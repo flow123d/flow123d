@@ -342,7 +342,7 @@ on all boundaries -- along the circumference of the square.
 %
 \begin{figure}[h!]
 \centering
-\includegraphics[width=0.8\textwidth]{tests_graphics/08_result.pdf}
+\includegraphics[width=0.8\textwidth]{tests_graphics/08_solution.pdf}
 \caption{Test 08 -- solution. Distribution of the pressure matches the analytical solution (\ref{eqn:test8}).}
 \label{fig:test8_solution}
 \end{figure}
@@ -572,7 +572,7 @@ right side using set of older \verb'.tbc' files.
 
 \subsection*{Geometry and boundary conditions}
 
-Dirichlet boundary condition for pressure is prescribed $x$ all around the plane and causes constant flow from right to left 
+Dirichlet boundary condition for pressure is prescribed $h_D = x$ all around the plane and causes constant flow from right to left 
 (pressure prescribed on the upper and lower sides are equal along x axis so causes no flow). Transport boundary condition has 
 the same prescribtion as for the pressure, only the values evolves in time.
 
@@ -582,7 +582,7 @@ of the boundary condition at specified times are shown in the following table:
 \begin{center}
   \begin{tabular}{|l|c|c|c|c|c|}
     \hline
-    time \units{}{1}{} & $0$ & $1$ & $3$ & $6$ & $7$\\
+    time \units{}{}{1} & $0$ & $1$ & $3$ & $6$ & $7$\\
     concentration & $0$ & $20$ & $0$ & $40$ & $0$\\
     \hline
   \end{tabular}
@@ -590,8 +590,8 @@ of the boundary condition at specified times are shown in the following table:
 
 \begin{figure}[htb!]
 \centering
-\includegraphics[width=15cm]{tests_graphics/14_mesh.pdf}
-\caption{Test 14 -- mesh}
+\includegraphics[width=15cm]{tests_graphics/14_solution.pdf}
+\caption{Test 14 -- solution at time 8.0~\unitss{}{}{1}.}
 \label{fig:test14_mesh}
 \end{figure}
 %
@@ -609,7 +609,8 @@ The flow is steady and the transport is solved in time interval $(0,10.0)$~\unit
 %
 
 \subsection*{Verification}
-
+This test verifies that the transport boundary condition can evolve in time. We use old \verb'.tbc' for description 
+of the transport boundary condition but all other possibilities work also.
 
 
 %=====================================================
@@ -721,8 +722,10 @@ The geometry and material and transport parameters are the same as in test 12.
 \section{Test 18 -- Diffusion through fractures}
 This test is aimed at transport caused just by diffusion. 
 
-There is a triangular domain with zero pressure everywhere so no flow is present. Triangular element with high concentration of a substance lies in the middle of the domain and its sides neighbour with fractures.
-The coeffients of molecular diffusion and diffusive transfer through fractures are the parameters of the implicit transport and are set in the configuration file.
+There is a triangular domain with zero pressure everywhere so no flow is present. Triangular element 
+with high concentration of a substance lies in the middle of the domain and its sides neighbour with fractures.
+The coeffients of molecular diffusion and diffusive transfer through fractures are the parameters of 
+the implicit transport and are set in the configuration file.
 
 \subsection*{Geometry}
 
@@ -731,7 +734,30 @@ The coeffients of molecular diffusion and diffusive transfer through fractures a
 \subsection*{Verification}
 
 
+%=====================================================
+%                   TEST  18
+%=====================================================
 
+\section{Test 19 -- Boundary condition interpolation}
+
+The input file \verb'large_cube_solution.msh' for interpolation was computed from \verb'flow_large_gmsh.con'.
+
+To view comparision of the large mesh and small mesh with interpolated bc
+compute \verb'flow_large_vtk.con' and then add results when opening Paraview with state file.
+
+\begin{itemize} 
+    \item \emph{problem type} -- sequential coupling, 
+    \item \emph{primary equation} -- steady mixed hybrid
+    \item \emph{secondary equation} -- transport operator splitting
+  \end{itemize}
+
+\subsection*{Geometry}
+
+
+\subsection*{Parameters}
+
+\subsection*{Verification}
+verification of interpolation of boundary condition for piezohead
 
 
 

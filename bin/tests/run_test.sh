@@ -403,7 +403,8 @@ do
                 else
                     FLOW_EXIT_STATUS=100
                 fi
-		               
+		
+		rm -f ${FLOW_SCRIPT_STDOUT}
 
 		# In all cases copy content of ./output to ./test_results directory
 		copy_outputs "${INI_FILE}" "${NP}"
