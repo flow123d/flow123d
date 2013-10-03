@@ -201,10 +201,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
 
-    // set up solver
-    //solver = new Solver;
-    //solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
-
     // Read names of transported substances.
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
@@ -271,13 +267,12 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // allocate matrix and vector structures
     
     ls    = new LinSys*[n_subst_];
-    // TODO: have Distribution object in DoF handler, use it here and on several other places
-	//int lsize = feo->dh()->lsize();
-    //ls_dt = new LinSys_PETSC(feo->dh()->distr());
+    ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
     for (int sbi = 0; sbi < n_subst_; sbi++) {
-    	//ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
+    	ls[sbi]->set_solution(NULL);
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
@@ -293,9 +288,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 TransportDG::~TransportDG()
 {
-    //delete transport_output;
     delete time_;
-    delete solver;
     delete ls_dt;
 
     if (el_ds->myp() == 0)
@@ -356,7 +349,6 @@ void TransportDG::update_solution()
     	// preallocate mass matrix
     	ls_dt->start_allocation();
     	assemble_mass_matrix();
-    	ls_dt->finish_assembly();
     	mass_matrix = NULL;
 
 		// preallocate system matrix
@@ -400,7 +392,7 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		MatZeroEntries(ls[i]->get_matrix());
+    		ls[i]->mat_zero_entries();
     	}
         assemble_stiffness_matrix();
         for (int i=0; i<n_subst_; i++)
@@ -426,7 +418,7 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		VecSet(ls[i]->get_rhs(), 0);
+    		ls[i]->rhs_zero_entries();
     	}
     	set_sources();
     	set_boundary_conditions();
@@ -458,33 +450,27 @@ void TransportDG::update_solution()
      *   A^k = A + 1/dt M.
      *
      */
-
+    Mat m;
     for (int i=0; i<n_subst_; i++)
     {
-		MatCopy(stiffness_matrix[i], ls[i]->get_matrix(), DIFFERENT_NONZERO_PATTERN);
-		// ls->get_matrix() = 1/dt*mass_matrix + ls->get_matrix()
-		MatAXPY(ls[i]->get_matrix(), 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
-		Vec y;
+    	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
+		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
+		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
+		Vec y,w;
 		VecDuplicate(rhs[i], &y);
-		// y = mass_matrix*ls->get_solution()
+		VecDuplicate(rhs[i], &w);
 		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		// ls->get_rhs() = 1/dt*y + rhs
-		VecWAXPY(ls[i]->get_rhs(), 1./time_->dt(), y, rhs[i]);
-
-		//MatView( ls->get_matrix(), PETSC_VIEWER_STDOUT_SELF );
+		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		ls[i]->set_rhs(w);
 
 		VecDestroy(&y);
+		VecDestroy(&w);
 
-		//VecView( ls->get_rhs(), PETSC_VIEWER_STDOUT_SELF );
-		// solve
-		//solve_system(solver, ls[i]);
 		ls[i]->solve();
     }
 
     mass_balance();
 
-    //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
-    
     END_TIMER("DG-ONE STEP");
 }
 
@@ -517,8 +503,6 @@ void TransportDG::output_data()
 {
     double *solution;
     unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-    //int n_nodes = mesh_->node_vector.size();
-    //int count[n_nodes];
 
     if (!time_->is_current(output_mark_type)) return;
 
@@ -1476,8 +1460,7 @@ void TransportDG::set_initial_condition()
 	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
 		ls[sbi]->finish_assembly();
-		solve_system(solver, ls[sbi]);
-		//ls[sbi]->solve();
+		ls[sbi]->solve();
 	}
 }
 

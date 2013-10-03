@@ -185,6 +185,32 @@ public:
     }
     
     /**
+     * Sets PETSC matrix (only for PETSC solvers)
+     */
+    virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
+    {
+        ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    /**
+     * Sets RHS vector  (only for PETSC solvers)
+     */
+    virtual PetscErrorCode set_rhs(Vec &rhs)
+    {
+        ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    virtual PetscErrorCode mat_zero_entries()
+    {
+    	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    virtual PetscErrorCode rhs_zero_entries()
+    {
+    	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    /**
      *  Returns PETSC vector with solution. Underlying array can be provided on construction.
      */
     const Vec &get_solution()

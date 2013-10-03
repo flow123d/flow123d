@@ -488,9 +488,6 @@ private:
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
 
-	/// Solver for the linear algebraic system.
-	struct Solver *solver;
-
 	// @}
 
 
@@ -502,9 +499,6 @@ private:
 
 	/// Class for handling the solution output.
 	OutputTime *transport_output;
-
-	/// Time marks for writing the output.
-	//TimeMark::Type output_mark_type;
 
 	// @}
 
@@ -519,8 +513,6 @@ private:
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
-
-    //const MH_DofHandler * mh_dh;
 
     // @}
 };

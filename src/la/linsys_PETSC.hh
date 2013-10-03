@@ -66,6 +66,26 @@ public:
         return rhs_; 
     }
 
+    PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
+    {
+    	return MatCopy(matrix, matrix_, str);
+    }
+
+    PetscErrorCode set_rhs(Vec &rhs)
+    {
+    	return VecCopy(rhs, rhs_);
+    }
+
+    PetscErrorCode mat_zero_entries()
+    {
+    	return MatZeroEntries(matrix_);
+    }
+
+    PetscErrorCode rhs_zero_entries()
+    {
+    	return VecSet(rhs_, 0);
+    }
+
     void start_allocation();
 
     void start_add_assembly();
