@@ -35,7 +35,7 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
-template<unsigned int dim, unsigned int spacedim> class DOFHandler;
+class DOFHandlerBase;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -230,11 +230,6 @@ public:
 private:
 
 	/**
-	 * @brief Distribute elements and DOFs to processes.
-	 */
-	void make_transport_partitioning();
-
-	/**
 	 * @brief Assembles the mass matrix.
 	 *
 	 * The routine just calls templated method assemble_mass_matrix() for each
@@ -318,7 +313,7 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(const typename DOFHandler<dim,3>::CellIterator &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const ElementFullIter &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
@@ -475,12 +470,12 @@ private:
 	/// The mass matrix.
 	Mat mass_matrix;
 
-	/// Element id -> local element index (-1 if not local)
-    int *row_4_el;
-    /// Local element index -> id
-    int *el_4_loc;
-    /// Distribution of elements
-    Distribution *el_ds;
+//	/// Element id -> local element index (-1 if not local)
+//    int *row_4_el;
+//    /// Local element index -> id
+//    int *el_4_loc;
+//    /// Distribution of elements
+//    Distribution *el_ds;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
