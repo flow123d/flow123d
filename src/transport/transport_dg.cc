@@ -1185,6 +1185,9 @@ void TransportDG::set_boundary_conditions()
     vector<arma::vec> bc_values(qsize);
     int rank;
 
+    for (int i=0; i<qsize; i++)
+    	bc_values[i].resize(n_subst_);
+
     for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
@@ -1445,8 +1448,10 @@ void TransportDG::prepare_initial_condition()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs];
     double matrix[ndofs*ndofs], rhs[ndofs];
-    std::vector<arma::vec> init_values;
-    init_values.resize(qsize);
+    std::vector<arma::vec> init_values(qsize);
+
+    for (int i=0; i<qsize; i++)
+    	init_values[i].resize(n_subst_);
 
     for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
