@@ -69,7 +69,7 @@ set(sources_lib_la
 	la/distribution.cc
 	la/local_to_global_map.cc
     la/schur.cc
-    la/solve.cc
+    #la/solve.cc
     la/linsys.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
