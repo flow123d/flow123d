@@ -223,7 +223,7 @@ We choose $\sigma_R=0.5$ and then we get $u_R=-2x$ on the south side and $u_R=3x
 \end{itemize}
 
 \subsection*{Verification}
-This test verifies prescribing different types boundary conditions.
+This test verifies prescribing different types of boundary conditions.
 
 
 %=====================================================
@@ -245,17 +245,21 @@ We will discuss both the geometry and parameters at once.
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.6\textwidth]{tests_graphics/06_result_32d.pdf}
-\caption{Test 06 -- solution. For verification see the blue plate where the constant piezometric head is.}
+\caption{Test 06 -- solution. For verification see the blue plate where the constant 
+         piezometric head -3~\unitss{}{1}{} is.}
 \label{fig:test6_solution_32d}
 \end{figure}
 %
 \textbf{3D-2D.}
 There is a cube with vertices [0,0,0] [-1,-1,-1] which couples with a 2D crack in the bottom (i.e. $z=-1$~\unitss{}{1}{}).
-We consider solution of the piezometric head in the cube $p_3(x,y,z) = z$. We will use it to prescribe Dirichlet boundary condition on the non-coupling parts of the cube.
+We consider solution of the piezometric head in the cube $p_3(x,y,z) = z$. We will use it to 
+prescribe Dirichlet boundary condition on the non-coupling parts of the cube.
 There are no sources of a flow in the cube. 
-We can write the outflow through the bottom of the cube in following term $q_{32} = \mathbf{q_3} \cdot \mathbf{n} = (- K_3 \nabla p_3(x,y,-1))\cdot \mathbf{n}$,
+We can write the outflow through the bottom of the cube in following term 
+$q_{32} = \mathbf{q_3} \cdot \mathbf{n} = (- K_3 \nabla p_3(x,y,-1))\cdot \mathbf{n}$,
 where $\mathbf{n}=(0,0,-1)$.
-To obtain Laplace equation with zero right hand side on the 2D crack, we prescribe a new source term (\ref{eqn:test06_f2}) that eliminates the inflow coming from the cube.         
+To obtain Laplace equation with zero right hand side on the 2D crack, we prescribe a new source 
+term (\ref{eqn:test06_f2}) that eliminates the inflow coming from the cube.         
 \begin{eqnarray}
     F_2 &=& \delta_2  f_2 + q_{32} = 0   \nonumber\\
     f_2(x,y) &=& -\frac{q_{32}}{\delta_2}   \label{eqn:test06_f2}.
@@ -268,14 +272,16 @@ From the flow coupling equation we can get the piezometric head (\ref{eqn:test06
      \sigma_{32}  ( p_3(x,y,-1) - p_2(x,y) ) &=& q_{32} \nonumber\\
      p_2(x,y) &=& -\frac{q_{32}}{\sigma_{32}} + p_3(x,y,-1) \label{eqn:test06_p2}.
 \end{eqnarray}   
-When $\sigma_{32} = 1$~\unitss{}{}{-1} is set then the piezometric head in the crack is constant and equal $p_2(x,y) = -3$~\unitss{}{1}{}.
+When $\sigma_{32} = 1$~\unitss{}{}{-1} is set then the piezometric head in the crack is constant and equal $p_2(x,y) = -3$~\unitss{}{1}{}
+as we can see in figure \ref{fig:test6_solution_32d}.
 
 %
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.6\textwidth]{tests_graphics/06_result_21d.pdf}
-\caption{Test 06 -- solution. For verification see the blue channel on the left side of the plane where the constant piezometric head is.}
-\label{fig:test6_solution_32d}
+\caption{Test 06 -- solution. For verification see the blue channel on the left side of the plane 
+         where the constant piezometric head -2.5~\unitss{}{1}{} is.}
+\label{fig:test6_solution_21d}
 \end{figure}
 %
 \textbf{2D-1D.}
@@ -298,7 +304,8 @@ From the flow coupling equation we can get the pressure (\ref{eqn:test06_p1}) on
      \delta_2 \sigma_{21} ( p_2(0,y) - p_2(y) ) &=& q_{21} \nonumber\\
      p_1(y) &=& -\frac{q_{21}}{\delta_2 \sigma_{21}} + p_2(0,y) \label{eqn:test06_p1}.
 \end{eqnarray}   
-When $\sigma_{21} = 1$~\unitss{}{}{-1} is set then the pressure in the crack is constant and equal $p_1(y) = -2.5$~\unitss{}{1}{}.
+When $\sigma_{21} = 1$~\unitss{}{}{-1} is set then the pressure in the crack is constant and equal $p_1(y) = -2.5$~\unitss{}{1}{}
+as we can see in the figure \ref{fig:test6_solution_21d}.
 
 % \subsection*{Parameters}
 % Parameters where discussed above.
@@ -528,17 +535,9 @@ transport: concentration is 1.0 at point [0,0,0] and 0.0 at points [10,0,$\mp5$]
 
 Initial concentration of the substances is zero in the whole area. 
 %
-\begin{figure}[htb!]
-\centering
-\includegraphics[width=12cm]{tests_graphics/13_mesh.pdf}
-\caption{Test 13 -- mesh}
-\label{fig:test13_mesh}
-\end{figure}
-%
-%
 \subsection*{Parameters}
 The flow is steady and the transport is solved in time interval $(0,100.0)$~\unitss{}{}{1}. 
-The output is written every 0.5~\unitss{}{}{1}. 
+The output is written every 5~\unitss{}{}{1}. 
 Time parameters for implicitly computed transport are the same only initial time step and output time is set to 5.0~\unitss{}{}{1}.
 \begin{itemize}
   \item \textbf{Thickness:} all planes are set to 1.0~\unitss{}{1}{}.
@@ -551,9 +550,30 @@ Time parameters for implicitly computed transport are the same only initial time
   \item \textbf{Dispersion coefficients:} Default parameters are set in implicit transport, so no dispersion is present. 
         For more details see \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData} in the input reference.
 \end{itemize}
-
+%
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tests_graphics/13_solution_t2.pdf}
+        \caption{Solution at time 10~\unitss{}{}{1}.}
+        \label{fig:test13_a}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{tests_graphics/13_solution_t10.pdf}
+        \caption{Solution at time 10~\unitss{}{}{1}.}
+        \label{fig:test13_b}
+    \end{subfigure}
+    \caption{Test 13 -- mesh}
+  \label{fig:test13}
+\end{figure}
+%
 \subsection*{Verification}
-This test verifies qualitatively both the problem of flow and transport.
+This test verifies qualitatively both the problem of flow and transport. We can see the influence of smaller conductivity 
+in upper branch in the figure \ref{fig:test13}. The concentration of the substance spreads slower in the upper branch than 
+in the lower one.
 
 %=====================================================
 %                   TEST  14
