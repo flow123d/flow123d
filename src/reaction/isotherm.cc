@@ -29,16 +29,17 @@ void Langmuir::reinit(double mult_coef, double alpha)
 	return;
 }
 
-
-
-void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double por_m, double por_imm, double phi, double molar_mass, double c_aqua_limit)
+void Isotherm::reinit(enum SorptionType adsorption_type, double rho_aqua, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef)
 {
-	this->set_sorption_type(sorp_type);
-	this->set_rho_aqua(rho_aqua);
-	this->set_scales(por_m, por_imm, phi, rock_density, molar_mass);
-    this->set_inv_scale_aqua(scale_aqua_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
-    this->set_inv_scale_sorbed(scale_sorbed_/((scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_)));
-    this->set_caq_limmit(c_aqua_limit);
+	adsorption_type_ = adsorption_type;
+	rho_aqua_ = rho_aqua;
+	scale_aqua_ = scale_aqua;
+	scale_sorbed_ = scale_sorbed;
+    inv_scale_aqua_ = scale_aqua_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
+    inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
+    c_aqua_limit_ = c_aqua_limit;
+    mult_coef_ = mult_coef;
+    second_coef_ = second_coef;
 }
 
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
@@ -46,34 +47,36 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     double total_mass = (scale_aqua_* c_aqua + scale_sorbed_ * c_sorbed);
     double total_mass_steps = total_mass / total_mass_step_;
     int total_mass_idx = static_cast <int>(std::floor(total_mass_steps));
-    if ( total_mass_idx < 0 ) return false;
-    if ( (unsigned int)(total_mass_idx) < interpolation_table.size() ) {
+    xprintf(Msg,"total_mass %f, total_mass_idx %d, total_mass_step_ %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %f, c_sorbed %f\n", total_mass, total_mass_idx, total_mass_step_, scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
+    if ( total_mass_idx < 0 ) {xprintf(UsrErr,"total_mass %f\n", total_mass); }
+    if ( (unsigned int)(total_mass_idx) < (interpolation_table.size() - 1) ) {
     	double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);
-        c_aqua = (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_); // (scale_aqua_ * total_mass * inv_scale_aqua_ - scale_sorbed_ * rot_sorbed * inv_scale_sorbed_);
-        c_sorbed = (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_); // (scale_sorbed_ * total_mass * inv_scale_aqua_ + scale_aqua_ * rot_sorbed * inv_scale_sorbed_);
+        c_aqua = (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_);
+        c_sorbed = (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_);
         return true;
     } else {
     	if (c_aqua_limit_ > 0.0) {
-    		precipitate(c_aqua, c_sorbed); //, scale_aqua_, scale_sorbed_);
-    	} else
-        {
-        	cout << "c_aqua_limit_ has the value " << c_aqua_limit_ << endl;
-        	return false;
-        }
+    		precipitate(c_aqua, c_sorbed);
+    	} else {
+    		ConcPair conc(c_aqua, c_sorbed);
+    		conc = solve_conc(conc);
+    		c_aqua = conc.first;
+    		c_sorbed = conc.second;
+    	}
     }
 
-    return true; //false;
+    return true;
 }
 
 template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm)
 {
     boost::uintmax_t max_iter = 20;
-    dekl_tolerance<double> toler(30);
+    tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 	double critic_total_mass = c_aqua_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(c_aqua_limit_ / this->rho_aqua_)*scale_sorbed_;
 
-	const double upper_solution_bound = critic_total_mass / scale_aqua_ + 0.00001; // corresponds to c_a^max, where substance stsarts to precipitate + 1.0
+	const double upper_solution_bound = critic_total_mass / scale_aqua_ + 0.00001;
 
 	if(total_mass < critic_total_mass)
 	{
@@ -83,7 +86,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 		c_aqua = (solution.first + solution.second)/2; // = average of the pair solution defined above, midpoint
 		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_; //const_cast<Func &>(isotherm)(c_aqua);
 	}else{
-		precipitate(c_aqua, c_sorbed); //, scale_aqua_, scale_sorbed_);
+		precipitate(c_aqua, c_sorbed);
 	}
 
     return;
@@ -95,7 +98,85 @@ template void Isotherm::solve_conc<Langmuir>(double &c_aqua, double &c_sorbed, c
 
 template void Isotherm::solve_conc<Freundlich>(double &c_aqua, double &c_sorbed, const Freundlich &isotherm);
 
-void Isotherm::precipitate(double &c_aqua, double &c_sorbed) //, double scale_aqua, double scale_sorbed)
+ConcPair Isotherm::solve_conc(ConcPair conc)
+{
+	double c_aqua = conc.first;
+	double c_sorbed = conc.second;
+
+	switch(adsorption_type_)
+	{
+		/*case 0:
+ 	 	 {
+	 	 ;
+ 	 	 }
+ 	 	 break;*/
+		case 1: //  linear:
+		{
+			Linear obj_isotherm(mult_coef_);
+			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+		}
+		break;
+		case 2: // freundlich
+		{
+			Freundlich obj_isotherm(mult_coef_, second_coef_);
+			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+		}
+		break;
+		case 3:  // langmuir:
+		{
+			Langmuir obj_isotherm(mult_coef_, second_coef_);
+			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+		}
+		break;
+		default:
+		{
+			xprintf(UsrErr,"4) Isotherm::solve_conc(ConcPair) did nit cimpute any type of sorption. "); //either not considered or it has an unknown type %d.", i_subst, reg_id_nr, isotherms[reg_id_nr][i_subst].get_sorption_type());
+		}
+		break;
+	}
+	conc.first = c_aqua;
+	conc.second = c_sorbed;
+
+	return conc;
+}
+
+void Isotherm::make_table(int nr_of_points)
+{
+	switch(adsorption_type_)
+	{
+	 /*case 0: // none:
+		 {
+		 	isotherms[reg_idx][i_subst].make_one_point_table();
+	 	 }
+		 break;*/
+	 	 case 1: //  linear:
+	 	 {
+		 	Linear obj_isotherm(mult_coef_);
+			make_table(obj_isotherm, nr_of_points);
+	 	 }
+	 	 break;
+	 	 case 2: // freundlich:
+	 	 {
+		 	Freundlich obj_isotherm(mult_coef_, second_coef_);
+			make_table(obj_isotherm, nr_of_points);
+	 	 }
+	 	 break;
+	 	 case 3: // langmuir:
+	 	 {
+		 	Langmuir obj_isotherm(mult_coef_, second_coef_);
+			make_table(obj_isotherm, nr_of_points);
+	 	 }
+	 	 break;
+	 	 default:
+	 	 {
+			 make_one_point_table();
+		 	 xprintf(Msg,"2) Isotherm::make_table(int), sorption is either not considered or it has an unknown type %d.", adsorption_type_); //, i_subst, reg_idx, hlp_iso_type);
+	 	 }
+	 	 break;
+	}
+}
+
+void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 {
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 
@@ -146,40 +227,26 @@ void Isotherm::make_one_point_table(void)
 	return;
 }
 
-void Isotherm::set_sorption_type(SorptionType sorp_type)
+/*void Isotherm::set_sorption_type(SorptionType sorp_type)
 {
-	sorption_type_ = sorp_type;
+	adsorption_type_ = sorp_type;
 	return;
-}
+}*/
 
 SorptionType Isotherm::get_sorption_type(void)
 {
-	return sorption_type_;
+	return adsorption_type_;
 }
 
-void Isotherm::set_mult_coef_(double mult_coef)
+void Isotherm::set_iso_params(SorptionType sorp_type, double mult_coef, double second_coef)
 {
+	adsorption_type_ = sorp_type;
 	mult_coef_ = mult_coef;
-	return;
-}
-
-double Isotherm::get_mult_coef_(void)
-{
-	return mult_coef_;
-}
-
-void Isotherm::set_second_coef_(double second_coef)
-{
 	second_coef_ = second_coef;
 	return;
 }
 
-double Isotherm::get_second_coef_(void)
-{
-	return second_coef_;
-}
-
-void Isotherm::set_rho_aqua(double rho_aqua)
+/*void Isotherm::set_rho_aqua(double rho_aqua)
 {
 	rho_aqua_ = rho_aqua;
 	return;
@@ -213,25 +280,7 @@ void Isotherm::set_caq_limmit(double caq_limmit)
 {
 	c_aqua_limit_ = caq_limmit;
 	return;
-}
-
-void Isotherm::set_scales(double por_m, double por_imm, double phi, double rock_density, double molar_mass)
-{
-	switch (kind_of_pores_)
-	{
-		case IMMOBILE :
-		 scale_aqua_ = por_imm;
-	 	 scale_sorbed_ = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_mass; // (1 - phi) * (1 - por_m - por_imm)
-	 	 break;
-		case MOBILE :
-		 scale_aqua_ = por_m;
-	 	 scale_sorbed_ = phi * (1 - por_m - por_imm) * rock_density * molar_mass;
-	 	break;
-		default :
-			xprintf(UsrErr,"Unknown type of pores inside a rock matrix.\n");
-	}
-	return;
-}
+}*/
 
 void Isotherm::set_kind_of_pores(int kind_of_pores)
 {
