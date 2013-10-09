@@ -410,6 +410,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
 	    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
 	    Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
 	    Compl->set_solution(sol_array);
+	    ( (LinSys_PETSC *)Compl )->set_from_input( Orig->in_rec_ );
 	    VecRestoreArray( Sol2, &sol_array );
 
     	PetscInt ncols, pos_start, pos_start_IA;

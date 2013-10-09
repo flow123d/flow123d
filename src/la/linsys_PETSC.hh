@@ -119,6 +119,9 @@ public:
 
     void view( );
 
+    /**
+     * Sets specific parameters of LinSys_PETSC defined by user in input file and used to calculate
+     */
     void set_from_input(const Input::Record in_rec);
 
 
@@ -146,8 +149,7 @@ private:
 
 private:
 
-    double      a_tol_;  // absolute tolerance of linear solver
-    std::string params_; // command-line-like options for the PETSc solver
+    std::string params_;		 // command-line-like options for the PETSc solver
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.

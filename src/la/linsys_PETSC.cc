@@ -307,7 +307,8 @@ int LinSys_PETSC::solve()
     //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
     //if (r_tol < 0) r_tol=solver_accuracy;
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    //ierr = KSPSetTolerances(system, r_tol, a_tol, PETSC_DEFAULT,PETSC_DEFAULT); 
+    DBGMSG("KSP tolerances: r_tol_ %.10f, a_tol_ %.10f\n", r_tol_, a_tol_);
+    ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system); 
 
     ierr = KSPSolve(system, rhs_, solution_ ); 
@@ -416,8 +417,7 @@ void LinSys_PETSC::gatherSolution_( )
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {
     // common values
-    r_tol_  = in_rec.val<double>("r_tol");   
-    max_it_ = in_rec.val<int>("max_it");   
+	LinSys::set_from_input( in_rec );
 
     // PETSc specific setting
     a_tol_  = in_rec.val<double>("a_tol");   

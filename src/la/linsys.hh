@@ -71,6 +71,7 @@
 #include "system/xio.h"
 #include "la/distribution.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 
 
 #include <mpi.h>
@@ -85,6 +86,7 @@
 
 class LinSys
 {
+friend class SchurComplement;
 public:
     // Abstract Input Record for LinSys initialization
     static Input::Type::AbstractRecord input_type;
@@ -431,6 +433,17 @@ public:
         ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Sets basic parameters of LinSys defined by user in input file and used to calculate
+     */
+    virtual void set_from_input(const Input::Record in_rec)
+    {
+    	in_rec_ = Input::Record( in_rec );
+        r_tol_  = in_rec.val<double>("r_tol");
+        max_it_ = in_rec.val<int>("max_it");
+        a_tol_  = 0.01 * r_tol_;
+    }
+
     ~LinSys()
     { 
        PetscErrorCode ierr;
@@ -440,6 +453,7 @@ public:
 
 protected:
     double           r_tol_;  // relative tolerance of linear solver
+    double      	 a_tol_;  // absolute tolerance of linear solver
     int              max_it_; // maximum number of iterations of linear solver
 
     MPI_Comm         comm_;
@@ -463,6 +477,8 @@ protected:
     ConstraintVec_   constraints_;
 
     std::vector<double>  globalSolution_; //!< global solution in numbering for linear system
+
+    Input::Record in_rec_;        // structure contained parameters of LinSys defined in input file
 
 };
 
