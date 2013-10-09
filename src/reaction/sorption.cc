@@ -166,6 +166,7 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
 			SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
+			Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
 
 			// Creates interpolation tables in the case of constant rock matrix parameters
 			if((data_.rock_density.get_const_value(reg_iter, rock_density)) &&
@@ -179,10 +180,14 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 				double scale_sorbed;
 				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
 					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
-				isotherms[reg_idx][i_subst].reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_param[i_subst], second_coef[i_subst]); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
-				isotherms[reg_idx][i_subst].make_table(nr_of_points);
+				isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_param[i_subst], second_coef[i_subst]); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
+				isotherm.make_table(nr_of_points);
 			}else{
-				isotherms[reg_idx][i_subst].set_iso_params(hlp_iso_type,mult_param[i_subst],second_coef[i_subst]);
+				// We need to get coeficients belonging to particular isotherm. Solution realized bellow is just temporary. If it would be final, then the initialization could preceed if-condition above.
+				data_.mult_coefs.get_const_value(reg_iter, mult_param);
+				data_.second_params.get_const_value(reg_iter, second_coef);
+				xprintf(Msg,"Sorption::prepare_inputs(), mult_coef_ %f, second_coef_ %f\n", mult_param[i_subst], second_coef[i_subst]);
+				isotherm.set_iso_params(hlp_iso_type,mult_param[i_subst],second_coef[i_subst]);
 			}
 
 		}
@@ -251,6 +256,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		    	// Coeficients describing isoterms must be constant at the moment I think.
 		    	double mult_coef = isotherm.mult_coef_;
 		    	double second_coef = isotherm.second_coef_;
+		    	//xprintf(Msg,"coeficients %f %f\n", mult_coef, second_coef);
 
 				isotherm.reinit(elem_sorp_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef);
 		    	int subst_id = substance_ids[i_subst];

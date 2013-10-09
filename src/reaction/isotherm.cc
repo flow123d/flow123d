@@ -102,6 +102,7 @@ ConcPair Isotherm::solve_conc(ConcPair conc)
 {
 	double c_aqua = conc.first;
 	double c_sorbed = conc.second;
+	//xprintf(Msg,"Isotherm::solve_conc(ConcPair), concentrations before simulation: %f %f\n",c_aqua, c_sorbed);
 
 	switch(adsorption_type_)
 	{
@@ -114,26 +115,31 @@ ConcPair Isotherm::solve_conc(ConcPair conc)
 		{
 			Linear obj_isotherm(mult_coef_);
 			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+			//xprintf(Msg,"Isotherm::solve_conc(CP), linear_case\n");
 		}
 		break;
 		case 2: // freundlich
 		{
 			Freundlich obj_isotherm(mult_coef_, second_coef_);
 			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+			//xprintf(Msg,"Isotherm::solve_conc(CP), freundlich_case\n");
+			//xprintf(Msg,"Isotherm::solve_conc(CP), freundlich_case, mult_coef_ %f, second_coef_ %f\n", mult_coef_, second_coef_);
 		}
 		break;
 		case 3:  // langmuir:
 		{
 			Langmuir obj_isotherm(mult_coef_, second_coef_);
 			solve_conc(c_aqua, c_sorbed, obj_isotherm);
+			//xprintf(Msg,"Isotherm::solve_conc(CP), langmuir_case\n");
 		}
 		break;
 		default:
 		{
-			xprintf(UsrErr,"4) Isotherm::solve_conc(ConcPair) did nit cimpute any type of sorption. "); //either not considered or it has an unknown type %d.", i_subst, reg_id_nr, isotherms[reg_id_nr][i_subst].get_sorption_type());
+			xprintf(Msg,"4) Isotherm::solve_conc(ConcPair) did nit cimpute any type of sorption. "); //either not considered or it has an unknown type %d.", i_subst, reg_id_nr, isotherms[reg_id_nr][i_subst].get_sorption_type());
 		}
 		break;
 	}
+	//xprintf(Msg,"Isotherm::solve_conc(ConcPair), concentrations after simulation: %f %f\n",c_aqua, c_sorbed);
 	conc.first = c_aqua;
 	conc.second = c_sorbed;
 
