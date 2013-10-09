@@ -48,7 +48,7 @@
 
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
-#include "solve.h"
+//#include "solve.h"
 #include "system/system.hh"
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"

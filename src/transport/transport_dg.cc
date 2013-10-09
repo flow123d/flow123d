@@ -36,7 +36,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-#include "la/solve.h"
+//#include "la/solve.h"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"

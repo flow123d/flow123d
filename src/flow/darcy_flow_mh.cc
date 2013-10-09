@@ -46,7 +46,7 @@
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
 #include "la/linsys_BDDC.hh"
-#include "la/solve.h"
+//#include "la/solve.h"
 #include "la/schur.hh"
 #include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
