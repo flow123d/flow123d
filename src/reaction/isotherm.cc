@@ -233,6 +233,14 @@ void Isotherm::make_one_point_table(void)
 	return;
 }
 
+bool Isotherm::is_precomputed()
+{
+	if(interpolation_table.size() > 1)
+		return true;
+	else
+		return false;
+}
+
 /*void Isotherm::set_sorption_type(SorptionType sorp_type)
 {
 	adsorption_type_ = sorp_type;

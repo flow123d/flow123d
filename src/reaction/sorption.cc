@@ -163,33 +163,40 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 		if(data_.sorption_types.get_const_value(reg_iter, iso_type)) ;
 		  else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
 
-		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+		// Creates interpolation tables in the case of constant rock matrix parameters
+		if((data_.rock_density.get_const_value(reg_iter, rock_density)) &&
+				(data_.mult_coefs.get_const_value(reg_iter, mult_param)) &&
+				(data_.second_params.get_const_value(reg_iter, second_coef)) &&
+				(this->porosity_->get_const_value(reg_iter, por_m)) &&
+				(this->immob_porosity_->get_const_value(reg_iter, por_imm)) &&
+				(this->phi_->get_const_value(reg_iter, phi)))
 		{
-			SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
-			Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
-
-			// Creates interpolation tables in the case of constant rock matrix parameters
-			if((data_.rock_density.get_const_value(reg_iter, rock_density)) &&
-					(data_.mult_coefs.get_const_value(reg_iter, mult_param)) &&
-					(data_.second_params.get_const_value(reg_iter, second_coef)) &&
-					(this->porosity_->get_const_value(reg_iter, por_m)) &&
-					(this->immob_porosity_->get_const_value(reg_iter, por_imm)) &&
-					(this->phi_->get_const_value(reg_iter, phi)))
+			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
+				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
+				Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
+
+				//scales for the case of sorption in mobile pores follows
 				double scale_aqua = por_m;
 				double scale_sorbed;
 				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
 					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+
 				isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_param[i_subst], second_coef[i_subst]); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
 				isotherm.make_table(nr_of_points);
-			}else{
+			}
+		}else{
+			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+			{
+				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
+				Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
+
 				// We need to get coeficients belonging to particular isotherm. Solution realized bellow is just temporary. If it would be final, then the initialization could preceed if-condition above.
 				data_.mult_coefs.get_const_value(reg_iter, mult_param);
 				data_.second_params.get_const_value(reg_iter, second_coef);
 				xprintf(Msg,"Sorption::prepare_inputs(), mult_coef_ %f, second_coef_ %f\n", mult_param[i_subst], second_coef[i_subst]);
 				isotherm.set_iso_params(hlp_iso_type,mult_param[i_subst],second_coef[i_subst]);
 			}
-
 		}
 	}
 }
@@ -215,7 +222,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     //	If intersections are not known then solve the problem analytically (toms748_solve).
 
     // Constant value of rock density and mobile porosity over the whole region
-    if( (data_.rock_density.get_const_value(region, rock_density)) &&  (this->porosity_->get_const_value(region, porosity)) )
+    if( this->isotherms[reg_id_nr][0].is_precomputed() ) //(data_.rock_density.get_const_value(region, rock_density)) &&  (this->porosity_->get_const_value(region, porosity)) )
 	{
 		START_TIMER("new-sorption interpolation");
 		{
@@ -223,18 +230,16 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 			{
 				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
 				int subst_id = substance_ids[i_subst];
-			    if( (isotherm.get_sorption_type() > 0) )
-			    {
-					isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
-			    }
+			    isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
 			}
 		}
 		END_TIMER("new-sorption interpolation");
 	}else{
 		START_TIMER("new-sorption toms748_solve values-readed");
-		if( !(data_.rock_density.get_const_value(region, rock_density)) ) rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
+		//if( !(data_.rock_density.get_const_value(region, rock_density)) )
+			rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 		double porosity;
-		if( !(this->porosity_->get_const_value(region, porosity)) )
+		//if( !(this->porosity_->get_const_value(region, porosity)) )
 			porosity = this->porosity_->value(elem->centre(),elem->element_accessor());
 
 		double phi = this->phi_->value(elem->centre(),elem->element_accessor());
@@ -247,27 +252,27 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 		{
 			double scale_sorbed;
+			// following condition is valid for adsorption in mobile pores
 			if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
 								xprintf(UsrErr, "Sorption::compute_reaction() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+
 			Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-			if(isotherm.get_sorption_type() > 0) //this->isotherms[reg_id_nr][i_subst].get_sorption_type() > 0)
-		    {
-		    	SorptionType elem_sorp_type = isotherm.get_sorption_type(); //this->isotherms[reg_id_nr][i_subst].get_sorption_type();
-		    	// Coeficients describing isoterms must be constant at the moment I think.
-		    	double mult_coef = isotherm.mult_coef_;
-		    	double second_coef = isotherm.second_coef_;
-		    	//xprintf(Msg,"coeficients %f %f\n", mult_coef, second_coef);
+		    SorptionType elem_sorp_type = isotherm.adsorption_type_; //this->isotherms[reg_id_nr][i_subst].get_sorption_type();
 
-				isotherm.reinit(elem_sorp_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef);
-		    	int subst_id = substance_ids[i_subst];
+		    // Coeficients describing isoterms must be constant at the moment I think.
+		    double mult_coef = isotherm.mult_coef_;
+		    double second_coef = isotherm.second_coef_;
+		    //xprintf(Msg,"coeficients %f %f\n", mult_coef, second_coef);
 
-		    	ConcPair conc(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
-				START_TIMER("new-sorption toms748_solve");
-		    	conc = isotherm.solve_conc(conc);
-				END_TIMER("new-sorption toms748_solve");
-		    	concentration_matrix[subst_id][loc_el] = conc.first;
-		    	sorbed_conc_array[i_subst][loc_el] = conc.second;
-		    }
+			isotherm.reinit(elem_sorp_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef);
+		    int subst_id = substance_ids[i_subst];
+
+		    ConcPair conc(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
+			START_TIMER("new-sorption toms748_solve");
+		    conc = isotherm.solve_conc(conc);
+			END_TIMER("new-sorption toms748_solve");
+		    concentration_matrix[subst_id][loc_el] = conc.first;
+		    sorbed_conc_array[i_subst][loc_el] = conc.second;
 		}
 	}
 

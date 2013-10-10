@@ -255,6 +255,10 @@ public:
     *
     */
     void precipitate(double &c_aqua, double &c_sorbed); //double &c_aqua, double &c_sorbed); //
+    /**
+    * Informs ifever the interpolation table is precomputed and has more than one cell
+    */
+    bool is_precomputed(void);
     /// Type of isotherm
     enum SorptionType adsorption_type_;
     /**
@@ -277,7 +281,7 @@ private:
     /// Limit concentration in solution, we model coagulation as adsorption
     double c_aqua_limit_;
     /// Type of isotherm
-    SorptionType sorption_type_;
+    //SorptionType adsorption_type_;
     /**
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
