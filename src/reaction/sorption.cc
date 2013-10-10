@@ -159,18 +159,23 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 		int reg_idx = reg_iter.bulk_idx();
 
+		ElementAccessor<3> elm;
+
 		// List of types of isotherms in particular regions, initialization
-		if(data_.sorption_types.get_const_value(reg_iter, iso_type)) ;
+		if(data_.sorption_types.get_const_accessor(reg_iter, elm)) ;
 		  else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
 
+
 		// Creates interpolation tables in the case of constant rock matrix parameters
-		if((data_.rock_density.get_const_value(reg_iter, rock_density)) &&
-				(data_.mult_coefs.get_const_value(reg_iter, mult_param)) &&
-				(data_.second_params.get_const_value(reg_iter, second_coef)) &&
-				(this->porosity_->get_const_value(reg_iter, por_m)) &&
-				(this->immob_porosity_->get_const_value(reg_iter, por_imm)) &&
-				(this->phi_->get_const_value(reg_iter, phi)))
+		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
+				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
+				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
+				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->phi_->get_const_accessor(reg_iter, elm)))
 		{
+		    // TODO: call isotherm_reinit(isotherms[reg_idx], elm) here to get constant values and call reinit for isotherms
+
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
 				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
@@ -191,9 +196,11 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
 				Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
 
+				// TODO: should do nothing herre
+
 				// We need to get coeficients belonging to particular isotherm. Solution realized bellow is just temporary. If it would be final, then the initialization could preceed if-condition above.
-				data_.mult_coefs.get_const_value(reg_iter, mult_param);
-				data_.second_params.get_const_value(reg_iter, second_coef);
+				//data_.mult_coefs.get_const_accessor(reg_iter, mult_param);
+				//data_.second_params.get_const_accessor(reg_iter, second_coef);
 				xprintf(Msg,"Sorption::prepare_inputs(), mult_coef_ %f, second_coef_ %f\n", mult_param[i_subst], second_coef[i_subst]);
 				isotherm.set_iso_params(hlp_iso_type,mult_param[i_subst],second_coef[i_subst]);
 			}
@@ -222,7 +229,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     //	If intersections are not known then solve the problem analytically (toms748_solve).
 
     // Constant value of rock density and mobile porosity over the whole region
-    if( this->isotherms[reg_id_nr][0].is_precomputed() ) //(data_.rock_density.get_const_value(region, rock_density)) &&  (this->porosity_->get_const_value(region, porosity)) )
+    if( this->isotherms[reg_id_nr][0].is_precomputed() ) //(data_.rock_density.get_const_accessor(region, rock_density)) &&  (this->porosity_->get_const_accessor(region, porosity)) )
 	{
 		START_TIMER("new-sorption interpolation");
 		{
@@ -236,10 +243,10 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		END_TIMER("new-sorption interpolation");
 	}else{
 		START_TIMER("new-sorption toms748_solve values-readed");
-		//if( !(data_.rock_density.get_const_value(region, rock_density)) )
+		//if( !(data_.rock_density.get_const_accessor(region, rock_density)) )
 			rock_density = data_.rock_density.value(elem->centre(),elem->element_accessor());
 		double porosity;
-		//if( !(this->porosity_->get_const_value(region, porosity)) )
+		//if( !(this->porosity_->get_const_accessor(region, porosity)) )
 			porosity = this->porosity_->value(elem->centre(),elem->element_accessor());
 
 		double phi = this->phi_->value(elem->centre(),elem->element_accessor());

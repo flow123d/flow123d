@@ -19,8 +19,15 @@
  * Element accessor templated just by dimension of the embedding space, used by Fields.
  * This should allow algorithms over elements where dimension of particular element is runtime parameter.
  *
- * TODO: (add various things needed by particular Field implementations)
+ * This class suites as interface of Fields to the mesh elements, in particular this accessor knows directly
+ * the region, and also can be used as an accessor that works on the whole region if used by Fields that do not depend on
+ * particular elements as FieldConstant, FiledFormula, and FieldPython.
  *
+ * TODO:
+ * - make this kind of accessor subclass of FieldCommonBase or at least move it into src/fields
+ *   since it has functionality particular for Fields
+ *
+ * Ideas:
  * need function to calculate intersection (object) of two ElementAccessors, but this definitely should be templated by
  * dimension of the ref. element (or rather shape of ref. element), here we can have case dispatch
  *
@@ -28,12 +35,39 @@
 template <int spacedim>
 class ElementAccessor {
 public:
-    ElementAccessor() {}
+    /**
+     * Default invalid accessor.
+     */
+    ElementAccessor()
+    : mesh_(NULL)
+    {}
 
+    /**
+     * Regional accessor.
+     */
+    ElementAccessor(Mesh *mesh, RegionIdx r_idx)
+    : mesh_(mesh), dim_(undefined_dim_), r_idx_(r_idx)
+    {}
+
+    /**
+     * Element accessor.
+     */
     ElementAccessor(Mesh *mesh, unsigned int idx, bool boundary)
-    : mesh_(mesh), boundary_(boundary), element_idx_(idx)
+    : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
+    }
+
+    inline bool is_regional() const {
+        return dim_ == undefined_dim_;
+    }
+
+    inline bool is_elemental() const {
+        return ( is_valid() && ! is_regional() );
+    }
+
+    inline bool is_valid() const {
+        return mesh_ != NULL;
     }
 
     inline unsigned int dim() const
@@ -50,10 +84,10 @@ public:
 
 
     inline Region region() const
-        { return element()->region(); }
+        { return Region( r_idx_, mesh_->region_db()); }
 
     inline RegionIdx region_idx() const
-        { return element()->region_idx(); }
+        { return r_idx_; }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
     //inline unsigned int region_id() const {
@@ -70,9 +104,14 @@ public:
         return element_idx_;
     }
 private:
+    /**
+     * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.
+     * Is used for ElementAccessors for whole region
+     */
+    static const unsigned int undefined_dim_ = 100;
+
     /// Dimension of reference element.
     unsigned int dim_;
-    // BoundingBox box_;
 
     /// Pointer to the mesh owning the element.
     Mesh *mesh_;
@@ -81,6 +120,9 @@ private:
 
     /// Index into Mesh::bc_elements or Mesh::element array.
     unsigned int element_idx_;
+
+    /// Region index.
+    RegionIdx r_idx_;
 };
 
 

@@ -55,6 +55,11 @@ public:
     /// Default region is undefined/invalid
 	RegionIdx():idx_(undefined) {}
 
+	/// Allow implicit conversion from Region. We loose information about input ID, label, dim stored in database.
+	//RegionIdx(Region region)
+	//: idx_(region.idx())
+	//{}
+
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
         { return !(idx_ & 1); }
@@ -140,6 +145,9 @@ public:
     Region(RegionIdx r_idx, const RegionDB & db)
     : RegionIdx(r_idx), db_(&db)
     {}
+
+    RegionIdx operator() (const Region &)
+        {return RegionIdx(idx_); }
 
     /// Returns label of the region (using RegionDB)
     std::string label() const;

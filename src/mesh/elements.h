@@ -120,6 +120,9 @@ protected:
 
     friend class GmshMeshReader;
 
+    template<int spacedim, class Value>
+    friend class Field;
+
 };
 
 

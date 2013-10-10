@@ -98,8 +98,8 @@ TEST(Field, init_from_default) {
 
 }
 
-
-TEST(Field, no_check) {
+/// Test optional fields dependent e.g. on BC type
+TEST(Field, disable_where) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     enum {
@@ -171,3 +171,38 @@ TEST(Field, no_check) {
     bc_value.set_time(0.0);
     bc_sigma.set_time(0.0);
 }
+
+string get_const_accessor_input = R"INPUT(
+{   
+   init_conc=[ 1, 2, 3],
+   conductivity_3d={ #3x3 tensor
+       TYPE="FieldFormula",
+       value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+   }
+}
+)INPUT";
+
+/*
+namespace it = Input::Type;
+TEST(Field, get_const_accessor) {
+    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::TensorFixed > conductivity;
+
+    it::Record main =
+            it::Record("main")
+            .declare_key("init_conc", init_conc.get_input_type(), "desc")
+            .declare_key("conductivity_3d", conductivity.get_input_type(), "desc");
+
+
+    // read input string
+    std::stringstream ss(input);
+    Input::JSONToStorage reader;
+    reader.read_stream( ss, rec_type );
+    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+    init_conc.set_from_input(in_rec.value<Input::Record>("init_conc"));
+    conductivity.
+
+}
+
+*/

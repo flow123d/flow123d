@@ -52,14 +52,13 @@ class DistributionLocalized : public DistributionType {
 public: DistributionLocalized() : DistributionType(-2) {}
 };
 
-/**
-class DistributionCyclic : public DistributionType {
-};
-*/
+
 
 /**
  * Continuous distribution of an 1D array of indexes.
- * Default is PETSC_COMM_WORLD communicator, but you can provide another.
+ * TODO: after inclusion of LibMesh sources:
+ * - replace constructor Distribution(Vec) with NumericVector.get_distribution()
+ * - derive from ParalellObjectS
  */
 
 class Distribution {
@@ -80,7 +79,7 @@ public:
      * COLLECTIVE
      * @param size Local size on calling processor.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
+    //@param comm (optional) MPI Communicator.
     Distribution(const unsigned int size, MPI_Comm comm);
 
     /**
@@ -90,7 +89,7 @@ public:
      *
      * @param sizes Int array with sizes.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
+    //@param comm (optional) MPI Communicator.
     Distribution(const unsigned int * const sizes, MPI_Comm comm);
 
     /**
@@ -99,7 +98,6 @@ public:
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      * @param petsc_vector
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const Vec &petsc_vector);
 
     /**
@@ -109,7 +107,7 @@ public:
      * @param type Either Block or Localized distribution of indices.
      * @param global_size Total number of indices to distribute.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
+    //@param comm (optional) MPI Communicator.
     Distribution(const DistributionType &type, unsigned int global_size, MPI_Comm comm);
 
     /**

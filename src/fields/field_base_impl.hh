@@ -205,10 +205,10 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 
 template <int spacedim, class Value>
-bool Field<spacedim, Value>::get_const_value(Region reg, typename Value::return_type &value) {
+bool Field<spacedim, Value>::get_const_accessor(Region reg, ElementAccessor<spacedim> &elm) {
     boost::shared_ptr< FieldBaseType > region_field = operator[](reg);
     if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        value = region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+        elm = ElementAccessor<spacedim>(mesh_, reg );
         return true;
     } else {
         return false;
