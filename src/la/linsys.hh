@@ -118,10 +118,13 @@ public:
      * to all particular solvers.
      *
      * @param comm - MPI communicator
+     *
+     * TODO: Vector solution_ is now initialized to NULL, but it should be rather allocated
+     * in the constructor instead of the method set_solution().
      */
     LinSys( Distribution * rows_ds,
             MPI_Comm comm = MPI_COMM_WORLD )
-      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ),
+      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ), solution_(NULL),
         positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
@@ -447,7 +450,7 @@ public:
     ~LinSys()
     { 
        PetscErrorCode ierr;
-       ierr = VecDestroy(&solution_); CHKERRV( ierr );
+       if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }
        if ( own_solution_ ) delete[] v_solution_;
     }
 
