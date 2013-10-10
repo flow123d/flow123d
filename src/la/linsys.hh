@@ -124,7 +124,7 @@ public:
      */
     LinSys( Distribution * rows_ds,
             MPI_Comm comm = MPI_COMM_WORLD )
-      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ), solution_(NULL),
+      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ), solution_(NULL), v_solution_(NULL),
         positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
