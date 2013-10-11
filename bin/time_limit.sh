@@ -11,6 +11,7 @@ else
 fi
 
 # run command on background, take its PID
+echo "$@"
 $@ &
 PID=$!
 

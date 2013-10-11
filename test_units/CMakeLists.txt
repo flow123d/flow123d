@@ -4,7 +4,7 @@ enable_testing()
 # Set timeout for one unit test
 set(TEST_TIMEOUT 30) # 30 s
 # Set timeout for one unit test running under valgrind
-set(TEST_TIMEOUT 300) # 5 min
+set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
 SET(GTEST_ROOT "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
@@ -48,7 +48,7 @@ macro(define_test class_name)
 
   # rule to run the test
   add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
