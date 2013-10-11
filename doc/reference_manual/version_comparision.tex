@@ -28,10 +28,10 @@ In the section \ref{sec:compare_mel} we present a benchmark based on real data. 
 problem of flow and transport in the Melechov region. Results of profiling are shown and discussed 
 in details.
 
-In the section \ref{sec:compare_sources} we show one of the problem that occured during upgrading from
-version 1.6.7 to 1.7.0. It was not possible to prescribe transport source in a region in older versions
-so one used to delete the source elements from the mesh and prescribe Dirichlet boundary condition instead.
-We solved the problem in both case with version 1.6.7 and compared it with 1.7.0.
+In the section \ref{sec:compare_sources} we show problems that occured during upgrading input files from
+version 1.6.7 to 1.7.0. It was not possible to prescribe transport source in older versions
+so one used to delete the source elements from the mesh and prescribe transport and flow Dirichlet boundary condition instead.
+We solved the problem in both cases with version 1.6.7 and compared it with 1.7.0.
 
 
 
@@ -53,7 +53,7 @@ We solved the problem in both case with version 1.6.7 and compared it with 1.7.0
 
 This benchmark is based on the real data. We solve transport of a single 
 substance from the concentration source in the Melechov region which is considered as
-one of the localities suitable for building nuclear waste deposit.
+one of the localities suitable for building a nuclear waste deposit.
 We used cluster 'hal' in the Supercomputing Centre of Czech Technical University for the computation.
 The general information on the benchmark is summarized:
 
@@ -86,7 +86,7 @@ integration using new system of classes for handling degrees of freedom, finite 
 
 \item \textbf{Mesh reading.} Another thing that is slowing down the computation is reading of the mesh. Version 1.7.0 seems 
 to be slower because the neighboring of elements is computed directly in runtime. By contrast the older version uses still 
-the utility 'NGH' to generete neighboring file which is used later (this procedure is not measured). We can also see along the 
+the utility \verb'NGH' to generate neighboring file which is used later (this procedure is not measured). We can also see along the 
 row \emph{Reading mesh} that this routine is not scaling at all. Until we implement classes for handling the mesh in parallel 
 way this will not be any faster.
 
@@ -95,10 +95,10 @@ of Schur complements needs to be optimized.
 
 \item \textbf{Convection matrix assembly.}
 In the \emph{convection matrix assembly} routine we can see improvement from version 1.6.7 to 1.7.0. This routine scales better in
-newer version and this probably can be still further optimized.
+newer version and this probably can still be further optimized.
 
 \item \textbf{Transport Operator Splitting -- one step.}
-It seems the newer version 1.7.0 is a bit faster. The difference is mainly caused by some small 
+It seems the newer version 1.7.0 is a bit faster there. The difference is mainly caused by some small 
 changes in determining the time step of convection. There are fewer convection steps in version 
 1.7.0 so the routine does not last so long. But still the average time of one convection step 
 is shorter.
@@ -125,7 +125,7 @@ The problem of transport sources can be viewed in different ways. We can prescri
 or we can cut off that region from the mesh and then prescribe a~Dirichlet boundary condition (both for flow and transport)
 on the created boundary. The second way was used in some models when transport sources had not been implemented in Flow123d yet.
 In this section we would like to show the user the comparision of both techniques used on the real problem and point out some problems
-that occured (or that may occure in the future).
+that occured (or that may occure in the future if one is not careful).
 
 \subsection{Water Flow}
 When deleting the source elements and prescribing the Dirichlet boundary condition for transport instead 
@@ -133,8 +133,8 @@ of source term, we must also define a Dirichlet boundary condition for flow on t
 do not know the values of pressure to prescribe. 
 
 One used to compute the flow in the whole area at first to find the values of the pressure on the elements sides 
-where the concentration source is. Then one computed the problem again without the elements of concentration source and with the 
-Dirichlet boundary condition (values of pressure computed before) for flow applied. 
+where the concentration source is. Then one computed the problem again without the elements of the concentration source and with the 
+Dirichlet boundary condition for flow applied (values of pressure computed before). 
 
 \begin{figure}[!h]
         \centering
@@ -146,19 +146,33 @@ Dirichlet boundary condition (values of pressure computed before) for flow appli
 %
 \begin{figure}[!h]
         \centering
-        \includegraphics[width=0.75\textwidth]{tests_graphics/mel_167s-170_velocity.pdf}
-        \caption{Difference in flow velocities between solutions computed by versions 1.6.7 and 1.7.0 (with sources term).
+        \includegraphics[width=0.60\textwidth]{tests_graphics/mel_167s-167o_velocity_equal.pdf}
+        \caption{Difference in flow velocities between computation with new Dirichlet BC and sources term (both computed in version 1.6.7). 
                  Red brick is the concentration source region.}
         \label{fig:bench_mel2}
+\end{figure}
+%
+\begin{figure}[!h]
+        \centering
+        \includegraphics[width=0.75\textwidth]{tests_graphics/mel_167s-170_velocity_equal.pdf}
+        \caption{Difference in flow velocities between solutions computed by versions 1.6.7 and 1.7.0 (with sources term).
+                 Red brick is the concentration source region.}
+        \label{fig:bench_mel5}
 \end{figure}
 
 
 In the figure \ref{fig:bench_mel1} we are showing the difference between the older solution (with Dirichlet BC 
-prescribed in the area of deleted elements) and solution in the compact area. We can see that there is 
-considerable difference in the nearby area of deleted elements. In this case the reason is that somehow wrong values 
+prescribed in the area of deleted elements) and the solution in the compact area. We can see that there is a~considerable 
+difference in the nearby area of deleted elements. In this case the reason is that somehow wrong values 
 of pressure were prescribed as the Dirichlet BC. One can look for the difference into the raw output file 
-where pressure and velocitiy on element sides can be found. The solutions in farther regions is considered equal 
+where pressure and velocity on element sides can be found. The solutions in farther regions are considered equal 
 with the precision of the solver $10^{-7}$.
+
+To prove that the velocities are the same whether the source region is present in the mesh or not, we recalculated the flow and used the correct pressure values
+for the Dirichlet boundary condition. The result is shown in the figure \ref{fig:bench_mel2} where the difference is much smaller.
+The source of the difference comes most probably from the postprocessing where the velocities are computed from the pressure. 
+The error of pressure computed by solver (in order of $10^{-7}$) can be increased by multiplication with the conductivity
+which is larger than 1000 in some regions.
 
 
 % \begin{figure}
@@ -177,17 +191,16 @@ with the precision of the solver $10^{-7}$.
 %     \end{subfigure}
 % \end{figure}
 
-In the figure \ref{fig:bench_mel2} we also demonstrate small difference in water flow computed by versions 1.6.7 and 1.7.0. 
-There are 5 areas where the difference is larger than the solver accuracy (set $10^{-7}$). The source of this difference comes
-most probably from the postprocessing where the velocities are computed from the pressure. The error of pressure computed by solver
-can be increased by multiplication with the conductivity which is larger than 1000 in some regions.
+In the figure \ref{fig:bench_mel5} we also demonstrate small difference in water flow computed by versions 1.6.7 and 1.7.0. 
+There are 5 areas where the difference is larger than the solver accuracy (set $10^{-7}$). This is caused again by 
+postprocessing as we mentioned above.
 
 \subsection{Transport}
 The transport of the substance was computed over time period of $10^4$ years. In the figure \ref{fig:bench_mel3} we can see 
 where the substance spread in concentration above $10^{-7}$~\unitss{1}{-3}{} which again corresponds to the solver accuracy.
 We can compare the solutions computed by different versions in subfigures \ref{fig:bench_mel3a} to \ref{fig:bench_mel3c}.
 The transport is caused only by convection so the velocities computed before are determining. As we can see in the figure 
-\ref{fig:bench_mel1}, the difference in velocities is positive which means the velocities were smaller when the Dirichlet 
+\ref{fig:bench_mel1}, the difference in velocities is positive which means the velocities were smaller when the wrong Dirichlet 
 boundary condition for flow was prescribed on the concentration source region. That is why the convectional transport is 
 also slower in that case as we can observe in the figure \ref{fig:bench_mel3a}. 
 The transport computed with source term prescribed is the same in both versions 1.6.7 and 1.7.0 as ilustrated in the figure
@@ -223,6 +236,16 @@ order $10^{-7}$ corresponding again to the solver accuracy.
 Because the problem was originally computed on $10^6$ years, we show in figures \ref{fig:bench_mel4a} to \ref{fig:bench_mel4c} 
 also the results of transport after this longer period.
 
+\vfil
+
+\textbf{Conclusion.} We can conclude that the results in all cases are the same with respect to the solver accuracy (both flow and transport) when 
+the input files are made correctly. We would obtain the same results of transport in all three cases like shown in figures \ref{fig:bench_mel3b}, \ref{fig:bench_mel3c} and 
+\ref{fig:bench_mel4b}, \ref{fig:bench_mel4c}. Comparing the solutions, pressure and velocity are equal when correct boundary condition values are applied. 
+The transport can be defined both by Dirichlet boundary condition on the source region and by prescribing a source term on that region. 
+We should mention that we used the source term in the form $F_S = \sigma_s(c_S-c)$, according to (\ref{eqn:transport_sources}).
+
+\pagebreak
+
 \begin{figure}[!h]
     \centering
     \begin{subfigure}[b]{0.3\textwidth}
@@ -256,12 +279,12 @@ corresponding times. }
 
 \subsection{Faced problems}
 Several errors, bugs and problems on user side has arised while converting the 
-input structure for version 1.7.0 and while doing profiling. 
+input structure to version 1.7.0 and while doing profiling. The followings should be avoided in the future.
 
 \begin{itemize}
   \item \textbf{Problem} of \verb'.mtr'. file. There are several versions of input material file for 
         different Melechov meshes. Regions that are not present in the mesh and quantities that are not used in
-        the equations are all ignored in version 1.6.7. This can very confusing when transforming the input
+        the equations are all ignored in version 1.6.7. This can be very confusing when transforming the input
         for the newer version 1.7.0. Fortunately newer version provides feedback on this matter and writes
         warnings in log file.
 
@@ -273,7 +296,8 @@ input structure for version 1.7.0 and while doing profiling.
   \item \textbf{Problem} with sigma parameter describing communication between fractures and volume.
         In version 1.6.7 this parameter is well hidden in \verb'.ngh' file as a tag at the end of
         lines. In version 1.7.0 one has to set this parameter in the bulk record of 2d and 1d regions 
-        else the default value 1.0 will be used instead. 
+        else the default value 1.0 will be used instead. A better physical model for estimation of this 
+        parameter is beiing developed.
 
   \item \textbf{Problem} with solver accuracy. We found user mistakes in defining the solver accuracy in 
         old \verb'.ini' file. In version 1.6.7 one can use section \verb'Solver' to set solver accuracy,
