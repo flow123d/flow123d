@@ -11,18 +11,22 @@ else
 fi
 
 # run command on background, take its PID
-echo "$@"
+#echo "$@"
 $@ &
-PID=$!
+COMMAND_PID=$!
 
-(
-  sleep $TIME; 
-  # kill only if the program still runs
-  ps cax | grep "^ *${PID}" > /dev/null;
-  if [ $? -eq 0 ]; 
-  then  kill ${PID};
-  fi
-)&
+# wait until COMMAND is finished or timeout
+END_TICK="${TIME}0"
+while [ -e /proc/${COMMAND_PID} -a "${TICK}" != "${END_TICK}" ]
+do 
+  sleep 0.1
+  TICK=$(($TICK+1))
+done
 
-# wait until the program finish
-wait $PID
+# kill possibly running COMMAND
+if [ -e /proc/${COMMAND_PID} ]
+then
+  kill ${COMMAND_PID}
+  exit 1
+fi  
+

@@ -423,7 +423,8 @@ public:
     //{ return implicit_bulk_; }
 
     /**
-     * Returns implicit bulk region.
+     * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
+     * This region has label "IMPLICIT_BOUNDARY".
      */
     Region implicit_boundary_region();
 
@@ -471,7 +472,10 @@ public:
     RegionSet difference( const string & set_name_1, const string & set_name_2);
 
     /**
-     * Get region set of specified name
+     * Get region set of specified name. Three sets are defined by default:
+     * "ALL" - set of all regions both bulk and boundary.
+     * "BULK" - set of all bulk regions
+     * "BOUNDARY" - set of all boundary regions
      *
      * @param set_name Name of set
      * @return RegionSet of specified name
