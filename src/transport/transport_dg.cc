@@ -439,6 +439,7 @@ void TransportDG::update_solution()
      *
      */
 
+    START_TIMER("solve");
     for (int i=0; i<n_subst_; i++)
     {
 		MatCopy(stiffness_matrix[i], ls[i]->get_matrix(), DIFFERENT_NONZERO_PATTERN);
@@ -459,6 +460,7 @@ void TransportDG::update_solution()
 		// solve
 		solve_system(solver, ls[i]);
     }
+    END_TIMER("solve");
 
     mass_balance();
 
@@ -1089,7 +1091,7 @@ void TransportDG::assemble_fluxes_element_side()
     // assemble integral over sides
     for (int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
     {
-    	Neighbour *nb = &mesh_->vb_neighbours_[inb];
+    	Neighbour *nb = &mesh_->vb_neighbours_[feo->dh()->nb_index(inb)];
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
@@ -1421,6 +1423,7 @@ void TransportDG::set_DG_parameters_boundary(const SideIter side,
 
 void TransportDG::set_initial_condition()
 {
+	START_TIMER("set_init_cond");
 	for (int sbi=0; sbi<n_subst_; sbi++)
 		ls[sbi]->start_allocation();
 	prepare_initial_condition<1>();
@@ -1438,6 +1441,7 @@ void TransportDG::set_initial_condition()
 		ls[sbi]->finalize();
 		solve_system(solver, ls[sbi]);
 	}
+	END_TIMER("set_init_cond");
 }
 
 template<unsigned int dim>

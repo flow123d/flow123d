@@ -427,7 +427,6 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     // create local array of neighbours
 	for (unsigned int inb=0; inb<mesh->vb_neighbours_.size(); inb++)
 	{
-		bool is_edge_local = false;
 		Neighbour *nb = &mesh->vb_neighbours_[inb];
 		if (el_is_local(mesh->element.index(nb->element()))
 				|| el_is_local(nb->side()->element().index()))

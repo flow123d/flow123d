@@ -37,7 +37,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
+        a_tol = 1e-12, 
+        r_tol = 1e-20,
         parameters = ""
       }, 
       time = {
@@ -49,6 +50,8 @@
       TYPE = "AdvectionDiffusion_DG", 
       dual_porosity = false, 
       
+      dg_order = 0
+      
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 0
@@ -59,9 +62,9 @@
         { rid = 7,
           init_conc = 0,
           por_m = 1,
-          diff_m = 1e-9,
-          disp_l = 1e-2,
-          disp_t = 1e-2,
+          diff_m = 0e-9,
+          disp_l = 0e-2,
+          disp_t = 0e-2,
           dg_penalty = 1e1,
           sources_density = {
             TYPE = "FieldElementwise",
@@ -102,7 +105,8 @@
       },
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07,
+        r_tol = 1e-20
       }
     }, 
     time = {
