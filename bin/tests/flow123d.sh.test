@@ -1,0 +1,81 @@
+#!/bin/bash
+set -x 
+
+# make flow123d dummy
+cp ./tester_mpi test_dir/flow123d
+
+cd test_dir
+
+function die {
+  echo "$1"
+  exit 1
+}
+
+function expect_lt {
+  if [ -z "$1" -o -z "$2" ] 
+  then
+    die "Empty argument: arg1: '$1' arg2: '$2'" 
+  fi
+  
+  if [ "$1" -lt "$2" ]
+  then 
+    return 0
+  else 
+    die "Failed: $1 -lt $2" 
+  fi 
+}
+
+#####################################################3
+# test time_limit.sh
+
+# test killing serial program
+OUT=`./time_limit.sh -t 2 ./flow123d -t 6 | tail -n 1`
+expect_lt "${OUT##*: }" "3"
+
+# test do not wait when program finish
+MILISEC=`{ time ./time_limit.sh -t 10 ./flow123d -t 2 ; } 2>&1 | grep "real" | sed 's/real *//' | sed 's/0m//' | sed 's/\\.//' | sed 's/s$//'`
+expect_lt "${MILISEC}" 3000
+
+# test killing parallel program 
+OUT="`./time_limit.sh -t 2 ./mpiexec -np 2 ./flow123d -t 6 -p`"
+LAST_TIME=`echo "${OUT}" | grep "wall time" | tail -n 1 | sed 's/.*\[s\]: //'`
+PIDS=`echo "${OUT}" | grep "PID:" | sed 's/PID://'`
+
+expect_lt "${LAST_TIME}" "3"
+
+for PID in ${PIDS}
+do
+  if [ -e /proc/${PID} ]
+  then  
+    die "time_limit.sh faild to kill process: ${PID}"
+  fi
+done  
+
+
+########################################################333
+# test flow123d.sh
+
+# test : parameter propagation, NP, timeout  
+OUT="`./flow123d.sh -t 2 -np 3 -- -t 6 -p`"
+
+MPI_SIZE=`echo "${OUT}" | grep "MPI size:" | sed 's/.*: //'`
+expect_lt "${MPI_SIZE}" "4"
+expect_lt "2" "${MPI_SIZE}"
+
+
+LAST_TIME=`echo "${OUT}" | grep "wall time" | tail -n 1 | sed 's/.*\[s\]: //'`
+expect_lt "${LAST_TIME}" "3"
+
+PIDS=`echo "${OUT}" | grep "PID:" | sed 's/PID://'`
+for PID in ${PIDS}
+do
+  if [ -e /proc/${PID} ]
+  then  
+    die "flow123d.sh faild to kill process: ${PID}"
+  fi
+done  
+
+# test memory limit
+OUT="`./flow123d.sh -t 4 -m 100 -np 3 -- -m 102400 -p `"
+MEMORY=`echo "${OUT}" | grep "allocated" | tail -n 1 | sed 's/.*\[kB\]://'`
+expect_lt "${MEMORY}" 102400

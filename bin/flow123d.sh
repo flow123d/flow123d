@@ -28,12 +28,14 @@
 # alow mem parameter in different units
 
 # Uncomment following line, when you want to debug bash script
-#set -x 
+set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
 # Relative path to mpiexec binary from current/working directory
 MPIEXEC="${0%/*}/${MPIEXEC}"
+
+TIME_LIMIT_SH="${0%/*}/time_limit.sh"
 
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
@@ -211,6 +213,14 @@ function expand_timeout() {
 #
 # Function set variable EXIT_STATUS to nonzero value in the case of an error.
 
+function call_flow() {
+    (
+      ulimit -S -v ${MEM_LIMIT}
+      nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
+    )  
+}
+
+
 # 
 function run_flow()
 {
@@ -230,8 +240,8 @@ function run_flow()
 	then
 		# Set up memory limits that prevent too allocate too much memory.
 		# ulimit is bash commad, it accepts limit specified in kB
-		MEM_LIMIT=`expr ${MEM} \* 1000`
-		ulimit -S -v ${MEM_LIMIT}
+		MEM_LIMIT=`expr ${MEM} \* 1024`
+		echo "MEMORY LIMIT: ${MEM_LIMIT}"
 	fi
 	
 
@@ -246,61 +256,24 @@ function run_flow()
 	if [ -n "${TIMEOUT}" ]
 	then
                 expand_timeout
+                CALL_TIME_LIMIT_SH="${TIME_LIMIT_SH} -t ${TIMEOUT}"
+        fi    
                 
-		# Flow123d runs with changed priority (19 is the lowest priority)
-		if [ -n "${QUEUE}" ]
-		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 &
-		else
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} &
-		fi
-		FLOW123D_PID=$!
-		
-		IS_RUNNING=1
+        # Flow123d runs with changed priority (19 is the lowest priority)
+        if [ -n "${QUEUE}" ]
+        then
+                call_flow  > "/tmp/${STDOUT_FILE}" 2>&1
+        else
+                call_flow
+        fi
 
-		TIMER=0
-		# Wait max TIMEOUT seconds, then kill flow123d processes
-		while [ ${TIMER} -lt ${TIMEOUT} ]
-		do
-			TIMER=`expr ${TIMER} + 1`
-			sleep 1
+        FLOW123D_EXIT_STATUS=$?
 
-			# Is flow123d process still running?
-			ps | ${AWK} '{ print $1 }' | grep -q "${FLOW123D_PID}"
-			if [ $? -ne 0 ]
-			then
-				# set up, that flow123d was finished in time
-				IS_RUNNING="0"
-				break 1
-			fi
-		done
-		
-		# Was Flow123d finished during TIMEOUT or is it still running?
-		if [ ${IS_RUNNING} -eq 1 ]
-		then
-			# Send SIGTERM to flow123d.
-			kill -s SIGTERM ${FLOW123D_PID} #> /dev/null 2>&1
-			EXIT_STATUS=14
-		else
-			# Get exit status variable of flow123d
-			wait ${FLOW123D_PID}
-			FLOW123D_EXIT_STATUS=$?
+        if [ $? -ne 0 ]
+        then
+                EXIT_STATUS=14
+        fi  
 
-			# Was Flow123d finished correctly?
-			if [ ! ${FLOW123D_EXIT_STATUS} -eq 0 ]
-			then
-				EXIT_STATUS=15
-			fi
-		fi
-	else
-		if [ -n "${QUEUE}" ]
-		then
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} >"/tmp/${STDOUT_FILE}" 2>&1 
-                else
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} 			
-		fi
-	fi
-	
 
 	if [ -n "${QUEUE}" ]
 	then

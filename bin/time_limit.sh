@@ -1,5 +1,7 @@
 #!/bin/bash
+#set -x
 
+# Parse parameters
 if [ "$1" == "-t" ]
 then
   shift
@@ -10,23 +12,59 @@ else
   echo "Run <command> and kill it after <time> seconds."
 fi
 
+
+# wait $1 seconds for process with PID $2
+# return 0 if process ends before timeout $1
+# return 1 if timeout is reached
+function wait_for_pid {
+    # wait until COMMAND is finished or timeout
+    PID=$2
+    TIMEOUT="$10"
+    TIMER=0
+    while [ ${TIMER} -lt ${TIMEOUT} ]
+    do 
+      if [ -e /proc/${PID} ]
+      then 
+        TIMER=`expr ${TIMER} + 1`
+        sleep 0.1
+      else
+        return 0
+      fi  
+    done
+    return 1
+}
+
+
+
 # run command on background, take its PID
 #echo "$@"
-$@ &
+"$@" &
 COMMAND_PID=$!
+echo "PID: ${COMMAND_PID}"
 
-# wait until COMMAND is finished or timeout
-END_TICK="${TIME}0"
-while [ -e /proc/${COMMAND_PID} -a "${TICK}" != "${END_TICK}" ]
-do 
-  sleep 0.1
-  TICK=$(($TICK+1))
+if wait_for_pid $TIME ${COMMAND_PID}
+then
+  # process finished
+  exit 0
+fi  
+
+
+# kill still running COMMAND and all its childs
+CPIDS="${COMMAND_PID} $(pgrep -P ${COMMAND_PID})"
+for ONE_PID in ${CPIDS}
+do
+  kill -s SIGTERM ${ONE_PID}
+  wait_for_pid 5 ${ONE_PID} &
 done
 
-# kill possibly running COMMAND
-if [ -e /proc/${COMMAND_PID} ]
-then
-  kill ${COMMAND_PID}
-  exit 1
-fi  
+# force kill for remaining
+for ONE_PID in ${CPIDS}
+do
+  if [ -e /proc/${ONE_PID} ]
+  then
+    kill -9 ${ONE_PID}
+  fi
+done  
+
+exit 1
 
