@@ -28,7 +28,7 @@
 # alow mem parameter in different units
 
 # Uncomment following line, when you want to debug bash script
-set -x 
+# set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
@@ -217,7 +217,9 @@ function call_flow() {
     (
       ulimit -S -v ${MEM_LIMIT}
       nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
+      exit $?
     )  
+    return $?
 }
 
 
@@ -267,13 +269,7 @@ function run_flow()
                 call_flow
         fi
 
-        FLOW123D_EXIT_STATUS=$?
-
-        if [ $? -ne 0 ]
-        then
-                EXIT_STATUS=14
-        fi  
-
+        EXIT_STATUS=$?
 
 	if [ -n "${QUEUE}" ]
 	then

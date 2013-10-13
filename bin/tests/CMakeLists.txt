@@ -10,10 +10,11 @@
 
   # target to call flow123d.sh.test
   add_custom_target(test_flow123d_sh
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../time_limit.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../flow123d.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/test_dir
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/time_limit.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/flow123d.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/mpiexec ${CMAKE_CURRENT_BINARY_DIR}/test_dir
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../config ${CMAKE_CURRENT_BINARY_DIR}/test_dir
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/config ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_SOURCE_DIR}/bin/tests/flow123d.sh.test 
       DEPENDS tester_mpi
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

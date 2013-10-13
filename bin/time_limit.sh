@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 #set -x
 
 # Parse parameters
@@ -9,7 +11,8 @@ then
   shift
 else
   echo "Usage: time_limit.sh -t <time> <command>"
-  echo "Run <command> and kill it after <time> seconds."
+  echo "Run <command> and kill it (and its childs) after <time> seconds."
+  echo "Exit with the same exit code as the command. Code 143 if terminated by SIGTERM."
 fi
 
 
@@ -45,7 +48,8 @@ echo "PID: ${COMMAND_PID}"
 if wait_for_pid $TIME ${COMMAND_PID}
 then
   # process finished
-  exit 0
+  wait ${COMMAND_PID}
+  exit $?
 fi  
 
 
@@ -66,5 +70,6 @@ do
   fi
 done  
 
-exit 1
+wait ${COMMAND_PID}
+exit $?
 

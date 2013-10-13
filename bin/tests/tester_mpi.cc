@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include <string>
 #include <iostream>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -19,6 +20,7 @@ int main(int argc, char * argv[]) {
   int time=0;
   int memory=1;
   bool parallel=false;
+  int exit_code=0;
   
   // parse arguments
   for(char ** p=argv+1; p < argv + argc; p++) {
@@ -32,7 +34,11 @@ int main(int argc, char * argv[]) {
     } else
     if ( string(*p) == "-p" ) 
       parallel=true;
-    else {
+    else 
+    if ( string(*p) == "-e" ) {
+      p++;
+      exit_code=atoi(*p);
+    } else {   
       cout << "Unknown parameter: '" << *p << "'." << endl;
     }
   }
@@ -75,4 +81,6 @@ int main(int argc, char * argv[]) {
   }
 
   if (parallel)   MPI_Finalize();
+  
+  exit(exit_code);
 }
