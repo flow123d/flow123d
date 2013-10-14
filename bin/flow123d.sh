@@ -41,9 +41,9 @@ TIME_LIMIT_SH="${0%/*}/time_limit.sh"
 # where this script is placed
 FLOW123D="./flow123d"
 # Relative or absolute path to Flow123d binary from current/working directory
-FLOW123D="${0%/*}/${FLOW123D}"
+FLOW123D_REL="${0%/*}/${FLOW123D}"
 # Absolute path
-FLOW123D=`which "${FLOW123D}"`
+FLOW123D=`which "${FLOW123D_REL}"`
 # Absolute path to working directory
 WORKDIR="${PWD}"
 
@@ -213,13 +213,20 @@ function expand_timeout() {
 #
 # Function set variable EXIT_STATUS to nonzero value in the case of an error.
 
-function call_flow() {
-    (
-      ulimit -S -v ${MEM_LIMIT}
-      nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
-      exit $?
-    )  
-    return $?
+function call_flow() {     
+      # Check if Flow123d exists and it is executable file
+      if [ -x "${FLOW123D}" ]
+      then
+              (
+              ulimit -S -v ${MEM_LIMIT}
+              nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
+              exit $?
+              )
+              return $?
+      else        
+              echo "Error: can not find executable: '${FLOW123D_REL}'; WORKDIR: ${WORKDIR}"
+              return 11
+      fi        
 }
 
 
@@ -228,13 +235,7 @@ function run_flow()
 {
         EXIT_STATUS=0
         
-	# Check if Flow123d exists and it is executable file
-	if ! [ -x "${FLOW123D}" ]
-	then
-		echo "Error: can't execute ${FLOW123D}"
-		EXIT_STATUS=11
-		return
-	fi
+
 	
 
 	# Was memory limit set?
@@ -243,7 +244,7 @@ function run_flow()
 		# Set up memory limits that prevent too allocate too much memory.
 		# ulimit is bash commad, it accepts limit specified in kB
 		MEM_LIMIT=`expr ${MEM} \* 1024`
-		echo "MEMORY LIMIT: ${MEM_LIMIT}"
+		#echo "MEMORY LIMIT: ${MEM_LIMIT}"
 	fi
 	
 
@@ -260,7 +261,8 @@ function run_flow()
                 expand_timeout
                 CALL_TIME_LIMIT_SH="${TIME_LIMIT_SH} -t ${TIMEOUT}"
         fi    
-                
+           
+
         # Flow123d runs with changed priority (19 is the lowest priority)
         if [ -n "${QUEUE}" ]
         then
@@ -268,8 +270,8 @@ function run_flow()
         else
                 call_flow
         fi
-
         EXIT_STATUS=$?
+        
 
 	if [ -n "${QUEUE}" ]
 	then

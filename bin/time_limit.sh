@@ -43,7 +43,7 @@ function wait_for_pid {
 #echo "$@"
 "$@" &
 COMMAND_PID=$!
-echo "PID: ${COMMAND_PID}"
+#echo "PID: ${COMMAND_PID}"
 
 if wait_for_pid $TIME ${COMMAND_PID}
 then
