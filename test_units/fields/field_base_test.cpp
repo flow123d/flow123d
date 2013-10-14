@@ -25,10 +25,10 @@
 string field_input = R"INPUT(
 {
    sorption_type="linear",   
-   init_conc=[ 1, 2, 3],    // FieldConst
+   init_conc=[ 10, 20, 30],    // FieldConst
    conductivity={ //3x3 tensor
        TYPE="FieldFormula",
-       value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+       value=["x","y", "z"]
    }
 }
 )INPUT";
@@ -45,8 +45,8 @@ TEST(Field, init_from_input) {
 
     it::Selection sorption_type_sel =
             it::Selection("SorptionType")
-            .add_value(0,"linear")
-            .add_value(1,"none");
+            .add_value(1,"linear")
+            .add_value(0,"none");
 
 
     Field<3, FieldValue<3>::Enum > sorption_type;
@@ -78,6 +78,27 @@ TEST(Field, init_from_input) {
     sorption_type.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
     init_conc.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+
+    sorption_type.set_time(0.0);
+    init_conc.set_time(0.0);
+    conductivity.set_time(0.0);
+
+    auto ele = mesh.element_accessor(5);
+    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+
+    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+
+    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - conductivity.value(ele.centre(), ele);
+    double norm=arma::norm(diff, 1);
+    EXPECT_DOUBLE_EQ( 0.0, norm );
+
+//  using const accessor
+    Region reg = mesh.region_db().find_id(40);
+    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
+    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
+
+    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
 }
 
