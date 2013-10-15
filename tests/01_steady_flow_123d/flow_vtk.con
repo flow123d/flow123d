@@ -71,7 +71,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        r_tol = 1e-07
+        r_tol = 1.0e-10,
+        a_tol = 1.0e-10
       } 
     }
   }, 
