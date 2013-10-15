@@ -465,6 +465,8 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
+
+add_subdirectory(bin/tests)
 add_subdirectory(test_units)
 
 #################################################################### add targets

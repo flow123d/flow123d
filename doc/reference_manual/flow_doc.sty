@@ -36,7 +36,8 @@
 \def\UNIT#1#2{\ifstrempty{#2}{}{%
 \ifstrequal{#2}{1}{\mathrm{#1}}{\mathrm{#1}^{#2}}%
 }}
-\def\units#1#2#3{$[ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} ]$}
+\def\units#1#2#3{$[ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} ]$}	%with brackets
+\def\unitss#1#2#3{$ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} $}	%without brackets
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

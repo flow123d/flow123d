@@ -40,9 +40,10 @@ Other quantities are:
 
 \item $\th$ \units{}{}{} is the \hyperA{TransportDG-BulkData::por-m}{porosity}, i.e. fraction of space occupied by water and the total volume.
 \item The hydrodynamic dispersivity tensor $\D^i$ \units{}{2}{-1} has the form
-\[
+\begin{equation} 
+  \label{eqn:transport_disp}
   \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \times \vc v}{\abs{\vc v}^2}\right),
-\]
+\end{equation}
 which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
 Here $D_m^i$ \units{}{2}{-1} is the \hyperA{TransportDG-BulkData::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{TransportDG-BulkData::disp-l}{longitudal dispersivity} and the \hyperA{TransportDG-BulkData::disp-t}{transversal dispersivity}, respectively.
 Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, related to the Darcy flux $\vc q_d$ by the relation $\vc q_d = \th\delta_d\vc v$.
@@ -51,7 +52,9 @@ For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cit
 
 \item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources.
 Its form is:
-$$ F_S^i = \varrho^i_S + (c_S^i-c^i)\sigma_S. $$
+\begin{equation}
+ F_S^i = \varrho^i_S + (c_S^i-c^i)\sigma_S. \label{eqn:transport_sources}
+\end{equation}
 Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
 
 \item $F_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.

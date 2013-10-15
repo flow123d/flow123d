@@ -20,18 +20,90 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-string input = R"INPUT(
-{   
-   init_conc={ # formula on 2d 
+
+
+string field_input = R"INPUT(
+{
+   sorption_type="linear",   
+   init_conc=[ 10, 20, 30],    // FieldConst
+   conductivity={ //3x3 tensor
        TYPE="FieldFormula",
-       value=["x", "x*y", "y+t"]
-   },
-   conductivity_3d={ #3x3 tensor
-       TYPE="FieldFormula",
-       value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+       value=["x","y", "z"]
    }
 }
 )INPUT";
+
+
+namespace it = Input::Type;
+TEST(Field, init_from_input) {
+    Profiler::initialize();
+
+    Mesh mesh;
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
+
+    it::Selection sorption_type_sel =
+            it::Selection("SorptionType")
+            .add_value(1,"linear")
+            .add_value(0,"none");
+
+
+    Field<3, FieldValue<3>::Enum > sorption_type;
+    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::TensorFixed > conductivity;
+
+
+    sorption_type.set_selection(&sorption_type_sel);
+    init_conc.set_n_comp(3);
+
+    it::Record main_record =
+            it::Record("main", "desc")
+            .declare_key("sorption_type", sorption_type.make_input_tree(), it::Default::obligatory(), "desc")
+            .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
+
+
+    // read input string
+    std::stringstream ss(field_input);
+    Input::JSONToStorage reader;
+    reader.read_stream( ss, main_record );
+    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+    sorption_type.set_mesh(&mesh);
+    init_conc.set_mesh(&mesh);
+    conductivity.set_mesh(&mesh);
+
+    auto r_set = mesh.region_db().get_region_set("BULK");
+    sorption_type.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
+    init_conc.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
+    conductivity.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+
+    sorption_type.set_time(0.0);
+    init_conc.set_time(0.0);
+    conductivity.set_time(0.0);
+
+    auto ele = mesh.element_accessor(5);
+    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+
+    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+
+    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - conductivity.value(ele.centre(), ele);
+    double norm=arma::norm(diff, 1);
+    EXPECT_DOUBLE_EQ( 0.0, norm );
+
+//  using const accessor
+    Region reg = mesh.region_db().find_id(40);
+    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
+    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
+
+    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+
+}
+
+
+
 
 /* Regions in the test mesh:
  * $PhysicalNames
@@ -98,8 +170,8 @@ TEST(Field, init_from_default) {
 
 }
 
-
-TEST(Field, no_check) {
+/// Test optional fields dependent e.g. on BC type
+TEST(Field, disable_where) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     enum {
@@ -171,3 +243,4 @@ TEST(Field, no_check) {
     bc_value.set_time(0.0);
     bc_sigma.set_time(0.0);
 }
+

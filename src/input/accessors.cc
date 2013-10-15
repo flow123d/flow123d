@@ -57,7 +57,7 @@ void Address::down(unsigned int idx) {
 }
 
 
-std::string Address::make_full_address() {
+std::string Address::make_full_address() const {
     std::string address = "";
     const StorageBase * storage = data_->root_storage_;
     const Type::TypeBase * input_type = data_->root_type_;
@@ -114,7 +114,7 @@ Record::Record(const Address &address, const Type::Record type)
 }
 
 
-Input::Address & Record::get_address()
+const Input::Address & Record::get_address() const
 {
 	return address_;
 }
@@ -158,7 +158,7 @@ Input::Type::Record AbstractRecord::type() const
 }
 
 
-Input::Address & AbstractRecord::get_address()
+const Input::Address & AbstractRecord::get_address() const
 {
 	return address_;
 }
@@ -187,7 +187,7 @@ Array::Array(const Address &address, const Type::Array type)
 }
 
 
-Input::Address & Array::get_address()
+const Input::Address & Array::get_address() const
 {
 	return address_;
 }

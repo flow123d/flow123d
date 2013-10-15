@@ -43,6 +43,8 @@
 # Function that is used for running flow123d at hydra cluster
 function run_flow()
 {
+        EXIT_STATUS=0
+        
 	# Some important files
 	export ERR_FILE="err.log"
 	export OUT_FILE="out.log"
@@ -113,8 +115,8 @@ xxEOFxx
 		# Remove obsolete script
 		# rm ${QSUB_FILE}
 	else
-		return 1
+                # can not create QSUB script
+                EXIT_STATUS=1
 	fi		
 	
-	return 0
 }

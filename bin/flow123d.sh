@@ -35,13 +35,15 @@ MPIEXEC="./mpiexec"
 # Relative path to mpiexec binary from current/working directory
 MPIEXEC="${0%/*}/${MPIEXEC}"
 
+TIME_LIMIT_SH="${0%/*}/time_limit.sh"
+
 # Relative path to Flow123d binary from the directory,
 # where this script is placed
 FLOW123D="./flow123d"
 # Relative or absolute path to Flow123d binary from current/working directory
-FLOW123D="${0%/*}/${FLOW123D}"
+FLOW123D_REL="${0%/*}/${FLOW123D}"
 # Absolute path
-FLOW123D=`which "${FLOW123D}"`
+FLOW123D=`which "${FLOW123D_REL}"`
 # Absolute path to working directory
 WORKDIR="${PWD}"
 
@@ -171,21 +173,25 @@ function parse_arguments()
 # takes variable TIMEOUT in format HH:MM:SS
 # and expands HH (hours) and MM (minutes)
 function expand_timeout() {
+    # echo "input TIMEOUT: $TIMEOUT"
     HH=${TIMEOUT%%:*}
     REST=${TIMEOUT#*:}
-    if [ -n "${HH}" ]
+    if [ "${HH}" != "${REST}" ]
     then
       MM=${REST%%:*}
       REST=${REST#*:}
-      if [ -n "${MM}" ]
+      if [ "${MM}" != "${REST}" ]
       then
-        # format HH:MM:SS.MS
+        # format HH:MM:SS
         TIMEOUT=$(( 3600 * ${HH} + 60 * ${MM} + ${REST} ))
       else
-        # format MM:SS.MS
+        # format MM:SS
         TIMEOUT=$(( 60 * ${HH} + ${REST} ))
       fi        
     fi
+    # format SS
+    
+    # echo "expanded TIMEOUT: $TIMEOUT"
 }
 
 
@@ -199,20 +205,37 @@ function expand_timeout() {
 # FLOW123D is relative path to bin/flow123d (.exe)
 # FLOW_PARAMS is list of parameters of flow123d
 # MEM - memory limit
-# PPN - processors per node
+# QUEUE - if set, we redirect stdout and stderr to the file ${QUEUE}.<date and time>
 #
 # Function has to set variable ${STDOUT_FILE} with name of file 
 # containing redirected stdout and stderr  of the run.
 # This file has to appear after the end of computation.
+#
+# Function set variable EXIT_STATUS to nonzero value in the case of an error.
+
+function call_flow() {     
+      # Check if Flow123d exists and it is executable file
+      if [ -x "${FLOW123D}" ]
+      then
+              (
+              ulimit -S -v ${MEM_LIMIT}
+              nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
+              exit $?
+              )
+              return $?
+      else        
+              echo "Error: can not find executable: '${FLOW123D_REL}'; WORKDIR: ${WORKDIR}"
+              return 11
+      fi        
+}
+
+
 # 
 function run_flow()
 {
-	# Check if Flow123d exists and it is executable file
-	if ! [ -x "${FLOW123D}" ]
-	then
-		echo "Error: can't execute ${FLOW123D}"
-		exit 11
-	fi
+        EXIT_STATUS=0
+        
+
 	
 
 	# Was memory limit set?
@@ -220,8 +243,8 @@ function run_flow()
 	then
 		# Set up memory limits that prevent too allocate too much memory.
 		# ulimit is bash commad, it accepts limit specified in kB
-		MEM_LIMIT=`expr ${MEM} \* 1000`
-		ulimit -S -v ${MEM_LIMIT}
+		MEM_LIMIT=`expr ${MEM} \* 1024`
+		#echo "MEMORY LIMIT: ${MEM_LIMIT}"
 	fi
 	
 
@@ -236,61 +259,19 @@ function run_flow()
 	if [ -n "${TIMEOUT}" ]
 	then
                 expand_timeout
-                
-		# Flow123d runs with changed priority (19 is the lowest priority)
-		if [ -n "${QUEUE}" ]
-		then
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 &
-		else
-			nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} &
-		fi
-		FLOW123D_PID=$!
-		
-		IS_RUNNING=1
+                CALL_TIME_LIMIT_SH="${TIME_LIMIT_SH} -t ${TIMEOUT}"
+        fi    
+           
 
-		TIMER=0
-		# Wait max TIMEOUT seconds, then kill flow123d processes
-		while [ ${TIMER} -lt ${TIMEOUT} ]
-		do
-			TIMER=`expr ${TIMER} + 1`
-			sleep 1
-
-			# Is flow123d process still running?
-			ps | ${AWK} '{ print $1 }' | grep -q "${FLOW123D_PID}"
-			if [ $? -ne 0 ]
-			then
-				# set up, that flow123d was finished in time
-				IS_RUNNING="0"
-				break 1
-			fi
-		done
-		
-		# Was Flow123d finished during TIMEOUT or is it still running?
-		if [ ${IS_RUNNING} -eq 1 ]
-		then
-			# Send SIGTERM to flow123d.
-			kill -s SIGTERM ${FLOW123D_PID} #> /dev/null 2>&1
-			exit 14
-		else
-			# Get exit status variable of flow123d
-			wait ${FLOW123D_PID}
-			FLOW123D_EXIT_STATUS=$?
-
-			# Was Flow123d finished correctly?
-			if [ ! ${FLOW123D_EXIT_STATUS} -eq 0 ]
-			then
-				exit 15
-			fi
-		fi
-	else
-		if [ -n "${QUEUE}" ]
-		then
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} > "/tmp/${STDOUT_FILE}" 2>&1 
-                else
-                        nice --adjustment="${NICE}" "${FLOW123D}" ${FLOW_PARAMS} 			
-		fi
-	fi
-	
+        # Flow123d runs with changed priority (19 is the lowest priority)
+        if [ -n "${QUEUE}" ]
+        then
+                call_flow  > "/tmp/${STDOUT_FILE}" 2>&1
+        else
+                call_flow
+        fi
+        EXIT_STATUS=$?
+        
 
 	if [ -n "${QUEUE}" ]
 	then
@@ -317,4 +298,4 @@ run_flow
 # print the file with merged stdout, that will appear after the job is finished
 if [ -n "${STDOUT_FILE}" ]; then echo "REDIRECTED: ${STDOUT_FILE}"; fi
 
-exit 0
+exit ${EXIT_STATUS}

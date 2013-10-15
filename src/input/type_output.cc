@@ -1026,9 +1026,11 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 } else {
                     stream << "{" << it->default_.value() << "}";
                 }
-
+                
+                string temp_desc = it->description_;
+                boost::replace_all(temp_desc, "\n", "\\\\");
                 stream << "{\\AddDoc{" << type->type_name() << "::" << it->key_ << "}}{"
-                       << it->description_ << "}" << endl;
+                       << temp_desc << "}" << endl;
             }
 
             stream << "\\end{RecordType}" << endl;

@@ -199,6 +199,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
 template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
+    ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
 	if (elm.idx() != computed_elm_idx_) {
 		computed_elm_idx_ = elm.idx();
 
@@ -313,6 +314,8 @@ template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list)
 {
+    ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
+    xprintf(Err, "Not implemented.");
 	// not supported yet
 }
 

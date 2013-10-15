@@ -408,8 +408,7 @@ void DarcyFlowMH_Steady::update_solution() {
         make_schur1();
         make_schur2();
 
-        schur2->get_system()->solve();
-        convergedReason = schur1->get_system()->solve();
+        convergedReason =schur2->get_system()->solve();
         schur2->resolve();
         schur1->resolve();
         break;
@@ -1023,9 +1022,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
     //xprintf(Msg,"****************** problem statistics \n");
 
     if (schur0 == NULL) { // create Linear System for MH matrix
-
+       
 #ifdef HAVE_BDDCML
-        if (in_rec.type() == LinSys_BDDC::input_type) {
+        if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
@@ -1042,11 +1041,20 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             // for BDDC no Schur complements for the moment
             n_schur_compls = 0;
         }
-        else
-#endif // HAVE_BDDCML
-        if (in_rec.type() == LinSys_PETSC::input_type) {
+        
+#endif 
+        // use PETSC for serial case even when user want BDDC
+        if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
             LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
-            ls->set_from_input(in_rec);
+
+            // temporary solution; we have to set precision also for sequantial case of BDDC
+            // final solution should be probably call of direct solver for oneproc case
+            if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
+            else {
+                ls->LinSys::set_from_input(in_rec); // get only common options
+                n_schur_compls=0; // has to prevent usage of SchurComplement since thay assume PETSC Input::Record
+            }
+
             ls->set_solution( NULL );
             schur0=ls;
             // possible initialization particular to BDDC
@@ -1065,7 +1073,9 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             END_TIMER("PETSC PREALLOCATION");
 
             VecZeroEntries(schur0->get_solution());
-        } else {
+        }
+
+        if (schur0==NULL) {
             xprintf(Err, "Unknown solver type. Internal error.\n");
         }
     }

@@ -12,6 +12,7 @@
 #include "fields/field_formula.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
+#include <boost/foreach.hpp>
 
 /// Implementation.
 
@@ -61,32 +62,65 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
     // read formulas form input
     formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
-
-    set_time(this->time_);
+    //value_input_address_ = rec.get_address().make_full_address();
 }
 
 
 template <int spacedim, class Value>
 bool FieldFormula<spacedim, Value>::set_time(double time) {
-    this->time_=time;
+
+
+    bool any_parser_changed = false;
+
 
     std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
     // update parsers
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+            // get all variable names from the formula
+            std::vector<std::string> var_list;
 
-            parser_matrix_[row][col].AddConstant("t", this->time_);
-            // possibly add other constants
-            parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
+            FunctionParser tmp_parser;
+            int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
+            ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
 
-            if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
-                xprintf(UsrErr, "FieldFormula at(%d,%d) error while parsing expression:\n '%s'\nParser error message: %s\n",
-                        row,col,formula_matrix_.at(row,col).c_str(),parser_matrix_[row][col].ErrorMsg() );
+            bool time_dependent = false;
+            BOOST_FOREACH(std::string &var_name, var_list ) {
+                if (var_name == std::string("t") ) time_dependent=true;
+                else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
+                else
+                    xprintf(Warn, "Unknown variable '%s' in the  FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
+                            var_name.c_str(), row, col, formula_matrix_.at(row,col).c_str(),
+                            value_input_address_.c_str() );
+            }
+            if (time_dependent) {
+                // DBGMSG("set t= %g\n", time);
+                parser_matrix_[row][col].AddConstant("t", time);
             }
 
-            parser_matrix_[row][col].Optimize();
+            // TODO:
+            // - possibly add user defined constants and units here ...
+            // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
+
+            if (time_dependent || this->time_ == -numeric_limits<double>::infinity() ) {
+                parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
+
+                if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
+                    xprintf(UsrErr, "ParserError: %s\n in the FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
+                        parser_matrix_[row][col].ErrorMsg(),
+                        row,col,formula_matrix_.at(row,col).c_str(),
+                        value_input_address_.c_str());
+                }
+
+                parser_matrix_[row][col].Optimize();
+                any_parser_changed = true;
+            }
+
+
         }
-    return true; // TODO: check if the fromula contains 't' variable, and return true only in that case
+
+    this->time_=time;
+    return any_parser_changed;
 }
 
 

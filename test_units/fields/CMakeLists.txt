@@ -40,6 +40,7 @@ if(CMAKE_HAVE_CXX11)
     define_mpi_test(field_elementwise 1)
     
     define_mpi_test(field_base 1)
+    #define_mpi_test(field_base 2)
 endif()
 
 

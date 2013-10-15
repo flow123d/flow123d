@@ -43,6 +43,9 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
+    /**
+     * For time dependent formulas returns always true. For time independent formulas returns true only for the first time.
+     */
     virtual bool set_time(double time);
 
     /**
@@ -60,11 +63,21 @@ public:
     virtual ~FieldFormula();
 
 private:
+    // FieldValue_ wrapper for matrix of strings
     typedef FieldValue_<Value::NRows_, Value::NCols_, std::string> StringValue;
 
+    // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     typename StringValue::return_type formula_matrix_;
+
+    // FieldValue_ wrapper for unified reading of the input
     StringValue formula_matrix_helper_;
+
+    // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
+
+    // Full address of the FiledFormula 'value' key.
+    // Necessary in the case of an error during parsing.
+    std::string value_input_address_;
 
 };
 

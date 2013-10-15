@@ -7,12 +7,11 @@
  *  TODO:
  *  - komentar k RegionIdx
  *  - presun enum RegionType do public Region - komentar + pouzit v kodu
- *  - komentar k typdef RegionSet
- *  - presun MapElementIDToRegionID do RegionDB
- *  - dodelat intersection, differecne
- *  - test element map
- *
  *  - zkontrolovat chybove hlasky a ASSERTY, co z toho by melo byt pres exception?
+ *
+ *  - Seems that GMSH allows repeating ID and Label on regions of different dimension, therefore
+ *    label and ID are not unique without dimension.
+ *
  */
 
 #ifndef REGION_HH_
@@ -29,6 +28,7 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
 
 namespace BMI=::boost::multi_index;
@@ -54,6 +54,11 @@ public:
 
     /// Default region is undefined/invalid
 	RegionIdx():idx_(undefined) {}
+
+	/// Allow implicit conversion from Region. We loose information about input ID, label, dim stored in database.
+	//RegionIdx(Region region)
+	//: idx_(region.idx())
+	//{}
 
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
@@ -140,6 +145,9 @@ public:
     Region(RegionIdx r_idx, const RegionDB & db)
     : RegionIdx(r_idx), db_(&db)
     {}
+
+    RegionIdx operator() (const Region &)
+        {return RegionIdx(idx_); }
 
     /// Returns label of the region (using RegionDB)
     std::string label() const;
@@ -304,11 +312,16 @@ public:
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
-    DECLARE_EXCEPTION( ExcSizeWhileOpen, << "Can not get size of MaterialDispatch yet open.");
-    DECLARE_EXCEPTION( ExcInconsistentAdd, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
-                                             << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n" \
-                                             << "OR other region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n" \
-                                             << "OR both ID and label match an existing region with different dimension and/or boundary flag.");
+    //DECLARE_EXCEPTION( ExcSizeWhileOpen, << "Can not get size of MaterialDispatch yet open.");
+    DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
+    DECLARE_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "other region with same label but different ID: " << EI_IDOfOtherLabel::val << " already exists\n");
+    DECLARE_EXCEPTION( ExcInconsistentBoundary, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "both ID and label match an existing region with different boundary flag.");
+    DECLARE_EXCEPTION( ExcInconsistentDimension, << "Inconsistent add of region with id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
+                                             << "both ID and label match an existing region with different dimension.");
+
     DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
 
@@ -320,6 +333,11 @@ public:
      * of reasonable size.
      */
     static const unsigned int max_n_regions = 64000;
+
+    /// Undefined dimension for regions introduced from mesh input record.
+    /// Dimensions 0,1,2,3 are valid.
+    static const unsigned int undefined_dim = 10;
+
 
     /**
      * This method adds new region into the database and returns its index. This requires full
@@ -340,8 +358,8 @@ public:
     Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
 
     /**
-     * As the previous, but generates automatic if region is boundary or not.
-     * The specification of this region is given in 'additional region definitions' section of the input file.
+     * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
+     * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
      */
     Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
@@ -405,7 +423,8 @@ public:
     //{ return implicit_bulk_; }
 
     /**
-     * Returns implicit bulk region.
+     * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
+     * This region has label "IMPLICIT_BOUNDARY".
      */
     Region implicit_boundary_region();
 
@@ -453,7 +472,10 @@ public:
     RegionSet difference( const string & set_name_1, const string & set_name_2);
 
     /**
-     * Get region set of specified name
+     * Get region set of specified name. Three sets are defined by default:
+     * "ALL" - set of all regions both bulk and boundary.
+     * "BULK" - set of all bulk regions
+     * "BOUNDARY" - set of all boundary regions
      *
      * @param set_name Name of set
      * @return RegionSet of specified name
@@ -479,6 +501,9 @@ public:
 
 
 private:
+
+
+
     /// One item in region database
     struct RegionItem {
         RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
@@ -501,15 +526,30 @@ private:
     typedef BMI::multi_index_container<
             RegionItem,
             BMI::indexed_by<
-                // access by index (can not use random access since we may have empty (and unmodifiable) holes)
+                // access by index
+                // Can not use random access without introducing "empty" RegionItems to fill holes in the case
+                // n_boundary != n_bulk. Empty items must be unsince we may have empty (and unmodifiable) holes ?? why)
+                //
+                // we need O(1) access
+                //BMI::random_access< BMI::tag<RandomIndex > >,
                 BMI::ordered_unique< BMI::tag<Index>, BMI::member<RegionItem, unsigned int, &RegionItem::index > >,
-                // ordered access (like stl::map) by id and label
-                BMI::ordered_unique< BMI::tag<ID>,    BMI::member<RegionItem, unsigned int, &RegionItem::id> >,
+                // use hashing for IDs, to get O(1) find complexity .. necessary for large meshes
+                BMI::hashed_unique< BMI::tag<ID>,    BMI::member<RegionItem, unsigned int, &RegionItem::id> >,
+                // ordered access (like stl::map) by label
                 BMI::ordered_unique< BMI::tag<Label>, BMI::member<RegionItem, std::string, &RegionItem::label> >
             >
     > RegionTable;
 
-    /// Should be RegionSet that consist from all regions. After RegionSets are implemented.
+    // ID and Label index iterators
+    typedef RegionTable::index<Label>::type::iterator   LabelIter;
+    typedef RegionTable::index<ID>::type::iterator IDIter;
+
+
+    /// Consistency check in common use by various add_region methods.
+    void check_dim_consistency(IDIter it_id, unsigned int dim);
+
+
+    /// Database of all regions (both boundary and bulk).
     RegionTable region_set_;
 
     /// flag for closed database, no regions can be added, but you can add region sets

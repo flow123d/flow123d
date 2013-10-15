@@ -289,11 +289,12 @@ int LinSys_PETSC::solve()
        if (this->is_positive_definite())
            petsc_dflt_opt="-ksp_type cg -pc_type ilu -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite -pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix";
+           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_shift_positive_definite";
     }
 
+    if (params_ == "") params_ = petsc_dflt_opt;
     //petsc_str = params.c_str();
-    xprintf(MsgVerb,"inserting petsc options: %s\n",params_.c_str());
+    xprintf(MsgLog,"inserting petsc options: %s\n",params_.c_str());
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
     //xfree(petsc_str);
     
@@ -307,7 +308,7 @@ int LinSys_PETSC::solve()
     //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
     //if (r_tol < 0) r_tol=solver_accuracy;
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    DBGMSG("KSP tolerances: r_tol_ %.10f, a_tol_ %.10f\n", r_tol_, a_tol_);
+    DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system); 
 

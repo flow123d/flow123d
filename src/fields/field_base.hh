@@ -178,7 +178,7 @@ public:
 
 
 protected:
-       /// Actual time level
+       /// Actual time level; initial value is -infinity.
        double time_;
        /// Last value, prevents passing large values (vectors) by value.
        Value value_;
@@ -249,7 +249,7 @@ public:
      * Getters.
      */
     const std::string &name() const;
-    const std::string &desc() const;
+    const std::string desc() const;
     const IT::Default &get_default() const;
     const std::string &units() const;
     bool is_bc() const;
@@ -367,9 +367,6 @@ protected:
  * key methods @p value, and @p value_list are not virtual in this class by contrast these methods are inlined to minimize overhead for
  * simplest fields like FieldConstant.
  *
- * TODO:
- * there should be clearly three distinguish states: after default construction, having mesh (with closed regiondb - allocate table), checked_table
- * in first set_time
  *
  */
 template<int spacedim, class Value>
@@ -412,10 +409,11 @@ public:
     boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
-     * If the field on given region @p reg exists and is of type FieldConstant<...> the method sets
-     * parameter @p value to the constant value of the field and returns true. Otherwise it returns false and value of the @p value parameter remains untouched.
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true and sets
+     * given ElementAccessor @p elm to "virtual" element on which Field::value returns constant value.
+     * Otherwise it returns false and invalidate @p elm (ElementAccessor::is_valid() returns false).
      */
-    bool get_const_value(Region reg, typename Value::return_type &value);
+    bool get_const_accessor(Region reg, ElementAccessor<spacedim> &elm);
 
     /**
      * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
@@ -486,7 +484,6 @@ private:
      * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
      */
     bool is_fully_initialized_;
-
 };
 
 

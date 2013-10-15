@@ -52,6 +52,7 @@ build/CMakeCache.txt:
 # current directory in shell if we are forced to use make clean-all.
 create_unit_test_links:
 	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
+	ln -sf "$${PWD}/build/bin/tests/Makefile" "$${PWD}/bin/tests/makefile"
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
