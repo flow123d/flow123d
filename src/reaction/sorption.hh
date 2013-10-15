@@ -34,6 +34,7 @@
 
 #include "fields/field_base.hh"
 #include "reaction/isotherm.hh"
+#include "transport/transport.h"
 
 class Mesh;
 class Distribution;
@@ -94,6 +95,10 @@ class Sorption:  public Reaction
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		double **compute_reaction(double **concentrations, int loc_el);
+		/**
+		*
+		*/
+		void isotherm_reinit(std::vector<Isotherm> &isotherms, ElementAccessor<3> &elm);
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/

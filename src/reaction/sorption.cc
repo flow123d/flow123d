@@ -7,6 +7,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
+#include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -17,6 +18,7 @@
 #include "mesh/region.hh"
 #include "input/type_selection.hh"
 
+//extern enum SorptionType;
 const double pi = 3.1415;
 namespace it=Input::Type;
 
@@ -132,9 +134,9 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	}
 
 	// List of types of isotherms in particular regions
-	arma::Col<unsigned int> iso_type;
+	//arma::Col<unsigned int> iso_type;
 	//cout << "there are " << nr_of_substances <<" substances under concideration." << endl;
-	iso_type.resize(nr_of_substances);
+	//iso_type.resize(nr_of_substances);
 
 	/*arma::Col<double> mult_coef;
 	mult_coef.resize(nr_of_substances);
@@ -142,12 +144,12 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	arma::Col<double> second_coef;
 	second_coef.resize(nr_of_substances);*/
 
-	// List of sorption parameters
+	/*/ List of sorption parameters
 	FieldValue<3>::Vector::return_type mult_param;
 	mult_param.resize(nr_of_substances);
 	FieldValue<3>::Vector::return_type second_coef;
 	second_coef.resize(nr_of_substances);
-	// Mass transfer coeffs between mobile and immobile pores
+	// Mass transfer coeffs between mobile and immobile pores*/
 	FieldValue<3>::Vector::return_type mass_transfer_coeffs;
 	mass_transfer_coeffs.resize(nr_of_substances);
 
@@ -155,19 +157,19 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
-		double por_m, por_imm, phi; //, mult_coef, second_coef;
+		//double por_m, por_imm, phi; //, mult_coef, second_coef;
 
 		int reg_idx = reg_iter.bulk_idx();
 
 		ElementAccessor<3> elm;
 
 		// List of types of isotherms in particular regions, initialization
-		if(data_.sorption_types.get_const_accessor(reg_iter, elm)) ;
-		  else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
-
+		//if(data_.sorption_types.get_const_accessor(reg_iter, elm)) ;
+		  //else  xprintf(UsrErr,"Type of isotherm must be the same all over the %d-th region, but it is not.", reg_iter.id());
 
 		// Creates interpolation tables in the case of constant rock matrix parameters
 		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
+				//(data_.sorption_types.get_const_accessor(reg_iter, elm)) &&
 				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
 				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
 				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
@@ -175,22 +177,12 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 				(this->phi_->get_const_accessor(reg_iter, elm)))
 		{
 		    // TODO: call isotherm_reinit(isotherms[reg_idx], elm) here to get constant values and call reinit for isotherms
-
+			isotherm_reinit(isotherms[reg_idx],elm);
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
-				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
-				Isotherm & isotherm = this->isotherms[reg_idx][i_subst];
-
-				//scales for the case of sorption in mobile pores follows
-				double scale_aqua = por_m;
-				double scale_sorbed;
-				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
-					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
-
-				isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_param[i_subst], second_coef[i_subst]); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
-				isotherm.make_table(nr_of_points);
+				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
-		}else{
+		}	/*else{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
 				SorptionType hlp_iso_type =  SorptionType(iso_type[i_subst]);
@@ -204,8 +196,63 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 				xprintf(Msg,"Sorption::prepare_inputs(), mult_coef_ %f, second_coef_ %f\n", mult_param[i_subst], second_coef[i_subst]);
 				isotherm.set_iso_params(hlp_iso_type,mult_param[i_subst],second_coef[i_subst]);
 			}
-		}
+		}*/
 	}
+}
+
+void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, ElementAccessor<3> &elm)
+{
+	const  ElementAccessor<3> &elem = elm;
+	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
+	double porosity = this->porosity_->value(elem.centre(),elem);
+
+	double phi = this->phi_->value(elem.centre(),elem);
+	double por_m = this->porosity_->value(elem.centre(),elem);
+	double por_imm = this->immob_porosity_->value(elem.centre(),elem);
+
+	// List of types of isotherms in particular regions
+	//arma::Col<unsigned int> iso_type;
+	//cout << "there are " << nr_of_substances <<" substances under concideration." << endl;
+	//iso_type.resize(nr_of_substances);
+	/*if((iso_type = data_.sorption_types.value(elem.centre(),elem)) == false)
+		xprintf(UsrErr,"Sorption::isotherm_reinit(), sorption types are not initialized.\n");*/
+
+	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	{
+		double mult_coef = data_.mult_coefs.value(elem.centre(),elem)(i_subst);
+		double second_coef = data_.second_params.value(elem.centre(),elem)(i_subst);
+		SorptionType hlp_iso_type = SorptionType(data_.sorption_types.value(elem.centre(),elem)(i_subst));
+		Isotherm & isotherm = isotherms_vec[i_subst];
+
+		//scales are different for the case of sorption in mobile and immobile pores
+		double scale_aqua, scale_sorbed;
+		//isotherm.set_adsorption_scales(porosity_type, scale_aqua, scale_sorbed, phi, por_m, por_imm, rock_density, molar_masses[i_subst]);
+
+		/*switch(porosity_type)
+		{
+			case MOBILE:
+			{*/
+				scale_aqua = por_m;
+				scale_sorbed;
+				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
+					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+			/*}break;
+			case IMMOBILE:
+			{
+				scale_aqua = por_imm;
+				scale_sorbed;
+				if((scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
+					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed ((1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+			}break;
+			default:
+				xprintf(UsrErr,"Unknown type of pores.\n");
+			break;
+	 	 }*/
+
+		isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
+	}
+
+	return;
 }
 
 // TODO: check duplicity of parents
@@ -272,7 +319,9 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		    //xprintf(Msg,"coeficients %f %f\n", mult_coef, second_coef);
 
 			isotherm.reinit(elem_sorp_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef);
-		    int subst_id = substance_ids[i_subst];
+			/**/
+			//isotherm_reinit(isotherms[reg_id_nr], elem->element_accessor());
+			int subst_id = substance_ids[i_subst];
 
 		    ConcPair conc(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
 			START_TIMER("new-sorption toms748_solve");

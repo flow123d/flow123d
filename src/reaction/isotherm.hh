@@ -208,6 +208,10 @@ public:
      */
     bool compute_projection(double &c_aqua, double &c_sorbed);
     /**
+    *
+    */
+    //void set_adsorption_scales(int porosity_type, double &scale_aqua, double &scale_sorbed, double phi, double por_m, double por_imm, double rock_density, double molar_masses);
+    /**
     *	Enables to set private parameter.
     */
     //void set_inv_scale_aqua(double inv_scale_aqua);

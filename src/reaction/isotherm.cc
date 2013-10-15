@@ -135,7 +135,7 @@ ConcPair Isotherm::solve_conc(ConcPair conc)
 		break;
 		default:
 		{
-			xprintf(Msg,"4) Isotherm::solve_conc(ConcPair) did nit cimpute any type of sorption. "); //either not considered or it has an unknown type %d.", i_subst, reg_id_nr, isotherms[reg_id_nr][i_subst].get_sorption_type());
+			; //xprintf(Msg,"4) Isotherm::solve_conc(ConcPair) did nit cimpute any type of sorption. ");
 		}
 		break;
 	}
@@ -150,11 +150,11 @@ void Isotherm::make_table(int nr_of_points)
 {
 	switch(adsorption_type_)
 	{
-	 /*case 0: // none:
+	 	 /*case 0: // none:
 		 {
-		 	isotherms[reg_idx][i_subst].make_one_point_table();
-	 	 }
-		 break;*/
+		 	make_one_point_table();
+	 	 }*/
+		 break;
 	 	 case 1: //  linear:
 	 	 {
 		 	Linear obj_isotherm(mult_coef_);
@@ -176,10 +176,11 @@ void Isotherm::make_table(int nr_of_points)
 	 	 default:
 	 	 {
 			 make_one_point_table();
-		 	 xprintf(Msg,"2) Isotherm::make_table(int), sorption is either not considered or it has an unknown type %d.", adsorption_type_); //, i_subst, reg_idx, hlp_iso_type);
+		 	 xprintf(Msg,"2) Isotherm::make_table(int), sorption is either not considered or it has an unknown type %d.\n", adsorption_type_); //, i_subst, reg_idx, hlp_iso_type);
 	 	 }
 	 	 break;
 	}
+	return;
 }
 
 void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
