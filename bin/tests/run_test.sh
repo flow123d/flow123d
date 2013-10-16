@@ -314,15 +314,6 @@ function check_outputs {
 }
 
 
-
-# Check if Flow123d exists and it is executable file
-if ! [ -x "${FLOW123D_SH}" ]
-then
-	echo "Error: can't execute ${FLOW123D_SH}"
-	exit 1
-fi
-
-
 function wait_for_flow_script {
         # Wait for (finished) flow script and get its exit status ('wait' returns status of the sub process)   
         if [ -z "${FLOW_EXIT_STATUS}" ]
@@ -336,6 +327,23 @@ function wait_for_flow_script {
         STDOUT_FILE="${STDOUT_FILE#REDIRECTED: }"  
         #echo "Waiting for ${STDOUT_FILE}."
 }
+
+#########################################################################################################################333
+# MAIN
+
+
+# Check if Flow123d exists and it is executable file
+if ! [ -x "${FLOW123D_SH}" ]
+then
+	echo "Error: can't execute ${FLOW123D_SH}"
+	exit 1
+fi
+
+# Make output directory
+if [ ! -d ${OUTPUT_DIR} ]
+then 
+  mkdir -p ${OUTPUT_DIR}
+fi  
 
 
 FLOW_SCRIPT_STDOUT="`pwd`/flow_script.stdout"

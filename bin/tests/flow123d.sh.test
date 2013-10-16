@@ -100,11 +100,28 @@ MEMORY=`echo "${OUT}" | grep "allocated" | tail -n 1 | sed 's/.*\[kB\]://'`
 expect_le "${MEMORY}" 102400
 
 
-set -x 
-
 TEST "propagation of exit code"
 ./flow123d.sh -- -e 13
 expect_eq "$?" "13"
 
 ./flow123d.sh -t 1 -- -t 5
 expect_eq "$?" "143"
+
+
+########################################################333
+# test run_test.sh
+
+#TEST "running test"
+#touch ./file
+#./tests/run_test.sh "file" "1" "-t 2"
+
+
+TEST "reporting failing program"
+touch ./file
+OUT=`./tests/run_test.sh "file" "1" "-e 13"`
+if ! echo "$OUT" | grep '\[Failed:error\]'
+then
+  echo "$OUT"
+  die "Test didn't fail!"
+fi
+
