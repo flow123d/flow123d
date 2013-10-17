@@ -134,22 +134,22 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 	double rock_density;
 
+	ElementAccessor<3> elm;
+
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
 		int reg_idx = reg_iter.bulk_idx();
 
-		ElementAccessor<3> elm;
-
 		// Creates interpolation tables in the case of constant rock matrix parameters
 		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
-				//(data_.sorption_types.get_const_accessor(reg_iter, elm)) &&
 				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
 				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
 				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
 				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->phi_->get_const_accessor(reg_iter, elm)))
+				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
 		{
 			isotherm_reinit(isotherms[reg_idx],elm);
+			xprintf(Msg,"parameters are constant\n");
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
 				isotherms[reg_idx][i_subst].make_table(nr_of_points);
@@ -201,7 +201,6 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 				xprintf(UsrErr,"Unknown type of pores.\n");
 			break;
 	 	 }*/
-
 		isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
 	}
 
@@ -238,12 +237,12 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
-				Isotherm & isotherm = isotherms_vec[i_subst];
+				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst]; //isotherms_vec[i_subst];
 				int subst_id = substance_ids[i_subst];
 				ASSERT(subst_id > nr_of_substances, "subst_id %d is larger than nr_of_substances %d\n", subst_id, nr_of_substances);
 			    isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
-			    xprintf(Msg, "interpolation table has been used for sorption simulation\n");
 			}
+		    xprintf(Msg, "interpolation table has been used for sorption simulation\n");
 		}
 		END_TIMER("new-sorption interpolation");
 	}else{

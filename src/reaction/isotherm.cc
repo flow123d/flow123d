@@ -137,9 +137,9 @@ ConcPair Isotherm::solve_conc(ConcPair conc)
 
 void Isotherm::make_table(int nr_of_points)
 {
+	xprintf(Msg,"adsorption_type %d\n",adsorption_type_);
 	switch(adsorption_type_)
 	{
-		 break;
 	 	 case 1: //  linear:
 	 	 {
 		 	Linear obj_isotherm(mult_coef_);
@@ -164,16 +164,7 @@ void Isotherm::make_table(int nr_of_points)
 	 	 }
 	 	 break;
 	}
-	return;
-}
-
-void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
-{
-	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
-
-	c_aqua = c_aqua_limit_;
-	c_sorbed = (total_mass - scale_aqua_ * c_aqua_limit_)/scale_sorbed_;
-
+	xprintf(Msg,"interpolation_table.size() is %d\n", interpolation_table.size());
 	return;
 }
 
@@ -205,6 +196,16 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
     return;
 }
 
+void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
+{
+	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
+
+	c_aqua = c_aqua_limit_;
+	c_sorbed = (total_mass - scale_aqua_ * c_aqua_limit_)/scale_sorbed_;
+
+	return;
+}
+
 template void Isotherm::make_table<Linear>(const Linear &isotherm, int n_steps);
 
 template void Isotherm::make_table<Langmuir>(const Langmuir &isotherm, int n_steps);
@@ -213,6 +214,7 @@ template void Isotherm::make_table<Freundlich>(const Freundlich &isotherm, int n
 
 int Isotherm::is_precomputed()
 {
+	//xprintf(Msg,"interpolation_table.size() is %d\n", interpolation_table.size());
 	return  interpolation_table.size();
 }
 
