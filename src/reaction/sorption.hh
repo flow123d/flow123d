@@ -98,7 +98,7 @@ class Sorption:  public Reaction
 		/**
 		*
 		*/
-		void isotherm_reinit(std::vector<Isotherm> &isotherms, ElementAccessor<3> &elm);
+		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/

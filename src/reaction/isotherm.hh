@@ -180,9 +180,6 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    //void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double por_m, double por_imm, double phi, double molar_mass, double c_aqua_limit);
-    //template<Func>
-	//void reinit(enum SorptionType sorption_type, const Func &isotherm, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit);
 	void reinit(enum SorptionType sorption_type, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef);
 	/**
      *
@@ -208,42 +205,6 @@ public:
      */
     bool compute_projection(double &c_aqua, double &c_sorbed);
     /**
-    *
-    */
-    //void set_adsorption_scales(int porosity_type, double &scale_aqua, double &scale_sorbed, double phi, double por_m, double por_imm, double rock_density, double molar_masses);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_inv_scale_aqua(double inv_scale_aqua);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_inv_scale_sorbed(double inv_scale_sorbed);
-    /**
-    *
-    */
-    //void set_rho_aqua(double rho_aqua);
-    /**
-    *
-    */
-    //double get_rho_aqua(void);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_scale_aqua(double scale_aqua);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_scale_sorbed(double scale_sorbed);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_caq_limmit(double caq_limmit);
-    /**
-    * 	Creates interpolation table containing just one point
-    */
-    void make_one_point_table(void);
-    /**
     *  Returns sorption type
     */
     SorptionType get_sorption_type(void);
@@ -262,7 +223,7 @@ public:
     /**
     * Informs ifever the interpolation table is precomputed and has more than one cell
     */
-    bool is_precomputed(void);
+    int is_precomputed(void);
     /// Type of isotherm
     enum SorptionType adsorption_type_;
     /**
@@ -284,8 +245,6 @@ private:
     double inv_scale_aqua_, inv_scale_sorbed_;
     /// Limit concentration in solution, we model coagulation as adsorption
     double c_aqua_limit_;
-    /// Type of isotherm
-    //SorptionType adsorption_type_;
     /**
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
