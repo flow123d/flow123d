@@ -79,7 +79,9 @@ public:
     }
 
     inline arma::vec::fixed<spacedim> centre() const {
-        return element()->centre();
+        ASSERT(is_valid(), "Invalid element accessor.");       
+        if (is_regional() ) return arma::vec::fixed<spacedim>();
+        else return element()->centre();
     }
 
 

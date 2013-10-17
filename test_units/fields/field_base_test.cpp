@@ -7,7 +7,7 @@
 
 #define TEST_USE_MPI
 #include <gtest_mpi.hh>
-
+#include <gtest_throw_what.hh>
 
 #include "fields/field_base.hh"
 #include "input/input_type.hh"
@@ -83,22 +83,30 @@ TEST(Field, init_from_input) {
     init_conc.set_time(0.0);
     conductivity.set_time(0.0);
 
-    auto ele = mesh.element_accessor(5);
-    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+    {	
+	    auto ele = mesh.element_accessor(5);
+	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 
-    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
-    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - conductivity.value(ele.centre(), ele);
-    double norm=arma::norm(diff, 1);
-    EXPECT_DOUBLE_EQ( 0.0, norm );
+	    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - conductivity.value(ele.centre(), ele);
+	    double norm=arma::norm(diff, 1);
+	    EXPECT_DOUBLE_EQ( 0.0, norm );
+    }
 
-//  using const accessor
-    Region reg = mesh.region_db().find_id(40);
-    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
-    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
+    {
+	//  using const accessor
+	    ElementAccessor<3> ele;
+	    EXPECT_THROW_WHAT( {sorption_type.value(ele.centre(), ele);} , ExcAssertMsg , "Invalid element accessor.");
+	    Region reg = mesh.region_db().find_id(40);
+	    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
+	    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
+	
+	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+   }
 
-    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
-    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+
 
 }
 
