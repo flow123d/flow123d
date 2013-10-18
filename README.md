@@ -19,7 +19,7 @@ License
 -------
 
 The source code of Flow123d is licensed under GPL3 license. For details look
-at file LICENSE.
+at files LICENSE and GPL3.
 
 Build Flow123
 -------------
