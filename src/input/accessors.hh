@@ -115,7 +115,8 @@ protected:
          * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
          * TODO: Possibly can be shared.
          */
-        std::vector<unsigned int> path_;
+        //std::vector<unsigned int> path_;
+        std::vector<Address *> nodes_;
         /**
          * Root Input::Type.
          */
@@ -150,7 +151,7 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    void down(unsigned int idx);
+    const Address * down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
@@ -164,7 +165,7 @@ public:
     /**
      * Produce a full address, i.e. sequence of keys and indices separated by '/',
      * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
-     * that is path_[actual_node_].
+     * that is nodes_[actual_node_].
      */
     std::string make_full_address() const;
 
@@ -175,13 +176,25 @@ protected:
      */
     boost::shared_ptr<AddressData> data_;
     /**
-     * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
+     * Actual node in the @p nodes_. Currently the last element, useful for shared @p nodes_ vector.
      */
     unsigned int actual_node_;
+    /**
+     * Depth of actual node.
+     */
+    unsigned int depth_;
+    /**
+     * Order what descendant of its parent actual node is.
+     */
+    unsigned int descendant_order_;
     /**
      * Actual storage
      */
     const StorageBase * actual_storage_;
+    /**
+     * Position of parent of actual node in shared @p nodes_ vector.
+     */
+    unsigned int parent_;
 };
 
 /**
