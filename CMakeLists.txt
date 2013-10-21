@@ -13,8 +13,19 @@
 
 
 # Include settings given by user first
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
+#set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CONFIG_CMAKE "config.cmake")
+if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
+    include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
+else()
+    if (EXISTS "${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
+        include("${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
+    else()
+        # create from template
+        MESSAGE(FATAL_ERROR "Need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
+    endif()
+endif ()
+
 
 
 # If the CCACHE_CXX_COMPILER is set 
@@ -42,7 +53,7 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
-    set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/external_projects)
+    set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/../external_projects)
 endif()
 
 
@@ -403,7 +414,7 @@ else (CYGWIN)
 endif(CYGWIN)
 
 # check for subversion and prepare generating of file with revision info.
-find_package(Subversion)
+#find_package(Subversion)
 
 
 
@@ -441,11 +452,14 @@ add_subdirectory(test_units)
 
 if( PETSC_FOUND )
 
-  #### create rev_num.h - file with revision number
+  #### create rev_num.h - file with some info about code origin
   # a custom target - is always built -> call cmake script to generate rev_num.h
+  # Get the current working branch
+
+
   add_custom_target(rev_num_always 
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_svn_rev_num.cmake)
+                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake)
   
   # rev_num.h is a generated file
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
