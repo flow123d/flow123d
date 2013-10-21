@@ -21,48 +21,28 @@
 # $LastChangedDate$
 #
 # This makefile just provide main rules for: build, documentation and testing
-# Build itself takes place in ./src.
+# Build itself takes place in ../<branch>-build
 #
 
-all:  build_all install
+BRANCH_NAME=$(shell git rev-parse --abbrev-ref HEAD)
+BUILD_DIR="$(shell pwd)/../build-$(BRANCH_NAME)"
+SOURCE_DIR="$(shell pwd)"
 
 FLOW_BIN=flow123d
-INTERPOLATE_BIN=interpolation
 MPIEXEC_BIN=mpiexec
 
 ifndef N_JOBS
   N_JOBS=2
 endif  
 
-# install all binaries form build tree to './bin' dir
-install: 
-	if [ -e  "build/$(INTERPOLATE_BIN)" ]; then rm -f bin/$(INTERPOLATE_BIN); cp "build/$(INTERPOLATE_BIN)" bin; fi
-	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
-	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
 
+all:  build_all install
 
-# run first cmake
-build/CMakeCache.txt:
-	if [ ! -d build ]; then mkdir build; fi
-	cd build; cmake ..
-
-# This target builds links in directory test_units and its subdirectories 
-# to generated makefiles in the build directory. 
-# This way we can run tests from the source tree and do not have problems with deleted
-# current directory in shell if we are forced to use make clean-all.
-create_unit_test_links:
-	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
-	ln -sf "$${PWD}/build/bin/tests/Makefile" "$${PWD}/bin/tests/makefile"
-
-# This target only configure the build process.
-# Useful for building unit tests without actually build whole program.
-cmake: build/CMakeCache.txt  create_unit_test_links
-
+flow123d:  build_flow123d  install
 
 
 build_all: build_flow123d
 
-flow123d:  build_flow123d  install
 
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
@@ -72,26 +52,51 @@ flow123d:  build_flow123d  install
 # 4 		31s	27s
 # 8 		30s
 build_flow123d: cmake
-	make -j $(N_JOBS) -C build flow123d
+	make -j $(N_JOBS) -C $(BUILD_DIR) flow123d
 
-	
-interpolation: build_interpolation install
-	
-build_interpolation: 
-	make -j $(N_JOBS) -C build interpolation
 
+# This target only configure the build process.
+# Useful for building unit tests without actually build whole program.
+cmake: $(BUILD_DIR)/CMakeCache.txt  create_source_links
+
+
+# run first cmake
+$(BUILD_DIR)/CMakeCache.txt:
+	if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
+	cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
+
+# This target builds links in directory test_units and its subdirectories 
+# to generated makefiles in the build directory. 
+# This way we can run tests from the source tree and do not have problems with deleted
+# current directory in shell if we are forced to use make clean-all.
+create_source_links:
+#	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
+#	ln -sf "$${PWD}/build/bin/tests/Makefile" "$${PWD}/bin/tests/makefile"
+
+
+# install all binaries from build tree to './bin' dir
+install: 
+	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
+	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
+
+
+
+save_config:
+	cp -f $(SOURCE_DIR)/config.cmake $(BUILD_DIR)
+	
+load_config:
+	cp -f $(BUILD_DIR)/config.cmake $(SOURCE_DIR)
 
 	
 # Remove all generated files
 clean: cmake
-	make -C build clean
+	make -C $(BUILD_DIR) clean
 
 # try to remove all
 clean-all: 
 	rm -f bin/${FLOW_BIN}
 	rm -f bin/${MPIEXEC_BIN}
-	rm -f bin/${INTERPOLATE_BIN}
-	rm -rf build
+	rm -rf $(BUILD_DIR)
 	for f in  `find test_units/ -name makefile`; do rm -f "$${f}";done
 	make -C third_party clean
 
