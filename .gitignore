@@ -12,3 +12,6 @@ CTestTestfile.cmake
 
 *~
 *.kate-swp
+
+.cproject
+.project
