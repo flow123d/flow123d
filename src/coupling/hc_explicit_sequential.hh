@@ -31,7 +31,6 @@
 #ifndef HC_EXPLICIT_SEQUENTIAL_HH_
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
-#include "main.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
