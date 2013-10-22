@@ -221,7 +221,7 @@ public:
     */
     void precipitate(double &c_aqua, double &c_sorbed); //double &c_aqua, double &c_sorbed); //
     /**
-    * Informs ifever the interpolation table is precomputed and has more than one cell
+    * Informs ifever the interpolation table is precomputed, in such a case interpolation_table has some cells
     */
     int is_precomputed(void);
     /// Type of isotherm

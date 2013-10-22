@@ -47,7 +47,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     double total_mass = (scale_aqua_* c_aqua + scale_sorbed_ * c_sorbed);
     double total_mass_steps = total_mass / total_mass_step_;
     int total_mass_idx = static_cast <int>(std::floor(total_mass_steps));
-    xprintf(Msg,"total_mass %f, total_mass_idx %d, total_mass_step_ %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %f, c_sorbed %f\n", total_mass, total_mass_idx, total_mass_step_, scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
+    //xprintf(Msg,"total_mass %f, total_mass_idx %d, total_mass_step_ %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %f, c_sorbed %f\n", total_mass, total_mass_idx, total_mass_step_, scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
     if ( total_mass_idx < 0 ) {xprintf(UsrErr,"total_mass %f\n", total_mass); }
     if ( (unsigned int)(total_mass_idx) < (interpolation_table.size() - 1) ) {
     	double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);

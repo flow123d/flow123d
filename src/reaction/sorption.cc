@@ -186,7 +186,7 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 			case MOBILE:
 			{*/
 				scale_aqua = por_m;
-				scale_sorbed;
+				//scale_sorbed;
 				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
 					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 			/*}break;
@@ -231,7 +231,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     //	If intersections are not known then solve the problem analytically (toms748_solve).
 
     // Constant value of rock density and mobile porosity over the whole region
-    if( this->isotherms[reg_id_nr][0].is_precomputed() )
+    if( this->isotherms_precomputed(isotherms_vec) )
 	{
 		START_TIMER("new-sorption interpolation");
 		{
@@ -239,10 +239,10 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 			{
 				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst]; //isotherms_vec[i_subst];
 				int subst_id = substance_ids[i_subst];
-				ASSERT(subst_id > nr_of_substances, "subst_id %d is larger than nr_of_substances %d\n", subst_id, nr_of_substances);
-			    isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
+				//ASSERT(subst_id < nr_of_substances, "subst_id %d is larger than nr_of_substances %d\n", subst_id, nr_of_substances);
+			    if(isotherm.is_precomputed()) isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
 			}
-		    xprintf(Msg, "interpolation table has been used for sorption simulation\n");
+		    //xprintf(Msg, "interpolation table has been used for sorption simulation\n");
 		}
 		END_TIMER("new-sorption interpolation");
 	}else{
@@ -345,6 +345,21 @@ void Sorption::set_phi(pScalar phi)
 {
 	phi_ = phi;
 	return;
+}
+
+int Sorption::isotherms_precomputed(std::vector<Isotherm> & isotherms_vec)
+{
+	int count = 0;
+
+	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	{
+		if((count += isotherms_vec[i_subst].is_precomputed()) > 0)
+		{
+			//xprintf(Msg,"Sorption::isotherms_precomputed, count is %d\n", count);
+			return count;
+		}
+	}
+	return count;
 }
 
 void Sorption::update_solution(void)

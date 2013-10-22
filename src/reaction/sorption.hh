@@ -144,6 +144,10 @@ class Sorption:  public Reaction
 		*/
 		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
 		/**
+		*
+		*/
+		int isotherms_precomputed(std::vector<Isotherm> & isotherms_vec);
+		/**
 		* Meaningless inherited methods.
 		*/
 		virtual void update_solution(void);
