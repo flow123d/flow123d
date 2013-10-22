@@ -1,2 +1,16 @@
 .cproject
 .project
+config.cmake
+profiler_info*.log
+flow*.log
+
+
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+
+*~
+*.kate-swp
