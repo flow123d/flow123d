@@ -90,7 +90,7 @@ Application::Application( int argc,  char ** argv)
   log_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(false)
+  use_profiler(true)
 {
     // parse our own command line arguments, leave others for PETSc
     parse_cmd_line(argc, argv);
@@ -102,45 +102,20 @@ Application::Application( int argc,  char ** argv)
 
     system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
-    use_profiler=true;
+    //use_profiler=true;
     Profiler::initialize();
     
-    // Say Hello
-    // make strings from macros in order to check type
-    string version(_PROGRAM_VERSION_);
-    string revision(_PROGRAM_REVISION_);
-    string branch(_PROGRAM_BRANCH_);
-    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
-    
-    int mpi_size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
-    xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
-    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+    display_version();
+  
+    Input::Record i_rec = read_input();
 
-    // read main input file
-    Input::JSONToStorage json_reader;
-    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading main input file %s.\n", fname.c_str() );
-    std::ifstream in_stream(fname.c_str());
-    if (! in_stream) {
-        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
-    }
-    try {
-      json_reader.read_stream(in_stream, input_type );
-    } catch (Input::JSONToStorage::ExcInputError &e ) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
-    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
-    }  
 
     {
         using namespace Input;
         int i;
 
         // get main input record handle
-        Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
-
+  
         // should flow123d wait for pressing "Enter", when simulation is completed
         sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");
         // read record with problem configuration
@@ -168,7 +143,7 @@ Application::Application( int argc,  char ** argv)
             }
 
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
-
+  
             // run simulation
             problem->run_simulation();
 
@@ -191,33 +166,56 @@ Application::Application( int argc,  char ** argv)
 
 
 
+void Application::display_version() {
+    // Say Hello
+    // make strings from macros in order to check type
+    string version(_PROGRAM_VERSION_);
+    string revision(_GIT_REVISION_);
+    string branch(_GIT_BRANCH_);
+    string url(_GIT_URL_);
+    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
+    
+    int mpi_size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
+    xprintf(Msg, "This is Flow123d, version %s revison: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
+    Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+}
 
 
-/**
- * @brief Main flow initialization
- * @param[in] argc       command line argument count
- * @param[in] argv       command line arguments
 
- * TODO: this parsing function should be in main.cc
- *
- */
-//@param[out] ini_fname Init file name
-//@param[out] goal      Flow computation goal
+Input::Record Application::read_input() {
+   if (main_input_filename_ == "") {
+        cout << "Usage error: The main input file has to be specified through -s parameter.\n\n";
+        cout << program_arguments_desc_ << "\n";
+        free_and_exit();
+    }
+    
+    // read main input file
+    Input::JSONToStorage json_reader;
+    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
+    DBGMSG("Reading main input file %s.\n", fname.c_str() );
+    std::ifstream in_stream(fname.c_str());
+    if (! in_stream) {
+        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
+    }
+    try {
+      json_reader.read_stream(in_stream, input_type );
+    } catch (Input::JSONToStorage::ExcInputError &e ) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
+      e << Input::JSONToStorage::EI_File(fname); throw;
+    }  
+    
+    return json_reader.get_root_interface<Input::Record>();
+}
+
+
+
+
 void Application::parse_cmd_line(const int argc, char ** argv) {
     namespace po = boost::program_options;
 
-    const char USAGE_MSG[] = "\n\
-    Usage: flow123d [options] ini_file\n\
-    Options:\n\
-    -s       Compute MH problem (Obsolete)\n\
-             Source files have to be in the current directory.\n\
-    -S       Compute MH problem\n\
-             Source files have to be in the same directory as ini file.\n\
-    -i       String used to change the 'variable' ${INPUT} in the file path.\n\
-    -o       Absolute path to output directory.\n\
-    -l file  Set base name of log files or turn logging off if no name is given.\n";
-
-    //xprintf(MsgLog, "Parsing program parameters ...\n");
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -227,6 +225,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
         ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
         ("log,l", po::value< string >(), "Set base name for log files.")
+        ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
@@ -306,11 +305,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
             main_input_dir_ = ".";
             main_input_filename_ = input_filename;
         }
-    } else {
-        cout << "Usage error: The main input file has to be specified.\n\n";
-        cout << desc << "\n";
-        free_and_exit();
-    }
+    } 
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
@@ -337,6 +332,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         }
     }
 
+    stringstream(program_arguments_desc_) << desc;
     // TODO: catch specific exceptions and output usage messages
 }
 
@@ -346,7 +342,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::free_and_exit() {
     //close the Profiler
-    DBGMSG("prof: %d\n", use_profiler);
+    //DBGMSG("prof: %d\n", use_profiler);
     if (use_profiler) {
         Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();

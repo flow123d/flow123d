@@ -457,9 +457,10 @@ if( PETSC_FOUND )
   # Get the current working branch
 
 
+  message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
   add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake)
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+  )
   
   # rev_num.h is a generated file
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
