@@ -4,6 +4,10 @@ flow*.log
 unit_tests/*/makefile
 unit_tests/makefile
 bin/tests/makefile
+bin/flow123d
+bin/mpiexec
+tests/*/test_results
+tests/*/output
 
 CMakeCache.txt
 CMakeFiles

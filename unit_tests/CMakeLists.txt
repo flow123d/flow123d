@@ -7,9 +7,10 @@ set(TEST_TIMEOUT 30) # 30 s
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-SET(GTEST_ROOT "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
-include_directories( ${GTEST_ROOT}/include ${CMAKE_SOURCE_DIR}/unit_tests)
-add_subdirectory( ${GTEST_ROOT} ${GTEST_ROOT})
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/thisrd_party/gtest-1.6.0")
+include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
+add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension

@@ -36,9 +36,9 @@ ifndef N_JOBS
 endif  
 
 
-all:  build_all install
+all:  build_all 
 
-flow123d:  build_flow123d  install
+flow123d:  build_flow123d 
 
 
 build_all: build_flow123d
@@ -72,12 +72,14 @@ $(BUILD_DIR)/CMakeCache.txt:
 create_source_links:
 	for f in  `find unit_tests/ -name CMakeLists.txt`; do ln -sf "$(BUILD_DIR)/$${f%/*}/Makefile" "$${f%/*}/makefile";done
 	ln -sf "$(BUILD_DIR)/bin/tests/Makefile" "$(SOURCE_DIR)/bin/tests/makefile"
+	ln -sf "$(BUILD_DIR)/$(FLOW_BIN)" "$(SOURCE_DIR)/bin"
+	ln -sf "$(BUILD_DIR)/$(MPIEXEC_BIN)" "$(SOURCE_DIR)/bin"
 
 
 # install all binaries from build tree to './bin' dir
-install: 
-	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
-	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
+#install: 
+#	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
+#	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
 
 
 
