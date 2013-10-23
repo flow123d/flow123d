@@ -445,7 +445,8 @@ add_subdirectory(src)
 add_subdirectory(doc)
 
 add_subdirectory(bin/tests)
-add_subdirectory(test_units)
+add_subdirectory(unit_tests)
+
 
 #################################################################### add targets
 

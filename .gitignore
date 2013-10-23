@@ -3,7 +3,9 @@
 config.cmake
 profiler_info*.log
 flow*.log
-
+unit_tests/*/makefile
+unit_tests/makefile
+bin/tests/makefile
 
 CMakeCache.txt
 CMakeFiles

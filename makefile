@@ -70,8 +70,8 @@ $(BUILD_DIR)/CMakeCache.txt:
 # This way we can run tests from the source tree and do not have problems with deleted
 # current directory in shell if we are forced to use make clean-all.
 create_source_links:
-#	for f in  `find test_units/ -name CMakeLists.txt`; do ln -sf "$${PWD}/build/$${f%/*}/Makefile" "$${f%/*}/makefile";done
-#	ln -sf "$${PWD}/build/bin/tests/Makefile" "$${PWD}/bin/tests/makefile"
+	for f in  `find unit_tests/ -name CMakeLists.txt`; do ln -sf "$(BUILD_DIR)/$${f%/*}/Makefile" "$${f%/*}/makefile";done
+	ln -sf "$(BUILD_DIR)/bin/tests/Makefile" "$(SOURCE_DIR)/bin/tests/makefile"
 
 
 # install all binaries from build tree to './bin' dir
