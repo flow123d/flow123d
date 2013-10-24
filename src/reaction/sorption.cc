@@ -34,13 +34,14 @@ Record Sorption::input_type
 	.derive_from( Reaction::input_type )
 	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
-	.declare_key("substeps", Integer(), Default("100"),
+	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("species", Array(String()), Default::obligatory(),
 							"Names of all the adsorbing species")
 	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
-	.declare_key("solubility", Array(Double()), Default::obligatory(),
+	// if following key remains negative or zero after initialization, then no limited solubility is concidered
+	.declare_key("solubility", Array(Double()), Default("-1.0"), //Default::obligatory(), //Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
     .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
                    	   	   "Containes region specific data necessery to construct isotherms.");
@@ -119,9 +120,9 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
-	Input::Array solub_limit_array = in_rec.val<Input::Array>("solubility");
-	if (solub_limit_array.size() == c_aq_max.size() )   solub_limit_array.copy_to( c_aq_max );
-	  else  xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solub_limit_array.size(), c_aq_max.size());
+	Input::Array interp_table_limits = in_rec.val<Input::Array>("solubility");
+	if (interp_table_limits.size() == c_aq_max.size())   interp_table_limits.copy_to( c_aq_max );
+	  //else  xprintf(Msg,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
 	unsigned int idx, i_spec = 0;
@@ -231,16 +232,15 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
     //	If intersections are not known then solve the problem analytically (toms748_solve).
 
     // Constant value of rock density and mobile porosity over the whole region
-    if( this->isotherms_precomputed(isotherms_vec) )
+    if(isotherms_vec[0].is_precomputed())
 	{
 		START_TIMER("new-sorption interpolation");
 		{
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
-				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst]; //isotherms_vec[i_subst];
+				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
 				int subst_id = substance_ids[i_subst];
-				//ASSERT(subst_id < nr_of_substances, "subst_id %d is larger than nr_of_substances %d\n", subst_id, nr_of_substances);
-			    if(isotherm.is_precomputed()) isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
+			    isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
 			}
 		    //xprintf(Msg, "interpolation table has been used for sorption simulation\n");
 		}
@@ -269,9 +269,16 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 								xprintf(UsrErr, "Sorption::compute_reaction() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 
 		    ConcPair conc(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
-			START_TIMER("new-sorption toms748_solve");
-		    conc = isotherm.solve_conc(conc);
-			END_TIMER("new-sorption toms748_solve");
+			if(isotherm.limited_solubility_on_ && (concentration_matrix[subst_id][loc_el] > isotherm.table_limit_))
+			{
+				START_TIMER("new-sorption, var params, lim solub");
+				isotherm.precipitate(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
+				END_TIMER("new-sorption, var params, lim solub");
+			}else{
+				START_TIMER("new-sorption toms748_solve");
+		    	conc = isotherm.solve_conc(conc);
+				END_TIMER("new-sorption toms748_solve");
+			}
 		    concentration_matrix[subst_id][loc_el] = conc.first;
 		    sorbed_conc_array[i_subst][loc_el] = conc.second;
 		}
@@ -345,21 +352,6 @@ void Sorption::set_phi(pScalar phi)
 {
 	phi_ = phi;
 	return;
-}
-
-int Sorption::isotherms_precomputed(std::vector<Isotherm> & isotherms_vec)
-{
-	int count = 0;
-
-	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-	{
-		if((count += isotherms_vec[i_subst].is_precomputed()) > 0)
-		{
-			//xprintf(Msg,"Sorption::isotherms_precomputed, count is %d\n", count);
-			return count;
-		}
-	}
-	return count;
 }
 
 void Sorption::update_solution(void)

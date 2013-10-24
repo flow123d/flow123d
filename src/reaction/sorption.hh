@@ -69,6 +69,7 @@ class Sorption:  public Reaction
 
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
+			Field<3, FieldValue<3>::Integer > limit_solub_on; //
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 			Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
@@ -143,10 +144,6 @@ class Sorption:  public Reaction
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
 		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
-		*
-		*/
-		int isotherms_precomputed(std::vector<Isotherm> & isotherms_vec);
 		/**
 		* Meaningless inherited methods.
 		*/
