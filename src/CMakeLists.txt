@@ -166,6 +166,9 @@ set(sources_lib_non_system
     transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
+    
+    interpolation/interpolant.cc
+    interpolation/adaptivesimpson.cc
 )
 
 
