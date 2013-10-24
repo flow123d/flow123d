@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "interpolation/functors.hh"
-#include "interpolation/interpolant.hh"
+#include "interpolation/interpolant_impl.hh"
 
 #define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
