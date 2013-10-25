@@ -197,7 +197,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
           flux_changed(true),
           allocation_done(false)
 {
-	time_scheme_ = implicit_euler;
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
     
@@ -208,6 +207,8 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // Read names of transported substances.
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
+
+    mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
 
     // Set up physical parameters.
     data.set_mesh(&init_mesh);
@@ -240,6 +241,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // create finite element structures and distribute DOFs
     dg_order = in_rec.val<unsigned int>("dg_order");
     feo = new FEObjects(mesh_, dg_order);
+    DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
     // set up output class
     Input::Record output_rec = in_rec.val<Input::Record>("output");
@@ -279,8 +281,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // set initial conditions
     set_initial_condition();
 
-    // save initial state
-    output_data();
 }
 
 
@@ -302,6 +302,7 @@ TransportDG::~TransportDG()
     delete[] stiffness_matrix;
     delete[] rhs;
     delete feo;
+    delete mass_balance_;
 
     gamma.clear();
     subst_names_.clear();
@@ -318,10 +319,10 @@ void TransportDG::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
 
-	// calculate mass balance at initial time
+	// save solution and calculate mass balance at initial time
 	if (!allocation_done)
 	{
-		mass_balance();
+		output_data();
 	}
 
     time_->next_time();
@@ -462,7 +463,7 @@ void TransportDG::update_solution()
     }
     END_TIMER("solve");
 
-    mass_balance();
+    mass_balance()->calculate(time_->t());
 
     //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
     
@@ -498,8 +499,6 @@ void TransportDG::output_data()
 {
     double *solution;
     unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-    //int n_nodes = mesh_->node_vector.size();
-    //int count[n_nodes];
 
     if (!time_->is_current(output_mark_type)) return;
 
@@ -594,13 +593,11 @@ void TransportDG::output_data()
 		VecDestroy(&solution_vec);
 	}
 
-	if (feo->dh()->el_ds()->myp() == 0)
-	{
-		if(transport_output) {
-			xprintf(MsgLog, "transport DG: write_data()\n");
-			transport_output->write_data(time_->t());
-		}
+	if(transport_output) {
+		xprintf(MsgLog, "transport DG: write_data()\n");
+		transport_output->write_data(time_->t());
 	}
+	mass_balance()->output(time_->t());
 
     END_TIMER("DG-OUTPUT");
 }

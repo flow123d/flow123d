@@ -368,10 +368,10 @@ coupled with reaction and sorption model (ODE per element)
 \begin{RecordType}{\HTRaised{IT::Sorptions}{Sorptions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information about all the limited solubility affected adsorptions.}
 \KeyItem{\hyperB{Sorptions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Sorptions}{}{Sub-record selection.}
 \KeyItem{\hyperB{Sorptions::solvent-dens}{solvent\_dens}}{Double }{1.0}{}{Density of the solvent.}
-\KeyItem{\hyperB{Sorptions::substeps}{substeps}}{Integer }{100}{}{Number of equidistant substeps, molar mass and isotherm intersections}
-\KeyItem{\hyperB{Sorptions::species}{species}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of all the sorbing species}
+\KeyItem{\hyperB{Sorptions::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{Sorptions::species}{species}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of all the adsorbing species}
 \KeyItem{\hyperB{Sorptions::molar-masses}{molar\_masses}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the sorbing species}
-\KeyItem{\hyperB{Sorptions::solubility}{solubility}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies solubility limits of all the sorbing species}
+\KeyItem{\hyperB{Sorptions::solubility}{solubility}}{Array  of Double }{-1.0}{}{Specifies solubility limits of all the sorbing species}
 \KeyItem{\hyperB{Sorptions::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::Sorption-BulkData}{Sorption\_BulkData}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessery to construct isotherms.}
 \end{RecordType}
 
