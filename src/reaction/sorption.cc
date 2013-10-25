@@ -122,7 +122,11 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 	Input::Array interp_table_limits = in_rec.val<Input::Array>("solubility");
 	if (interp_table_limits.size() == c_aq_max.size())   interp_table_limits.copy_to( c_aq_max );
-	  //else  xprintf(Msg,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
+	  else
+	  {
+		double def_val;
+		if((def_val > 0.0) && (interp_table_limits.size() > 1)) xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
+	  }
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
 	unsigned int idx, i_spec = 0;
@@ -356,36 +360,36 @@ void Sorption::set_phi(pScalar phi)
 
 void Sorption::update_solution(void)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "1) Meaningless inherited method." << endl;
 	return;
 }
 void Sorption::choose_next_time(void)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "2) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step_constrain(double dt)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "3) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_parallel_solution_vector(Vec &vc)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "4) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_solution_vector(double* &vector, unsigned int &size)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "5) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step(double new_timestep)
 {
-	cout << "Meaningless inherited method." << endl;
+	cout << "6) Meaningless inherited method." << endl;
 	return;
 }
 
