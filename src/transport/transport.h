@@ -172,6 +172,8 @@ public:
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 
+	TimeIntegrationScheme time_scheme() { return TimeIntegrationScheme::explicit_euler; }
+
 private:
 
     /**
@@ -211,13 +213,11 @@ private:
     void alloc_transport_structs_mpi();
 
     /**
-     * Overriding the virtual method that is called by TransportBase::mass_balance() to get boundary balances over individual boundary regions.
-     * TODO: more precise description
+     * Implements the virtual method EquationForMassBalance::calc_fluxes().
      */
     void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
     /**
-     * Overriding the virtual method that is called by TransportBase::mass_balance() to get source balances over individual boundary regions.
-     * TODO: more precise description
+     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
      */
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
@@ -257,7 +257,7 @@ private:
 
 
 
-            VecScatter vconc_out_scatter;
+    VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
 
     /// Time when the transport matrix was created.

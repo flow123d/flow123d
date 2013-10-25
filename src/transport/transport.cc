@@ -107,8 +107,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 {
     F_ENTRY;
 
-    time_scheme_ = explicit_euler;
-
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
@@ -123,6 +121,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
+
+    mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
 
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
@@ -234,6 +234,8 @@ void ConvectionTransport::make_transport_partitioning() {
 ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi, ph;
+
+    delete mass_balance_;
 
     //Destroy mpi vectors at first
     VecDestroy(&v_sources_corr);
@@ -1251,13 +1253,7 @@ int ConvectionTransport::get_n_substances() {
 
 void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
-    double ***solution = conc;
-    // int *el_4_loc, *row_4_el;
-    // Distribution *el_ds;
     double mass_flux[n_substances()];
-
-    //convection->get_par_info(el_4_loc, el_ds);
-    //row_4_el = convection->get_row_4_el();
 
     FOR_BOUNDARIES(mesh_, bcd) {
 
@@ -1268,7 +1264,7 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
 
         double water_flux = mh_dh->side_flux(*(bcd->side()));
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-            mass_flux[sbi] = water_flux*solution[MOBILE][sbi][loc_index];
+            mass_flux[sbi] = water_flux*conc[MOBILE][sbi][loc_index];
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
@@ -1287,15 +1283,6 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
 
 void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {
-  //the sources concentration is divided by dt cause it is multiplied by it before
-  
-    //int *el_4_loc, *row_4_el;
-    //Distribution *el_ds;
-    double ***solution = conc;
-
-    //convection->get_par_info(el_4_loc, el_ds);
-    //row_4_el = convection->get_row_4_el();
-
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
     {
         compute_concentration_sources(sbi);
@@ -1310,7 +1297,14 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
             if (el_ds->is_local(index))
             {
             	int loc_index = index - el_ds->begin();
-                mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*solution[MOBILE][sbi][loc_index]*elem->measure();
+            	double sum_sol_phases = 0;
+            	for (int ph=0; ph<MAX_PHASES; ph++)
+            	{
+            		if ((sub_problem & ph) == ph)
+            			sum_sol_phases += conc[ph][sbi][loc_index];
+            	}
+
+                mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*sum_sol_phases*elem->measure();
                 src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
             }
         }
@@ -1326,7 +1320,7 @@ void ConvectionTransport::output_data() {
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
         if (field_output) field_output->write_data(time_->t());
-        mass_balance();
+        mass_balance()->output(time_->t());
 
         //for synchronization when measuring time by Profiler
         MPI_Barrier(MPI_COMM_WORLD);
