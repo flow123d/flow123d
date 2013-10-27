@@ -180,9 +180,6 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-    //void reinit(enum SorptionType sorption_type, double rock_density, double aqua_density, double por_m, double por_imm, double phi, double molar_mass, double c_aqua_limit);
-    //template<Func>
-	//void reinit(enum SorptionType sorption_type, const Func &isotherm, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit);
 	void reinit(enum SorptionType sorption_type, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef);
 	/**
      *
@@ -208,38 +205,6 @@ public:
      */
     bool compute_projection(double &c_aqua, double &c_sorbed);
     /**
-    *	Enables to set private parameter.
-    */
-    //void set_inv_scale_aqua(double inv_scale_aqua);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_inv_scale_sorbed(double inv_scale_sorbed);
-    /**
-    *
-    */
-    //void set_rho_aqua(double rho_aqua);
-    /**
-    *
-    */
-    //double get_rho_aqua(void);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_scale_aqua(double scale_aqua);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_scale_sorbed(double scale_sorbed);
-    /**
-    *	Enables to set private parameter.
-    */
-    //void set_caq_limmit(double caq_limmit);
-    /**
-    * 	Creates interpolation table containing just one point
-    */
-    void make_one_point_table(void);
-    /**
     *  Returns sorption type
     */
     SorptionType get_sorption_type(void);
@@ -256,9 +221,9 @@ public:
     */
     void precipitate(double &c_aqua, double &c_sorbed); //double &c_aqua, double &c_sorbed); //
     /**
-    * Informs ifever the interpolation table is precomputed and has more than one cell
+    * Informs ifever the interpolation table is precomputed, in such a case interpolation_table has some cells
     */
-    bool is_precomputed(void);
+    int is_precomputed(void);
     /// Type of isotherm
     enum SorptionType adsorption_type_;
     /**
@@ -269,6 +234,12 @@ public:
     * 	Second potential parameter of the isotherm
     */
     double second_coef_;
+    /// Limit concentration in solution, we model coagulation as adsorption
+    double table_limit_;
+    /**
+    *
+    */
+    bool limited_solubility_on_;
 private:
     /// density of the solvent
     double rho_aqua_;
@@ -278,10 +249,6 @@ private:
     double scale_sorbed_;
     /// reciprocal values
     double inv_scale_aqua_, inv_scale_sorbed_;
-    /// Limit concentration in solution, we model coagulation as adsorption
-    double c_aqua_limit_;
-    /// Type of isotherm
-    //SorptionType adsorption_type_;
     /**
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
@@ -320,101 +287,5 @@ private:
     Func func;
     double total_mass_, scale_sorbed_, scale_aqua_, rho_aqua_;
 };
-
-/*class IsothermFactory
-{
-public:
-	void reinit(Isotherm &isotherm, enum SorptionType adsorption_type, double rho_aqua, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef)
-	{
-        //tmp_isotherm = isotherm;
-        if((mult_coef_ = mult_coef) < 0.0 ) xprintf(UsrErr,"Multiplication coefficient for an isotherm must equal to or higher then 0.0");
-        second_coef_ = second_coef;
-        // save functor parameters
-		isotherm.reinit(adsorption_type, rho_aqua, scale_aqua, scale_sorbed, c_aqua_limit, mult_coef, second_coef);
-    }
-    ConcPair solve_conc( Isotherm &isotherm, ConcPair conc ) {
-    	double c_aqua = conc.first;
-    	double c_sorbed = conc.second;
-    	switch (isotherm.adsorption_type_) {
-    	   case none:
-    	   {
-    		   xprintf(Msg,"IsothermFactory solve_conc not computed. No sorption is considered.\n");
-    		   break;
-    	   }
-    	   case linear:
-    	   {
-    		   Linear iso_functor(mult_coef_);
-    		   isotherm.solve_conc(c_aqua, c_sorbed, iso_functor);
-    		   conc.first = c_aqua;
-    		   conc.second = c_sorbed;
-               return conc;
-               break;
-    	   }
-           case freundlich:
-           {
-        	   Freundlich iso_functor(mult_coef_, second_coef_);
-        	   isotherm.solve_conc(c_aqua, c_sorbed, iso_functor);
-    		   conc.first = c_aqua;
-    		   conc.second = c_sorbed;
-               return conc;
-               break;
-           }
-           case langmuir:
-           {
-        	   Langmuir iso_functor(mult_coef_, second_coef_);
-        	   isotherm.solve_conc(c_aqua, c_sorbed, iso_functor);
-    		   conc.first = c_aqua;
-    		   conc.second = c_sorbed;
-               return conc;
-               break;
-           }
-           default:
-           {
-        	   xprintf(UsrErr,"IsothermFactory solve_conc failed."); // Sorption of %d-th specie in %d-th region has unknown type %d.", i_subst, reg_idx, hlp_iso_type)
-        	   break;
-           }
-         }
-    }
-
-    void make_table(Isotherm &isotherm)
-    {
-    	int n_points=100; //gives the number of samples in the interpolation table
-
-         switch (isotherm.adsorption_type_)
-         {
-           case none:
-           {
-        	   isotherm.make_one_point_table();
-        	   break;
-           }
-           case linear:
-           {
-        	   Linear iso_functor(mult_coef_);
-               isotherm.make_table(iso_functor, n_points);
-               break;
-           }
-           case freundlich:
-           {
-        	   Freundlich iso_functor(mult_coef_, second_coef_);
-               isotherm.make_table(iso_functor, n_points);
-        	   break;
-           }
-           case langmuir:
-           {
-        	   Langmuir iso_functor(mult_coef_, second_coef_);
-               isotherm.make_table(iso_functor, n_points);
-        	   break;
-           }
-           default:
-           {
-        	   xprintf(UsrErr,"IsothermFactory make_table failed. Unknown type of an isotherm."); // Sorption of %d-th specie in %d-th region has unknown type %d.", i_subst, reg_idx, hlp_iso_type)
-        	   break;
-           }
-         }
-    }
-
-    //Isotherm tmp_isotherm; // o jeden parametr min pri reinitu
-    double mult_coef_, second_coef_;
-};*/
 
 #endif /* SORPTION_IMPL_HH_ */

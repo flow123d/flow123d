@@ -130,7 +130,7 @@ struct MsgFmt {
 #define	NUM_OF_FMTS		8
 static struct MsgFmt msg_fmt[] = {
 	{Msg, 		true,  false,   SCR_STDOUT,	false,	NULL},
-	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "DBG (%s, %s(), %d):"},
+	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
 	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},

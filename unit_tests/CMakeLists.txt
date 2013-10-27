@@ -7,18 +7,19 @@ set(TEST_TIMEOUT 30) # 30 s
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-SET(GTEST_ROOT "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
-include_directories( ${GTEST_ROOT}/include ${CMAKE_SOURCE_DIR}/test_units)
-add_subdirectory( ${GTEST_ROOT} ${GTEST_ROOT})
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/thisrd_party/gtest-1.6.0")
+include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
+add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension
-set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/test_units/gtest_mpi.cc)
+set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
 
 # Defines macro for absolute path to unit_tests, so that unit tests can read
 # some test files in its source directory, while the binary of the test is created
 # elsewhere.
-add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/test_units")
+add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
 #################################
 # MACRO define_test
@@ -126,7 +127,7 @@ add_subdirectory("coupling")
 
 #add_executable(ioNameHandlerTest system/io_name_handler.cc)
 #set_target_properties(ioNameHandlerTest PROPERTIES
-#     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/test_units/bin
+#     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/unit_tests/bin
 #  )
 #  target_link_libraries(ioNameHandlerTest ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES} ${GTEST_LIBRARIES} Flow123d)
 

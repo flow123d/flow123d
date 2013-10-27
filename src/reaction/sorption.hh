@@ -34,6 +34,7 @@
 
 #include "fields/field_base.hh"
 #include "reaction/isotherm.hh"
+#include "transport/transport.h"
 
 class Mesh;
 class Distribution;
@@ -68,6 +69,7 @@ class Sorption:  public Reaction
 
 			Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
 			Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
+			Field<3, FieldValue<3>::Integer > limit_solub_on; //
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 			Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
@@ -94,6 +96,10 @@ class Sorption:  public Reaction
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		double **compute_reaction(double **concentrations, int loc_el);
+		/**
+		*
+		*/
+		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/

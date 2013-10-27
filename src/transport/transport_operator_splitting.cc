@@ -417,9 +417,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         // Part for mobile zone description follows.
 	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
+	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
 	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
+	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
 	    sorptions->prepare_inputs(*sorptions_it, MOBILE);
+	    xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
 	    double ***conc_matrix = convection->get_concentration_matrix();
 	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 	    sorptions->set_sorb_conc_array(el_distribution->lsize());
@@ -434,6 +437,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		    sorptions_immob->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_immob_concentration_matrix(conc_matrix[IMMOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_sorb_conc_array(el_distribution->lsize());
+	    }else{
+		    sorptions_immob = NULL;
 	    }
 	  } else{
 	    sorptions = NULL;
