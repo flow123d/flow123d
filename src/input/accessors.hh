@@ -112,11 +112,13 @@ class Address {
 protected:
     struct AddressData {
         /**
-         * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
-         * TODO: Possibly can be shared.
+         * Pointer to data of parent node in the tree
          */
-        //std::vector<unsigned int> path_;
-        std::vector<Address *> nodes_;
+        AddressData * parent_;
+        /**
+         * Order what descendant of its parent actual node is.
+         */
+        unsigned int descendant_order_;
         /**
          * Root Input::Type.
          */
@@ -125,6 +127,10 @@ protected:
          *
          */
         const StorageBase *root_storage_;
+        /**
+         * Actual storage
+         */
+        const StorageBase * actual_storage_;
     };
 
 public:
@@ -157,9 +163,9 @@ public:
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	ASSERT(actual_storage_, "NULL pointer to storage in address object!!! \n");
+    	ASSERT(data_->actual_storage_, "NULL pointer to storage in address object!!! \n");
 
-    	return actual_storage_;
+    	return data_->actual_storage_;
     }
 
     /**
@@ -176,25 +182,9 @@ protected:
      */
     boost::shared_ptr<AddressData> data_;
     /**
-     * Actual node in the @p nodes_. Currently the last element, useful for shared @p nodes_ vector.
-     */
-    unsigned int actual_node_;
-    /**
-     * Depth of actual node.
-     */
-    unsigned int depth_;
-    /**
-     * Order what descendant of its parent actual node is.
-     */
-    unsigned int descendant_order_;
-    /**
      * Actual storage
      */
-    const StorageBase * actual_storage_;
-    /**
-     * Position of parent of actual node in shared @p nodes_ vector.
-     */
-    unsigned int parent_;
+    //const StorageBase * actual_storage_;
 };
 
 /**
