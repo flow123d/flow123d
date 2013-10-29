@@ -29,6 +29,7 @@
 
 #include <string>
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 
 using namespace std;
 
@@ -38,13 +39,41 @@ using namespace std;
 
 class Application {
 public:
-    Application(int argc, char ** argv);
+    /// Root of the Input::Type tree. Description of whole input structure.
     static Input::Type::Record input_type;
+    
+    /// Application constructor. 
+    Application(int argc, char ** argv);
+    
+    /**
+     * Parse command line parameters.
+     * @param[in] argc       command line argument count
+     * @param[in] argv       command line arguments
+     */ 
     void parse_cmd_line(const int argc, char ** argv);
+    
+    /**
+     * Displays program version and build info.
+     * Pass version information to Profiler.
+     * 
+     * TODO: Split these two functionalities.
+     */ 
+    void display_version();
+    
+    /**
+     * Read main input file
+     * 
+     * Returns accessor to the root Record.
+     */ 
+    Input::Record read_input();
+    
+    /// TODO: should be destructor ?
     void free_and_exit();
 private:
 
+    /// directory of main input file (used to resolve relative paths of other input files)
     string main_input_dir_;
+    /// filename of main input file
     string main_input_filename_;
 
     /**
@@ -55,7 +84,11 @@ private:
     string log_filename_;
     int passed_argc_;
     char ** passed_argv_;
+    
+    /// Description of possible command line arguments.
+    string program_arguments_desc_;
 
+    /// If true, we do output of profiling information.
     bool use_profiler;
 };
 

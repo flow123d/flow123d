@@ -1,0 +1,11 @@
+*** ../CMakeLists.txt	2012-10-03 03:42:50.000000000 +0200
+--- ../../../flow123d/branches/JB_1.7_inputs/third_party/armadillo-3.2.4/CMakeLists.txt	2012-08-23 21:31:54.880621909 +0200
+***************
+*** 265,267 ****
+  
+! add_library( armadillo SHARED src/wrap_libs )
+  target_link_libraries( armadillo ${ARMA_LIBS} )
+--- 267,269 ----
+  
+! add_library( armadillo src/wrap_libs )
+  target_link_libraries( armadillo ${ARMA_LIBS} )
