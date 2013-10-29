@@ -1,13 +1,11 @@
 ### PETSC library ###################################################################
-# The Flow123 requires PETSC library (3.2.x), you have to set 
+# The Flow123 requires PETSC library (3.4.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
 # would to use system wide settings.
 # e.g.
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
-set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
-set(PETSC_ARCH "gcc_O3")
 
 # e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
 # set( PETSC_ADDITIONAL_LIBS "-lpthread")
@@ -29,8 +27,8 @@ set(PETSC_ARCH "gcc_O3")
 # If the variable is unset, BDDCML is not used.
 # Note: For automatic installation you need MUMPS and ScaLapack, this can be automatically installed with PETSC 
 # if you set INSTALL_PETSC_BDDCML.
-
-set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+#
+# set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
 ### Python setting ###############################################################
 # USE_PYTHON - only use python if this is set to "yes"
