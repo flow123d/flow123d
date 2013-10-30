@@ -286,6 +286,8 @@ void Linear_reaction::set_time_step(double new_timestep)
 
 void Linear_reaction::compute_one_step(void)
 {
+    //data_.set_time(*time_); // set to the last computed time
+	//if timestep changed then modify_reaction_matrix(), not implemented yet
     //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
