@@ -172,7 +172,7 @@ protected:
 class InterpolantImplicit : public InterpolantBase
 {
 public:
-  typedef enum { fix_x, fix_y
+  typedef enum { fix_x, fix_y, no_fix
   } fix_var;
   
   ///@name Construction.
@@ -213,26 +213,33 @@ public:
   der diff(const double& u);
   
   ///Returns interpolated value of the derivation.
-  /** @param i_x is the point at which we evaluate the interpolation
+  /** @param x is the point at which we evaluate the interpolation
    */
-  //double diffn(const double& i_x, const unsigned int& n);
+  //double diffn(const double& x, const unsigned int& n);
   
   ///Returns value of the original functor.
-  /** @param i_x is the point at which we evaluate the original functor
+  /** @param x is function variable.
+   *  @param y is function variable.
    */
   double f_val(const double& x, const double& y);
   
+  ///Returns value of the original functor when one of the variables is fixed.
+  /** @param u is function variable (the one not fixed).
+   */
+  double f_val(const double& u);
+  
   ///Returns 1st derivate of original functor using FADBAD.
-  /** @param i_x is the point at which we evaluate the original functor
+  /** @param x is function variable.
+   *  @param y is function variable.
    */
   der f_diff ( const double& x, const double& y);
   
   /** Returns n-th derivate of original functor using FADBAD.
     * Uses coeficients in Taylor's row.
-    * @param i_x is the point at which we evaluate the original functor
+    * @param u is the point at which we evaluate the original functor
     * @param n is the order of the derivate we want
     */
-  double f_diffn(const double& i_x, const unsigned int& n);
+  double f_diffn(const double& u, const unsigned int& n);
   //@}
   
 
@@ -247,24 +254,26 @@ public:
     
     
 protected:
+  
+  ///class FuncExplicit.
+  /** This functor transforms implicit functor with two variables into
+   * an explicit functor with only one varible and the other one fixed.
+   */
   template<class Type=double>
   class FuncExplicit : public Functor<Type>
   {
   public:
-    //typedef enum{ p1, p2, p3
-    //Parameters;
-    
     ///Constructor.
     FuncExplicit(){}
   
-    //probably no using
+    //probably not using
     template<class TType>
     FuncExplicit(Functor<TType>& func) : Functor<Type>(func){};
     
     //constructor from templated implicit functor
     template<class TType>
     FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
-      : func_impl(func_impl), fix_(fix), fix_val(fix_val) {}
+      : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
   
     virtual Type operator()(const Type& u)
     {

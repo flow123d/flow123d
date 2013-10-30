@@ -49,7 +49,7 @@ public:
   void set_param(const unsigned int& param_name, const double& param_value);
   
   ///Returns parameter.
-  double get_param(const unsigned int& param_name);
+  double param(const unsigned int& param_name);
   
   /** Returns size of the vector for the parameters.
    * Not actual number of used parameters! 
@@ -57,7 +57,7 @@ public:
   unsigned int n_param();
   
 protected:
-  std::vector<double> data_;
+  std::vector<double> param_;
 };
 
 
@@ -74,7 +74,7 @@ public:
    * which is used in Interpolant's method @p Interpolant::set_functor.
    */
   template<class TType>
-  Functor(Functor<TType>& func);
+  Functor(FunctorBase<TType>& func);
 
   ///Destructor.
   virtual ~Functor();
@@ -107,7 +107,4 @@ public:
   virtual Type operator()(const Type& x, const Type& y) = 0;
 };
 
-
-
-#include "functors_impl.hh"
 #endif  //FUNCTORBASE_H
