@@ -18,6 +18,8 @@
 #include "mesh/region.hh"
 #include "input/type_selection.hh"
 
+#include "coupling/time_governor.hh"
+
 const double pi = 3.1415;
 namespace it=Input::Type;
 
@@ -44,7 +46,9 @@ Record Sorption::input_type
 	.declare_key("solubility", Array(Double()), Default("-1.0"), //Default::obligatory(), //Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
     .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Containes region specific data necessery to construct isotherms.");
+                   	   	   "Containes region specific data necessery to construct isotherms.")//;
+	.declare_key("time", Double(), Default("1.0"),
+			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
 Sorption::EqData::EqData()
 : EqDataBase("Sorption")
@@ -97,6 +101,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 			isotherms[i_reg].push_back(iso_mob);
 		}
 	}
+
+    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());
 }
 
 Sorption::~Sorption(void)
@@ -137,7 +143,7 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 		else	xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
 	}
 
-	double rock_density;
+	//double rock_density;
 
 	ElementAccessor<3> elm;
 
@@ -295,6 +301,39 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 // Computes sorption simulation over all the elements.
 void Sorption::compute_one_step(void)
 {
+    data_.set_time(*time_); // set to the last computed time
+    //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
+	if((data_.rock_density.changed_during_set_time) &&
+		(data_.mult_coefs.changed_during_set_time) &&
+		(data_.second_params.changed_during_set_time) &&
+		(this->porosity_->changed_during_set_time) &&
+		(this->immob_porosity_->changed_during_set_time) &&
+		(this->phi_->changed_during_set_time))/**/
+	{
+		ElementAccessor<3> elm;
+
+		BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+		{
+			int reg_idx = reg_iter.bulk_idx();
+
+			// Creates interpolation tables in the case of constant rock matrix parameters
+			if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
+				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
+				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
+				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
+			{
+				isotherm_reinit(isotherms[reg_idx],elm);
+				xprintf(Msg,"parameters are constant\n");
+				for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+				{
+					isotherms[reg_idx][i_subst].make_table(nr_of_points);
+				}
+			}
+		}
+	}
+
     START_TIMER("new_sorp_step");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
