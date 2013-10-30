@@ -418,10 +418,11 @@ endif(CYGWIN)
 
 
 
-################################################################### set includes and libraries paths
+######################################################################################################################### 
+# set includes and libraries paths
 
 include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
+    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${PETSC_INCLUDES}
@@ -431,7 +432,27 @@ include_directories(
 )
 
 
-##############
+##################################################################################################################### 
+# Macro to make usefull links in SOURCE_DIR
+##################################
+
+
+# initialize a global variable (cached)
+set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
+              
+
+macro(make_link_in_source FILE)
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_BINARY_DIR}/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+  
+  set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
+endmacro()
+
+make_link_in_source(bin/flow123d)
+make_link_in_source(bin/mpiexec)
+make_link_in_source(bin/tests/Makefile)
 
 ############################################################33 process subdirectories
 
@@ -445,7 +466,7 @@ add_subdirectory(src)
 add_subdirectory(doc)
 
 add_subdirectory(bin/tests)
-add_subdirectory(unit_tests)
+add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 
 #################################################################### add targets
@@ -486,19 +507,28 @@ if( PETSC_FOUND )
         message(WARNING "Missing any mpiexec.")
       endif()
   endif()
-  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
+  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
   
 
 
   ### add target for flow123d binary
-  add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_executable(bin/flow123d src/main.cc)
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  add_dependencies(bin/flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
+
+
+################################################################333
+# clean-links target
+
+add_custom_target(clean-links
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${SOURCE_TREE_LINKS}
+)
+
 
 
