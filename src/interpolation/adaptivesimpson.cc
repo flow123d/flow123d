@@ -1,5 +1,6 @@
 
 #include "adaptivesimpson.hh"
+#include "functors_impl.hh"
 #include "system/xio.h"
 
 #include <math.h>

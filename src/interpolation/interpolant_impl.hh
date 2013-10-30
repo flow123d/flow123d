@@ -1,4 +1,5 @@
 #include "interpolant.hh"
+#include "system/xio.h"
 
 /********************************** Interpolant ********************************/  
 
@@ -18,8 +19,6 @@ void Interpolant::set_functor(Functor<double>* func)
   func_diff = new Func<B<double> >(*func);
   func_diffn = new Func<T<double> >(*func);
   checks[Interpolant::check_functor] = true;
-  
-  DBGMSG("Functor copy constructor: param(2)=%f\n",func_diff->get_param(2));
 }
 
 
@@ -119,3 +118,20 @@ inline der Interpolant::diff_p1(const double& i_x)
 
 /********************************** InterpolantImplicit ********************************/    
 
+template<template<class> class Func, class Type >
+void InterpolantImplicit::set_functor(FunctorImplicit<Type>* func) 
+{
+  this->func = func;
+  func_diff = new Func<B<Type> >(*func);
+  func_diffn = new Func<T<Type> >(*func);
+  checks[Interpolant::check_functor] = true;
+}
+  
+template<template<class> class Func>
+void InterpolantImplicit::set_functor(FunctorImplicit<double>* func) 
+{
+  this->func = func;
+  func_diff = new Func<B<double> >(*func);
+  func_diffn = new Func<T<double> >(*func);
+  checks[Interpolant::check_functor] = true;
+}

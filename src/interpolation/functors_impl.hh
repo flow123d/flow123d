@@ -8,17 +8,24 @@
 template<class Type>
 FunctorBase<Type>::FunctorBase() 
 {
-  data_.resize(5);   //default resizing of the data vector
+  //param_.resize(5);   //default resizing of the data vector
 }
-  
+
 template<class Type>
 template<class TType >
 FunctorBase<Type>::FunctorBase(FunctorBase<TType>& func) 
 {
+  //DBGMSG("FunctorBase copy constructor.\n");
   unsigned int n = func.n_param();
-  data_.resize(n);
+  //DBGMSG("param_size = %d\n",n);
+  param_.resize(n);
+  
   for(unsigned int i=0; i < n; i++) //copying vector
-    data_[i] = func.get_param(i);   
+  {
+    //DBGMSG("get_param = %d\n",i);
+    param_[i] = func.param(i);   
+  }
+  //*/
 }
   
 template<class Type>
@@ -27,28 +34,28 @@ FunctorBase<Type>::~FunctorBase() {}
 template<class Type>
 void FunctorBase<Type>::set_param(const unsigned int& param_name, const double& param_value)
 {
-  if(param_name < data_.size())
+  if(param_name < param_.size())
   {
-    data_[param_name] = param_value;
+    param_[param_name] = param_value;
   }
   else
   {
-    data_.push_back(param_value);
+    param_.push_back(param_value);
   }
 }
   
 template<class Type>
-double FunctorBase<Type>::get_param(const unsigned int& param_name)
+double FunctorBase<Type>::param(const unsigned int& param_name)
 {
-  ASSERT(param_name < data_.size(),"This parameter does not exist.");
+  ASSERT(param_name < param_.size(),"This parameter does not exist.");
   
-  return data_[param_name];
+  return param_[param_name];
 }
   
 template<class Type>
 unsigned int FunctorBase<Type>::n_param()
 { 
-  return data_.size();
+  return param_.size();
 }
   
   
@@ -60,7 +67,7 @@ Functor<Type>::Functor() : FunctorBase<Type>::FunctorBase()
   
 template<class Type>
 template<class TType >
-Functor<Type>::Functor(Functor<TType>& func) : FunctorBase<Type>::FunctorBase(func)
+Functor<Type>::Functor(FunctorBase<TType>& func) : FunctorBase<Type>::FunctorBase(func)
 {}
   
   

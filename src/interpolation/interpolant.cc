@@ -1,4 +1,4 @@
-#include "functors.hh"
+#include "functors_impl.hh"
 #include "interpolant_impl.hh"
 #include "adaptivesimpson.hh"
 
@@ -200,9 +200,11 @@ void Interpolant::create_nodes()
   
 InterpolantImplicit::InterpolantImplicit()
   : InterpolantBase(),
+    func_u(NULL),
     func(NULL),
     func_diff(NULL),
-    func_diffn(NULL)
+    func_diffn(NULL),
+    fix_(InterpolantImplicit::no_fix)
   {
   }
   
@@ -212,5 +214,21 @@ void InterpolantImplicit::fix_variable(InterpolantImplicit::fix_var fix, const d
 {
   fix_ = fix;
   fix_val = val;
+  func_u = new FuncExplicit<double>(*func,fix_,fix_val);
 }
+
+double InterpolantImplicit::f_val(const double& u)
+{
+  return func_u->operator()(u);
+}
+
+
+void InterpolantImplicit::interpolate_p0(double& interpolation_error)
+{
+  if(func_u != NULL) 
+    delete func_u;
+  
+  func_u = new FuncExplicit<double>(*func,fix_,fix_val);
+}
+
 
