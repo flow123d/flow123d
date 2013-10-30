@@ -66,7 +66,7 @@ http://dev.nti.tul.cz/trac/flow123d/wiki/Software
 
 ### Install PETSc Library
 
-Flow versions 1.7.x depends on the PETSC library 3.2.0-xx.
+Flow versions 1.7.x depends on the PETSC library 3.4.0-xx.
 You can download this version from:
 
 http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
@@ -103,7 +103,7 @@ To obtain PETSC configuration for the production version you can use e.g.
 
     $ export PETSC_ARCH=linux-gcc-dbg
     $./config/configure.py --with-debugging=0 --CFLAGS-O=-O3 --FFLAGS-O=-O3 \
-       --download-mpich=yes --download-parmetis=yes --download-f-blas-lapack=1
+       --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
     $ make all
     $ make test
 
