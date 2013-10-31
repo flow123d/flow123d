@@ -24,12 +24,13 @@
 # Build itself takes place in ../<branch>-build
 #
 
+# default root of builds
+BUILD_SPACE="$(shell pwd)/.."
+
 BRANCH_NAME=$(shell git rev-parse --abbrev-ref HEAD)
-BUILD_DIR="$(shell pwd)/../build-$(BRANCH_NAME)"
+BUILD_DIR="$(BUILD_SPACE)/build-$(BRANCH_NAME)"
 SOURCE_DIR="$(shell pwd)"
 
-FLOW_BIN=flow123d
-MPIEXEC_BIN=mpiexec
 
 ifndef N_JOBS
   N_JOBS=2
@@ -46,7 +47,7 @@ all:  build_flow123d
 # 4 		31s	27s
 # 8 		30s
 build_flow123d: cmake
-	make -j $(N_JOBS) -C $(BUILD_DIR) flow123d
+	make -j $(N_JOBS) -C $(BUILD_DIR) bin/flow123d
 
 
 # This target only configure the build process.
