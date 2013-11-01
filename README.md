@@ -1,5 +1,4 @@
-Flow123d
-========
+# Flow123d #
 
 [![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
 
@@ -17,16 +16,14 @@ All computations can be run in parallel using PETSc and MPI. However, the
 mesh data and output operations are still sequential. Program supports output
 into VTK format for visualization and postprocessing in Paraview. 
 
-License
--------
+## License ##
 
 The source code of Flow123d is licensed under GPL3 license. For details look
 at files LICENSE and GPL3.
 
-Build Flow123
--------------
+## Build Flow123 ##
 
-### Prerequisities
+### Prerequisities ##
 
 If you are running Windows, you have to install 'cygwin' for emulation of
 POSIX unix environment. Then all work has to be done in the directories under
@@ -66,7 +63,7 @@ Other libraries that can be possibly useful for developers can be found on addre
 http://dev.nti.tul.cz/trac/flow123d/wiki/Developement
 http://dev.nti.tul.cz/trac/flow123d/wiki/Software
 
-### Install PETSc Library
+### Build Step 1 - Install PETSc Library ###
 
 Flow versions 1.7.x depends on the PETSC library 3.4.0-xx.
 You can download this version from:
@@ -121,7 +118,7 @@ To obtain PETSC configuration for the production version you can use e.g.
 > * Configurations mentioned above are minimalistic. 
 >   Next we describe several additional configure options which can be useful.
 
-#### Alternatives and Troubleshooting
+#### Alternatives and Troubleshooting ####
 
 * Windows: If you use a shell script for PETSC configuration under cygwin,
 always check if you use UNIX line ends. It can be specified in the notepad
@@ -217,7 +214,7 @@ http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/M
 
 http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-dev/docs/manualpages/PC/PCHYPRE.html
 
-### Build Step 2 - Compile Flow123
+### Build Step 2 - Compile Flow123 ###
 
 Copy file  makefile.in.cmake.template to makefile.in.cmake:
 
