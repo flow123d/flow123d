@@ -333,7 +333,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         }
     }
 
-    stringstream(program_arguments_desc_) << desc;
+    ostringstream tmp_stream(program_arguments_desc_);
+    tmp_stream << desc;
     // TODO: catch specific exceptions and output usage messages
 }
 
