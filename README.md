@@ -1,6 +1,8 @@
 Flow123d
 ========
 
+[![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
+
 Flow123d is a simulator of underground water flow and transport in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
