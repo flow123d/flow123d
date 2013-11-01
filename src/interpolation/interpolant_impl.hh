@@ -24,9 +24,11 @@ void Interpolant::set_functor(Functor<double>* func)
 
 inline double Interpolant::val(const double& i_x)
 {
+  total_calls++;
   if(i_x < bound_a)
   {
     interval_miss_a++;
+    
     return f_val(i_x);
   }
   if(i_x > bound_b)
@@ -36,13 +38,13 @@ inline double Interpolant::val(const double& i_x)
   }
   else
   {
-    interval_hits++;
     return (this->*val_)(i_x);
   }
 }
 
 inline der Interpolant::diff(const double& i_x)
 {
+  total_calls++;
   if(i_x < bound_a)
   {
     interval_miss_a++;
@@ -55,7 +57,6 @@ inline der Interpolant::diff(const double& i_x)
   }
   else
   {
-    interval_hits++;
     return (this->*diff_)(i_x);
   }  
 }
@@ -115,6 +116,38 @@ inline der Interpolant::diff_p1(const double& i_x)
 
 
 
+  class Interpolant::NormL2 : public Functor<double>
+  {
+  public:
+    NormL2(Interpolant* interpolant)
+    : interpolant(interpolant){}
+  
+    virtual double operator()(const double& x)
+    {
+      return std::pow(interpolant->f_val(x) - interpolant->val(x),2);
+    }         
+  
+  private:
+    Interpolant* interpolant;
+  };
+  
+  class Interpolant::NormW21 : public Functor<double>
+  {
+  public:
+    NormW21(Interpolant* interpolant)
+    : interpolant(interpolant){}
+  
+    virtual double operator()(const double& x)
+    {
+      double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
+      double diff = std::pow(interpolant->f_diff(x).dfdx - interpolant->diff(x).dfdx,2);
+      return val+diff;
+    }         
+  
+  private:
+    Interpolant* interpolant;
+  };
+
 
 /********************************** InterpolantImplicit ********************************/    
 
@@ -135,3 +168,42 @@ void InterpolantImplicit::set_functor(FunctorImplicit<double>* func)
   func_diffn = new Func<T<double> >(*func);
   checks[Interpolant::check_functor] = true;
 }
+
+
+
+  ///class FuncExplicit.
+  /** This functor transforms implicit functor with two variables into
+   * an explicit functor with only one varible and the other one fixed.
+   */
+  template<class Type>
+  class InterpolantImplicit::FuncExplicit : public Functor<Type>
+  {
+  public:
+    ///Constructor.
+    FuncExplicit(){}
+  
+    //probably not using
+    template<class TType>
+    FuncExplicit(Functor<TType>& func) : Functor<Type>(func){};
+    
+    //constructor from templated implicit functor
+    template<class TType>
+    FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
+      : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
+  
+    virtual Type operator()(const Type& u)
+    {
+      Type ret;
+      if(fix_ == InterpolantImplicit::fix_x)
+        ret = func_impl->operator()(fix_val,u);
+      if(fix_ == InterpolantImplicit::fix_y)
+        ret =  func_impl->operator()(u,fix_val);
+      
+      return ret;
+    }
+    
+  private:
+    FunctorImplicit<Type>* func_impl;
+    fix_var fix_;
+    double fix_val;
+  };

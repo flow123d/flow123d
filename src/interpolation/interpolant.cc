@@ -7,32 +7,90 @@
 
 /********************************** InterpolantBase ******************************/
 InterpolantBase::InterpolantBase()
-  : n_checks(4),
-    interval_miss_a(0),
-    interval_miss_b(0),
-    interval_hits(0)
+  : degree(0),
+    max_size(MAX_SIZE),
+    automatic_step(false),
+    error_(-1.0),
+    extrapolation(InterpolantBase::functor),
+    n_checks(4)
 {
+  reset_stat();
   checks.resize(n_checks);
 }
   
 InterpolantBase::~InterpolantBase() {}
   
 
-void InterpolantBase::set_interval(const double& a, const double& b)
+double InterpolantBase::error()
 {
-  ASSERT(a!=b,"Bounds overlap.");
-  ASSERT(a<b,"a must be lower and b must be upper bound.");
-  this->bound_a = a;
+  return error_;
+}
+
+void InterpolantBase::set_interval(const double& bound_a, const double& bound_b)
+{
+  ASSERT(bound_a!=bound_b,"Bounds overlap.");
+  ASSERT(bound_a<bound_b,"a must be lower and b must be upper bound.");
+  this->bound_a = bound_a;
   checks[check_a] = true;
-  this->bound_b = b;
+  this->bound_b = bound_b;
   checks[check_b] = true;
 }
   
 void InterpolantBase::set_size(const unsigned int& size)
 {
+  ASSERT(size >0, "Size of interpolation table must be positive number!.");
   this->size = size;
   checks[Interpolant::check_size] = true;
+  
+  automatic_step = false;
 }
+
+void InterpolantBase::set_size_automatic(const double& user_tol, const unsigned int& init_size, const unsigned int& max_size)
+{
+  ASSERT(init_size >0, "Maximal size of interpolation table must be positive number!.");
+  ASSERT(max_size >= init_size, "Maximal size of interpolation table is smaller than initial size.");
+  this->user_tol = user_tol;
+  this->max_size = max_size;
+  size = init_size;
+  automatic_step = true;
+}
+
+void InterpolantBase::set_extrapolation(InterpolantBase::ExtrapolationType extrapolation)
+{
+  this->extrapolation = extrapolation;
+}
+
+void InterpolantBase::reset_stat()
+{
+  interval_miss_a = 0;
+  interval_miss_b = 0;
+  total_calls = 0;
+  max_a = 0;
+  max_b = 0;
+}
+
+void InterpolantBase::check_and_reinterpolate()
+{
+  double percetange = 0.3;      //percentage of misses that is allowed
+  bool reinterpolate = false;   //should we remake interpolation?
+  if(interval_miss_a/total_calls > percetange)
+  {
+    bound_a = max_a;
+    reinterpolate = true;
+  }
+  if(interval_miss_b/total_calls > percetange)
+  {
+    bound_b = max_b;
+    reinterpolate = true;
+  }
+  
+  if(reinterpolate)
+  {
+    interpolate(degree);
+    reset_stat();
+  }
+}
+
   
 bool InterpolantBase::check_all()
 {
@@ -114,25 +172,75 @@ void Interpolant::create_nodes()
   f_vec[size] = value.f;
   df_vec[size] = value.dfdx;
     
-  DBGMSG("number_of_nodes = %d\n", n_nodes);
+  //DBGMSG("number_of_nodes = %d\n", n_nodes);
 }
 
-  void Interpolant::interpolate_p0(double& interpolation_error)
+int Interpolant::interpolate(unsigned int degree)
+{
+  this->degree = degree;        
+  ASSERT(check_all(), "Parameters check did not pass. Some of the parameters were not set.");  
+  unsigned int result;
+  
+  //selecting interpolation
+  void (Interpolant::*interpolate_func)(void);
+  switch(degree)
   {
-    ASSERT(check_all(), "Parameters check did not pass. Probably some of the parameters were not set.");
+    case 0: interpolate_func = &Interpolant::interpolate_p0; break; 
+    case 1: interpolate_func = &Interpolant::interpolate_p1; break; 
+    default: ASSERT(degree > 1, "Higher order interpolation is not available at the moment.");
+  }
+  
+  if(automatic_step)
+  {
+    DBGMSG("Maximum size of interpolation table: %d\n",max_size);
+    unsigned int k=0;
+    while(x_vec.size()-1 < max_size/2) 
+    {
+      (this->*interpolate_func)();
+      if(user_tol < error_)
+      {
+        size *= 2;              //double the size (i.e. halve the step)
+        DBGMSG("Interpolating: %d   size: %d \t error: %f\n",k, size, error_);
+        result = 1;   //tolerance has not been satisfied
+      }
+      else 
+      {
+        DBGMSG("Size of the table set automaticaly to: %d after %d cycles.\n", size,k);
+        DBGMSG("Error of the interpolation is: %f\n", error_);
+        result = 0;   //interpolation OK
+        break;
+      }
+      k++;
+    }
+    if(x_vec.size()-1 > max_size/2) 
+    { DBGMSG("User defined tolerance %f has not been satisfied with size of interpolation table %d.\n",user_tol,size); }
+  }
+  else 
+  {
+    (this->*interpolate_func)();
+    result = 0;   //interpolation OK
+  }
+  return result;
+}
+
+  void Interpolant::interpolate_p0()
+  { 
     create_nodes();
     val_ = &Interpolant::val_p0;      //pointer to the evalutation function
     diff_ = &Interpolant::diff_p0;      //pointer to the evalutation function
+    
+    Functor<double>* norm = new NormW21(this);
+    compute_error(norm);      //sets error_
+    delete norm;
   }
   
-  void Interpolant::interpolate_p1(double& interpolation_error)
+  void Interpolant::interpolate_p1()
   {
-    ASSERT(check_all(), "Parameters check did not pass. Probably some of the parameters were not set.");
     create_nodes();
     p1_vec.resize(n_nodes-1);    //linear coeficients
     p1d_vec.resize(n_nodes-1);    //linear coeficients
     
-    for(unsigned int i = 0; i < n_nodes; i++)
+    for(unsigned int i = 0; i < p1_vec.size(); i++)
     {
       p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
       p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / (x_vec[i+1] - x_vec[i]);
@@ -141,24 +249,36 @@ void Interpolant::create_nodes()
     val_ = &Interpolant::val_p1;      //pointer to the evalutation function
     diff_ = &Interpolant::diff_p1;    //pointer to the evalutation function
     
-    /*
+    Functor<double>* norm = new NormW21(this);
+    compute_error(norm);
+    delete norm;
+  
     //Writes the interpolation table.
-    for(unsigned int i=0; i<x_vec.size(); i++)
+    /*
+    for(unsigned int i=0; i < p1_vec.size(); i++)
     {
-      std::cout << "x: " << x_vec[i] << "\tf: " << f_vec[i] << "\tp1: " << p1_vec[i] << std::endl;
+      std::cout << "x: " << x_vec[i] << "\tf: " << f_vec[i] << "\tp1: " << p1_vec[i] << "\tdf: " << df_vec[i] << "\tp1d: " << p1d_vec[i] << std::endl;
     }
     //*/
   }
   
-  double Interpolant::compute_error()
-  {
-    double tot_err = 0; // absolute error on <a,b>
-    /*
-  ErrorNum p_err;       // absolute/relative polynomial error on its interval
-      
-  p_err.i = 0;
-  p_err.err = 0;
-        
+void Interpolant::compute_error(Functor<double>* norm)
+{
+  double tot_err = 0; // total absolute error on <a,b>
+  double p_err = 0;   // absolute error on x[i]-x[i+1]
+  
+  for(unsigned long i = 0; i < p1_vec.size(); i++ )
+  { 
+    p_err = std::sqrt(AdaptiveSimpson::AdaptSimpson(*norm,
+                                                    x_vec[i], 
+                                                    x_vec[i+1],
+                                                    SIMPSON_TOLERANCE) );
+    //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
+    tot_err += p_err;
+  }  
+  tot_err /= (bound_b - bound_a);
+    
+  /* PRIORITY QUEUE FOR ADAPTIVE INTERVAL DIVIDING
   for(unsigned long i = 0; i < g->get_count(); i++ )
   {
     LP_Norm norm(f,g->get_polynomial(i),2);
@@ -185,14 +305,14 @@ void Interpolant::create_nodes()
     pq.push(p_err); //puts in priority queue
   }
   
-  /* writes relative and absolute total error
-  std::cout << "\trelative err = "
-    << tot_err/(g->GetA()-g->GetB()) 
-    << "\tabsolute err = " << tot_err << std::endl;
+  // writes relative and absolute total error
+  //std::cout << "\trelative err = "
+  //  << tot_err/(g->GetA()-g->GetB()) 
+  //  << "\tabsolute err = " << tot_err << std::endl;
   //*/
   
-    return tot_err;       //returns absolute total error
-  }
+  error_ = tot_err;       //returns total relative error
+}
 
   
   
@@ -214,7 +334,7 @@ void InterpolantImplicit::fix_variable(InterpolantImplicit::fix_var fix, const d
 {
   fix_ = fix;
   fix_val = val;
-  func_u = new FuncExplicit<double>(*func,fix_,fix_val);
+  func_u = new InterpolantImplicit::FuncExplicit<double>(*func,fix_,fix_val);
 }
 
 double InterpolantImplicit::f_val(const double& u)
@@ -223,7 +343,7 @@ double InterpolantImplicit::f_val(const double& u)
 }
 
 
-void InterpolantImplicit::interpolate_p0(double& interpolation_error)
+void InterpolantImplicit::interpolate_p0()
 {
   if(func_u != NULL) 
     delete func_u;

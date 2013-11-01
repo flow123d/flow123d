@@ -1,6 +1,9 @@
 
 #include "functors.hh"
 
+#define SIMPSON_TOLERANCE 1e-10
+#define MAX_SIZE 1000
+
 ///class Interpolant
 /** Class can be templated by the functor (object with implemented operator ()), 
  * or there can still FuntorValueBase(), abstract class with virtual operator()
@@ -11,6 +14,9 @@
 class InterpolantBase
 {
 public:
+  typedef enum { constant, linear, functor 
+  } ExtrapolationType;
+  
   ///@name Construction.
   //@{
   ///constructor
@@ -21,15 +27,24 @@ public:
  
   ///@name Interpolation.
   //@{
+  ///Returns error of the interpolation.
+  ///It is equal to the chosen norm of the difference divided by the lenght of interval.
+  ///Returns -1.0 if the interpolation has not been computed yet.
+  double error();
+  
   ///Sets the interpolation interval.
-  void set_interval(const double&a, const double& b);
+  void set_interval(const double&bound_a, const double& bound_b);
   
   void set_size(const unsigned int& size);
-  double set_size_automatic(const double& tol,const unsigned int& max_size=0);
+  void set_size_automatic(const double& user_tol,const unsigned int& init_size, const unsigned int& max_size=MAX_SIZE);
+  
+  void set_extrapolation(ExtrapolationType extrapolation);
+  
+  ///Creates piecewise interpolation with polynomials of selected degree.
+  virtual int interpolate(unsigned int degree) = 0;
   //@}
     
 protected:
-  
   ///@name Interpolation.
   //@{
   double bound_a,       ///<< Left interval boundary.
@@ -37,7 +52,16 @@ protected:
          step;          ///<< Chosen interpolation step.
          
   unsigned int size,    ///<< Number of dividing intervals.
-               n_nodes; ///<< Number of nodes in the interval \[(a,b)\].
+               n_nodes, ///<< Number of nodes in the interval \[(a,b)\].
+               degree;
+               
+  double user_tol;
+  unsigned int max_size;
+  bool automatic_step;
+  
+  double error_;        ///<< Error of the interpolation. (Norm of difference divided by the lenght of interval.)
+  
+  ExtrapolationType extrapolation;
   //@}
   
   ///@name Check.
@@ -57,7 +81,13 @@ protected:
   ///Parameters setting check.
   unsigned int interval_miss_a,
                interval_miss_b,
-               interval_hits;         
+               total_calls;   
+               
+  double max_a,
+         max_b;
+         
+  void reset_stat();
+  void check_and_reinterpolate();
   //@}
   
   ///Factorial (used in Taylor row expansion in n-th derivate computation @p diffn)
@@ -130,15 +160,15 @@ public:
 
   ///@name Interpolation.
   //@{
-  ///Creates piecewise constant interpolation.
-  void interpolate_p0(double& interpolation_error);
-  
-  ///Creates piecewise linear interpolation.
-  void interpolate_p1(double& interpolation_error);
+  ///Creates piecewise interpolation with polynomials of selected degree.
+  virtual int interpolate(unsigned int degree);
   //@}
     
     
 protected:
+  class NormL2;
+  class NormW21;
+  
   Functor<double>* func;
   Functor<B<double> >* func_diff;
   Functor<T<double> >* func_diffn;
@@ -151,9 +181,14 @@ protected:
   std::vector<double> p1_vec;   ///<< Vector of linear coeficients of P1 interpolation.
   std::vector<double> p1d_vec;  ///<< Vector of linear coeficients of P1 interpolation.
   
-  void create_nodes();
-  double compute_error();
+  ///Creates piecewise constant interpolation.
+  void interpolate_p0();
+  ///Creates piecewise linear interpolation.
+  void interpolate_p1();
   
+  void compute_error(Functor<double>* norm);
+  
+  void create_nodes();
   unsigned int find_interval(const double& i_x);
   double (Interpolant::*val_)(const double&);
   der (Interpolant::*diff_)(const double&);
@@ -245,48 +280,22 @@ public:
 
   ///@name Interpolation.
   //@{
+  
+  ///Creates piecewise interpolation with polynomials of selected degree.
+  int interpolate(unsigned int degree) {return 5;}
+  
   ///Creates piecewise constant interpolation.
-  void interpolate_p0(double& interpolation_error);
+  void interpolate_p0();
   
   ///Creates piecewise linear interpolation.
-  void interpolate_p1(double& interpolation_error);
+  void interpolate_p1();
   //@}
     
     
 protected:
   
-  ///class FuncExplicit.
-  /** This functor transforms implicit functor with two variables into
-   * an explicit functor with only one varible and the other one fixed.
-   */
   template<class Type=double>
-  class FuncExplicit : public Functor<Type>
-  {
-  public:
-    ///Constructor.
-    FuncExplicit(){}
-  
-    //probably not using
-    template<class TType>
-    FuncExplicit(Functor<TType>& func) : Functor<Type>(func){};
-    
-    //constructor from templated implicit functor
-    template<class TType>
-    FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
-      : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
-  
-    virtual Type operator()(const Type& u)
-    {
-      if(fix_=InterpolantImplicit::fix_x)
-        return func_impl->operator()(fix_val,u);
-      if(fix_=InterpolantImplicit::fix_y)
-        return func_impl->operator()(u,fix_val);
-    }
-  private:
-    FunctorImplicit<Type>* func_impl;
-    fix_var fix_;
-    double fix_val;
-  };
+  class FuncExplicit;
   
   FuncExplicit<double>* func_u;
   FunctorImplicit<double>* func;
