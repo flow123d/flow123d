@@ -3,7 +3,7 @@
 
 #include "functors.hh"
 
-#define MAX_RECURSION 9e+6
+#define MAX_RECURSION 1e+7
 
 
 ///Static class implementing integration using Simpson's rule.

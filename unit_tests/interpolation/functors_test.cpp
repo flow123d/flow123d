@@ -12,10 +12,43 @@
 
 #define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
+//Example functor f(x)=x^2
+template<class Type=double>
+class Quadratic : public Functor<Type>
+{
+public:
+  ///Constructor.
+  Quadratic(){}
+  
+  template<class TType>
+  Quadratic(Functor<TType>& func) : Functor<Type>(func){};
+  
+  virtual Type operator()(const Type& x)
+  {
+    return x*x;
+  }    
+};
+
+//Example functor f(x)=x+2
+template<class Type=double>
+class Linear : public Functor<Type>
+{
+public:
+  ///Constructor.
+  Linear(){}
+  
+  template<class TType>
+  Linear(Functor<TType>& func) : Functor<Type>(func){};
+  
+  virtual Type operator()(const Type& x)
+  {
+    return x+2;
+  }    
+};
 
 //Example functor f(x)=x^3 + p1 
 template<class Type=double>
-class MyFunction_x3 : public Functor<Type>
+class Cubic : public Functor<Type>
 {
 public:
     
@@ -23,14 +56,14 @@ public:
   } Parameters;
 
   ///Constructor.
-  MyFunction_x3(){}
+  Cubic(){}
   
   template<class TType>
-  MyFunction_x3(Functor<TType>& func) : Functor<Type>(func){};
+  Cubic(Functor<TType>& func) : Functor<Type>(func){};
   
   virtual Type operator()(const Type& x)
   {
-    return x*x*x + this->param(MyFunction_x3<>::p1);
+    return x*x*x + this->param(Cubic<>::p1);
   }    
 };
 
@@ -61,23 +94,23 @@ public:
  */
 TEST (Functors, functors)
 {
-  MyFunction_x3<double> my_func;                //x^3
-  MyFunction_x3<> my_func2;                     //x^3+2 (parameter p1=2.0)
+  Cubic<double> my_func;                //x^3
+  Cubic<> my_func2;                     //x^3+2 (parameter p1=2.0)
   
-  my_func.set_param(MyFunction_x3<double>::p1,0.0);
-  my_func2.set_param(MyFunction_x3<double>::p1,2.0);
-  my_func.set_param(MyFunction_x3<>::p2,2.0);
-  my_func.set_param(MyFunction_x3<>::p3,3.0);
+  my_func.set_param(Cubic<double>::p1,0.0);
+  my_func2.set_param(Cubic<double>::p1,2.0);
+  my_func.set_param(Cubic<>::p2,2.0);
+  my_func.set_param(Cubic<>::p3,3.0);
   
   Interpolant* interpolant = new Interpolant();
-  interpolant->set_functor<MyFunction_x3, double>(&my_func);
+  interpolant->set_functor<Cubic, double>(&my_func);
   
   Interpolant* interpolant2 = new Interpolant();
-  interpolant2->set_functor<MyFunction_x3>(&my_func2);
+  interpolant2->set_functor<Cubic>(&my_func2);
   
   //params
   EQUAL(my_func.param(2), 3.0);
-  EQUAL(my_func.param(MyFunction_x3<>::p2), 2.0);
+  EQUAL(my_func.param(Cubic<>::p2), 2.0);
   
   //2^3 = 8, dfdx: 3x^2, 3*2^2=12
   EQUAL(my_func(2), 8);
@@ -89,8 +122,10 @@ TEST (Functors, functors)
   
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
-  double error;
-  interpolant->interpolate_p1(error);
+  
+  interpolant->interpolate(1);
+  
+  DBGMSG("Error of interpolation: %f\n", interpolant->error());
   
   EQUAL(interpolant->val(-7), -343);
   EQUAL(interpolant->val(-5), -125);
@@ -128,5 +163,55 @@ TEST (Functors, implicit_functors)
 }
 
 
+
+
+TEST (Functors, interpolation_error)
+{
+  //note: when computing integral of the difference don't forget
+  //that the variable is moved: x'=(x-x[i])
+  
+  Linear<double> lin_func;                //x+2
+  Quadratic<double> quad_func;            //x^2
+  Cubic<double> cubic_func;               //x^3
+  Interpolant* interpolant = new Interpolant();
+  interpolant->set_interval(0,10);
+  interpolant->set_size(2);
+  
+  
+  interpolant->set_functor<Linear, double>(&lin_func);
+  interpolant->interpolate(1);
+  //linear function is interpolated by linear aproximation accurately
+  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  EQUAL(interpolant->error(), 0);
+  
+  
+  interpolant->set_functor<Quadratic, double>(&quad_func);
+  interpolant->interpolate(1);
+  //http://www.numberempire.com/definiteintegralcalculator.php
+  // \int_0^5 (x^2-5*x)^2+(2*x-2*x)^2 = 104.1666666666666
+  // sqrt = 10,206207262
+  // \int_5^10 (x^2-15*(x-5)-25)^2+(2*x-2*(x-5)-10)^2 = 104.1666666666666
+  // sqrt = 10,206207262
+  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  EQUAL(interpolant->error(), 2.041241452319315197172500120359472930431365966796875);
+  
+  
+  cubic_func.set_param(Cubic<double>::p1,0.0);
+  interpolant->set_functor<Cubic, double>(&cubic_func);
+  interpolant->interpolate(1);
+  //http://www.numberempire.com/definiteintegralcalculator.php
+  // \int_0^5 (x^3-25*x)^2+(3*x^2-15*x)^2 = 6889.880952380952
+  // sqrt = 83,005306772
+  // \int_5^10 (x^3-175*(x-5)-125)^2+(3*x^2-45*(x-5)-75)^2 = 53764.88095238095
+  // sqrt = 231,872553254
+  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  EQUAL(interpolant->error(), 31.48778600260849458436496206559240818023681640625);
+  
+  interpolant->set_size_automatic(5e-3,5);
+  interpolant->interpolate(1);
+  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  
+  delete interpolant;
+}
 
 

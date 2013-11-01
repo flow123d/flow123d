@@ -46,7 +46,7 @@ double AdaptiveSimpson::AdaptSimpson( Functor<double> &func,
 				      const double& a, const double& b, 
 				      const double& tol )
 {
-  DBGMSG("AdaptiveSimpson: a(%f) b(%f)\n",a,b);
+  //DBGMSG("AdaptiveSimpson: a(%f) b(%f)\n",a,b);
   double c = 0.5*(b+a);
   double fa,fb,fc;
   double sx,res;
@@ -54,10 +54,10 @@ double AdaptiveSimpson::AdaptSimpson( Functor<double> &func,
   fb = func(b);
   fc = func(c);
   long recursion = 0;
-  DBGMSG("fa=%f \tfb=%f \tfc=%f\n",fa,fb,fc);
+  //DBGMSG("fa=%f \tfb=%f \tfc=%f\n",fa,fb,fc);
   sx = Simpson(b-a, fa, fc, fb);
   res = SimpsonAd(func,b-a,a,c,b,fa,fc,fb,sx,tol,recursion);
-  DBGMSG("\trecursions: %f\n",recursion);
+  //DBGMSG("\trecursions: %f\n",recursion);
   return res;
 }
 
