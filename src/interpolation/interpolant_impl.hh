@@ -1,6 +1,8 @@
 #include "interpolant.hh"
 #include "system/xio.h"
 
+#include <cmath>
+
 /********************************** Interpolant ********************************/  
 
 template<template<class> class Func, class Type >
