@@ -205,6 +205,10 @@ public:
      */
     bool compute_projection(double &c_aqua, double &c_sorbed);
     /**
+    * Decides between interpolation, precipitation and iterative solution using toms748_solve
+    */
+    bool compute_reaction(double &c_aqua, double &c_sorbed);
+    /**
     *  Returns sorption type
     */
     SorptionType get_sorption_type(void);

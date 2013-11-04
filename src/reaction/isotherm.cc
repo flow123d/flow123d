@@ -148,6 +148,32 @@ ConcPair Isotherm::solve_conc(ConcPair conc)
 	return conc;
 }
 
+bool Isotherm::compute_reaction(double &c_aqua, double &c_sorbed)
+{
+	if(this->is_precomputed())
+	{
+		//START_TIMER("new-sorption interpolation");
+		compute_projection(c_aqua, c_sorbed);
+		//END_TIMER("new-sorption interpolation");
+	}else{
+		ConcPair conc(c_aqua, c_sorbed);
+		if(limited_solubility_on_ && (c_aqua > table_limit_))
+		{
+			//START_TIMER("new-sorption, var params, lim solub");
+			precipitate(c_aqua, c_sorbed);
+			//END_TIMER("new-sorption, var params, lim solub");
+		}else{
+			//START_TIMER("new-sorption toms748_solve");
+	    	conc = solve_conc(conc);
+			//END_TIMER("new-sorption toms748_solve");
+		}
+	    c_aqua = conc.first;
+	    c_sorbed = conc.second;
+	}
+
+	return true;
+}
+
 void Isotherm::make_table(int nr_of_points)
 {
 	xprintf(Msg,"adsorption_type %d\n",adsorption_type_);
