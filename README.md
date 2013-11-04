@@ -259,4 +259,5 @@ Try this every if your build doesn't work and you don't know why.
 --------------------------------------------------------------------------------
 
 For further information about program usage see documentation in "doc/" in
-particular reference manual "doc/flow_doc". 
+particular reference manual "doc/flow_doc".
+
