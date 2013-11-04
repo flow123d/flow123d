@@ -177,16 +177,16 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
 	if (sorptions_it){
-        convection->get_par_info(el_4_loc, el_distribution);
         // Part for mobile zone description follows.
 	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
+        convection->get_par_info(el_4_loc, el_distribution);
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
 	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
 	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
 	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
 	    sorptions->prepare_inputs(*sorptions_it, MOBILE);
-	    xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
+	    //xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
 	    double ***conc_matrix = convection->get_concentration_matrix();
 	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 	    sorptions->set_sorb_conc_array(el_distribution->lsize());
