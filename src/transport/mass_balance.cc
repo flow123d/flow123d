@@ -200,15 +200,18 @@ void MassBalance::calculate(double time) {
 
 
 	// sum sources and fluxes according to the time integration scheme
+	// TODO: Think if we really need TimeIntegrationScheme or the cummulative
+	// quantities can be calculated in the same way for both explicit and implicit
+	// methods.
 	switch (equation_->time_scheme())
 	{
 	case EquationForMassBalance::explicit_euler:
-		for (int i=0; i<n_subst; i++)
-		{
-			integrated_sources[i] += last_sources[i]*(time-last_time);
-			integrated_fluxes[i] += last_fluxes[i]*(time-last_time);
-		}
-		break;
+//		for (int i=0; i<n_subst; i++)
+//		{
+//			integrated_sources[i] += last_sources[i]*(time-last_time);
+//			integrated_fluxes[i] += last_fluxes[i]*(time-last_time);
+//		}
+//		break;
 	case EquationForMassBalance::implicit_euler:
 		for (int i=0; i<n_subst; i++)
 		{
