@@ -1254,6 +1254,10 @@ int ConvectionTransport::get_n_substances() {
 void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
     double mass_flux[n_substances()];
+    double *pconc[n_substances()];
+
+    for (int sbi=0; sbi<n_substances(); sbi++)
+    	VecGetArray(vpconc[sbi], &pconc[sbi]);
 
     FOR_BOUNDARIES(mesh_, bcd) {
 
@@ -1263,8 +1267,14 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         int loc_index = index-el_ds->begin();
 
         double water_flux = mh_dh->side_flux(*(bcd->side()));
-        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-            mass_flux[sbi] = water_flux*conc[MOBILE][sbi][loc_index];
+        if (water_flux < 0) {
+        	arma::vec bc_conc = data_.bc_conc.value( bcd->element()->centre(), bcd->element_accessor() );
+        	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        		mass_flux[sbi] = water_flux*bc_conc[sbi];
+        } else {
+        	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        		mass_flux[sbi] = water_flux*pconc[sbi][loc_index];
+        }
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
@@ -1290,23 +1300,22 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 
         FOR_ELEMENTS(mesh_,elem)
         {
+        	int index = row_4_el[elem.index()];
+        	if (!el_ds->is_local(index)) continue;
         	ElementAccessor<3> ele_acc = elem->element_accessor();
         	double por_m = data_.por_m.value(elem->centre(), ele_acc);
         	double csection = data_.cross_section->value(elem->centre(), ele_acc);
-            int index = row_4_el[elem.index()];
-            if (el_ds->is_local(index))
-            {
-            	int loc_index = index - el_ds->begin();
-            	double sum_sol_phases = 0;
-            	for (int ph=0; ph<MAX_PHASES; ph++)
-            	{
-            		if ((sub_problem & ph) == ph)
-            			sum_sol_phases += conc[ph][sbi][loc_index];
-            	}
+        	int loc_index = index - el_ds->begin();
+			double sum_sol_phases = 0;
 
-                mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*sum_sol_phases*elem->measure();
-                src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
-            }
+			for (int ph=0; ph<MAX_PHASES; ph++)
+			{
+				if ((sub_problem & ph) == ph)
+					sum_sol_phases += conc[ph][sbi][loc_index];
+			}
+
+			mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*sum_sol_phases*elem->measure();
+			src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
         }
     }
 }

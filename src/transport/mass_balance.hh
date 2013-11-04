@@ -10,6 +10,9 @@
 class EquationForMassBalance {
 public:
 
+	// TODO: Think if we really need TimeIntegrationScheme.
+	// Currently the cummulative quantities are calculated by the method calculate()
+	// in the same way for both explicit and implicit methods.
     enum TimeIntegrationScheme {
     	none,
     	explicit_euler,

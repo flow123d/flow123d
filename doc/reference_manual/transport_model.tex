@@ -138,12 +138,10 @@ The advection-dispersion equation satisfies the balance of mass in the following
 $$ m^i(0) + \int_0^t s^i(\tau) \,d\tau - \int_0^t f^i(\tau) \,d\tau = m^i(t) $$
 for any instant $t$ in the computational time interval and any substance $i$.
 Here
-$$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}\delta_d\th c^i(t,\vc x)\,d\vc x $$
-is the mass \units{1}{}{},
-$$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S(t,\vc x)\,d\vc x $$
-is the volume source \units{1}{}{-1} and
+$$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}\delta_d\th c^i(t,\vc x)\,d\vc x, $$
+$$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S(t,\vc x)\,d\vc x, $$
 $$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\th\delta_d c^i(t,\vc x)\vc q(t,\vc x)\tn I - \th\delta_d\D^i\nabla c^i(t,\vc x)\right)\cdot\vc n \,d\vc x $$
-is the mass flux \units{1}{}{-1} of $i$-th substance at time $t$.
+is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \units{1}{}{-1} of $i$-th substance at time $t$, respectively.
 The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
 
 

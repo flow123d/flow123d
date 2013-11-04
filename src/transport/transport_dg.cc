@@ -1512,13 +1512,13 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 	vector<double> por_m(qsize), csection(qsize);
 	vector<arma::vec3> side_velocity(qsize);
 	double conc, mass_flux, water_flux;
-	arma::vec3 c_grad;
-    std::vector<arma::vec> Dm, alphaL, alphaT;
+    std::vector<arma::vec> bc_values;
 	arma::mat33 D;
 
-	Dm.resize(qsize);
-	alphaL.resize(qsize);
-	alphaT.resize(qsize);
+	bc_values.resize(qsize);
+
+    for (int i=0; i<qsize; i++)
+    	bc_values[i].resize(n_subst_);
 
     for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
@@ -1531,6 +1531,9 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
     	SideIter side = edg->side(0);
     	DOFHandlerMultiDim::CellIterator cell = side->element();
         ElementAccessor<3> ele_acc = cell->element_accessor();
+        Region r = side->cond()->element_accessor().region();
+        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
+        unsigned int bc_region_idx = r.boundary_idx();
 
 		water_flux = mh_dh->side_flux(*side)/side->measure();
 
@@ -1541,32 +1544,26 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 		calculate_velocity(cell, side_velocity, fsv_rt);
 		data.por_m.value_list(fe_values.point_list(), ele_acc, por_m);
 		data.cross_section->value_list(fe_values.point_list(), ele_acc, csection);
-		data.diff_m.value_list(fe_values.point_list(), ele_acc, Dm);
-		data.disp_l.value_list(fe_values.point_list(), ele_acc, alphaL);
-		data.disp_t.value_list(fe_values.point_list(), ele_acc, alphaT);
+		data.bc_conc.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			mass_flux = 0;
 
 			for (unsigned int k=0; k<qsize; k++)
 			{
-				calculate_dispersivity_tensor(D, side_velocity[k], Dm[k][sbi], alphaL[k][sbi], alphaT[k][sbi], por_m[k], csection[k]);
 				conc = 0;
-				c_grad.zeros();
 				for (unsigned int i=0; i<ndofs; i++)
 				{
 					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
-					c_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
 				}
+				// the penalty term has to be added otherwise the mass balance will not hold
+				if (mh_dh->side_flux(*side) < -mh_dh->precision())
+					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*fe_values.JxW(k);
 
-				mass_flux += (-csection[k]*por_m[k]*dot(D*c_grad,fe_values.normal_vector(0)) + water_flux*conc)*fe_values.JxW(k);
+				mass_flux += water_flux*conc*fe_values.JxW(k);
 			}
 
-			Region r = side->cond()->element_accessor().region();
-			if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
-			unsigned int bc_region_idx = r.boundary_idx();
 			bcd_balance[sbi][bc_region_idx] += mass_flux;
-
 			if (mass_flux > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
 			else bcd_minus_balance[sbi][bc_region_idx] += mass_flux;
 		}
