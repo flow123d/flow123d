@@ -8,7 +8,7 @@ set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
 set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/thisrd_party/gtest-1.6.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.6.0")
 include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
@@ -112,25 +112,26 @@ macro(define_mpi_test class_name n_proc)
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
 endmacro()
 
-##############################
-# test subdirs
-add_subdirectory("input")
-add_subdirectory("interpolation")
-add_subdirectory("la")
-add_subdirectory("system")
-add_subdirectory("fields")
-add_subdirectory("quadrature")
-add_subdirectory("mesh")
-add_subdirectory("coupling")
+
+######################################################################################################
+# Macro to add a subdirectory and create sym link to the generated Makefile
+#
+macro(add_test_directory dir)
+    add_subdirectory("${dir}")
+    make_link_in_source("unit_tests/${dir}/Makefile")
+endmacro()
 
 
+#######################################################################################################
+# add subdirectories
+# - has to be done manually to get correct dependencies on CMake's list files.
 
-#add_executable(ioNameHandlerTest system/io_name_handler.cc)
-#set_target_properties(ioNameHandlerTest PROPERTIES
-#     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/unit_tests/bin
-#  )
-#  target_link_libraries(ioNameHandlerTest ${PETSC_LIBRARIES} ${PARMETIS_LIBRARIES} ${GTEST_LIBRARIES} Flow123d)
 
-#add_test(NAME io_name_handler 
-#    COMMAND ioNameHandlerTest -o /output -i input)
-
+add_test_directory("input")
+add_test_directory("interpolation")
+add_test_directory("la")
+add_test_directory("system")
+add_test_directory("fields")
+add_test_directory("quadrature")
+add_test_directory("mesh")
+add_test_directory("coupling")

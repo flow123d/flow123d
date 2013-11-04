@@ -24,25 +24,20 @@
 # Build itself takes place in ../<branch>-build
 #
 
+# default root of builds
+BUILD_SPACE="$(shell pwd)/.."
+
 BRANCH_NAME=$(shell git rev-parse --abbrev-ref HEAD)
-BUILD_DIR="$(shell pwd)/../build-$(BRANCH_NAME)"
+BUILD_DIR="$(BUILD_SPACE)/build-$(BRANCH_NAME)"
 SOURCE_DIR="$(shell pwd)"
 
-FLOW_BIN=flow123d
-MPIEXEC_BIN=mpiexec
 
 ifndef N_JOBS
   N_JOBS=2
 endif  
 
 
-all:  build_all 
-
-flow123d:  build_flow123d 
-
-
-build_all: build_flow123d
-
+all:  build_flow123d 
 
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
@@ -52,40 +47,21 @@ build_all: build_flow123d
 # 4 		31s	27s
 # 8 		30s
 build_flow123d: cmake
-	make -j $(N_JOBS) -C $(BUILD_DIR) flow123d
+	make -j $(N_JOBS) -C $(BUILD_DIR) bin/flow123d
 
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
-cmake: $(BUILD_DIR)/CMakeCache.txt  create_source_links
-
-
-# run first cmake
-$(BUILD_DIR)/CMakeCache.txt:
+cmake:  
 	if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
 	cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
-# This target builds links in directory test_units and its subdirectories 
-# to generated makefiles in the build directory. 
-# This way we can run tests from the source tree and do not have problems with deleted
-# current directory in shell if we are forced to use make clean-all.
-create_source_links:
-	for f in  `find unit_tests/ -name CMakeLists.txt`; do ln -sf "$(BUILD_DIR)/$${f%/*}/Makefile" "$${f%/*}/makefile";done
-	ln -sf "$(BUILD_DIR)/bin/tests/Makefile" "$(SOURCE_DIR)/bin/tests/makefile"
-	ln -sf "$(BUILD_DIR)/$(FLOW_BIN)" "$(SOURCE_DIR)/bin"
-	ln -sf "$(BUILD_DIR)/$(MPIEXEC_BIN)" "$(SOURCE_DIR)/bin"
 
-
-# install all binaries from build tree to './bin' dir
-#install: 
-#	if [ -e  "build/$(FLOW_BIN)" ]; then rm -f bin/$(FLOW_BIN); cp "build/$(FLOW_BIN)" bin; fi
-#	if [ -e  "build/$(MPIEXEC_BIN)" ]; then rm -f bin/$(MPIEXEC_BIN); cp "build/$(MPIEXEC_BIN)" bin; chmod a+x bin/mpiexec; fi
-
-
-
+# Save config.cmake from working dir to the build dir.
 save_config:
 	cp -f $(SOURCE_DIR)/config.cmake $(BUILD_DIR)
 	
+# Restore config.cmake from build dir, possibly overwrite the current one.	
 load_config:
 	cp -f $(BUILD_DIR)/config.cmake $(SOURCE_DIR)
 
@@ -94,18 +70,11 @@ load_config:
 clean: cmake
 	make -C $(BUILD_DIR) clean
 
-# try to remove all
+# Remove all  build files. (not including test results)
 clean-all: 
-	rm -f bin/${FLOW_BIN}
-	rm -f bin/${MPIEXEC_BIN}
+	make -C $(BUILD_DIR) clean-links	# ignor errors
 	rm -rf $(BUILD_DIR)
-	for f in  `find test_units/ -name makefile`; do rm -f "$${f}";done
-	make -C third_party clean
 
-# remove everything that is not under version control 
-# BE EXTREMELY CAREFUL using this
-clean_all_svn:
-	bin/svnclean.sh
 
 # Make all tests	
 testall:
@@ -115,12 +84,20 @@ testall:
 %.tst :
 	make -C tests $*.tst
 
+# Clean test results
+clean_tests:
+	make -C tests clean
+
+
 # Create doxygen documentation
 online-doc:
 	make -C doc/doxy doc
 
+# Generate user manual using Latex sources and input reference generted by Flow123d binary.  
+gen_doc: $(DOC_DIR)/input_reference.tex
 
-# create input file reference for manual
+############################################################################################
+# manual directory
 DOC_DIR=doc/reference_manual
 
 # creates the file that defins additional information 
@@ -151,12 +128,9 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 $(DOC_DIR)/input_reference.tex: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
 	
-gen_doc: $(DOC_DIR)/input_reference.tex
 		
-
-clean_tests:
-	make -C tests clean
-
+################################################################################################
+# release packages
 
 lbuild=linux_build
 linux_package: #clean clean_tests all

@@ -43,6 +43,7 @@
 #include <fstream>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/options_description.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -332,7 +333,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         }
     }
 
-    stringstream(program_arguments_desc_) << desc;
+    ostringstream tmp_stream(program_arguments_desc_);
+    tmp_stream << desc;
     // TODO: catch specific exceptions and output usage messages
 }
 
