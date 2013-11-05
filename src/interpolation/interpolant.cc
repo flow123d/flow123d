@@ -7,8 +7,7 @@
 
 /********************************** InterpolantBase ******************************/
 InterpolantBase::InterpolantBase()
-  : degree(0),
-    max_size(MAX_SIZE),
+  : max_size(MAX_SIZE),
     automatic_step(false),
     error_(-1.0),
     extrapolation(InterpolantBase::functor),
@@ -71,14 +70,13 @@ void InterpolantBase::reset_stat()
 
 void InterpolantBase::check_and_reinterpolate()
 {
-  double percetange = 0.3;      //percentage of misses that is allowed
   bool reinterpolate = false;   //should we remake interpolation?
-  if(interval_miss_a/total_calls > percetange)
+  if(interval_miss_a/total_calls > MISS_PERCENTAGE)
   {
     bound_a = max_a;
     reinterpolate = true;
   }
-  if(interval_miss_b/total_calls > percetange)
+  if(interval_miss_b/total_calls > MISS_PERCENTAGE)
   {
     bound_b = max_b;
     reinterpolate = true;
@@ -86,7 +84,7 @@ void InterpolantBase::check_and_reinterpolate()
   
   if(reinterpolate)
   {
-    interpolate(degree);
+    interpolate();
     reset_stat();
   }
 }
@@ -175,13 +173,14 @@ void Interpolant::create_nodes()
   //DBGMSG("number_of_nodes = %d\n", n_nodes);
 }
 
-int Interpolant::interpolate(unsigned int degree)
-{
-  this->degree = degree;        
+int Interpolant::interpolate()
+{   
   ASSERT(check_all(), "Parameters check did not pass. Some of the parameters were not set.");  
   unsigned int result;
   
-  //selecting interpolation
+  //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
+  //selecting the interpolation 
+  /*
   void (Interpolant::*interpolate_func)(void);
   switch(degree)
   {
@@ -189,6 +188,7 @@ int Interpolant::interpolate(unsigned int degree)
     case 1: interpolate_func = &Interpolant::interpolate_p1; break; 
     default: ASSERT(degree > 1, "Higher order interpolation is not available at the moment.");
   }
+  */
   
   if(automatic_step)
   {
@@ -196,7 +196,8 @@ int Interpolant::interpolate(unsigned int degree)
     unsigned int k=0;
     while(x_vec.size()-1 < max_size/2) 
     {
-      (this->*interpolate_func)();
+      //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
+      interpolate_p1();
       if(user_tol < error_)
       {
         size *= 2;              //double the size (i.e. halve the step)
@@ -217,23 +218,25 @@ int Interpolant::interpolate(unsigned int degree)
   }
   else 
   {
-    (this->*interpolate_func)();
+    //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
+    interpolate_p1();
     result = 0;   //interpolation OK
   }
   return result;
 }
 
+/*
+  // CONSTANT INTERPOLATION
   void Interpolant::interpolate_p0()
   { 
     create_nodes();
-    val_ = &Interpolant::val_p0;      //pointer to the evalutation function
-    diff_ = &Interpolant::diff_p0;      //pointer to the evalutation function
     
     Functor<double>* norm = new NormW21(this);
     compute_error(norm);      //sets error_
     delete norm;
   }
-  
+*/
+
   void Interpolant::interpolate_p1()
   {
     create_nodes();
@@ -245,9 +248,6 @@ int Interpolant::interpolate(unsigned int degree)
       p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
       p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / (x_vec[i+1] - x_vec[i]);
     }
-    
-    val_ = &Interpolant::val_p1;      //pointer to the evalutation function
-    diff_ = &Interpolant::diff_p1;    //pointer to the evalutation function
     
     Functor<double>* norm = new NormW21(this);
     compute_error(norm);

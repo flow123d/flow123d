@@ -123,7 +123,7 @@ TEST (Functors, functors)
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
   
-  interpolant->interpolate(1);
+  interpolant->interpolate();
   
   DBGMSG("Error of interpolation: %f\n", interpolant->error());
   
@@ -179,14 +179,14 @@ TEST (Functors, interpolation_error)
   
   
   interpolant->set_functor<Linear, double>(&lin_func);
-  interpolant->interpolate(1);
+  interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
   //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
   EQUAL(interpolant->error(), 0);
   
   
   interpolant->set_functor<Quadratic, double>(&quad_func);
-  interpolant->interpolate(1);
+  interpolant->interpolate();
   //http://www.numberempire.com/definiteintegralcalculator.php
   // \int_0^5 (x^2-5*x)^2+(2*x-2*x)^2 = 104.1666666666666
   // sqrt = 10,206207262
@@ -198,7 +198,7 @@ TEST (Functors, interpolation_error)
   
   cubic_func.set_param(Cubic<double>::p1,0.0);
   interpolant->set_functor<Cubic, double>(&cubic_func);
-  interpolant->interpolate(1);
+  interpolant->interpolate();
   //http://www.numberempire.com/definiteintegralcalculator.php
   // \int_0^5 (x^3-25*x)^2+(3*x^2-15*x)^2 = 6889.880952380952
   // sqrt = 83,005306772
@@ -208,7 +208,7 @@ TEST (Functors, interpolation_error)
   EQUAL(interpolant->error(), 31.48778600260849458436496206559240818023681640625);
   
   interpolant->set_size_automatic(5e-3,5);
-  interpolant->interpolate(1);
+  interpolant->interpolate();
   //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
   
   delete interpolant;

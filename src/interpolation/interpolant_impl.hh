@@ -26,40 +26,49 @@ void Interpolant::set_functor(Functor<double>* func)
 
 inline double Interpolant::val(const double& i_x)
 {
+  //increase calls
   total_calls++;
-  if(i_x < bound_a)
+  //every STATISTIC_CHECK calls check the statistics
+  if(total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  
+  //return value
+  if(i_x < bound_a)     //left miss
   {
     interval_miss_a++;
     
     return f_val(i_x);
   }
-  if(i_x > bound_b)
+  if(i_x > bound_b)     //right miss
   {
     interval_miss_b++;
     return f_val(i_x);
   }
-  else
+  else                  //hit the interval
   {
-    return (this->*val_)(i_x);
+    return val_p1(i_x);
   }
 }
 
 inline der Interpolant::diff(const double& i_x)
 {
+  //increase calls
   total_calls++;
-  if(i_x < bound_a)
+  //every STATISTIC_CHECK calls check the statistics
+  if(total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  
+  if(i_x < bound_a)     //left miss
   {
     interval_miss_a++;
-   return f_diff(i_x);
+   return f_diff(i_x);  //right miss
   }
   if(i_x > bound_b)
   {
     interval_miss_b++;
     return f_diff(i_x);
   }
-  else
+  else                  //hit the interval
   {
-    return (this->*diff_)(i_x);
+    return diff_p1(i_x);
   }  
 }
   
@@ -68,7 +77,7 @@ inline double Interpolant::f_val(const double& i_x)
   return func->operator()(i_x);
 }
   
-inline  der Interpolant::f_diff ( const double& i_x )
+inline der Interpolant::f_diff ( const double& i_x )
 {
   B<double> x(i_x);   // Initialize arguments
   //Func func;        // Instantiate functor
@@ -87,6 +96,7 @@ inline unsigned int Interpolant::find_interval(const double& i_x)
   return floor((i_x - bound_a) / step);
 }
 
+/* //CONSTANT INTERPOLATION
 inline double Interpolant::val_p0(const double& i_x)
 {
   return f_vec[find_interval(i_x)];
@@ -100,6 +110,7 @@ inline der Interpolant::diff_p0(const double& i_x)
   result.dfdx = df_vec[i];
   return result;
 }
+*/
   
 inline double Interpolant::val_p1(const double& i_x)
 {
@@ -118,37 +129,38 @@ inline der Interpolant::diff_p1(const double& i_x)
 
 
 
-  class Interpolant::NormL2 : public Functor<double>
+class Interpolant::NormL2 : public Functor<double>
+{
+public:
+  NormL2(Interpolant* interpolant)
+  : interpolant(interpolant){}
+
+  virtual double operator()(const double& x)
   {
-  public:
-    NormL2(Interpolant* interpolant)
-    : interpolant(interpolant){}
-  
-    virtual double operator()(const double& x)
-    {
-      return std::pow(interpolant->f_val(x) - interpolant->val(x),2);
-    }         
-  
-  private:
-    Interpolant* interpolant;
-  };
-  
-  class Interpolant::NormW21 : public Functor<double>
+    return std::pow(interpolant->f_val(x) - interpolant->val(x),2);
+  }         
+ 
+private:
+  Interpolant* interpolant;
+};
+
+
+class Interpolant::NormW21 : public Functor<double>
+{
+public:
+  NormW21(Interpolant* interpolant)
+  : interpolant(interpolant){}
+ 
+  virtual double operator()(const double& x)
   {
-  public:
-    NormW21(Interpolant* interpolant)
-    : interpolant(interpolant){}
+    double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
+    double diff = std::pow(interpolant->f_diff(x).dfdx - interpolant->diff(x).dfdx,2);
+    return val+diff;
+  }         
   
-    virtual double operator()(const double& x)
-    {
-      double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
-      double diff = std::pow(interpolant->f_diff(x).dfdx - interpolant->diff(x).dfdx,2);
-      return val+diff;
-    }         
-  
-  private:
-    Interpolant* interpolant;
-  };
+private:
+  Interpolant* interpolant;
+};
 
 
 /********************************** InterpolantImplicit ********************************/    
