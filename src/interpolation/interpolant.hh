@@ -3,6 +3,8 @@
 
 #define SIMPSON_TOLERANCE 1e-10
 #define MAX_SIZE 1000
+#define MISS_PERCENTAGE 0.3      //percentage of interpolantion interval misses during evaluation that is allowed
+#define STATISTIC_CHECK 1000      //frequance of checking the evaluation statistics
 
 ///class Interpolant
 /** Class can be templated by the functor (object with implemented operator ()), 
@@ -41,7 +43,9 @@ public:
   void set_extrapolation(ExtrapolationType extrapolation);
   
   ///Creates piecewise interpolation with polynomials of selected degree.
-  virtual int interpolate(unsigned int degree) = 0;
+  /** @return 0 if interpolation created; 1 if the tolerance has not been satisfied (in case of automatic choice of size)
+   */
+  virtual int interpolate() = 0;
   //@}
     
 protected:
@@ -52,8 +56,7 @@ protected:
          step;          ///<< Chosen interpolation step.
          
   unsigned int size,    ///<< Number of dividing intervals.
-               n_nodes, ///<< Number of nodes in the interval \[(a,b)\].
-               degree;
+               n_nodes; ///<< Number of nodes in the interval \[(a,b)\].
                
   double user_tol;
   unsigned int max_size;
@@ -161,11 +164,13 @@ public:
   ///@name Interpolation.
   //@{
   ///Creates piecewise interpolation with polynomials of selected degree.
-  virtual int interpolate(unsigned int degree);
+  virtual int interpolate();
   //@}
     
     
 protected:
+  // Not actual norm.
+  // Returns only power of difference of functor and interpolant at point.
   class NormL2;
   class NormW21;
   
@@ -182,7 +187,7 @@ protected:
   std::vector<double> p1d_vec;  ///<< Vector of linear coeficients of P1 interpolation.
   
   ///Creates piecewise constant interpolation.
-  void interpolate_p0();
+  //void interpolate_p0();
   ///Creates piecewise linear interpolation.
   void interpolate_p1();
   
@@ -190,12 +195,13 @@ protected:
   
   void create_nodes();
   unsigned int find_interval(const double& i_x);
-  double (Interpolant::*val_)(const double&);
-  der (Interpolant::*diff_)(const double&);
-  double val_p0(const double& i_x);
   double val_p1(const double& i_x);
-  der diff_p0(const double& i_x);
   der diff_p1(const double& i_x);
+  
+  /* CONSTANT INTERPOLATION
+  double val_p0(const double& i_x);
+  der diff_p0(const double& i_x);
+  */
   //@}
 };
 
@@ -282,7 +288,7 @@ public:
   //@{
   
   ///Creates piecewise interpolation with polynomials of selected degree.
-  int interpolate(unsigned int degree) {return 5;}
+  virtual int interpolate() {return 5;}
   
   ///Creates piecewise constant interpolation.
   void interpolate_p0();
