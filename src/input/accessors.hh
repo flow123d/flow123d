@@ -181,10 +181,6 @@ protected:
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
-    /**
-     * Actual storage
-     */
-    //const StorageBase * actual_storage_;
 };
 
 /**
@@ -301,6 +297,11 @@ public:
      */
     const Address &get_address() const ;
 
+    /**
+     * Set address
+     */
+    void set_address(const Address &address);
+
 
 protected:
     /// Corresponding Type::Record object.
@@ -366,6 +367,11 @@ public:
      * Returns address
      */
     const Address &get_address() const;
+
+    /**
+     * Set address
+     */
+    void set_address(const Address &address);
 
 
 private:
@@ -462,6 +468,11 @@ public:
     * Returns address
     */
    const Address &get_address() const;
+
+   /**
+    * Set address
+    */
+   void set_address(const Address &address);
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
