@@ -197,6 +197,7 @@ private:
   
   //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
 	void compute_concentration_sources(unsigned int sbi);
+	void compute_concentration_sources_for_mass_balance(unsigned int sbi);
 
 	/**
 	 * Finish explicit transport matrix (time step scaling)

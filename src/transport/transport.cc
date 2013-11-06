@@ -543,6 +543,52 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
         }
 }
 
+void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigned int sbi) {
+
+	//temporary variables
+	unsigned int loc_el;
+	double conc_diff;
+	ElementAccessor<3> ele_acc;
+	arma::vec3 p;
+
+	double *pconc;
+	VecGetArray(vpconc[sbi], &pconc);
+
+	//TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
+
+	//checking if the data were changed
+	if( (data_.sources_density.changed_during_set_time)
+		  || (data_.sources_conc.changed_during_set_time)
+		  || (data_.sources_sigma.changed_during_set_time) )
+	{
+		START_TIMER("sources_reinit");
+		for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+		{
+			ele_acc = mesh_->element_accessor(el_4_loc[loc_el]);
+			p = ele_acc.centre();
+
+			//if(data_.sources_density.changed_during_set_time)
+			sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi);
+
+			//if(data_.sources_conc.changed_during_set_time)
+			sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
+
+			//if(data_.sources_sigma.changed_during_set_time)
+			sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi);
+		}
+	}
+
+    //now computing source concentrations: density - sigma (source_conc - actual_conc)
+    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+    	conc_diff = sources_conc[sbi][loc_el] - pconc[loc_el];
+    	if ( conc_diff > 0.0)
+    		sources_corr[loc_el] = sources_density[sbi][loc_el] + conc_diff * sources_sigma[sbi][loc_el];
+    	else
+            sources_corr[loc_el] = sources_density[sbi][loc_el];
+    }
+}
+
 
 void ConvectionTransport::compute_one_step() {
 
@@ -1295,7 +1341,7 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 {
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
     {
-        compute_concentration_sources(sbi);
+        compute_concentration_sources_for_mass_balance(sbi);
         double *sources = sources_corr;
 
         FOR_ELEMENTS(mesh_,elem)
