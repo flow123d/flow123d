@@ -52,7 +52,6 @@ public:
   double param(const unsigned int& param_name);
   
   /** Returns size of the vector for the parameters.
-   * Not actual number of used parameters! 
    */
   unsigned int n_param();
   

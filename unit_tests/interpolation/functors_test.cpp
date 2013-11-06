@@ -12,23 +12,6 @@
 
 #define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
-//Example functor f(x)=x^2
-template<class Type=double>
-class Quadratic : public Functor<Type>
-{
-public:
-  ///Constructor.
-  Quadratic(){}
-  
-  template<class TType>
-  Quadratic(Functor<TType>& func) : Functor<Type>(func){};
-  
-  virtual Type operator()(const Type& x)
-  {
-    return x*x;
-  }    
-};
-
 //Example functor f(x)=x+2
 template<class Type=double>
 class Linear : public Functor<Type>
@@ -43,6 +26,23 @@ public:
   virtual Type operator()(const Type& x)
   {
     return x+2;
+  }    
+};
+
+//Example functor f(x)=x^2
+template<class Type=double>
+class Quadratic : public Functor<Type>
+{
+public:
+  ///Constructor.
+  Quadratic(){}
+  
+  template<class TType>
+  Quadratic(Functor<TType>& func) : Functor<Type>(func){};
+  
+  virtual Type operator()(const Type& x)
+  {
+    return x*x;
   }    
 };
 
@@ -89,66 +89,24 @@ public:
   }    
 };
 
-/**
- * Test for Functors and interpolant creation only
- */
+
 TEST (Functors, functors)
 {
+  //Explicit functor
   Cubic<double> my_func;                //x^3
   Cubic<> my_func2;                     //x^3+2 (parameter p1=2.0)
   
   my_func.set_param(Cubic<double>::p1,0.0);
-  my_func2.set_param(Cubic<double>::p1,2.0);
   my_func.set_param(Cubic<>::p2,2.0);
   my_func.set_param(Cubic<>::p3,3.0);
-  
-  Interpolant* interpolant = new Interpolant();
-  interpolant->set_functor<Cubic, double>(&my_func);
-  
-  Interpolant* interpolant2 = new Interpolant();
-  interpolant2->set_functor<Cubic>(&my_func2);
   
   //params
   EQUAL(my_func.param(2), 3.0);
   EQUAL(my_func.param(Cubic<>::p2), 2.0);
+  EQUAL(my_func.n_param(), 3);
+  EQUAL(my_func2.n_param(), 0);
   
-  //2^3 = 8, dfdx: 3x^2, 3*2^2=12
-  EQUAL(my_func(2), 8);
-  EQUAL(interpolant->f_val(2), 8);
-  EQUAL(interpolant->f_diff(2).f, 8);
-  EQUAL(interpolant->f_diff(2).dfdx, 12);
-  EQUAL(interpolant2->f_diff(2).f, 10);
-  EQUAL(interpolant2->f_diff(2).dfdx, 12);
-  
-  interpolant->set_interval(-5,11);
-  interpolant->set_size(8);
-  
-  interpolant->interpolate();
-  
-  DBGMSG("Error of interpolation: %f\n", interpolant->error());
-  
-  EQUAL(interpolant->val(-7), -343);
-  EQUAL(interpolant->val(-5), -125);
-  EQUAL(interpolant->val(0), 0);
-  EQUAL(interpolant->val(3), 27);
-  EQUAL(interpolant->val(10), 1030);
-  EQUAL(interpolant->val(11), 1331);
-  
-  EQUAL(interpolant->diff(-7).f, -343);
-  EQUAL(interpolant->diff(-7).dfdx, 147);
-  EQUAL(interpolant->diff(-4).dfdx, 51);
-  EQUAL(interpolant->diff(3).dfdx, 27);
-  EQUAL(interpolant->diff(5).dfdx, 75);
-  EQUAL(interpolant->diff(9).dfdx, 243);
-  EQUAL(interpolant->diff(10).dfdx, 303);
-  EQUAL(interpolant->diff(11).dfdx, 363);
-  
-  delete interpolant;
-  delete interpolant2;
-}
-
-TEST (Functors, implicit_functors)
-{
+  //Implicit functor
   Circle<double> circle_func;
   circle_func.set_param(Circle<>::radius,4.0);
   
@@ -160,6 +118,78 @@ TEST (Functors, implicit_functors)
   interpolant->fix_variable(InterpolantImplicit::fix_x,2.0);
   
   EQUAL(interpolant->f_val(3.0),-3.0);           //2^2+3^2-4^2 = 4+9-16=-3
+}
+
+
+/**
+ * Test for interpolant of x^3
+ */
+TEST (Functors, make_interpolation)
+{
+  Cubic<double> my_func;                //x^3
+  Cubic<> my_func2;                     //x^3+p1 (parameter p1=2.0)
+  
+  my_func.set_param(Cubic<double>::p1,0.0);
+  my_func2.set_param(Cubic<double>::p1,2.0);
+  
+  Interpolant* interpolant = new Interpolant();
+  interpolant->set_functor<Cubic, double>(&my_func);
+  
+  Interpolant* interpolant2 = new Interpolant();
+  interpolant2->set_functor<Cubic>(&my_func2);
+  
+  //statistics - zero at start
+  EQUAL(interpolant->statistics().total_calls, 0);
+  EQUAL(interpolant->statistics().interval_miss_a, 0);
+  EQUAL(interpolant->statistics().interval_miss_b, 0);
+  
+  //2^3 = 8, dfdx: 3x^2, 3*2^2=12
+  EQUAL(my_func(2), 8);
+  EQUAL(interpolant->f_val(2), 8);
+  EQUAL(interpolant->f_diff(2).f, 8);
+  EQUAL(interpolant->f_diff(2).dfdx, 12);
+  
+  //2nd 3rd derivate: 6*x, 6
+  EQUAL(interpolant->f_diffn(4,2), 24);
+  EQUAL(interpolant->f_diffn(4,3), 6);
+  
+  EQUAL(interpolant2->f_diff(2).f, 10);
+  EQUAL(interpolant2->f_diff(2).dfdx, 12);
+  
+  interpolant->set_interval(-5,11);
+  interpolant->set_size(8);
+  interpolant->interpolate();
+  
+  DBGMSG("Error of interpolation: %f\n", interpolant->error());
+  
+  EQUAL(interpolant->val(-7), -343);    //out of interval
+  EQUAL(interpolant->statistics().min, interpolant->statistics().max);
+  
+  EQUAL(interpolant->val(-5), -125);
+  EQUAL(interpolant->val(0), 0);
+  EQUAL(interpolant->val(3), 27);
+  EQUAL(interpolant->val(10), 1030);
+  EQUAL(interpolant->val(11), 1331);
+  EQUAL(interpolant->val(15), 3375);    //out of interval
+  
+  EQUAL(interpolant->diff(-7).f, -343); //out of interval
+  EQUAL(interpolant->diff(-7).dfdx, 147);       //out of interval
+  EQUAL(interpolant->diff(-4).dfdx, 51);
+  EQUAL(interpolant->diff(3).dfdx, 27);
+  EQUAL(interpolant->diff(5).dfdx, 75);
+  EQUAL(interpolant->diff(9).dfdx, 243);
+  EQUAL(interpolant->diff(10).dfdx, 303);
+  EQUAL(interpolant->diff(11).dfdx, 363);
+  
+  //statistics
+  EQUAL(interpolant->statistics().total_calls, 15);
+  EQUAL(interpolant->statistics().interval_miss_a, 3);
+  EQUAL(interpolant->statistics().interval_miss_b, 1);
+  EQUAL(interpolant->statistics().min, -7.0);
+  EQUAL(interpolant->statistics().max, 15.0);
+  
+  delete interpolant;
+  delete interpolant2;
 }
 
 
@@ -177,6 +207,7 @@ TEST (Functors, interpolation_error)
   interpolant->set_interval(0,10);
   interpolant->set_size(2);
   
+  EQUAL(interpolant->error(), -1);      //error not computed yet
   
   interpolant->set_functor<Linear, double>(&lin_func);
   interpolant->interpolate();
