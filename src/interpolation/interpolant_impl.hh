@@ -27,20 +27,24 @@ void Interpolant::set_functor(Functor<double>* func)
 inline double Interpolant::val(const double& i_x)
 {
   //increase calls
-  total_calls++;
+  stats.total_calls++;
+  stats.min = std::min(stats.min, i_x);
+  //DBGMSG("stats.max = %f\n", stats.max);
+  stats.max = std::max(stats.max, i_x);
+  //DBGMSG("stats.max = %f\n", stats.max);
+  
   //every STATISTIC_CHECK calls check the statistics
-  if(total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  if(stats.total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
   
   //return value
   if(i_x < bound_a)     //left miss
   {
-    interval_miss_a++;
-    
+    stats.interval_miss_a++;
     return f_val(i_x);
   }
   if(i_x > bound_b)     //right miss
   {
-    interval_miss_b++;
+    stats.interval_miss_b++;
     return f_val(i_x);
   }
   else                  //hit the interval
@@ -52,18 +56,21 @@ inline double Interpolant::val(const double& i_x)
 inline der Interpolant::diff(const double& i_x)
 {
   //increase calls
-  total_calls++;
+  stats.total_calls++;
+  stats.min = std::min(stats.min, i_x);
+  stats.max = std::max(stats.max, i_x);
+  
   //every STATISTIC_CHECK calls check the statistics
-  if(total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  if(stats.total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
   
   if(i_x < bound_a)     //left miss
   {
-    interval_miss_a++;
-   return f_diff(i_x);  //right miss
+    stats.interval_miss_a++;
+    return f_diff(i_x);  //right miss
   }
   if(i_x > bound_b)
   {
-    interval_miss_b++;
+    stats.interval_miss_b++;
     return f_diff(i_x);
   }
   else                  //hit the interval

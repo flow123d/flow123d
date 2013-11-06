@@ -5,6 +5,8 @@
 #include "system/xio.h"
 //#include "system/sys_profiler.hh"
 
+#include <limits>
+
 /********************************** InterpolantBase ******************************/
 InterpolantBase::InterpolantBase()
   : max_size(MAX_SIZE),
@@ -25,6 +27,12 @@ double InterpolantBase::error()
   return error_;
 }
 
+InterpolantBase::eval_statistics InterpolantBase::statistics()
+{
+  return stats;
+}
+
+
 void InterpolantBase::set_interval(const double& bound_a, const double& bound_b)
 {
   ASSERT(bound_a!=bound_b,"Bounds overlap.");
@@ -33,6 +41,10 @@ void InterpolantBase::set_interval(const double& bound_a, const double& bound_b)
   checks[check_a] = true;
   this->bound_b = bound_b;
   checks[check_b] = true;
+  
+  //are given oposite be able to response to all calls
+  stats.min = std::numeric_limits<double>::max();
+  stats.max = -std::numeric_limits<double>::max();
 }
   
 void InterpolantBase::set_size(const unsigned int& size)
@@ -61,24 +73,24 @@ void InterpolantBase::set_extrapolation(InterpolantBase::ExtrapolationType extra
 
 void InterpolantBase::reset_stat()
 {
-  interval_miss_a = 0;
-  interval_miss_b = 0;
-  total_calls = 0;
-  max_a = 0;
-  max_b = 0;
+  stats.interval_miss_a = 0;
+  stats.interval_miss_b = 0;
+  stats.total_calls = 0;
+  stats.min = std::numeric_limits<double>::max();
+  stats.max = -std::numeric_limits<double>::max();
 }
 
 void InterpolantBase::check_and_reinterpolate()
 {
   bool reinterpolate = false;   //should we remake interpolation?
-  if(interval_miss_a/total_calls > MISS_PERCENTAGE)
+  if(stats.interval_miss_a/stats.total_calls > MISS_PERCENTAGE)
   {
-    bound_a = max_a;
+    bound_a = stats.min;
     reinterpolate = true;
   }
-  if(interval_miss_b/total_calls > MISS_PERCENTAGE)
+  if(stats.interval_miss_b/stats.total_calls > MISS_PERCENTAGE)
   {
-    bound_b = max_b;
+    bound_b = stats.max;
     reinterpolate = true;
   }
   
@@ -222,6 +234,7 @@ int Interpolant::interpolate()
     interpolate_p1();
     result = 0;   //interpolation OK
   }
+  reset_stat();
   return result;
 }
 

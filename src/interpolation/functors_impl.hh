@@ -47,7 +47,7 @@ void FunctorBase<Type>::set_param(const unsigned int& param_name, const double& 
 template<class Type>
 double FunctorBase<Type>::param(const unsigned int& param_name)
 {
-  ASSERT(param_name < param_.size(),"This parameter does not exist.");
+  ASSERT(param_name < param_.size(),"Parameter of the functor was not set.");
   
   return param_[param_name];
 }

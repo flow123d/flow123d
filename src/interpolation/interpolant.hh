@@ -19,6 +19,16 @@ public:
   typedef enum { constant, linear, functor 
   } ExtrapolationType;
   
+  ///Structure keeps statistics of evaluation.
+  typedef struct {
+  unsigned int interval_miss_a,         ///<< counts left misses of the interval
+               interval_miss_b,         ///<< counts right misses of the interval
+               total_calls;             ///<< counts total calls of evaluation
+               
+  double min,         ///<< minimal x for which the evaluation was called
+         max;         ///<< maximal x for which the evaluation was called
+  } eval_statistics;
+  
   ///@name Construction.
   //@{
   ///constructor
@@ -33,6 +43,8 @@ public:
   ///It is equal to the chosen norm of the difference divided by the lenght of interval.
   ///Returns -1.0 if the interpolation has not been computed yet.
   double error();
+  
+  eval_statistics statistics();
   
   ///Sets the interpolation interval.
   void set_interval(const double&bound_a, const double& bound_b);
@@ -81,14 +93,8 @@ protected:
   
   ///@name Evaluation statistics.
   //@{
-  ///Parameters setting check.
-  unsigned int interval_miss_a,
-               interval_miss_b,
-               total_calls;   
-               
-  double max_a,
-         max_b;
-         
+  
+  eval_statistics stats;
   void reset_stat();
   void check_and_reinterpolate();
   //@}
