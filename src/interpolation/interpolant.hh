@@ -16,10 +16,13 @@
 class InterpolantBase
 {
 public:
+  /** Enumerates possible kinds of interpolation.
+   * @p functor means that the original functor will be called outside interpolation interval
+   */
   typedef enum { constant, linear, functor 
   } ExtrapolationType;
   
-  ///Structure keeps statistics of evaluation.
+  ///Structure that keeps statistics of evaluation.
   typedef struct {
   unsigned int interval_miss_a,         ///<< counts left misses of the interval
                interval_miss_b,         ///<< counts right misses of the interval
@@ -44,14 +47,28 @@ public:
   ///Returns -1.0 if the interpolation has not been computed yet.
   double error();
   
-  eval_statistics statistics();
+  //Gettters
+  eval_statistics statistics() const;
+  double bound_a() const;
+  double bound_b() const;
+  unsigned int size() const;
   
-  ///Sets the interpolation interval.
+  ///Sets the interpolation interval boundaries.
   void set_interval(const double&bound_a, const double& bound_b);
   
+  ///Sets size of the interpolation table. It is also equal to the number of intervals.
   void set_size(const unsigned int& size);
+
+  /** Sets automatic step choice.
+   * When @p interpolate is called than divides the step until some tolerance or maximum
+   * size of the interpolation table is reached.
+   * @param user_tol is the tolerance which should the interpolation meet
+   * @param init_size is the initial choice of table size
+   * @param max_size is maximal size of the table that user allows
+   */
   void set_size_automatic(const double& user_tol,const unsigned int& init_size, const unsigned int& max_size=MAX_SIZE);
   
+  ///Sets the type of extrapolation. Functor type is default.
   void set_extrapolation(ExtrapolationType extrapolation);
   
   ///Creates piecewise interpolation with polynomials of selected degree.
@@ -63,20 +80,20 @@ public:
 protected:
   ///@name Interpolation.
   //@{
-  double bound_a,       ///<< Left interval boundary.
-         bound_b,       ///<< Right interval boundary.
+  double bound_a_,       ///<< Left interval boundary.
+         bound_b_,       ///<< Right interval boundary.
          step;          ///<< Chosen interpolation step.
          
-  unsigned int size,    ///<< Number of dividing intervals.
+  unsigned int size_,    ///<< Number of dividing intervals.
                n_nodes; ///<< Number of nodes in the interval \[(a,b)\].
                
-  double user_tol;
-  unsigned int max_size;
-  bool automatic_step;
+  double user_tol;      ///<< User set tolerance which is used during automatic step choice.
+  unsigned int max_size; ///<< Maximal size of the interpolation table.
+  bool automatic_step;  ///<< Is true if step/size should be chosen automatically.
   
   double error_;        ///<< Error of the interpolation. (Norm of difference divided by the lenght of interval.)
   
-  ExtrapolationType extrapolation;
+  ExtrapolationType extrapolation;      ///Extrapolation type.
   //@}
   
   ///@name Check.
@@ -93,9 +110,9 @@ protected:
   
   ///@name Evaluation statistics.
   //@{
-  
-  eval_statistics stats;
-  void reset_stat();
+  bool use_statistics;          ///<< true if statistics is checked (it must be switched of during error computation)
+  eval_statistics stats;        ///<< structure which keeps evaluation statistics
+  void reset_stat();            ///<< resets all measured statistics
   void check_and_reinterpolate();
   //@}
   
@@ -176,13 +193,13 @@ public:
     
 protected:
   // Not actual norm.
-  // Returns only power of difference of functor and interpolant at point.
+  // Returns only power of difference of functor and its interpolant at point.
   class NormL2;
   class NormW21;
   
-  Functor<double>* func;
-  Functor<B<double> >* func_diff;
-  Functor<T<double> >* func_diffn;
+  Functor<double>* func;                ///<< Pointer to original functor with double type.
+  Functor<B<double> >* func_diff;       ///<< Pointer to original functor with FADBAD type.
+  Functor<T<double> >* func_diffn;      ///<< Pointer to original functor with FADBAD type.
   
   ///@name Interpolation.
   //@{
@@ -197,13 +214,23 @@ protected:
   ///Creates piecewise linear interpolation.
   void interpolate_p1();
   
+  ///Computes interpolation error with given norm.
   void compute_error(Functor<double>* norm);
   
+  /** Creates vector of nodes according to the table size
+   * and computes function values and derivates at the nodes.
+   */
   void create_nodes();
+
+  ///Finds interval on which @p i_x lies.
   unsigned int find_interval(const double& i_x);
+
+  ///Function that evaluates the P1 interpolant at @p i_x.
   double val_p1(const double& i_x);
+
+  ///Function that evaluates the derivate of P1 interpolant at @p i_x.
   der diff_p1(const double& i_x);
-  
+
   /* CONSTANT INTERPOLATION
   double val_p0(const double& i_x);
   der diff_p0(const double& i_x);
@@ -230,10 +257,10 @@ public:
   ///destructor
   virtual ~InterpolantImplicit(void);
   
-  ///Sets the functor.
+  ///Sets the implicit functor.
   /** 
-   * @param func is the pointer to functor.
-   * @tparam Func is the functor type
+   * @param func is the pointer to implicit functor.
+   * @tparam Func is the functor class.
    * @tparam Type is the template type of the functor (e.g. double)
    */
   template<template<class> class Func, class Type >
@@ -247,6 +274,10 @@ public:
   ///@name Evaluation.
   //@{
   
+  /** Fixes the chosen variable and sets its fixed value.
+   * @param fix is the chosen variable (no_fix, fix_x or fix_y)
+   * @param value is the fixed value
+   */
   void fix_variable(InterpolantImplicit::fix_var fix, const double& val);
   
   ///Returns interpolated value.
@@ -296,9 +327,6 @@ public:
   ///Creates piecewise interpolation with polynomials of selected degree.
   virtual int interpolate() {return 5;}
   
-  ///Creates piecewise constant interpolation.
-  void interpolate_p0();
-  
   ///Creates piecewise linear interpolation.
   void interpolate_p1();
   //@}
@@ -314,27 +342,14 @@ protected:
   FunctorImplicit<B<double> >* func_diff;
   FunctorImplicit<T<double> >* func_diffn;
   
+  Interpolant* explicit_interpolant;
+
   fix_var fix_;
   double fix_val;
   
   ///@name Interpolation.
   //@{
-  std::vector<double> x_vec;    ///<< Vector of nodes.
-  std::vector<double> f_vec;    ///<< Vector of function values at nodes.
-  std::vector<double> df_vec;   ///<< Vector of function derivates values at nodes.
-  std::vector<double> p1_vec;   ///<< Vector of linear coeficients of P1 interpolation.
-  std::vector<double> p1d_vec;  ///<< Vector of linear coeficients of P1 interpolation.
   
-  void create_nodes();
-  double compute_error();
-  
-  unsigned int find_interval(const double& i_x);
-  double (Interpolant::*val_)(const double&);
-  der (Interpolant::*diff_)(const double&);
-  double val_p0(const double& i_x);
-  double val_p1(const double& i_x);
-  der diff_p0(const double& i_x);
-  der diff_p1(const double& i_x);
   //@}
 
 };

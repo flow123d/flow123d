@@ -156,6 +156,7 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant2->f_diff(2).f, 10);
   EQUAL(interpolant2->f_diff(2).dfdx, 12);
   
+  
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
   interpolant->interpolate();
@@ -186,6 +187,27 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->statistics().interval_miss_a, 3);
   EQUAL(interpolant->statistics().interval_miss_b, 1);
   EQUAL(interpolant->statistics().min, -7.0);
+  EQUAL(interpolant->statistics().max, 15.0);
+  
+  //increasing missed interval evaluation
+  //this should remake the table
+  for(unsigned int i=0; i < (STATISTIC_CHECK+1); i++)
+  {
+    //DBGMSG("i: %d\n",i);
+    interpolant->val(-20);
+    interpolant->val(15);
+  }
+  
+  //statistics
+  //DBGMSG("bound_a: %f\n",interpolant->bound_a());
+  //DBGMSG("bound_b: %f\n",interpolant->bound_b());
+  //DBGMSG("total: %d\n",interpolant->statistics().total_calls);
+  EQUAL(interpolant->bound_a(),-20);
+  EQUAL(interpolant->bound_b(),15);
+  EQUAL(interpolant->statistics().total_calls, 1017);
+  EQUAL(interpolant->statistics().interval_miss_a, 0);
+  EQUAL(interpolant->statistics().interval_miss_b, 0);
+  EQUAL(interpolant->statistics().min, -20.0);
   EQUAL(interpolant->statistics().max, 15.0);
   
   delete interpolant;

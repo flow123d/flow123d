@@ -3,7 +3,35 @@
 
 #include <cmath>
 
-/********************************** Interpolant ********************************/  
+/********************************** InterpolantBase ********************************/
+
+inline double InterpolantBase::error()
+{
+  return error_;
+}
+
+inline InterpolantBase::eval_statistics InterpolantBase::statistics() const
+{
+  return stats;
+}
+
+inline double InterpolantBase::bound_a() const
+{
+  return bound_a_;
+}
+
+inline double InterpolantBase::bound_b() const
+{
+  return bound_b_;
+}
+
+inline unsigned int InterpolantBase::size() const
+{
+  return size_;
+}
+
+
+/********************************** Interpolant ********************************/
 
 template<template<class> class Func, class Type >
 void Interpolant::set_functor(Functor<Type>* func) 
@@ -29,20 +57,20 @@ inline double Interpolant::val(const double& i_x)
   //increase calls
   stats.total_calls++;
   stats.min = std::min(stats.min, i_x);
-  //DBGMSG("stats.max = %f\n", stats.max);
   stats.max = std::max(stats.max, i_x);
-  //DBGMSG("stats.max = %f\n", stats.max);
   
+  //DBGMSG("total: %d \t modulo: %d\n",stats.total_calls,stats.total_calls % STATISTIC_CHECK);
   //every STATISTIC_CHECK calls check the statistics
-  if(stats.total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
+    this->check_and_reinterpolate();
   
   //return value
-  if(i_x < bound_a)     //left miss
+  if(i_x < bound_a_)     //left miss
   {
     stats.interval_miss_a++;
     return f_val(i_x);
   }
-  if(i_x > bound_b)     //right miss
+  if(i_x > bound_b_)     //right miss
   {
     stats.interval_miss_b++;
     return f_val(i_x);
@@ -61,14 +89,15 @@ inline der Interpolant::diff(const double& i_x)
   stats.max = std::max(stats.max, i_x);
   
   //every STATISTIC_CHECK calls check the statistics
-  if(stats.total_calls % STATISTIC_CHECK) this->check_and_reinterpolate();
+  if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
+    this->check_and_reinterpolate();
   
-  if(i_x < bound_a)     //left miss
+  if(i_x < bound_a_)     //left miss
   {
     stats.interval_miss_a++;
     return f_diff(i_x);  //right miss
   }
-  if(i_x > bound_b)
+  if(i_x > bound_b_)
   {
     stats.interval_miss_b++;
     return f_diff(i_x);
@@ -100,7 +129,7 @@ inline der Interpolant::f_diff ( const double& i_x )
 inline unsigned int Interpolant::find_interval(const double& i_x)
 {
   //counts in which interval x is (the last node before x)
-  return floor((i_x - bound_a) / step);
+  return floor((i_x - bound_a_) / step);
 }
 
 /* //CONSTANT INTERPOLATION
@@ -170,7 +199,7 @@ private:
 };
 
 
-/********************************** InterpolantImplicit ********************************/    
+/********************************** InterpolantImplicit ********************************/
 
 template<template<class> class Func, class Type >
 void InterpolantImplicit::set_functor(FunctorImplicit<Type>* func) 
@@ -189,7 +218,6 @@ void InterpolantImplicit::set_functor(FunctorImplicit<double>* func)
   func_diffn = new Func<T<double> >(*func);
   checks[Interpolant::check_functor] = true;
 }
-
 
 
   ///class FuncExplicit.
