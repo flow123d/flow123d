@@ -89,7 +89,7 @@ And run the configuration script, for example with following options:
       --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
 
 This also automagically install BLAS, Lapack, MPICH, and ParMetis so it takes
-a while, it can be about 15 min. If everything is OK, you obtain table with
+a while (it can be about 15 min). If everything is OK, you obtain table with
 used compilers and libraries. Finally compile PETSC with this configuration:
 
     $ make all
