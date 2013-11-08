@@ -549,7 +549,9 @@ class IteratorBase {
 public:
 
     /**
-     * Constructor of iterator without type and dereference methods.
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     *
      */
     IteratorBase(const Address &address, const unsigned int index)
     : address_(address), index_(index)
@@ -619,9 +621,13 @@ public:
     Iterator() : IteratorBase( Address(), 0) {}
 
     /**
-     * Constructor with Type of data
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     * Parameter @p type is Input::Type of object the iterator points to.
+     *
+     *
      */
-    Iterator(const Input::Type::TypeBase &type,const Address &address, const unsigned int index)
+    Iterator(const Input::Type::TypeBase &type, const Address &address, const unsigned int index)
     : IteratorBase(address, index), type_( type_check_and_convert(type))
     {}
 
