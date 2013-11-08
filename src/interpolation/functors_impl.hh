@@ -7,26 +7,7 @@
 /************************************************ FunctorBase ********************************/
 template<class Type>
 FunctorBase<Type>::FunctorBase() 
-{
-  //param_.resize(5);   //default resizing of the data vector
-}
-
-template<class Type>
-template<class TType >
-FunctorBase<Type>::FunctorBase(FunctorBase<TType>& func) 
-{
-  //DBGMSG("FunctorBase copy constructor.\n");
-  unsigned int n = func.n_param();
-  //DBGMSG("param_size = %d\n",n);
-  param_.resize(n);
-  
-  for(unsigned int i=0; i < n; i++) //copying vector
-  {
-    //DBGMSG("get_param = %d\n",i);
-    param_[i] = func.param(i);   
-  }
-  //*/
-}
+{}
   
 template<class Type>
 FunctorBase<Type>::~FunctorBase() {}
@@ -43,7 +24,23 @@ void FunctorBase<Type>::set_param(const unsigned int& param_name, const double& 
     param_.push_back(param_value);
   }
 }
+
+template<class Type> 
+template<class TType> 
+void FunctorBase<Type>::set_param_from_func(FunctorBase<TType>* func)
+{
+  //DBGMSG("FunctorBase copy constructor.\n");
+  unsigned int n = func->n_param();
+  //DBGMSG("param_size = %d\n",n);
+  param_.resize(n);
   
+  for(unsigned int i=0; i < n; i++) //copying vector
+  {
+    //DBGMSG("get_param = %d\n",i);
+    param_[i] = func->param(i);   
+  }
+}
+ 
 template<class Type>
 double FunctorBase<Type>::param(const unsigned int& param_name)
 {
@@ -63,12 +60,6 @@ unsigned int FunctorBase<Type>::n_param()
 template<class Type>
 Functor<Type>::Functor() : FunctorBase<Type>::FunctorBase()
 {}
-
-  
-template<class Type>
-template<class TType >
-Functor<Type>::Functor(FunctorBase<TType>& func) : FunctorBase<Type>::FunctorBase(func)
-{}
   
   
 template<class Type>
@@ -78,11 +69,6 @@ Functor<Type>::~Functor() {}
 /************************************************ FunctorImplicit *****************************/
 template<class Type>
 FunctorImplicit<Type>::FunctorImplicit() : FunctorBase<Type>::FunctorBase()
-{}
-  
-template<class Type>
-template<class TType >
-FunctorImplicit<Type>::FunctorImplicit(FunctorImplicit<TType>& func) : FunctorBase<Type>::FunctorBase(func) 
 {}
  
   

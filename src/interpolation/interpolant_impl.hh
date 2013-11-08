@@ -34,20 +34,29 @@ inline unsigned int InterpolantBase::size() const
 /********************************** Interpolant ********************************/
 
 template<template<class> class Func, class Type >
-void Interpolant::set_functor(Functor<Type>* func) 
+Interpolant::Interpolant(Func<Type>* func) 
 {
   this->func = func;
-  func_diff = new Func<B<Type> >(*func);
-  func_diffn = new Func<T<Type> >(*func);
+  func_diff = new Func<B<Type> >();
+  func_diffn = new Func<T<Type> >();
+  
+  func_diff->set_param_from_func(func);
+  func_diffn->set_param_from_func(func);
+  
   checks[Interpolant::check_functor] = true;
 }
-  
-template<template<class> class Func>
-void Interpolant::set_functor(Functor<double>* func) 
+
+
+template<template<class> class Func, class Type >
+void Interpolant::set_functor(Func<Type>* func) 
 {
   this->func = func;
-  func_diff = new Func<B<double> >(*func);
-  func_diffn = new Func<T<double> >(*func);
+  func_diff = new Func<B<Type> >();
+  func_diffn = new Func<T<Type> >();
+  
+  func_diff->set_param_from_func(func);
+  func_diffn->set_param_from_func(func);
+  
   checks[Interpolant::check_functor] = true;
 }
 
@@ -202,20 +211,28 @@ private:
 /********************************** InterpolantImplicit ********************************/
 
 template<template<class> class Func, class Type >
-void InterpolantImplicit::set_functor(FunctorImplicit<Type>* func) 
+void InterpolantImplicit::set_functor(Func<Type>* func) 
 {
   this->func = func;
-  func_diff = new Func<B<Type> >(*func);
-  func_diffn = new Func<T<Type> >(*func);
+  func_diff = new Func<B<Type> >();
+  func_diffn = new Func<T<Type> >();
+  
+  func_diff->set_param_from_func(func);
+  func_diffn->set_param_from_func(func);
+  
   checks[Interpolant::check_functor] = true;
 }
   
 template<template<class> class Func>
-void InterpolantImplicit::set_functor(FunctorImplicit<double>* func) 
+void InterpolantImplicit::set_functor(Func<double>* func) 
 {
   this->func = func;
-  func_diff = new Func<B<double> >(*func);
-  func_diffn = new Func<T<double> >(*func);
+  func_diff = new Func<B<double> >();
+  func_diffn = new Func<T<double> >();
+  
+  func_diff->set_param_from_func(func);
+  func_diffn->set_param_from_func(func);
+  
   checks[Interpolant::check_functor] = true;
 }
 
@@ -234,12 +251,14 @@ void InterpolantImplicit::set_functor(FunctorImplicit<double>* func)
     //probably not using
     template<class TType>
     FuncExplicit(Functor<TType>& func) : Functor<Type>(func){};
-    
+   
+    /*
     //constructor from templated implicit functor
     template<class TType>
     FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
       : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
-  
+  */
+    
     virtual Type operator()(const Type& u)
     {
       Type ret;

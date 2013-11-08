@@ -20,9 +20,6 @@ public:
   ///Constructor.
   Linear(){}
   
-  template<class TType>
-  Linear(Functor<TType>& func) : Functor<Type>(func){};
-  
   virtual Type operator()(const Type& x)
   {
     return x+2;
@@ -36,9 +33,6 @@ class Quadratic : public Functor<Type>
 public:
   ///Constructor.
   Quadratic(){}
-  
-  template<class TType>
-  Quadratic(Functor<TType>& func) : Functor<Type>(func){};
   
   virtual Type operator()(const Type& x)
   {
@@ -58,9 +52,6 @@ public:
   ///Constructor.
   Cubic(){}
   
-  template<class TType>
-  Cubic(Functor<TType>& func) : Functor<Type>(func){};
-  
   virtual Type operator()(const Type& x)
   {
     return x*x*x + this->param(Cubic<>::p1);
@@ -79,9 +70,6 @@ public:
 
   ///Constructor.
   Circle(){}
-  
-  template<class TType>
-  Circle(FunctorImplicit<TType>& func) : FunctorImplicit<Type>(func){};
   
   virtual Type operator()(const Type& x, const Type& y)
   {
@@ -106,6 +94,7 @@ TEST (Functors, functors)
   EQUAL(my_func.n_param(), 3);
   EQUAL(my_func2.n_param(), 0);
   
+  /*
   //Implicit functor
   Circle<double> circle_func;
   circle_func.set_param(Circle<>::radius,4.0);
@@ -118,6 +107,7 @@ TEST (Functors, functors)
   interpolant->fix_variable(InterpolantImplicit::fix_x,2.0);
   
   EQUAL(interpolant->f_val(3.0),-3.0);           //2^2+3^2-4^2 = 4+9-16=-3
+  */
 }
 
 
@@ -132,11 +122,9 @@ TEST (Functors, make_interpolation)
   my_func.set_param(Cubic<double>::p1,0.0);
   my_func2.set_param(Cubic<double>::p1,2.0);
   
-  Interpolant* interpolant = new Interpolant();
-  interpolant->set_functor<Cubic, double>(&my_func);
-  
+  Interpolant* interpolant = new Interpolant(&my_func);
   Interpolant* interpolant2 = new Interpolant();
-  interpolant2->set_functor<Cubic>(&my_func2);
+  interpolant2->set_functor(&my_func2);
   
   //statistics - zero at start
   EQUAL(interpolant->statistics().total_calls, 0);
@@ -225,7 +213,8 @@ TEST (Functors, interpolation_error)
   Linear<double> lin_func;                //x+2
   Quadratic<double> quad_func;            //x^2
   Cubic<double> cubic_func;               //x^3
-  Interpolant* interpolant = new Interpolant();
+  
+  Interpolant* interpolant = new Interpolant(&lin_func);
   interpolant->set_interval(0,10);
   interpolant->set_size(2);
   
