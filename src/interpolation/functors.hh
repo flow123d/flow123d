@@ -6,21 +6,7 @@
 #include "badiff.h"
 #include "tadiff.h"
 
-
-///Defines how many derivates can be returned from Taylor's coeficients.
-#define DIFF_N 10
-//#define SIMPSON_TOLERANCE 1e-9
-
 using namespace fadbad;
-
-/// Structure der
-/** Structure with derivate and value, that is return by Diff()
-  */
-struct der
-{
-  double f;
-  double dfdx;
-};
 
 ///Abstract templated class with virtual operator ()
 template<class Type>
@@ -29,13 +15,6 @@ class FunctorBase
 public:
   ///Constructor.
   FunctorBase();
-  
-  ///Copy constructor - templated.
-  /** Enables doing copies like: \verbatim FunctorBase<B<double> >(FunctorBase<double>)\endverbatim
-   * which is used in Interpolant's method @p Interpolant::set_functor.
-   */
-  template<class TType>
-  FunctorBase(FunctorBase<TType>& func);
 
   ///Destructor.
   virtual ~FunctorBase();
@@ -47,6 +26,12 @@ public:
    * e.g. \verbatim set_param(MyFunctor::my_parameter, value) \endverbatim.
    */
   void set_param(const unsigned int& param_name, const double& param_value);
+  
+  ///Sets a functor's parameters from another functor.
+  /** Copies all the parameters defined in the given functor.
+   */
+  template<class TType>
+  void set_param_from_func(FunctorBase<TType>* func);
   
   ///Returns parameter.
   double param(const unsigned int& param_name);
@@ -67,13 +52,6 @@ class Functor : public FunctorBase<Type>
 public:
   ///Constructor.
   Functor();
-  
-  ///Copy constructor - templated.
-  /** Enables doing copies like: \verbatim FunctorBase<B<double> >(FunctorBase<double>)\endverbatim
-   * which is used in Interpolant's method @p Interpolant::set_functor.
-   */
-  template<class TType>
-  Functor(FunctorBase<TType>& func);
 
   ///Destructor.
   virtual ~Functor();
@@ -91,13 +69,6 @@ class FunctorImplicit : public FunctorBase<Type>
 public:
   ///Constructor.
   FunctorImplicit();
-  
-  ///Copy constructor - templated.
-  /** Enables doing copies like: \verbatim FunctorBase<B<double> >(FunctorBase<double>)\endverbatim
-   * which is used in Interpolant's method @p Interpolant::set_functor.
-   */
-  template<class TType>
-  FunctorImplicit(FunctorImplicit<TType>& func);
 
   ///Destructor.
   virtual ~FunctorImplicit();

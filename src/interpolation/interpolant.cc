@@ -8,6 +8,8 @@
 #include <limits>
 
 /********************************** InterpolantBase ******************************/
+const unsigned int InterpolantBase::n_derivates = 10;
+
 InterpolantBase::InterpolantBase()
   : max_size(MAX_SIZE),
     automatic_step(false),
@@ -141,15 +143,15 @@ Interpolant::~Interpolant()
   
 double Interpolant::f_diffn(const double& i_x, const unsigned int& n)
 {
-  ASSERT(n <= DIFF_N,"Not allowed to obtain n-th derivate. Check/change 'DIFF_N' in header file.");
+  ASSERT(n <= n_derivates,"Not allowed to obtain higher than n-th derivate.");
   T<double> x,f;
 
   x = i_x;
   x[1] = 1;
   f = func_diffn->operator()(x);
-  f.eval(DIFF_N);
+  f.eval(n_derivates);
       
-  for(int i = 0; i<DIFF_N; i++)    //goes through the field of Taylor's coeficients
+  for(unsigned int i = 0; i<n_derivates; i++)    //goes through the field of Taylor's coeficients
   {                           //and divide them by the factorial to get derivates
     f[i] = f[i] * this->fact(i);
   }
@@ -360,7 +362,7 @@ void InterpolantImplicit::fix_variable(InterpolantImplicit::fix_var fix, const d
 {
   fix_ = fix;
   fix_val = val;
-  func_u = new InterpolantImplicit::FuncExplicit<double>(*func,fix_,fix_val);
+  //func_u = new InterpolantImplicit::FuncExplicit<double>(*func,fix_,fix_val);
 }
 
 double InterpolantImplicit::f_val(const double& u)
@@ -374,7 +376,7 @@ void InterpolantImplicit::interpolate_p1()
   if(func_u != NULL) 
     delete func_u;
   
-  func_u = new FuncExplicit<double>(*func,fix_,fix_val);
+  //func_u = new FuncExplicit<double>(*func,fix_,fix_val);
 }
 
 

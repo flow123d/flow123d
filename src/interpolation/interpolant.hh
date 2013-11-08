@@ -6,6 +6,19 @@
 #define MISS_PERCENTAGE 0.3      //percentage of interpolantion interval misses during evaluation that is allowed
 #define STATISTIC_CHECK 1000      //frequance of checking the evaluation statistics
 
+
+/** This pair contains both the function value and the first derivate.
+ * Structure with derivate and value, that is return by Diff().
+ */
+typedef std::pair<double,double> DiffValue;
+
+
+struct der
+{
+  double f;
+  double dfdx;
+};
+
 ///class Interpolant
 /** Class can be templated by the functor (object with implemented operator ()), 
  * or there can still FuntorValueBase(), abstract class with virtual operator()
@@ -78,6 +91,9 @@ public:
   //@}
     
 protected:
+  ///Defines how many derivates we allow to be returned from Taylor's coeficients.
+  const static unsigned int n_derivates;
+  
   ///@name Interpolation.
   //@{
   double bound_a_,       ///<< Left interval boundary.
@@ -131,8 +147,18 @@ public:
   ///constructor
   Interpolant();
   
+  ///Constructor with functor setting.
+  /** 
+   * @param func is the pointer to functor.
+   * @tparam Func is the functor type
+   * @tparam Type is the template type of the functor (e.g. double)
+   */
+  template<template<class> class Func, class Type >
+  Interpolant(Func<Type>* func);
+  
   ///destructor
   virtual ~Interpolant(void);
+  
   
   ///Sets the functor.
   /** 
@@ -141,12 +167,9 @@ public:
    * @tparam Type is the template type of the functor (e.g. double)
    */
   template<template<class> class Func, class Type >
-  void set_functor(Functor<Type>* func);
-  
-  ///Specialization of the setter for Type=double
-  template<template<class> class Func>
-  void set_functor(Functor<double>* func);
+  void set_functor(Func<Type>* func);
   //@}
+  
   
   ///@name Evaluation.
   //@{
@@ -264,11 +287,11 @@ public:
    * @tparam Type is the template type of the functor (e.g. double)
    */
   template<template<class> class Func, class Type >
-  void set_functor(FunctorImplicit<Type>* func);
+  void set_functor(Func<Type>* func);
   
   ///Specialization of the setter for Type=double
   template<template<class> class Func>
-  void set_functor(FunctorImplicit<double>* func);
+  void set_functor(Func<double>* func);
   //@}
   
   ///@name Evaluation.
