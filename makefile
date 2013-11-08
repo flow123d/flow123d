@@ -72,7 +72,7 @@ clean: cmake
 
 # Remove all  build files. (not including test results)
 clean-all: 
-	make -C $(BUILD_DIR) clean-links	# ignor errors
+	-make -C $(BUILD_DIR) clean-links	# ignore errors
 	rm -rf $(BUILD_DIR)
 
 
