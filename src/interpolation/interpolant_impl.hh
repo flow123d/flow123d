@@ -61,114 +61,115 @@ void Interpolant::set_functor(Func<Type>* func)
 }
 
 
-inline double Interpolant::val(const double& i_x)
+inline double Interpolant::val(double x)
 {
   //increase calls
   stats.total_calls++;
-  stats.min = std::min(stats.min, i_x);
-  stats.max = std::max(stats.max, i_x);
   
-  //DBGMSG("total: %d \t modulo: %d\n",stats.total_calls,stats.total_calls % STATISTIC_CHECK);
+  //uncomment if we want to do the check automatically
   //every STATISTIC_CHECK calls check the statistics
-  if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
-    this->check_and_reinterpolate();
+  //if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
+  //  this->check_and_reinterpolate();
   
   //return value
-  if(i_x < bound_a_)     //left miss
+  if(x < bound_a_)     //left miss
   {
     stats.interval_miss_a++;
-    return f_val(i_x);
+    stats.min = std::min(stats.min, x);
+    return f_val(x);
   }
-  if(i_x > bound_b_)     //right miss
+  if(x > bound_b_)     //right miss
   {
     stats.interval_miss_b++;
-    return f_val(i_x);
+    stats.max = std::max(stats.max, x);
+    return f_val(x);
   }
   else                  //hit the interval
   {
-    return val_p1(i_x);
+    return val_p1(x);
   }
 }
 
-inline der Interpolant::diff(const double& i_x)
+inline DiffValue Interpolant::diff(double x)
 {
   //increase calls
   stats.total_calls++;
-  stats.min = std::min(stats.min, i_x);
-  stats.max = std::max(stats.max, i_x);
   
+  //uncomment if we want to do the check automatically
   //every STATISTIC_CHECK calls check the statistics
-  if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
-    this->check_and_reinterpolate();
+  //if((stats.total_calls % STATISTIC_CHECK == 0) && use_statistics) 
+  //  this->check_and_reinterpolate();
   
-  if(i_x < bound_a_)     //left miss
+  if(x < bound_a_)     //left miss
   {
     stats.interval_miss_a++;
-    return f_diff(i_x);  //right miss
+    stats.min = std::min(stats.min, x);
+    return f_diff(x);  //right miss
   }
-  if(i_x > bound_b_)
+  if(x > bound_b_)
   {
     stats.interval_miss_b++;
-    return f_diff(i_x);
+    stats.max = std::max(stats.max, x);
+    return f_diff(x);
   }
   else                  //hit the interval
   {
-    return diff_p1(i_x);
+    return diff_p1(x);
   }  
 }
   
-inline double Interpolant::f_val(const double& i_x)
+inline double Interpolant::f_val(double x)
 {
-  return func->operator()(i_x);
+  return func->operator()(x);
 }
   
-inline der Interpolant::f_diff ( const double& i_x )
+inline DiffValue Interpolant::f_diff (double x)
 {
-  B<double> x(i_x);   // Initialize arguments
+  B<double> xx(x);   // Initialize arguments
   //Func func;        // Instantiate functor
-  B<double> f(func_diff->operator()(x)); // Evaluate function and record DAG
+  B<double> f(func_diff->operator()(xx)); // Evaluate function and record DAG
   f.diff(0,1);        // Differentiate
  
-  der d;
-  d.f = f.x();        // Value of function
-  d.dfdx = x.d(0);    // Value of df/dx
+  DiffValue d;
+  d.first = f.x();    // Value of function
+  d.second = xx.d(0);  // Value of df/dx
   return d;           // Return function value
 }
 
-inline unsigned int Interpolant::find_interval(const double& i_x)
+inline unsigned int Interpolant::find_interval(double x)
 {
   //counts in which interval x is (the last node before x)
-  return floor((i_x - bound_a_) / step);
+  return floor((x - bound_a_) / step);
 }
 
 /* //CONSTANT INTERPOLATION
-inline double Interpolant::val_p0(const double& i_x)
+inline double Interpolant::val_p0(double x)
 {
-  return f_vec[find_interval(i_x)];
+  return f_vec[find_interval(x)];
 }
 
-inline der Interpolant::diff_p0(const double& i_x)
+inline DiffValue Interpolant::diff_p0(double x)
 {
-  der result;
-  unsigned int i = find_interval(i_x);
+  DiffValue result;
+  unsigned int i = find_interval(x);
   result.f = f_vec[i];
   result.dfdx = df_vec[i];
   return result;
 }
 */
   
-inline double Interpolant::val_p1(const double& i_x)
+inline double Interpolant::val_p1(double x)
 {
-  unsigned int i = find_interval(i_x);
-  return p1_vec[i]*(i_x-x_vec[i]) + f_vec[i];
+  unsigned int i = find_interval(x);
+  return p1_vec[i]*(x-x_vec[i]) + f_vec[i];
 }
   
-inline der Interpolant::diff_p1(const double& i_x)
+inline DiffValue Interpolant::diff_p1(double x)
 {
-  der result;
-  unsigned int i = find_interval(i_x);
-  result.f = p1_vec[i]*(i_x-x_vec[i]) + f_vec[i];
-  result.dfdx = p1d_vec[i]*(i_x-x_vec[i]) + df_vec[i];
+  DiffValue result;
+  unsigned int i = find_interval(x);
+  result.first = p1_vec[i]*(x-x_vec[i]) + f_vec[i];
+  result.second = p1d_vec[i]*(x-x_vec[i]) + df_vec[i];
   return result;
 }
 
@@ -199,7 +200,7 @@ public:
   virtual double operator()(double x)
   {
     double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
-    double diff = std::pow(interpolant->f_diff(x).dfdx - interpolant->diff(x).dfdx,2);
+    double diff = std::pow(interpolant->f_diff(x).second - interpolant->diff(x).second,2);
     return val+diff;
   }         
   
@@ -222,24 +223,10 @@ void InterpolantImplicit::set_functor(Func<Type>* func)
   
   checks[Interpolant::check_functor] = true;
 }
-  
-template<template<class> class Func>
-void InterpolantImplicit::set_functor(Func<double>* func) 
-{
-  this->func = func;
-  func_diff = new Func<B<double> >();
-  func_diffn = new Func<T<double> >();
-  
-  func_diff->set_param_from_func(func);
-  func_diffn->set_param_from_func(func);
-  
-  checks[Interpolant::check_functor] = true;
-}
-
 
   ///class FuncExplicit.
   /** This functor transforms implicit functor with two variables into
-   * an explicit functor with only one varible and the other one fixed.
+   * an explicit functor with only one variable and the other one fixed.
    */
   template<class Type>
   class InterpolantImplicit::FuncExplicit : public FunctorBase<Type>
@@ -247,18 +234,11 @@ void InterpolantImplicit::set_functor(Func<double>* func)
   public:
     ///Constructor.
     FuncExplicit(){}
-  
-  /*
-    //probably not using
-    template<class TType>
-    FuncExplicit(FunctorBase<TType>& func) : FunctorBase<Type>(func){};
-   
     
     //constructor from templated implicit functor
     template<class TType>
-    FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
-      : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
-  */
+    FuncExplicit(IFunctorBase<TType>& func_impl, fix_var fix, double fix_val)
+      : func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
     
     virtual Type operator()(Type u)
     {

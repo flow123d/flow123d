@@ -20,7 +20,7 @@ public:
   ///Constructor.
   Linear(){}
   
-  virtual Type operator()(Type x)
+  Type operator()(Type x)
   {
     return x+2;
   }    
@@ -34,7 +34,7 @@ public:
   ///Constructor.
   Quadratic(){}
   
-  virtual Type operator()(Type x)
+  Type operator()(Type x)
   {
     return x*x;
   }    
@@ -60,7 +60,7 @@ public:
     this->set_param(p3, pp3);
   }
   
-  virtual Type operator()(Type x)
+  Type operator()(Type x)
   {
     return x*x*x + this->param(p1);
   }    
@@ -79,7 +79,7 @@ public:
   ///Constructor.
   Circle(){}
   
-  virtual Type operator()(Type x,Type y)
+  Type operator()(Type x,Type y)
   {
     return x*x + y*y - this->param(Circle<Type>::radius)*this->param(Circle<Type>::radius);
   }    
@@ -138,19 +138,21 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->statistics().total_calls, 0);
   EQUAL(interpolant->statistics().interval_miss_a, 0);
   EQUAL(interpolant->statistics().interval_miss_b, 0);
+  EQUAL(interpolant->statistics().min, 0);
+  EQUAL(interpolant->statistics().max, 0);
   
   //2^3 = 8, dfdx: 3x^2, 3*2^2=12
   EQUAL(my_func(2), 8);
   EQUAL(interpolant->f_val(2), 8);
-  EQUAL(interpolant->f_diff(2).f, 8);
-  EQUAL(interpolant->f_diff(2).dfdx, 12);
+  EQUAL(interpolant->f_diff(2).first, 8);
+  EQUAL(interpolant->f_diff(2).second, 12);
   
   //2nd 3rd derivate: 6*x, 6
   EQUAL(interpolant->f_diffn(4,2), 24);
   EQUAL(interpolant->f_diffn(4,3), 6);
   
-  EQUAL(interpolant2->f_diff(2).f, 10);
-  EQUAL(interpolant2->f_diff(2).dfdx, 12);
+  EQUAL(interpolant2->f_diff(2).first, 10);
+  EQUAL(interpolant2->f_diff(2).second, 12);
   
   
   interpolant->set_interval(-5,11);
@@ -160,7 +162,8 @@ TEST (Functors, make_interpolation)
   DBGMSG("Error of interpolation: %f\n", interpolant->error());
   
   EQUAL(interpolant->val(-7), -343);    //out of interval
-  EQUAL(interpolant->statistics().min, interpolant->statistics().max);
+  EQUAL(interpolant->statistics().min, -7.0);
+  EQUAL(interpolant->statistics().max, 11);
   
   EQUAL(interpolant->val(-5), -125);
   EQUAL(interpolant->val(0), 0);
@@ -169,14 +172,14 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->val(11), 1331);
   EQUAL(interpolant->val(15), 3375);    //out of interval
   
-  EQUAL(interpolant->diff(-7).f, -343); //out of interval
-  EQUAL(interpolant->diff(-7).dfdx, 147);       //out of interval
-  EQUAL(interpolant->diff(-4).dfdx, 51);
-  EQUAL(interpolant->diff(3).dfdx, 27);
-  EQUAL(interpolant->diff(5).dfdx, 75);
-  EQUAL(interpolant->diff(9).dfdx, 243);
-  EQUAL(interpolant->diff(10).dfdx, 303);
-  EQUAL(interpolant->diff(11).dfdx, 363);
+  EQUAL(interpolant->diff(-7).first, -343); //out of interval
+  EQUAL(interpolant->diff(-7).second, 147);       //out of interval
+  EQUAL(interpolant->diff(-4).second, 51);
+  EQUAL(interpolant->diff(3).second, 27);
+  EQUAL(interpolant->diff(5).second, 75);
+  EQUAL(interpolant->diff(9).second, 243);
+  EQUAL(interpolant->diff(10).second, 303);
+  EQUAL(interpolant->diff(11).second, 363);
   
   //statistics
   EQUAL(interpolant->statistics().total_calls, 15);
@@ -194,13 +197,16 @@ TEST (Functors, make_interpolation)
     interpolant->val(15);
   }
   
+  interpolant->check_and_reinterpolate();
+  
   //statistics
   //DBGMSG("bound_a: %f\n",interpolant->bound_a());
   //DBGMSG("bound_b: %f\n",interpolant->bound_b());
   //DBGMSG("total: %d\n",interpolant->statistics().total_calls);
   EQUAL(interpolant->bound_a(),-20);
   EQUAL(interpolant->bound_b(),15);
-  EQUAL(interpolant->statistics().total_calls, 1017);
+  
+  EQUAL(interpolant->statistics().total_calls, 0);
   EQUAL(interpolant->statistics().interval_miss_a, 0);
   EQUAL(interpolant->statistics().interval_miss_b, 0);
   EQUAL(interpolant->statistics().min, -20.0);
