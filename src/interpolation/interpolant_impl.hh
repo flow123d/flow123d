@@ -174,13 +174,13 @@ inline der Interpolant::diff_p1(const double& i_x)
 
 
 
-class Interpolant::NormL2 : public Functor<double>
+class Interpolant::NormL2 : public FunctorBase<double>
 {
 public:
   NormL2(Interpolant* interpolant)
   : interpolant(interpolant){}
 
-  virtual double operator()(const double& x)
+  virtual double operator()(double x)
   {
     return std::pow(interpolant->f_val(x) - interpolant->val(x),2);
   }         
@@ -190,13 +190,13 @@ private:
 };
 
 
-class Interpolant::NormW21 : public Functor<double>
+class Interpolant::NormW21 : public FunctorBase<double>
 {
 public:
   NormW21(Interpolant* interpolant)
   : interpolant(interpolant){}
  
-  virtual double operator()(const double& x)
+  virtual double operator()(double x)
   {
     double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
     double diff = std::pow(interpolant->f_diff(x).dfdx - interpolant->diff(x).dfdx,2);
@@ -242,24 +242,25 @@ void InterpolantImplicit::set_functor(Func<double>* func)
    * an explicit functor with only one varible and the other one fixed.
    */
   template<class Type>
-  class InterpolantImplicit::FuncExplicit : public Functor<Type>
+  class InterpolantImplicit::FuncExplicit : public FunctorBase<Type>
   {
   public:
     ///Constructor.
     FuncExplicit(){}
   
+  /*
     //probably not using
     template<class TType>
-    FuncExplicit(Functor<TType>& func) : Functor<Type>(func){};
+    FuncExplicit(FunctorBase<TType>& func) : FunctorBase<Type>(func){};
    
-    /*
+    
     //constructor from templated implicit functor
     template<class TType>
     FuncExplicit(FunctorImplicit<TType>& func_impl, fix_var fix, const double& fix_val)
       : Functor<TType>(func_impl),func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
   */
     
-    virtual Type operator()(const Type& u)
+    virtual Type operator()(Type u)
     {
       Type ret;
       if(fix_ == InterpolantImplicit::fix_x)
@@ -271,7 +272,7 @@ void InterpolantImplicit::set_functor(Func<double>* func)
     }
     
   private:
-    FunctorImplicit<Type>* func_impl;
+    IFunctorBase<Type>* func_impl;
     fix_var fix_;
     double fix_val;
   };

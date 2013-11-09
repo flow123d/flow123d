@@ -11,7 +11,7 @@ double AdaptiveSimpson::Simpson(const double& h, const double &fa,
   return (fa + fb + 4.0*fc)*(h/6.0);
 }
 
-double AdaptiveSimpson::SimpsonAd(Functor<double> &func, 
+double AdaptiveSimpson::SimpsonAd(FunctorBase<double> &func, 
 				  const double& h, const double &a, 
 				  const double &c, const double &b,
 				  const double &fa, const double &fc, 
@@ -42,7 +42,7 @@ double AdaptiveSimpson::SimpsonAd(Functor<double> &func,
   }
 }
 
-double AdaptiveSimpson::AdaptSimpson( Functor<double> &func,
+double AdaptiveSimpson::AdaptSimpson( FunctorBase<double> &func,
 				      const double& a, const double& b, 
 				      const double& tol )
 {
