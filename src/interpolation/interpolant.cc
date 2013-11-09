@@ -8,25 +8,26 @@
 #include <limits>
 
 /********************************** InterpolantBase ******************************/
-const unsigned int InterpolantBase::n_derivates = 10;
+const unsigned int InterpolantBase::n_derivatives = 10;
 
 InterpolantBase::InterpolantBase()
-  : max_size(MAX_SIZE),
+  : bound_a_(0),
+    bound_b_(0),
+    max_size(MAX_SIZE),
     automatic_step(false),
     error_(-1.0),
     extrapolation(InterpolantBase::functor),
-    n_checks(4),
     use_statistics(true)
 {
   reset_stat();
-  checks.resize(n_checks);
+  checks.resize(4);
 }
   
 InterpolantBase::~InterpolantBase() 
 {}
   
 
-void InterpolantBase::set_interval(const double& bound_a, const double& bound_b)
+void InterpolantBase::set_interval(double bound_a, double bound_b)
 {
   ASSERT(bound_a != bound_b,"Bounds overlap.");
   ASSERT(bound_a < bound_b,"a must be lower and b must be upper bound.");
@@ -36,11 +37,13 @@ void InterpolantBase::set_interval(const double& bound_a, const double& bound_b)
   checks[check_b] = true;
   
   //are given oposite be able to response to all calls
-  stats.min = std::numeric_limits<double>::max();
-  stats.max = -std::numeric_limits<double>::max();
+  //stats.min = std::numeric_limits<double>::max();
+  //stats.max = -std::numeric_limits<double>::max();
+  stats.min = bound_a;
+  stats.max = bound_b;
 }
   
-void InterpolantBase::set_size(const unsigned int& size)
+void InterpolantBase::set_size(unsigned int size)
 {
   ASSERT(size >0, "Size of interpolation table must be positive number!.");
   this->size_ = size;
@@ -49,7 +52,7 @@ void InterpolantBase::set_size(const unsigned int& size)
   automatic_step = false;
 }
 
-void InterpolantBase::set_size_automatic(const double& user_tol, const unsigned int& init_size, const unsigned int& max_size)
+void InterpolantBase::set_size_automatic(double user_tol, unsigned int init_size, unsigned int max_size)
 {
   ASSERT(init_size >0, "Maximal size of interpolation table must be positive number!.");
   ASSERT(max_size >= init_size, "Maximal size of interpolation table is smaller than initial size.");
@@ -69,9 +72,11 @@ void InterpolantBase::reset_stat()
   stats.interval_miss_a = 0;
   stats.interval_miss_b = 0;
   stats.total_calls = 0;
-  stats.min = std::numeric_limits<double>::max();
-  stats.max = -std::numeric_limits<double>::max();
+  //stats.min = std::numeric_limits<double>::max();
+  //stats.max = -std::numeric_limits<double>::max();
   //switch statistics on
+  stats.min = bound_a_;
+  stats.max = bound_b_;
   use_statistics = true;
 }
 
@@ -101,19 +106,13 @@ void InterpolantBase::check_and_reinterpolate()
 }
 
   
-bool InterpolantBase::check_all()
+void InterpolantBase::check_all()
 {
-  if (!checks[Interpolant::check_functor]) std::cout << "Functor is not set." << std::endl;
-  if (!checks[Interpolant::check_a]) std::cout << "Left boundary of the interval is not set." << std::endl;
-  if (!checks[Interpolant::check_b]) std::cout << "Right boundary of the interval is not set." << std::endl;
-  if (!checks[Interpolant::check_size]) std::cout << "Step is not set." << std::endl;
-  if ((user_tol == 0) && automatic_step) xprintf(Err,"Tolerance for automatic interpolation is not set.");
-    
-  bool res=true;
-  for(unsigned int i=0; i<checks.size(); i++)
-    res = res && checks[i];
-    
-  return res;
+  ASSERT(checks[Interpolant::check_functor], "Functor is not set.");
+  ASSERT(checks[Interpolant::check_a], "Left boundary of the interval is not set.");
+  ASSERT(checks[Interpolant::check_b], "Right boundary of the interval is not set.");
+  ASSERT(checks[Interpolant::check_size], "Step is not set.");
+  ASSERT(! ((user_tol == 0) && automatic_step), "Tolerance for automatic interpolation is not set.");
 }
 
 long InterpolantBase::fact(long n)
@@ -141,17 +140,17 @@ Interpolant::~Interpolant()
 }
 
   
-double Interpolant::f_diffn(const double& i_x, const unsigned int& n)
+double Interpolant::f_diffn(double x,unsigned int n)
 {
-  ASSERT(n <= n_derivates,"Not allowed to obtain higher than n-th derivate.");
-  T<double> x,f;
+  ASSERT(n <= n_derivatives,"Not allowed to obtain higher than n-th derivate.");
+  T<double> xx,f;
 
-  x = i_x;
-  x[1] = 1;
-  f = func_diffn->operator()(x);
-  f.eval(n_derivates);
+  xx = x;
+  xx[1] = 1;
+  f = func_diffn->operator()(xx);
+  f.eval(n_derivatives);
       
-  for(unsigned int i = 0; i<n_derivates; i++)    //goes through the field of Taylor's coeficients
+  for(unsigned int i = 0; i<n_derivatives; i++)    //goes through the field of Taylor's coeficients
   {                           //and divide them by the factorial to get derivates
     f[i] = f[i] * this->fact(i);
   }
@@ -169,29 +168,29 @@ void Interpolant::create_nodes()
   df_vec.resize(n_nodes);      //function derivates values in the nodes
     
   //filling the vector x and f
-  der value;
+  DiffValue value;
   double temp_x = bound_a_;
   for(unsigned int i = 0; i < size_; i++)
   {
     temp_x = bound_a_ + step*i;
     value = f_diff(temp_x);
     x_vec[i] = temp_x;
-    f_vec[i] = value.f;
-    df_vec[i] = value.dfdx;
+    f_vec[i] = value.first;
+    df_vec[i] = value.second;
   }  
     
   //finish the interval
   x_vec[size_] = bound_b_;
   value = f_diff(bound_b_);
-  f_vec[size_] = value.f;
-  df_vec[size_] = value.dfdx;
+  f_vec[size_] = value.first;
+  df_vec[size_] = value.second;
     
   //DBGMSG("number_of_nodes = %d\n", n_nodes);
 }
 
 int Interpolant::interpolate()
 {   
-  ASSERT(check_all(), "Parameters check did not pass. Some of the parameters were not set.");  
+  check_all();  //checks if all needed parameters were set
   unsigned int result;
   
   //switch off statistics due to error computation
@@ -362,10 +361,10 @@ void InterpolantImplicit::fix_variable(InterpolantImplicit::fix_var fix, const d
 {
   fix_ = fix;
   fix_val = val;
-  //func_u = new InterpolantImplicit::FuncExplicit<double>(*func,fix_,fix_val);
+  func_u = new InterpolantImplicit::FuncExplicit<double>(*func,fix_,fix_val);
 }
 
-double InterpolantImplicit::f_val(const double& u)
+double InterpolantImplicit::f_val(double u)
 {
   return func_u->operator()(u);
 }
@@ -376,7 +375,7 @@ void InterpolantImplicit::interpolate_p1()
   if(func_u != NULL) 
     delete func_u;
   
-  //func_u = new FuncExplicit<double>(*func,fix_,fix_val);
+  func_u = new FuncExplicit<double>(*func,fix_,fix_val);
 }
 
 

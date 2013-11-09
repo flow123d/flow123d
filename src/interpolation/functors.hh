@@ -84,7 +84,7 @@ public:
     this->set_param(p3, pp3);
   }
   
-  virtual Type operator()(Type x)
+  Type operator()(Type x)
   {
     return x*x*x * this->param(p1) + this->param(p2)/this->param(p3);
   }    
