@@ -19,7 +19,7 @@ class AdaptiveSimpson
     static double Simpson ( const double& h, const double &fa, const double &fc, const double &fb );
   
     ///the recursive method
-    static double SimpsonAd( Functor<double> &func, 
+    static double SimpsonAd( FunctorBase<double> &func, 
 		      const double& h, const double &a, const double &c, const double &b,
 		      const double &fa, const double &fc, const double &fb, 
 		      const double &sx, const double &tol, long &recursion );
@@ -27,7 +27,7 @@ class AdaptiveSimpson
   public:
 	       
     ///main method that starts the evaluation and calls the recursion
-    static double AdaptSimpson( Functor<double> &func,
+    static double AdaptSimpson( FunctorBase<double> &func,
 		     const double& a, const double& b, 
 		     const double& tol );	    		
 };

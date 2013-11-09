@@ -220,9 +220,9 @@ protected:
   class NormL2;
   class NormW21;
   
-  Functor<double>* func;                ///<< Pointer to original functor with double type.
-  Functor<B<double> >* func_diff;       ///<< Pointer to original functor with FADBAD type.
-  Functor<T<double> >* func_diffn;      ///<< Pointer to original functor with FADBAD type.
+  FunctorBase<double>* func;                ///<< Pointer to original functor with double type.
+  FunctorBase<B<double> >* func_diff;       ///<< Pointer to original functor with FADBAD type.
+  FunctorBase<T<double> >* func_diffn;      ///<< Pointer to original functor with FADBAD type.
   
   ///@name Interpolation.
   //@{
@@ -238,7 +238,7 @@ protected:
   void interpolate_p1();
   
   ///Computes interpolation error with given norm.
-  void compute_error(Functor<double>* norm);
+  void compute_error(FunctorBase<double>* norm);
   
   /** Creates vector of nodes according to the table size
    * and computes function values and derivates at the nodes.
@@ -361,9 +361,9 @@ protected:
   class FuncExplicit;
   
   FuncExplicit<double>* func_u;
-  FunctorImplicit<double>* func;
-  FunctorImplicit<B<double> >* func_diff;
-  FunctorImplicit<T<double> >* func_diffn;
+  IFunctorBase<double>* func;
+  IFunctorBase<B<double> >* func_diff;
+  IFunctorBase<T<double> >* func_diffn;
   
   Interpolant* explicit_interpolant;
 

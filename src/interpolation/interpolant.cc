@@ -270,7 +270,7 @@ int Interpolant::interpolate()
       p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / (x_vec[i+1] - x_vec[i]);
     }
     
-    Functor<double>* norm = new NormW21(this);
+    FunctorBase<double>* norm = new NormW21(this);
     compute_error(norm);
     delete norm;
   
@@ -283,7 +283,7 @@ int Interpolant::interpolate()
     //*/
   }
   
-void Interpolant::compute_error(Functor<double>* norm)
+void Interpolant::compute_error(FunctorBase<double>* norm)
 {
   double tot_err = 0; // total absolute error on <a,b>
   double p_err = 0;   // absolute error on x[i]-x[i+1]

@@ -4,16 +4,15 @@
 #include "functors.hh"
 #include "system/xio.h"
 
-/************************************************ FunctorBase ********************************/
+/**************************************** FunctorCommon *****************************************/
 template<class Type>
-FunctorBase<Type>::FunctorBase() 
-{}
+FunctorCommon<Type>::FunctorCommon() {}
   
 template<class Type>
-FunctorBase<Type>::~FunctorBase() {}
+FunctorCommon<Type>::~FunctorCommon() {}
   
 template<class Type>
-void FunctorBase<Type>::set_param(const unsigned int& param_name, const double& param_value)
+void FunctorCommon<Type>::set_param(unsigned int param_name, double param_value)
 {
   if(param_name < param_.size())
   {
@@ -27,10 +26,9 @@ void FunctorBase<Type>::set_param(const unsigned int& param_name, const double& 
 
 template<class Type> 
 template<class TType> 
-void FunctorBase<Type>::set_param_from_func(FunctorBase<TType>* func)
+void FunctorCommon<Type>::set_param_from_func(FunctorCommon<TType>* func)
 {
-  //DBGMSG("FunctorBase copy constructor.\n");
-  unsigned int n = func->n_param();
+  unsigned int n = func->param_.size();
   //DBGMSG("param_size = %d\n",n);
   param_.resize(n);
   
@@ -42,38 +40,28 @@ void FunctorBase<Type>::set_param_from_func(FunctorBase<TType>* func)
 }
  
 template<class Type>
-double FunctorBase<Type>::param(const unsigned int& param_name)
+double FunctorCommon<Type>::param(unsigned int param_name)
 {
   ASSERT(param_name < param_.size(),"Parameter of the functor was not set.");
   
   return param_[param_name];
 }
+
+  
+/************************************************ FunctorBase ************************************/
+template<class Type>
+FunctorBase<Type>::FunctorBase() : FunctorCommon<Type>::FunctorCommon() {}
   
 template<class Type>
-unsigned int FunctorBase<Type>::n_param()
-{ 
-  return param_.size();
-}
+FunctorBase<Type>::~FunctorBase() {}
   
   
-/************************************************ Functor ************************************/
+/************************************************ IFunctorBase ***********************************/
 template<class Type>
-Functor<Type>::Functor() : FunctorBase<Type>::FunctorBase()
-{}
-  
+IFunctorBase<Type>::IFunctorBase() : FunctorCommon<Type>::FunctorCommon() {}
   
 template<class Type>
-Functor<Type>::~Functor() {}
-  
-  
-/************************************************ FunctorImplicit *****************************/
-template<class Type>
-FunctorImplicit<Type>::FunctorImplicit() : FunctorBase<Type>::FunctorBase()
-{}
- 
-  
-template<class Type>
-FunctorImplicit<Type>::~FunctorImplicit() {}
+IFunctorBase<Type>::~IFunctorBase() {}
  
 
 #endif  //FUNCTORBASE_IMPL_H
