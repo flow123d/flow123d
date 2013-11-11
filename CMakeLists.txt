@@ -1,7 +1,5 @@
 # CMAKE system TODO
 #
-# * make our own module FindPETSC  using native cmake support in PETSC version >3.2 
-# * check external packages in FindPETSC, in particular Parmetis
 #
 # * report compiler flags and used libraries in a summarizing table before own build
 #
@@ -11,9 +9,12 @@
 #
 #
 
+# check build_tree link,
+# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 # Include settings given by user first
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CONFIG_CMAKE "config.cmake")
 if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
@@ -443,7 +444,7 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
 
 macro(make_link_in_source FILE)
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_BINARY_DIR}/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
   
@@ -474,18 +475,27 @@ add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 if( PETSC_FOUND )
 
+  #### Safety check of build_tree link
+  # This check is called by every target, if it fails we are probably running makefile generated for another branch.
+  # So we must break the build.
+  add_custom_target(update_source_tree 
+
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook 0 0 1
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+   
+
   #### create rev_num.h - file with some info about code origin
   # a custom target - is always built -> call cmake script to generate rev_num.h
   # Get the current working branch
 
-
-  message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+  #message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
   add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
   )
   
   # rev_num.h is a generated file
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
+  set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 
@@ -514,7 +524,7 @@ if( PETSC_FOUND )
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )

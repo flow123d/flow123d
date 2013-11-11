@@ -24,11 +24,11 @@
 # Build itself takes place in ../<branch>-build
 #
 
-# default root of builds
-BUILD_SPACE="$(shell pwd)/.."
+# check and possibly set build_tree link
+NULL=$(shell bin/git_post_checkout_hook)
 
-BRANCH_NAME=$(shell git rev-parse --abbrev-ref HEAD)
-BUILD_DIR="$(BUILD_SPACE)/build-$(BRANCH_NAME)"
+# following depends on git_post_checkout_hook
+BUILD_DIR="$(shell cd -P ./build_tree && pwd)"
 SOURCE_DIR="$(shell pwd)"
 
 
@@ -37,7 +37,7 @@ ifndef N_JOBS
 endif  
 
 
-all:  build_flow123d 
+all:  install_hooks build_flow123d 
 
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
@@ -56,6 +56,13 @@ cmake:
 	if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
 	cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
+	
+# add post-checkout hook
+install_hooks:
+	if [ ! -e .git/hooks/post-checkout ];\
+	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
+	fi	
+		
 
 # Save config.cmake from working dir to the build dir.
 save_config:

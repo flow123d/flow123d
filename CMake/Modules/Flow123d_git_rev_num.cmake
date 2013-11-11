@@ -1,7 +1,6 @@
 ####
 # this CMake script is called at build time to get revision of current working copy
 
-# the FindSubversion.cmake module is part of the standard distribution
 include(FindGit)
 
 if (GIT_FOUND) 

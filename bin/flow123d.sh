@@ -95,7 +95,7 @@ function parse_arguments()
         NICE=0
 
 	# print help when called with no parameters
-	if [ -z "$1" ]; then print_help; exit 0; fi
+	if [ -z "$1" ]; then print_help; exit 1; fi
 	
 	# Parse arguments (do not use bash builtin command getopts, it is too restrictive)
 	while [ -n "$1" ]

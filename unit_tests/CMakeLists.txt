@@ -46,6 +46,7 @@ macro(define_test class_name)
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
   #set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
+  add_dependencies(${test_binary} update_source_tree)
 
   # rule to run the test
   add_custom_target(${test_name} 
