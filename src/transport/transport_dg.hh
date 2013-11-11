@@ -234,6 +234,8 @@ public:
 	 */
 	virtual EqData *get_data() { return &data; }
 
+	TimeIntegrationScheme time_scheme() { return implicit_euler; }
+
 	/**
 	 * @brief Destructor.
 	 */
@@ -482,13 +484,6 @@ private:
 	/// The mass matrix.
 	Mat mass_matrix;
 
-//	/// Element id -> local element index (-1 if not local)
-//    int *row_4_el;
-//    /// Local element index -> id
-//    int *el_4_loc;
-//    /// Distribution of elements
-//    Distribution *el_ds;
-
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
 
@@ -510,9 +505,6 @@ private:
 	/// Class for handling the solution output.
 	OutputTime *transport_output;
 
-	/// Time marks for writing the output.
-	//TimeMark::Type output_mark_type;
-
 	// @}
 
 
@@ -526,8 +518,6 @@ private:
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
-
-    //const MH_DofHandler * mh_dh;
 
     // @}
 };

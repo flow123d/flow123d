@@ -209,6 +209,7 @@
 \AddDoc{Sorptions::molar\_masses}
 \AddDoc{Sorptions::solubility}
 \AddDoc{Sorptions::bulk\_data}
+\AddDoc{Sorptions::time}
 \AddDoc{Sorption\_BulkData}
 \AddDoc{Sorption\_BulkData::r\_set}
 \AddDoc{Sorption\_BulkData::region}

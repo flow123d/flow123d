@@ -105,6 +105,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
     string::size_type new_pos = 0;
     string address = ref_address + '/';
     string tmp_str;
+    bool relative_ref = false;
 
     std::set<string>::iterator it = previous_references_.find(ref_address);
     if (it == previous_references_.end()) {
@@ -134,6 +135,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
             }
 
         } else if (tmp_str == "..") {
+        	relative_ref = true;
             if (ref_path.level() <= 0 ) {
                 THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("can not go up from root") );
@@ -149,6 +151,9 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
                         << EI_Specification("key '"+tmp_str+"' not found") );
         }
         pos = new_pos+1;
+    }
+    if (relative_ref) {
+    	xprintf(Msg, "Key '%s' is set to value of key '%s'\n", this->str().c_str(), ref_path.str().c_str());
     }
     return ref_path;
 }

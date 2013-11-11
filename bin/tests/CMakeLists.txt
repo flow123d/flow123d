@@ -13,7 +13,7 @@
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/time_limit.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/flow123d.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/mpiexec ${CMAKE_CURRENT_BINARY_DIR}/test_dir
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/bin/mpiexec ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/config ${CMAKE_CURRENT_BINARY_DIR}/test_dir
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/test_dir/tests
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/tests/run_test.sh ${CMAKE_CURRENT_BINARY_DIR}/test_dir/tests

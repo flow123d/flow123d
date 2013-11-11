@@ -163,6 +163,7 @@ set(sources_lib_non_system
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
+    transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
 )
