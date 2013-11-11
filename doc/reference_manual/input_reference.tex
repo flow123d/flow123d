@@ -368,10 +368,10 @@ coupled with reaction and sorption model (ODE per element)
 \begin{RecordType}{\HTRaised{IT::Sorptions}{Sorptions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information about all the limited solubility affected adsorptions.}
 \KeyItem{\hyperB{Sorptions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Sorptions}{}{Sub-record selection.}
 \KeyItem{\hyperB{Sorptions::solvent-dens}{solvent\_dens}}{Double }{1.0}{}{Density of the solvent.}
-\KeyItem{\hyperB{Sorptions::substeps}{substeps}}{Integer }{100}{}{Number of equidistant substeps, molar mass and isotherm intersections}
-\KeyItem{\hyperB{Sorptions::species}{species}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of all the sorbing species}
+\KeyItem{\hyperB{Sorptions::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{Sorptions::species}{species}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of all the adsorbing species}
 \KeyItem{\hyperB{Sorptions::molar-masses}{molar\_masses}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the sorbing species}
-\KeyItem{\hyperB{Sorptions::solubility}{solubility}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies solubility limits of all the sorbing species}
+\KeyItem{\hyperB{Sorptions::solubility}{solubility}}{Array  of Double }{-1.0}{}{Specifies solubility limits of all the sorbing species}
 \KeyItem{\hyperB{Sorptions::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::Sorption-BulkData}{Sorption\_BulkData}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessery to construct isotherms.}
 \end{RecordType}
 
@@ -555,6 +555,9 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{TransportDG-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
 \KeyItem{\hyperB{TransportDG-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
 \KeyItem{\hyperB{TransportDG-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Boundary conditions for concentrations.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Default Field value: inflow \\ Boundary condition type, possible values: inflow, dirichlet, neumann, robin.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Flux in Neumann boundary condition.}
+\KeyItem{\hyperB{TransportDG-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Conductivity coefficient in Robin boundary condition.}
 \KeyItem{\hyperB{TransportDG-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
 \KeyItem{\hyperB{TransportDG-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
 \end{RecordType}

@@ -54,6 +54,13 @@ Selection TransportDG::dg_variant_selection_input_type
 	.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
 	.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method");
 
+Selection TransportDG::EqData::bc_type_selection =
+              Selection("TransportDG_EqData_bc_Type")
+               .add_value(inflow, "inflow", "Dirichlet BC on inflow and homogeneous Neumann BC on outflow.")
+               .add_value(dirichlet, "dirichlet")
+               .add_value(neumann, "neumann")
+               .add_value(robin, "robin");
+
 Record TransportDG::input_type
 	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
 	.derive_from(TransportBase::input_type)
@@ -177,6 +184,20 @@ TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
 	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", Default("0"));
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
 			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", Default("1.0"));
+
+    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", Default("inflow") );
+    bc_type.set_selection(&bc_type_selection);
+
+    std::vector<FieldEnum> list; list.push_back(neumann);
+//    bc_conc.disable_where(& bc_type, list );
+
+    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", Default("0.0"));
+//    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(robin);
+//    bc_flux.disable_where(& bc_type, list );
+
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", Default("0.0"));
+//    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(neumann);
+//    bc_robin_sigma.disable_where(& bc_type, list );
 }
 
 RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
@@ -213,6 +234,9 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data.set_mesh(&init_mesh);
     data.init_conc.set_n_comp(n_subst_);
     data.bc_conc.set_n_comp(n_subst_);
+    data.bc_type.set_n_comp(n_subst_);
+    data.bc_flux.set_n_comp(n_subst_);
+    data.bc_robin_sigma.set_n_comp(n_subst_);
     data.diff_m.set_n_comp(n_subst_);
     data.disp_l.set_n_comp(n_subst_);
     data.disp_t.set_n_comp(n_subst_);
@@ -977,7 +1001,7 @@ void TransportDG::assemble_fluxes_boundary()
     vector<arma::mat33> side_K(qsize);
     vector<arma::vec3> side_velocity;
     vector<double> por_m(qsize), csection(qsize);
-    vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize);
+    vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize), robin_sigma(qsize);
     arma::vec dg_penalty;
     double gamma_l;
 
@@ -1005,37 +1029,44 @@ void TransportDG::assemble_fluxes_boundary()
         data.por_m.value_list(fe_values_side.point_list(), ele_acc, por_m);
         data.cross_section->value_list(fe_values_side.point_list(), ele_acc, csection);
         dg_penalty = data.dg_penalty.value(cell->centre(), ele_acc);
+        arma::uvec bc_type = data.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
+
+        data.bc_robin_sigma.value_list(fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
 
         for (int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int k=0; k<qsize; k++)
         		calculate_dispersivity_tensor(side_K[k], side_velocity[k], Dm[k][sbi], alphaL[k][sbi], alphaT[k][sbi], por_m[k], csection[k]);
 
-			// set up the parameters for DG method
-			set_DG_parameters_boundary(side, side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
-			if (side->cond() != 0)
-				gamma[sbi][side->cond_idx()] = gamma_l;
+        	for (unsigned int i=0; i<ndofs; i++)
+        		for (unsigned int j=0; j<ndofs; j++)
+        			local_matrix[i*ndofs+j] = 0;
 
 			// On Neumann boundaries we have only term from integrating by parts the advective term,
 			// on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
 			double transport_flux = mh_dh->side_flux( *side )/side->measure();
-			if (mh_dh->side_flux( *side ) < -mh_dh->precision())
-				transport_flux += gamma_l;
-
-			for (unsigned int i=0; i<ndofs; i++)
-				for (unsigned int j=0; j<ndofs; j++)
-					local_matrix[i*ndofs+j] = 0;
+			if ((bc_type[sbi] == EqData::dirichlet)
+					|| (bc_type[sbi] == EqData::inflow ))
+			{
+				// set up the parameters for DG method
+				set_DG_parameters_boundary(side, side_K, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
+				gamma[sbi][side->cond_idx()] = gamma_l;
+				if (bc_type[sbi] == EqData::dirichlet || mh_dh->side_flux( *side ) < -mh_dh->precision())
+					transport_flux += gamma_l;
+			}
 
 			// fluxes and penalty
 			for (unsigned int k=0; k<qsize; k++)
 			{
-				double flux_times_JxW = transport_flux*fe_values_side.JxW(k);
+				double flux_times_JxW;
+				if (bc_type[sbi] == EqData::robin)
+					flux_times_JxW = (transport_flux + robin_sigma[k][sbi])*fe_values_side.JxW(k);
+				else
+					flux_times_JxW = transport_flux*fe_values_side.JxW(k);
 
 				for (unsigned int i=0; i<ndofs; i++)
-				{
 					for (unsigned int j=0; j<ndofs; j++)
 						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
-				}
 			}
 			ls[sbi]->mat_set_values(ndofs, (int *)side_dof_indices, ndofs, (int *)side_dof_indices, local_matrix);
         }
@@ -1184,11 +1215,15 @@ void TransportDG::set_boundary_conditions()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     unsigned int side_dof_indices[ndofs];
     double local_rhs[ndofs];
-    vector<arma::vec> bc_values(qsize);
+    vector<arma::vec> bc_values(qsize), bc_fluxes(qsize), bc_sigma(qsize);
     int rank;
 
     for (int i=0; i<qsize; i++)
+    {
     	bc_values[i].resize(n_subst_);
+    	bc_fluxes[i].resize(n_subst_);
+    	bc_sigma[i].resize(n_subst_);
+    }
 
     for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
@@ -1197,17 +1232,20 @@ void TransportDG::set_boundary_conditions()
     	if (edg->side(0)->dim() != dim-1) continue;
     	// skip edges lying not on the boundary
     	if (edg->side(0)->cond() == NULL) continue;
-    	// skip outflow boundaries
-    	if (mh_dh->side_flux( *edg->side(0) ) >= -mh_dh->precision()) continue;
 
     	SideIter side = edg->side(0);
     	typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
         ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
+        arma::uvec bc_type = data.bc_type.value(side->cond()->element()->centre(), ele_acc);
+
         fe_values_side.reinit(cell, side->el_idx());
-        feo->dh()->get_dof_indices(cell, side_dof_indices);
 
         data.bc_conc.value_list(fe_values_side.point_list(), ele_acc, bc_values);
+        data.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
+        data.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
+
+        feo->dh()->get_dof_indices(cell, side_dof_indices);
 
         for (int sbi=0; sbi<n_subst_; sbi++)
         {
@@ -1215,7 +1253,21 @@ void TransportDG::set_boundary_conditions()
 
         	for (unsigned int k=0; k<qsize; k++)
         	{
-        		double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+        		double bc_term = 0;
+                if ((bc_type[sbi] == EqData::inflow && mh_dh->side_flux( *edg->side(0) ) < -mh_dh->precision())
+                		|| (bc_type[sbi] == EqData::dirichlet))
+                {
+                	bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+                }
+                else if (bc_type[sbi] == EqData::neumann)
+                {
+                	bc_term = bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+                }
+                else if (bc_type[sbi] == EqData::robin)
+                {
+                	bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
+                }
+
         		for (unsigned int i=0; i<ndofs; i++)
 					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 			}

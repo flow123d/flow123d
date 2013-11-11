@@ -320,6 +320,9 @@
 \AddDoc{TransportDG\_BoundaryData::rid}
 \AddDoc{TransportDG\_BoundaryData::time}
 \AddDoc{TransportDG\_BoundaryData::bc\_conc}
+\AddDoc{TransportDG\_BoundaryData::bc\_type}
+\AddDoc{TransportDG\_BoundaryData::bc\_flux}
+\AddDoc{TransportDG\_BoundaryData::bc\_robin\_sigma}
 \AddDoc{TransportDG\_BoundaryData::old\_boundary\_file}
 \AddDoc{TransportDG\_BoundaryData::bc\_times}
 \AddDoc{TransportDG\_BulkData}
