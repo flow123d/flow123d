@@ -67,16 +67,22 @@ Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::source
 \paragraph{Initial and boundary conditions.}
 At time $t=0$ the concentration is determined by the \hyperA{TransportDG-BulkData::init-conc}{initial condition}
 $$ c^i(0,\vc x) = c^i_0(\vc x). $$
-The physical boundary $\partial\Omega_d$ is decomposed into two parts:
+The physical boundary $\partial\Omega_d$ is decomposed into the parts $\Gamma_I\cup\Gamma_D\cup\Gamma_N\cup\Gamma_R$, which may change during simulation time.
+The first part $\Gamma_I$ is further divided into two segments:
 \begin{align*}
-\Gamma_D(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)<0\},\\
-\Gamma_N(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)\ge 0\},
+\Gamma_I^+(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)<0\},\\
+\Gamma_I^-(t) &= \{\vc x\in \partial\Omega_d\where \vc q(t,\vc x)\cdot\vc n(\vc x)\ge 0\},
 \end{align*}
 where $\vc n$ stands for the unit outward normal vector to $\partial\Omega_d$.
-On the inflow part $\Gamma_D$, the user must provide \hyperA{TransportDG-BoundaryData::bc-conc}{Dirichlet boundary condition} for concentrations:
-$$ c^i(t,\vc x) = c^i_D(t,\vc x) \mbox{ on }\Gamma_D(t), $$
-while on $\Gamma_N$ we impose homogeneous Neumann boundary condition:
-$$ -\th\delta_d\D^i(t,\vc x)\nabla c^i(t,\vc x)\cdot\vc n(\vc x) = 0 \mbox{ on }\Gamma_N(t). $$
+We prescribe the following boundary conditions:
+On the inflow parts $\Gamma_I^+\cup\Gamma_D$, the user must provide \hyperA{TransportDG-BoundaryData::bc-conc}{Dirichlet boundary condition} $c_D^i$ for concentrations:
+$$ c^i = c^i_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. $$
+On $\Gamma_I^-$ we impose homogeneous Neumann boundary condition:
+$$ -\th\delta_d\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-, $$
+on $\Gamma_N$ we impose Neumann boundary condition with user-defined \hyperA{TransportDG-BoundaryData::bc-flux}{concentration flux} $f^i_N$:
+$$ -\th\delta_d\D^i\nabla c^i\cdot\vc n = f^i_N \mbox{ on }\Gamma_N, $$
+and finally on $\Gamma_R$ we impose Robin boundary condition through \hyperA{TransportDG-BoundaryData::bc-robin-sigma}{transition parameter} $\sigma^i_R$ and \hyperA{TransportDG-BoundaryData::bc-conc}{reference concentration} $c^i_D$:
+$$ -\th\delta_d\D^i\nabla c^i\cdot\vc n = \sigma^i_R(c^i-c^i_D) \mbox{ on }\Gamma_R. $$
 
 
 
