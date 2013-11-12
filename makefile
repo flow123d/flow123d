@@ -24,10 +24,8 @@
 # Build itself takes place in ../<branch>-build
 #
 
-# check and possibly set build_tree link
-NULL=$(shell bin/git_post_checkout_hook)
-
 # following depends on git_post_checkout_hook
+# every target using var. BUILD_DIR has to depend on 'update_build_tree'
 BUILD_DIR=$(shell cd -P ./build_tree && pwd)
 SOURCE_DIR=$(shell pwd)
 
@@ -39,6 +37,9 @@ endif
 
 all:  install_hooks build_flow123d 
 
+# this is prerequisite for evry target using BUILD_DIR variable
+update_build_tree:
+	bin/git_post_checkout_hook
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -46,13 +47,13 @@ all:  install_hooks build_flow123d
 # 2 		30s	26s
 # 4 		31s	27s
 # 8 		30s
-build_flow123d: cmake
+build_flow123d: update_build_tree cmake
 	make -j $(N_JOBS) -C $(BUILD_DIR) bin/flow123d
 
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
-cmake:  
+cmake:  update_build_tree
 	if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
 	cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
@@ -65,20 +66,20 @@ install_hooks:
 		
 
 # Save config.cmake from working dir to the build dir.
-save_config:
+save_config: update_build_tree
 	cp -f $(SOURCE_DIR)/config.cmake $(BUILD_DIR)
 	
 # Restore config.cmake from build dir, possibly overwrite the current one.	
-load_config:
+load_config: update_build_tree
 	cp -f $(BUILD_DIR)/config.cmake $(SOURCE_DIR)
 
 	
 # Remove all generated files
-clean: cmake
+clean: update_build_tree cmake
 	make -C $(BUILD_DIR) clean
 
 # Remove all  build files. (not including test results)
-clean-all: 
+clean-all: update_build_tree
 	-make -C $(BUILD_DIR) clean-links	# ignore errors
 	rm -rf $(BUILD_DIR)
 

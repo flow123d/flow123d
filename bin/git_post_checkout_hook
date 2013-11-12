@@ -12,7 +12,10 @@ PREVIOUS_HEAD=$1                # hash
 NEW_HEAD=$2                     # hash
 BRANCH_CHECKOUT_FLAG=$3         # 1-checkout branch / 0-checkout file
 
-
+if [ -n "${PREVIOUS_HEAD}" -a -n "${NEW_HEAD}" ]
+then
+  CALLED_AS_HOOK=1
+fi
 
 
 NEW_BRANCH=`git rev-parse --abbrev-ref HEAD`
@@ -26,20 +29,32 @@ OLD_BRANCH=${BUILD_TREE##*/build-}
 echo ""
 echo "POST-CHECKOUT(${OLD_BRANCH} -> ${NEW_BRANCH}):"
 
-# check that link is not OK
-if [ ! "${OLD_BRANCH}" == "${NEW_BRANCH}" ]
+# check that we have build directory
+if [ ! -d ${BUILD_DIR} ]
 then
-  if [ ! -d ${BUILD_DIR} ]
-  then
-    echo "Possibly new branch, copy build tree from the previous one."
     mkdir -p ${BUILD_DIR}
-    cp -r build_tree/* ${BUILD_DIR}  
-  fi
+    
+    if [ -n CALLED_AS_HOOK -a  ! "${OLD_BRANCH}" == "${NEW_BRANCH}"  ]
+    then
+        if [ -d build_tree ]
+        then
+            echo "Possibly new branch, copy build tree from the previous one."
+            cp -r build_tree/* ${BUILD_DIR}  
+        fi
+    fi    
+fi
 
+# check that we have correct link
+if [ ! "${OLD_BRANCH}" == "${NEW_BRANCH}" ]
+then 
   echo "setting build_tree -> ${BUILD_DIR}"
   rm build_tree
   ln -s ${BUILD_DIR} build_tree
   
+  if [ ! -n CALLED_AS_HOOK ]
+  then
+      echo "Updating build_tree link stops the build. Please, run it again."
+  fi
   exit 1
 fi  
 
