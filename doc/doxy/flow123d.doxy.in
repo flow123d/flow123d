@@ -16,9 +16,10 @@
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT= ../../src headers 
+##############
+# headers - module documentation that can not be done in regular sources
 
-
+INPUT= ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/doc/doxy/headers 
 
 #---------------------------------------------------------------------------
 # Project related configuration options
