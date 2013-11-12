@@ -479,8 +479,7 @@ if( PETSC_FOUND )
   # This check is called by every target, if it fails we are probably running makefile generated for another branch.
   # So we must break the build.
   add_custom_target(update_source_tree 
-
-    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook 0 0 1
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
    
