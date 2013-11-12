@@ -48,7 +48,7 @@ fi
 if [ ! "${OLD_BRANCH}" == "${NEW_BRANCH}" ]
 then 
   echo "setting build_tree -> ${BUILD_DIR}"
-  rm build_tree
+  rm -f build_tree
   ln -s ${BUILD_DIR} build_tree
   
   if [ ! -n CALLED_AS_HOOK ]

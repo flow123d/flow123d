@@ -39,7 +39,7 @@ all:  install_hooks build_flow123d
 
 # this is prerequisite for evry target using BUILD_DIR variable
 update_build_tree:
-	bin/git_post_checkout_hook
+	-bin/git_post_checkout_hook
 
 # timing of parallel builds (on Core 2 Duo, 4 GB ram)
 # N JOBS	O3	g,O0	
@@ -119,7 +119,7 @@ gen_doc: $(DOC_DIR)/input_reference.tex
 #
 
 # call flow123d and make raw input_reference file
-$(DOC_DIR)/input_reference_raw.tex: build_flow123d	 	
+$(DOC_DIR)/input_reference_raw.tex: update_build_tree build_flow123d	 	
 	$(BUILD_DIR)/bin/flow123d --latex_doc | grep -v "DBG" | \
 	sed 's/->/$$\\rightarrow$$/g' > $(DOC_DIR)/input_reference_raw.tex
 
