@@ -6,10 +6,9 @@
 #
 # This makefile provides main rules for documentation
 
-doc: flow123d.doc 
+doc:
+	cat flow123d.doxy  | doxygen - >doxygen.log
 
 clean:
 	rm -f flow123d/*
 
-%.doc: %.doxy
-	cat flow123d.doxy short.doxy | doxygen - >doxygen.log
