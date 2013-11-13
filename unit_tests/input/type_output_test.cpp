@@ -147,6 +147,79 @@ TEST(OutputTypeAbstractRecord, abstract_record_test) {
     cout << OutputJSONMachine(&a_rec) << endl;
 }
 
+
+/**
+ * Child classes of Input::Type::AbstractRecord and AdHocAbstractRecord
+ * Contains public method for adding descendants
+ */
+class AbstractRecordTest : public Input::Type::AbstractRecord {
+public:
+	AbstractRecordTest(const string & type_name_in, const string & description)
+	: Input::Type::AbstractRecord(type_name_in, description)
+	{}
+
+	void declare_descendant(const Record &subrec) {
+		add_descendant(subrec);
+	}
+};
+class AdHocAbstractRecordTest : public Input::Type::AdHocAbstractRecord {
+public:
+	AdHocAbstractRecordTest(const AbstractRecord *ancestor)
+	: Input::Type::AdHocAbstractRecord(ancestor)
+	{}
+
+	void declare_descendant(const Record &subrec) {
+		add_descendant(subrec);
+	}
+};
+
+TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
+    using namespace Input::Type;
+
+	Selection sel_problem("Problem_TYPE_selection");
+	{
+		sel_problem.add_value(0, "B_Record");
+		sel_problem.add_value(1, "C_Record");
+		sel_problem.add_value(2, "D_Record");
+		sel_problem.close();
+	}
+
+	Record b_rec("B_Record", "Test record.");
+	b_rec.declare_key("TYPE", sel_problem, Default("B_Record"), "Type of problem");
+    b_rec.declare_key("b_val", Integer(), Default("10"), "");
+    b_rec.declare_key("description", String(), Default::obligatory(), "");
+    b_rec.close();
+
+    Record c_rec("C_Record", "Test record.");
+	c_rec.declare_key("TYPE", sel_problem, Default("C_Record"), "Type of problem");
+    c_rec.declare_key("c_val", Double(), Default("0.5"), "");
+    c_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
+    c_rec.close();
+
+    Record d_rec("D_Record", "Test record.");
+	d_rec.declare_key("TYPE", sel_problem, Default("D_Record"), "Type of problem");
+    d_rec.declare_key("d_val", Integer(), Default("1"), "");
+    d_rec.declare_key("pause", Bool(), Default("false"), "");
+    d_rec.close();
+
+    // ancestor abstract record
+    AbstractRecordTest a_rec_test("EqBase", "Base of equation records.");
+    a_rec_test.close();
+    a_rec_test.declare_descendant(b_rec);
+    a_rec_test.declare_descendant(c_rec);
+    AbstractRecord a_rec(a_rec_test);
+
+    // adhoc abstract record - descendant of a_rec
+    AdHocAbstractRecordTest adhoc_rec(&a_rec);
+    adhoc_rec.finish();
+    adhoc_rec.declare_descendant(d_rec);
+
+    cout << "## " << "AdHocAbstractRecord printout" << endl;
+    OutputText output_text( &adhoc_rec, 0);
+    output_text.print(cout);
+}
+
+
 TEST(OutputTypeArray, array_of_array_test) {
     using namespace Input::Type;
 
