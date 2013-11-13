@@ -16,11 +16,11 @@ InterpolantBase::InterpolantBase()
     max_size(MAX_SIZE),
     automatic_step(false),
     error_(-1.0),
-    extrapolation(InterpolantBase::functor),
-    use_statistics(true)
+    extrapolation(Extrapolation::functor)
+    //use_statistics(true)
 {
   reset_stat();
-  checks.resize(4);
+  checks.resize(4,false);
 }
   
 InterpolantBase::~InterpolantBase() 
@@ -32,9 +32,9 @@ void InterpolantBase::set_interval(double bound_a, double bound_b)
   ASSERT(bound_a != bound_b,"Bounds overlap.");
   ASSERT(bound_a < bound_b,"a must be lower and b must be upper bound.");
   this->bound_a_ = bound_a;
-  checks[check_a] = true;
+  checks[Check::bound_a] = true;
   this->bound_b_ = bound_b;
-  checks[check_b] = true;
+  checks[Check::bound_b] = true;
   
   //are given oposite be able to response to all calls
   //stats.min = std::numeric_limits<double>::max();
@@ -47,7 +47,7 @@ void InterpolantBase::set_size(unsigned int size)
 {
   ASSERT(size >0, "Size of interpolation table must be positive number!.");
   this->size_ = size;
-  checks[Interpolant::check_size] = true;
+  checks[Check::size] = true;
   
   automatic_step = false;
 }
@@ -62,7 +62,7 @@ void InterpolantBase::set_size_automatic(double user_tol, unsigned int init_size
   automatic_step = true;
 }
 
-void InterpolantBase::set_extrapolation(InterpolantBase::ExtrapolationType extrapolation)
+void InterpolantBase::set_extrapolation(Extrapolation::Type extrapolation)
 {
   this->extrapolation = extrapolation;
 }
@@ -77,20 +77,20 @@ void InterpolantBase::reset_stat()
   //switch statistics on
   stats.min = bound_a_;
   stats.max = bound_b_;
-  use_statistics = true;
+  //use_statistics = true;
 }
 
-void InterpolantBase::check_and_reinterpolate()
+void InterpolantBase::check_stats_and_reinterpolate(double percentage)
 {
   //DBGMSG("Check and reinterpolate.\n");
   bool reinterpolate = false;   //should we remake interpolation?
-  if((double)stats.interval_miss_a/stats.total_calls > MISS_PERCENTAGE)
+  if((double)stats.interval_miss_a/stats.total_calls > percentage)
   {
-    DBGMSG("Check and reinterpolate.\n");
+    //DBGMSG("Check and reinterpolate.\n");
     bound_a_ = stats.min;
     reinterpolate = true;
   }
-  if((double)stats.interval_miss_b/stats.total_calls > MISS_PERCENTAGE)
+  if((double)stats.interval_miss_b/stats.total_calls > percentage)
   {
     //DBGMSG("Check and reinterpolate.\n");
     bound_b_ = stats.max;
@@ -108,10 +108,10 @@ void InterpolantBase::check_and_reinterpolate()
   
 void InterpolantBase::check_all()
 {
-  ASSERT(checks[Interpolant::check_functor], "Functor is not set.");
-  ASSERT(checks[Interpolant::check_a], "Left boundary of the interval is not set.");
-  ASSERT(checks[Interpolant::check_b], "Right boundary of the interval is not set.");
-  ASSERT(checks[Interpolant::check_size], "Step is not set.");
+  ASSERT(checks[Check::functor], "Functor is not set.");
+  ASSERT(checks[Check::bound_a], "Left boundary of the interval is not set.");
+  ASSERT(checks[Check::bound_b], "Right boundary of the interval is not set.");
+  ASSERT(checks[Check::size], "Step is not set.");
   ASSERT(! ((user_tol == 0) && automatic_step), "Tolerance for automatic interpolation is not set.");
 }
 
@@ -195,7 +195,7 @@ int Interpolant::interpolate()
   
   //switch off statistics due to error computation
   //is switched on automatically by reset_stat()
-  use_statistics = false;
+  //use_statistics = false;
 
   //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
   //selecting the interpolation 
@@ -215,6 +215,7 @@ int Interpolant::interpolate()
     unsigned int k=0;
     while(x_vec.size()-1 < max_size/2) 
     {
+      //DBGMSG("k = %d\n",k);
       //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
       interpolate_p1();
       if(user_tol < error_)
@@ -268,36 +269,56 @@ int Interpolant::interpolate()
       p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
       p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / (x_vec[i+1] - x_vec[i]);
     }
-    
-    FunctorBase<double>* norm = new NormW21(this);
+  
+    //FunctorBase<double>* norm = new NormL2(this);
+    //FunctorBase<double>* norm = new NormW21(this);
+    FunctorBase<double>* norm = new NormWp1(this,4);
     compute_error(norm);
     delete norm;
   
+    DBGMSG("error: %f\n", error_);
     //Writes the interpolation table.
-    /*
+    unsigned int p = 10,
+                 pp = 5;
     for(unsigned int i=0; i < p1_vec.size(); i++)
     {
-      std::cout << "x: " << x_vec[i] << "\tf: " << f_vec[i] << "\tp1: " << p1_vec[i] << "\tdf: " << df_vec[i] << "\tp1d: " << p1d_vec[i] << std::endl;
+      std::cout << "x: " << setw(p) << x_vec[i] << setw(pp) << "f:" << setw(p) << f_vec[i] << setw(pp) << "p1:" 
+      << setw(p) << p1_vec[i] << setw(pp) << "df:" << setw(p) << df_vec[i] << setw(pp) << "p1d:" << setw(p) << p1d_vec[i] << std::endl;
     }
+    std::cout << "x: " << setw(p) << x_vec[x_vec.size()-1] << setw(pp) << "f:" << setw(p) << f_vec[x_vec.size()-1] << setw(pp) << "p1:" 
+      << setw(p) << "-" << setw(pp) << "df:" << setw(p) << df_vec[x_vec.size()-1] << setw(pp) <<  "p1d:" << setw(p) << "-" << std::endl;
     //*/
   }
   
 void Interpolant::compute_error(FunctorBase<double>* norm)
 {
-  double tot_err = 0; // total absolute error on <a,b>
-  double p_err = 0;   // absolute error on x[i]-x[i+1]
+  double  tot_err = 0, // total absolute error on <a,b>
+          p_err = 0,   // absolute error on x[i]-x[i+1]
+          func_norm = 0; // norm of the functor
+  
+  FunctorBase<double>* norm_func = new NormFunc(this,4);
   
   for(unsigned long i = 0; i < p1_vec.size(); i++ )
   { 
-    p_err = std::sqrt(AdaptiveSimpson::AdaptSimpson(*norm,
-                                                    x_vec[i], 
-                                                    x_vec[i+1],
-                                                    SIMPSON_TOLERANCE) );
+    p_err = std::abs( AdaptiveSimpson::AdaptSimpson(*norm,
+                                           x_vec[i], 
+                                           x_vec[i+1],
+                                           SIMPSON_TOLERANCE) );
+    func_norm += std::abs( AdaptiveSimpson::AdaptSimpson(*norm_func,
+                                               x_vec[i], 
+                                               x_vec[i+1],
+                                               SIMPSON_TOLERANCE*1e3) );
+                   
     //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
     tot_err += p_err;
-  }  
-  tot_err /= (bound_b_ - bound_a_);
-    
+  }
+  //DBGMSG("func_norm = %f\n",func_norm);
+  //DBGMSG("tot_err = %f\n",tot_err);
+  tot_err = tot_err / func_norm;     //relative to the norm of the functor
+  tot_err = std::pow(tot_err, 1.0/4.0);     //p-th root
+  //tot_err /= (bound_b_ - bound_a_);     //relative to the interval length  
+  
+  delete norm_func;  
   /* PRIORITY QUEUE FOR ADAPTIVE INTERVAL DIVIDING
   for(unsigned long i = 0; i < g->get_count(); i++ )
   {
