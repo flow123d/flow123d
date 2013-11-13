@@ -160,6 +160,7 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
+	friend class AdHocAbstractRecord;
 
 public:
 
@@ -491,6 +492,7 @@ protected:
 
 class AbstractRecord : public Record {
 	friend class OutputBase;
+	friend class AdHocAbstractRecord;
 
 protected:
 
@@ -637,6 +639,35 @@ protected:
     void add_descendant(const Record &subrec);
 
     friend class Record;
+};
+
+
+/** ******************************************************************************************************************************
+ * Class for declaration of polymorphic Record.
+ *
+ * AbstractRecord extends on list of descendants provided immediately
+ * after construction by add_descendant(). These descendants derive
+ * only keys from common AR. AdHocAR has separate instance for every
+ * key of this type.
+ *
+ * @ingroup input_types
+ */
+class AdHocAbstractRecord : public AbstractRecord {
+public:
+	/**
+	 * Constructor
+	 */
+	AdHocAbstractRecord(const AbstractRecord *ancestor);
+
+    /**
+     * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
+     * calls close() and complete keys with non-null pointers to lazy types.
+     */
+    bool finish() const;
+
+protected:
+    /// Pointer to actual data of the parent AbstractRecord.
+    boost::shared_ptr<ChildData> parent_data_;
 };
 
 

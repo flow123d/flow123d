@@ -562,6 +562,25 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
 }
 
 
+/************************************************
+ * implementation of AdHocAbstractRecord
+ */
+
+AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord *ancestor)
+: AbstractRecord(ancestor->type_name(), ancestor->data_->description_), parent_data_(ancestor->child_data_)
+{}
+
+bool AdHocAbstractRecord::finish() const
+{
+	if (data_->finished) return true;
+
+	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
+	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), (*it).type_name());
+	    child_data_->list_of_childs.push_back(*it);
+	}
+
+	return Record::finish();
+}
 
 
 } // closing namespace Type
