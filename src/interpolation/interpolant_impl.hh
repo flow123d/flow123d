@@ -10,7 +10,7 @@ inline double InterpolantBase::error()
   return error_;
 }
 
-inline InterpolantBase::eval_statistics InterpolantBase::statistics() const
+inline InterpolantBase::EvalStatistics InterpolantBase::statistics() const
 {
   return stats;
 }
@@ -43,7 +43,7 @@ Interpolant::Interpolant(Func<Type>* func)
   func_diff->set_param_from_func(func);
   func_diffn->set_param_from_func(func);
   
-  checks[Interpolant::check_functor] = true;
+  checks[Check::functor] = true;
 }
 
 
@@ -57,7 +57,7 @@ void Interpolant::set_functor(Func<Type>* func)
   func_diff->set_param_from_func(func);
   func_diffn->set_param_from_func(func);
   
-  checks[Interpolant::check_functor] = true;
+  checks[Check::functor] = true;
 }
 
 
@@ -76,13 +76,33 @@ inline double Interpolant::val(double x)
   {
     stats.interval_miss_a++;
     stats.min = std::min(stats.min, x);
-    return f_val(x);
+    
+    switch(extrapolation)
+    {
+      case Extrapolation::constant: 
+        return f_vec[0];
+      case Extrapolation::linear:
+        return f_vec[0] + p1_vec[0]*(x-x_vec[0]);
+      case Extrapolation::functor:
+      default:
+        return f_val(x);      //otherwise compute original functor
+    }
   }
-  if(x > bound_b_)     //right miss
+  else if(x > bound_b_)     //right miss
   {
     stats.interval_miss_b++;
     stats.max = std::max(stats.max, x);
-    return f_val(x);
+    
+    switch(extrapolation)
+    {
+      case Extrapolation::constant: 
+        return f_vec[size_];
+      case Extrapolation::linear:
+        return f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]);
+      case Extrapolation::functor:
+      default:
+        return f_val(x);      //otherwise compute original functor
+    }
   }
   else                  //hit the interval
   {
@@ -104,13 +124,35 @@ inline DiffValue Interpolant::diff(double x)
   {
     stats.interval_miss_a++;
     stats.min = std::min(stats.min, x);
-    return f_diff(x);  //right miss
+    switch(extrapolation)
+    {
+      case Extrapolation::constant: 
+        return DiffValue(f_vec[0],
+                         df_vec[0]);
+      case Extrapolation::linear:
+        return DiffValue(f_vec[0] + p1_vec[0]*(x-x_vec[0]), 
+                         df_vec[0] + p1d_vec[0]*(x-x_vec[0]));
+      case Extrapolation::functor:
+      default:
+        return f_diff(x);      //otherwise compute original functor
+    }
   }
-  if(x > bound_b_)
+  else if(x > bound_b_)      //right miss
   {
     stats.interval_miss_b++;
     stats.max = std::max(stats.max, x);
-    return f_diff(x);
+    switch(extrapolation)
+    {
+      case Extrapolation::constant: 
+        return DiffValue(f_vec[size_], 
+                         df_vec[size_]);
+      case Extrapolation::linear:
+        return DiffValue(f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]),
+                         df_vec[size_-1] + p1d_vec[size_-1]*(x-x_vec[size_-1]) );
+      case Extrapolation::functor:
+      default:
+        return f_diff(x);      //otherwise compute original functor
+    }
   }
   else                  //hit the interval
   {
@@ -163,7 +205,8 @@ inline double Interpolant::val_p1(double x)
   unsigned int i = find_interval(x);
   return p1_vec[i]*(x-x_vec[i]) + f_vec[i];
 }
-  
+
+
 inline DiffValue Interpolant::diff_p1(double x)
 {
   DiffValue result;
@@ -175,6 +218,9 @@ inline DiffValue Interpolant::diff_p1(double x)
 
 
 
+/** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^2 \f$ in the norm \f$ \|f-i\|_{L_2}\f$. 
+   * It is used as input functor to integration.
+   */
 class Interpolant::NormL2 : public FunctorBase<double>
 {
 public:
@@ -190,7 +236,9 @@ private:
   Interpolant* interpolant;
 };
 
-
+  /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^2 + (f'(x)-i'(x))^2 \f$ in the norm \f$ \|f-i\|_{W^1_2} \f$. 
+   * It is used as input functor to integration.
+   */
 class Interpolant::NormW21 : public FunctorBase<double>
 {
 public:
@@ -207,6 +255,53 @@ public:
 private:
   Interpolant* interpolant;
 };
+        
+  /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^p + (f'(x)-i'(x))^p \f$ in the norm \f$ \|f-i\|_{W^1_p} \f$. 
+   * It is used as input functor to integration.
+   */
+class Interpolant::NormWp1 : public FunctorBase<double>
+{
+public:
+  NormWp1(Interpolant* interpolant, double p)
+  : interpolant(interpolant), p_(p) {}
+ 
+  inline double p() {return p_;}
+ 
+  virtual double operator()(double x)
+  {
+    double val = std::pow(interpolant->f_val(x) - interpolant->val(x),p_);
+    double diff = std::pow(interpolant->f_diff(x).second - interpolant->diff(x).second,p_);
+    return val+diff;
+  }         
+  
+private:
+  Interpolant* interpolant;
+  double p_;
+};
+
+  /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^p + (f'(x)-i'(x))^p \f$ in the norm \f$ \|f-i\|_{W^1_p} \f$. 
+   * It is used as input functor to integration.
+   */
+class Interpolant::NormFunc : public FunctorBase<double>
+{
+public:
+  NormFunc(Interpolant* interpolant, double p)
+  : interpolant(interpolant), p_(p) {}
+ 
+  inline double p() {return p_;}
+ 
+  virtual double operator()(double x)
+  {
+    double val = std::pow(interpolant->f_val(x),p_);
+    double diff = std::pow(interpolant->f_diff(x).second,p_);
+    return val+diff;
+  }         
+  
+private:
+  Interpolant* interpolant;
+  double p_;
+};
+
 
 
 /********************************** InterpolantImplicit ********************************/
@@ -221,7 +316,7 @@ void InterpolantImplicit::set_functor(Func<Type>* func)
   func_diff->set_param_from_func(func);
   func_diffn->set_param_from_func(func);
   
-  checks[Interpolant::check_functor] = true;
+  checks[Check::functor] = true;
 }
 
   ///class FuncExplicit.
