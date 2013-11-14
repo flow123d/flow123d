@@ -172,7 +172,7 @@ public:
 	virtual void get_parallel_solution_vector(Vec &vc);
 	virtual void get_solution_vector(double* &vector, unsigned int &size);
 
-	TimeIntegrationScheme time_scheme() { return TimeIntegrationScheme::explicit_euler; }
+	TimeIntegrationScheme time_scheme() { return explicit_euler; }
 
 private:
 
