@@ -57,3 +57,5 @@ file(WRITE rev_num.h.tmp "#define _GIT_REVISION_ \"${GIT_DESCRIBE}\"\n#define _G
 # reduces needless rebuilds
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different rev_num.h.tmp rev_num.h)
 #execute_process(COMMAND ${CMAKE_COMMAND} -E remove rev_num.h.tmp)
+
+set(GIT_DESCRIBE ${GIT_DESCRIBE} CACHE INTERNAL "Human readable description of last git commit.")

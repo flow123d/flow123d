@@ -432,6 +432,54 @@ include_directories(
     ${MPI_CXX_INCLUDE_PATH}
 )
 
+######################################################################################################################
+# custom targets
+
+
+#### Safety check of build_tree link
+# This check is called by every target, if it fails we are probably running makefile generated for another branch.
+# So we must break the build.
+add_custom_target(update_source_tree 
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+   
+
+   
+#### create rev_num.h - file with some info about code origin
+# a custom target - is always built -> call cmake script to generate rev_num.h
+# Get the current working branch
+
+#message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+add_custom_target(rev_num_always 
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+)
+# rev_num.h is a generated file
+set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
+    PROPERTIES GENERATED TRUE
+    HEADER_FILE_ONLY TRUE)
+
+    
+    
+#### make a script which call correct mpiexec (taken from PETSC)
+# we can not use link, since mpiexec can be sript which reads its location from calling sequence
+#
+# TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
+# ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
+message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
+if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
+      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
+      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
+else()
+      if(COMMAND mpiexec)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
+        set(MPIEXEC_PATH mpiexec)
+      else()
+        message(WARNING "Missing any mpiexec.")
+      endif()
+endif()
+configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+
 
 ##################################################################################################################### 
 # Macro to make usefull links in SOURCE_DIR
@@ -474,53 +522,7 @@ add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 
 if( PETSC_FOUND )
-
-  #### Safety check of build_tree link
-  # This check is called by every target, if it fails we are probably running makefile generated for another branch.
-  # So we must break the build.
-  add_custom_target(update_source_tree 
-
-    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook 0 0 1
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  )
-   
-
-  #### create rev_num.h - file with some info about code origin
-  # a custom target - is always built -> call cmake script to generate rev_num.h
-  # Get the current working branch
-
-  #message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
-  add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
-  )
   
-  # rev_num.h is a generated file
-  set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
-    PROPERTIES GENERATED TRUE
-    HEADER_FILE_ONLY TRUE)
-
-
-  #### make a script which call correct mpiexec (taken from PETSC)
-  # we can not use link, since mpiexec can be sript which reads its location from calling sequence
-  #
-  # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
-  # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
-  message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
-  if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
-      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
-      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
-  else()
-      if(COMMAND mpiexec)
-        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
-        set(MPIEXEC_PATH mpiexec)
-      else()
-        message(WARNING "Missing any mpiexec.")
-      endif()
-  endif()
-  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
-  
-
-
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)

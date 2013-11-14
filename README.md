@@ -2,6 +2,10 @@
 
 [![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
 
+[Source documentation](http://dev.nti.tul.cz:8080/job/make_doc/doxygen/)
+
+[Reference manual](http://dev.nti.tul.cz:8080/job/make_doc/doclinks/1/)
+
 Flow123d is a simulator of underground water flow and transport in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
