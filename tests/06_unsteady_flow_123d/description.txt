@@ -1,7 +1,0 @@
-NOT SUPPORTED BY VERSION 1.6.5
-
-Test problem 6
----------------------
-verification of:
--unsteady flow
-

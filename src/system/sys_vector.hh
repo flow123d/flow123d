@@ -85,7 +85,7 @@ public:
      *  Get index of FullIterator in its container.
      *  Return invalid index -1 for undefined iterator.
      */
-    inline int index()
+    inline int index() const
     { if (this->iter != this->cont.storage.end()) return this->iter - cont.storage.begin();
       else  return (-1);
     }

@@ -286,11 +286,13 @@ void Linear_reaction::set_time_step(double new_timestep)
 
 void Linear_reaction::compute_one_step(void)
 {
+    //data_.set_time(*time_); // set to the last computed time
+	//if timestep changed then modify_reaction_matrix(), not implemented yet
     //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
     START_TIMER("linear reaction step");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
 	    if (dual_porosity_on == true) {

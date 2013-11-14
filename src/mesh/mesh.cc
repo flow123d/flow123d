@@ -34,11 +34,13 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
+#include "input/json_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
+#include <boost/make_shared.hpp>
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
@@ -46,6 +48,7 @@
 // think about following dependencies
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
+#include "mesh/partitioning.hh"
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -58,33 +61,42 @@
 #include "mesh/region.hh"
 
 
-using namespace Input::Type;
+namespace IT = Input::Type;
 
 
-Record Mesh::input_type
-	= Record("Mesh","Record with mesh related data." )
-	.declare_key("mesh_file", FileName::input(), Default::obligatory(),
+IT::Record Mesh::input_type
+	= IT::Record("Mesh","Record with mesh related data." )
+	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 			"Input file with mesh description.")
-	.declare_key("regions", Array( RegionDB::region_input_type ), Default::optional(),
+	.declare_key("regions", IT::Array( RegionDB::region_input_type ), IT::Default::optional(),
 	        "List of additional region definitions not contained in the mesh.")
-	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
+	.declare_key("sets", IT::Array( RegionDB::region_set_input_type), IT::Default::optional(),
 	        "List of region set definitions. There are three region sets implicitly defined:\n"
 	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
+	.declare_key("partitioning", Partitioning::input_type, IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
 	.close();
 
 
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh()
+Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
+:comm_(comm)
 {
+    Input::JSONToStorage reader;
+    std::stringstream in(input_str);
+    reader.read_stream( in, Mesh::input_type );
+    in_record_ = reader.get_root_interface<Input::Record>();
+
     reinit(in_record_);
 }
 
 
 
-Mesh::Mesh(Input::Record in_record)
-: in_record_(in_record) {
+Mesh::Mesh(Input::Record in_record, MPI_Comm com)
+: in_record_(in_record),
+  comm_(com)
+{
     reinit(in_record_);
 }
 
@@ -143,6 +155,12 @@ unsigned int Mesh::n_sides()
         FOR_ELEMENTS(this, ele) n_sides_ += ele->n_sides();
     }
     return n_sides_;
+}
+
+
+
+Partitioning *Mesh::get_part() {
+    return part_.get();
 }
 
 
@@ -223,6 +241,7 @@ void Mesh::setup_topology() {
     count_side_types();
 
     region_db_.close();
+    part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 }
 
 

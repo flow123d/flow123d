@@ -3,6 +3,8 @@
  *
  *  Created on: Dec 6, 2012
  *      Author: jb
+ *
+ *
  */
 
 #ifndef FIELD_VALUES_HH_
@@ -166,6 +168,17 @@ template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { val 
  *
  * ET is type of elements, n_cols and n_rows gives fixed dimensions of the tensor value (nx1 is vector, 1x1 is scalar,
  * 0x1 is variable size vector, 0x0 is variable size tensor (not implemented yet) )
+ *
+ * TODO:
+ * This wrapper serves at least to several different things:
+ * - Unified reading of input values (for FieldConstant, FieldFormula, etc.)
+ *    provided by init_from_input
+ * - Unified InputType objects, provided by type_name(), get_input_type()
+ *
+ * - For unified matrix-like access even to scalar and vector values, without compromising performance.
+ *    provided by operator(); n_cols, n_rows, from_raw, ...
+ *
+ * Maybe it could be better to split these two functions into two distinguish but related classes.
  *
  */
 template <int NRows, int NCols, class ET>

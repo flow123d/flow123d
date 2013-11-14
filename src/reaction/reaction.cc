@@ -82,10 +82,15 @@ void Reaction::set_time_step(Input::Record in_rec)
 	return;
 }*/
 
-void Reaction::set_dual_porosity(bool dual_porosity_on)//obsolete function
+void Reaction::set_dual_porosity(bool dual_porosity_on)
 {
 	this->dual_porosity_on = dual_porosity_on; //in_rec.val<bool>("dual_porosity"); //OptGetBool("Transport", "Dual_porosity", "no");
 	return;
+}
+
+bool Reaction::get_dual_porosity(void)
+{
+	return this->dual_porosity_on;
 }
 
 double Reaction::get_time_step(void)

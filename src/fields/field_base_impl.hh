@@ -10,6 +10,7 @@
 #define FIELD_BASE_IMPL_HH_
 
 #include <string>
+#include <limits>
 using namespace std;
 
 #include <boost/type_traits.hpp>
@@ -40,7 +41,8 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
-: time_(0.0), value_(r_value_)
+: time_( -numeric_limits<double>::infinity() ),
+  value_(r_value_)
 {
     value_.set_n_comp(n_comp);
 }
@@ -71,7 +73,7 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename 
 #ifdef HAVE_PYTHON
     FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
 #endif
-    //FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
+    FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
     FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
 
     return type;
@@ -86,7 +88,8 @@ FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, u
     boost::shared_ptr< FieldBase<spacedim, Value> > func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
-//        func= new FieldInterpolatedP0<spacedim,Value>(n_comp);
+	//xprintf(PrgErr,"TYPE of Field currently not functional.\n");
+	func=boost::make_shared< FieldInterpolatedP0<spacedim,Value> >(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
         func=boost::make_shared< FieldPython<spacedim, Value> >(n_comp);
@@ -203,10 +206,10 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 
 template <int spacedim, class Value>
-bool Field<spacedim, Value>::get_const_value(Region reg, typename Value::return_type &value) {
+bool Field<spacedim, Value>::get_const_accessor(Region reg, ElementAccessor<spacedim> &elm) {
     boost::shared_ptr< FieldBaseType > region_field = operator[](reg);
     if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        value = region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+        elm = ElementAccessor<spacedim>(mesh_, reg );
         return true;
     } else {
         return false;

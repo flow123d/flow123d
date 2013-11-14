@@ -109,7 +109,7 @@ UpdateFlags MappingP1<dim,spacedim>::update_each(UpdateFlags flags)
 
 
 template<unsigned int dim, unsigned int spacedim>
-void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::CellIterator &cell,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
@@ -185,7 +185,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandler<dim,space
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase::CellIterator &cell,
                             unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -289,7 +289,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandler<dim,
 }
 
 template<>
-void MappingP1<0,3>::fill_fe_side_values(const DOFHandler<0,3>::CellIterator &cell,
+void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cell,
                             unsigned int sid,
                             const Quadrature<0> &q,
                             MappingInternalData &data,

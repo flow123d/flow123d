@@ -33,52 +33,23 @@
           anisotropy = 10
         },
         // using region set
-//        { r_set = "fractions",  
-//          anisotropy = 1
-//        },
+        { r_set = "fractions",  
+          anisotropy = 1
+        },
+	/* 
         { region = "2d_fraction_1",
           anisotropy = 1
         },
         { region = "2d_fraction_2",
           anisotropy = 1
         },
+	*/
         { region = "3d_cube",
           anisotropy = 0.1
         }
       ],
       
-      bc_data = [
-        { region = ".1d_channel",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".2d_fraction_1",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".2d_fraction_2",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".3d_cube",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        }
-      ],
 
-comment = {
       bc_data = [
          // using region set
          {  r_set = "dirichlet_boundary",
@@ -88,38 +59,8 @@ comment = {
                 value = "x-z"
             }
         }
-        /*
-        { region = ".1d_channel",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".2d_fraction_1",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".2d_fraction_2",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        },
-        { region = ".3d_cube",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x-z"
-          }
-        }
-        */
-      ]
-},
+      ],
+
 
       output = {
         balance_output = "water_balance.out", 

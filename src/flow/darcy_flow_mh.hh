@@ -72,6 +72,7 @@ class SparseGraph;
 class LocalToGlobalMap;
 
 
+
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -147,6 +148,17 @@ public:
     };
 
 
+    /**
+     * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
+     *
+     * TODO:
+     * - how we can reuse values computed during assembly
+     *   we want to make this class see values in
+     *
+     */
+    //class
+
+
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
@@ -178,7 +190,7 @@ protected:
         unsigned int size;
 
         get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, mesh_->n_sides(), velocity_array, &velocity_vector);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
 
     }
 
@@ -319,9 +331,9 @@ protected:
 };
 
 
-void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
-void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
-        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+//void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
+//void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
+//        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
 

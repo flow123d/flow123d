@@ -1,0 +1,8 @@
+/**
+ * @defgroup exceptions  Exceptions
+ *
+ * 
+ * 
+ * 
+ * 
+ */ 

@@ -42,7 +42,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
+#include "mesh/partitioning.hh"
 
 namespace it = Input::Type;
 
@@ -62,6 +62,9 @@ it::Record DarcyFlowMHOutput::input_type
                     "Output stream for P0 approximation of the piezometric head field.")
     .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
                     "Output file for water balance table.")
+    .declare_key("subdomains", it::String(),
+                    "Output stream for subdomain indices (partitioning of mesh elements) used by DarcyFlow module.")
+
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                     "Output file with raw data form MH module.");
 
@@ -128,6 +131,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
             (mesh_, "velocity_p0", "L/T", in_rec, ele_flux, -1.0);
         if(output_time) this->output_streams[&ele_flux] = output_time;
 #endif
+
+        Iterator<string> it = in_rec.find<string>("subdomains");
+        if (bool(it)) {
+            result = OutputTime::register_elem_data
+                    (mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
+        }
 
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
@@ -688,7 +697,9 @@ void DarcyFlowMHOutput::water_balance() {
     FOR_BOUNDARIES(mesh_, bcd) {
         // !! there can be more sides per one boundary
         double flux = dh.side_flux( *(bcd->side()) );
+
         Region r = bcd->region();
+        //DBGMSG("flux: %f side: %d %d reg: %s\n", flux, bcd->side()->element()->index(), bcd->side()->el_idx(), r.label().c_str() );
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
         unsigned int bc_region_idx = r.boundary_idx();
         bcd_balance[bc_region_idx] += flux;

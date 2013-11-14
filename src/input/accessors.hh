@@ -112,10 +112,13 @@ class Address {
 protected:
     struct AddressData {
         /**
-         * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
-         * TODO: Possibly can be shared.
+         * Pointer to data of parent node in the tree
          */
-        std::vector<unsigned int> path_;
+        AddressData * parent_;
+        /**
+         * Order what descendant of its parent actual node is.
+         */
+        unsigned int descendant_order_;
         /**
          * Root Input::Type.
          */
@@ -124,6 +127,10 @@ protected:
          *
          */
         const StorageBase *root_storage_;
+        /**
+         * Actual storage
+         */
+        const StorageBase * actual_storage_;
     };
 
 public:
@@ -150,23 +157,23 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    void down(unsigned int idx);
+    const Address * down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	ASSERT(actual_storage_, "NULL pointer to storage in address object!!! \n");
+    	ASSERT(data_->actual_storage_, "NULL pointer to storage in address object!!! \n");
 
-    	return actual_storage_;
+    	return data_->actual_storage_;
     }
 
     /**
      * Produce a full address, i.e. sequence of keys and indices separated by '/',
      * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
-     * that is path_[actual_node_].
+     * that is nodes_[actual_node_].
      */
-    std::string make_full_address();
+    std::string make_full_address() const;
 
 
 protected:
@@ -174,14 +181,6 @@ protected:
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
-    /**
-     * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
-     */
-    unsigned int actual_node_;
-    /**
-     * Actual storage
-     */
-    const StorageBase * actual_storage_;
 };
 
 /**
@@ -296,7 +295,12 @@ public:
     /**
      * Returns address
      */
-    Address &get_address();
+    const Address &get_address() const ;
+
+    /**
+     * Set address
+     */
+    void set_address(const Address &address);
 
 
 protected:
@@ -362,7 +366,12 @@ public:
     /**
      * Returns address
      */
-    Address &get_address();
+    const Address &get_address() const;
+
+    /**
+     * Set address
+     */
+    void set_address(const Address &address);
 
 
 private:
@@ -380,7 +389,11 @@ private:
  *
  * There are two possible ways how to retrieve data from Array accessor. First, you can use generic
  * @p copy_to function to copy the data into a given container. Second, you can get an Iterator<Type>
- * and iterate through the Array.
+ * and iterate through the Array. Unfortunately, you have to provide Type to the begin() method so this
+ * implementation is not fully compliant with standard library. The reason is that in order to speed up compilation of many
+ * classes using input accessors we wouldn't have Input::Array a class template that it can be compiled only once.
+ * By this reason one can not use BOOST_FOREACH to iterate over Input::Array.
+ * TODO: Make Input::Array<Type> wrapper which is compliant with standard library.
  *
  * In either case correspondence between resulting type (i.e. type of elements of the container or type of the Iterator)
  * and the type of the data in the Array is checked only once.
@@ -454,7 +467,12 @@ public:
    /**
     * Returns address
     */
-   Address &get_address();
+   const Address &get_address() const;
+
+   /**
+    * Set address
+    */
+   void set_address(const Address &address);
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
@@ -532,7 +550,9 @@ class IteratorBase {
 public:
 
     /**
-     * Constructor of iterator without type and dereference methods.
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     *
      */
     IteratorBase(const Address &address, const unsigned int index)
     : address_(address), index_(index)
@@ -556,7 +576,7 @@ public:
     /**
      * Returns address
      */
-    Address &get_address()
+    const Address &get_address() const
     { return address_; }
 
 
@@ -602,9 +622,13 @@ public:
     Iterator() : IteratorBase( Address(), 0) {}
 
     /**
-     * Constructor with Type of data
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     * Parameter @p type is Input::Type of object the iterator points to.
+     *
+     *
      */
-    Iterator(const Input::Type::TypeBase &type,const Address &address, const unsigned int index)
+    Iterator(const Input::Type::TypeBase &type, const Address &address, const unsigned int index)
     : IteratorBase(address, index), type_( type_check_and_convert(type))
     {}
 

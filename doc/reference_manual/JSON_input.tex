@@ -242,7 +242,7 @@ concentration = {
 \end{verbatim}
 
 \subsection{Field data for equations}
-Every equation record has keys \verb'bulk\_data' and \verb'bc_data'. Both have the same structure, however, the first one is intended to set the bulk fields (on bulk regions)
+Every equation record has keys \verb'bulk_data' and \verb'bc_data'. Both have the same structure, however, the first one is intended to set the bulk fields (on bulk regions)
 while the second serves for initialization of the boundary fields (on boundary regions). These keys contains an array of region-time initialization records
 like the \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{BulkData} record of the DarcyFlow equation. Every such record specify fields on particular region 
 (keys \hyperA{DarcyFlowMH-Steady-BulkData::region}{{\tt region}} and \hyperA{DarcyFlowMH-Steady-BulkData::rid}{{\tt rid}} ) or on a region set 

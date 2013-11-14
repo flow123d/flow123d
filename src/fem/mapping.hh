@@ -156,7 +156,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    virtual void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+    virtual void fill_fe_values(const typename DOFHandlerBase::CellIterator &cell,
                         const Quadrature<dim> &q,
                         MappingInternalData &data,
                         FEValuesData<dim,spacedim> &fv_data) = 0;
@@ -171,7 +171,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    virtual void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+    virtual void fill_fe_side_values(const typename DOFHandlerBase::CellIterator &cell,
                             unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,

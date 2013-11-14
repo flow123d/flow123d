@@ -36,8 +36,8 @@
 
 class Distribution;
 class OutputTime;
-
-template<unsigned int dim, unsigned int spacedim> class DOFHandler;
+class DOFHandlerBase;
+class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -86,6 +86,14 @@ public:
 	class EqData : public TransportBase::TransportEqData {
 	public:
 
+        enum BC_Type {
+            inflow=0,
+            dirichlet=1,
+            neumann=2,
+            robin=3
+        };
+        static Input::Type::Selection bc_type_selection;
+
 		EqData();
 		RegionSet read_boundary_list_item(Input::Record rec);
 
@@ -94,6 +102,10 @@ public:
 		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
 		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+
+        BCField<3, FieldValue<3>::EnumVector > bc_type;
+        BCField<3, FieldValue<3>::Vector > bc_flux;
+        BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
 
 	};
 
@@ -120,8 +132,7 @@ public:
 		template<unsigned int dim>
 		inline Mapping<dim,3> *mapping();
 
-		template<unsigned int dim>
-		inline DOFHandler<dim,3> *dh();
+		inline DOFHandlerMultiDim *dh();
 
 	private:
 
@@ -147,10 +158,8 @@ public:
 		Mapping<2,3> *map2_;
 		Mapping<3,3> *map3_;
 
-		/// Objects for distribution of dofs.
-		DOFHandler<1,3> *dh1_;
-		DOFHandler<2,3> *dh2_;
-		DOFHandler<3,3> *dh3_;
+		/// Object for distribution of dofs.
+		DOFHandlerMultiDim *dh_;
 	};
 
 	enum DGVariant {
@@ -225,6 +234,8 @@ public:
 	 * @brief Getter for field data.
 	 */
 	virtual EqData *get_data() { return &data; }
+
+	TimeIntegrationScheme time_scheme() { return implicit_euler; }
 
 	/**
 	 * @brief Destructor.
@@ -317,7 +328,7 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(const typename DOFHandler<dim,3>::CellIterator &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const ElementFullIter &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
@@ -474,9 +485,6 @@ private:
 	/// The mass matrix.
 	Mat mass_matrix;
 
-	/// Distribution of the solution vectors to the processors.
-	Distribution *distr;
-
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
 
@@ -495,8 +503,6 @@ private:
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
-	/// Time marks for writing the output.
-	//TimeMark::Type output_mark_type;
 
 	// @}
 
@@ -511,8 +517,6 @@ private:
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
-
-    //const MH_DofHandler * mh_dh;
 
     // @}
 };

@@ -1,7 +1,5 @@
 # CMAKE system TODO
 #
-# * make our own module FindPETSC  using native cmake support in PETSC version >3.2 
-# * check external packages in FindPETSC, in particular Parmetis
 #
 # * report compiler flags and used libraries in a summarizing table before own build
 #
@@ -11,10 +9,24 @@
 #
 #
 
+# check build_tree link,
+# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 # Include settings given by user first
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(${CMAKE_CURRENT_SOURCE_DIR}/makefile.in.cmake )
+set(CONFIG_CMAKE "config.cmake")
+if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
+    include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
+else()
+    if (EXISTS "${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
+        include("${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
+    else()
+        # create from template
+        MESSAGE(FATAL_ERROR "Need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
+    endif()
+endif ()
+
 
 
 # If the CCACHE_CXX_COMPILER is set 
@@ -26,7 +38,7 @@ endif(CCACHE_CXX_COMPILER)
 
 
 # Project name and language(s)
-project(Flow123d CXX C)
+project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8)
@@ -42,7 +54,7 @@ list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
-    set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/external_projects)
+    set(EXTERNAL_PROJECT_DIR ${PROJECT_SOURCE_DIR}/../external_projects)
 endif()
 
 
@@ -85,30 +97,49 @@ else(FLOW_CC_FLAGS)
   else()
   endif()
   
-  
-    # Compiler-specific C++11 activation.
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            add_definitions("-DHAVE_CXX11")    
-            set(CMAKE_HAVE_CXX11 "true")
-        elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-            add_definitions("-DHAVE_CXX11")
-            set(CMAKE_HAVE_CXX11 "true")    
-        endif ()
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-        add_definitions("-Wno-uninitialized -DHAVE_CXX11")
-        set(CMAKE_HAVE_CXX11 "true")
-    else ()
-        message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-    endif()
-  
 endif(FLOW_CC_FLAGS)
 
+
+# Compiler-specific C++11 activation.
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+	    execute_process(
+	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	        add_definitions("-DHAVE_CXX11_FULL")    
+	        set(CMAKE_HAVE_CXX11 "true")
+	    elseif (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	        add_definitions("-DHAVE_CXX11_DRAFT")
+	        set(CMAKE_HAVE_CXX11 "true")   
+	    elseif (GCC_VERSION VERSION_GREATER 4.4)
+	    	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	    	set(CMAKE_HAVE_CXX11 "true")   
+	    	message(WARNING "Warnning: GCC version under 4.6, not recomended!." ) 
+	    else ()
+	    	message(SEND_ERROR "Error: GCC version under 4.4, not supported!." )	
+	    endif ()
+
+    # Necessary for FParser - TODO: move to better place
+    # ?? what about Clang
+    add_definitions("-DHAVE_SINCOS")
+    
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
+    
+    # BOOST must be compiled with clang in order to use C++11 standard. 
+    set(Boost_FORCE_REBUILD "true")
+    set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+    set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+    
+    #add_definitions("-DHAVE_CXX11")
+    set(CMAKE_HAVE_CXX11 "true")
+    # 
+    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    #
+else ()
+    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+endif()
 
 #########################################################################
 # Check that glibc has working execinfo.h
@@ -207,8 +238,10 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
-#set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
-find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+if (NOT Boost_FORCE_REBUILD)
+    find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
+endif()    
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
@@ -253,14 +286,26 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
-find_package(PETSc 3.2.0)
-find_package(PARMETIS)
+include (FindPackageMultipass)
+  
+find_package(PETSc 3.4.0)
 
-if (PETSC_FOUND)
-    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
-    set(MPI_CXX_LIBRARIES ${PETSC_LIBRARIES})
-    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
-else(PETSC_FOUND)
+
+if (NOT PETSC_FOUND)
+    if (PETSC_DIR) 
+        message(STATUS "Can not configure with given PETSC_DIR=${PETSC_DIR}")
+    else()    
+        # Install PETSC
+        # also set PETSC_DIR, PETSC_ARCH
+        set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        include(InstallPetsc)
+        
+        set(PETSC_CURRENT "NO")
+        find_package(PETSc 3.4.0)
+        
+    endif()    
+        
+        
     # If we haven't PETSC, we try to find MPI
         
     # === Variables ===
@@ -280,26 +325,42 @@ else(PETSC_FOUND)
     #   MPIEXEC_PREFLAGS           Flags to pass to MPIEXEC directly
     #                              before the executable to run.
     #   MPIEXEC_POSTFLAGS          Flags to pass to MPIEXEC after other flags
-
-    find_package(MPI)
-  
-    if (MPI_CXX_FOUND)
-        add_definitions(-DHAVE_MPI)
-    else(MPI_CXX_FOUND) 
+#
+#    find_package(MPI)
+#  
+#    if (MPI_CXX_FOUND)
+#        add_definitions(-DHAVE_MPI)
+#    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
-        set(mpiuni_sources    system/mpiuni/mpi.c)
-        set(MPIUNI_INCLUDES src/system/mpiuni)
-        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
-    
+#        set(mpiuni_sources    system/mpiuni/mpi.c)
+#        set(MPIUNI_INCLUDES src/system/mpiuni)
+#        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+#    
         # overwrite NOTFOUND status
-        set(MPI_CXX_LIBRARIES mpiuni_lib)
-        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
-    
-    endif(MPI_CXX_FOUND)
+#        set(MPI_CXX_LIBRARIES mpiuni_lib)
+#        set(MPI_CXX_INCLUDE_PATH ${MPIUNI_INCLUDES})
+#    
+#    endif(MPI_CXX_FOUND)
 
+endif(NOT PETSC_FOUND)
+
+if(PETSC_FOUND)
+    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+    set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
+    set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
+    
+    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
+    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
 endif(PETSC_FOUND)
 
-
+find_package(PARMETIS)
+#################################################################################
+#  BDDCML_FOUND - set to true if the library is found
+#set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+#include(InstallBLOPEX)
+#set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+#include(InstallBDDCML)
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
@@ -319,11 +380,13 @@ if (NOT Armadillo_FOUND)
   unset(Armadillo_FOUND CACHE) 
   unset(Armadillo_INCLUDE_DIR CACHE)        # overwrite cache    
   unset(Armadillo_LIBRARY_DIRS CACHE)
+  unset(Armadillo_CONFIGURE_FILE CACHE)
 
   set(Armadillo_ROOT_HINT ${EXTERNAL_ARMADILLO_DIR})  
   find_package(ArmadilloFlow 3.2.4 REQUIRED)
 
 endif()
+
 
 message(STATUS "Armadillo_LIBRARIES: ${Armadillo_LIBRARIES}")
 message(STATUS "Armadillo_INCLUDE_DIRS: ${Armadillo_INCLUDE_DIRS}")
@@ -333,7 +396,7 @@ IF (PETSC_FOUND)
     # until we know how to take only blas and lapack from PETSC we have to make Armadillo depend on whole PETSC lib.
     # this may be fragile because of _NOCONFIG
     set_target_properties(armadillo PROPERTIES 
-      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_LIBRARIES}"
+      IMPORTED_LINK_INTERFACE_LIBRARIES_NOCONFIG "${PETSC_EXTERNAL_LIB}"
       ) 
 endif()
 
@@ -345,22 +408,24 @@ else (CYGWIN)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
+    else()
+	set(PYTHON_INCLUDE_DIRS "")
+	set(PYTHON_LIBRARIES "")
     endif()
 endif(CYGWIN)
 
 # check for subversion and prepare generating of file with revision info.
-find_package(Subversion)
+#find_package(Subversion)
 
 
 
-################################################################### set includes and libraries paths
+######################################################################################################################### 
+# set includes and libraries paths
 
 include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
+    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/third_party/metis-4.0/Lib
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
-    ${CMAKE_SOURCE_DIR}/third_party/json_spirit
     ${PETSC_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
@@ -368,7 +433,27 @@ include_directories(
 )
 
 
-##############
+##################################################################################################################### 
+# Macro to make usefull links in SOURCE_DIR
+##################################
+
+
+# initialize a global variable (cached)
+set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
+              
+
+macro(make_link_in_source FILE)
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+  
+  set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
+endmacro()
+
+make_link_in_source(bin/flow123d)
+make_link_in_source(bin/mpiexec)
+make_link_in_source(bin/tests/Makefile)
 
 ############################################################33 process subdirectories
 
@@ -380,21 +465,37 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
-add_subdirectory(test_units)
+
+add_subdirectory(bin/tests)
+add_subdirectory(unit_tests) # this also adds third_party/gtest
+
 
 #################################################################### add targets
 
 
 if( PETSC_FOUND )
 
-  #### create rev_num.h - file with revision number
+  #### Safety check of build_tree link
+  # This check is called by every target, if it fails we are probably running makefile generated for another branch.
+  # So we must break the build.
+  add_custom_target(update_source_tree 
+
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook 0 0 1
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+   
+
+  #### create rev_num.h - file with some info about code origin
   # a custom target - is always built -> call cmake script to generate rev_num.h
+  # Get the current working branch
+
+  #message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
   add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-                         -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_svn_rev_num.cmake)
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+  )
   
   # rev_num.h is a generated file
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
+  set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 
@@ -416,19 +517,28 @@ if( PETSC_FOUND )
         message(WARNING "Missing any mpiexec.")
       endif()
   endif()
-  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
+  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
   
 
 
   ### add target for flow123d binary
-  add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS} semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_executable(bin/flow123d src/main.cc)
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
+
+
+################################################################333
+# clean-links target
+
+add_custom_target(clean-links
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${SOURCE_TREE_LINKS}
+)
+
 
 

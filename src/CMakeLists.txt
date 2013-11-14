@@ -156,12 +156,14 @@ set(sources_lib_non_system
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     reaction/sorption.cc
+    #reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
+    transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
 )
@@ -185,7 +187,8 @@ endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(system_lib ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+add_dependencies(system_lib update_source_tree)
 
 
 # when the precompiled headers are used in the future
@@ -205,7 +208,7 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
@@ -220,7 +223,7 @@ target_link_libraries(fem_lib
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
  
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
@@ -231,7 +234,7 @@ target_link_libraries(coupling_lib
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     fem_lib mesh_lib la_lib semchem  input_lib system_lib
-    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

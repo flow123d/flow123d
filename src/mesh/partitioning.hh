@@ -40,10 +40,6 @@ public:
     Partitioning(Mesh *mesh, Input::Record in);
 
     /**
-     * # set partitioning into the elements of the mesh
-     */
-//    void set_partition_to_mesh();
-    /**
      * Get initial distribution.
      */
     const Distribution *get_init_distr() const;
@@ -51,6 +47,22 @@ public:
      * Get local part of mesh partition.
      */
     const int *get_loc_part() const;
+
+    /**
+     * Creates and returns vector with element partitioning for output.
+     */
+    vector<int> &seq_output_partition();
+
+    /**
+     * Obsolete see source file for doc.
+     */
+    void id_maps(int n_ids, int *id_4_old,
+                    Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+
+
+    static void id_maps(int n_ids, int *id_4_old,
+            const Distribution &old_ds, int *loc_part,
+            Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 
     /// Destructor.
     ~Partitioning();
@@ -69,8 +81,8 @@ private:
      */
     enum PartitionGraphType {
         any_neighboring,               ///< Add edge for any pair of neighboring elements
-        any_wight_lower_dim_cuts,      ///< Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face
-        same_dimension_neghboring,     ///< Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply)
+        any_weight_lower_dim_cuts,      ///< Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face
+        same_dimension_neighboring,     ///< Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply)
     };
 
     /// The input mesh
@@ -84,17 +96,20 @@ private:
     int *       loc_part_;
     /// Original distribution of elements. Depends on type of partitioner
     Distribution *init_el_ds_;
+    /// Sequential partitioning for output.
+    vector<int> seq_part_;
 
     /**
      * Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_
      */
     void make_element_connection_graph();
     /**
-     * # Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_
-     * # calls partitioning tool given by the key "tool" of the input record accessor @p in_
-     * # result is local part of partition
+     * Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_)
+     * calls partitioning tool given by the key "tool" of the input record accessor @p in_)
+     * result is local part of the partitioning. Can be retrieved by @p get_loc_part().
      */
     void make_partition();
+
 
 };
 

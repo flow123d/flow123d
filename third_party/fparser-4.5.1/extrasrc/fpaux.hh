@@ -324,6 +324,7 @@ namespace FUNCTIONPARSERTYPES
 
 
 #ifdef _GNU_SOURCE
+#ifdef HAVE_SINCOS
     inline void fp_sinCos(double& sin, double& cos, const double& a)
     {
         sincos(a, &sin, &cos);
@@ -337,6 +338,7 @@ namespace FUNCTIONPARSERTYPES
     {
         sincosl(a, &sin, &cos);
     }
+#endif
 #endif
 
 

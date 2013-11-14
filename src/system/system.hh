@@ -58,6 +58,13 @@
 #define strcmpi strcasecmp
 #define DIR_DELIMITER '/'
 
+#ifdef HAVE_CXX11_FULL
+  #define OPERATOR_NEW_THROW_EXCEPTION
+#else
+  #define OPERATOR_NEW_THROW_EXCEPTION throw(std::bad_alloc)
+#endif
+
+
 using namespace std;
 
 
@@ -123,8 +130,8 @@ void * xrealloc( void * ptr, size_t size );
  */
 // @{
 
-void *operator new (std::size_t size) throw(std::bad_alloc);
-void *operator new[] (std::size_t size) throw(std::bad_alloc);
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
 void operator delete( void *p) throw();
 void operator delete[]( void *p) throw();
 // @}

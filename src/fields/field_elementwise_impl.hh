@@ -94,6 +94,10 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(data_, "Null data pointer.\n");
     if (reader_ == NULL) return false;
 
+    //walkaround for the steady time governor - there is no data to be read in time==infinity
+    //TODO: is it possible to check this before calling set_time?
+    if (time == numeric_limits< double >::infinity()) return false;
+    
     GMSH_DataHeader search_header;
     search_header.actual=false;
     search_header.field_name=field_name_;
@@ -138,7 +142,9 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh, bool boundary_domai
 template <int spacedim, class Value>
 typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
 {
+        ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
         ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
+
         unsigned int idx = n_components_*elm.idx();
 
         return Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
@@ -153,6 +159,7 @@ template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
+    ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
     ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
     ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {

@@ -186,6 +186,12 @@ const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::point(const unsigned int 
     return data.points[point_no];
 }
 
+template<unsigned int dim, unsigned int spacedim> inline
+const vector<vec::fixed<spacedim> > &FEValuesBase<dim,spacedim>::point_list()
+{
+    return data.points;
+}
+
 template<unsigned int dim,unsigned int spacedim> inline
 const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::normal_vector(unsigned int point_no)
 {
@@ -235,7 +241,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
 
 template<unsigned int dim,unsigned int spacedim> inline
-void FEValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell)
+void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 {
     ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
@@ -304,7 +310,7 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim> inline
-void FESideValues<dim,spacedim>::reinit(typename DOFHandler<dim,spacedim>::CellIterator & cell,
+void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
 		unsigned int sid)
 {
     this->data.present_cell = &cell;

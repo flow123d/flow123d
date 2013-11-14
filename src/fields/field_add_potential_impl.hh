@@ -59,6 +59,13 @@ void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point<sp
     }
 }
 
+template <int spacedim, class Value>
+bool FieldAddPotential<spacedim,Value>::set_time (double time)
+{
+    ASSERT(inner_field_, "Null data pointer.\n");
+    //DBGMSG("set_time for field_add_potential\n");
+    return inner_field_->set_time(time);
+}
 
 
 template <int spacedim, class Value>

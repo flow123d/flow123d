@@ -152,9 +152,9 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path);
  *  This class implements a reader of modified JSON file format. The modifications include
  *  shell-like comments (using hash '#' character), this is implemented in comment_filter.hh,  optional quoting of
  *  keys in JSON objects that do not contain spaces, and possibility to use '=' instead of ':'. So you can write:
- @code
-     { key1="text", key2=2, "key 3"=4 }
- @endcode
+ *  @code
+ *    { key1="text", key2=2, "key 3"=4 }
+ *  @endcode
  *  Note, however, that our input interface allows only C identifiers for keys. The reader use json_spirit library
  *  (based on Spirit parser from Boost) with slightly modified grammar.
  *
@@ -293,7 +293,10 @@ T JSONToStorage::get_root_interface() const
 	ASSERT(envelope, "NULL pointer to storage object envelope!!! \n");
 
 	Address a(envelope, root_type_);
-    return *(Iterator<T>( *root_type_, a, 0));
+	Address addr(storage_, root_type_);
+	T root = *(Iterator<T>( *root_type_, a, 0));
+	root.set_address(addr);
+    return root;
 }
 
 

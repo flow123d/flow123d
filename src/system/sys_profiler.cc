@@ -515,7 +515,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 void Profiler::output(MPI_Comm comm) {
             char filename[PATH_MAX];
-            strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H:%M:%S.log", localtime(&start_time));
+            strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
             string full_fname =  FilePath(string(filename), FilePath::output_file);
 
             DBGMSG("output into: %s\n", full_fname.c_str());

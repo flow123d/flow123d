@@ -41,7 +41,10 @@
  */
 
 #include <petscvec.h>
+#include <algorithm>
+#include <limits>
 #include <petscmat.h>
+#include <armadillo>
 
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
@@ -125,30 +128,30 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        ASSERT(m == n,"Assumed square matrix.");
 
        // set size
-       locSizeA = m;
+       loc_size_A = m;
        //DBGMSG("A block size %d",locSizeA);
 
        // size of B block
-       locSizeB = orig_sub_size - locSizeA;
+       locSizeB = orig_sub_size - loc_size_A;
 
        VecGetOwnershipRange(Orig->get_rhs(),&vec_orig_low,&vec_orig_high);
 
        if (IsA == NULL) {
            // create A block index set
            // assume 'a_inv->local_size' be local part of A block
-           ISCreateStride(PETSC_COMM_SELF,locSizeA,vec_orig_low,1,&IsA);
+           ISCreateStride(PETSC_COMM_SELF,loc_size_A,vec_orig_low,1,&IsA);
 
        } 
        // obtain index set local to subdomain
        ISGetIndices(IsA,&IsAIndices);
-       IsALocalIndices = new PetscInt[locSizeA];
+       IsALocalIndices = new PetscInt[loc_size_A];
        int shift = IsAIndices[0];
-       for (i = 0; i < locSizeA; i++) {
+       for (i = 0; i < loc_size_A; i++) {
 	   IsALocalIndices[i] = IsAIndices[i] - shift;
        }
        ISRestoreIndices(IsA,&IsAIndices);
 
-       ISCreateGeneral(PETSC_COMM_SELF,locSizeA,IsALocalIndices,PETSC_USE_POINTER,&IsA_sub);
+       ISCreateGeneral(PETSC_COMM_SELF,loc_size_A,IsALocalIndices,PETSC_USE_POINTER,&IsA_sub);
        //DBGPRINT_INT("pole_lokalnich_indexu",locSizeA,IsALocalIndices);
        MPI_Barrier(PETSC_COMM_WORLD);
 
@@ -156,7 +159,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 
        // create B block index set
        orig_lsize = Orig->vec_lsize();
-       locSizeB_vec = orig_lsize - locSizeA;
+       locSizeB_vec = orig_lsize - loc_size_A;
 
        ISComplement(IsA, vec_orig_low, vec_orig_high, &IsB);
        ISAllGather(IsB,&fullIsB);
@@ -174,7 +177,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        // create complement system
        // TODO: introduce LS as true object, clarify its internal states
        // create RHS sub vecs RHS1, RHS2
-       ierr = VecCreateMPI(PETSC_COMM_WORLD,locSizeA,PETSC_DETERMINE,&(RHS1));
+       ierr = VecCreateMPI(PETSC_COMM_WORLD,loc_size_A,PETSC_DETERMINE,&(RHS1));
        ierr = VecCreateMPI(PETSC_COMM_WORLD,locSizeB_vec,PETSC_DETERMINE,&(RHS2));
 
        // create scatters
@@ -182,7 +185,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        ierr = VecScatterCreate(Orig->get_rhs( ), IsB, RHS2, PETSC_NULL, &ScatterToB);
 
        // create Solution sub vecs Sol1, Compl->solution
-       ierr = VecCreateMPI(PETSC_COMM_WORLD, locSizeA,     PETSC_DETERMINE, &(Sol1));
+       ierr = VecCreateMPI(PETSC_COMM_WORLD, loc_size_A,     PETSC_DETERMINE, &(Sol1));
        ierr = VecCreateMPI(PETSC_COMM_WORLD, locSizeB_vec, PETSC_DETERMINE, &(Sol2));
 
        // Prepare local data
@@ -209,16 +212,16 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        // create A block index set
        if (IsA == NULL) {
            // assume 'a_inv->local_size' be local part of A block
-           MatGetLocalSize(IA,&locSizeA,PETSC_NULL);
-           ISCreateStride(PETSC_COMM_WORLD,locSizeA,orig_first,1,&IsA);
+           MatGetLocalSize(IA,&loc_size_A,PETSC_NULL);
+           ISCreateStride(PETSC_COMM_WORLD,loc_size_A,orig_first,1,&IsA);
        } else {
-           ISGetLocalSize(IsA, &locSizeA);
+           ISGetLocalSize(IsA, &loc_size_A);
        }
        ISAllGather(IsA,&fullIsA);
 
        // create B block index set
-       locSizeB = orig_lsize-locSizeA;
-       ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+locSizeA,1,&IsB);
+       locSizeB = orig_lsize-loc_size_A;
+       ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
        ISAllGather(IsB,&fullIsB);
 
 
@@ -233,14 +236,14 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        // TODO: introduce LS as true object, clarify its internal states
        // create RHS sub vecs RHS1, RHS2
        VecGetArray(Orig->get_rhs(),&rhs_array);
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeA,PETSC_DETERMINE,rhs_array,&(RHS1));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
 
        // create Solution sub vecs Sol1, Compl->solution
        VecGetArray(Orig->get_solution(),&sol_array);
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeA,PETSC_DETERMINE,sol_array,&(Sol1));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeB,PETSC_DETERMINE,rhs_array+locSizeA,&(RHS2));
-       VecCreateMPIWithArray(PETSC_COMM_WORLD,locSizeB,PETSC_DETERMINE,sol_array+locSizeA,&(Sol2));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+       VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
        VecRestoreArray(Orig->get_rhs(),&rhs_array);
        VecRestoreArray(Orig->get_solution(),&sol_array);
@@ -253,7 +256,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
        const PetscInt *rangesAblock;
        VecGetOwnershipRanges(RHS1,&rangesAblock);
 
-       Distribution new_ds(locSizeB);
+       Distribution new_ds(locSizeB, PETSC_COMM_WORLD);
        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row_new;
        global_row_4_sub_row_new=boost::make_shared<LocalToGlobalMap>(new_ds);
 
@@ -331,110 +334,147 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
         MPI_Barrier(PETSC_COMM_WORLD);*/
 }
 
-SchurComplement :: SchurComplement(Mat & a)
+SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat)
+: IsA(ia), Orig(orig)
 {
-	//xprintf(Msg, "Constructor SchurComplement\n");
+        xprintf(Msg, "Constructor SchurComplement\n");
 
-	PetscInt m, n, ncols, *indices;
-	PetscErrorCode ierr;
-	Mat sub_mat;
-	IS is;
-	unsigned int pos_proc; //position of processed row
-	std::vector<bool> processed_rows;
-	std::vector<unsigned int> submat_rows;
-	std::deque<unsigned int> queue;
-	const PetscInt *cols;
-	const PetscScalar *vals;
-	PetscScalar mat_val[1];
+        PetscInt m, n;
+        PetscErrorCode ierr;
+        PetscScalar *rhs_array, *sol_array;
+        int orig_first;
 
-	ierr = MatGetSize(a, &m, &n);
-	ASSERT(m == m, "Assumed square matrix.\n" );
-	processed_rows.resize(m);
-	for (unsigned int i=0; i<m; i++) processed_rows[i] = false;
-	pos_proc = 0;
-	//xprintf(Msg, "size: %d\n",m);
+        int n_proc, rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+        MPI_Comm_size(PETSC_COMM_WORLD, &n_proc);
 
-	while (pos_proc < processed_rows.size()) {
-		processed_rows[pos_proc] = true;
-		submat_rows.clear();
-		submat_rows.push_back(pos_proc);
-		ierr = MatGetRow(a, pos_proc, &ncols, &cols, &vals);
+        // check type of LinSys, dimensions of matrix, index set
+        ierr = MatGetSize(Orig->get_matrix(), &m, &n);
+        ASSERT(Orig->type == LinSys::MAT_MPIAIJ, "Assumed MAT_MPIAIJ type of Orig object.\n");
+        ASSERT(m == n, "Assumed square matrix.\n" );
+        ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
-		for (PetscInt i=0; i<ncols; i++) {
-			if (!processed_rows[i]) {
-				queue.push_back( cols[i] );
-				processed_rows[ cols[i] ] = true;
-				submat_rows.push_back( cols[i] );
-			} else if (i!=pos_proc) {
-				//ERROR
-			}
-		}
+        // initialize variables
+        IA_sub  = NULL;
+        B       = NULL;
+        Bt      = NULL;
+        B_sub   = NULL;
+        Bt_sub  = NULL;
+        xA      = NULL;
+        xA_sub  = NULL;
+        IAB     = NULL;
+        IAB_sub = NULL;
+        sub_vec_block2 = NULL;
+        Compl=NULL;
 
-		while (queue.size()) {
-			ierr = MatGetRow(a, queue.front(), &ncols, &cols, &vals);
-			for (PetscInt i=0; i<ncols; i++) {
-				if (!processed_rows[i]) {
-					queue.push_back( cols[i] );
-					processed_rows[ cols[i] ] = true;
-					submat_rows.push_back( cols[i] );
-				}
-			}
-			queue.pop_front();
-		}
+        F_ENTRY;
 
-		// get sub_mat block
-		std::sort( processed_rows.begin(), processed_rows.end() );
-		PetscMalloc(processed_rows.size() * sizeof(PetscInt), &indices);
-		for (PetscInt i=0; i<processed_rows.size(); i++) {
-			indices[i] = processed_rows[i];
-		}
-		ISCreateGeneral(PETSC_COMM_SELF, processed_rows.size(), indices, PETSC_COPY_VALUES, &is);
-		MatGetSubMatrix(a, is, is, MAT_INITIAL_MATRIX, &sub_mat);
-		PetscFree(indices);
-		ISDestroy(&is);
+        {
+           // get distribution of original matrix
+           MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
+           MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
+           MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
+           DBGMSG(" - rank: %d, orig_first: %d, orig_lsize: %d \n", rank, orig_first, orig_lsize);
 
-		/* // test output
-		for (PetscInt i=0; i<processed_rows.size(); i++) {
-			for (PetscInt j=0; j<processed_rows.size(); j++) {
-				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
-				cout << (double) (mat_val[0]) << " ";
-			}
-			cout << endl;
-		} // */
+           // create A block index set
+           ISGetLocalSize(IsA, &loc_size_A);
+           ISAllGather(IsA,&fullIsA);
+           DBGMSG(" - rank: %d, locSizeA: %d\n", rank, loc_size_A);
+           //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
-		// create Inverse of the sub_mat block
-		ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, processed_rows.size(), processed_rows.size(), PETSC_DETERMINE,
-				PETSC_DETERMINE, 4, PETSC_NULL, 0, PETSC_NULL, &(sub_mat));
-		ASSERT(ierr == 0,"Error in MatCreateMPIAIJ.");
+           // create B block index set
+           locSizeB = orig_lsize-loc_size_A;
+           ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
+           ISAllGather(IsB,&fullIsB);
+           DBGMSG(" - rank: %d, locSizeB: %d\n", rank, locSizeB);
+           //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 
-		// stored values to inversion IA matrix
-		for (PetscInt i=0; i<processed_rows.size(); i++) {
-			for (PetscInt j=0; j<processed_rows.size(); j++) {
-				MatGetValues(sub_mat, 1, &i, 1, &i, mat_val);
-				MatSetValue(IA, processed_rows[i], processed_rows[j], (double) (mat_val[0]), INSERT_VALUES);
-			}
-		}
+           // create complement system
+           // TODO: introduce LS as true object, clarify its internal states
+           // create RHS sub vecs RHS1, RHS2
+           VecGetArray(Orig->get_rhs(),&rhs_array);
+           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
 
-		do {
-			pos_proc++;
-			if (pos_proc == processed_rows.size()) break;
-		} while(processed_rows[pos_proc]);
-	}
+           // create Solution sub vecs Sol1, Compl->solution
+           VecGetArray(Orig->get_solution(),&sol_array);
+           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
+           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+           VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
+           VecRestoreArray(Orig->get_rhs(),&rhs_array);
+           VecRestoreArray(Orig->get_solution(),&sol_array);
 
-    // initialize variables
-    IA_sub  = NULL;
-    B       = NULL;
-    Bt      = NULL;
-    B_sub   = NULL;
-    Bt_sub  = NULL;
-    xA      = NULL;
-    xA_sub  = NULL;
-    IAB     = NULL;
-    IAB_sub = NULL;
-    sub_vec_block2 = NULL;
+           VecGetArray( Sol2, &sol_array );
+           Compl = new LinSys_MPIAIJ( locSizeB, sol_array );
+           VecRestoreArray( Sol2, &sol_array );
+        }
+
+    	PetscInt ncols, pos_start, pos_start_IA;
+    	MatGetOwnershipRange(Orig->get_matrix(),&pos_start,PETSC_NULL);
+    	MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
+        DBGMSG(" - rank: %d, pos_start_IA: %d, pos_start: %d, loc_size_A: %d \n", rank, pos_start_IA, pos_start, loc_size_A);
+
+        std::vector<PetscInt> submat_rows;
+        const PetscInt *cols;
+        const PetscScalar *vals;
+
+        std::vector<unsigned int> processed_rows(loc_size_A,0);
+
+        unsigned int mat_block=1;   //actual processed block of matrix
+        for(unsigned int loc_row=0; loc_row < processed_rows.size(); loc_row++) {
+            if (processed_rows[loc_row] != 0) continue;
+
+            	PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
+            	unsigned int b_vals = 0; // count of values stored in B-block of Orig system
+                submat_rows.clear();
+                ierr = MatGetRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+                for (PetscInt i=0; i<ncols; i++) {
+                	if (cols[i] >= pos_start+loc_size_A) {
+                		b_vals++;
+                	} else if (cols[i] < min) {
+                		min=cols[i];
+                	} else if (cols[i] > max) {
+                		max=cols[i];
+                	}
+                }
+                size_submat = max - min + 1;
+                ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
+                ASSERT_LESS(size_submat , max_size_submat);
+
+                ierr = MatRestoreRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+                arma::mat submat2(size_submat, size_submat);
+                submat2.zeros();
+                for (PetscInt i=0; i<size_submat; i++) {
+                	processed_rows[ loc_row + i ] = mat_block;
+                	submat_rows.push_back( i + loc_row + pos_start_IA );
+                    ierr = MatGetRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+                    for (PetscInt j=0; j<ncols; j++) {
+                    	if (cols[j] < pos_start+loc_size_A) submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
+                    }
+                    ierr = MatRestoreRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+                }
+                // test output
+                xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);
+                for (int i=0; i<size_submat; i++) {
+                    for (int j=0; j<size_submat; j++) {
+                        xprintf(Msg, "%2.0f ", submat2(i,j));
+                    }
+                    xprintf(Msg, "\n");
+                }
+                xprintf(Msg, "\n");
+
+                // get inversion matrix
+                arma::mat invmat = submat2.i();
+                // stored to inversion IA matrix
+                const PetscInt* rows = &submat_rows[0];
+                MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, invmat.memptr(), INSERT_VALUES);
+
+                mat_block++;
+        }
+
 }
+
 
 /**
  * @brief Form Schur complement. Call solve. Resolve original solution.
@@ -613,9 +653,9 @@ void SchurComplement::form_rhs()
        ISGetIndices( IsA_sub, &IsALocalIndices );
        VecGetArray( subdomain_rhs, &subdomain_rhs_array );
 
-       rhs_interior = new PetscScalar[locSizeA];
+       rhs_interior = new PetscScalar[loc_size_A];
 
-       for (i = 0; i<locSizeA; i++) 
+       for (i = 0; i<loc_size_A; i++)
        {
 	  locIndex = IsALocalIndices[i];
           rhs_interior[i] = subdomain_rhs_array[locIndex];
@@ -624,15 +664,15 @@ void SchurComplement::form_rhs()
        ISRestoreIndices( IsA_sub, &IsALocalIndices );
 
 
-       VecCreateSeqWithArray(PETSC_COMM_SELF,locSizeA,rhs_interior,&rhs1_vec);
+       VecCreateSeqWithArray(PETSC_COMM_SELF,1, loc_size_A,rhs_interior,&rhs1_vec);
 
        VecCreateSeq(PETSC_COMM_SELF,locSizeB,&sub_vec_block2);
        MatMultTranspose(IAB_sub,rhs1_vec,sub_vec_block2);
 
        // create RHS sub vecs RHS1, RHS2
        orig_lsize   = Orig->vec_lsize();
-       locSizeB_vec = orig_lsize - locSizeA;
-       VecCreateMPI(PETSC_COMM_WORLD,locSizeB_vec,PETSC_DETERMINE,&(RHS2_update));
+       locSizeB_vec = orig_lsize - loc_size_A;
+       VecCreateMPI(PETSC_COMM_WORLD, locSizeB_vec,PETSC_DETERMINE,&(RHS2_update));
 
        LinSys_MATIS *ls_IS_Compl = dynamic_cast<LinSys_MATIS*>(Compl);
        ierr = VecScatterBegin( ls_IS_Compl->get_scatter(), sub_vec_block2, RHS2_update,  ADD_VALUES, SCATTER_REVERSE);
@@ -687,7 +727,7 @@ void SchurComplement::resolve()
        ierr = VecScatterEnd(ls_IS->get_scatter(),Compl->get_solution(),  sub_vec_block2, INSERT_VALUES,SCATTER_FORWARD);
 
        VecGetArray(Sol1,&sol1_array_loc);
-       VecCreateSeqWithArray(PETSC_COMM_SELF,locSizeA,sol1_array_loc,&sol1_vec_loc);
+       VecCreateSeqWithArray(PETSC_COMM_SELF,1, loc_size_A,sol1_array_loc,&sol1_vec_loc);
 
        MatMult(IAB_sub,sub_vec_block2,sol1_vec_loc);
        VecRestoreArray(Sol1,&sol1_array_loc);
@@ -714,14 +754,14 @@ void SchurComplement::resolve()
         VecGetArray( Sol1, &sol1_array_loc );
         VecGetArray( Compl->get_solution(), &sol2_array_loc );
 
-        for (int i = 0; i<locSizeA; i++) 
+        for (int i = 0; i<loc_size_A; i++)
         {
             sol_array_loc[i] = sol1_array_loc[i];
         }
-        int locSizeB_vec = orig_lsize - locSizeA;
+        int locSizeB_vec = orig_lsize - loc_size_A;
         for (int i = 0; i<locSizeB_vec; i++) 
         {
-            int index = locSizeA + i;
+            int index = loc_size_A + i;
             sol_array_loc[ index ] = sol2_array_loc[i];
         }
 
@@ -738,6 +778,7 @@ void SchurComplement::resolve()
 SchurComplement :: ~SchurComplement() {
 
     F_ENTRY;
+    DBGMSG("Destructor\n");
 
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
@@ -757,8 +798,11 @@ SchurComplement :: ~SchurComplement() {
     if ( IAB_sub != NULL )        MatDestroy(&IAB_sub);
     if ( sub_vec_block2 != NULL ) VecDestroy(&sub_vec_block2);
 
+    if (Compl) delete Compl;
+
     if      (Orig->type == LinSys::MAT_IS) {
         delete [] IsALocalIndices;
     }
-    delete Compl;
+
+
 }

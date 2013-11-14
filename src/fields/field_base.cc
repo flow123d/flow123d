@@ -38,8 +38,12 @@ const std::string & FieldCommonBase::units() const
 { return units_; }
 
 
-const std::string & FieldCommonBase::desc() const
-{ return desc_; }
+const std::string  FieldCommonBase::desc() const
+{ if(default_.has_value_at_declaration())
+    return "Default Field value: " + default_.value() + " \n " + desc_; 
+  else
+    return desc_;
+}
 
 
 const IT::Default & FieldCommonBase::get_default() const
@@ -62,15 +66,8 @@ Mesh * FieldCommonBase::mesh() const
 { return mesh_; }
 
 
-double FieldCommonBase::time() const
-{ return last_set_time_; }
-
-
 bool FieldCommonBase::changed() const
 { return changed_during_set_time; }
-
-int FieldCommonBase::get_spacedim() const
-{ return spacedim_; }
 
 
 FieldCommonBase::~FieldCommonBase() {}

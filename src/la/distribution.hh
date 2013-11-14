@@ -25,19 +25,40 @@
  * @file
  * @brief  Support classes for parallel programing.
  *
+ * TODO:
+ *
+ * * need better resolution of constructors
  */
+
 
 #ifndef MESH_PARTITION_HH_
 #define MESH_PARTITION_HH_
 
+#include <mpi.h>
+#include <ostream>
 #include <petscvec.h>
 
+class DistributionType {
+public:
+explicit DistributionType(int type) : type_(type) {}
+int type_;
+};
+
+class DistributionBlock : public DistributionType {
+public: DistributionBlock() : DistributionType(-1) {}
+};
+
+class DistributionLocalized : public DistributionType {
+public: DistributionLocalized() : DistributionType(-2) {}
+};
 
 
 
 /**
  * Continuous distribution of an 1D array of indexes.
- * Default is PETSC_COMM_WORLD communicator, but you can provide another.
+ * TODO: after inclusion of LibMesh sources:
+ * - replace constructor Distribution(Vec) with NumericVector.get_distribution()
+ * - derive from ParalellObjectS
  */
 
 class Distribution {
@@ -58,8 +79,8 @@ public:
      * COLLECTIVE
      * @param size Local size on calling processor.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int size);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const unsigned int size, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from given array of sizes of processors.
@@ -68,8 +89,8 @@ public:
      *
      * @param sizes Int array with sizes.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int * const sizes);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const unsigned int * const sizes, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from distribution of a PETSC vector.
@@ -77,7 +98,6 @@ public:
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      * @param petsc_vector
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const Vec &petsc_vector);
 
     /**
@@ -87,8 +107,8 @@ public:
      * @param type Either Block or Localized distribution of indices.
      * @param global_size Total number of indices to distribute.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const SpecialDistribution type, unsigned int global_size);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const DistributionType &type, unsigned int global_size, MPI_Comm comm);
 
     /**
      * Copy Constructor.
@@ -117,9 +137,12 @@ public:
     unsigned int get_proc(unsigned int idx) const;
     /// get local sizes array
     const unsigned int * get_lsizes_array();
-    inline MPI_Comm get_comm() {return communicator;}
+    /// get local starts array
+    const unsigned int * get_starts_array() const;
+    /// Returns communicator.
+    inline MPI_Comm get_comm() const {return communicator;}
     /// distribution view
-    void view();
+    void view(std::ostream &stream) const;
     ~Distribution();
 private:
     /// communicator
@@ -133,7 +156,9 @@ private:
     /// local sizes
     unsigned int *lsizes;
 };
-typedef class Distribution Distribution;
+
+inline std::ostream & operator <<(std::ostream &stream, const Distribution &distr)
+    { distr.view(stream); return stream; }
 
 
 

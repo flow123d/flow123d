@@ -130,7 +130,7 @@ struct MsgFmt {
 #define	NUM_OF_FMTS		8
 static struct MsgFmt msg_fmt[] = {
 	{Msg, 		true,  false,   SCR_STDOUT,	false,	NULL},
-	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "DBG (%s, %s(), %d):"},
+	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
 	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},
@@ -371,11 +371,11 @@ void operator delete[]( void *p,  const my_new_t &) throw ()
 }
 */
 
-void *operator new (std::size_t size) throw(std::bad_alloc) {
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
-void *operator new[] (std::size_t size) throw(std::bad_alloc) {
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
