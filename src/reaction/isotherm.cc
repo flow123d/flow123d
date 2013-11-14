@@ -6,6 +6,7 @@
  */
 #include <utility>
 
+//#include "system/sys_profiler.hh"
 #include "transport/transport.h"
 #include "reaction/isotherm.hh"
 
@@ -31,6 +32,7 @@ void Langmuir::reinit(double mult_coef, double alpha)
 
 void Isotherm::reinit(enum SorptionType adsorption_type, double rho_aqua, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef)
 {
+	//START_TIMER("Isotherm::reinit, table or var. params");
 	adsorption_type_ = adsorption_type;
 	rho_aqua_ = rho_aqua;
 	scale_aqua_ = scale_aqua;
@@ -46,6 +48,9 @@ void Isotherm::reinit(enum SorptionType adsorption_type, double rho_aqua, double
     }
     mult_coef_ = mult_coef;
     second_coef_ = second_coef;
+
+	//END_TIMER("Isotherm::reinit, table or var. params");
+	return;
 }
 
 bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
@@ -56,10 +61,12 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     //xprintf(Msg,"total_mass %f, total_mass_idx %d, total_mass_step_ %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %f, c_sorbed %f\n", total_mass, total_mass_idx, total_mass_step_, scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
     if ( total_mass_idx < 0 ) {xprintf(UsrErr,"total_mass %f seems to have negative value.\n", total_mass); }
     if ( (unsigned int)(total_mass_idx) < (interpolation_table.size() - 1) ) {
+		//START_TIMER("new-sorption, interpolation");
     	double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);
         c_aqua = (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_);
         c_sorbed = (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_);
         return true;
+		//END_TIMER("new-sorption, interpolation");
     } else {
     	if (limited_solubility_on_)// { // tady testovat priznak jestli je uvazovana omezena rozpustnost
     	{
@@ -78,6 +85,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
 template<class Func>
 void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm)
 {
+	//START_TIMER("new-sorption, solve_conc, toms748_solve");
     boost::uintmax_t max_iter = 20;
     tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
@@ -95,6 +103,7 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 	/*}else{
 		precipitate(c_aqua, c_sorbed);
 	}*/
+	//END_TIMER("new-sorption, solve_conc, toms748_solve");
 
     return;
 }
@@ -152,20 +161,14 @@ bool Isotherm::compute_reaction(double &c_aqua, double &c_sorbed)
 {
 	if(this->is_precomputed())
 	{
-		//START_TIMER("new-sorption interpolation");
 		compute_projection(c_aqua, c_sorbed);
-		//END_TIMER("new-sorption interpolation");
 	}else{
 		ConcPair conc(c_aqua, c_sorbed);
 		if(limited_solubility_on_ && (c_aqua > table_limit_))
 		{
-			//START_TIMER("new-sorption, var params, lim solub");
 			precipitate(c_aqua, c_sorbed);
-			//END_TIMER("new-sorption, var params, lim solub");
 		}else{
-			//START_TIMER("new-sorption toms748_solve");
 	    	conc = solve_conc(conc);
-			//END_TIMER("new-sorption toms748_solve");
 		}
 	    c_aqua = conc.first;
 	    c_sorbed = conc.second;
@@ -246,6 +249,7 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
 
 void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 {
+	//START_TIMER("new-sorption, precipitate, lim solub");
 	if(table_limit_ > 0.0)
 	{
 		double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
@@ -255,6 +259,7 @@ void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 	}else{
 		xprintf(UsrErr,"limited solubility is considered, but the solubility limit has wrong, negative value %f\n", table_limit_);
 	}
+	//END_TIMER("new-sorption, precipitate, lim solub");
 
 	return;
 }
