@@ -174,6 +174,8 @@ void Sorption::make_tables(void)
 
 void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
+	START_TIMER("Sorption::isotherm_reinit");
+
 	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
 	double porosity = this->porosity_->value(elem.centre(),elem);
 
@@ -217,6 +219,8 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 		isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
 	}
 
+	END_TIMER("Sorption::isotherm_reinit");
+
 	return;
 }
 
@@ -225,6 +229,7 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
+    //START_TIMER("Computes reaction");
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
     double porosity;
     double rock_density;
@@ -249,6 +254,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 		int subst_id = substance_ids[i_subst];
 	    isotherm.compute_reaction((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
 	}
+    //END_TIMER("Computes reaction");
 
 	return concentrations;
 }
@@ -268,13 +274,14 @@ void Sorption::compute_one_step(void)
 		make_tables();
 	}
 
-    START_TIMER("new_sorp_step");
+    START_TIMER("Computes reaction");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix, loc_el);
 	 }
-    END_TIMER("new_sorp_step");
-	 return;
+    END_TIMER("Computes reaction");
+
+	return;
 }
 
 
