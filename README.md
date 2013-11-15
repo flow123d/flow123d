@@ -224,7 +224,7 @@ Copy file  makefile.in.cmake.template to makefile.in.cmake:
 
     $ cp makefile.in.cmake.template makefile.in.cmake
 
-Edit file makefile.in.cmake, set PETSC_DIR and PETSC_ARCH variables.
+Edit file **makefile.in.cmake**, set `PETSC_DIR` and `PETSC_ARCH` variables.
 
 You can specify type of build:
 
