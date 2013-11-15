@@ -1,20 +1,4 @@
-## Directory containing installation of PETSC
-#set(PETSC_DIR "/home/tester.flow123d/petsc-3.2-p4")
-## Architecture of PETSC
-#set(PETSC_ARCH "linux-gnu-c-debug")
-
-
-## This is directory, where flow123d is be built
-# BUILD_DIR=bitten_tmp
-
-## Compile arguments
-# FLOW_CFLAGS=-g -O0
-
-## Debug information
-#USE_NODEBUG=-DNODEBUG
-#USE_PRINTALL=-DMPI_PRINTALL
-
-#MAKE_JOBS=2
+# Configuration for CI server
 
 set(FLOW_BUILD_TYPE debug)
 
