@@ -7,7 +7,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-//#include "reaction/isotherm.hh"
+#include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -146,69 +146,28 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	make_tables();
 }
 
-			if((data_.rock_density.get_const_value(reg_iter, rock_density)) && (data_.mob_porosity.get_const_value(reg_iter, mobile_porosity)) )
+void Sorption::make_tables(void)
+{
+	ElementAccessor<3> elm;
+
+	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+	{
+		int reg_idx = reg_iter.bulk_idx();
+
+		// Creates interpolation tables in the case of constant rock matrix parameters
+		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
+				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
+				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
+				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
+				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
+		{
+			isotherm_reinit(isotherms[reg_idx],elm);
+			xprintf(Msg,"parameters are constant\n");
+			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
 			{
-				switch(hlp_iso_type)
-				{
-				case 0: // none: //
-				{
-				 	isotherms_mob[reg_idx][i_subst].make_one_point_table();
-				 	//cout << "The interpolation table size is " << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
-				 	/*if(dual_porosity_on)
-				 	{
-					const Linear obj_isotherm_immob(mult_param[i_subst]);
-					isotherms_immob[reg_idx][i_subst].make_one_point_table();
-				 	}*/
-			 	 }
-				 break;
-			 	 case 1: //  linear: //
-			 	 {
-				 	Linear obj_isotherm(mult_param[i_subst]);
-					//isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
-					isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
-					//cout << "The interpolation table size is " << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
-					/*if(dual_porosity_on)
-					{
-						const Linear obj_isotherm_immob(mult_param[i_subst]);
-						isotherms_immob[reg_idx][i_subst].make_table(obj_isotherm_immob, nr_of_points);
-					}*/
-			 	 }
-			 	 break;
-			 	 case 2: // freundlich: //
-			 	 {
-				 	//cout << "Freundlich's interpolation table would be created" << endl;
-				 	Freundlich obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
-					//isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
-					//isotherms_mob[reg_idx][i_subst].set_second_coef_(second_coef[i_subst]);
-					isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
-				 	 //cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
-			 	 }
-			 	 break;
-			 	 case 3: // langmuir: //
-			 	 {
-				 	Langmuir obj_isotherm(mult_param[i_subst], second_coef[i_subst]);
-					//isotherms_mob[reg_idx][i_subst].set_mult_coef_(mult_param[i_subst]);
-					//isotherms_mob[reg_idx][i_subst].set_second_coef_(second_coef[i_subst]);
-					isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm, nr_of_points);
-					//cout << "The interpolation table size is" << isotherms_mob[reg_idx][i_subst].get_interpolation_table_size() << endl;
-			 		/*if(dual_porosity_on)
-			 		{
-				 		Langmuir obj_isotherm_immob(mult_param[i_subst], second_coef[i_subst]);
-						isotherms_mob[reg_idx][i_subst].make_table(obj_isotherm_immob, nr_of_points);
-			 		}*/
-			 	 }
-			 	 break;
-			 	 default:
-			 	 {
-				 	 xprintf(UsrErr,"2) Sorption of %d-th specie in %d-th region has unknown type %d.", i_subst, reg_idx, hlp_iso_type);
-			 	 }
-			 	 break;
-				}
-			}else{
-				//isotherms_mob[reg_idx][i_subst].make_one_point_table();
-				isotherms_mob[reg_idx][i_subst].set_scale_aqua(-1.0);
+				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
-			isotherms_mob[reg_idx][i_subst].set_sorption_type(hlp_iso_type);
 		}
 	}
 }
