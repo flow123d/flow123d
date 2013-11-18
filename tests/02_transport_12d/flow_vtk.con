@@ -28,7 +28,7 @@
 
       output = {
         output_stream = {
-          REF = "/output_streams/0"
+          REF = "/system/output_streams/0"
         }, 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
@@ -76,9 +76,9 @@
       ],
 
       output = {
-        conc_mobile_p0 = "transport_output_stream", 
+        mobile_p0 = "transport_output_stream", 
         output_stream = {
-          REF = "/output_streams/1"
+          REF = "/system/output_streams/1"
         }, 
         save_step = 0.5
       }, 
@@ -95,24 +95,26 @@
     }
   }, 
 
-	output_streams = [
-	  {
-	    file = "./test2.pvd", 
-	    format = {
-	      TYPE = "vtk", 
-	      variant = "ascii"
-	    }, 
-	    name = "flow_output_stream"
-	  }, 
-	  {
-	    file = "./transport.pvd", 
-	    format = {
-	      TYPE = {
-	        REF = "/output_streams/0/format/TYPE"
-	      }, 
-	      variant = "ascii"
-	    }, 
-	    name = "transport_output_stream"
-	  }
-	]
+  system = {
+    output_streams = [
+      {
+        file = "./test2.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport.pvd", 
+        format = {
+          TYPE = {
+            REF = "/system/output_streams/0/format/TYPE"
+          }, 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+  }
 }

@@ -64,10 +64,13 @@
 
       output = {
         balance_output = "water_balance.out", 
-        raw_flow_output = "./raw_output.txt",
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
         piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
+        raw_flow_output = "./raw_output.txt",
         velocity_p0 = "flow_output_stream"
       }, 
       solver = {
@@ -77,12 +80,14 @@
     }
   }, 
 
-  output_streams = {
-    file = "./test1.msh", 
-    format = {
-      TYPE = "gmsh", 
-      variant = "ascii"
-    }, 
-    name = "flow_output_stream"
+  system = {
+    output_stream = {
+        file = "./test1.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
   }
 }

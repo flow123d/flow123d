@@ -55,7 +55,8 @@
     }
   }, 
 
-    output_streams = {
+  system = {
+    output_stream = {
         file = "./test1.pvd", 
         format = {
           TYPE = "vtk", 
@@ -63,4 +64,5 @@
         }, 
         name = "flow_output_stream"
       }
+  }
 }
