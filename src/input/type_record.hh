@@ -657,7 +657,7 @@ public:
 	/**
 	 * Constructor
 	 */
-	AdHocAbstractRecord(const AbstractRecord *ancestor);
+	AdHocAbstractRecord(const AbstractRecord &ancestor);
 
     /**
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
@@ -665,9 +665,17 @@ public:
      */
     bool finish() const;
 
+    /**
+     * Add inherited Record.
+     */
+    void add_child(const Record &subrec);
+
 protected:
     /// Pointer to actual data of the parent AbstractRecord.
     boost::shared_ptr<ChildData> parent_data_;
+
+    /// Temporary value of ancestor AbstractRecord
+    const AbstractRecord *tmp_ancestor_;
 };
 
 

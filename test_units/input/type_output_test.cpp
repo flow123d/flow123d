@@ -162,16 +162,6 @@ public:
 		add_descendant(subrec);
 	}
 };
-class AdHocAbstractRecordTest : public Input::Type::AdHocAbstractRecord {
-public:
-	AdHocAbstractRecordTest(const AbstractRecord *ancestor)
-	: Input::Type::AdHocAbstractRecord(ancestor)
-	{}
-
-	void declare_descendant(const Record &subrec) {
-		add_descendant(subrec);
-	}
-};
 
 TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
     using namespace Input::Type;
@@ -210,9 +200,9 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
     AbstractRecord a_rec(a_rec_test);
 
     // adhoc abstract record - descendant of a_rec
-    AdHocAbstractRecordTest adhoc_rec(&a_rec);
+    AdHocAbstractRecord adhoc_rec(a_rec);
     adhoc_rec.finish();
-    adhoc_rec.declare_descendant(d_rec);
+    adhoc_rec.add_child(d_rec);
 
     cout << "## " << "AdHocAbstractRecord printout" << endl;
     OutputText output_text( &adhoc_rec, 0);

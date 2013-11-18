@@ -566,13 +566,38 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
  * implementation of AdHocAbstractRecord
  */
 
-AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord *ancestor)
-: AbstractRecord(ancestor->type_name(), ancestor->data_->description_), parent_data_(ancestor->child_data_)
-{}
+AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
+{
+	if ( TypeBase::was_constructed(&ancestor) ) {
+		AbstractRecord(ancestor.type_name(), ancestor.data_->description_);
+		parent_data_ = ancestor.child_data_;
+		tmp_ancestor_ = NULL;
+	} else {
+		AbstractRecord("Incomplete AdHocAbstractRecord", "");
+		tmp_ancestor_ = &ancestor; //postponed
+	}
+}
+
+
+void AdHocAbstractRecord::add_child(const Record &subrec)
+{
+	AbstractRecord::add_descendant(subrec);
+}
+
 
 bool AdHocAbstractRecord::finish() const
 {
 	if (data_->finished) return true;
+
+	if (tmp_ancestor_ != 0) {
+        if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
+        tmp_ancestor_->finish();
+
+		//data_->type_name_ = tmp_ancestor_->type_name();
+        //data_->description_ = tmp_ancestor_->data_->description_;
+		//parent_data_ = tmp_ancestor_->child_data_;
+		//this->tmp_ancestor_ = NULL;
+	}
 
 	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
 	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), (*it).type_name());
