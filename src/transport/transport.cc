@@ -88,11 +88,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
             "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
 }
 
-<<<<<<< HEAD
 
-
-=======
->>>>>>> master
 RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec) {
     // Base method EqDataBase::read_boundary_list_item must be called first!
     RegionSet domain = EqDataBase::read_boundary_list_item(rec);
@@ -127,11 +123,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-<<<<<<< HEAD
-=======
+
     mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
 
->>>>>>> master
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
     data_.alpha.set_n_comp(n_subst_);
@@ -173,26 +167,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.conc_mobile.set_name("conc_mobile");
     data_.conc_mobile.set_units("M/L^3");
 
-    field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-    for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
-         // TODO: What about output also other "phases", IMMOBILE and so on.
-
-         // create FieldElementwise for every substance, set it to data->conc_mobile
-         data_.conc_mobile[subst_id].set_field(
-                 mesh_->region_db().get_region_set("ALL"),
-                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
-                 );
-
-
-         std::string subst_name = subst_names_[subst_id] + "_mobile";
-         double *data = out_conc[MOBILE][subst_id];
-         OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
-                 output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());
-    }
-
     // write initial condition
     output_vector_gather();
-    if(field_output) field_output->write_data(time_->t());
+    OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
 }
 
 
@@ -1382,7 +1359,11 @@ void ConvectionTransport::output_data() {
 
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
-        if (field_output) field_output->write_data(time_->t());
+
+        // Register fresh output data
+        //Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
+        //OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
+
         mass_balance()->output(time_->t());
 
         //for synchronization when measuring time by Profiler

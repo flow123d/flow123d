@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: output.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
+ * $Revision: 2505 $
+ * $LastChangedBy: jiri.hnidek $
+ * $LastChangedDate: 2013-09-13 16:52:27 +0200 (Pá, 13 IX 2013) $
  *
  * @file    output.cc
  * @brief   The functions for all outputs (methods of classes: Output and OutputTime).
@@ -86,9 +86,10 @@ static inline void fix_GMSH_file_name(string *fname)
 }
 
 
-OutputData::OutputData(FieldCommonBase *field)
+OutputData::OutputData(FieldCommonBase *field, int spacedim)
 {
     this->field = field;
+    this->spacedim = spacedim;
 }
 
 OutputData::~OutputData()

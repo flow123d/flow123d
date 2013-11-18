@@ -132,12 +132,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         if(output_time) this->output_streams[&ele_flux] = output_time;
 #endif
 
-        Iterator<string> it = in_rec.find<string>("subdomains");
-        if (bool(it)) {
-            result = OutputTime::register_elem_data
-                    (mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
-        }
-
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 

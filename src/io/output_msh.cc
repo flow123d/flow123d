@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
+ * $Id: output_msh.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
  * $Revision$
  * $LastChangedBy$
  * $LastChangedDate$
@@ -150,7 +150,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->field->get_spacedim() << endl;   // number of components
+            file << (*data)->spacedim << endl;   // number of components
             file << (*data)->data.size() << endl;  // number of values
 
             this->write_msh_ascii_cont_data(*data);
@@ -172,7 +172,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->field->get_spacedim() << endl;   // number of components
+            file << (*data)->spacedim << endl;   // number of components
             file << mesh->n_elements() << endl; // number of values
 
             this->write_msh_ascii_discont_data(*data);
@@ -201,7 +201,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->field->get_spacedim() << endl;   // number of components
+            file << (*data)->spacedim << endl;   // number of components
             file << (*data)->data.size() << endl;  // number of values
 
             this->write_msh_ascii_cont_data(*data);

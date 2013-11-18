@@ -17,10 +17,10 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: output.h 2505 2013-09-13 14:52:27Z jiri.hnidek $
+ * $Revision: 2505 $
+ * $LastChangedBy: jiri.hnidek $
+ * $LastChangedDate: 2013-09-13 16:52:27 +0200 (Pá, 13 IX 2013) $
  *
  * @file    output.h
  * @brief   Header: The functions for all outputs.
@@ -90,7 +90,8 @@ class OutputData {
 public:
     FieldCommonBase *field;
     std::vector<boost::any> data;
-    OutputData(FieldCommonBase *field);
+    int spacedim;
+    OutputData(FieldCommonBase *field, int spacedim);
     ~OutputData();
 };
 
@@ -103,27 +104,21 @@ public:
  * places to. See output_vtk.cc and output_msh.cc.
  */
 class OutputTime {
-protected:
-
-    int             rank;               ///< MPI rank of process (is tested in methods)
-
-    // Protected setters for descendant
-    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
-
-    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
-
-    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-
-    OutputTime() {};
-
-private:
-    ofstream        *base_file;         ///< Base output stream
-    string          *base_filename;     ///< Name of base output file
-    string          *data_filename;     ///< Name of data output file
-    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    Mesh            *mesh;
 
 public:
+    /**
+     * \brief Constructor of OutputTime object. It opens base file for writing.
+     *
+     * \param[in] in_rec The reference on the input record
+     */
+    OutputTime(const Input::Record &in_rec);
+
+    /**
+     * \brief Destructor of OutputTime. It doesn't do anything, because all
+     * necessary destructors will be called in destructor of Output
+     */
+    virtual ~OutputTime();
+
     vector<OutputData*>    node_data;
     vector<OutputData*>    corner_data;
     vector<OutputData*>    elem_data;
@@ -204,18 +199,6 @@ public:
      */
     static void destroy_all(void);
 
-    /**
-     * \brief Constructor of OutputTime object. It opens base file for writing.
-     *
-     * \param[in] in_rec The reference on the input record
-     */
-    OutputTime(const Input::Record &in_rec);
-
-    /**
-     * \brief Destructor of OutputTime. It doesn't do anything, because all
-     * necessary destructors will be called in destructor of Output
-     */
-    virtual ~OutputTime();
 
     /**
      * \brief This method set current time for registered data array/vector
@@ -262,6 +245,25 @@ public:
      */
     static void clear_data(void);
 
+private:
+    ofstream        *base_file;         ///< Base output stream
+    string          *base_filename;     ///< Name of base output file
+    string          *data_filename;     ///< Name of data output file
+    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
+    Mesh            *mesh;
+
+protected:
+
+    int             rank;               ///< MPI rank of process (is tested in methods)
+
+    // Protected setters for descendant
+    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
+
+    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
+
+    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
+
+    OutputTime() {};
 };
 
 
@@ -307,15 +309,15 @@ void OutputTime::register_data(const Input::Record &in_rec,
     /* Copy data to vector */
     switch(type) {
     case NODE_DATA:
-        output_data = new OutputData((FieldCommonBase*)field);
+        output_data = new OutputData((FieldCommonBase*)field, spacedim);
         output_time->node_data.push_back(output_data);
         break;
     case CORNER_DATA:
-        output_data = new OutputData((FieldCommonBase*)field);
+        output_data = new OutputData((FieldCommonBase*)field, spacedim);
         output_time->corner_data.push_back(output_data);
         break;
     case ELEM_DATA:
-        output_data = new OutputData((FieldCommonBase*)field);
+        output_data = new OutputData((FieldCommonBase*)field, spacedim);
         FOR_ELEMENTS(mesh, ele) {
             output_data->data.push_back(field->value(ele->centre(), ele->element_accessor()));
         }

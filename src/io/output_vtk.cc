@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
+ * $Id: output_vtk.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
  * $Revision$
  * $LastChangedBy$
  * $LastChangedDate$
@@ -333,7 +333,7 @@ void OutputVTK::write_vtk_vector_ascii(OutputData *output_data)
             "_[" <<
             output_data->field->units() <<
             "]\" NumberOfComponents=\"" <<
-            output_data->field->get_spacedim() <<
+            output_data->spacedim <<
             "\" format=\"ascii\">" <<
             endl;
 
@@ -351,9 +351,9 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputData*> *output_data)
             data != output_data->end();
             ++data)
     {
-        if((*data)->field->get_spacedim() == 1) {
+        if((*data)->spacedim == 1) {
             this->write_vtk_scalar_ascii(*data);
-        } else if((*data)->field->get_spacedim() == 3) {
+        } else if((*data)->spacedim == 3) {
             this->write_vtk_vector_ascii(*data);
         } else {
             /* TODO: not supported */
@@ -371,7 +371,7 @@ void OutputVTK::write_vtk_scalar_data_names(vector<OutputData*> *output_data)
                 data != output_data->end();
                 ++data)
     {
-        if((*data)->field->get_spacedim() == 1) {
+        if((*data)->spacedim == 1) {
             file << (*data)->field->name() << "_[" << (*data)->field->units() << "]";
             file << ",";
         }
@@ -387,7 +387,7 @@ void OutputVTK::write_vtk_vector_data_names(vector<OutputData*> *output_data)
     for(vector<OutputData*>::iterator data = output_data->begin();
                 data != output_data->end(); ++data)
     {
-        if((*data)->field->get_spacedim() == 3) {
+        if((*data)->spacedim == 3) {
             file << (*data)->field->name() << "_[" << (*data)->field->units() << "]";
             file << ",";
         }
