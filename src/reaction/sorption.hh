@@ -149,6 +149,10 @@ class Sorption:  public Reaction
 		*/
 		void make_tables(void);
 		/**
+		*
+		*/
+		bool limited_solubility_on_;
+		/**
 		* Meaningless inherited methods.
 		*/
 		virtual void update_solution(void);
