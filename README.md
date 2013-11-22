@@ -236,7 +236,7 @@ or
 
 or you can directly set flags for C and C++ compiler:
       
-    $ set(CC_FLAGS "-O3 -DNODEBUG -pg ")
+    $ set(CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg ")
 
 Then run the compilation by:
 

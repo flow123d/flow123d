@@ -85,15 +85,15 @@ else(FLOW_CC_FLAGS)
     # debug mode
     set(CMAKE_CXX_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    add_definitions(-DDEBUG)
+    add_definitions(-DFlow123d_DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DNODEBUG)
+    add_definitions(-DFlow123d_NODEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DDEBUG)
+    add_definitions(-DFlow123d_DEBUG)
   else()
   endif()
   
