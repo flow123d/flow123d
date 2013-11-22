@@ -32,7 +32,7 @@ public:
   /**There is a vector for the functors parameters.
    * The vector of parameters is addressed by integer, but one can
    * use enum inside one's own functor to make it more convenient.
-   * e.g. \verbatim set_param(MyFunctor::my_parameter, value) \endverbatim.
+   * e.g. \code `set_param(MyFunctor::my_parameter, value)` \endcode.
    * @param param_name is integer value (or enum value) to access member of the parameter vector
    * @param param_value is the new value of selected parameter
    */
@@ -65,17 +65,15 @@ protected:
  * 
  * The template is used to enable computing derivates by FADBAD++ library. 
  * The virtual operator() needs to operate both with type double and FADBAD++ types, 
- * such as \verbatim B<double> \endverbatim and \verbatim T<double> \endverbatim.
+ * such as `B<double>` and `T<double>`.
  * 
- * Simple usage example for function \[x^3\] with three parameters: \code
+ * Simple usage example for function \f$ x^3p_1+\frac{p_2}{p_3} \f$ with three parameters: \code
 template<class Type=double>
 class Cubic : public FunctorBase<Type>
 {
 public:
   typedef enum{ p1, p2, p3
   } Parameters;
-
-  Cubic(){}
   
   Cubic(double pp1, double pp2, double pp3)
   {

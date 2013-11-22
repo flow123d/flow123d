@@ -1,4 +1,5 @@
 #include "interpolant.hh"
+//#undef DEBUG
 #include "system/xio.h"
 
 #include <cmath>
@@ -34,9 +35,10 @@ inline unsigned int InterpolantBase::size() const
 /********************************** Interpolant ********************************/
 
 template<template<class> class Func, class Type >
-Interpolant::Interpolant(Func<Type>* func) 
+Interpolant::Interpolant(Func<Type>* func, bool interpolate_derivative) 
+  : func(func), 
+    interpolate_derivative(interpolate_derivative)
 {
-  this->func = func;
   func_diff = new Func<B<Type> >();
   func_diffn = new Func<T<Type> >();
   
@@ -48,8 +50,9 @@ Interpolant::Interpolant(Func<Type>* func)
 
 
 template<template<class> class Func, class Type >
-void Interpolant::set_functor(Func<Type>* func) 
+void Interpolant::set_functor(Func<Type>* func, bool interpolate_derivative) 
 {
+  this->interpolate_derivative = interpolate_derivative;
   this->func = func;
   func_diff = new Func<B<Type> >();
   func_diffn = new Func<T<Type> >();
@@ -60,6 +63,11 @@ void Interpolant::set_functor(Func<Type>* func)
   checks[Check::functor] = true;
 }
 
+
+inline double Interpolant::val_test(double x)
+{
+    return val_p1(x);
+}
 
 inline double Interpolant::val(double x)
 {
@@ -74,6 +82,7 @@ inline double Interpolant::val(double x)
   //return value
   if(x < bound_a_)     //left miss
   {
+    DBGMSG("test\n");
     stats.interval_miss_a++;
     stats.min = std::min(stats.min, x);
     
@@ -90,6 +99,7 @@ inline double Interpolant::val(double x)
   }
   else if(x > bound_b_)     //right miss
   {
+    DBGMSG("test\n");
     stats.interval_miss_b++;
     stats.max = std::max(stats.max, x);
     
@@ -112,6 +122,7 @@ inline double Interpolant::val(double x)
 
 inline DiffValue Interpolant::diff(double x)
 {
+  ASSERT(interpolate_derivative, "Derivative is not interpolated. Flag must be switched true in constructor (or set_functor).");
   //increase calls
   stats.total_calls++;
   
@@ -217,89 +228,58 @@ inline DiffValue Interpolant::diff_p1(double x)
 }
 
 
-
-/** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^2 \f$ in the norm \f$ \|f-i\|_{L_2}\f$. 
+/** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^p + (f'(x)-i'(x))^p \f$ in the norm \f$ \|f-i\|_{W^1_p} \f$. 
    * It is used as input functor to integration.
    */
-class Interpolant::NormL2 : public FunctorBase<double>
+class Interpolant::FuncError_lp : public FunctorBase<double>
 {
 public:
-  NormL2(Interpolant* interpolant)
-  : interpolant(interpolant){}
-
-  virtual double operator()(double x)
-  {
-    return std::pow(interpolant->f_val(x) - interpolant->val(x),2);
-  }         
- 
-private:
-  Interpolant* interpolant;
-};
-
-  /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^2 + (f'(x)-i'(x))^2 \f$ in the norm \f$ \|f-i\|_{W^1_2} \f$. 
-   * It is used as input functor to integration.
-   */
-class Interpolant::NormW21 : public FunctorBase<double>
-{
-public:
-  NormW21(Interpolant* interpolant)
-  : interpolant(interpolant){}
- 
-  virtual double operator()(double x)
-  {
-    double val = std::pow(interpolant->f_val(x) - interpolant->val(x),2);
-    double diff = std::pow(interpolant->f_diff(x).second - interpolant->diff(x).second,2);
-    return val+diff;
-  }         
-  
-private:
-  Interpolant* interpolant;
-};
-        
-  /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^p + (f'(x)-i'(x))^p \f$ in the norm \f$ \|f-i\|_{W^1_p} \f$. 
-   * It is used as input functor to integration.
-   */
-class Interpolant::NormWp1 : public FunctorBase<double>
-{
-public:
-  NormWp1(Interpolant* interpolant, double p)
-  : interpolant(interpolant), p_(p) {}
+  FuncError_lp(Interpolant* interpolant, double p, double tol)
+  : interpolant(interpolant), p_(p), tol_(tol) {}
  
   inline double p() {return p_;}
+  inline double tol() {return tol_;}
  
   virtual double operator()(double x)
   {
-    double val = std::pow(interpolant->f_val(x) - interpolant->val(x),p_);
-    double diff = std::pow(interpolant->f_diff(x).second - interpolant->diff(x).second,p_);
-    return val+diff;
+    double f_val = interpolant->f_val(x);
+    double a = std::abs(f_val - interpolant->val(x)) / (std::abs(f_val) + tol_);
+             
+    return std::pow(a, p_);
   }         
   
 private:
   Interpolant* interpolant;
   double p_;
+  double tol_;
 };
-
+       
   /** Functor class that computes the argument of the integral \f$ (f(x)-i(x))^p + (f'(x)-i'(x))^p \f$ in the norm \f$ \|f-i\|_{W^1_p} \f$. 
    * It is used as input functor to integration.
    */
-class Interpolant::NormFunc : public FunctorBase<double>
+class Interpolant::FuncError_wp1 : public FunctorBase<double>
 {
 public:
-  NormFunc(Interpolant* interpolant, double p)
-  : interpolant(interpolant), p_(p) {}
+  FuncError_wp1(Interpolant* interpolant, double p, double tol)
+  : interpolant(interpolant), p_(p), tol_(tol) {}
  
   inline double p() {return p_;}
+  inline double tol() {return tol_;}
  
   virtual double operator()(double x)
   {
-    double val = std::pow(interpolant->f_val(x),p_);
-    double diff = std::pow(interpolant->f_diff(x).second,p_);
-    return val+diff;
+    DiffValue f = interpolant->f_diff(x);
+    DiffValue g = interpolant->diff(x);
+    double a = std::abs(f.first - g.first) / (std::abs(f.first) + tol_)
+             + std::abs(f.second - g.second) / (std::abs(f.second) + tol_);
+             
+    return std::pow(a, p_);
   }         
   
 private:
   Interpolant* interpolant;
   double p_;
+  double tol_;
 };
 
 
