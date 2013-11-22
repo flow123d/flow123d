@@ -10,7 +10,7 @@
 /** Uses 3-point Simpson's rule to evaluate an intergral on interval a,b.
   * Divides interval in halves in recusion until the difference
   * between values of Simpson's rule before and after division is
-  * smaller then $15\epsilon$.
+  * smaller then \f$ 15\epsilon \f$.
   */
 class AdaptiveSimpson
 {

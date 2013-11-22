@@ -1,9 +1,13 @@
 /*
- * time_governor_test.cpp
+ * functors_test.cc
  *
- *  Created on: May 20, 2011
- *      Author: jb
+ *  Created on: November, 2013
+ *      Author: pe
  */
+
+#include <ctime>
+#include <cstdlib>
+#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -139,19 +143,32 @@ TEST (Functors, functors)
 /**
  * Test for interpolant of x^3
  */
+
 TEST (Functors, make_interpolation)
 {
+  bool interpolate_derivative = true;
   Cubic<double> my_func;                //x^3
   Cubic<> my_func2;                     //x^3+p1 (parameter p1=2.0)
   
-  my_func.set_param(Cubic<double>::p1,0.0);
+  //test interpolant2-----------
   my_func2.set_param(Cubic<double>::p1,2.0);
+  Interpolant interpolant2;
+  interpolant2.set_functor(&my_func2, false);
+  interpolant2.set_interval(0, 10);
+  //interpolant2.set_size(10);
+  interpolant2.set_size_automatic(0.01, 10, 1e5);
+  EQUAL(interpolant2.f_diff(2).first, 10);
+  EQUAL(interpolant2.f_diff(2).second, 12);
+  interpolant2.interpolate();
+  EXPECT_TRUE(interpolant2.error() < 3.891645e-3);
+  EXPECT_TRUE(interpolant2.error() > 3.891643e-3);
+  //-----------------------
   
-  Interpolant* interpolant = new Interpolant(&my_func);
-  Interpolant* interpolant2 = new Interpolant();
-  interpolant2->set_functor(&my_func2);
+  
+  my_func.set_param(Cubic<double>::p1,0.0);
+  Interpolant* interpolant = new Interpolant(&my_func, interpolate_derivative);
   //extrapolation set by default to functor
-
+  
   //statistics - zero at start
   EQUAL(interpolant->statistics().total_calls, 0);
   EQUAL(interpolant->statistics().interval_miss_a, 0);
@@ -169,12 +186,9 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->f_diffn(4,2), 24);
   EQUAL(interpolant->f_diffn(4,3), 6);
   
-  EQUAL(interpolant2->f_diff(2).first, 10);
-  EQUAL(interpolant2->f_diff(2).second, 12);
-  
-  
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
+  //interpolant->set_size_automatic(0.1,10,1e5);
   interpolant->interpolate();
   
   //DBGMSG("Error of interpolation: %f\n", interpolant->error());
@@ -225,7 +239,7 @@ TEST (Functors, make_interpolation)
   
   //increasing missed interval evaluation
   //this should remake the table
-  for(unsigned int i=0; i < (STATISTIC_CHECK+1); i++)
+  for(unsigned int i=0; i < 1000; i++)
   {
     //DBGMSG("i: %d\n",i);
     interpolant->val(-20);
@@ -247,9 +261,9 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->statistics().interval_miss_b, 0);
   EQUAL(interpolant->statistics().min, -20.0);
   EQUAL(interpolant->statistics().max, 15.0);
-
+  //*/
+  
   delete interpolant;
-  delete interpolant2;
 }
 
 
@@ -265,45 +279,197 @@ TEST (Functors, interpolation_error)
   Cubic<double> cubic_func;               //x^3
   
   Interpolant* interpolant = new Interpolant(&lin_func);
-  interpolant->set_interval(0,10);
-  interpolant->set_size(2);
+  interpolant->set_interval(1,10);
+  interpolant->set_size(10);
   
   EQUAL(interpolant->error(), -1);      //error not computed yet
   
-  interpolant->set_functor<Linear, double>(&lin_func);
+  //interpolant->set_functor<Linear, double>(&lin_func);
   interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
   //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
   EQUAL(interpolant->error(), 0);
   
-    /*
   interpolant->set_functor<Quadratic, double>(&quad_func);
   interpolant->interpolate();
-  //http://www.numberempire.com/definiteintegralcalculator.php
-  // \int_0^5 (x^2-5*x)^2+(2*x-2*x)^2 = 104.1666666666666
-  // sqrt = 10,206207262
-  // \int_5^10 (x^2-15*(x-5)-25)^2+(2*x-2*(x-5)-10)^2 = 104.1666666666666
-  // sqrt = 10,206207262
-  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
-  EQUAL(interpolant->error(), 2.041241452319315197172500120359472930431365966796875);
+  EXPECT_TRUE(interpolant->error() < 9.631392E-02);
+  EXPECT_TRUE(interpolant->error() > 9.631390E-02);
+  
   
   
   cubic_func.set_param(Cubic<double>::p1,0.0);
   interpolant->set_functor<Cubic, double>(&cubic_func);
+  interpolant->set_interval(-2,10);
+  interpolant->set_norm(ErrorNorm::l2);
   interpolant->interpolate();
-  //http://www.numberempire.com/definiteintegralcalculator.php
-  // \int_0^5 (x^3-25*x)^2+(3*x^2-15*x)^2 = 6889.880952380952
-  // sqrt = 83,005306772
-  // \int_5^10 (x^3-175*(x-5)-125)^2+(3*x^2-45*(x-5)-75)^2 = 53764.88095238095
-  // sqrt = 231,872553254
-  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
-  EQUAL(interpolant->error(), 31.48778600260849458436496206559240818023681640625);
   
-  interpolant->set_size_automatic(5e-3,5);
-  interpolant->interpolate();
-  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
-  */
+  
   delete interpolant;
 }
+//*/
 
 
+TEST (Functors, speed_creation)
+{
+  unsigned int size = 10*1000*1000;
+  double a = 1,
+         b = 10;
+  Cubic<double> cubic_func;               //x^3
+  cubic_func.set_param(Cubic<double>::p1,0.0);
+  //Interpolant* interpolant = new Interpolant(&cubic_func, true); //with derivative
+  Interpolant* interpolant = new Interpolant(&cubic_func, false);
+  interpolant->set_interval(a,b);
+  interpolant->set_size(size);
+  
+  double res1, res2, res3, res4;
+  clock_t start, end;
+  
+  start = clock();
+  {     //create interpolation of a functor
+    double step = (b-a)/size;
+  
+    vector<double> x_vec(size+1);
+    vector<double> f_vec(size+1);
+    vector<double> p_vec(size);
+  
+    double temp_x = a;
+    //filling the vector x and f
+    for(unsigned int i = 0; i != size; i++)
+    {
+      temp_x = a + step*i;
+      x_vec[i] = temp_x;
+      f_vec[i] = cubic_func(temp_x);
+    }
+    //finish the interval
+    x_vec[size] = b;
+    f_vec[size] = cubic_func(b);
+    
+    for(unsigned int i = 0; i != size; i++)
+    {
+      p_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
+    }
+    
+    //to this point 240ms
+    
+    double temp_a = a+step/2;
+    double tot_err, value, int_value;
+    for(unsigned int i = 0; i != size; i++)
+    {
+      temp_x = temp_a + step*i;
+      value = cubic_func(temp_x);
+      unsigned int ii = floor((temp_x - a) / step);
+      int_value = (temp_x - x_vec[ii])*p_vec[ii] + f_vec[ii];
+      tot_err = std::max( tot_err, 
+                          std::abs(value - int_value) / (std::abs(value)+1e-10)
+                        );
+    }
+    //to this point 340ms
+  }
+  end = clock();
+  res1 = (double)(end-start)/CLOCKS_PER_SEC *1000;
+  
+  start = clock();
+  {
+    interpolant->interpolate();
+  }
+  end = clock();
+  res2 = (double)(end-start)/CLOCKS_PER_SEC *1000;
+  
+  
+  Interpolant* interpolant2 = new Interpolant(&cubic_func, false);
+  interpolant2->set_interval(a,b);
+  interpolant2->set_size_automatic(1e-11, 10, size);
+  start = clock();
+  {
+    interpolant2->interpolate();
+  }
+  end = clock();
+  res3 = (double)(end-start)/CLOCKS_PER_SEC *1000;
+  
+  int p = 40;
+  cout << left << setw(p) << "Simple interpolation creation:" << res1 << " ms" << endl;
+  cout << setw(p) << "Interpolation creation:" << res2 << " ms" << endl;
+  cout << setw(p) << "Interpolation auto-creation:" << res3 << " ms" << endl;
+}
+//*/
+
+
+TEST (Functors, speed_evaluation)
+{
+  unsigned int size = 10000,
+               n = 100*1000*1000;
+  double a = 1,
+         b = 10;
+  Cubic<double> cubic_func;               //x^3
+  cubic_func.set_param(Cubic<double>::p1,0.0);
+  //Interpolant* interpolant = new Interpolant(&cubic_func, true); //with derivative
+  Interpolant* interpolant = new Interpolant(&cubic_func, false);
+  interpolant->set_interval(a,b);
+  interpolant->set_size(size);
+  interpolant->interpolate();
+  
+  double res=0;
+  double step = (b-a)/n;
+  
+  clock_t start, end;
+  
+  start = clock();
+  {     //compute x^3
+    for(unsigned int i= 0; i < n; i++)
+    {
+      double x = a+step*i;
+      res += x*x*x;
+      //res = pow(x,3); //is very long
+    }
+    cout << res;
+  }
+  end = clock();
+  
+  cout << "x*x*x: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+
+  res=0;
+  start = clock();
+  {     //compute x^3
+    for(unsigned int i= 0; i < n; i++)
+    {
+      res += cubic_func(a+step*i);
+    }
+    cout << res;
+  }
+  end = clock();
+  
+  cout << "functor: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+  
+  
+  
+  
+  res=0;
+  start = clock();
+  {
+    for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant->val(a+step*i);
+    }
+    cout << res;
+  }
+  end = clock();
+  
+  cout << "I.val:" << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+  
+  
+  
+  res=0;
+  start = clock();
+  {     
+    for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant->val_test(a+step*i);
+    }
+    cout << res;
+  }
+  end = clock();
+  
+  cout << "I.test: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+  
+}
+//*/

@@ -6,15 +6,19 @@
 //#include "system/sys_profiler.hh"
 
 #include <limits>
+#include <iomanip>
 
 /********************************** InterpolantBase ******************************/
 const unsigned int InterpolantBase::n_derivatives = 10;
+const unsigned int InterpolantBase::default_max_size = 10*1000;
+const double InterpolantBase::simpson_tolerance = 1e-10;
 
 InterpolantBase::InterpolantBase()
   : bound_a_(0),
     bound_b_(0),
-    max_size(MAX_SIZE),
-    automatic_step(false),
+    max_size(default_max_size),
+    automatic_size(false),
+    norm_type(ErrorNorm::max),
     error_(-1.0),
     extrapolation(Extrapolation::functor)
     //use_statistics(true)
@@ -36,7 +40,8 @@ void InterpolantBase::set_interval(double bound_a, double bound_b)
   this->bound_b_ = bound_b;
   checks[Check::bound_b] = true;
   
-  //are given oposite be able to response to all calls
+  //used to be use to collect the minimum and maximum "x" through all the evaluations (not only outside interval)
+  //are given oposite to be able to response to all calls
   //stats.min = std::numeric_limits<double>::max();
   //stats.max = -std::numeric_limits<double>::max();
   stats.min = bound_a;
@@ -49,8 +54,15 @@ void InterpolantBase::set_size(unsigned int size)
   this->size_ = size;
   checks[Check::size] = true;
   
-  automatic_step = false;
+  automatic_size = false;
 }
+
+void InterpolantBase::set_norm(ErrorNorm::Type norm_type, double p)
+{
+  this->norm_type = norm_type;
+  this->p = p;
+}
+
 
 void InterpolantBase::set_size_automatic(double user_tol, unsigned int init_size, unsigned int max_size)
 {
@@ -59,7 +71,9 @@ void InterpolantBase::set_size_automatic(double user_tol, unsigned int init_size
   this->user_tol = user_tol;
   this->max_size = max_size;
   size_ = init_size;
-  automatic_step = true;
+  automatic_size = true;
+  
+  checks[Check::size] = true;
 }
 
 void InterpolantBase::set_extrapolation(Extrapolation::Type extrapolation)
@@ -74,9 +88,9 @@ void InterpolantBase::reset_stat()
   stats.total_calls = 0;
   //stats.min = std::numeric_limits<double>::max();
   //stats.max = -std::numeric_limits<double>::max();
-  //switch statistics on
   stats.min = bound_a_;
   stats.max = bound_b_;
+  //switch statistics on
   //use_statistics = true;
 }
 
@@ -99,7 +113,7 @@ void InterpolantBase::check_stats_and_reinterpolate(double percentage)
   
   if(reinterpolate)
   {
-    DBGMSG("Reinterpolating...\n");
+    xprintf(Msg, "Interpolation: Reinterpolating...\n");
     interpolate();
     reset_stat();
   }
@@ -112,7 +126,7 @@ void InterpolantBase::check_all()
   ASSERT(checks[Check::bound_a], "Left boundary of the interval is not set.");
   ASSERT(checks[Check::bound_b], "Right boundary of the interval is not set.");
   ASSERT(checks[Check::size], "Step is not set.");
-  ASSERT(! ((user_tol == 0) && automatic_step), "Tolerance for automatic interpolation is not set.");
+  ASSERT(! ((user_tol == 0) && automatic_size), "Tolerance for automatic interpolation is not set.");
 }
 
 long InterpolantBase::fact(long n)
@@ -129,7 +143,8 @@ Interpolant::Interpolant()
   : InterpolantBase(),
     func(NULL),
     func_diff(NULL),
-    func_diffn(NULL)
+    func_diffn(NULL),
+    interpolate_derivative(false)
   {
   }
   
@@ -158,40 +173,10 @@ double Interpolant::f_diffn(double x,unsigned int n)
   return f[n];                //returns n-th derivate
 }
 
-void Interpolant::create_nodes()
-{
-  step = (bound_b_-bound_a_)/size_;       //n_nodes = size+1;
-  n_nodes = size_ + 1;
-  
-  x_vec.resize(n_nodes);       //nodes
-  f_vec.resize(n_nodes);       //function values in the nodes
-  df_vec.resize(n_nodes);      //function derivates values in the nodes
-    
-  //filling the vector x and f
-  DiffValue value;
-  double temp_x = bound_a_;
-  for(unsigned int i = 0; i < size_; i++)
-  {
-    temp_x = bound_a_ + step*i;
-    value = f_diff(temp_x);
-    x_vec[i] = temp_x;
-    f_vec[i] = value.first;
-    df_vec[i] = value.second;
-  }  
-    
-  //finish the interval
-  x_vec[size_] = bound_b_;
-  value = f_diff(bound_b_);
-  f_vec[size_] = value.first;
-  df_vec[size_] = value.second;
-    
-  //DBGMSG("number_of_nodes = %d\n", n_nodes);
-}
-
 int Interpolant::interpolate()
 {   
   check_all();  //checks if all needed parameters were set
-  unsigned int result;
+  unsigned int result = 10;
   
   //switch off statistics due to error computation
   //is switched on automatically by reset_stat()
@@ -209,39 +194,77 @@ int Interpolant::interpolate()
   }
   */
   
-  if(automatic_step)
+  //temporary vectors for values in the middle of intervals
+  std::vector<double> x_vec_half;
+  std::vector<double> f_vec_half;
+  std::vector<double> df_vec_half;
+      
+  double tol = 1e-10;   //error computation zero tolerance
+  
+  if(automatic_size)
   {
-    DBGMSG("Maximum size of interpolation table: %d\n",max_size);
-    unsigned int k=0;
-    while(x_vec.size()-1 < max_size/2) 
+    int k = -1;
+    create_nodes();     //creates intial set of nodes and values
+    while(1) 
     {
+      k++;
       //DBGMSG("k = %d\n",k);
       //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
-      interpolate_p1();
+      interpolate_p1(); 
+      
+      if(norm_type == ErrorNorm::max)
+        compute_error(tol, x_vec_half, f_vec_half, df_vec_half);
+      else
+        compute_error(tol, p, norm_type);
+      
+      DBGMSG("error: %E\n", error_);
+    
+      //error comparation
       if(user_tol < error_)
       {
-        size_ *= 2;              //double the size (i.e. halve the step)
-        DBGMSG("Interpolating: %d   size: %d \t error: %f\n",k, size_, error_);
+        DBGMSG("Interpolating: %d   size: %d \t error: %E\n",k, size_, error_);
         result = 1;   //tolerance has not been satisfied
       }
       else 
       {
-        DBGMSG("Size of the table set automaticaly to: %d after %d cycles.\n", size_,k);
-        DBGMSG("Error of the interpolation is: %f\n", error_);
+        xprintf(Msg,"Interpolation: Size of the table set automaticaly to: %d after %d cycles.\n", size_,k);
+        //DBGMSG("Interpolation error estimate is: %f\n", error_);
         result = 0;   //interpolation OK
         break;
       }
-      k++;
+      
+      //size comparation
+      if(size_ < max_size/2)
+      {
+        if(norm_type == ErrorNorm::max) // if we compute the maximum norm, we can use the computed values
+          swap_middle_values(x_vec_half, f_vec_half, df_vec_half); 
+        else    //else resize and compute new nodes
+        {
+          size_ *= 2;
+          create_nodes();
+        }
+      }
+      else
+      { 
+        xprintf(Warn,"Interpolation: User defined tolerance %E has not been satisfied with size of interpolation table %d.\n",user_tol,size_);
+        break;
+      }
     }
-    if(x_vec.size()-1 > max_size/2) 
-    { DBGMSG("User defined tolerance %f has not been satisfied with size of interpolation table %d.\n",user_tol,size_); }
   }
   else 
   {
     //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
+    create_nodes();     //creates intial set of nodes and values
     interpolate_p1();
+    
+    if(norm_type == ErrorNorm::max)
+      compute_error(tol, x_vec_half, f_vec_half, df_vec_half);
+    else
+      compute_error(tol, p, norm_type);
+      
     result = 0;   //interpolation OK
   }
+  xprintf(Msg,"Interpolation: Interpolation error estimate is: %E.\n", error_);
   reset_stat();
   return result;
 }
@@ -259,66 +282,186 @@ int Interpolant::interpolate()
 */
 
   void Interpolant::interpolate_p1()
-  {
-    create_nodes();
-    p1_vec.resize(n_nodes-1);    //linear coeficients
-    p1d_vec.resize(n_nodes-1);    //linear coeficients
+  { 
+    p1_vec.resize(size_);    //linear coeficients
     
-    for(unsigned int i = 0; i < p1_vec.size(); i++)
+    if(interpolate_derivative)
     {
-      p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
-      p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / (x_vec[i+1] - x_vec[i]);
+      double delta = 0;
+      p1d_vec.resize(size_);    //linear coeficients for derivative
+      for(unsigned int i = 0; i != p1_vec.size(); i++)
+      {
+        delta = x_vec[i+1] - x_vec[i];
+        p1_vec[i] = (f_vec[i+1] - f_vec[i]) / delta;
+        p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / delta;
+      }
     }
-  
-    //FunctorBase<double>* norm = new NormL2(this);
-    //FunctorBase<double>* norm = new NormW21(this);
-    FunctorBase<double>* norm = new NormWp1(this,4);
-    compute_error(norm);
-    delete norm;
-  
-    DBGMSG("error: %f\n", error_);
+    else
+    {
+      for(unsigned int i = 0; i != p1_vec.size(); i++)
+      {
+        p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
+      }
+    }
+    
     //Writes the interpolation table.
+    /*
     unsigned int p = 10,
                  pp = 5;
-    for(unsigned int i=0; i < p1_vec.size(); i++)
+    for(unsigned int i=0; i != size_-1; i++)
     {
-      std::cout << "x: " << setw(p) << x_vec[i] << setw(pp) << "f:" << setw(p) << f_vec[i] << setw(pp) << "p1:" 
-      << setw(p) << p1_vec[i] << setw(pp) << "df:" << setw(p) << df_vec[i] << setw(pp) << "p1d:" << setw(p) << p1d_vec[i] << std::endl;
+      std::cout << "x: " << setw(p) << x_vec[i] << setw(pp) << "f:" << setw(p) << f_vec[i] << setw(pp) << "p1:" << setw(p) << p1_vec[i];
+      if(interpolate_derivative) 
+        std::cout << setw(pp) << "df:" << setw(p) << df_vec[i] << setw(pp) << "p1d:" << setw(p) << p1d_vec[i] << std::endl;
+      else
+        std::cout << std::endl;
     }
-    std::cout << "x: " << setw(p) << x_vec[x_vec.size()-1] << setw(pp) << "f:" << setw(p) << f_vec[x_vec.size()-1] << setw(pp) << "p1:" 
-      << setw(p) << "-" << setw(pp) << "df:" << setw(p) << df_vec[x_vec.size()-1] << setw(pp) <<  "p1d:" << setw(p) << "-" << std::endl;
+      std::cout << "x: " << setw(p) << x_vec[x_vec.size()-1] << setw(pp) << "f:" << setw(p) << f_vec[f_vec.size()-1] << setw(pp) << "p1:" << setw(p) << "-";
+      if(interpolate_derivative)
+        std::cout << setw(pp) << "df:" << setw(p) << df_vec[df_vec.size()-1] << setw(pp) <<  "p1d:" << setw(p) << "-" << std::endl;
+      else
+        std::cout << std::endl;
     //*/
   }
+
+void Interpolant::create_nodes()
+{ 
+  //setting the step - length of piecewise interpolation intervals
+  step = (bound_b_-bound_a_)/size_;
+  n_nodes = size_ + 1;          //setting the number of nodes
   
-void Interpolant::compute_error(FunctorBase<double>* norm)
-{
-  double  tot_err = 0, // total absolute error on <a,b>
-          p_err = 0,   // absolute error on x[i]-x[i+1]
-          func_norm = 0; // norm of the functor
+  x_vec.resize(n_nodes);       //nodes
+  f_vec.resize(n_nodes);       //function values in the nodes
   
-  FunctorBase<double>* norm_func = new NormFunc(this,4);
-  
-  for(unsigned long i = 0; i < p1_vec.size(); i++ )
-  { 
-    p_err = std::abs( AdaptiveSimpson::AdaptSimpson(*norm,
-                                           x_vec[i], 
-                                           x_vec[i+1],
-                                           SIMPSON_TOLERANCE) );
-    func_norm += std::abs( AdaptiveSimpson::AdaptSimpson(*norm_func,
-                                               x_vec[i], 
-                                               x_vec[i+1],
-                                               SIMPSON_TOLERANCE*1e3) );
-                   
-    //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
-    tot_err += p_err;
+  double temp_x = bound_a_;
+  if(interpolate_derivative)
+  {
+    df_vec.resize(n_nodes);      //function derivates values in the nodes
+    //filling the vector x and f
+    DiffValue value;
+    for(unsigned int i = 0; i < size_; i++)
+    {
+      //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
+      temp_x = bound_a_ + step*i;
+      value = f_diff(temp_x);
+      x_vec[i] = temp_x;
+      f_vec[i] = value.first;
+      df_vec[i] = value.second;
+    }
+    //finish the interval
+    x_vec[size_] = bound_b_;
+    value = f_diff(bound_b_);
+    f_vec[size_] = value.first;
+    df_vec[size_] = value.second;
   }
-  //DBGMSG("func_norm = %f\n",func_norm);
-  //DBGMSG("tot_err = %f\n",tot_err);
-  tot_err = tot_err / func_norm;     //relative to the norm of the functor
-  tot_err = std::pow(tot_err, 1.0/4.0);     //p-th root
-  //tot_err /= (bound_b_ - bound_a_);     //relative to the interval length  
+  else
+  {
+    //filling the vector x and f
+    for(unsigned int i = 0; i < size_; i++)
+    {
+      temp_x = bound_a_ + step*i;
+      x_vec[i] = temp_x;
+      f_vec[i] = f_val(temp_x);
+    }
+    //finish the interval
+    x_vec[size_] = bound_b_;
+    f_vec[size_] = f_val(bound_b_);
+  }
+}
+
+void Interpolant::swap_middle_values(std::vector<double>& x, std::vector<double>& f, std::vector<double>& df)
+{
+  double new_size = 2*size_;
+        n_nodes = new_size+1;
+        step = (bound_b_-bound_a_)/new_size;    //which should be equal also step/2
+        
+        //we will use now the middle points computed in "compute_error" to construct vector of nodes
+        std::vector<double> swap_x_vec;
+        std::vector<double> swap_f_vec;
+        std::vector<double> swap_df_vec;
+        swap_x_vec.reserve(n_nodes);
+        swap_f_vec.reserve(n_nodes);
+
+        for(unsigned int i=0; i!=size_; i++)
+        {
+          swap_x_vec.push_back(x_vec[i]);
+          swap_x_vec.push_back(x[i]);
+          swap_f_vec.push_back(f_vec[i]);
+          swap_f_vec.push_back(f[i]);
+        }
+        swap_x_vec.push_back(x_vec.back());
+        swap_f_vec.push_back(f_vec.back());
+        x_vec = swap_x_vec;
+        f_vec = swap_f_vec;
+        
+        if(interpolate_derivative)
+        {
+          swap_df_vec.reserve(n_nodes);
+          for(unsigned int i=0; i!=size_; i++)
+          {
+            swap_df_vec.push_back(df_vec[i]);
+            swap_df_vec.push_back(df[i]);
+          }
+          swap_df_vec.push_back(df_vec.back());
+          df_vec = swap_df_vec;
+        } 
+        size_ = new_size; 
+}
+
+
+void Interpolant::compute_error(double tol, std::vector<double>& x, std::vector<double>& f, std::vector<double>& df)
+{
+  double tot_err = 0;
   
-  delete norm_func;  
+  x.clear();
+  f.clear();
+  x.reserve(size_);    //middle nodes
+  f.reserve(size_);    //function values in the middle nodes
+
+  double temp_a = bound_a_ + step/2;
+  double temp_x = temp_a;
+  if(interpolate_derivative)
+  {
+    df.clear();
+    df.reserve(size_); //function derivates values in the middle nodes
+    //filling the vector x and f
+    DiffValue value;
+    DiffValue int_value;
+    for(unsigned int i = 0; i != size_; i++)
+    {
+      //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
+      temp_x = temp_a + step*i;
+      value = f_diff(temp_x);
+      x.push_back(temp_x);
+      f.push_back(value.first);
+      df.push_back(value.second);
+      
+      int_value = diff_p1(temp_x);    //we can call directly the interpolant evaluation, because we know we are in the interval
+      //double t = std::abs(value.second - int_value.second) / (std::abs(value.second) + tol);
+      tot_err = std::max( tot_err, 
+                          std::abs(value.first - int_value.first) / (std::abs(value.first) + tol)
+                            + std::abs(value.second - int_value.second) / (std::abs(value.second) + tol)
+                        );
+      //DBGMSG("x,f,if: \t%f:  %f: %f\n",temp_x, value.first, int_value.first);
+      //DBGMSG("temporary tot_error: %f:  %f: %f\n",temp_x,tot_err,t);
+    }
+  }
+  else
+  {
+    //filling the vector x and f
+    for(unsigned int i = 0; i != size_; i++)
+    {
+      temp_x = temp_a + step*i;
+      x.push_back(temp_x);
+      f.push_back(f_val(temp_x));
+      tot_err = std::max( tot_err, 
+                          std::abs(f.back() - val_p1(temp_x)) / (std::abs(f.back()) + tol)
+                        );
+    }
+  }
+  
+  error_ = tot_err;
+  
   /* PRIORITY QUEUE FOR ADAPTIVE INTERVAL DIVIDING
   for(unsigned long i = 0; i < g->get_count(); i++ )
   {
@@ -351,10 +494,51 @@ void Interpolant::compute_error(FunctorBase<double>* norm)
   //  << tot_err/(g->GetA()-g->GetB()) 
   //  << "\tabsolute err = " << tot_err << std::endl;
   //*/
-  
-  error_ = tot_err;       //returns total relative error
 }
 
+void Interpolant::compute_error(double tol, double p, ErrorNorm::Type norm_type)
+{
+  double exponent = 2;  //default exponent
+  FunctorBase<double>* norm;
+  
+  switch(norm_type)
+  {     
+    case ErrorNorm::w21:    
+        norm = new FuncError_wp1(this, 2, tol);
+        break;
+    case ErrorNorm::wp1:    
+        norm = new FuncError_wp1(this, p, tol);
+        exponent = p;
+        break;
+    case ErrorNorm::lp:    
+        norm = new FuncError_lp(this, p, tol);
+        exponent = p;
+        break;
+    case ErrorNorm::l2:    
+    default:
+        norm = new FuncError_lp(this, 2, tol);                    
+  }
+  
+
+  double  tot_err = 0, // total absolute error on <a,b>
+          p_err = 0;   // absolute error on x[i]-x[i+1]
+  
+  for(unsigned long i = 0; i < p1_vec.size(); i++ )
+  { 
+    p_err = std::abs( AdaptiveSimpson::AdaptSimpson(*norm,
+                                           x_vec[i], 
+                                           x_vec[i+1],
+                                           simpson_tolerance) );
+                   
+    //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
+    tot_err += p_err;
+  }
+  //DBGMSG("tot_err = %f\n",tot_err);
+  tot_err /= (bound_b_ - bound_a_);       //relative to the interval length  
+  tot_err = std::pow(tot_err, 1.0/exponent);     //p-th root
+  error_ = tot_err;
+}
+  
   
   
 /********************************** InterpolantImplicit ********************************/  

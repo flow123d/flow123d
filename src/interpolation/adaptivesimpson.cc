@@ -35,6 +35,7 @@ double AdaptiveSimpson::SimpsonAd(FunctorBase<double> &func,
   }
   else
   {
+    //DBGMSG("simpsonad, recursion:  %10d \t %E\n", recursion, err_est);
     //std::cout << "simpsonad -else " << recursion << std::endl;
     //std::cout << h2 << "  " << a << "  " << ca << "  " << c << "  " << fa  << "  " << fca  << "  " << fc  << "  " << sa << std::endl;
     return SimpsonAd(func,h2,a,ca,c,fa,fca,fc,sa,tol,recursion) 
