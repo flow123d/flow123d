@@ -2,6 +2,7 @@
 find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
+  message("GIT_DESCRIBE: ${GIT_DESCRIBE}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxy/flow123d.doxy.in 
     ${CMAKE_CURRENT_BINARY_DIR}/online-doc/Doxyfile 
   )

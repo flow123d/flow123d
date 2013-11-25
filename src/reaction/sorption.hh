@@ -145,6 +145,10 @@ class Sorption:  public Reaction
 		*/
 		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
 		/**
+		*
+		*/
+		void make_tables(void);
+		/**
 		* Meaningless inherited methods.
 		*/
 		virtual void update_solution(void);
@@ -219,6 +223,10 @@ class Sorption:  public Reaction
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		double** sorbed_conc_array;
+		/**
+		*
+		*/
+	    //TimeGovernor *time_;
 };
 
 #endif

@@ -1,7 +1,5 @@
 # CMAKE system TODO
 #
-# * make our own module FindPETSC  using native cmake support in PETSC version >3.2 
-# * check external packages in FindPETSC, in particular Parmetis
 #
 # * report compiler flags and used libraries in a summarizing table before own build
 #
@@ -11,9 +9,12 @@
 #
 #
 
+# check build_tree link,
+# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 # Include settings given by user first
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CONFIG_CMAKE "config.cmake")
 if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
@@ -84,15 +85,15 @@ else(FLOW_CC_FLAGS)
     # debug mode
     set(CMAKE_CXX_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    add_definitions(-DDEBUG)
+    add_definitions(-DFlow123d_DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DNODEBUG)
+    add_definitions(-DFlow123d_NODEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DDEBUG)
+    add_definitions(-DFlow123d_DEBUG)
   else()
   endif()
   
@@ -103,7 +104,10 @@ endif(FLOW_CC_FLAGS)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
 	    execute_process(
 	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+	    if (CYGWIN)
+	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu99")
+	        add_definitions("-DCYGWIN")
+	    elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
 	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	        add_definitions("-DHAVE_CXX11_FULL")    
 	        set(CMAKE_HAVE_CXX11 "true")
@@ -237,7 +241,7 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
-#set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
 if (NOT Boost_FORCE_REBUILD)
     find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 endif()    
@@ -432,6 +436,54 @@ include_directories(
     ${MPI_CXX_INCLUDE_PATH}
 )
 
+######################################################################################################################
+# custom targets
+
+
+#### Safety check of build_tree link
+# This check is called by every target, if it fails we are probably running makefile generated for another branch.
+# So we must break the build.
+add_custom_target(update_source_tree 
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+   
+
+   
+#### create rev_num.h - file with some info about code origin
+# a custom target - is always built -> call cmake script to generate rev_num.h
+# Get the current working branch
+
+#message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+add_custom_target(rev_num_always 
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+)
+# rev_num.h is a generated file
+set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
+    PROPERTIES GENERATED TRUE
+    HEADER_FILE_ONLY TRUE)
+
+    
+    
+#### make a script which call correct mpiexec (taken from PETSC)
+# we can not use link, since mpiexec can be sript which reads its location from calling sequence
+#
+# TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
+# ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
+message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
+if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
+      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
+      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
+else()
+      if(COMMAND mpiexec)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
+        set(MPIEXEC_PATH mpiexec)
+      else()
+        message(WARNING "Missing any mpiexec.")
+      endif()
+endif()
+configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+
 
 ##################################################################################################################### 
 # Macro to make usefull links in SOURCE_DIR
@@ -444,7 +496,7 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
 
 macro(make_link_in_source FILE)
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_BINARY_DIR}/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
   
@@ -474,48 +526,11 @@ add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 
 if( PETSC_FOUND )
-
-  #### create rev_num.h - file with some info about code origin
-  # a custom target - is always built -> call cmake script to generate rev_num.h
-  # Get the current working branch
-
-
-  message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
-  add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
-  )
   
-  # rev_num.h is a generated file
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
-    PROPERTIES GENERATED TRUE
-    HEADER_FILE_ONLY TRUE)
-
-
-  #### make a script which call correct mpiexec (taken from PETSC)
-  # we can not use link, since mpiexec can be sript which reads its location from calling sequence
-  #
-  # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
-  # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
-  message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
-  if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
-      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
-      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
-  else()
-      if(COMMAND mpiexec)
-        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
-        set(MPIEXEC_PATH mpiexec)
-      else()
-        message(WARNING "Missing any mpiexec.")
-      endif()
-  endif()
-  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
-  
-
-
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )

@@ -22,13 +22,9 @@ Address::Address()
 {
    data_->root_type_ = NULL;
    data_->root_storage_ = &Array::empty_storage_;
-   data_->nodes_.push_back(this);
-   //data_->path_.push_back(0);
-   descendant_order_ = 0;
-   actual_storage_ = &Array::empty_storage_;
-   actual_node_ = 0;
-   depth_ = 0;
-   parent_ = 0;
+   data_->parent_ = NULL;
+   data_->descendant_order_ = 0;
+   data_->actual_storage_ = &Array::empty_storage_;
 }
 
 
@@ -42,71 +38,57 @@ Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_ro
 
     data_->root_type_ = type_root;
     data_->root_storage_ = storage_root;
-    data_->nodes_.push_back(this);
-    //data_->path_.push_back(0);
-    descendant_order_ = 0;
-    actual_storage_ = storage_root;
-    actual_node_ = 0;
-    depth_ = 0;
-    parent_ = 0;
+    data_->parent_ = NULL;
+    data_->descendant_order_ = 0;
+    data_->actual_storage_ = storage_root;
 }
 
 
 
 Address::Address(const Address& other)
-: data_(other.data_),
-  actual_node_( other.actual_node_),
-  depth_( other.depth_),
-  parent_( other.parent_),
-  actual_storage_( other.actual_storage_)
+: data_(other.data_)
 {}
 
 
 const Address * Address::down(unsigned int idx) const {
-	Address *a = new Address(*this);
-	a->actual_storage_ = actual_storage_->get_item(idx);
-    a->actual_node_ = data_->nodes_.size();
-    a->depth_++;
-    a->parent_ = actual_node_;
-    //data_->path_.push_back(idx);
-    a->descendant_order_ = idx;
-    data_->nodes_.push_back(a);
 
-	return data_->nodes_.back();
+	Address *addr = new Address(this->data_->root_storage_, this->data_->root_type_);
+	addr->data_->parent_ = this->data_.get();
+	addr->data_->descendant_order_ = idx;
+	addr->data_->actual_storage_ = data_->actual_storage_->get_item(idx);
+
+	return addr;
 }
 
 
 std::string Address::make_full_address() const {
-//	DBGMSG("PRINTOUT\n");
-//	for (unsigned int i=0; i<data_->nodes_.size(); i++) {
-//		DBGMSG("member %u, actual_node_ %u, depth_ %u, parent %u\n", i, data_->nodes_[i]->actual_node_, data_->nodes_[i]->depth_, data_->nodes_[i]->parent_);
-//	}
-//	DBGMSG("END PRINTOUT\n");
+	std::vector<unsigned int> path;
+	AddressData * address_data = data_.get();
+	while (address_data->parent_ != NULL) {
+		path.push_back(address_data->descendant_order_);
+		address_data = address_data->parent_;
+	}
 
+	// for empty path is returned address of root node
+	if (path.size() == 0) {
+		return "/";
+	}
+
+    const StorageBase * storage = address_data->root_storage_;
+    const Type::TypeBase * input_type = address_data->root_type_;
 	std::string address = "";
-    const StorageBase * storage = data_->root_storage_;
-    const Type::TypeBase * input_type = data_->root_type_;
-    unsigned int processed_node = actual_node_;
-    std::vector<unsigned int> path;
+	int i = path.size()-1;
 
-    path.resize(depth_);
-
-    for (unsigned int i = 0; i < depth_; i++) {
-    	unsigned int actual_node = data_->nodes_[processed_node]->actual_node_;
-    	//path[depth_ - 1 - i] = data_->path_[actual_node];
-    	path[depth_ - 1 - i] = data_->nodes_[actual_node]->descendant_order_;
-    	processed_node = data_->nodes_[processed_node]->parent_;
-    }
-
-    for (unsigned int i = 0; i < depth_; i++) {
-    	storage = storage->get_item(path[i]);
+    while (i >= 0) {
 
     	// dispatch types
         if (typeid(*input_type) == typeid(Type::Record)) {
+        	storage = storage->get_item(path[i]);
         	const Type::Record * rec = static_cast<const Type::Record *>(input_type);
         	Type::Record::KeyIter it = rec->begin() + path[i];
         	address = address + "/" + it->key_;
         	input_type = it->type_.get();
+        	i--;
         } else
 		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
 			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
@@ -114,9 +96,11 @@ std::string Address::make_full_address() const {
 			input_type = & a_rec->get_descendant(storage_type->get_int());
 		} else
 		if (typeid(*input_type) == typeid(Type::Array)) {
+	    	storage = storage->get_item(path[i]);
 			const Type::Array * arr = static_cast<const Type::Array *>(input_type);
 			address = address + "/" + boost::lexical_cast<std::string>(path[i]);
 			input_type = & arr->get_sub_type();
+			i--;
 		}
     }
 
@@ -153,6 +137,12 @@ Record::Record(const Address &address, const Type::Record type)
 const Input::Address & Record::get_address() const
 {
 	return address_;
+}
+
+
+void Record::set_address(const Address &address)
+{
+	address_ = address;
 }
 
 
@@ -200,6 +190,12 @@ const Input::Address & AbstractRecord::get_address() const
 }
 
 
+void AbstractRecord::set_address(const Address &address)
+{
+	address_ = address;
+}
+
+
 /*****************************************************************************
  * Implementation of the class Input::Array
  */
@@ -226,6 +222,12 @@ Array::Array(const Address &address, const Type::Array type)
 const Input::Address & Array::get_address() const
 {
 	return address_;
+}
+
+
+void Array::set_address(const Address &address)
+{
+	address_ = address;
 }
 
 

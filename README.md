@@ -1,6 +1,10 @@
 # Flow123d #
 
-[![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
+[![Build Status](http://ci2.nti.tul.cz/job/Flow123d%20build/badge/icon)](http://ci2.nti.tul.cz/job/Flow123d%20build/)
+
+[Source documentation](http://ci2.nti.tul.cz/job/make_doc/doxygen/)
+
+[Reference manual](http://ci2.nti.tul.cz/job/make_doc/doclinks/1/)
 
 Flow123d is a simulator of underground water flow and transport in fractured
 porous media. Novelty of this software is support of computations on complex
@@ -89,7 +93,7 @@ And run the configuration script, for example with following options:
       --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
 
 This also automagically install BLAS, Lapack, MPICH, and ParMetis so it takes
-a while, it can be about 15 min. If everything is OK, you obtain table with
+a while (it can be about 15 min). If everything is OK, you obtain table with
 used compilers and libraries. Finally compile PETSC with this configuration:
 
     $ make all
@@ -220,7 +224,7 @@ Copy file  makefile.in.cmake.template to makefile.in.cmake:
 
     $ cp makefile.in.cmake.template makefile.in.cmake
 
-Edit file makefile.in.cmake, set PETSC_DIR and PETSC_ARCH variables.
+Edit file **makefile.in.cmake**, set `PETSC_DIR` and `PETSC_ARCH` variables.
 
 You can specify type of build:
 
@@ -232,7 +236,7 @@ or
 
 or you can directly set flags for C and C++ compiler:
       
-    $ set(CC_FLAGS "-O3 -DNODEBUG -pg ")
+    $ set(CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg ")
 
 Then run the compilation by:
 
@@ -258,5 +262,6 @@ Try this every if your build doesn't work and you don't know why.
 
 --------------------------------------------------------------------------------
 
-For further information about program usage see documentation in "doc/" in
-particular reference manual "doc/flow_doc". 
+For further information about program usage see documentation in "./doc" in
+particular reference manual "doc/flow_doc".
+

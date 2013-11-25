@@ -36,7 +36,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-12,
+        r_tol = 1e-12
       } 
     }, 
  
@@ -77,7 +78,8 @@
       ],      
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-7
+        a_tol = 1e-12,
+        r_tol = 1e-12
       }, 
       time = {
         end_time = 0.01, 

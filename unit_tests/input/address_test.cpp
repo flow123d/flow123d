@@ -26,20 +26,6 @@ public:
 	}
 };
 
-/**
- * Child class of Input::Address
- * Contains public method for get root storage object
- */
-class AddressTest : public Input::Address {
-public:
-	AddressTest(const Address& other) : Input::Address(other)
-	{}
-
-	const Input::StorageBase * get_storage() const {
-		return data_->root_storage_;
-	}
-};
-
 const string read_input_json = R"JSON(
 {
 	problem = {
@@ -124,17 +110,14 @@ TEST(InputAddress, address_output_test) {
 	json_reader.read_stream( ss,  root_record);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
-	AddressTest addr_test(i_rec.get_address());
-	Input::Address a_root(addr_test.get_storage(), &root_record);
-	Input::Address a_problem( *(a_root.down(0)) );
-	Input::Address a_seq_coupling( *(a_problem.down(0)) );
-	Input::Address a_description( *(a_seq_coupling.down(1)) );
-	Input::Address a_regions( *(a_seq_coupling.down(3)) );
+	Input::Address a_problem( *(i_rec.get_address().down(0)) );
+	Input::Address a_description( *(a_problem.down(1)) );
+	Input::Address a_regions( *(a_problem.down(3)) );
 	Input::Address a_element_list( *(a_regions.down(2)) );
 	Input::Address a_element_1( *(a_element_list.down(1)) );
 
+	EXPECT_EQ("/", i_rec.get_address().make_full_address());
 	EXPECT_EQ("/problem", a_problem.make_full_address());
-	EXPECT_EQ("/problem", a_seq_coupling.make_full_address());
 	EXPECT_EQ("/problem/description", a_description.make_full_address());
 	EXPECT_EQ("/problem/regions", a_regions.make_full_address());
 	EXPECT_EQ("/problem/regions/element_list", a_element_list.make_full_address());

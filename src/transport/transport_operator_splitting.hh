@@ -8,6 +8,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+#include "transport/mass_balance.hh"
 
 
 /// external types:
@@ -33,7 +34,7 @@ class ConvectionTransport;
  * Here one has to specify methods for setting or getting data particular to
  * transport equations.
  */
-class TransportBase : public EquationBase {
+class TransportBase : public EquationBase, public EquationForMassBalance {
 public:
 
     /**
@@ -103,9 +104,9 @@ public:
     virtual void output_data() =0;
 
     /**
-     * Calculate mass balance: flux through boundary and volume sources
+     * Getter for mass balance class
      */
-    void mass_balance();
+    MassBalance *mass_balance() { return mass_balance_; }
 
     /// Returns number of trnasported substances.
     inline unsigned int n_substances() { return n_subst_; }
@@ -113,37 +114,11 @@ public:
     /// Returns reference to the vector of substnace names.
     inline vector<string> &substance_names() { return subst_names_; }
 
-    enum TimeIntegrationScheme {
-    	none,
-    	explicit_euler,
-    	implicit_euler,
-    	crank_nicholson
-    };
-
-    const TimeIntegrationScheme time_scheme() { return time_scheme_; }
 
 protected:
-    /**
-     * Calculates the total flux through boundaries of all regions, and additionally positive and negative fluxes.
-     * The actual calculation depends on the numerical scheme, so each descendant of TransportBase implements this method.
-     * @param bcd_balance       bcd_balance[i][j] is the calculated total flux
-     *                          of @p ith substance through boundary of @p jth region.
-     * @param bcd_plus_balance  bcd_plus_balance[i][j] is the total positive flux
-     *                          of @p ith substance through boundary of @p jth region.
-     * @param bcd_minus_balance bcd_minus_balance[i][j] is the total negative flux
-     *                          of @p ith substance through boundary of @p jth region.
-     */
-    virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
 
-    /**
-     * Calculates the substance mass and sources on all regions.
-     * The actual calculation depends on the numerical scheme, so each descendant of TransportBase implements this method.
-     * @param mass        mass[i][j] is the calculated mass of @p ith
-     *                    substance on @p jth region.
-     * @param src_balance src_balance[i][j] is the source mass
-     *                    of @p ith substance on @p jth region.
-     */
-    virtual void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) = 0;
+    /// Returns the region database.
+    const RegionDB *region_db() { return &mesh_->region_db(); }
 
     /// Number of transported substances.
     unsigned int n_subst_;
@@ -157,15 +132,6 @@ protected:
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
     const MH_DofHandler *mh_dh;
-    /**
-    *  Parameters of the equation
-    */
-    //TransportEqData data_;
-    /**
-     * Handle for output file for output of balance and total fluxes over individual regions and region sets.
-     * TODO: make a specialized class for output of these data
-     */
-    FILE *balance_output_file;
 
     /**
      * Mark type mask that is true for time marks of output points of the transport model.
@@ -173,9 +139,8 @@ protected:
      */
     TimeMark::Type output_mark_type;
 
-
-    TimeIntegrationScheme time_scheme_;
-
+    /// object for calculation and writing the mass balance to file.
+    MassBalance *mass_balance_;
 };
 
 
@@ -191,8 +156,6 @@ public:
         // make module solved for ever
         time_=new TimeGovernor();
         time_->next_time();
-
-        time_scheme_ = none;
     };
 
     inline virtual ~TransportNothing()
@@ -208,12 +171,13 @@ public:
 
     inline virtual void output_data() {};
 
-//    inline virtual TransportEqData *get_data() { return 0; };
+    TimeIntegrationScheme time_scheme() { return none; }
 
 private:
 
     inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
     inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
+
 };
 
 
@@ -266,18 +230,16 @@ public:
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
 
-    //virtual EqData *get_data() { return &data; };/**
+    TimeIntegrationScheme time_scheme() { return none; }
 
 
 private:
     /**
-     * Overriding the virtual method that is called by TransportBase::mass_balance() to get boundary balances over individual boundary regions.
-     * TODO: more precise description
+     * Implements the virtual method EquationForMassBalance::calc_fluxes().
      */
     void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
     /**
-     * Overriding the virtual method that is called by TransportBase::mass_balance() to get source balances over individual boundary regions.
-     * TODO: more precise description
+     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
      */
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 

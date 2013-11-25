@@ -74,7 +74,7 @@ Record TransportBase::input_type_output_record
 Record TransportOperatorSplitting::input_type
 	= Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"
-            "coupled with reaction and sorption model (ODE per element)\n"
+            "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
@@ -107,251 +107,16 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : EquationBase(mesh, in_rec ),
-  mh_dh(NULL)
+  mh_dh(NULL),
+  mass_balance_(NULL)
 {
-	balance_output_file = xfopen( FilePath("mass_balance.txt", FilePath::output_file), "wt");
 }
 
 TransportBase::~TransportBase()
 {
-	if (balance_output_file != NULL) xfclose(balance_output_file);
 }
 
 
-void TransportBase::mass_balance() {
-    F_ENTRY;
-
-    // First we compute the quantities, then on process 0 we write the output
-    const int nsubst = n_substances(),
-    		nboundary = mesh_->region_db().boundary_size(),
-    		nbulk = mesh_->region_db().bulk_size();
-    vector<vector<double> > bcd_balance(nsubst, vector<double>(nboundary, 0)),
-    		bcd_plus_balance(nsubst, vector<double>(nboundary, 0)),
-    		bcd_minus_balance(nsubst, vector<double>(nboundary, 0)),
-    		mass(nsubst, vector<double>(nbulk, 0)),
-    		src_balance(nsubst, vector<double>(nbulk, 0));
-
-
-    //computing mass fluxes over boundaries and elements
-    calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-	calc_elem_sources(mass, src_balance);
-
-
-	// gather results from processes and sum them up
-	int bcd_size = mesh_->region_db().boundary_size();
-	int blk_size = mesh_->region_db().bulk_size();
-	int buf_size = nsubst*(3*bcd_size + 2*blk_size);
-	double sendbuffer[buf_size], recvbuffer[buf_size];
-
-	// prepare sendbuffer
-	for (int i=0; i<nsubst; i++)
-	{
-		for (int j=0; j<bcd_size; j++)
-		{
-			sendbuffer[i*3*bcd_size+           j] = bcd_balance[i][j];
-			sendbuffer[i*3*bcd_size+  bcd_size+j] = bcd_plus_balance[i][j];
-			sendbuffer[i*3*bcd_size+2*bcd_size+j] = bcd_minus_balance[i][j];
-		}
-		for (int j=0; j<blk_size; j++)
-		{
-			sendbuffer[nsubst*3*bcd_size+i*2*blk_size         +j] = mass[i][j];
-			sendbuffer[nsubst*3*bcd_size+i*2*blk_size+blk_size+j] = src_balance[i][j];
-		}
-	}
-	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
-
-	int rank;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	if (rank != 0) return;
-
-
-
-	// update balance vectors
-	for (int i=0; i<nsubst; i++)
-	{
-		for (int j=0; j<bcd_size; j++)
-		{
-			bcd_balance[i][j]       = recvbuffer[i*3*bcd_size+           j];
-			bcd_plus_balance[i][j]  = recvbuffer[i*3*bcd_size+  bcd_size+j];
-			bcd_minus_balance[i][j] = recvbuffer[i*3*bcd_size+2*bcd_size+j];
-		}
-		for (int j=0; j<blk_size; j++)
-		{
-			mass[i][j]        = recvbuffer[nsubst*3*bcd_size+i*2*blk_size         +j];
-			src_balance[i][j] = recvbuffer[nsubst*3*bcd_size+i*2*blk_size+blk_size+j];
-		}
-	}
-
-
-	vector<double> bcd_total_balance(nsubst, 0.), // for computing total balance on boundary
-			bcd_total_inflow(nsubst, 0.),
-			bcd_total_outflow(nsubst, 0.),
-			mass_total(nsubst, 0.),
-			src_total_balance(nsubst, 0.);
-
-    //printing the head of mass balance file
-    unsigned int c = 6; //column number without label
-    unsigned int w = 14;  //column width
-    unsigned int wl = 2*(w-5)+7;  //label column width
-    stringstream s; //helpful stringstream
-    string bc_head_format = "# %-*s%-*s%-*s%-*s%-*s%-*s\n",
-           bc_format = "%*s%-*d%-*s%-*s%-*g%-*g%-*g\n",
-           bc_total_format = "# %-*s%-*s%-*g%-*g%-*g\n";
-    s << setw((w*c+wl-14)/2) << setfill('-') << "--"; //drawing half line
-    fprintf(balance_output_file,"# %s MASS BALANCE %s\n",s.str().c_str(), s.str().c_str());
-    fprintf(balance_output_file,"# Time: %f\n\n\n",time().t());
-
-    //BOUNDARY
-    fprintf(balance_output_file,"# Mass flux through boundary:\n");
-    fprintf(balance_output_file,bc_head_format.c_str(),w,"[boundary_id]",wl,"[label]",
-                            w,"[substance]",w,"[total flux]",w,"[outward flux]",w,"[inward flux]");
-    s.clear();
-    s.str(std::string());
-    s << setw(w*c+wl) << setfill('-') << "-";
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
-
-
-    //printing mass fluxes over boundaries
-    DBGMSG("DB[boundary] size: %u\n", mesh_->region_db().boundary_size());
-    const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
-
-    for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
-        //DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
-    	for (int sbi=0; sbi<nsubst; sbi++) {
-    		bcd_total_balance[sbi] += bcd_balance[sbi][reg->boundary_idx()];
-    		bcd_total_outflow[sbi] += bcd_plus_balance[sbi][reg->boundary_idx()];
-    		bcd_total_inflow[sbi] += bcd_minus_balance[sbi][reg->boundary_idx()];
-			fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
-					w, substance_names()[sbi].c_str(),w, bcd_balance[sbi][reg->boundary_idx()],
-					w, bcd_plus_balance[sbi][reg->boundary_idx()],
-					w, bcd_minus_balance[sbi][reg->boundary_idx()]);
-    	}
-    }
-    //total boundary balance
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
-    for (int sbi=0; sbi<nsubst; sbi++)
-    	fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"Total mass flux of substance",
-                w,substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
-    fprintf(balance_output_file, "\n\n");
-
-
-    //SOURCES
-    string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
-           src_format = "%*s%-*d%-*s%-*s%-*g%-*g\n",
-           src_total_format = "# %-*s%-*s%-*g%-*g\n";
-    //computing water balance of sources
-    fprintf(balance_output_file,"# Mass and sources on regions:\n");   //head
-    fprintf(balance_output_file,src_head_format.c_str(),w,"[region_id]",wl,"[label]",
-                            w,"[substance]",w,"[total_mass]",w,"[total_source]");
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //long line
-
-    //printing water balance of sources
-    DBGMSG("DB[bulk] size: %u\n", mesh_->region_db().bulk_size());
-    const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
-    for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
-    {
-    	for (int sbi=0; sbi<nsubst; sbi++)
-    	{
-    		mass_total[sbi] += mass[sbi][reg->bulk_idx()];
-			src_total_balance[sbi] += src_balance[sbi][reg->bulk_idx()];
-			//"%*s%-*d%-*s  %-*g%-*s%-*g\n";
-			fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
-					reg->label().c_str(), w, substance_names()[sbi].c_str(),
-					w,mass[sbi][reg->bulk_idx()],
-					w,src_balance[sbi][reg->bulk_idx()]);
-    	}
-    }
-    // total sources balance
-    fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
-    for (int sbi=0; sbi<nsubst; sbi++)
-    	fprintf(balance_output_file, src_total_format.c_str(),w+wl,"Total mass and sources balance",
-                w,substance_names()[sbi].c_str(),
-                w,mass_total[sbi],
-                w,src_total_balance[sbi]);
-
-
-    // cummulative balance over time
-
-	// quantities need for the balance over time interval
-	static vector<double> initial_mass(nsubst, 0.),
-			last_sources(nsubst, 0.),
-			last_fluxes(nsubst, 0.),
-			integrated_sources(nsubst, 0.),
-			integrated_fluxes(nsubst, 0.);
-	static double initial_time, last_time;
-	static bool initial = true;
-
-	if (initial)
-	{
-		initial_time = time().t();
-		last_time = initial_time;
-		for (int i=0; i<nsubst; i++)
-			initial_mass[i] = mass_total[i];
-		initial = false;
-	}
-
-	fprintf(balance_output_file, "\n\n# Cumulative mass balance on time interval [%-g,%-g]\n"
-			"# %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
-			initial_time, time().t(),
-			w,"[substance]",
-			w,"[A=init. mass]",
-			w,"[B=source]",
-			w,"[C=flux]",
-			w,"[A+B-C]",
-			w,"[D=curr. mass]",
-			w,"[A+B-C-D=err.]",
-			w,"[rel. error]");
-
-	switch (time_scheme())
-	{
-	case explicit_euler:
-		for (int i=0; i<nsubst; i++)
-		{
-			integrated_sources[i] += last_sources[i]*(time().t()-last_time);
-			integrated_fluxes[i] += last_fluxes[i]*(time().t()-last_time);
-		}
-		break;
-	case implicit_euler:
-		for (int i=0; i<nsubst; i++)
-		{
-			integrated_sources[i] += src_total_balance[i]*(time().t()-last_time);
-			integrated_fluxes[i] += bcd_total_balance[i]*(time().t()-last_time);
-		}
-		break;
-	case crank_nicholson:
-		for (int i=0; i<nsubst; i++)
-		{
-			integrated_sources[i] += (last_sources[i]+src_total_balance[i])*0.5*(time().t()-last_time);
-			integrated_fluxes[i] += (last_fluxes[i]+bcd_total_balance[i])*0.5*(time().t()-last_time);
-		}
-		break;
-	default:
-		break;
-	}
-
-	for (int i=0; i<nsubst; i++)
-	{
-		double denominator = max(fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]),fabs(mass_total[i]));
-		fprintf(balance_output_file, "  %-*s%-*g%-*g%-*g%-*g%-*g%-*g%-*g\n",
-				w,substance_names()[i].c_str(),
-				w,initial_mass[i],
-				w,integrated_sources[i],
-				w,integrated_fluxes[i],
-				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i],
-				w,mass_total[i],
-				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i],
-				w,fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i])/(denominator==0?1:denominator));
-	}
-
-	last_time = time().t();
-	for (int i=0; i<nsubst; i++)
-	{
-		last_sources[i] = src_total_balance[i];
-		last_fluxes[i] = bcd_total_balance[i];
-	}
-
-    fprintf(balance_output_file, "\n\n");
-}
 
 
 
@@ -362,7 +127,6 @@ void TransportBase::mass_balance() {
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
-	time_scheme_ = none;
 	Distribution *el_distribution;
 	int *el_4_loc;
 
@@ -413,16 +177,16 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
 	if (sorptions_it){
-        convection->get_par_info(el_4_loc, el_distribution);
         // Part for mobile zone description follows.
 	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
+        convection->get_par_info(el_4_loc, el_distribution);
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
 	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
 	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
 	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
 	    sorptions->prepare_inputs(*sorptions_it, MOBILE);
-	    xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
+	    //xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
 	    double ***conc_matrix = convection->get_concentration_matrix();
 	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 	    sorptions->set_sorb_conc_array(el_distribution->lsize());
@@ -483,7 +247,7 @@ void TransportOperatorSplitting::update_solution() {
 
 	if (first_time_call)
 	{
-		convection->mass_balance();
+		convection->mass_balance()->output(convection->time().t());
 		first_time_call = false;
 	}
 
@@ -515,6 +279,7 @@ void TransportOperatorSplitting::update_solution() {
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
 	    if(sorptions_immob) sorptions_immob->compute_one_step();
+	    convection->mass_balance()->calculate(convection->time().t());
 	}
     END_TIMER("TOS-one step");
     
@@ -562,14 +327,10 @@ void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* 
 
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
-{
-    convection->calc_fluxes(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-}
+{}
 
 void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
-{
-    convection->calc_elem_sources(mass, src_balance);
-}
+{}
 
 
 

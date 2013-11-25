@@ -54,8 +54,8 @@ set(PETSC_ARCH "gcc_O3")
 
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags: "-g -DDEBUG"
-# "release" set flags: "-O3 -DNODEBUG"
+# "debug" set flags: "-g -DFlow123d_DEBUG"
+# "release" set flags: "-O3 -DFlow123d_NODEBUG"
 #
 
 set(FLOW_BUILD_TYPE debug)
@@ -64,8 +64,8 @@ set(FLOW_BUILD_TYPE debug)
 # you can override these settings through variable FLOW_CC_FLAGS
 #
 # Flow recognize  following definitions:
-# NODEBUG					- all debug options off
-# DEBUG						- all debug options on
+# Flow123d_NODEBUG					- all debug options off
+# Flow123d_DEBUG					- all debug options on
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
@@ -73,7 +73,7 @@ set(FLOW_BUILD_TYPE debug)
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # e.g. :
-#set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
+#set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg ")
 
 
 

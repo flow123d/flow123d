@@ -424,7 +424,7 @@ public:
      * tag of actual timer node. If not we print out warning and try to find the correct tag
      * towards the tree root closing all nodes we pass through.
      *
-     * If DEBUG is set, we check that all children are closed.
+     * If Flow123d_DEBUG is set, we check that all children are closed.
      */
     void stop_timer(const CodePoint &cp);
 
@@ -496,6 +496,11 @@ public:
      * If you want some output call @p output method just before.
      */
     static void uninitialize();
+
+    /**
+     * Check if the instance was created.
+     */
+    static bool is_initialized() { return (_instance != NULL); }
 
 
 private:
@@ -628,6 +633,8 @@ public:
     inline double actual_cumulative_time() const
     { return 0.0; }
     static void uninitialize();
+
+    static bool is_initialized() { return (_instance != NULL); }
 
 private:
     static Profiler* _instance;

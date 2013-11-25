@@ -18,7 +18,8 @@
       }, 
       solver = {
         TYPE = "Petsc",
-        a_tol = 1e-07
+        a_tol = 1e-12,
+        r_tol = 1e-12
       },
       bc_data=[
         {
@@ -58,7 +59,8 @@
       },
       solver = {
         TYPE = "Petsc", 
-        a_tol = 1e-07
+        a_tol = 1e-12,
+        r_tol = 1e-12
       },
       bc_data=[
         {
