@@ -423,6 +423,7 @@ RECORD_DECLARE_KEY(Selection);
 RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(AbstractRecord);
+RECORD_DECLARE_KEY(AdHocAbstractRecord);
 
 
 
@@ -567,21 +568,28 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
  */
 
 AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
+: AbstractRecord("Derived AdHocAbstractRecord", "This description doesn't have print out.")
 {
 	if ( TypeBase::was_constructed(&ancestor) ) {
-		AbstractRecord(ancestor.type_name(), ancestor.data_->description_);
 		parent_data_ = ancestor.child_data_;
 		tmp_ancestor_ = NULL;
 	} else {
-		AbstractRecord("Incomplete AdHocAbstractRecord", "");
 		tmp_ancestor_ = &ancestor; //postponed
 	}
+	this->close();
+
 }
 
 
-void AdHocAbstractRecord::add_child(const Record &subrec)
+AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 {
-	AbstractRecord::add_descendant(subrec);
+	if ( TypeBase::was_constructed(&subrec) ) {
+		AbstractRecord::add_descendant(subrec);
+	} else {
+		unconstructed_childs.push_back( &subrec );
+	}
+
+	return *this;
 }
 
 
@@ -593,10 +601,17 @@ bool AdHocAbstractRecord::finish() const
         if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
         tmp_ancestor_->finish();
 
-		//data_->type_name_ = tmp_ancestor_->type_name();
-        //data_->description_ = tmp_ancestor_->data_->description_;
-		//parent_data_ = tmp_ancestor_->child_data_;
-		//this->tmp_ancestor_ = NULL;
+		parent_data_ = boost::shared_ptr<ChildData>( tmp_ancestor_->child_data_.get() );
+		tmp_ancestor_ = NULL;
+	}
+
+	while (unconstructed_childs.size()) {
+		const Record * rec = *(unconstructed_childs.begin());
+		if ( !TypeBase::was_constructed(rec) ) return false;
+
+	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), rec->type_name());
+	    child_data_->list_of_childs.push_back(*rec);
+	    unconstructed_childs.pop_front();
 	}
 
 	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {

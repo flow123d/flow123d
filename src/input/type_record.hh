@@ -668,14 +668,20 @@ public:
     /**
      * Add inherited Record.
      */
-    void add_child(const Record &subrec);
+    AdHocAbstractRecord &add_child(const Record &subrec);
 
 protected:
     /// Pointer to actual data of the parent AbstractRecord.
-    boost::shared_ptr<ChildData> parent_data_;
+    mutable boost::shared_ptr<ChildData> parent_data_;
 
     /// Temporary value of ancestor AbstractRecord
-    const AbstractRecord *tmp_ancestor_;
+    mutable const AbstractRecord *tmp_ancestor_;
+
+    /*
+     * Temporary list of unconstructed descendants of AdHocAbstractRecord.
+     * Items are checked and added to child_data_ in finish() method.
+     */
+    mutable std::deque< const Record * > unconstructed_childs;
 };
 
 
