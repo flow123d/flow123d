@@ -364,3 +364,47 @@ using namespace Input::Type;
 }
 
 
+/**
+ * Test AdHocAbstractRecord.
+ */
+namespace IT=Input::Type;
+
+class AdHocDataTest {
+public:
+	static IT::Record rec;
+	static IT::Record in_rec1;
+	static IT::Record in_rec2;
+	static IT::AbstractRecord ancestor;
+	static IT::AdHocAbstractRecord adhoc_1;
+	static IT::AdHocAbstractRecord adhoc_2;
+};
+
+
+IT::Record AdHocDataTest::in_rec1 = IT::Record("Record 1","")
+	.declare_key("val_1", IT::Integer(0), "value 1" )
+	.close();
+
+IT::AdHocAbstractRecord AdHocDataTest::adhoc_1 = IT::AdHocAbstractRecord(ancestor)
+	.add_child(AdHocDataTest::in_rec1)
+	.add_child(AdHocDataTest::in_rec2);
+
+IT::Record AdHocDataTest::rec = IT::Record("Problem","Base record")
+	.declare_key("adhoc_1", AdHocDataTest::adhoc_1, "" )
+	.declare_key("adhoc_2", AdHocDataTest::adhoc_2, "" );
+
+IT::AdHocAbstractRecord AdHocDataTest::adhoc_2 = IT::AdHocAbstractRecord(ancestor)
+	.add_child(AdHocDataTest::in_rec1)
+	.add_child(AdHocDataTest::in_rec2);
+
+IT::AbstractRecord AdHocDataTest::ancestor = IT::AbstractRecord("Ancestor","Base of equation records.");
+
+IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
+	.declare_key("val_2", IT::Integer(0), "value 2" )
+	.close();
+
+
+TEST(InputTypeAdHocAbstractRecord, inheritance) {
+using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+}
