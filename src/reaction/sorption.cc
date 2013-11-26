@@ -91,8 +91,9 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
 	molar_masses.resize( nr_of_substances );
-	c_aq_max.resize( nr_of_substances );
-	limited_solubility_on_ = false;
+	//c_aq_max.resize( nr_of_substances );
+	solubility_vec_.resize(nr_of_substances);
+	table_limit_.resize(nr_of_substances);
 
 	//isotherms array resized bellow
 	isotherms.resize(nr_of_regions);
@@ -129,30 +130,23 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
-	Input::Array interp_table_limits = in_rec.val<Input::Array>("solubility");
-	if (interp_table_limits.size() == c_aq_max.size())
+	Input::Array solubility_limits = in_rec.val<Input::Array>("solubility");
+	if (solubility_limits.size() == solubility_vec_.size())
 	{
-		interp_table_limits.copy_to( c_aq_max );
-		if(c_aq_max[0] > 0.0) limited_solubility_on_ = true;
+		solubility_limits.copy_to( solubility_vec_ );
 	}else
 	  {
-		//double def_val;
-		//if((def_val > 0.0) && (interp_table_limits.size() > 1))
-		if(interp_table_limits.size() > 1) xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
+		if(solubility_limits.size() > 1) xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_limits.size(), solubility_vec_.size());
 	  }
 
-	if(limited_solubility_on_ == false)
+	Input::Array interp_table_limits = in_rec.val<Input::Array>("table_limits");
+	if (interp_table_limits.size() == table_limit_.size())
 	{
-		Input::Array interp_table_limits2 = in_rec.val<Input::Array>("table_limits");
-		if (interp_table_limits2.size() == c_aq_max.size())
-		{
-			interp_table_limits2.copy_to( c_aq_max );
-			if(c_aq_max[0] > 0.0) xprintf(Msg,"Table limits are cosidered.\n");
-		}else
-		{
-			if(interp_table_limits2.size() > 1) xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
-		}
-	}/**/
+		interp_table_limits.copy_to( table_limit_ );
+	}else
+	{
+		if(interp_table_limits.size() > 1) xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), table_limit_.size());
+	}
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
 	unsigned int idx, i_spec = 0;
@@ -236,7 +230,15 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 				xprintf(UsrErr,"Unknown type of pores.\n");
 			break;
 	 	 }*/
-		isotherm.reinit(hlp_iso_type, limited_solubility_on_, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
+		bool limited_solubility_on = false;
+		if(solubility_vec_[i_subst] <= 0.0)
+		{
+			isotherm.reinit(hlp_iso_type, limited_solubility_on, solvent_dens, scale_aqua, scale_sorbed, table_limit_[i_subst], mult_coef, second_coef);
+
+		}else{
+			limited_solubility_on = true;
+			isotherm.reinit(hlp_iso_type, limited_solubility_on, solvent_dens, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
+		}
 	}
 
 	END_TIMER("Sorption::isotherm_reinit");

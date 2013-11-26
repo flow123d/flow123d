@@ -41,13 +41,6 @@ void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_solubility
     inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
     table_limit_ = c_aqua_limit;
     limited_solubility_on_ = limited_solubility_on;
-    //xprintf(Msg,"limited_solubility_on %d\n", limited_solubility_on);
-    if((c_aqua_limit > 0.0) && (limited_solubility_on_ == false))
-    {
-    	t_limits_known_ = true;
-    }else{
-    	t_limits_known_ = false;
-    }/**/
     mult_coef_ = mult_coef;
     second_coef_ = second_coef;
 
@@ -60,7 +53,6 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     double total_mass = (scale_aqua_* c_aqua + scale_sorbed_ * c_sorbed);
     double total_mass_steps = total_mass / total_mass_step_;
     int total_mass_idx = static_cast <int>(std::floor(total_mass_steps));
-    //xprintf(Msg,"total_mass %e, total_mass_idx %d, total_mass_step_ %e, scale_aqua_ %e, scale_sorbed_ %e, c_aqua %e, c_sorbed %e\n", total_mass, total_mass_idx, total_mass_step_, scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
     if ( total_mass_idx < 0 ) {xprintf(UsrErr,"total_mass %f seems to have negative value.\n", total_mass); }
     if ((unsigned int)(total_mass_idx) < (interpolation_table.size() - 1) ) {
 		//START_TIMER("new-sorption, interpolation");
@@ -74,7 +66,6 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     	{
     		precipitate(c_aqua, c_sorbed);
     	} else {
-    		//xprintf(Msg,"toms748 used to find concentration values.\n");
     		ConcPair conc(c_aqua, c_sorbed);
     		conc = solve_conc(conc);
     		c_aqua = conc.first;
@@ -103,12 +94,6 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 	difference = (solution.second - solution.first)/2;
 	c_aqua = solution.first + difference;
 	c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_;
-	/*do{
-		c_aqua = solution.first + difference;
-		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_;
-		difference /= 2;
-	}while(c_sorbed < 0);/**/
-	//END_TIMER("new-sorption, solve_conc, toms748_solve");
     return;
 }
 
@@ -185,7 +170,7 @@ bool Isotherm::compute_reaction(double &c_aqua, double &c_sorbed)
 void Isotherm::make_table(int nr_of_points)
 {
 	xprintf(Msg,"adsorption_type %d\n",adsorption_type_);
-	if(limited_solubility_on_ || t_limits_known_) switch(adsorption_type_)
+	if(table_limit_ > 0.0) switch(adsorption_type_)
 	{
 		case 0: // none
 		 {
@@ -244,12 +229,6 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
 
     return;
 }
-
-template void Isotherm::make_table<Linear>(const Linear &isotherm, int n_steps);
-
-template void Isotherm::make_table<Langmuir>(const Langmuir &isotherm, int n_steps);
-
-template void Isotherm::make_table<Freundlich>(const Freundlich &isotherm, int n_steps);
 
 void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 {

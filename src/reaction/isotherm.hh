@@ -249,10 +249,6 @@ public:
     *
     */
     bool limited_solubility_on_;
-    /**
-    *
-    */
-    bool t_limits_known_;
 private:
     /// density of the solvent
     double rho_aqua_;
