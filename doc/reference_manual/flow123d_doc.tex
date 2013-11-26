@@ -85,9 +85,12 @@
 \def\grad{\nabla}
 \def\Real{{\mathbf R}}
 
-
 %% ini_table members
 
+
+%paths to images
+\def\fig{figures}
+\def\test_fig{test_graphics}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
 %% set specific page layout
@@ -532,7 +535,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
-        \includegraphics[scale=0.4]{./03_flow.pdf}
+        \includegraphics[scale=0.4]{\fig/03_flow.pdf}
         % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
         \caption{Elementwise pressure head\\and velocity field (triangles).}
         \label{fig:tut-flow}
@@ -540,7 +543,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
     ~
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
-        \includegraphics[scale=0.4]{./03_trans.pdf}
+        \includegraphics[scale=0.4]{\fig/03_trans.pdf}
         % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
         \caption{Propagation of U235 from the inflow part of the boundary.}
         \label{fig:tut-trans}
@@ -570,7 +573,7 @@ that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elem
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=10cm]{ground_fractures}
+\includegraphics[width=10cm]{\fig/ground_fractures}
 \caption{
     \label{fig:multi-dim}
     Scheme of a problem with domains of multiple dimensions.
