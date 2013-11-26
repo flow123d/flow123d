@@ -74,7 +74,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
     	{
     		precipitate(c_aqua, c_sorbed);
     	} else {
-    		xprintf(Msg,"toms748 used to find concentration values.\n");
+    		//xprintf(Msg,"toms748 used to find concentration values.\n");
     		ConcPair conc(c_aqua, c_sorbed);
     		conc = solve_conc(conc);
     		c_aqua = conc.first;
@@ -91,19 +91,23 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 	//START_TIMER("new-sorption, solve_conc, toms748_solve");
 	boost::uintmax_t max_iter = 20;
 	tolerance<double> toler(30);
-	double difference;
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 	const double upper_solution_bound = upper_toms_bound(c_aqua, c_sorbed, isotherm);
 	//xprintf(Msg,"%s upper_solution_bound %f, total_mass %e \n",typeid(Func).name(), upper_solution_bound, total_mass);
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
 	//xprintf(Msg,"CrossFunction returns %e, %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %e, c_sorbed %e\n", eq_func(0), eq_func(upper_solution_bound), scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
-	pair<double,double> solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
+	pair<double,double> solution;
+	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
+		solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
+	double difference;
 	difference = (solution.second - solution.first)/2;
-	do{
+	c_aqua = solution.first + difference;
+	c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_;
+	/*do{
 		c_aqua = solution.first + difference;
 		c_sorbed = (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_;
 		difference /= 2;
-	}while(c_sorbed < 0);
+	}while(c_sorbed < 0);/**/
 	//END_TIMER("new-sorption, solve_conc, toms748_solve");
     return;
 }
@@ -268,19 +272,22 @@ void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 template<class Func>
 double Isotherm::upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm)
 {
-	double mass_upper_bound;
+	double mass_upper_bound, mub1, mub2;
 	double upper_bound;
-	//if(table_limit_ > 0)
-	if(limited_solubility_on_)
+
+	mub1 = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
+	mub2 = c_aqua*scale_aqua_ + c_sorbed*scale_sorbed_;
+
+	if(mub2 <= mub1)
 	{
-		mass_upper_bound = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
+		mass_upper_bound = mub1;
 	}
 	else
 	{
-		mass_upper_bound = c_aqua*scale_aqua_ + c_sorbed*scale_sorbed_; //10;
+		mass_upper_bound = mub2;
 	}/**/
 
-	upper_bound = mass_upper_bound / scale_aqua_ + 0.00001;
+	upper_bound = mass_upper_bound / scale_aqua_;
 
 	return upper_bound;
 }
