@@ -60,18 +60,19 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(PETSC
     DOWNLOAD_DIR ${EXTERNAL_PETSC_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.1.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.3.tar.gz\"
     SOURCE_DIR ${EXTERNAL_PETSC_DIR}/src
     BINARY_DIR ${EXTERNAL_PETSC_DIR}/src
     CONFIGURE_COMMAND ${EXTERNAL_PETSC_DIR}/src/configure ${PETSC_CONF_LINE}
     BUILD_COMMAND make all
+    INSTALL_COMMAND \"\"
   )  
 ")
 
 message(STATUS "=== Installing PETSC ===")
 # run cmake
 set(PETSC_DIR "${EXTERNAL_PETSC_DIR}/src")
-set(PETSC_ARCH "cmake")
+set(PETSC_ARCH "flow123d_release")
 set(ENV{PETSC_DIR} "${PETSC_DIR}")
 set(ENV{PETSC_ARCH} "${PETSC_ARCH}")
 execute_process(COMMAND ${CMAKE_COMMAND} ${EXTERNAL_PETSC_DIR} 
