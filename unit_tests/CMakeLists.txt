@@ -21,6 +21,8 @@ set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
+
+
 #################################
 # MACRO define_test
 #
@@ -50,13 +52,13 @@ macro(define_test class_name)
 
   # rule to run the test
   add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
@@ -95,14 +97,14 @@ macro(define_mpi_test class_name n_proc)
  # set(RUN_COMMAND ulimit -t 300\; )
  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=no
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       	      
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=yes
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
