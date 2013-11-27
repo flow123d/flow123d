@@ -199,8 +199,8 @@ public:
     /**
     *
     */
-    template<class Func>
-    double upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm);
+    /*template<class Func>
+    double upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm);*/
     /**
     *
     */

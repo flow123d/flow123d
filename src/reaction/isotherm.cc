@@ -62,7 +62,7 @@ bool Isotherm::compute_projection(double &c_aqua, double &c_sorbed)
         return true;
 		//END_TIMER("new-sorption, interpolation");
     } else {
-    	if (limited_solubility_on_)// { // tady testovat priznak jestli je uvazovana omezena rozpustnost
+    	if (limited_solubility_on_)
     	{
     		precipitate(c_aqua, c_sorbed);
     	} else {
@@ -83,7 +83,14 @@ void Isotherm::solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm
 	boost::uintmax_t max_iter = 20;
 	tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
-	const double upper_solution_bound = upper_toms_bound(c_aqua, c_sorbed, isotherm);
+	double mass_limit = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
+	double upper_solution_bound;
+
+	if(total_mass >= mass_limit)
+	{
+		mass_limit = total_mass;
+	}
+	upper_solution_bound = mass_limit / scale_aqua_;
 	//xprintf(Msg,"%s upper_solution_bound %f, total_mass %e \n",typeid(Func).name(), upper_solution_bound, total_mass);
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
 	//xprintf(Msg,"CrossFunction returns %e, %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %e, c_sorbed %e\n", eq_func(0), eq_func(upper_solution_bound), scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
@@ -233,53 +240,20 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
 void Isotherm::precipitate(double &c_aqua, double &c_sorbed)
 {
 	//START_TIMER("new-sorption, precipitate, lim solub");
-	//if(table_limit_ > 0.0)
 	if(limited_solubility_on_)
 	{
 		double total_mass = (scale_aqua_*c_aqua + scale_sorbed_ * c_sorbed);
 
 		c_aqua = table_limit_;
 		c_sorbed = (total_mass - scale_aqua_ * table_limit_)/scale_sorbed_;
-	}else{
-		xprintf(UsrErr,"limited solubility is considered, but the solubility limit has wrong, negative value %f\n", table_limit_);
 	}
 	//END_TIMER("new-sorption, precipitate, lim solub");
 
 	return;
 }
 
-template<class Func>
-double Isotherm::upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm)
-{
-	double mass_upper_bound, mub1, mub2;
-	double upper_bound;
-
-	mub1 = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
-	mub2 = c_aqua*scale_aqua_ + c_sorbed*scale_sorbed_;
-
-	if(mub2 <= mub1)
-	{
-		mass_upper_bound = mub1;
-	}
-	else
-	{
-		mass_upper_bound = mub2;
-	}/**/
-
-	upper_bound = mass_upper_bound / scale_aqua_;
-
-	return upper_bound;
-}
-
-template double Isotherm::upper_toms_bound<Linear>(double c_aqua, double c_sorbed, const Linear &isotherm);
-
-template double Isotherm::upper_toms_bound<Langmuir>(double c_aqua, double c_sorbed, const Langmuir &isotherm);
-
-template double Isotherm::upper_toms_bound<Freundlich>(double c_aqua, double c_sorbed, const Freundlich &isotherm);
-
 int Isotherm::is_precomputed()
 {
-	//xprintf(Msg,"interpolation_table.size() is %d\n", interpolation_table.size());
 	return  interpolation_table.size();
 }
 

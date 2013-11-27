@@ -361,41 +361,41 @@ void Sorption::set_phi(pScalar phi)
 
 void Sorption::update_solution(void)
 {
-	cout << "1) Meaningless inherited method." << endl;
+	//cout << "1) Meaningless inherited method." << endl;
 	return;
 }
 void Sorption::choose_next_time(void)
 {
-	cout << "2) Meaningless inherited method." << endl;
+	//cout << "2) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step_constrain(double dt)
 {
-	cout << "3) Meaningless inherited method." << endl;
+	//cout << "3) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_parallel_solution_vector(Vec &vc)
 {
-	cout << "4) Meaningless inherited method." << endl;
+	//cout << "4) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_solution_vector(double* &vector, unsigned int &size)
 {
-	cout << "5) Meaningless inherited method." << endl;
+	//cout << "5) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step(double new_timestep)
 {
-	cout << "6) Meaningless inherited method." << endl;
+	//cout << "6) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step(Input::Record in_rec)
 {
-	cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
+	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
 }
