@@ -327,7 +327,7 @@ TransportDG::~TransportDG()
     delete[] stiffness_matrix;
     delete[] rhs;
     delete feo;
-    delete mass_balance_;
+    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
     subst_names_.clear();

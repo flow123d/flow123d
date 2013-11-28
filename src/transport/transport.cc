@@ -236,7 +236,8 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi, ph;
 
-    delete mass_balance_;
+    if (mass_balance_ != NULL)
+    	delete mass_balance_;
 
     //Destroy mpi vectors at first
     VecDestroy(&v_sources_corr);
