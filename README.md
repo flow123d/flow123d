@@ -20,7 +20,7 @@ at files LICENSE and GPL3.
 
 ## Build Flow123d ##
 
-### Windows OS ###
+### Windows OS prerequisities ###
 
 If you are running Windows, you have to install 'cygwin' for emulation of
 POSIX unix environment. Then all work has to be done in the directories under
@@ -30,7 +30,7 @@ cygwin, e.g "C:\cygwin\home\user\". In addition to the packages mentioned for th
 * some editor that can save Unix like text files (notepad++, vim under cygwin) 
 
 
-### Linux OS ###
+### Linux OS prerequisities ###
 Requested packages (Debian) are: 
 
 * gcc, gcc4-g++, gcc4-fortran     C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
@@ -54,7 +54,7 @@ Flow123d depends also on PETSc library. It can be installed automatically during
 but for good parallel performance it has to be configured manually see appropriate section later on.
 
 
-### Build Step 2 - Compile Flow123 ###
+### Compile Flow123 ###
 
 Copy file `config.cmake.template` to `config.cmake`:
 
@@ -88,10 +88,14 @@ Try this every time if your build doesn't work and you don't know why.
 For further information about program usage see reference manual `doc/flow_doc`.
 
 
-### Install PETSc Library (optional) ###
+### Manual PETSc installation (optional) ###
 
 Flow versions 1.7.x depends on the PETSC library 3.4.x. It is installed automatically 
-if you do not set an existing installation in `config.cmake` file. For manual installation:
+if you do not set an existing installation in `config.cmake` file. However the manual installation 
+is necessary if
+- you want to switch between more configurations (debugging, release, ...) using `PETSC_ARCH` variable.
+- you want to achieve best performance configuring with system-wide MPI and/or BLAS and LAPACK libraries.
+
 
 1.  download PeTSc 3.4.x from:
     http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
@@ -138,7 +142,7 @@ if you do not set an existing installation in `config.cmake` file. For manual in
     ```
 
 ### Notes: ###
-* You can have several PETSC configuration using different PETSC_ARCH.
+* You can have several PETSC configuration using different `PETSC_ARCH` value.
 * For some reasons if you let PETSc to download and install its own MPICH it
   overrides your optimization flags for compiler. Workaround is to edit
   file ${PETSC_DIR}/${PETSC_ARCH}/conf/petscvariables and modify variables
@@ -148,7 +152,10 @@ if you do not set an existing installation in `config.cmake` file. For manual in
 
 ### Support for other libraries ##
 
-* PETSC use BLAS and few LAPACK functions for its local vector and matrix
+* **MKL** is implementation of BLAS and LAPACK libraries provided by Intel for its processors. 
+  Usually gives the best performance.
+
+* **ATLAS library** PETSC use BLAS and few LAPACK functions for its local vector and matrix
   operations. The speed of BLAS and LAPACK have dramatic impact on the overall
   performance. There is a sophisticated implementation of BLAS called ATLAS.
   ATLAS performs extensive set of performance tests on your hardware then make
