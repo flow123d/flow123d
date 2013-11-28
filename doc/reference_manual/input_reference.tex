@@ -342,6 +342,7 @@ coupled with reaction and sorption model (ODE per element)
 \KeyItem{\hyperB{TransportOperatorSplitting::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
 \KeyItem{\hyperB{TransportOperatorSplitting::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
 \KeyItem{\hyperB{TransportOperatorSplitting::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
+\KeyItem{\hyperB{TransportOperatorSplitting::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
 \KeyItem{\hyperB{TransportOperatorSplitting::reactions}{reactions}}{abstract type: \hyperlink{IT::Reactions}{Reactions}}{\textless\it optional\textgreater}{}{Initialization of per element reactions.}
 \KeyItem{\hyperB{TransportOperatorSplitting::adsorptions}{adsorptions}}{record: \hyperlink{IT::Sorptions}{Sorptions}}{\textless\it optional\textgreater}{}{Initialization of per element sorptions.}
 \KeyItem{\hyperB{TransportOperatorSplitting::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
@@ -356,6 +357,11 @@ coupled with reaction and sorption model (ODE per element)
 \KeyItem{\hyperB{TransportOutput::conc-immobile-p0}{conc\_immobile\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the concentration in immobile phase.}
 \KeyItem{\hyperB{TransportOutput::conc-mobile-sorbed-p0}{conc\_mobile\_sorbed\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.}
 \KeyItem{\hyperB{TransportOutput::conc-immobile-sorbed-p0}{conc\_immobile\_sorbed\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::MassBalance}{MassBalance}}{}{}{}{Balance of mass, boundary fluxes and sources for transport of substances.}
+\KeyItem{\hyperB{MassBalance::cumulative}{cumulative}}{Bool}{false}{}{Compute cumulative balance over time. If true, then balance is calculated at each computational time step, which can slow down the program.}
+\KeyItem{\hyperB{MassBalance::file}{file}}{output file name}{mass\_balance.txt}{}{File name for output of mass balance.}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Reactions}{Reactions}}{}{}{Equation for reading information about simple chemical reactions.}
@@ -540,6 +546,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{AdvectionDiffusion-DG::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
+\KeyItem{\hyperB{AdvectionDiffusion-DG::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::solver}{solver}}{abstract type: \hyperlink{IT::Solver}{Solver}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{AdvectionDiffusion-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}

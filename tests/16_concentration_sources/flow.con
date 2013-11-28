@@ -95,6 +95,9 @@
       ], 
       time = {
         REF = "../../time"
+      },
+      mass_balance = {
+        cumulative = true
       }
     }, 
     time = {

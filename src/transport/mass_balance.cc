@@ -42,13 +42,23 @@
 
 #include "transport/mass_balance.hh"
 
+using namespace Input::Type;
+
+Record MassBalance::input_type
+	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
+	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
+			"If true, then balance is calculated at each computational time step, which can slow down the program.")
+	.declare_key("file", FileName::output(), Default("mass_balance.txt"), "File name for output of mass balance.")
+;
 
 
 
-MassBalance::MassBalance(EquationForMassBalance *eq, const char *output_f_name)
+MassBalance::MassBalance(EquationForMassBalance *eq, const Input::Record &in_rec)
 	: equation_(eq), initial_time(0), last_time(-1), initial(true)
 {
-	balance_output_file = xfopen( output_f_name, "wt");
+	balance_output_file = xfopen( in_rec.val<FilePath>("file"), "wt");
+
+	cumulative = in_rec.val<bool>("cumulative");
 
     const int n_bcd_reg_ = equation_->region_db()->boundary_size();
     const int n_blk_reg_ = equation_->region_db()->bulk_size();
@@ -181,6 +191,8 @@ void MassBalance::calculate(double time) {
 			src_total_balance[sbi] += src_balance[sbi][reg->bulk_idx()];
 		}
 	}
+
+	if (!cumulative) return;
 
     // cumulative balance over time
 
@@ -320,34 +332,35 @@ void MassBalance::output(double time)
 				w,mass_total[sbi],
 				w,src_total_balance[sbi]);
 
-
-
-	// Print cumulative sources
-	fprintf(balance_output_file, "\n\n# Cumulative mass balance on time interval [%-g,%-g]\n"
-			"# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]\n"
-			"# %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
-			initial_time, time,
-			w,"[substance]",
-			w,"[A=init. mass]",
-			w,"[B=source]",
-			w,"[C=flux]",
-			w,"[A+B-C]",
-			w,"[D=curr. mass]",
-			w,"[A+B-C-D=err.]",
-			w,"[rel. error]");
-
-	for (int i=0; i<n_subst; i++)
+	if (cumulative)
 	{
-		double denominator = max(fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]),fabs(mass_total[i]));
-		fprintf(balance_output_file, "  %-*s%-*g%-*g%-*g%-*g%-*g%-*g%-*g\n",
-				w,equation_->substance_names()[i].c_str(),
-				w,initial_mass[i],
-				w,integrated_sources[i],
-				w,integrated_fluxes[i],
-				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i],
-				w,mass_total[i],
-				w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i],
-				w,fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i])/(denominator==0?1:denominator));
+		// Print cumulative sources
+		fprintf(balance_output_file, "\n\n# Cumulative mass balance on time interval [%-g,%-g]\n"
+				"# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]\n"
+				"# %-*s%-*s%-*s%-*s%-*s%-*s%-*s%-*s\n",
+				initial_time, time,
+				w,"[substance]",
+				w,"[A=init. mass]",
+				w,"[B=source]",
+				w,"[C=flux]",
+				w,"[A+B-C]",
+				w,"[D=curr. mass]",
+				w,"[A+B-C-D=err.]",
+				w,"[rel. error]");
+
+		for (int i=0; i<n_subst; i++)
+		{
+			double denominator = max(fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]),fabs(mass_total[i]));
+			fprintf(balance_output_file, "  %-*s%-*g%-*g%-*g%-*g%-*g%-*g%-*g\n",
+					w,equation_->substance_names()[i].c_str(),
+					w,initial_mass[i],
+					w,integrated_sources[i],
+					w,integrated_fluxes[i],
+					w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i],
+					w,mass_total[i],
+					w,initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i],
+					w,fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]-mass_total[i])/(denominator==0?1:denominator));
+		}
 	}
 
 	fprintf(balance_output_file, "\n\n");

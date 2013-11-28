@@ -83,6 +83,9 @@
       ], 
       time = {
         end_time = 10.0
+      },
+      mass_balance = {
+        cumulative = true
       }
     }
   }, 

@@ -50,7 +50,8 @@ AbstractRecord TransportBase::input_type
 	.declare_key("dual_porosity", Bool(), Default("false"),
 			"Dual porosity model.")
 	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
-			"Parameters of output stream.");
+			"Parameters of output stream.")
+	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
 
 
 Record TransportBase::input_type_output_record
@@ -247,7 +248,8 @@ void TransportOperatorSplitting::update_solution() {
 
 	if (first_time_call)
 	{
-		convection->mass_balance()->output(convection->time().t());
+		if (convection->mass_balance() != NULL)
+			convection->mass_balance()->output(convection->time().t());
 		first_time_call = false;
 	}
 
@@ -279,7 +281,8 @@ void TransportOperatorSplitting::update_solution() {
 	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
 	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
 	    if(sorptions_immob) sorptions_immob->compute_one_step();
-	    convection->mass_balance()->calculate(convection->time().t());
+	    if (convection->mass_balance() != NULL)
+	    	convection->mass_balance()->calculate(convection->time().t());
 	}
     END_TIMER("TOS-one step");
     
