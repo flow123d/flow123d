@@ -44,7 +44,7 @@ ADD_LATEX_DOCUMENT(${doc_name}.tex
 # Put images in INPUTS, then no conversion is done
 # or convert them to pdf and include the image directory
 
-add_custom_target(doc-pdf
+add_custom_target(ref-doc
   COMMAND make pdf
 )
 
