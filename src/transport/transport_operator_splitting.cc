@@ -75,7 +75,7 @@ Record TransportBase::input_type_output_record
 Record TransportOperatorSplitting::input_type
 	= Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"
-            "coupled with reaction and sorption model (ODE per element)\n"
+            "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),

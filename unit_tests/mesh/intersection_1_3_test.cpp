@@ -4,6 +4,7 @@
  *  Created on: 6.2.2013
  *      Author: viktor
  */
+
 #include <gtest/gtest.h>
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -18,7 +19,7 @@
 
 //#include "new_mesh/ngh/include/point.h"
 
-#define DEBUG
+#define Flow123d_DEBUG
 
 // Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){
@@ -35,7 +36,7 @@ TEST(intersections, 1d_3d){
 
 	BIHTree bt(&mesh_krychle, elementLimit);
 
-	Profiler::initialize();
+	//Profiler::initialize();
 	{
 	    START_TIMER("Inter");
 

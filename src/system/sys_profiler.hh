@@ -424,7 +424,7 @@ public:
      * tag of actual timer node. If not we print out warning and try to find the correct tag
      * towards the tree root closing all nodes we pass through.
      *
-     * If DEBUG is set, we check that all children are closed.
+     * If Flow123d_DEBUG is set, we check that all children are closed.
      */
     void stop_timer(const CodePoint &cp);
 

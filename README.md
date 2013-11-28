@@ -1,10 +1,10 @@
 # Flow123d #
 
-[![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
+[![Build Status](http://ci2.nti.tul.cz/job/Flow123d%20build/badge/icon)](http://ci2.nti.tul.cz/job/Flow123d%20build/)
 
-[Source documentation](http://dev.nti.tul.cz:8080/job/make_doc/doxygen/)
+[Source documentation](http://ci2.nti.tul.cz/job/make_doc/doxygen/)
 
-[Reference manual](http://dev.nti.tul.cz:8080/job/make_doc/doclinks/1/)
+[Reference manual](http://ci2.nti.tul.cz/job/make_doc/doclinks/1/)
 
 Flow123d is a simulator of underground water flow and transport in fractured
 porous media. Novelty of this software is support of computations on complex
@@ -224,7 +224,7 @@ Copy file  makefile.in.cmake.template to makefile.in.cmake:
 
     $ cp makefile.in.cmake.template makefile.in.cmake
 
-Edit file makefile.in.cmake, set PETSC_DIR and PETSC_ARCH variables.
+Edit file **makefile.in.cmake**, set `PETSC_DIR` and `PETSC_ARCH` variables.
 
 You can specify type of build:
 
@@ -236,7 +236,7 @@ or
 
 or you can directly set flags for C and C++ compiler:
       
-    $ set(CC_FLAGS "-O3 -DNODEBUG -pg ")
+    $ set(CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg ")
 
 Then run the compilation by:
 
