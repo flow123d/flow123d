@@ -1,0 +1,190 @@
+# TODO:
+# - needs slihtly different setting for 
+# linux-release:
+#  - wipe out everythink (build external packages)
+#  - use different config.cmake (optimalization)
+#  - optimal build of PETSC
+#  - run banchmarks
+#  - triger once a day
+#  - run packaging and publish
+
+# JJB pitfalls:
+#   * does not ignore unknown names in YAML file, so we can not use references
+#     to define lists at beginning by other script 
+#     fix: patch that only warn for unknown names
+#
+#   * multijob has key 'projects:' which should be 'jobs:' and should accept
+#     template expansion line project does
+#   
+#   * can not use job names with spaces, must override it using display-name
+#  
+#   * 
+#
+#
+
+
+
+# Multijob  project   
+- project:
+    name: "Multijob project"
+#    platform: [ linux, windows ]
+#    build-type: [ debug, release ]
+    platform: "linux"
+    build-type: "debug"
+    unit-dir: 
+      - $UNIT_TEST_DIRS_PLACEHOLDER$
+
+    jobs:
+      - "Flow123d-configure-{platform}-{build-type}"
+      - "Unit-test-{unit-dir}-{platform}-{build-type}"
+      - "Flow123d-build-multijob-{platform}-{build-type}"
+
+
+####################################################################
+# Flow123d configure 
+- job-template:
+    name: "Flow123d-configure-{platform}-{build-type}"
+    display-name: "Flow123d configure {platform} {build-type}"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          # configure
+          cd flow123d
+          cp config/ci2.nti.tul.cz.dbg.mk.in ./config.cmake
+          make cmake
+
+
+##################################################################
+# Unit test for given directory
+- job-template:
+    name: "Unit-test-{unit-dir}-{platform}-{build-type}"
+    display-name: "{unit-dir}  unit-test"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
+
+
+##################################################################
+# Unit tests benchmarks for given directory             
+- job-template:
+    name: "Unit-test-{unit-dir}-{platform}-{build-type}"
+    display-name: "{unit-dir}  unit-test"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
+
+
+        
+#################################################################
+# Integration test for given directory
+- job-template:
+    name: "Test-{test-dir}-{platform}-{build-type}"
+    display-name: "{test-dir} test"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          make -C flow123d/tests/{test-dir} test
+        
+
+########################################################################
+# Main multijob
+- job-template:
+    name: "Flow123d-build-multijob-{platform}-{build-type}"
+    display-name: "Flow123d multijob {platform} {build-type}"
+    project-type: multijob
+    node: "{platform}"
+    block-downstream: yes
+    # workspace                 - directory with per-branch builds and external-projects dir
+    # workspace/flow123d        - directore git clone to
+    workspace: "Flow123d-{platform}-{build-type}"
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          basedir: flow123d     # workspace/flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d.git
+    triggers:
+      - github
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+      - workspace-cleanup:
+          dirmatch: true
+          include:
+            - "flow123d"
+    builders:
+      - multijob:
+          name: "Configure Phase"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-configure-{platform}-{build-type}"
+      - multijob:
+          name: "Unit tests"
+          condition: SUCCESSFUL
+          projects:     #*UNIT-JOBS
+            - name: "Unit-test-$UNIT_TEST_DIRS_PLACEHOLDER$-{platform}-{build-type}"
+            - name: "Unit-test-system-{platform}-{build-type}"
+            - name: "Unit-test-input-{platform}-{build-type}"
+            - name: "Unit-test-mesh-{platform}-{build-type}"
+            - name: "Unit-test-fields-{platform}-{build-type}"
+            - name: "Unit-test-quadrature-{platform}-{build-type}"
+            - name: "Unit-test-coupling-{platform}-{build-type}"
+            - name: "Unit-test-la-{platform}-{build-type}"
+            - name: "Unit-test-interpolation-{platform}-{build-type}"
+
+
+##################################333
+# Modules      
+
+#    triggers:
+#      - github
+      #
+      # - timed: "H * * * *"
+      #
+      # Needs: BuildResultTrigger plugin, 
+      # advantage over default mechanism: monitored jobs do not know about trigger
+      # - build-result: 
+      #   - jobs:  # jobs to monitor
+      #   - results:
+
+#    wrappers:
+#      - build-name:
+#          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+      # This may be useful for large data benchmarks.
+      # We can not store large data in repository, but can copy them from 
+      # Jenkins master, possibly download them first, e.g. from bacula.
+      # needs Copy To Slave Plugin
+      #- copy-to-slave:
+      #
+
+#    publishers:
+      # - cifs: 
+      # - email-ext:
+      # - html-publisher:
+      # - junit
+      # - logparser: !!!
+      # - performance: 
+      # - pipeline: 
+      # - plot:
+
+
+    
+  
