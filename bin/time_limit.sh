@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-set -x
+#set -x
 
 # Parse parameters
 if [ "$1" == "-t" ]

@@ -1,3 +1,5 @@
+#ifndef INTERPOLATION_H
+#define INTERPOLATION_H
 
 #include "functors.hh"
 
@@ -132,7 +134,8 @@ public:
 protected:
   double bound_a_,      ///< Left interval boundary.
          bound_b_,      ///< Right interval boundary.
-         step;          ///< Chosen interpolation step.
+         step,          ///< Chosen interpolation step.
+         a_div_step;    ///< bound_ divided by step - precomputed value for evaluation
          
   unsigned int size_,   ///< Number of dividing intervals.
                n_nodes; ///< Number of nodes in the interval \f$(a,b)\f$.
@@ -322,6 +325,9 @@ public:
   //@}
     
     
+  ///Function that evaluates the P1 interpolant at @p x.
+  double val_p1(double x);
+  
 protected:
   class FuncError_lp;
   class FuncError_wp1;
@@ -361,8 +367,7 @@ protected:
   ///Finds interval on which @p x lies.
   unsigned int find_interval(double x);
 
-  ///Function that evaluates the P1 interpolant at @p x.
-  double val_p1(double x);
+  
 
   ///Function that evaluates the derivative of P1 interpolant at @p x.
   DiffValue diff_p1(double x);
@@ -486,3 +491,4 @@ protected:
 
 };
 
+#endif

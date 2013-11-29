@@ -1,8 +1,10 @@
-#include "interpolant.hh"
-//#undef DEBUG
-#include "system/xio.h"
+#ifndef INTERPOLANT_IMPL_H
+#define INTERPOLANT_IMPL_H
 
 #include <cmath>
+
+#include "interpolant.hh"
+#include "system/xio.h"
 
 /********************************** InterpolantBase ********************************/
 
@@ -64,11 +66,6 @@ void Interpolant::set_functor(Func<Type>* func, bool interpolate_derivative)
 }
 
 
-inline double Interpolant::val_test(double x)
-{
-    return val_p1(x);
-}
-
 inline double Interpolant::val(double x)
 {
   //increase calls
@@ -82,7 +79,8 @@ inline double Interpolant::val(double x)
   //return value
   if(x < bound_a_)     //left miss
   {
-    DBGMSG("test\n");
+    //DBGMSG("test\n");
+    //std::cout << "test a" << std::endl;
     stats.interval_miss_a++;
     stats.min = std::min(stats.min, x);
     
@@ -99,7 +97,8 @@ inline double Interpolant::val(double x)
   }
   else if(x > bound_b_)     //right miss
   {
-    DBGMSG("test\n");
+    //DBGMSG("test\n");
+    //std::cout << "test b" << std::endl;
     stats.interval_miss_b++;
     stats.max = std::max(stats.max, x);
     
@@ -118,6 +117,26 @@ inline double Interpolant::val(double x)
   {
     return val_p1(x);
   }
+}
+
+inline double Interpolant::val_test(double x)
+{
+  /*
+  //increase calls
+  stats.total_calls++;
+ 
+  if(x < bound_a_)
+  {
+    //std::cout << "test a" << std::endl;
+    return 0;
+  }
+  else if(x > bound_b_)     //right miss
+  {
+    //std::cout << "test b" << std::endl;
+    return 0;
+  }
+  else //*/
+     return val_p1(x);
 }
 
 inline DiffValue Interpolant::diff(double x)
@@ -213,8 +232,33 @@ inline DiffValue Interpolant::diff_p0(double x)
   
 inline double Interpolant::val_p1(double x)
 {
-  unsigned int i = find_interval(x);
+  /*
+[       OK ] InterpolantTest.FunctorEval (335 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (600 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (1888 ms)
+   */
+  unsigned int i = floor(x / step - a_div_step);
+  //unsigned int i = find_interval(x);
   return p1_vec[i]*(x-x_vec[i]) + f_vec[i];
+  
+  /*
+[       OK ] InterpolantTest.FunctorEval (335 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (1880 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (1615 ms)
+  */
+  //double x_step = x / step;
+  //unsigned int i = floor(x_step - a_div_step);
+  
+  //return (f_vec[i+1] - f_vec[i])*(x_step-i-a_div_step) + f_vec[i];
+  
+  /*
+[       OK ] InterpolantTest.FunctorEval (337 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (1926 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (1855 ms)
+  */
+  //double q = x_step - i - a_div_step;
+  //return q*f_vec[i+1] + (1-q)*f_vec[i];
+  //*/
 }
 
 
@@ -331,3 +375,5 @@ void InterpolantImplicit::set_functor(Func<Type>* func)
     fix_var fix_;
     double fix_val;
   };
+  
+#endif //INTERPOLATION_IMPL_H
