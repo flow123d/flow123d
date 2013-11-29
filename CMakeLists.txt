@@ -516,6 +516,7 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
+add_subdirectory(doc/reference_manual)
 
 add_subdirectory(bin/tests)
 add_subdirectory(unit_tests) # this also adds third_party/gtest
