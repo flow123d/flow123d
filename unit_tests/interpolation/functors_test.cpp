@@ -288,7 +288,9 @@ TEST (Functors, interpolation_error)
   interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
   //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
-  EQUAL(interpolant->error(), 0);
+  //cout << "Error of interpolation: " << interpolant->error() << endl;
+  //EQUAL(interpolant->error(), 0);
+  EXPECT_TRUE(interpolant->error() < 1e-15);
   
   interpolant->set_functor<Quadratic, double>(&quad_func);
   interpolant->interpolate();
@@ -394,6 +396,82 @@ TEST (Functors, speed_creation)
 //*/
 
 
+
+
+
+
+
+class InterpolantTest : public ::testing::Test{
+protected:
+  virtual void SetUp()
+  {
+    unsigned int size = 10000;
+    a = 1;
+    b = 10;
+           
+    cubic_func.set_param(Cubic<double>::p1,0.0);
+    
+    //n = 100*1000*1000;
+    n = 10*1000*1000;
+    
+    step = (b-a)/n;
+    
+    interpolant.set_functor(&cubic_func, false);
+    interpolant.set_interval(a,b);
+    interpolant.set_size(size);
+    interpolant.interpolate();
+  }
+  
+  Cubic<double> cubic_func;
+  //virtual void TearDown() {}
+  double a, b, step;
+  unsigned int n;
+  Interpolant interpolant;
+};
+
+
+TEST_F(InterpolantTest, FunctorEval){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += cubic_func(a+step*i);
+      //res = pow(x,3); //is very long
+    }
+  cout << "res = " << res << endl;
+}
+
+TEST_F(InterpolantTest, InterpolantEval_val){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant.val(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}
+
+/*
+TEST_F(InterpolantTest, InterpolantEval_val_p1){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant.val_p1(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}
+//*/
+
+
+TEST_F(InterpolantTest, InterpolantEval_val_test){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant.val_test(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}
+//*/
+
+/*
 TEST (Functors, speed_evaluation)
 {
   unsigned int size = 10000,
@@ -469,7 +547,19 @@ TEST (Functors, speed_evaluation)
   }
   end = clock();
   
-  cout << "I.test: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+  cout << "I.test1: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
   
+  res=0;
+  start = clock();
+  {     
+    for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant->val_p1(a+step*i);
+    }
+    cout << res;
+  }
+  end = clock();
+  
+  cout << "I.test2: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
 }
 //*/

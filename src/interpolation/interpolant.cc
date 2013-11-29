@@ -328,6 +328,7 @@ void Interpolant::create_nodes()
 { 
   //setting the step - length of piecewise interpolation intervals
   step = (bound_b_-bound_a_)/size_;
+  a_div_step = bound_a_ / step;
   n_nodes = size_ + 1;          //setting the number of nodes
   
   x_vec.resize(n_nodes);       //nodes
@@ -374,6 +375,7 @@ void Interpolant::swap_middle_values(std::vector<double>& x, std::vector<double>
   double new_size = 2*size_;
         n_nodes = new_size+1;
         step = (bound_b_-bound_a_)/new_size;    //which should be equal also step/2
+        a_div_step = bound_a_ / step;
         
         //we will use now the middle points computed in "compute_error" to construct vector of nodes
         std::vector<double> swap_x_vec;
