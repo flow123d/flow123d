@@ -505,6 +505,7 @@ endmacro()
 make_link_in_source(bin/flow123d)
 make_link_in_source(bin/mpiexec)
 make_link_in_source(bin/tests/Makefile)
+make_link_in_source(unit_tests/Makefile)
 
 ############################################################33 process subdirectories
 

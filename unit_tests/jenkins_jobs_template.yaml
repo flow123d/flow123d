@@ -32,7 +32,7 @@
     platform: "linux"
     build-type: "debug"
     unit-dir: 
-      - $UNIT_TEST_DIRS_PLACEHOLDER$
+      - $PLACEHOLDER_unit_list$
 
     jobs:
       - "Flow123d-configure-{platform}-{build-type}"
@@ -140,15 +140,7 @@
           name: "Unit tests"
           condition: SUCCESSFUL
           projects:     #*UNIT-JOBS
-            - name: "Unit-test-$UNIT_TEST_DIRS_PLACEHOLDER$-{platform}-{build-type}"
-            - name: "Unit-test-system-{platform}-{build-type}"
-            - name: "Unit-test-input-{platform}-{build-type}"
-            - name: "Unit-test-mesh-{platform}-{build-type}"
-            - name: "Unit-test-fields-{platform}-{build-type}"
-            - name: "Unit-test-quadrature-{platform}-{build-type}"
-            - name: "Unit-test-coupling-{platform}-{build-type}"
-            - name: "Unit-test-la-{platform}-{build-type}"
-            - name: "Unit-test-interpolation-{platform}-{build-type}"
+            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-{build-type}"
 
 
 ##################################333

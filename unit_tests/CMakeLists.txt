@@ -137,3 +137,42 @@ add_test_directory("fields")
 add_test_directory("quadrature")
 add_test_directory("mesh")
 add_test_directory("coupling")
+
+
+#################################################################################################
+# Targets for Jenkis Jobs Builder
+
+# Make list of integration test names from list of subdirectories in the test directory. 
+# This should be manually finished before it can be used by use it in 
+add_custom_target(test-list
+                  COMMAND ${CMAKE_COMMAND} -DDIRECTORY="${CMAKE_SOURCE_DIR}/tests" -DOUTPUT="${CMAKE_CURRENT_SOURCE_DIR}/test_list" -P ${CMAKE_CURRENT_SOURCE_DIR}/list_subdirs.cmake
+                  )
+
+
+# Following two targets assume installation of Jenkins jobs Builder.
+# https://github.com/openstack-infra/jenkins-job-buildera
+#
+# For installation follow README.md.
+
+# Rule to create XML definitions of Jenkins jobs and upload them to the server.
+set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
+add_custom_target(jenkins-upload
+                  COMMAND jenkins-jobs upload ${JENKINS_JOBS_FILE} 
+                  DEPENDS ${JENKINS_JOBS_FILE}
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+
+# Rule to create XML definitions of Jenkins jobs in local directory. (for testing)
+add_custom_target(jenkins-test
+                  COMMAND jenkins-jobs test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}                 
+                  DEPENDS ${JENKINS_JOBS_FILE}
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+
+# Rule how to make ${JENKINS_JOBS_FILE} from ./jenkins_jobs_template.yaml
+add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
+                  COMMAND ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
+                  DEPENDS jenkins_jobs_template.yaml
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+
