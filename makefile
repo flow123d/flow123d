@@ -32,10 +32,6 @@ SOURCE_DIR=$(shell pwd)
 # reference manual directory
 DOC_DIR=$(SOURCE_DIR)/doc/reference_manual
 
-ifndef N_JOBS
-  N_JOBS=2
-endif  
-
 
 .PHONY : all
 all:  install-hooks build-flow123d 
@@ -44,14 +40,9 @@ all:  install-hooks build-flow123d
 update-build-tree:
 	-bin/git_post_checkout_hook
 
-# timing of parallel builds (on Core 2 Duo, 4 GB ram)
-# N JOBS	O3	g,O0	
-# 1 		51s	46s
-# 2 		30s	26s
-# 4 		31s	27s
-# 8 		30s
+
 build-flow123d: update-build-tree cmake
-	make -j $(N_JOBS) -C $(BUILD_DIR) bin/flow123d
+	make -C $(BUILD_DIR) bin/flow123d
 
 
 # This target only configure the build process.
@@ -86,7 +77,7 @@ clean: update-build-tree cmake
 # Remove all  build files. (not including test results)
 .PHONY: clean-all
 clean-all: update-build-tree
-	-make -C $(BUILD_DIR) clean-links	# ignore errors
+	#-make -C $(BUILD_DIR) clean-links	# ignore errors
 	rm -rf $(BUILD_DIR)
 
 # Make all tests
@@ -147,7 +138,7 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
 	
-		
+	
 ################################################################################################
 # release packages
 
