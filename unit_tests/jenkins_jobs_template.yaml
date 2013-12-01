@@ -33,11 +33,16 @@
     build-type: "debug"
     unit-dir: 
       - $PLACEHOLDER_unit_list$
-
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    
     jobs:
       - "Flow123d-configure-{platform}-{build-type}"
       - "Unit-test-{unit-dir}-{platform}-{build-type}"
+      - "Flow123d-build-{platform}-{build-type}"
+      - "Test-{test-dir}-{platform}-{build-type}"
       - "Flow123d-build-multijob-{platform}-{build-type}"
+      
 
 
 ####################################################################
@@ -70,14 +75,14 @@
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
     builders:
       - shell: |
-          make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
+          make -C flow123d/build_tree/unit_tests/{unit-dir} all-test
 
 
 ##################################################################
 # Unit tests benchmarks for given directory             
 - job-template:
-    name: "Unit-test-{unit-dir}-{platform}-{build-type}"
-    display-name: "{unit-dir}  unit-test"
+    name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
+    display-name: "{unit-dir}  unit-benchmark"
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
     wrappers:
@@ -87,6 +92,22 @@
       - shell: |
           make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
 
+
+####################################################################
+# Flow123d configure 
+- job-template:
+    name: "Flow123d-build-{platform}-{build-type}"
+    display-name: "Flow123d build {platform} {build-type}"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          # configure
+          cd flow123d
+          make all
 
         
 #################################################################
@@ -141,6 +162,18 @@
           condition: SUCCESSFUL
           projects:     #*UNIT-JOBS
             - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-{build-type}"
+      - multijob:
+          name: "Build Flow123d"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-build-{platform}-{build-type}"
+      - multijob:
+          name: "Integration tests"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Test-$PLACEHOLDER_test_list$-{platform}-{build-type}"
+            
+            
 
 
 ##################################333

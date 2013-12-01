@@ -186,7 +186,7 @@ add_custom_target(test-list
 # Rule to create XML definitions of Jenkins jobs and upload them to the server.
 set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
 add_custom_target(jenkins-upload
-                  COMMAND jenkins-jobs upload ${JENKINS_JOBS_FILE} 
+                  COMMAND jenkins-jobs update ${JENKINS_JOBS_FILE} 
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
