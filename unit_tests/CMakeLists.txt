@@ -41,12 +41,12 @@ macro(add_test_directory libs)
     message("allow common targets")
     
     # default all_test target
-    add_custom_target(all_test
-                    DEPENDS ${subdir}
+    add_custom_target(all-test
+                    DEPENDS ${super_test}
                     )
   
     # default all_bench target
-    add_custom_target(all_bench
+    add_custom_target(all-bench
                     #DEPENDS ${test_name}
                     )
   endif()
@@ -157,6 +157,7 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
+add_subdirectory("scripts")
 add_subdirectory("input")
 #add_subdirectory("interpolation")
 add_subdirectory("la")
