@@ -74,10 +74,11 @@ load-config: update-build-tree
 clean: update-build-tree cmake
 	make -C $(BUILD_DIR) clean
 
-# Remove all  build files. (not including test results)
+# Remove all links in source and whole build tree
 .PHONY: clean-all
 clean-all: update-build-tree
-	#-make -C $(BUILD_DIR) clean-links	# ignore errors
+	# remove all symlinks in the source tree
+	rm -f `find . -type l` 
 	rm -rf $(BUILD_DIR)
 
 # Make all tests
