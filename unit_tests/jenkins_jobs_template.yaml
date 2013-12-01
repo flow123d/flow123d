@@ -2,7 +2,6 @@
 # - needs slihtly different setting for 
 # linux-release:
 #  - wipe out everythink (build external packages)
-#  - use different config.cmake (optimalization)
 #  - optimal build of PETSC
 #  - run banchmarks
 #  - triger once a day
@@ -41,7 +40,7 @@
       - "Unit-test-{unit-dir}-{platform}-{build-type}"
       - "Flow123d-build-{platform}-{build-type}"
       - "Test-{test-dir}-{platform}-{build-type}"
-      - "Flow123d-build-multijob-{platform}-{build-type}"
+      - "Flow123d-build-multijob-{platform}-debug"
       
 
 
@@ -59,7 +58,7 @@
       - shell: |
           # configure
           cd flow123d
-          cp config/ci2.nti.tul.cz.dbg.mk.in ./config.cmake
+          cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
 
 
@@ -126,26 +125,27 @@
         
 
 ########################################################################
-# Main multijob
+# Main multijob -debug
 #
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
-    name: "Flow123d-build-multijob-{platform}-{build-type}"
-    display-name: "Flow123d multijob {platform} {build-type}"
+    name: "Flow123d-build-multijob-{platform}-debug"
+    display-name: "Flow123d multijob {platform} debug"
     project-type: multijob
     node: "{platform}"
     block-downstream: yes
     # workspace                 - directory with per-branch builds and external-projects dir
     # workspace/flow123d        - directore git clone to
-    workspace: "Flow123d-{platform}-{build-type}"
+    workspace: "Flow123d-{platform}-debug"
     scm:
       - git:
           url: https://github.com/flow123d/flow123d.git
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d.git
-    triggers:
-      - github
+
+    triggers: 
+      - github        
     wrappers:
       - build-name:
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
@@ -158,23 +158,78 @@
           name: "Configure Phase"
           condition: SUCCESSFUL
           projects:  
-            - name: "Flow123d-configure-{platform}-{build-type}"
+            - name: "Flow123d-configure-{platform}-debug"
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:     #*UNIT-JOBS
-            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-{build-type}"
+            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-debug"
       - multijob:
           name: "Build Flow123d"
           condition: SUCCESSFUL
           projects:
-            - name: "Flow123d-build-{platform}-{build-type}"
+            - name: "Flow123d-build-{platform}-debug"
       - multijob:
           name: "Integration tests"
           condition: SUCCESSFUL
           projects:
-            - name: "Test-$PLACEHOLDER_test_list$-{platform}-{build-type}"
+            - name: "Test-$PLACEHOLDER_test_list$-{platform}-debug"
             
+
+
+########################################################################
+# Main multijob - release
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
+- job-template:
+    name: "Flow123d-build-multijob-{platform}-release"
+    display-name: "Flow123d multijob {platform} release"
+    project-type: multijob
+    node: "{platform}"
+    block-downstream: yes
+    # workspace                 - directory with per-branch builds and external-projects dir
+    # workspace/flow123d        - directore git clone to
+    workspace: "Flow123d-{platform}-release"
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          basedir: flow123d     # workspace/flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d.git
+          branches:
+            - master
+    triggers:
+      # once a day same time between 00:00 to 06:00; if source changed
+      - pollscm: "H H(0-6) * * *"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+      - workspace-cleanup:
+          dirmatch: true
+          include:
+            - "flow123d"
+            - "build-master"
+    builders:
+      - multijob:
+          name: "Configure Phase"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-configure-{platform}-release"
+      - multijob:
+          name: "Unit tests"
+          condition: COMPLETED
+          projects:     #*UNIT-JOBS
+            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-release"
+      - multijob:
+          name: "Build Flow123d"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-build-{platform}-release"
+      - multijob:
+          name: "Integration tests"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Test-$PLACEHOLDER_test_list$-{platform}-release"
             
 
 
