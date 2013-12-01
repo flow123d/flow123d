@@ -127,6 +127,8 @@
 
 ########################################################################
 # Main multijob
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
     name: "Flow123d-build-multijob-{platform}-{build-type}"
     display-name: "Flow123d multijob {platform} {build-type}"
@@ -159,7 +161,7 @@
             - name: "Flow123d-configure-{platform}-{build-type}"
       - multijob:
           name: "Unit tests"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:     #*UNIT-JOBS
             - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-{build-type}"
       - multijob:
