@@ -21,13 +21,9 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-
-
-add_custom_target( mesh_all_test )
-set(super_test "mesh_all_test")
-set(super_test_libs field_lib mesh_lib system_lib  ) 
+set(libs mesh_lib system_lib)
+add_test_directory("${libs}")
     
     define_test(gmsh_reader)
     define_test(intersection)
@@ -38,7 +34,7 @@ set(super_test_libs field_lib mesh_lib system_lib  )
     define_mpi_test(partitioning 2)
 
 if(CMAKE_HAVE_CXX11)
-	define_test(region)
+    define_test(region)
     define_mpi_test(mesh 2)
 endif()
     

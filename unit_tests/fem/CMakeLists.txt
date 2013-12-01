@@ -21,13 +21,9 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-
-
-add_custom_target( quadrature_all_test )
-set(super_test "quadrature_all_test")
-set(super_test_libs system_lib fem_lib)
+set(libs fem_lib)
+add_test_directory("${libs}")
 
 
 define_test(quadrature)

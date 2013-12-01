@@ -22,6 +22,39 @@ set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
 
+######################################################################################################
+# Macro to make default targets and operations in current unit tests subdirectory, namely:
+# - create sym link to the generated Makefile
+# - make all-test and all-bench targets
+# - add required libraries
+# Should be called from subdirectories
+macro(add_test_directory libs)
+  
+  string(REPLACE "${CMAKE_SOURCE_DIR}/unit_tests/" "" subdir "${CMAKE_CURRENT_SOURCE_DIR}")
+  message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
+  set(super_test "${subdir}-test")
+  add_custom_target( ${super_test} )
+  set(super_test_libs ${libs})
+  message("SUBDIR LIBS: ${libs}")
+  
+  if (ALLOW_DUPLICATE_CUSTOM_TARGETS)
+    message("allow common targets")
+    
+    # default all_test target
+    add_custom_target(all_test
+                    DEPENDS ${subdir}
+                    )
+  
+    # default all_bench target
+    add_custom_target(all_bench
+                    #DEPENDS ${test_name}
+                    )
+  endif()
+  
+  make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")    
+endmacro()
+
+
 
 #################################
 # MACRO define_test
@@ -40,9 +73,9 @@ add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 macro(define_test class_name)
   set(test_source "${class_name}_test.cpp")
   set(test_binary "${class_name}_test_bin")
-  set(test_name "${class_name}_test")
-  set(test_valgrind "${class_name}_valgrind")
-  message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
+  set(test_name "${class_name}-test")
+  set(test_valgrind "${class_name}-valgrind")
+  #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
@@ -50,10 +83,7 @@ macro(define_test class_name)
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
 
-  # default all_test target
-  add_custom_target(all_test
-                    DEPENDS ${test_name}
-                    )
+
   
   # rule to run the test
   add_custom_target(${test_name} 
@@ -86,9 +116,9 @@ endmacro()
 macro(define_mpi_test class_name n_proc)
   set(test_source "${class_name}_test.cpp")
   set(test_binary "${class_name}_test_bin")
-  set(test_name "${class_name}_${n_proc}_test")
-  set(test_valgrind "${class_name}_${n_proc}_valgrind")
-  message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
+  set(test_name "${class_name}-${n_proc}-test")
+  set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   if(TARGET ${test_binary})
@@ -98,14 +128,9 @@ macro(define_mpi_test class_name n_proc)
   	add_dependencies(${test_binary} mpiexec_link)      # make
   endif()	
 
-  # default all_test target
-  add_custom_target(all_test
-                    DEPENDS ${test_name}
-                    )
-
   # rule to run the test
- # set(RUN_COMMAND ulimit -t 300\; )
- # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
+  # set(RUN_COMMAND ulimit -t 300\; )
+  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
@@ -125,13 +150,6 @@ macro(define_mpi_test class_name n_proc)
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
 endmacro()
 
-######################################################################################################
-# Macro to add a subdirectory and create sym link to the generated Makefile
-#
-macro(add_test_directory dir)
-    add_subdirectory("${dir}")
-    make_link_in_source("unit_tests/${dir}/Makefile")
-endmacro()
 
 
 #######################################################################################################
@@ -139,14 +157,14 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
-add_test_directory("input")
-#add_test_directory("interpolation")
-add_test_directory("la")
-add_test_directory("system")
-add_test_directory("fields")
-add_test_directory("quadrature")
-add_test_directory("mesh")
-add_test_directory("coupling")
+add_subdirectory("input")
+#add_subdirectory("interpolation")
+add_subdirectory("la")
+add_subdirectory("system")
+add_subdirectory("fields")
+add_subdirectory("fem")
+add_subdirectory("mesh")
+add_subdirectory("coupling")
 
 
 #################################################################################################

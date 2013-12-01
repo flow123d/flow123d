@@ -47,6 +47,11 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
 
+# allow duplicate custom targets for makefiles
+set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+set(ALLOW_DUPLICATE_CUSTOM_TARGETS 1) #variable that can be tested
+
+
 ################################################################################# set CMake Modules
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -494,8 +499,12 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
               
 
 macro(make_link_in_source FILE)
+  # get relative filename if absolute address is given
+  message("FILE BEFORE: ${FILE}")
+  string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
+  message("FILE AFTER: ${rel_path}")
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${FILE} ${CMAKE_SOURCE_DIR}/${FILE}
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
   
@@ -543,9 +552,9 @@ endif()
 ################################################################333
 # clean-links target
 
-add_custom_target(clean-links
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${SOURCE_TREE_LINKS}
-)
+#add_custom_target(clean-links
+#    COMMAND ${CMAKE_COMMAND} -E remove -f ${SOURCE_TREE_LINKS}
+#)
 
 
 

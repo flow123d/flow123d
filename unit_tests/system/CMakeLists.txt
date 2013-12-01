@@ -21,13 +21,8 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-
-
-add_custom_target( system_test )
-set(super_test "system_test")
-set(super_test_libs system_lib)
+set(libs system_lib)
+add_test_directory("${libs}")
 
 
     define_mpi_test(profiler 1)
