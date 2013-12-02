@@ -598,10 +598,10 @@ bool AdHocAbstractRecord::finish() const
 	if (data_->finished) return true;
 
 	if (tmp_ancestor_ != 0) {
-        if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
+		if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
         tmp_ancestor_->finish();
 
-		parent_data_ = boost::shared_ptr<ChildData>( tmp_ancestor_->child_data_.get() );
+        parent_data_ = tmp_ancestor_->child_data_;
 		tmp_ancestor_ = NULL;
 	}
 

@@ -369,7 +369,7 @@ using namespace Input::Type;
  */
 namespace IT=Input::Type;
 
-class AdHocDataTest {
+class AdHocDataTest : public testing::Test {
 public:
 	static IT::Record rec;
 	static IT::Record in_rec1;
@@ -377,6 +377,12 @@ public:
 	static IT::AbstractRecord ancestor;
 	static IT::AdHocAbstractRecord adhoc_1;
 	static IT::AdHocAbstractRecord adhoc_2;
+
+protected:
+    virtual void SetUp() {
+    }
+    virtual void TearDown() {
+    };
 };
 
 
@@ -406,5 +412,15 @@ IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
 TEST(InputTypeAdHocAbstractRecord, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	AdHocDataTest::in_rec1.finish();
+	AdHocDataTest::in_rec2.finish();
+	AdHocDataTest::adhoc_1.finish();
+	AdHocDataTest::adhoc_2.finish();
+	AdHocDataTest::rec.finish();
 
+	EXPECT_EQ( 1, AdHocDataTest::in_rec1.size());
+	EXPECT_EQ( 1, AdHocDataTest::in_rec2.size());
+	EXPECT_EQ( 2, AdHocDataTest::adhoc_1.child_size());
+	EXPECT_EQ( 2, AdHocDataTest::adhoc_2.child_size());
+	EXPECT_EQ( 2, AdHocDataTest::rec.size());
 }
