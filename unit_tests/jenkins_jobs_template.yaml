@@ -22,14 +22,11 @@
 #
 
 
-
-# Multijob  project   
+# Multijob  project - debug
 - project:
-    name: "Multijob project"
-#    platform: [ linux, windows ]
-#    build-type: [ debug, release ]
-    platform: "linux"
-    build-type: "debug"
+    name: "Multijob project debug"
+    platform: linux
+    build-type: debug
     unit-dir: 
       - $PLACEHOLDER_unit_list$
     test-dir:
@@ -41,6 +38,24 @@
       - "Flow123d-build-{platform}-{build-type}"
       - "Test-{test-dir}-{platform}-{build-type}"
       - "Flow123d-build-multijob-{platform}-debug"
+
+
+# Multijob  project - release
+- project:
+    name: "Multijob project release"
+    platform: [ linux, windows ]
+    build-type: release
+    unit-dir: 
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    
+    jobs:
+      - "Flow123d-configure-{platform}-{build-type}"
+      - "Unit-test-{unit-dir}-{platform}-{build-type}"
+      - "Flow123d-build-{platform}-{build-type}"
+      - "Test-{test-dir}-{platform}-{build-type}"
+      - "Flow123d-build-multijob-{platform}-release"
       
 
 
@@ -145,7 +160,7 @@
           browser-url: https://github.com/flow123d/flow123d.git
 
     triggers: 
-      - github        
+      - github
     wrappers:
       - build-name:
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
@@ -153,6 +168,7 @@
           dirmatch: true
           include:
             - "flow123d"
+            - "build-HEAD"
     builders:
       - multijob:
           name: "Configure Phase"
@@ -200,15 +216,17 @@
             - master
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
-      - pollscm: "H H(0-6) * * *"
+      #- pollscm: "H H(0-6) * * *"
+      - github
     wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+      #- build-name:
+      #    name:  "#$BUILD_NUMBER"
       - workspace-cleanup:
           dirmatch: true
           include:
             - "flow123d"
             - "build-master"
+            - "external_projects"
     builders:
       - multijob:
           name: "Configure Phase"
@@ -227,9 +245,12 @@
             - name: "Flow123d-build-{platform}-release"
       - multijob:
           name: "Integration tests"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Test-$PLACEHOLDER_test_list$-{platform}-release"
+#      - multijob:
+#          name: "
+          
             
 
 
