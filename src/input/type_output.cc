@@ -163,9 +163,12 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 	if (typeid(*type) == typeid(Type::Array)) {
 		print_impl(stream, static_cast<const Type::Array *>(type), depth );
 	} else
-	//if (typeid(*type) == typeid(Type::AbstractRecord)) {
-	//	print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
-	//} else
+	if (typeid(*type) == typeid(Type::AbstractRecord)) {
+			print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+	} else
+	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
+		//print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
+	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
 		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
 	} else
@@ -178,12 +181,6 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 	if (typeid(*type) == typeid(Type::Bool)) {
 		print_impl(stream, static_cast<const Type::Bool *>(type), depth );
 	} else {
-		const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(type);
-		if (abstract_record_type != NULL ) {
-			print_impl(stream, abstract_record_type, depth );
-			return;
-		}
-
 		const Type::FileName * file_name_type = dynamic_cast<const Type::FileName *>(type);
         if (file_name_type != NULL ) {
         	print_impl(stream, file_name_type, depth );
@@ -436,6 +433,11 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
         }
 		break;
 	}
+}
+
+
+void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
 }
 
 
@@ -710,6 +712,11 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			break;
 	}
 
+}
+
+
+void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
 }
 
 
@@ -1125,6 +1132,11 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 }
 
 
+void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
+}
+
+
 void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
     if (! type->is_finished()) {
         xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
@@ -1304,6 +1316,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 
 	stream << "]" << endl;
 	stream << "}";
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
 }
 
 
