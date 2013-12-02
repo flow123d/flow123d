@@ -311,9 +311,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     if (typeid(*type) == typeid(Type::Record)) {
         return make_storage(p, static_cast<const Type::Record *>(type) );
     } else
-    if (typeid(*type) == typeid(Type::AbstractRecord)) {
-        return make_storage(p, static_cast<const Type::AbstractRecord *>(type) );
-    } else
     if (typeid(*type) == typeid(Type::Array)) {
         return make_storage(p, static_cast<const Type::Array *>(type) );
     } else
@@ -329,6 +326,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
+    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(type);
+    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
+
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
@@ -602,10 +602,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
-        if (typeid(*type) == typeid(Type::AbstractRecord) ) {
+        // an auto-convertible AbstractRecord can be initialized form default value
+    	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
+    	if (a_record != NULL ) {
             // an auto-convertible AbstractRecord can be initialized form default value
-            const Type::AbstractRecord *a_record = static_cast<const Type::AbstractRecord *>(type);
-
             if (a_record->begin()->default_.has_value_at_declaration() )    // a_record->bagin() ... TYPE key
                 return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
             else
