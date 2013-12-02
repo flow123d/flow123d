@@ -6,10 +6,6 @@
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
-set(PETSC_DIR "/home/jb/local/petsc-3.2-p3")
-set(PETSC_ARCH "gcc_O3")
-
-###
 # If PETSC are found but do not compile, it is probably due to some undefined references (usually nonstandard compiler libraries)
 # see file: BUILD_DIR/CMakeFiles/CMakeError.log 
 # and set following variable to add missing libraries using -L and -l parameters.
@@ -17,9 +13,47 @@ set(PETSC_ARCH "gcc_O3")
 # e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
 # set( PETSC_ADDITIONAL_LIBS "-lpthread")
 
+# If PETSC are not found we try to install them automatically.
+# Options for PETSC installer:
+#
+#     PETSC_MPI_DIR      - pass MPI to PETSC configure 
+#     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
+#
+#     PETSC_CONFIG - possible values:
+#       mini             - only petsc + necessary MPI, BLAS, LAPACK
+#       flow123d_mini    - mini + metis + parmetis
+#       bddcml           - flow123d_mini + mumps + scalapack + blacs
+#       full             - bddcml + hypre + blopex + umfpack + sundials
+#
+#     INSTALL_PETSC_OPTIONS - additional options used as parameters to configure.py,
+#
+# example:
+# set(PETSC_CONFIG "bddcml")
+# set(INSTALL_PETSC_OPTIONS "--download-hypre=yes")
+
+### BDDCML library #############################################################
+# BDDCML_ROOT - root directory of BDDCML library
+# tested with version 2.2
+# If BDDCML_ROOT is set and BDDCML library is not found it is installed automatically.
+# If the variable is unset, BDDCML is not used.
+# Note: For automatic installation you need MUMPS and ScaLapack, this can be automatically installed with PETSC 
+# if you set PETSC_CONFIG=bddcml.
+#
+# example:
+# set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+
+### Python setting ###############################################################
+# USE_PYTHON - only use python if this is set to "yes"
+# We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
+#
+# set(USE_PYTHON "yes")
+
+### Boost ######################
+# Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
+#
+#set(Boost_FORCE_REBUILD "yes")
 
 ### Build setting ####################################################################
-
 
 ### verbose mode ####
 # option to produce more verbose compiling
@@ -55,7 +89,7 @@ set(PETSC_ARCH "gcc_O3")
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags: "-g -DFlow123d_DEBUG"
-# "release" set flags: "-O3 -DFlow123d_NODEBUG"
+# "release" set flags: "-O3 -DDEBUG_PROFILER"
 #
 
 set(FLOW_BUILD_TYPE debug)
@@ -72,8 +106,8 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
-# e.g. :
-#set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg ")
+# example:
+#set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
 
 

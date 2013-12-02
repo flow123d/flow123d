@@ -5,8 +5,7 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 set(FLOW_CC_FLAGS "-O3 -DDEBUG_PROFILER")
 
-
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-set(INSTALL_PETSC_BDDCML "yes")
+set(PETSC_CONFIG "full")
 set(USE_PYTHON "yes")

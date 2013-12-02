@@ -81,6 +81,7 @@ if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
+  set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
   
 else(FLOW_CC_FLAGS)
@@ -89,15 +90,18 @@ else(FLOW_CC_FLAGS)
   if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
     set(CMAKE_CXX_FLAGS "-g -O0")
+    set(CMAKE_C_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
     add_definitions(-DFlow123d_DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DFlow123d_NODEBUG)
+    set(CMAKE_C_FLAGS "-O3")
+    add_definitions(-DDEBUG_PROFILER)
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
+    set(CMAKE_C_FLAGS "-O3")
     add_definitions(-DFlow123d_DEBUG)
   else()
   endif()
@@ -546,14 +550,4 @@ if( PETSC_FOUND )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
-
-
-################################################################333
-# clean-links target
-
-#add_custom_target(clean-links
-#    COMMAND ${CMAKE_COMMAND} -E remove -f ${SOURCE_TREE_LINKS}
-#)
-
-
 
