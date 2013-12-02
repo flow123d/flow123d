@@ -76,6 +76,30 @@
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
 
+####################################################################
+# Flow123d build libraries 
+# - we need separate step for this since unit tests can run even if 
+#   libraries do not build well
+# - on other hand we want to prevent parallel build of same files if 
+#   Jenkins execute run tests in parallel
+# - we can still get this parallel problem when some library do not build
+#   and two unit tests try to rebuild it
+# - ultimate solution may be: do not have independent jobs for individual unit tests
+#   just present generated XML files and use parallel make to make all unit tests and libraries
+#   
+- job-template:
+    name: "Flow123d-build-libs-{platform}-{build-type}"
+    display-name: "Flow123d libraries {platform} {build-type}"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    builders:
+      - shell: |
+          # configure
+          cd flow123d
+          make -j 4 all
 
 ##################################################################
 # Unit test for given directory
@@ -108,7 +132,7 @@
 
 
 ####################################################################
-# Flow123d configure 
+# Flow123d build main binary
 - job-template:
     name: "Flow123d-build-{platform}-{build-type}"
     display-name: "Flow123d build {platform} {build-type}"
@@ -138,7 +162,22 @@
       - shell: |
           make -C flow123d/tests/{test-dir} test
         
-
+#################################################################
+# Packaging
+- job-template:
+    name: "Pack-{platform}-release"
+    display-name: "Pack {platform} release"
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-release"
+    builders:
+      - shell: |
+          make -C flow123d/build-tree package
+          make -C flow123d/build-tree package_source
+#    publishers:
+#      - cifs:
+#          site: "bacula"
+#          target: 
+#          source: flow123d/build-tree/Flow123d-*  
 ########################################################################
 # Main multijob -debug
 #
@@ -175,6 +214,11 @@
           condition: SUCCESSFUL
           projects:  
             - name: "Flow123d-configure-{platform}-debug"
+      - multijob:
+          name: "Build Flow123d libraries"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-build-libs-{platform}-debug"
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
@@ -234,6 +278,11 @@
           projects:  
             - name: "Flow123d-configure-{platform}-release"
       - multijob:
+          name: "Build Flow123d libraries"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-build-libs-{platform}-release"
+      - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:     #*UNIT-JOBS
@@ -248,9 +297,12 @@
           condition: COMPLETED
           projects:
             - name: "Test-$PLACEHOLDER_test_list$-{platform}-release"
-#      - multijob:
-#          name: "
-          
+      - multijob:
+          name: "Pack and Install"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Pack-{platform}-release"
+
             
 
 

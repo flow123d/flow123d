@@ -479,13 +479,19 @@ set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
 # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
 # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
 message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
-if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
-      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
-      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
+if(PETSC_MPIEXEC)     
+      # missing CMAKE command to test working executable, moreover it could be without full path
+      
+      # resolve symlinks
+      get_filename_component(RESOLVED_MPIEXEC "${PETSC_MPIEXEC}" REALPATH)
+      message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
+      set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
 else()
-      if(COMMAND mpiexec)
-        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
-        set(MPIEXEC_PATH mpiexec)
+      find_program(SYSTEM_MPIEXEC mpiexec)
+      if(SYSTEM_MPIEXEC)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")	
+	get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
+        set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
       else()
         message(WARNING "Missing any mpiexec.")
       endif()
@@ -504,9 +510,7 @@ set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
 
 macro(make_link_in_source FILE)
   # get relative filename if absolute address is given
-  message("FILE BEFORE: ${FILE}")
   string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
-  message("FILE AFTER: ${rel_path}")
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -550,4 +554,71 @@ if( PETSC_FOUND )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
+
+####################################################################################
+# Install and Packaging
+
+if (UNIX)
+  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/Flow123d")
+endif()
+  
+
+# mpiexec, hope this will work
+install(DIRECTORY config 			DESTINATION bin/)
+install(DIRECTORY bin/ndiff 			DESTINATION bin/)
+install(DIRECTORY bin/paraview 			DESTINATION bin/)
+install(DIRECTORY bin/py			DESTINATION bin/)
+install(PROGRAMS   bin/tests/run_test.sh 	DESTINATION bin/tests)
+
+install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
+install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
+install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
+install(TARGETS    bin/flow123d 
+	RUNTIME DESTINATION bin/)
+install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
+
+# make manual optional until we have Latex on Windows build machine
+install(FILES ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf 
+						DESTINATION doc/ OPTIONAL)
+install(FILES doc/petsc_options_help 		DESTINATION doc/)
+install(FILES doc/flow_json.xml			DESTINATION doc/)
+install(FILES LICENSE DESTINATION doc/)
+install(FILES GPL3    DESTINATION doc/)
+
+# clean tests directory before install
+find_program (MAKE_EXECUTABLE NAMES make gmake)
+install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
+install(DIRECTORY tests DESTINATION .)
+install(FILES README.md DESTINATION .)
+
+# To install MSVC runtime libraries ... ?
+INCLUDE(InstallRequiredSystemLibraries)
+
+
+
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
+SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+SET(CPACK_PACKAGE_VERSION_MINOR "8")
+SET(CPACK_PACKAGE_VERSION_PATCH "0.alpha")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+IF(WIN32 AND NOT UNIX)
+  # There is a bug in NSI that does not handle full unix paths properly. Make
+  # sure there is at least one set of four (4) backlasshes.
+#  SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
+#  SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
+  SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+  SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
+  SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
+  SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
+  SET(CPACK_NSIS_MODIFY_PATH ON)
+ELSE(WIN32 AND NOT UNIX)
+  SET(CPACK_STRIP_FILES "bin/MyExecutable")
+  SET(CPACK_SOURCE_STRIP_FILES "")
+ENDIF(WIN32 AND NOT UNIX)
+SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+INCLUDE(CPack)
+
 

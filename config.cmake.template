@@ -53,6 +53,15 @@
 #
 #set(Boost_FORCE_REBUILD "yes")
 
+### Install Prefix ########################
+#
+# Root directory of Flow123d installation. Default is ${HOME}/local/Flow123d for Linux and
+# C:\Program Files\Flow123d for Windows.
+#
+# set(CMAKE_INSTALL_PREFIX "${HOME}/flow123d"
+
+
+
 ### Build setting ####################################################################
 
 ### verbose mode ####
