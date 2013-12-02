@@ -43,9 +43,11 @@ Record Sorption::input_type
 	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
 	// if following key remains negative or zero after initialization, then no limited solubility is concidered
-	.declare_key("solubility", Array(Double()), Default("-1.0"),
+	//.declare_key("solubility", Array(Double()), Default("-1.0"), //
+	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
-	.declare_key("table_limits", Array(Double()), Default("-1.0"),
+	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
+	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
                    	   	   "Containes region specific data necessery to construct isotherms.")//;
@@ -91,9 +93,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
 	molar_masses.resize( nr_of_substances );
-	//c_aq_max.resize( nr_of_substances );
-	solubility_vec_.resize(nr_of_substances);
-	table_limit_.resize(nr_of_substances);
+	//solubility_vec_.resize(nr_of_substances);
+	//table_limit_.resize(nr_of_substances);
 
 	//isotherms array resized bellow
 	isotherms.resize(nr_of_regions);
@@ -130,22 +131,30 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
-	Input::Array solubility_limits = in_rec.val<Input::Array>("solubility");
-	if (solubility_limits.size() == solubility_vec_.size())
+	Input::Iterator<Input::Array> solub_iter = in_rec.find<Input::Array>("solubility");
+	if( solub_iter )
 	{
-		solubility_limits.copy_to( solubility_vec_ );
-	}else
-	  {
-		if(solubility_limits.size() > 1) xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_limits.size(), solubility_vec_.size());
-	  }
+		solub_iter->copy_to(solubility_vec_);
+		if (solubility_vec_.size() != nr_of_substances)
+		{
+			xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_vec_.size(), nr_of_substances);
+		}
+	}else{
+		// fill solubility_vec_ with zeros or resize it at least
+		solubility_vec_.resize(nr_of_substances);
+	}
 
-	Input::Array interp_table_limits = in_rec.val<Input::Array>("table_limits");
-	if (interp_table_limits.size() == table_limit_.size())
+	Input::Iterator<Input::Array> interp_table_limits = in_rec.find<Input::Array>("table_limits");
+	if( interp_table_limits )
 	{
-		interp_table_limits.copy_to( table_limit_ );
-	}else
-	{
-		if(interp_table_limits.size() > 1) xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), table_limit_.size());
+		interp_table_limits->copy_to(table_limit_);
+		if (table_limit_.size() != nr_of_substances)
+		{
+			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", table_limit_.size(), nr_of_substances);
+		}/**/
+	}else{
+		// fill table_limit_ with zeros or resize it at least
+		table_limit_.resize(nr_of_substances);
 	}
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
@@ -153,7 +162,7 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
 	{
 		idx = find_subst_name(*spec_iter);
-		if ((idx < n_substances()) && (idx >= 0))   substance_ids[i_spec] = idx;
+		if ((idx < n_substances()) && (idx >= 0)) substance_ids[i_spec] = idx;
 		else	xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
 	}
 
