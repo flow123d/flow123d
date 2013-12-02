@@ -31,14 +31,14 @@ add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 macro(add_test_directory libs)
   
   string(REPLACE "${CMAKE_SOURCE_DIR}/unit_tests/" "" subdir "${CMAKE_CURRENT_SOURCE_DIR}")
-  message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
+  #message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
   set(super_test "${subdir}-test")
   add_custom_target( ${super_test} )
   set(super_test_libs ${libs})
-  message("SUBDIR LIBS: ${libs}")
+  #message("SUBDIR LIBS: ${libs}")
   
   if (ALLOW_DUPLICATE_CUSTOM_TARGETS)
-    message("allow common targets")
+    #message("allow common targets")
     
     # default all_test target
     add_custom_target(all-test

@@ -233,6 +233,7 @@ endif(EXEC_INFO_H)
 #   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
 #   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
 
+message(STATUS "\n =======================================================")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
@@ -304,6 +305,8 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+
+message(STATUS "\n =======================================================")
 include (FindPackageMultipass)
   
 find_package(PETSc 3.4.0)
@@ -373,6 +376,8 @@ if(PETSC_FOUND)
 endif(PETSC_FOUND)
 
 find_package(PARMETIS)
+
+#message(STATUS "\n =======================================================")
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
 #set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
@@ -387,6 +392,7 @@ find_package(PARMETIS)
 #  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
 #                              with correctly set dependencies on other libraries
 
+message(STATUS "\n =======================================================")
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
@@ -432,9 +438,7 @@ else (CYGWIN)
     endif()
 endif(CYGWIN)
 
-# check for subversion and prepare generating of file with revision info.
-#find_package(Subversion)
-
+message(STATUS "\n ======================================================= ")
 
 
 ######################################################################################################################### 
@@ -482,9 +486,8 @@ set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
 #
-# TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
-# ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
-message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
+
+#message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
 if(PETSC_MPIEXEC)     
       # missing CMAKE command to test working executable, moreover it could be without full path
       

@@ -231,7 +231,7 @@
             - name: "Flow123d-build-{platform}-debug"
       - multijob:
           name: "Integration tests"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Test-$PLACEHOLDER_test_list$-{platform}-debug"
             
@@ -260,8 +260,8 @@
             - master
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
-      #- pollscm: "H H(0-6) * * *"
-      - github
+      - pollscm: "H H(0-6) * * *"
+      #- github
     wrappers:
       #- build-name:
       #    name:  "#$BUILD_NUMBER"

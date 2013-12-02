@@ -38,19 +38,19 @@ all:  install-hooks build-flow123d
 
 # this is prerequisite for every target using BUILD_DIR variable
 update-build-tree:
-	-bin/git_post_checkout_hook
+	@-bin/git_post_checkout_hook	# do not print command, ignore return code
 
 
 build-flow123d: update-build-tree cmake
-	make -C $(BUILD_DIR) bin/flow123d
+	@make -C $(BUILD_DIR) bin/flow123d
 
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
 .PHONY : cmake
 cmake:  update-build-tree
-	if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
-	cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
+	@if [ ! -d "$(BUILD_DIR)" ]; then mkdir -p $(BUILD_DIR); fi
+	@cd $(BUILD_DIR); cmake "$(SOURCE_DIR)"
 
 	
 # add post-checkout hook
@@ -138,28 +138,6 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 # make final input_reference.tex, applying replace rules
 inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
-	
-	
-################################################################################################
-# release packages
-
-lbuild=linux_build
-linux-package: #clean clean_tests all
-	# copy bin
-	rm -rf $(lbuild)
-	mkdir -p $(lbuild)/bin/mpich
-	mpiexec=`cat bin/mpiexec |grep mpiexec |sed 's/ ".*$$//'|sed 's/"//g'`;\
-	cp "$${mpiexec}" $(lbuild)/bin/mpich/mpiexec
-	cp -r bin/flow123d bin/flow123d.sh bin/ndiff bin/tests bin/ngh/bin/ngh bin/bcd/bin/bcd $(lbuild)/bin
-	cp -r bin/paraview $(lbuild)/bin
-	# copy doc
-	mkdir $(lbuild)/doc
-	cp -r doc/articles doc/reference_manual/flow123d_doc.pdf doc/petsc_options_help $(lbuild)/doc
-	# copy tests
-	cp -r tests $(lbuild)
-
-linux-pack:
-	cd $(lbuild); tar -cvzf ../flow_build.tar.gz .
 	
 	
 ################################################################################################
