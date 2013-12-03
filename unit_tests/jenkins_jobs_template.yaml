@@ -34,6 +34,7 @@
     
     jobs:
       - "Flow123d-configure-{platform}-{build-type}"
+      - "Flow123d-build-libs-{platform}-{build-type}"
       - "Unit-test-{unit-dir}-{platform}-{build-type}"
       - "Flow123d-build-{platform}-{build-type}"
       - "Test-{test-dir}-{platform}-{build-type}"
@@ -52,9 +53,11 @@
     
     jobs:
       - "Flow123d-configure-{platform}-{build-type}"
+      - "Flow123d-build-libs-{platform}-{build-type}"
       - "Unit-test-{unit-dir}-{platform}-{build-type}"
       - "Flow123d-build-{platform}-{build-type}"
       - "Test-{test-dir}-{platform}-{build-type}"
+      - "Flow123d-{platform}-{build-type}-packages"
       - "Flow123d-build-multijob-{platform}-release"
       
 
@@ -63,7 +66,7 @@
 # Flow123d configure 
 - job-template:
     name: "Flow123d-configure-{platform}-{build-type}"
-    display-name: "Flow123d configure {platform} {build-type}"
+    display-name: "{platform} {build-type} / configure "
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
     wrappers:
@@ -89,7 +92,7 @@
 #   
 - job-template:
     name: "Flow123d-build-libs-{platform}-{build-type}"
-    display-name: "Flow123d libraries {platform} {build-type}"
+    display-name: "{platform} {build-type} / build libraries "
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
     wrappers:
@@ -100,14 +103,22 @@
           # configure
           cd flow123d
           make -j 4 all
+          make -j 4 -C unit_tests/gtest_mpi_obj         # build all common sources for unit tests
 
 ##################################################################
 # Unit test for given directory
 - job-template:
     name: "Unit-test-{unit-dir}-{platform}-{build-type}"
-    display-name: "{unit-dir}  unit-test"
+    display-name: "{platform} {build-type} / unit-test / {unit-dir}"
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
+    properties:
+      # Limit number of concurrently running unit tests to 2
+      - throttle:
+        max-per_node: 2
+        option: "category"
+        categories:
+          - Flow123d-category-unit-tests
     wrappers:
       - build-name:
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
@@ -120,7 +131,7 @@
 # Unit tests benchmarks for given directory             
 - job-template:
     name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
-    display-name: "{unit-dir}  unit-benchmark"
+    display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
     wrappers:
@@ -135,7 +146,7 @@
 # Flow123d build main binary
 - job-template:
     name: "Flow123d-build-{platform}-{build-type}"
-    display-name: "Flow123d build {platform} {build-type}"
+    display-name: "{platform} {build-type} / flow123d build "
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
     wrappers:
@@ -152,9 +163,17 @@
 # Integration test for given directory
 - job-template:
     name: "Test-{test-dir}-{platform}-{build-type}"
-    display-name: "{test-dir} test"
+    display-name: "{platform} {build-type} / test / {test-dir}"
     node: "{platform}"
     workspace: "Flow123d-{platform}-{build-type}"
+    properties:
+      # Limit number of concurrently running integration tests to 2
+      - throttle:
+        max-per_node: 2
+        option: "category"
+        categories:
+          - Flow123d-category-integration-tests
+
     wrappers:
       - build-name:
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
@@ -165,8 +184,8 @@
 #################################################################
 # Packaging
 - job-template:
-    name: "Pack-{platform}-release"
-    display-name: "Pack {platform} release"
+    name: "Flow123d-{platform}-release-packages"
+    display-name: "{platform} release make packages"
     node: "{platform}"
     workspace: "Flow123d-{platform}-release"
     builders:
@@ -191,6 +210,7 @@
     # workspace                 - directory with per-branch builds and external-projects dir
     # workspace/flow123d        - directore git clone to
     workspace: "Flow123d-{platform}-debug"
+
     scm:
       - git:
           url: https://github.com/flow123d/flow123d.git
@@ -207,7 +227,7 @@
           dirmatch: true
           include:
             - "flow123d"
-            - "build-HEAD"
+            - "build-*"
     builders:
       - multijob:
           name: "Configure Phase"
@@ -269,7 +289,7 @@
           dirmatch: true
           include:
             - "flow123d"
-            - "build-master"
+            - "build-*"
             - "external_projects"
     builders:
       - multijob:
