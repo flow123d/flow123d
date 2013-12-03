@@ -537,15 +537,27 @@ make_link_in_source(unit_tests/Makefile)
 
 
 # add fparser sources
-message(STATUS "ad subdir FParser")
+message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
 
 # add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
-add_subdirectory(doc/reference_manual)
-
 add_subdirectory(unit_tests) # this also adds third_party/gtest
+
+# optionally make targets for building reference_manual
+# we have to call separate instance of CMake since UseLatex.cmake
+# depends on many tools. If any of them miss CMake fails, while we can live
+# without targets for Latex doc.
+message(STATUS "==== child CMake for Latex sources ====") 
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc/reference_manual)
+execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
+                RESULT_VARIABLE res_var)
+message(STATUS "==== back in main CMake ====")
+if(NOT "${res_var}" STREQUAL "0")
+  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
+endif()
 
 
 #################################################################### add targets

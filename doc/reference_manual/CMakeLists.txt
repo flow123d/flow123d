@@ -1,33 +1,10 @@
-#  these are defined in findLATEX.cmake:
-#
-#  LATEX_COMPILER:       path to the LaTeX compiler
-#  PDFLATEX_COMPILER:    path to the PdfLaTeX compiler
-#  BIBTEX_COMPILER:      path to the BibTeX compiler
-#  MAKEINDEX_COMPILER:   path to the MakeIndex compiler
-#  DVIPS_CONVERTER:      path to the DVIPS converter
-#  PS2PDF_CONVERTER:     path to the PS2PDF converter
-#  LATEX2HTML_CONVERTER: path to the LaTeX2Html converter
+# Separate project for making reference manual PDF from 
+# Latex sources. UseLatex just sends errors when some
+# necessary tool is missing. This wrapper project can 
+# be called through execute_process
+project(Flow123d_Latex_doc)
+cmake_minimum_required(VERSION 2.8)
 
-find_package(LATEX)
-
-if    (NOT LATEX_COMPILER)
-  MESSAGE(STATUS "Latex command LATEX_COMPILER not found.")
-  set(no_latex 1)
-endif (NOT LATEX_COMPILER)
-if    (NOT PDFLATEX_COMPILER)
-  MESSAGE(STATUS "Latex command PDFLATEX_COMPILER not found.")
-  set(no_latex 1)
-endif (NOT PDFLATEX_COMPILER)
-if    (NOT BIBTEX_COMPILER)
-  MESSAGE(STATUS "Latex command BIBTEX_COMPILER not found.")
-  set(no_latex 1)
-endif (NOT BIBTEX_COMPILER)
-
-if(no_latex)
-  MESSAGE(STATUS "Coud not find LaTeX or some of its commands.")
-else()
-  # if all the LaTeX commands we need where found we can make the reference manual
-  
   set(doc_name "flow123d_doc")
 
   # Here add every new .tex (or other .txt, .sty etc.) file that you create and include
@@ -59,8 +36,8 @@ else()
       figures
   )
 
-  MESSAGE(STATUS "Buiding LaTeX documentation.")
-  INCLUDE(${PROJECT_SOURCE_DIR}/CMake/Modules/UseLATEX.cmake)
+  MESSAGE(STATUS "Targets for LaTeX documentation...")
+  INCLUDE(${CMAKE_SOURCE_DIR}/../../CMake/Modules/UseLATEX.cmake)
   MESSAGE(STATUS "UseLATEX.cmake included.")
 
   ADD_LATEX_DOCUMENT(${doc_name}.tex
@@ -69,11 +46,4 @@ else()
 		   IMAGE_DIRS ${doc_img_dirs}
 		   DEFAULT_PDF
   )
-  # NO_DEFAULT - does not build anything with make all, "make pdf" must be called
-  # Put images in INPUTS, then no conversion is done
-  # or convert them to pdf and include the image directory
-
-  add_custom_target(ref-doc
-    COMMAND make pdf
-  )
-endif(no_latex)
+  
