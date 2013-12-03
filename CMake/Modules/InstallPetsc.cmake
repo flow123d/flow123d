@@ -74,8 +74,8 @@ elseif(PETSC_CONFIG STREQUAL "flow123d_mini")
 elseif(PETSC_CONFIG STREQUAL "bddcml")
     set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes)
 elseif(PETSC_CONFIG STREQUAL "full")
-    if (CMAKE_HOST_WIN32) # includes win32, win64, and cygwin
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-sundials=yes)
+    if (CMAKE_HOST_WIN32 OR WIN32 OR CYGWIN) # CMAKE_HOST_WIN32 should include win32, win64, and cygwin; but doesn't work
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes  --download-blacs=yes --download-scalapack=yes --download-mumps=yes )
     else()    
         set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-umfpack=yes --download-sundials=yes)
     endif()
