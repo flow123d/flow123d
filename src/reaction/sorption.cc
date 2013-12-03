@@ -40,7 +40,7 @@ Record Sorption::input_type
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("species", Array(String()), Default::obligatory(),
 							"Names of all the adsorbing species")
-	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
+	.declare_key("molar_masses", Array(Double(0.0)), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
 	// if following key remains negative or zero after initialization, then no limited solubility is concidered
 	//.declare_key("solubility", Array(Double()), Default("-1.0"), //

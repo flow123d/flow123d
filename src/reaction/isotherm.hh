@@ -199,11 +199,6 @@ public:
     /**
     *
     */
-    /*template<class Func>
-    double upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm);*/
-    /**
-    *
-    */
     ConcPair solve_conc(ConcPair conc);
     /**
      * Update concentrations.
@@ -228,7 +223,7 @@ public:
     /**
     *
     */
-    void precipitate(double &c_aqua, double &c_sorbed); //double &c_aqua, double &c_sorbed); //
+    //void precipitate(double &c_aqua, double &c_sorbed);
     /**
     * Informs ifever the interpolation table is precomputed, in such a case interpolation_table has some cells
     */
