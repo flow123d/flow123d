@@ -122,8 +122,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-    if (in_rec.find<Input::Record>("mass_balance") != NULL)
-    	mass_balance_ = new MassBalance(this, *in_rec.find<Input::Record>("mass_balance"));
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    if (it)
+    	mass_balance_ = new MassBalance(this, *it);
 
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
