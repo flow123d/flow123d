@@ -119,7 +119,10 @@ set(sources_fem_lib
     
 )
 
-
+set(sources_lib_interpolation
+    interpolation/interpolant.cc
+    interpolation/adaptivesimpson.cc
+)
 
 
 
@@ -166,9 +169,6 @@ set(sources_lib_non_system
     transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
-    
-    interpolation/interpolant.cc
-    interpolation/adaptivesimpson.cc
 )
 
 
@@ -222,6 +222,11 @@ target_link_libraries(mesh_lib
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
     system_lib mesh_lib armadillo ${Boost_LIBRARIES})
+    
+# interpolation_lib    
+add_library(interpolation_lib ${sources_lib_interpolation})
+target_link_libraries(interpolation_lib
+    system_lib )
 
 # field_lib  
 add_library(field_lib ${sources_lib_field})
