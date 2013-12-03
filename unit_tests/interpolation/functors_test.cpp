@@ -71,6 +71,25 @@ public:
 };
 
 
+//Example functor f(x)=x^3
+template<class Type=double>
+class Power3 : public FunctorBase<Type>
+{
+public:
+    
+  typedef enum{ p1, p2, p3
+  } Parameters;
+
+  ///Constructor.
+  Power3(){}
+  
+  Type operator()(Type x)
+  {
+    return pow(x,3);
+  }    
+};
+
+
 //Example functor f(x)=x^2 + y^2 - 4 
 template<class Type=double>
 class Circle : public IFunctorBase<Type>
@@ -140,9 +159,6 @@ TEST (Functors, functors)
 }
 
 
-/**
- * Test for interpolant of x^3
- */
 
 TEST (Functors, make_interpolation)
 {
@@ -183,8 +199,8 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->f_diff(2).second, 12);
   
   //2nd 3rd derivate: 6*x, 6
-  EQUAL(interpolant->f_diffn(4,2), 24);
-  EQUAL(interpolant->f_diffn(4,3), 6);
+  EXPECT_EQ(interpolant->f_diffn(4,2), 24);
+  EXPECT_EQ(interpolant->f_diffn(4,3), 6);
   
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
@@ -239,7 +255,7 @@ TEST (Functors, make_interpolation)
   
   //increasing missed interval evaluation
   //this should remake the table
-  for(unsigned int i=0; i < 1000; i++)
+  for(unsigned int i=0; i < 100; i++)
   {
     //DBGMSG("i: %d\n",i);
     interpolant->val(-20);
@@ -261,7 +277,6 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->statistics().interval_miss_b, 0);
   EQUAL(interpolant->statistics().min, -20.0);
   EQUAL(interpolant->statistics().max, 15.0);
-  //*/
   
   delete interpolant;
 }
@@ -301,7 +316,7 @@ TEST (Functors, interpolation_error)
   
   cubic_func.set_param(Cubic<double>::p1,0.0);
   interpolant->set_functor<Cubic, double>(&cubic_func);
-  interpolant->set_interval(-2,10);
+  interpolant->set_interval(1,10);
   interpolant->set_norm(ErrorNorm::l2);
   interpolant->interpolate();
   
@@ -310,90 +325,82 @@ TEST (Functors, interpolation_error)
 }
 //*/
 
+class InterpolantCreateTest : public ::testing::Test{
+protected:
+  virtual void SetUp()
+  {
+    size = 3*1000*1000;
+    a = 1;
+    b = 10;
 
-TEST (Functors, speed_creation)
+    interpolant.set_functor(&cubic_func, false);
+    interpolant.set_interval(a,b);
+  }
+  
+  Power3<double> cubic_func;
+  //virtual void TearDown() {}
+  double a, b, step;
+  unsigned int size;
+  Interpolant interpolant;
+};
+
+TEST_F(InterpolantCreateTest, Fix)
 {
-  unsigned int size = 10*1000*1000;
-  double a = 1,
-         b = 10;
-  Cubic<double> cubic_func;               //x^3
-  cubic_func.set_param(Cubic<double>::p1,0.0);
-  //Interpolant* interpolant = new Interpolant(&cubic_func, true); //with derivative
-  Interpolant* interpolant = new Interpolant(&cubic_func, false);
-  interpolant->set_interval(a,b);
-  interpolant->set_size(size);
+  double step = (b-a)/size;
   
-  double res1, res2, res3, res4;
-  clock_t start, end;
+  vector<double> x_vec(size+1);
+  vector<double> f_vec(size+1);
+  vector<double> p_vec(size);
   
-  start = clock();
-  {     //create interpolation of a functor
-    double step = (b-a)/size;
-  
-    vector<double> x_vec(size+1);
-    vector<double> f_vec(size+1);
-    vector<double> p_vec(size);
-  
-    double temp_x = a;
-    //filling the vector x and f
-    for(unsigned int i = 0; i != size; i++)
-    {
-      temp_x = a + step*i;
-      x_vec[i] = temp_x;
-      f_vec[i] = cubic_func(temp_x);
-    }
-    //finish the interval
-    x_vec[size] = b;
-    f_vec[size] = cubic_func(b);
-    
-    for(unsigned int i = 0; i != size; i++)
-    {
-      p_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
-    }
-    
-    //to this point 240ms
-    
-    double temp_a = a+step/2;
-    double tot_err, value, int_value;
-    for(unsigned int i = 0; i != size; i++)
-    {
-      temp_x = temp_a + step*i;
-      value = cubic_func(temp_x);
-      unsigned int ii = floor((temp_x - a) / step);
-      int_value = (temp_x - x_vec[ii])*p_vec[ii] + f_vec[ii];
-      tot_err = std::max( tot_err, 
-                          std::abs(value - int_value) / (std::abs(value)+1e-10)
-                        );
-    }
-    //to this point 340ms
-  }
-  end = clock();
-  res1 = (double)(end-start)/CLOCKS_PER_SEC *1000;
-  
-  start = clock();
+  double temp_x = a;
+  //filling the vector x and f
+  for(unsigned int i = 0; i != size; i++)
   {
-    interpolant->interpolate();
+    temp_x = a + step*i;
+    x_vec[i] = temp_x;
+    f_vec[i] = cubic_func(temp_x);
   }
-  end = clock();
-  res2 = (double)(end-start)/CLOCKS_PER_SEC *1000;
-  
-  
-  Interpolant* interpolant2 = new Interpolant(&cubic_func, false);
-  interpolant2->set_interval(a,b);
-  interpolant2->set_size_automatic(1e-11, 10, size);
-  start = clock();
+  //finish the interval
+  x_vec[size] = b;
+  f_vec[size] = cubic_func(b);
+
+  for(unsigned int i = 0; i != size; i++)
   {
-    interpolant2->interpolate();
+    p_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
   }
-  end = clock();
-  res3 = (double)(end-start)/CLOCKS_PER_SEC *1000;
-  
-  int p = 40;
-  cout << left << setw(p) << "Simple interpolation creation:" << res1 << " ms" << endl;
-  cout << setw(p) << "Interpolation creation:" << res2 << " ms" << endl;
-  cout << setw(p) << "Interpolation auto-creation:" << res3 << " ms" << endl;
-}
-//*/
+
+  //to this point 254ms
+   
+  //error computation in the middle nodes
+  //we do not create vector of middle nodes here
+  //so that can make some difference
+  double temp_a = a+step/2;
+  double tot_err, value, int_value;
+  for(unsigned int i = 0; i != size; i++)
+  {
+    temp_x = temp_a + step*i;
+    value = cubic_func(temp_x);
+    unsigned int ii = floor((temp_x - a) / step);
+    int_value = (temp_x - x_vec[ii])*p_vec[ii] + f_vec[ii];
+    tot_err = std::max( tot_err,
+                        std::abs(value - int_value) / (std::abs(value)+1e-10)
+                      );
+  }
+  //to this point 467ms
+};
+
+
+TEST_F(InterpolantCreateTest, Interpolate)
+{
+  interpolant.set_size(size);
+  interpolant.interpolate();
+};
+
+TEST_F(InterpolantCreateTest, Automatic)
+{
+  interpolant.set_size_automatic(1e-11, 11, size);
+  interpolant.interpolate();
+};
 
 
 
@@ -408,10 +415,7 @@ protected:
     unsigned int size = 10000;
     a = 1;
     b = 10;
-           
-    cubic_func.set_param(Cubic<double>::p1,0.0);
     
-    //n = 100*1000*1000;
     n = 10*1000*1000;
     
     step = (b-a)/n;
@@ -422,23 +426,49 @@ protected:
     interpolant.interpolate();
   }
   
-  Cubic<double> cubic_func;
+  Power3<double> cubic_func;
   //virtual void TearDown() {}
   double a, b, step;
   unsigned int n;
   Interpolant interpolant;
 };
 
+/*
+3.12.2013, Pavel Exner
+
+Test results:
+[       OK ] InterpolantTest.FunctorEval (679 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (65 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (196 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_test (194 ms)
+
+For unknown reason the val() function is faster than val_p1() which is called inside val().
+It also behave differently when only some of these 4 tests are running.
+
+Test results of valgrind run:
+> valgrind --tool=callgrind --dump-instr=yes ./functors_test_bin
+
+[       OK ] InterpolantTest.FunctorEval (19593 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (3640 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (2470 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_test (2496 ms)
+
+It is also strange that the val() function is slower than the others when using Valgrind.
+
+Conclusion:
+On the other hand, the interpolation is still at least 3 times faster than 
+the functor evaluation (std::pow) and that can be satisfying for now...
+*/
 
 TEST_F(InterpolantTest, FunctorEval){
   double res = 0;
   for(unsigned int i= 0; i < n; i++)
     {
       res += cubic_func(a+step*i);
-      //res = pow(x,3); //is very long
     }
   cout << "res = " << res << endl;
 }
+
 
 TEST_F(InterpolantTest, InterpolantEval_val){
   double res = 0;
@@ -449,7 +479,7 @@ TEST_F(InterpolantTest, InterpolantEval_val){
   cout << "res = " << res << endl;
 }
 
-/*
+
 TEST_F(InterpolantTest, InterpolantEval_val_p1){
   double res = 0;
   for(unsigned int i= 0; i < n; i++)
@@ -471,95 +501,208 @@ TEST_F(InterpolantTest, InterpolantEval_val_test){
 }
 //*/
 
-/*
-TEST (Functors, speed_evaluation)
-{
-  unsigned int size = 10000,
-               n = 100*1000*1000;
-  double a = 1,
-         b = 10;
-  Cubic<double> cubic_func;               //x^3
-  cubic_func.set_param(Cubic<double>::p1,0.0);
-  //Interpolant* interpolant = new Interpolant(&cubic_func, true); //with derivative
-  Interpolant* interpolant = new Interpolant(&cubic_func, false);
-  interpolant->set_interval(a,b);
-  interpolant->set_size(size);
-  interpolant->interpolate();
-  
-  double res=0;
-  double step = (b-a)/n;
-  
-  clock_t start, end;
-  
-  start = clock();
-  {     //compute x^3
-    for(unsigned int i= 0; i < n; i++)
-    {
-      double x = a+step*i;
-      res += x*x*x;
-      //res = pow(x,3); //is very long
-    }
-    cout << res;
-  }
-  end = clock();
-  
-  cout << "x*x*x: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
 
-  res=0;
-  start = clock();
-  {     //compute x^3
-    for(unsigned int i= 0; i < n; i++)
+
+/***************************   HYDROLOGY FUNCTIONS   *****************************/
+
+template<class Type=double>
+class FK : public FunctorBase<Type>   //FK - hydraulic conductivity function
+{
+  private:
+    double Bpar,PPar,n,Qr,Qs,
+           Qa,Qm,Qk,Alfa,Ks,Kk,
+           m,Hr,Hk,Hs,
+           C1Qee,C2Qee,Qeer,Qees,Qeek;
+        
+  public:
+    FK()
     {
-      res += cubic_func(a+step*i);
+      Bpar = 0.5,
+      PPar = 2;
+      
+      n = 1.111,
+      Qr = 0.001,
+      Qs = 0.436,
+      Qa = 0.001,
+      Qm = 0.439,
+      Qk = 0.436,
+      Alfa = 0.733,
+      Ks = 0.0505,
+      Kk = 0.0505,
+        
+                
+      m = 1-1/n;            
+      C1Qee = 1/(Qm - Qa);
+      C2Qee = -Qa/(Qm - Qa);
+      Qeer = max(C1Qee*Qr + C2Qee,1E-3);
+      Qees = min(C1Qee*Qs + C2Qee,1 - 1E-15);
+      Qeek = min(C1Qee*Qk + C2Qee,Qees);
+      Hr = -1/Alfa*pow(pow(Qeer,-1/m)-1,1/n);
+      Hs = -1/Alfa*pow(pow(Qees,-1/m)-1,1/n); 
+      Hk = -1/Alfa*pow(pow(Qeek,-1/m)-1,1/n); 
     }
-    cout << res;
-  }
-  end = clock();
-  
-  cout << "functor: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
-  
-  
-  
-  
-  res=0;
-  start = clock();
+    
+    double get_Hr()
+    { return Hr; }
+    
+    double get_Hk()
+    { return Hk; }
+    
+    double get_Hs()
+    { return Hs; }
+    
+    
+    Type operator()(Type h)
+    {   
+      Type Kr,FFQr,FFQ,FFQk,Qee,Qe,Qek,C1Qe,C2Qe,Q;
+      
+      if (h <= Hr) return Ks*(1E-9);
+      else if(h < Hk)
+      {
+            Q = Qa + (Qm - Qa)*pow((1 + pow(-Alfa*h,n)),-m);
+            Qee = C1Qee*Q + C2Qee;
+            FFQr = pow(1 - pow(Qeer,1/m),m);
+            FFQ = pow(1 - pow(Qee,1/m),m);
+            FFQk = pow(1 - pow(Qeek,1/m),m);
+            C1Qe = 1/(Qs - Qr);
+            C2Qe = -Qr/(Qs - Qr);
+            Qe = C1Qe*Q + C2Qe;
+            Qek = C1Qe*Qk + C2Qe;
+            Kr = pow(Qe/Qek,Bpar)*pow((FFQr - FFQ)/(FFQr - FFQk),PPar) * Kk/Ks;
+            return max<Type>(Ks*Kr,Ks*(1E-9));  
+      }
+      else if(h <= Hs)
+      {
+           Kr = (1-Kk/Ks)/(Hs-Hk)*(h-Hs) + 1;
+           return Ks*Kr;
+      }        
+      else return Ks;
+   }               
+        
+};
+
+
+template<class Type=double>
+class FQ : public FunctorBase<Type>            //FQ - water saturation function
+{
+  private:
+    double n,Qr,Qs,Qa,Qm,Alfa,
+           m,C1Qee,C2Qee,Qeer,Qees,Hr,Hs;
+    
+  public:
+    FQ()
+    {
+        n = 1.111,
+        Qr = 0.001,
+        Qs = 0.436,
+        Qa = 0.001,
+        Qm = 0.439,
+        Alfa = 0.733,
+    
+        m = 1 - 1/n;
+        C1Qee = 1/(Qm - Qa);
+        C2Qee = -Qa/(Qm - Qa);
+        Qeer = max(C1Qee*Qr + C2Qee,1E-3);
+        Qees = min(C1Qee*Qs + C2Qee,1-1E-15);
+        Hr = -1/Alfa*pow(pow(Qeer,-1/m)-1,1/n);
+        Hs = -1/Alfa*pow(pow(Qees,-1/m)-1,1/n); 
+    }
+    
+    double get_Hr()
+    { return Hr; }
+    
+    double get_Hs()
+    { return Hs; }
+        
+    Type operator()( Type h )
+    {
+      Type Qee;
+      if(h <= Hr) return Qr;
+      else if(h < Hs)
+      {
+        Qee = pow(1+pow(-Alfa*h,n),-m);
+        return Qa + (Qm - Qa)*Qee;
+      }
+      else return Qs;
+    }
+};
+
+
+class HydrologyTest : public ::testing::Test{
+protected:
+  virtual void SetUp()
   {
-    for(unsigned int i= 0; i < n; i++)
-    {
-      res += interpolant->val(a+step*i);
-    }
-    cout << res;
+    unsigned int size = 10000;
+    a = -10.0;
+    b = fk.get_Hs()-1e-10;        //-0.127;
+    
+    n = 6*1000*1000;
+    
+    step = (b-a)/n;
+    
+    interpolant_fk.set_functor(&fk);
+    interpolant_fq.set_functor(&fq);
+    interpolant_fk.set_interval(a,b);
+    interpolant_fq.set_interval(a,b);
+    interpolant_fk.set_size(size);
+    interpolant_fq.set_size(size);
   }
-  end = clock();
   
-  cout << "I.val:" << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
-  
-  
-  
-  res=0;
-  start = clock();
-  {     
-    for(unsigned int i= 0; i < n; i++)
+  FK<double> fk;
+  FQ<double> fq;
+  //virtual void TearDown() {}
+  double a, b, step;
+  unsigned int n;
+  Interpolant interpolant_fk;
+  Interpolant interpolant_fq;
+};
+
+/*
+3.12.2013, Pavel Exner
+
+Results of following tests with n=6*1000*1000 and size=10000.
+[       OK ] HydrologyTest.FKEval (3697 ms)
+[       OK ] HydrologyTest.FQEval (836 ms)
+[       OK ] HydrologyTest.Interpolate_FK (126 ms)
+[       OK ] HydrologyTest.Interpolate_FQ (115 ms)
+*/
+
+TEST_F(HydrologyTest, FKEval){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
     {
-      res += interpolant->val_test(a+step*i);
+      res += fk(a+step*i);
     }
-    cout << res;
-  }
-  end = clock();
-  
-  cout << "I.test1: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
-  
-  res=0;
-  start = clock();
-  {     
-    for(unsigned int i= 0; i < n; i++)
-    {
-      res += interpolant->val_p1(a+step*i);
-    }
-    cout << res;
-  }
-  end = clock();
-  
-  cout << "I.test2: " << (double)(end-start)/CLOCKS_PER_SEC *1000 << " ms" << endl;
+  cout << "res = " << res << endl;
 }
-//*/
+
+TEST_F(HydrologyTest, FQEval){
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += fq(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}
+
+TEST_F(HydrologyTest, Interpolate_FK){
+  interpolant_fk.interpolate();
+  
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant_fk.val(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}
+
+TEST_F(HydrologyTest, Interpolate_FQ){
+  interpolant_fq.interpolate();
+  
+  double res = 0;
+  for(unsigned int i= 0; i < n; i++)
+    {
+      res += interpolant_fq.val(a+step*i);
+    }
+  cout << "res = " << res << endl;
+}

@@ -280,10 +280,12 @@ public:
    */
   double val(double x);
   
-  
   ///Do NOT use, only for testing purpose.
   double val_test(double x);
   
+  ///Do NOT use, only for testing purpose. Function that evaluates the P1 interpolant at x.
+  double val_p1(double x);
+
   ///Returns interpolated value of the derivation.
   /** @param x is the point at which we evaluate the interpolation
    */
@@ -323,10 +325,6 @@ public:
   template<template<class> class Func, class Type >
   void set_functor(Func<Type>* func, bool interpolate_derivative=false);
   //@}
-    
-    
-  ///Function that evaluates the P1 interpolant at @p x.
-  double val_p1(double x);
   
 protected:
   class FuncError_lp;
