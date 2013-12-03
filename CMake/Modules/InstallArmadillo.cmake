@@ -48,12 +48,14 @@ file (WRITE "${cmakelists_fname}"
 
 # run cmake
 execute_process(COMMAND ${CMAKE_COMMAND} ${EXTERNAL_ARMADILLO_DIR} 
-    WORKING_DIRECTORY ${EXTERNAL_ARMADILLO_DIR})
+    WORKING_DIRECTORY ${EXTERNAL_ARMADILLO_DIR}
+    OUTPUT_FILE ${EXTERNAL_ARMADILLO_DIR}/cmake.log)
 
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 # run make
-execute_process(COMMAND ${MAKE_EXECUTABLE} 
-    WORKING_DIRECTORY ${EXTERNAL_ARMADILLO_DIR})    
+execute_process(COMMAND ${MAKE_EXECUTABLE}                 
+    WORKING_DIRECTORY ${EXTERNAL_ARMADILLO_DIR}
+    OUTPUT_FILE ${EXTERNAL_ARMADILLO_DIR}/make.log)    
 
 
 #file (REMOVE ${cmakelists_fname})

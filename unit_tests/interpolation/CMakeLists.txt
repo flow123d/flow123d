@@ -24,15 +24,13 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-
-add_custom_target( interpolation_test )
-set(super_test "interpolation_test")
-set(super_test_libs new_mesh_lib)
+set(libs system_lib)
+add_test_directory("${libs}")
 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     
-    define_test(intersection)
+    #define_test(intersection)
     
 endif()
 
