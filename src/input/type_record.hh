@@ -334,7 +334,7 @@ public:
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish() const;
+    bool finish();
 
 protected:
 
@@ -663,7 +663,7 @@ public:
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
      * calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish() const;
+    bool finish();
 
     /**
      * Add inherited Record.
@@ -672,16 +672,16 @@ public:
 
 protected:
     /// Pointer to actual data of the parent AbstractRecord.
-    mutable boost::shared_ptr<ChildData> parent_data_;
+    boost::shared_ptr<ChildData> parent_data_;
 
     /// Temporary value of ancestor AbstractRecord
-    mutable const AbstractRecord *tmp_ancestor_;
+    const AbstractRecord *tmp_ancestor_;
 
     /*
      * Temporary list of unconstructed descendants of AdHocAbstractRecord.
      * Items are checked and added to child_data_ in finish() method.
      */
-    mutable std::deque< const Record * > unconstructed_childs;
+    std::deque< const Record * > unconstructed_childs;
 };
 
 

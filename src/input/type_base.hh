@@ -134,7 +134,7 @@ public:
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
      */
-    virtual bool finish() const
+    virtual bool finish()
     { return true; };
 
     /**
@@ -272,7 +272,7 @@ public:
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish() const;
+    virtual bool finish();
 
     virtual bool is_finished() const {
         return data_->finished; }

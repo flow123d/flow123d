@@ -169,7 +169,7 @@ public:
     //inline void set_made_extensive_doc(bool val) const;
 
 
-    bool finish() const
+    bool finish()
         { close(); return true; }
 private:
 

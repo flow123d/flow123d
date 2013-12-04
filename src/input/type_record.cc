@@ -186,7 +186,7 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 
 
-bool Record::finish() const
+bool Record::finish()
 {
 	if (data_->finished) return true;
 
@@ -226,7 +226,7 @@ bool Record::finish() const
             }
         }
         if (it->key_ != "TYPE") {
-            data_->finished = data_->finished && it->type_->finish();
+            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -367,7 +367,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
         // for Array, Double, Integer, we assume no static variables
-        if (type.finish()) check_key_default_value(default_value, type, key);
+    	if (const_cast<KeyType *>( &type )->finish()) check_key_default_value(default_value, type, key);
 
         boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
         data_->declare_key(key, type_copy, NULL, default_value, description);
@@ -593,13 +593,13 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AdHocAbstractRecord::finish() const
+bool AdHocAbstractRecord::finish()
 {
 	if (data_->finished) return true;
 
 	if (tmp_ancestor_ != 0) {
 		if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
-        tmp_ancestor_->finish();
+		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
 
         parent_data_ = tmp_ancestor_->child_data_;
 		tmp_ancestor_ = NULL;

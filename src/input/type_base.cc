@@ -136,7 +136,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  */
 
 
-bool Array::finish() const {
+bool Array::finish() {
 	return data_->finish();
 }
 
