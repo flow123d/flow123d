@@ -38,21 +38,12 @@ using namespace Input::Type;
 Record OutputMSH::input_type
 	= Record("gmsh", "Parameters of gmsh output format.")
 	// It is derived from abstract class
-	.derive_from(OutputFormat::input_type);
-
-// TODO: Remove or adjust the following code.
-//	// The variant
-//	static Selection variant_sel("GMSH variant");
-//	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
-//	    		"ASCII variant of GMSH file format");
-//	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
-//	    		"Binary variant of GMSH file format (not supported yet)");
-//	    variant_sel.finish();
+	.derive_from(OutputTime::input_format_type);
 
 
 void OutputMSH::write_msh_header(void)
 {
-    ofstream &file = this->output_time->get_base_file();
+    ofstream &file = this->get_base_file();
 
     // Write simple header
     file << "$MeshFormat" << endl;
@@ -62,8 +53,8 @@ void OutputMSH::write_msh_header(void)
 
 void OutputMSH::write_msh_geometry(void)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh* mesh = this->output_time->get_mesh();
+    ofstream &file = this->get_base_file();
+    Mesh* mesh = this->get_mesh();
 
     // Write information about nodes
     file << "$Nodes" << endl;
@@ -76,8 +67,8 @@ void OutputMSH::write_msh_geometry(void)
 
 void OutputMSH::write_msh_topology(void)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh* mesh = this->output_time->get_mesh();
+    ofstream &file = this->get_base_file();
+    Mesh* mesh = this->get_mesh();
     unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
@@ -100,26 +91,43 @@ void OutputMSH::write_msh_topology(void)
 
 void OutputMSH::write_msh_ascii_cont_data(OutputData* output_data)
 {
-    ofstream &file = this->output_time->get_base_file();
+    ofstream &file = this->get_base_file();
     long int item_id = 1;
+    unsigned int i, j, offset;
 
     /* Set precision to max */
     file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
+    offset = output_data->spacedim;
+
     /* Write ascii data */
-    for(std::vector<boost::any>::iterator item = output_data->data.begin();
-            item != output_data->data.end();
-            ++item, ++item_id)
-    {
-        if(item->type() == typeid(double)) {
-            file << item_id << " " << boost::any_cast<double>(*item) << std::endl;
-        } else if(item->type() == typeid(float)) {
-            file << item_id << " " << boost::any_cast<float>(*item) << std::endl;
-        } else if(item->type() == typeid(int)) {
-            file << item_id << " " << boost::any_cast<int>(*item) << std::endl;
+    if(output_data->data_type == OutputData::INT) {
+        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
+            file << item_id << " ";
+            for(j=0; j < offset; j++) {
+                file << ((int*)output_data->data)[i*offset + j] << " ";
+            }
+            file << std::endl;
+        }
+    } else if(output_data->data_type == OutputData::UINT) {
+        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
+            file << item_id << " ";
+            for(j=0; j < offset; j++) {
+                file << ((unsigned int*)output_data->data)[i*offset + j] << " ";
+            }
+            file << std::endl;
+        }
+    } else if(output_data->data_type == OutputData::DOUBLE) {
+        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
+            file << item_id << " ";
+            for(j=0; j < offset; j++) {
+                file << ((double*)output_data->data)[i*offset + j] << " ";
+            }
+            file << std::endl;
         }
     }
+
 }
 
 
@@ -131,51 +139,55 @@ void OutputMSH::write_msh_ascii_discont_data(OutputData* output_data)
 
 void OutputMSH::write_msh_node_data(double time, int step)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = this->get_base_file();
+    Mesh *mesh = this->get_mesh();
+    OutputData *output_data;
 
-
-    if(this->output_time->node_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->output_time->node_data.begin();
-                    data != this->output_time->node_data.end();
+    if(this->node_data.empty() == false) {
+        for(vector<OutputData*>::iterator data = this->node_data.begin();
+                    data != this->node_data.end();
                     ++data)
         {
+            output_data = *data;
+
             file << "$NodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << (*data)->field->name() << "_[" << (*data)->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->spacedim << endl;   // number of components
-            file << (*data)->data.size() << endl;  // number of values
+            file << output_data->spacedim << endl;   // number of components
+            file << output_data->item_count << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(*data);
+            this->write_msh_ascii_cont_data(output_data);
 
             file << "$EndNodeData" << endl;
         }
-    } else if(this->output_time->corner_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->output_time->corner_data.begin();
-                    data != this->output_time->corner_data.end();
+    } else if(this->corner_data.empty() == false) {
+        for(vector<OutputData*>::iterator data = this->corner_data.begin();
+                    data != this->corner_data.end();
                     ++data)
         {
+            output_data = *data;
+
             file << "$ElementNodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << (*data)->field->name() << "_[" << (*data)->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->spacedim << endl;   // number of components
+            file << output_data->spacedim << endl;   // number of components
             file << mesh->n_elements() << endl; // number of values
 
-            this->write_msh_ascii_discont_data(*data);
+            this->write_msh_ascii_discont_data(output_data);
 
             file << "$EndElementNodeData" << endl;
         }
@@ -184,27 +196,29 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
-    ofstream &file = this->output_time->get_base_file();
+	OutputData* output_data;
+    ofstream &file = this->get_base_file();
 
-    if(this->output_time->elem_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->output_time->elem_data.begin();
-                    data != this->output_time->elem_data.end();
+    if(this->elem_data.empty() == false) {
+        for(vector<OutputData*>::iterator data = this->elem_data.begin();
+                    data != this->elem_data.end();
                     ++data)
         {
+            output_data = *data;
             file << "$ElementData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << (*data)->field->name() << "_[" << (*data)->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << (*data)->spacedim << endl;   // number of components
-            file << (*data)->data.size() << endl;  // number of values
+            file << output_data->spacedim << endl;   // number of components
+            file << output_data->item_count << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(*data);
+            this->write_msh_ascii_cont_data(output_data);
 
             file << "$EndElementData" << endl;
         }
@@ -213,7 +227,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->base_filename()->c_str());
 
     this->write_msh_header();
 
@@ -228,7 +242,7 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->base_filename()->c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
@@ -236,11 +250,11 @@ int OutputMSH::write_data(void)
         this->header_written = true;
     }
         
-    this->write_msh_node_data(this->output_time->time, this->output_time->current_step);
-    this->write_msh_elem_data(this->output_time->time, this->output_time->current_step);
+    this->write_msh_node_data(this->time, this->current_step);
+    this->write_msh_elem_data(this->time, this->current_step);
 
     // Flush stream to be sure everything is in the file now
-    this->output_time->get_base_file().flush();
+    this->get_base_file().flush();
 
     xprintf(MsgLog, "O.K.\n");
 
@@ -252,15 +266,9 @@ int OutputMSH::write_tail(void)
     return 1;
 }
 
-OutputMSH::OutputMSH(OutputTime *_output_time)
+OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-    this->output_time = _output_time;
-    this->write_head();
-}
-
-OutputMSH::OutputMSH(OutputTime *_output_time, const Input::Record &in_rec)
-{
-    this->output_time = _output_time;
+	this->file_format = OutputTime::GMSH;
     this->header_written = false;
 }
 
@@ -268,5 +276,4 @@ OutputMSH::~OutputMSH()
 {
     this->write_tail();
 }
-
 

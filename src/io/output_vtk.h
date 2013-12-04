@@ -38,7 +38,7 @@
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputVTK : public OutputFormat {
+class OutputVTK : public OutputTime {
 
 public:
 
@@ -46,13 +46,13 @@ public:
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
-    OutputVTK(OutputTime *_output_time, const Input::Record &in_rec);
+    OutputVTK(const Input::Record &in_rec);
 
     /**
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
-    OutputVTK(OutputTime *_output_time);
+    OutputVTK();
 
     /**
      * \brief The destructor of this class. It writes tail of the file too.
@@ -113,11 +113,6 @@ private:
     	COMPRESSION_NONE = 1,
     	COMPRESSION_GZIP = 2
     } Compression;
-
-    /**
-     * \brief The pointer at OutputTime
-     */
-    OutputTime *output_time;
 
     // VTK Element types
     typedef enum {

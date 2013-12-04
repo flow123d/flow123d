@@ -72,6 +72,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <typeinfo>
 #include <mpi.h>
 #include <boost/any.hpp>
 
@@ -81,7 +82,8 @@
 #include "fields/field_base.hh"
 #include "input/accessors.hh"
 
-class OutputFormat;
+class OutputVTK;
+class OutputMSH;
 
 /**
  * \brief This method is used for stored data that are copied from field.
@@ -89,9 +91,16 @@ class OutputFormat;
 class OutputData {
 public:
     FieldCommonBase *field;
-    std::vector<boost::any> data;
+    void *data;
+    typedef enum DataType {
+        INT = 0,
+        UINT,
+        DOUBLE
+    } DataType;
+    DataType data_type;
+    int item_count;
     int spacedim;
-    OutputData(FieldCommonBase *field, int spacedim);
+    OutputData(FieldCommonBase *field, DataType data_type, int item_count, int spacedim);
     ~OutputData();
 };
 
@@ -129,8 +138,6 @@ public:
 
     ofstream& get_base_file(void) { return *base_file; };
 
-    string& get_base_filename(void) { return *base_filename; };
-
     ofstream& get_data_file(void) { return *data_file; };
 
     string& get_data_filename(void) { return *data_filename; };
@@ -167,8 +174,16 @@ public:
         ELEM_DATA   = 3
     } RefType;
 
+    /**
+     * \brief This method returns pointer at existing data, when corresponding
+     * ouput data exists or it create new one.
+     */
+    OutputData *output_data_by_field(FieldCommonBase *field,
+            RefType ref_type, OutputData::DataType data_type,
+            int item_count, int spacedim);
+
     OutFileFormat   file_format;
-    OutputFormat    *output_format;
+    //OutputFormat    *output_format;
     string          *name;              ///< Name of output stream
 
     /**
@@ -199,7 +214,6 @@ public:
      */
     static void destroy_all(void);
 
-
     /**
      * \brief This method set current time for registered data array/vector
      */
@@ -212,8 +226,12 @@ public:
      */
     static Input::Type::Record input_type;
 
-    int              current_step;      ///< Current step
+    /**
+     * \brief The specification of output file format
+     */
+    static Input::Type::AbstractRecord input_format_type;
 
+    int              current_step;      ///< Current step
 
     /**
      * \brief This method write all registered data to output streams
@@ -236,8 +254,8 @@ public:
      * This
      */
     template<int spacedim, class Value>
-    void register_data(const Input::Record &in_rec,
-            const RefType type,
+    static void register_data(const Input::Record &in_rec,
+            const RefType ref_type,
             Field<spacedim, Value> *field);
 
     /**
@@ -245,9 +263,31 @@ public:
      */
     static void clear_data(void);
 
+    /**
+     *
+     */
+    virtual int write_data(void) = 0;
+
+    /**
+     *
+     */
+    virtual int write_head(void) = 0 ;
+
+    /**
+     *
+     */
+    virtual int write_tail(void) = 0;
+
+    /**
+     *
+     */
+    static OutputTime* create_output_stream(const Input::Record &in_rec);
+
+    string *base_filename() { return this->_base_filename; };
+
 private:
     ofstream        *base_file;         ///< Base output stream
-    string          *base_filename;     ///< Name of base output file
+    string          *_base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
     Mesh            *mesh;
@@ -259,11 +299,8 @@ protected:
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
 
-    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
+    void set_base_file(ofstream *_base_file) { this->base_file = _base_file; };
 
-    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
-
-    OutputTime() {};
 };
 
 
@@ -280,11 +317,14 @@ void OutputTime::register_data(const Input::Record &in_rec,
 
 template<int spacedim, class Value>
 void OutputTime::register_data(const Input::Record &in_rec,
-        const RefType type,
+        const RefType ref_type,
         Field<spacedim, Value> *field)
 {
     string name_ = field->name();
     OutputData *output_data;
+    unsigned int item_count = 0;
+
+    // TODO: do not ty to find empty string and raise exception
 
     // Try to find record with output stream (the key is name of data)
     Input::Iterator<string> stream_name_iter = in_rec.find<string>(name_);
@@ -303,25 +343,63 @@ void OutputTime::register_data(const Input::Record &in_rec,
         return;
     }
 
-    Mesh *mesh = output_time->get_mesh();
+    Mesh *mesh = field->mesh();
+
+    if(output_time->get_mesh() == NULL) {
+        output_time->set_mesh(mesh);
+    }
+
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh, NULL);
 
+    /* This is problematic part, because of templates :-( */
+    OutputData::DataType data_type;
+    if(typeid(Value) == typeid(FieldValue<1>::Integer) ||
+            typeid(Value) == typeid(FieldValue<1>::IntVector)) {
+        data_type = OutputData::INT;
+    } else if(typeid(Value) == typeid(FieldValue<1>::Enum) ||
+            typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
+        data_type = OutputData::UINT;
+    } else if(typeid(Value) == typeid(FieldValue<1>::Scalar) ||
+            typeid(Value) == typeid(FieldValue<1>::Vector)) {
+        data_type = OutputData::DOUBLE;
+    } else {
+        printf("not supported yet\n");
+        /* TODO: raise exception */
+        return;
+    }
+
     /* Copy data to vector */
-    switch(type) {
+    switch(ref_type) {
     case NODE_DATA:
-        output_data = new OutputData((FieldCommonBase*)field, spacedim);
-        output_time->node_data.push_back(output_data);
+    	item_count = mesh->n_nodes();
+        output_data = output_time->output_data_by_field((FieldCommonBase*)field,
+                ref_type, data_type, item_count, spacedim);
+        /* TODO: register data */
         break;
     case CORNER_DATA:
-        output_data = new OutputData((FieldCommonBase*)field, spacedim);
-        output_time->corner_data.push_back(output_data);
+        output_data = output_time->output_data_by_field((FieldCommonBase*)field,
+                ref_type, data_type, item_count, spacedim);
+        /* TODO: register data */
         break;
     case ELEM_DATA:
-        output_data = new OutputData((FieldCommonBase*)field, spacedim);
-        FOR_ELEMENTS(mesh, ele) {
-            output_data->data.push_back(field->value(ele->centre(), ele->element_accessor()));
+    	item_count = mesh->n_elements();
+
+        output_data = output_time->output_data_by_field((FieldCommonBase*)field,
+                ref_type, data_type, item_count, spacedim);
+
+        int ele_index = 0;
+        if(data_type == OutputData::DOUBLE) {
+            FOR_ELEMENTS(mesh, ele) {
+                ((double*)output_data->data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
+                ele_index++;
+            }
+        } else if(data_type == OutputData::INT) {
+            FOR_ELEMENTS(mesh, ele) {
+                ((int*)output_data->data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
+                ele_index++;
+            }
         }
-        output_time->elem_data.push_back(output_data);
+
         break;
     }
 
@@ -330,21 +408,6 @@ void OutputTime::register_data(const Input::Record &in_rec,
         output_time->time = field->time();
     }
 }
-
-
-/**
- * \brief The class used as parent class of file format classes
- */
-class OutputFormat {
-public:
-	OutputFormat() {}
-    virtual ~OutputFormat() {}
-	virtual int write_data(void) { return 0; }
-	virtual int write_head(void) { return 0; }
-	virtual int write_tail(void) { return 0; }
-
-	static Input::Type::AbstractRecord input_type;
-};
 
 
 #endif

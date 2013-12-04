@@ -27,6 +27,9 @@ Test files has to be named "*_test.cpp".
 2) to add new directory "subdir" you have to:
 - put add_subdirecctory("subdir") into "test_units/CMakeLists.txt" 
 - make file "test_units/subdir/CMakeLists.txt" (start with copy of the existing one)
+  - aware where are implemented tested classes and add appropriate libraries to:
+    set( super_test_libs ... ). Name of libraries could be found in:
+    src/CMakeLists.txt
 
 
 The CMake system provides macro UNIT_TESTS_SRC_DIR, that expands to root directory of

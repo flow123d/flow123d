@@ -28,6 +28,7 @@
  */
 
 #include <string>
+#include <typeinfo>
 #include <petsc.h>
 #include <boost/any.hpp>
 #include <assert.h>
@@ -50,16 +51,23 @@ Record OutputTime::input_type
     // The stream
     .declare_key("file", FileName::output(), Default::obligatory(),
             "File path to the connected output file.")
+            // The format
+	.declare_key("format", OutputTime::input_format_type, Default::optional(),
+			"Format of output stream and possible parameters.");
+#if 0
     // The format
     .declare_key("format", OutputFormat::input_type, Default::optional(),
             "Format of output stream and possible parameters.");
-
 
 AbstractRecord OutputFormat::input_type
     = AbstractRecord("OutputFormat",
             "Format of output stream and possible parameters.");
     // Complete declaration of  abstract record OutputFormat
+#endif
 
+AbstractRecord OutputTime::input_format_type
+    = AbstractRecord("OutputTime",
+            "Format of output stream and possible parameters.");
 
 /**
  * \brief This method add right suffix to .pvd VTK file
@@ -86,15 +94,80 @@ static inline void fix_GMSH_file_name(string *fname)
 }
 
 
-OutputData::OutputData(FieldCommonBase *field, int spacedim)
+OutputData::OutputData(FieldCommonBase *field, DataType data_type, int item_count, int spacedim)
 {
     this->field = field;
+    this->item_count = item_count;
+    this->data_type = data_type;
+    switch(this->data_type) {
+        case OutputData::INT:
+            this->data = new int[spacedim*item_count];
+            break;
+        case OutputData::UINT:
+            this->data = new unsigned int[spacedim*item_count];
+            break;
+        case OutputData::DOUBLE:
+            this->data = new double[spacedim*item_count];
+            break;
+    }
+    //this->data_type = data_type;
     this->spacedim = spacedim;
 }
 
 OutputData::~OutputData()
 {
-    this->data.clear();
+    if(this->data) {
+        switch(this->data_type) {
+        case OutputData::INT:
+            delete[] (int*)this->data;
+            break;
+        case OutputData::UINT:
+            delete[] (unsigned int*)this->data;
+            break;
+        case OutputData::DOUBLE:
+            delete[] (double*)this->data;
+            break;
+        }
+    }
+}
+
+OutputData *OutputTime::output_data_by_field(FieldCommonBase *field,
+        RefType ref_type, OutputData::DataType data_type, int item_count, int spacedim)
+{
+    OutputData *output_data = NULL;
+    std::vector<OutputData*> *data_vector;
+
+    switch(ref_type) {
+    case NODE_DATA:
+        data_vector = &this->node_data;
+        break;
+    case CORNER_DATA:
+        data_vector = &this->corner_data;
+        break;
+    case ELEM_DATA:
+        data_vector = &this->elem_data;
+        break;
+    }
+
+    /* Try to find existing data */
+    for(std::vector<OutputData*>::iterator data_iter = data_vector->begin();
+            data_iter != data_vector->end();
+            ++data_iter) {
+        OutputData *tmp = *data_iter;
+        if(tmp->field->name() == field->name()) {
+            output_data = tmp;
+            break;
+        }
+    }
+
+    /* When such data doesn't exists yet, then create new one */
+    if(output_data == NULL) {
+        output_data = new OutputData((FieldCommonBase*)field, data_type,
+                item_count, spacedim);
+        data_vector->push_back(output_data);
+    }
+
+    return output_data;
 }
 
 /* Initialize static member of the class */
@@ -116,18 +189,44 @@ void OutputTime::destroy_all(void)
 
 OutputTime *OutputTime::output_stream_by_name(string name)
 {
+	OutputTime *output_time;
     // Try to find existing object
     for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
             output_iter != OutputTime::output_streams.end();
             ++output_iter)
     {
-        if( *(*output_iter)->name == name) {
-            return *output_iter;
+        output_time = (*output_iter);
+        if( *(output_time->name) == name) {
+            return output_time;
         }
     }
 
     return NULL;
 }
+
+
+OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
+{
+    OutputTime* output_time;
+
+    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
+
+    if(format) {
+        if((*format).type() == OutputVTK::input_type) {
+            output_time = new OutputVTK(in_rec);
+        } else if ( (*format).type() == OutputMSH::input_type) {
+            output_time = new OutputMSH(in_rec);
+        } else {
+            xprintf(Warn, "Unsupported file format, using default VTK\n");
+            output_time = new OutputVTK(in_rec);
+        }
+    } else {
+        output_time = new OutputVTK(in_rec);
+    }
+
+    return output_time;
+}
+
 
 OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 {
@@ -156,7 +255,7 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 
     xprintf(MsgLog, "NOT FOUND. Creating new ... ");
 
-    output_time = new OutputTime(in_rec);
+    output_time = OutputTime::create_output_stream(in_rec);
     OutputTime::output_streams.push_back(output_time);
 
     xprintf(MsgLog, "DONE\n");
@@ -167,8 +266,6 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 
 OutputTime::OutputTime(const Input::Record &in_rec)
 {
-    this->output_format=NULL;
-    
     int ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
@@ -189,6 +286,7 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
+    // TODO: move this part to OutputVTK.cc and OutputMSH.cc
     // Check if file suffix is suffix of specified file format
     if(format) {
         if((*format).type() == OutputVTK::input_type) {
@@ -218,24 +316,11 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     this->current_step = 0;
 
     set_base_file(base_file);
-    set_base_filename(base_filename);
+    this->_base_filename = base_filename;
     set_mesh(mesh);
 
     this->time = -1.0;
     this->write_time = -1.0;
-
-    if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            this->output_format = new OutputVTK(this, *format);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            this->output_format = new OutputMSH(this, *format);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            this->output_format = new OutputVTK(this);
-        }
-    } else {
-        this->output_format = new OutputVTK(this);
-    }
 
 }
 
@@ -247,12 +332,8 @@ OutputTime::~OutputTime(void)
          return;
      }
 
-     if(this->output_format != NULL) {
-         delete this->output_format;
-     }
-
-     if(base_filename != NULL) {
-         delete base_filename;
+     if(this->_base_filename != NULL) {
+         delete this->_base_filename;
      }
 
      if(base_file != NULL) {
@@ -270,7 +351,7 @@ void OutputTime::write_all_data(void)
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
-    //OutputTime *output_time = NULL;
+    OutputTime *output_time = NULL;
 
     /* It's possible now to do output to the file only in the first process */
     if(rank != 0) {
@@ -285,17 +366,15 @@ void OutputTime::write_all_data(void)
     {
         // Write data to output stream, when data registered to this output
         // streams were changed
-        if((*stream_iter)->write_time < (*stream_iter)->time) {
+        output_time = (*stream_iter);
+        if(output_time->write_time < output_time->time) {
             DBGMSG("Write output to output stream: %s for time: %f\n",
                     (*stream_iter)->name->c_str(),
                     (*stream_iter)->time);
-            if((*stream_iter)->output_format != NULL) {
-                // Write data
-                (*stream_iter)->output_format->write_data();
-                // Remember the last time of writing to output stream
-                (*stream_iter)->write_time = (*stream_iter)->time;
-                (*stream_iter)->current_step++;
-            }
+            output_time->write_data();
+            // Remember the last time of writing to output stream
+            output_time->write_time = output_time->time;
+            output_time->current_step++;
         } else {
             DBGMSG("Skipping output stream: %s in time: %f\n",
                     (*stream_iter)->name->c_str(),
@@ -310,13 +389,16 @@ void OutputTime::write_all_data(void)
 
 void OutputTime::clear_data(void)
 {
+	OutputTime *output_time = NULL;
+
     // Go through all OutputTime objects
     for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
             stream_iter != OutputTime::output_streams.end();
             ++stream_iter)
     {
-        (*stream_iter)->node_data.clear();
-        (*stream_iter)->corner_data.clear();
-        (*stream_iter)->elem_data.clear();
+        output_time = (*stream_iter);
+        output_time->node_data.clear();
+        output_time->corner_data.clear();
+        output_time->elem_data.clear();
     }
 }

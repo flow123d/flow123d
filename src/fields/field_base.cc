@@ -38,6 +38,10 @@ const std::string & FieldCommonBase::units() const
 { return units_; }
 
 
+double FieldCommonBase::time() const
+{ return last_set_time_; }
+
+
 const std::string  FieldCommonBase::desc() const
 { if(default_.has_value_at_declaration())
     return "Default Field value: " + default_.value() + " \n " + desc_; 

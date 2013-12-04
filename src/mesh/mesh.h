@@ -128,6 +128,10 @@ public:
      */
     void reinit(Input::Record in_record);
 
+    inline unsigned int n_nodes() const {
+        return node_vector.size();
+    }
+
     inline unsigned int n_elements() const {
         return element.size();
     }
