@@ -1,26 +1,8 @@
-# TODO:
-# - needs slihtly different setting for 
-# linux-release:
-#  - wipe out everythink (build external packages)
-#  - optimal build of PETSC
-#  - run banchmarks
-#  - triger once a day
-#  - run packaging and publish
 
-# JJB pitfalls:
-#   * does not ignore unknown names in YAML file, so we can not use references
-#     to define lists at beginning by other script 
-#     fix: patch that only warn for unknown names
-#
-#   * multijob has key 'projects:' which should be 'jobs:' and should accept
-#     template expansion line project does
-#   
-#   * can not use job names with spaces, must override it using display-name
-#  
-#   * 
-#
-#
 
+#########################################################################################
+# Projects - Jenkins Jobs Builder way to generate templated jobs
+#########################################################################################
 
 # Multijob  project - debug
 - project:
@@ -60,6 +42,12 @@
       - "Flow123d-{platform}-{build-type}-packages"
       - "Flow123d-build-multijob-{platform}-release"
       
+
+
+#########################################################################################
+# Single Job Templates
+#########################################################################################
+
 
 
 ####################################################################
@@ -103,7 +91,7 @@
           # configure
           cd flow123d
           make -j 4 all
-          make -j 4 -C unit_tests/gtest_mpi_obj         # build all common sources for unit tests
+          make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
 
 ##################################################################
 # Unit test for given directory
@@ -115,10 +103,10 @@
     properties:
       # Limit number of concurrently running unit tests to 2
       - throttle:
-        max-per_node: 2
-        option: "category"
-        categories:
-          - Flow123d-category-unit-tests
+          max-per-node: 2
+          option: "category"
+          categories:
+            - Flow123d-category-unit-tests
     wrappers:
       - build-name:
           name:  "$GIT_BRANCH #$BUILD_NUMBER"
@@ -128,7 +116,7 @@
 
 
 ##################################################################
-# Unit tests benchmarks for given directory             
+# Unit tests benchmarks for given directory     (NOT USED YET)        
 - job-template:
     name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
@@ -169,10 +157,10 @@
     properties:
       # Limit number of concurrently running integration tests to 2
       - throttle:
-        max-per_node: 2
-        option: "category"
-        categories:
-          - Flow123d-category-integration-tests
+          max-per-node: 2
+          option: "category"
+          categories:
+            - Flow123d-category-integration-tests
 
     wrappers:
       - build-name:
@@ -184,10 +172,10 @@
 #################################################################
 # Packaging
 - job-template:
-    name: "Flow123d-{platform}-release-packages"
-    display-name: "{platform} release make packages"
+    name: "Flow123d-{platform}-{build-type}-packages"
+    display-name: "{platform} {build-type} / make packages"
     node: "{platform}"
-    workspace: "Flow123d-{platform}-release"
+    workspace: "Flow123d-{platform}-{build-type}"
     builders:
       - shell: |
           make -C flow123d/build-tree package
@@ -197,6 +185,15 @@
 #          site: "bacula"
 #          target: 
 #          source: flow123d/build-tree/Flow123d-*  
+
+
+
+#########################################################################################
+# Multijob Job Templates
+#########################################################################################
+
+
+
 ########################################################################
 # Main multijob -debug
 #

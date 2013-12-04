@@ -96,7 +96,7 @@ EXIT_STATUS=0
 # The limit of virtual memory is 200MB (memory, that could be allocated)
 #
 # Seems that setting limits for virtual memory doesn't work under Cygwin.
-ulimit -S -v 200000
+ulimit -S -v 500000
 
 
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
