@@ -186,12 +186,6 @@ bool Array::ArrayData::finish()
 
 
 
-/*void  Array::reset_doc_flags() const {
-	data_->type_of_values_->reset_doc_flags();
-}*/
-
-
-
 string Array::type_name() const {
     return "array_of_" + data_->type_of_values_->type_name();
 }
@@ -267,9 +261,6 @@ ARRAY_CONSTRUCT(AbstractRecord);
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
  */
-/*void  Scalar::reset_doc_flags() const
-{}*/
-
 
 string Scalar::full_type_name() const {
     return type_name();

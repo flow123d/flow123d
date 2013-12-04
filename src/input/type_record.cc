@@ -305,7 +305,6 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  p_parent_(0),
- //made_extensive_doc(false),
  finished(false),
  closed_(false),
  derived_(false),
@@ -493,14 +492,6 @@ void AbstractRecord::no_more_descendants()
     }
     if (! finish()) xprintf(PrgErr, "Can not finish AbstractRecord when calling no_more_descendants.\n");
 }
-
-
-/*void  AbstractRecord::reset_doc_flags() const {
-		Record::reset_doc_flags();
-        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
-                    it!= child_data_->list_of_childs.end(); ++it)
-            it->reset_doc_flags();
-}*/
 
 
 bool AbstractRecord::valid_default(const string &str) const
