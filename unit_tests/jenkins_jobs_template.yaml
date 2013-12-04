@@ -200,7 +200,7 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
     name: "Flow123d-build-multijob-{platform}-debug"
-    display-name: "Flow123d multijob {platform} debug"
+    display-name: "{platform} debug Flow123d multijob"
     project-type: multijob
     node: "{platform}"
     block-downstream: yes
@@ -213,7 +213,7 @@
           url: https://github.com/flow123d/flow123d.git
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
-          browser-url: https://github.com/flow123d/flow123d.git
+          browser-url: https://github.com/flow123d/flow123d
 
     triggers: 
       - github
@@ -260,7 +260,7 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
     name: "Flow123d-build-multijob-{platform}-release"
-    display-name: "Flow123d multijob {platform} release"
+    display-name: "{platform} release Flow123d multijob"
     project-type: multijob
     node: "{platform}"
     block-downstream: yes
@@ -272,7 +272,7 @@
           url: https://github.com/flow123d/flow123d.git
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
-          browser-url: https://github.com/flow123d/flow123d.git
+          browser-url: https://github.com/flow123d/flow123d
           branches:
             - master
     triggers:
