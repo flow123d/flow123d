@@ -155,6 +155,7 @@ endmacro()
 
 
 
+
 #######################################################################################################
 # add subdirectories
 # - has to be done manually to get correct dependencies on CMake's list files.
@@ -162,7 +163,7 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
-#add_subdirectory("interpolation")
+add_subdirectory("interpolation")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("fields")
