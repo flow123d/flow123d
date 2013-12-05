@@ -122,7 +122,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-    mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
+    if (in_rec.find<Input::Record>("mass_balance") != NULL)
+    	mass_balance_ = new MassBalance(this, *in_rec.find<Input::Record>("mass_balance"));
 
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
@@ -235,7 +236,8 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi, ph;
 
-    delete mass_balance_;
+    if (mass_balance_ != NULL)
+    	delete mass_balance_;
 
     //Destroy mpi vectors at first
     VecDestroy(&v_sources_corr);
@@ -1374,7 +1376,8 @@ void ConvectionTransport::output_data() {
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
         if (field_output) field_output->write_data(time_->t());
-        mass_balance()->output(time_->t());
+        if (mass_balance() != NULL)
+        	mass_balance()->output(time_->t());
 
         //for synchronization when measuring time by Profiler
         MPI_Barrier(MPI_COMM_WORLD);

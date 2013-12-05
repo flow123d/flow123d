@@ -188,6 +188,7 @@
 \AddDoc{TransportOperatorSplitting::sorption\_enable}
 \AddDoc{TransportOperatorSplitting::dual\_porosity}
 \AddDoc{TransportOperatorSplitting::output}
+\AddDoc{TransportOperatorSplitting::mass\_balance}
 \AddDoc{TransportOperatorSplitting::reactions}
 \AddDoc{TransportOperatorSplitting::adsorptions}
 \AddDoc{TransportOperatorSplitting::bc\_data}
@@ -200,6 +201,9 @@
 \AddDoc{TransportOutput::conc\_immobile\_p0}
 \AddDoc{TransportOutput::conc\_mobile\_sorbed\_p0}
 \AddDoc{TransportOutput::conc\_immobile\_sorbed\_p0}
+\AddDoc{MassBalance}
+\AddDoc{MassBalance::cumulative}
+\AddDoc{MassBalance::file}
 \AddDoc{Reactions}
 \AddDoc{Sorptions}
 \AddDoc{Sorptions::TYPE}
@@ -310,6 +314,7 @@
 \AddDoc{AdvectionDiffusion\_DG::sorption\_enable}
 \AddDoc{AdvectionDiffusion\_DG::dual\_porosity}
 \AddDoc{AdvectionDiffusion\_DG::output}
+\AddDoc{AdvectionDiffusion\_DG::mass\_balance}
 \AddDoc{AdvectionDiffusion\_DG::solver}
 \AddDoc{AdvectionDiffusion\_DG::bc\_data}
 \AddDoc{AdvectionDiffusion\_DG::bulk\_data}

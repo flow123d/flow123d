@@ -21,6 +21,41 @@ set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
+
+######################################################################################################
+# Macro to make default targets and operations in current unit tests subdirectory, namely:
+# - create sym link to the generated Makefile
+# - make all-test and all-bench targets
+# - add required libraries
+# Should be called from subdirectories
+macro(add_test_directory libs)
+  
+  string(REPLACE "${CMAKE_SOURCE_DIR}/unit_tests/" "" subdir "${CMAKE_CURRENT_SOURCE_DIR}")
+  #message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
+  set(super_test "${subdir}-test")
+  add_custom_target( ${super_test} )
+  set(super_test_libs ${libs})
+  #message("SUBDIR LIBS: ${libs}")
+  
+  if (ALLOW_DUPLICATE_CUSTOM_TARGETS)
+    #message("allow common targets")
+    
+    # default all_test target
+    add_custom_target(all-test
+                    DEPENDS ${super_test}
+                    )
+  
+    # default all_bench target
+    add_custom_target(all-bench
+                    #DEPENDS ${test_name}
+                    )
+  endif()
+  
+  make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")    
+endmacro()
+
+
+
 #################################
 # MACRO define_test
 #
@@ -38,9 +73,9 @@ add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 macro(define_test class_name)
   set(test_source "${class_name}_test.cpp")
   set(test_binary "${class_name}_test_bin")
-  set(test_name "${class_name}_test")
-  set(test_valgrind "${class_name}_valgrind")
-  message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
+  set(test_name "${class_name}-test")
+  set(test_valgrind "${class_name}-valgrind")
+  #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
@@ -48,15 +83,17 @@ macro(define_test class_name)
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
 
+
+  
   # rule to run the test
   add_custom_target(${test_name} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
@@ -79,9 +116,9 @@ endmacro()
 macro(define_mpi_test class_name n_proc)
   set(test_source "${class_name}_test.cpp")
   set(test_binary "${class_name}_test_bin")
-  set(test_name "${class_name}_${n_proc}_test")
-  set(test_valgrind "${class_name}_${n_proc}_valgrind")
-  message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
+  set(test_name "${class_name}-${n_proc}-test")
+  set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
   
   # executable rule
   if(TARGET ${test_binary})
@@ -92,17 +129,17 @@ macro(define_mpi_test class_name n_proc)
   endif()	
 
   # rule to run the test
- # set(RUN_COMMAND ulimit -t 300\; )
- # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
+  # set(RUN_COMMAND ulimit -t 300\; )
+  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")  
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=no
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       	      
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_color=yes
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
@@ -114,13 +151,6 @@ macro(define_mpi_test class_name n_proc)
 endmacro()
 
 
-######################################################################################################
-# Macro to add a subdirectory and create sym link to the generated Makefile
-#
-macro(add_test_directory dir)
-    add_subdirectory("${dir}")
-    make_link_in_source("unit_tests/${dir}/Makefile")
-endmacro()
 
 
 #######################################################################################################
@@ -128,11 +158,51 @@ endmacro()
 # - has to be done manually to get correct dependencies on CMake's list files.
 
 
-add_test_directory("input")
-add_test_directory("interpolation")
-add_test_directory("la")
-add_test_directory("system")
-add_test_directory("fields")
-add_test_directory("quadrature")
-add_test_directory("mesh")
-add_test_directory("coupling")
+add_subdirectory("scripts")
+add_subdirectory("input")
+add_subdirectory("interpolation")
+add_subdirectory("la")
+add_subdirectory("system")
+add_subdirectory("fields")
+add_subdirectory("fem")
+add_subdirectory("mesh")
+add_subdirectory("coupling")
+
+
+#################################################################################################
+# Targets for Jenkis Jobs Builder
+
+# Make list of integration test names from list of subdirectories in the test directory. 
+# This should be manually finished before it can be used by use it in 
+add_custom_target(test-list
+                  COMMAND ${CMAKE_COMMAND} -DDIRECTORY="${CMAKE_SOURCE_DIR}/tests" -DOUTPUT="${CMAKE_CURRENT_SOURCE_DIR}/test_list" -P ${CMAKE_CURRENT_SOURCE_DIR}/list_subdirs.cmake
+                  )
+
+
+# Following two targets assume installation of Jenkins jobs Builder.
+# https://github.com/openstack-infra/jenkins-job-buildera
+#
+# For installation follow README.md.
+
+# Rule to create XML definitions of Jenkins jobs and upload them to the server.
+set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
+add_custom_target(jenkins-upload
+                  COMMAND jenkins-jobs update ${JENKINS_JOBS_FILE} 
+                  DEPENDS ${JENKINS_JOBS_FILE}
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+
+# Rule to create XML definitions of Jenkins jobs in local directory. (for testing)
+add_custom_target(jenkins-test
+                  COMMAND jenkins-jobs test ${JENKINS_JOBS_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}                 
+                  DEPENDS ${JENKINS_JOBS_FILE}
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+
+# Rule how to make ${JENKINS_JOBS_FILE} from ./jenkins_jobs_template.yaml
+add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
+                  COMMAND ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
+                  DEPENDS jenkins_jobs_template.yaml
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  )
+

@@ -6,6 +6,7 @@ cp ./tester_mpi test_dir/flow123d
 cd test_dir
 
 function die {
+  echo "**************** TEST FAILURE *****************"
   echo "$1"
   exit 1
 }
@@ -125,3 +126,6 @@ then
   die "Test didn't fail!"
 fi
 
+echo "****************************"
+echo "* SUCCESS - all tests passed"
+echo "****************************"

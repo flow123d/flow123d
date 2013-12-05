@@ -21,20 +21,15 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
+set(libs interpolation_lib)
+add_test_directory("${libs}")
 
-add_custom_target( interpolation_test )
-set(super_test "interpolation_test")
-set(super_test_libs interpolation_lib)
-
-
-if(CMAKE_COMPILER_IS_GNUCXX)
     
-    define_test(functors)
+define_test(functors)
+
     
-endif()
 
 
 

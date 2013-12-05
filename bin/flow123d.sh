@@ -251,7 +251,7 @@ function run_flow()
 	# form name of the redirected stdout and stderr
         if [ -n "${QUEUE}" ] 
         then 
-                STDOUT_FILE="${QUEUE}.`date +%y.%m.%d_%T`" 
+                STDOUT_FILE="${QUEUE}.`date +%y.%m.%d_%T`.$RANDOM" 
                 rm -f `pwd`/${STDOUT_FILE}
         fi
 

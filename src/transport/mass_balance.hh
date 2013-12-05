@@ -82,7 +82,7 @@ protected:
 class MassBalance {
 public:
 
-    MassBalance(EquationForMassBalance *eq, const char *output_f_name);
+    MassBalance(EquationForMassBalance *eq, const Input::Record &in_rec);
 
     ~MassBalance();
 
@@ -95,6 +95,9 @@ public:
      * Calculate mass balance: flux through boundary, mass and volume sources
      */
     void calculate(double time);
+
+
+    static Input::Type::Record input_type;
 
 
 protected:
@@ -130,6 +133,9 @@ protected:
 
 	/// true before calculating the mass at initial time, otherwise false
 	bool initial;
+
+	/// if true then cumulative balance is computed
+	bool cumulative;
 
 };
 

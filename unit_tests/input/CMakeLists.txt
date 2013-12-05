@@ -25,9 +25,8 @@
 
 
 
-add_custom_target( input_test )
-set(super_test "input_test")
-set(super_test_libs input_lib)
+set(libs input_lib)
+add_test_directory("${libs}")
 
 
 if(CMAKE_HAVE_CXX11)

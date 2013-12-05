@@ -24,10 +24,8 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-
-add_custom_target( la_test )
-set(super_test "la_test")
-set(super_test_libs la_lib)
+set(libs la_lib)
+add_test_directory("${libs}")
 
 
 define_mpi_test(inversion_matrix 1)
