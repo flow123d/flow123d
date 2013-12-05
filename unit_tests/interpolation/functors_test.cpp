@@ -16,6 +16,8 @@
 
 #define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
+//*********************************** FUNCTOR EXAMPLES *********************************
+
 //Example functor f(x)=x+2
 template<class Type=double>
 class Linear : public FunctorBase<Type>
@@ -100,6 +102,9 @@ public:
   } Parameters;
 
   ///Constructor.
+  Circle(){}
+  
+  ///Constructor.
   Circle(double prad, double pc_x, double pc_y)
   {
     this->set_param(radius, prad);
@@ -109,10 +114,13 @@ public:
   
   Type operator()(Type x,Type y)
   {
-    return std::pow(x-this->param(c_x),2) + std::pow(y-this->param(c_y),2) - std::pow(this->param(radius),2);
+    //return std::pow(x-this->param(c_x),2) + std::pow(y-this->param(c_y),2) - std::pow(this->param(radius),2);
+    return pow(x-this->param(c_x),2) + pow(y-this->param(c_y),2) - pow(this->param(radius),2);
   }    
 };
 
+
+//*********************************** UNIT TESTS *********************************
 
 TEST (Functors, functors)
 {
@@ -148,14 +156,6 @@ TEST (Functors, functors)
   EQUAL(circle_func.param(Circle<>::radius), 4.0);
   EQUAL(circle_func.param(Circle<>::c_x), 1.0);
   EQUAL(circle_func(5.0,2.0), 0.0);
-  
-  /*
-  InterpolantImplicit* interpolant = new InterpolantImplicit(&circle_func);
-  
-  interpolant->fix_variable(InterpolantImplicit::fix_x,2.0);
-  
-  EQUAL(interpolant->f_val(3.0),-3.0);           //2^2+3^2-4^2 = 4+9-16=-3
-  //*/
 }
 
 
@@ -246,9 +246,9 @@ TEST (Functors, make_interpolation)
   EQUAL(interpolant->diff(-10).second, 75);
   EQUAL(interpolant->diff(15).second, 363);
   interpolant->set_extrapolation(Extrapolation::linear);
-  EQUAL(interpolant->val(-10), -370);           //-125 + 49*(-10-(-5))
-  EQUAL(interpolant->val(15), 2535);            //729 + 301*(15-9)
-  EQUAL(interpolant->diff(-10).first, -370);    
+  EQUAL(interpolant->val(-10), -370);           //-125 + 49*(-10-(-5)) 
+  EQUAL(interpolant->val(15), 2535);            //729 + 301*(15-9)      
+  EQUAL(interpolant->diff(-10).first, -370);                            
   EQUAL(interpolant->diff(15).first, 2535);
   EQUAL(interpolant->diff(-10).second, 195);    //75 + (-24)*(-10-(-5))
   EQUAL(interpolant->diff(15).second, 603);     //243 + 60*(15-9)
@@ -280,8 +280,23 @@ TEST (Functors, make_interpolation)
   
   delete interpolant;
 }
+//*/
 
-
+TEST(Functors, make_implicit)
+{
+  Circle<double> circle_func(4.0, 1.0, 2.0);    //(x-1)^2 + (y-2)^2 - 4^2 = 0
+  
+  
+  InterpolantImplicit interpolant(&circle_func, true);
+  
+  interpolant.fix_variable(IFixVariable::fix_x,2.0);
+  
+  EQUAL(interpolant.f_val(3.0),-14.0);           //(2-1)^2+(3-2)^2-4^2 = 1+1-16=-14
+  
+  interpolant.set_interval(-4,4);
+  interpolant.set_size(10);
+  //interpolant.interpolate();
+}
 
 
 TEST (Functors, interpolation_error)
@@ -323,7 +338,9 @@ TEST (Functors, interpolation_error)
   
   delete interpolant;
 }
-//*/
+
+
+//*********************************** FIXTURE TESTS - BENCHMARKS *********************************
 
 class InterpolantCreateTest : public ::testing::Test{
 protected:
@@ -433,32 +450,49 @@ protected:
   Interpolant interpolant;
 };
 
-/*
-3.12.2013, Pavel Exner
 
-Test results:
-[       OK ] InterpolantTest.FunctorEval (679 ms)
-[       OK ] InterpolantTest.InterpolantEval_val (65 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_p1 (196 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_test (194 ms)
+// 3.12.2013, Pavel Exner
+// 
+// Test results:
+// [       OK ] InterpolantTest.FunctorEval (679 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val (65 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_p1 (196 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_test (194 ms)
+// 
+// For unknown reason the val() function is faster than val_p1() which is called inside val().
+// It also behave differently when only some of these 4 tests are running.
+// 
+// Test results of valgrind run:
+// > valgrind --tool=callgrind --dump-instr=yes ./functors_test_bin
+// 
+// [       OK ] InterpolantTest.FunctorEval (19593 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val (3640 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_p1 (2470 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_test (2496 ms)
+// 
+// It is also strange that the val() function is slower than the others when using Valgrind.
+// 
+// Conclusion:
+// On the other hand, the interpolation is still at least 3 times faster than 
+// the functor evaluation (std::pow) and that can be satisfying for now...
 
-For unknown reason the val() function is faster than val_p1() which is called inside val().
-It also behave differently when only some of these 4 tests are running.
 
-Test results of valgrind run:
-> valgrind --tool=callgrind --dump-instr=yes ./functors_test_bin
+// 5.12.2013, Pavel Exner
+//
+// Test results:
+// [       OK ] InterpolantTest.FunctorEval (659 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val (165 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_p1 (164 ms)
+// [       OK ] InterpolantTest.InterpolantEval_val_test (162 ms)
+//
+// After removing unnecessary node and coeficient arrays:
+// These results are satisfying:
+//  + the function val_p1 itself is by 14% faster than before
+//  + we use only one array to keep the function values
+//  + all three functions take the same time which means
+//    that the collecting statistics and going through several IF commands
+//    does not affect the evaluation time
 
-[       OK ] InterpolantTest.FunctorEval (19593 ms)
-[       OK ] InterpolantTest.InterpolantEval_val (3640 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_p1 (2470 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_test (2496 ms)
-
-It is also strange that the val() function is slower than the others when using Valgrind.
-
-Conclusion:
-On the other hand, the interpolation is still at least 3 times faster than 
-the functor evaluation (std::pow) and that can be satisfying for now...
-*/
 
 TEST_F(InterpolantTest, FunctorEval){
   double res = 0;
@@ -488,7 +522,6 @@ TEST_F(InterpolantTest, InterpolantEval_val_p1){
     }
   cout << "res = " << res << endl;
 }
-//*/
 
 
 TEST_F(InterpolantTest, InterpolantEval_val_test){
@@ -499,11 +532,10 @@ TEST_F(InterpolantTest, InterpolantEval_val_test){
     }
   cout << "res = " << res << endl;
 }
-//*/
 
 
 
-/***************************   HYDROLOGY FUNCTIONS   *****************************/
+//***************************   HYDROLOGY FUNCTIONS   *****************************
 
 template<class Type=double>
 class FK : public FunctorBase<Type>   //FK - hydraulic conductivity function
@@ -657,15 +689,15 @@ protected:
   Interpolant interpolant_fq;
 };
 
-/*
-3.12.2013, Pavel Exner
 
-Results of following tests with n=6*1000*1000 and size=10000.
-[       OK ] HydrologyTest.FKEval (3697 ms)
-[       OK ] HydrologyTest.FQEval (836 ms)
-[       OK ] HydrologyTest.Interpolate_FK (126 ms)
-[       OK ] HydrologyTest.Interpolate_FQ (115 ms)
-*/
+// 5.12.2013, Pavel Exner
+// 
+// Results of following tests with n=6*1000*1000 and size=10000.
+// [       OK ] HydrologyTest.FKEval (3603 ms)
+// [       OK ] HydrologyTest.FQEval (824 ms)
+// [       OK ] HydrologyTest.Interpolate_FK (113 ms)
+// [       OK ] HydrologyTest.Interpolate_FQ (103 ms)
+
 
 TEST_F(HydrologyTest, FKEval){
   double res = 0;

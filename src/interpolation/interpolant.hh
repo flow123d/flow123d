@@ -35,9 +35,19 @@ typedef std::pair<double,double> DiffValue;
     } Type;
   };
   
+/** Enumerates types of variable fixation in implicit interpolant.
+ */
+  struct IFixVariable
+  {
+    typedef enum { fix_x,  ///< x variable will be fixed with given value 
+                   fix_y,  ///< y variable will be fixed with given value 
+                   no_fix  ///< no variable is fixed (used when InterpolantImplicit is created) 
+    } Type;
+  };
+  
 ///Base class for interpolation.
 /** This class serves as the common interface for interpolation classes.
- * It provides functions for setting the basic parameters of an interpolation
+ * It provides functions for setting the common parameters of an interpolation
  * such as interval, size of the table and extrapolation.
  * 
  * @see Interpolant
@@ -125,7 +135,7 @@ public:
   
   ///Can be called to check automatically the evaluation statistics and possibly reinterpolate.
   /** The function computes ratio of evaluations outside the interpolation interval - on each side of the interval. 
-   * Then it compares the results with given percentage and accordingly changes (streches) the interval a reinterpolate.
+   * Then it compares the results with given percentage and accordingly changes (only streches) the interval and reinterpolate.
    * @param percentage is the percentage of evaluations outside the interval (on one side)
    */
   void check_stats_and_reinterpolate(double percentage=0.3);
@@ -153,12 +163,12 @@ protected:
    */
   Extrapolation::Type extrapolation;     
   
-  ///Defines how many derivatives we allow to be returned from Taylor's coeficients.
-  const static unsigned int n_derivatives;
-  const static unsigned int default_max_size;
-  const static double simpson_tolerance;
   
-  ///Factorial (used in Taylor row expansion in n-th derivative computation).
+  const static unsigned int n_derivatives;      ///< Defines how many derivatives we allow to be returned from Taylor's coeficients.
+  const static unsigned int default_max_size;   ///< Default maximal size of the interpolation table.
+  const static double simpson_tolerance;        ///< Tolerance in Adaptive Simpson intergration. @see AdaptiveSimpson
+  
+  ///Recursive factorial function (used in Taylor row expansion in n-th derivative computation).
   long fact (long x);
 
   
@@ -178,8 +188,8 @@ protected:
   
   
   //currently not used
-  //bool use_statistics;        ///< Is true if statistics is checked (it must be switched of during error computation)
-  EvalStatistics stats;        ///< Structure which keeps evaluation statistics. See InterpolantBase::eval_statistics.
+  //bool use_statistics;       ///< Is true if statistics is checked (it must be switched of during error computation)
+  EvalStatistics stats;        ///< Structure which keeps evaluation statistics. See \ref InterpolantBase::eval_statistics.
   
 };
 
@@ -189,10 +199,10 @@ protected:
  * computation of derivates and interpolation of the functor. We will describe the functionality
  * in the following paragrahphs.
  *
- * ## Evaluation of functor and its derivatives
+ * ## Evaluation of a functor and its derivatives
  *
  * Beside the interpolation, the class provides calling of the functor itself.
- * All functions evaluating the functor starts with '`f_`', e.g. function \ref f_val computes the functor value.
+ * All functions evaluating directly the functor starts with '`f_`', e.g. function \ref f_val computes the functor value.
  * 
  * We use the FADBAD++ library ([website](http://www.fadbad.com)) to compute derivatives of the functor. First derivatives
  * can be obtained by function \ref f_diff which uses backward automatic differentiation. Higher order derivatives can be 
@@ -245,6 +255,8 @@ protected:
  * \f]
  * This approach is much more expensive but can give better results.
  * 
+ * TODO: Improve error computation. Suggest more robust method. 
+ * 
  * ### Evaluation statistics
  * 
  * We collect some statistics during the evaluation of the interpolant in the struct \ref InterpolantBase::EvalStatistics -- total number of calls, number of evaluations
@@ -253,7 +265,7 @@ protected:
  * according to the given percentage of evaluation outside the interval.
  * 
  */
-//\frac{\abs{f(x)-g(x)}}{\abs{f(x)} + tol} + \frac{\abs{f'(x)-g'(x)}}{\abs{f'(x)} + tol}
+
 class Interpolant : public InterpolantBase
 {
 public:
@@ -281,9 +293,24 @@ public:
   double val(double x);
   
   ///Do NOT use, only for testing purpose.
+  /** TODO: After testing it can be removed and 
+   * \ref val_p1 can be made private again.
+   */
   double val_test(double x);
   
-  ///Do NOT use, only for testing purpose. Function that evaluates the P1 interpolant at x.
+  ///Do NOT use, unless you are 100% sure. 
+  /** This function evaluates the P1 interpolant at x.
+   * It does not check the interval, does not provide extrapolation 
+   * and does not collect statistics.
+   * 
+   * Can be used to POSSIBLY speed the evaluation just a little bit,
+   * if you are absolutely sure that you evaluate the interpolant
+   * only on the given interval and do not want to collect statistics.
+   * 
+   * Same can be done with \ref diff_p1 if it is made public.
+   * 
+   * Used in unit_test benchmark to compare with val function.
+   */
   double val_p1(double x);
 
   ///Returns interpolated value of the derivation.
@@ -336,46 +363,39 @@ protected:
   
   bool interpolate_derivative;  ///< Is true if we want to interpolate the derivative too.
   
-  std::vector<double> x_vec;    ///< Vector of nodes.
+  //std::vector<double> x_vec;    ///< Vector of nodes.
   std::vector<double> f_vec;    ///< Vector of function values at nodes.
   std::vector<double> df_vec;   ///< Vector of function derivatives values at nodes.
-  std::vector<double> p1_vec;   ///< Vector of linear coeficients of P1 interpolation.
-  std::vector<double> p1d_vec;  ///< Vector of linear coeficients of P1 interpolation.
+  //std::vector<double> p1_vec;   ///< Vector of linear coeficients of P1 interpolation.
+  //std::vector<double> p1d_vec;  ///< Vector of linear coeficients of P1 interpolation.
   
   //Creates piecewise constant interpolation.
   //void interpolate_p0();
   
   ///Creates piecewise linear interpolation.
-  void interpolate_p1();
+  //void interpolate_p1();
   
   ///Computes estimate of interpolation error in maximum norm.
-  void compute_error(double tol, std::vector<double>& x, std::vector<double>& f, std::vector<double>& df);
+  void compute_error(double tol, std::vector<double>& f, std::vector<double>& df);
   
   ///Computes estimate of interpolation error with given norm.
   void compute_error(double tol, double p, ErrorNorm::Type norm_type);
   
-  void swap_middle_values(std::vector<double>& x, std::vector<double>& f, std::vector<double>& df);
+  void swap_middle_values(std::vector<double>& f, std::vector<double>& df);
   
   ///Creates table of nodes and function values.
   /** Creates vector of nodes according to the table size
    * and computes function and derivative values at the nodes.
    */
-  void create_nodes();
+  void compute_values();
 
   ///Finds interval on which @p x lies.
-  unsigned int find_interval(double x);
-
+  //unsigned int find_interval(double x);
   
-
+  
   ///Function that evaluates the derivative of P1 interpolant at @p x.
   DiffValue diff_p1(double x);
-
-  /* CONSTANT INTERPOLATION
-  double val_p0(double x);
-  der diff_p0(double x);
-  */
 };
-
 
 
 
@@ -384,13 +404,21 @@ protected:
 class InterpolantImplicit : public InterpolantBase
 {
 public:
-  typedef enum { fix_x, fix_y, no_fix
-  } fix_var;
   
   ///@name Construction.
   //@{
   ///constructor
   InterpolantImplicit();
+  
+  ///Constructor with functor setting.
+  /** 
+   * @param func is the pointer to functor
+   * @param interpolate_derivative is true when derivate is also interpolated
+   * @tparam Func is the functor type
+   * @tparam Type is the template type of the functor (e.g. double)
+   */
+  template<template<class> class Func, class Type >
+  InterpolantImplicit(Func<Type>* func, bool interpolate_derivative=false);
   
   ///destructor
   virtual ~InterpolantImplicit(void);
@@ -402,7 +430,7 @@ public:
    * @tparam Type is the template type of the functor (e.g. double)
    */
   template<template<class> class Func, class Type >
-  void set_functor(Func<Type>* func);
+  void set_functor(Func<Type>* func, bool interpolate_derivative=false);
   
   //@}
   
@@ -413,7 +441,7 @@ public:
    * @param fix is the chosen variable (no_fix, fix_x or fix_y)
    * @param value is the fixed value
    */
-  void fix_variable(InterpolantImplicit::fix_var fix, const double& value);
+  void fix_variable(IFixVariable::Type fix, double value);
   
   ///Returns interpolated value.
   /** @param u is the point at which we evaluate the interpolation
@@ -460,10 +488,9 @@ public:
   //@{
   
   ///Creates piecewise interpolation with polynomials of selected degree.
-  virtual int interpolate() {return 5;}
+  virtual int interpolate();
   
-  ///Creates piecewise linear interpolation.
-  void interpolate_p1();
+  
   //@}
     
     
@@ -477,13 +504,18 @@ protected:
   IFunctorBase<B<double> >* func_diff;
   IFunctorBase<T<double> >* func_diffn;
   
+  bool interpolate_derivative;  ///< Is true if we want to interpolate the derivative too.
+  
   Interpolant* explicit_interpolant;
 
-  fix_var fix_;
+  IFixVariable::Type fix_;
   double fix_val;
   
   ///@name Interpolation.
   //@{
+  
+  ///Creates piecewise linear interpolation.
+  void interpolate_p1();
   
   //@}
 
