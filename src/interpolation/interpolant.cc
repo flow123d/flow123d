@@ -26,7 +26,7 @@ InterpolantBase::InterpolantBase()
   reset_stat();
   checks.resize(4,false);
 }
-  
+
 InterpolantBase::~InterpolantBase() 
 {}
   
@@ -177,7 +177,7 @@ int Interpolant::interpolate()
 {   
   check_all();  //checks if all needed parameters were set
   unsigned int result = 10;
-  
+
   //switch off statistics due to error computation
   //is switched on automatically by reset_stat()
   //use_statistics = false;
@@ -195,7 +195,6 @@ int Interpolant::interpolate()
   */
   
   //temporary vectors for values in the middle of intervals
-  std::vector<double> x_vec_half;
   std::vector<double> f_vec_half;
   std::vector<double> df_vec_half;
       
@@ -204,16 +203,14 @@ int Interpolant::interpolate()
   if(automatic_size)
   {
     int k = -1;
-    create_nodes();     //creates intial set of nodes and values
     while(1) 
     {
       k++;
       //DBGMSG("k = %d\n",k);
-      //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
-      interpolate_p1(); 
+      compute_values();     //computes function (and possibly derivate) values at nodes
       
       if(norm_type == ErrorNorm::max)
-        compute_error(tol, x_vec_half, f_vec_half, df_vec_half);
+        compute_error(tol, f_vec_half, df_vec_half);
       else
         compute_error(tol, p, norm_type);
       
@@ -237,11 +234,11 @@ int Interpolant::interpolate()
       if(size_ < max_size/2)
       {
         if(norm_type == ErrorNorm::max) // if we compute the maximum norm, we can use the computed values
-          swap_middle_values(x_vec_half, f_vec_half, df_vec_half); 
+          swap_middle_values(f_vec_half, df_vec_half); 
         else    //else resize and compute new nodes
         {
           size_ *= 2;
-          create_nodes();
+          compute_values();     //computes function (and possibly derivate) values at nodes
         }
       }
       else
@@ -253,12 +250,10 @@ int Interpolant::interpolate()
   }
   else 
   {
-    //(this->*interpolate_func)();    //POSSIBLE WAY TO USE MORE KINDS OF INTERPOLATION
-    create_nodes();     //creates intial set of nodes and values
-    interpolate_p1();
-    
+    compute_values();     //computes function (and possibly derivate) values at nodes
+
     if(norm_type == ErrorNorm::max)
-      compute_error(tol, x_vec_half, f_vec_half, df_vec_half);
+      compute_error(tol, f_vec_half, df_vec_half);
     else
       compute_error(tol, p, norm_type);
       
@@ -279,8 +274,8 @@ int Interpolant::interpolate()
     compute_error(norm);      //sets error_
     delete norm;
   }
-*/
-
+  
+  // LINEAR INTERPOLATION WITH SAVED COEFICIENTS
   void Interpolant::interpolate_p1()
   { 
     p1_vec.resize(size_);    //linear coeficients
@@ -305,7 +300,7 @@ int Interpolant::interpolate()
     }
     
     //Writes the interpolation table.
-    /*
+    
     unsigned int p = 10,
                  pp = 5;
     for(unsigned int i=0; i != size_-1; i++)
@@ -321,17 +316,16 @@ int Interpolant::interpolate()
         std::cout << setw(pp) << "df:" << setw(p) << df_vec[df_vec.size()-1] << setw(pp) <<  "p1d:" << setw(p) << "-" << std::endl;
       else
         std::cout << std::endl;
-    //*/
   }
+//*/
 
-void Interpolant::create_nodes()
+void Interpolant::compute_values()
 { 
   //setting the step - length of piecewise interpolation intervals
   step = (bound_b_-bound_a_)/size_;
   a_div_step = bound_a_ / step;
   n_nodes = size_ + 1;          //setting the number of nodes
   
-  x_vec.resize(n_nodes);       //nodes
   f_vec.resize(n_nodes);       //function values in the nodes
   
   double temp_x = bound_a_;
@@ -345,12 +339,10 @@ void Interpolant::create_nodes()
       //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
       temp_x = bound_a_ + step*i;
       value = f_diff(temp_x);
-      x_vec[i] = temp_x;
       f_vec[i] = value.first;
       df_vec[i] = value.second;
     }
     //finish the interval
-    x_vec[size_] = bound_b_;
     value = f_diff(bound_b_);
     f_vec[size_] = value.first;
     df_vec[size_] = value.second;
@@ -361,16 +353,14 @@ void Interpolant::create_nodes()
     for(unsigned int i = 0; i < size_; i++)
     {
       temp_x = bound_a_ + step*i;
-      x_vec[i] = temp_x;
       f_vec[i] = f_val(temp_x);
     }
     //finish the interval
-    x_vec[size_] = bound_b_;
     f_vec[size_] = f_val(bound_b_);
   }
 }
 
-void Interpolant::swap_middle_values(std::vector<double>& x, std::vector<double>& f, std::vector<double>& df)
+void Interpolant::swap_middle_values(std::vector<double>& f, std::vector<double>& df)
 {
   double new_size = 2*size_;
         n_nodes = new_size+1;
@@ -378,22 +368,16 @@ void Interpolant::swap_middle_values(std::vector<double>& x, std::vector<double>
         a_div_step = bound_a_ / step;
         
         //we will use now the middle points computed in "compute_error" to construct vector of nodes
-        std::vector<double> swap_x_vec;
         std::vector<double> swap_f_vec;
         std::vector<double> swap_df_vec;
-        swap_x_vec.reserve(n_nodes);
         swap_f_vec.reserve(n_nodes);
 
         for(unsigned int i=0; i!=size_; i++)
         {
-          swap_x_vec.push_back(x_vec[i]);
-          swap_x_vec.push_back(x[i]);
           swap_f_vec.push_back(f_vec[i]);
           swap_f_vec.push_back(f[i]);
         }
-        swap_x_vec.push_back(x_vec.back());
         swap_f_vec.push_back(f_vec.back());
-        x_vec = swap_x_vec;
         f_vec = swap_f_vec;
         
         if(interpolate_derivative)
@@ -411,13 +395,11 @@ void Interpolant::swap_middle_values(std::vector<double>& x, std::vector<double>
 }
 
 
-void Interpolant::compute_error(double tol, std::vector<double>& x, std::vector<double>& f, std::vector<double>& df)
+void Interpolant::compute_error(double tol, std::vector<double>& f, std::vector<double>& df)
 {
   double tot_err = 0;
   
-  x.clear();
   f.clear();
-  x.reserve(size_);    //middle nodes
   f.reserve(size_);    //function values in the middle nodes
 
   double temp_a = bound_a_ + step/2;
@@ -434,7 +416,6 @@ void Interpolant::compute_error(double tol, std::vector<double>& x, std::vector<
       //DBGMSG("size: %d \tfill vectors: %d\n",size_,i);
       temp_x = temp_a + step*i;
       value = f_diff(temp_x);
-      x.push_back(temp_x);
       f.push_back(value.first);
       df.push_back(value.second);
       
@@ -454,7 +435,6 @@ void Interpolant::compute_error(double tol, std::vector<double>& x, std::vector<
     for(unsigned int i = 0; i != size_; i++)
     {
       temp_x = temp_a + step*i;
-      x.push_back(temp_x);
       f.push_back(f_val(temp_x));
       tot_err = std::max( tot_err, 
                           std::abs(f.back() - val_p1(temp_x)) / (std::abs(f.back()) + tol)
@@ -524,12 +504,14 @@ void Interpolant::compute_error(double tol, double p, ErrorNorm::Type norm_type)
 
   double  tot_err = 0, // total absolute error on <a,b>
           p_err = 0;   // absolute error on x[i]-x[i+1]
+  double x_node;
   
-  for(unsigned long i = 0; i < p1_vec.size(); i++ )
+  for(unsigned long i = 0; i < size_; i++ )
   { 
+    x_node = bound_a_ + i*step;
     p_err = std::abs( AdaptiveSimpson::AdaptSimpson(*norm,
-                                           x_vec[i], 
-                                           x_vec[i+1],
+                                           x_node, 
+                                           x_node+step,
                                            simpson_tolerance) );
                    
     //DBGMSG("error on interval<%f,%f>: %f\n",x_vec[i],x_vec[i+1],p_err);
@@ -551,8 +533,9 @@ InterpolantImplicit::InterpolantImplicit()
     func(NULL),
     func_diff(NULL),
     func_diffn(NULL),
+    interpolate_derivative(false),
     explicit_interpolant(NULL),
-    fix_(InterpolantImplicit::no_fix)
+    fix_(IFixVariable::no_fix)
   {
   }
   
@@ -564,7 +547,7 @@ InterpolantImplicit::~InterpolantImplicit()
   if(func_u) delete func_u;
 }
 
-void InterpolantImplicit::fix_variable(InterpolantImplicit::fix_var fix, const double& val)
+void InterpolantImplicit::fix_variable(IFixVariable::Type fix, double val)
 {
   fix_ = fix;
   fix_val = val;
@@ -576,6 +559,34 @@ double InterpolantImplicit::f_val(double u)
   return func_u->operator()(u);
 }
 
+
+int InterpolantImplicit::interpolate()
+{
+  //BUG: FuncExplicit cannot be copied in interpolant constructor with its members !!!
+  /*
+  ASSERT(fix_ != IFixVariable::no_fix,"Cannot do interpolation. No varible was fixed.");
+  check_all();
+  DBGMSG("seg %f\n",func_u);
+  explicit_interpolant = new Interpolant(func_u, interpolate_derivative);
+  //explicit_interpolant->set_functor(func_u, interpolate_derivative); 
+  DBGMSG("seg\n");
+  explicit_interpolant->set_interval(bound_a_,bound_b_);
+  DBGMSG("seg\n");
+  if(automatic_size)
+  {
+    explicit_interpolant->set_size_automatic(user_tol, size_, max_size);
+  }
+  else
+  {
+    explicit_interpolant->set_size(size_);
+  }
+
+  DBGMSG("seg\n");
+  explicit_interpolant->interpolate();
+  DBGMSG("seg\n");
+  error_ = explicit_interpolant->error();
+  */
+}
 
 void InterpolantImplicit::interpolate_p1()
 {

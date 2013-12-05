@@ -58,7 +58,6 @@ void Interpolant::set_functor(Func<Type>* func, bool interpolate_derivative)
   this->func = func;
   func_diff = new Func<B<Type> >();
   func_diffn = new Func<T<Type> >();
-  
   func_diff->set_param_from_func(func);
   func_diffn->set_param_from_func(func);
   
@@ -89,7 +88,7 @@ inline double Interpolant::val(double x)
       case Extrapolation::constant: 
         return f_vec[0];
       case Extrapolation::linear:
-        return f_vec[0] + p1_vec[0]*(x-x_vec[0]);
+        return (f_vec[1] - f_vec[0])*(x/step-a_div_step) + f_vec[0]; //f_vec[0] + p1_vec[0]*(x-x_vec[0]);
       case Extrapolation::functor:
       default:
         return f_val(x);      //otherwise compute original functor
@@ -107,7 +106,7 @@ inline double Interpolant::val(double x)
       case Extrapolation::constant: 
         return f_vec[size_];
       case Extrapolation::linear:
-        return f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]);
+        return (f_vec[size_] - f_vec[size_-1])*(x-bound_b_+step)/step + f_vec[size_-1];//f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]);
       case Extrapolation::functor:
       default:
         return f_val(x);      //otherwise compute original functor
@@ -135,8 +134,8 @@ inline double Interpolant::val_test(double x)
     //std::cout << "test b" << std::endl;
     return 0;
   }
-  else //*/
-     return val_p1(x);
+  else  //*/
+     return val_p1(x);  
 }
 
 inline DiffValue Interpolant::diff(double x)
@@ -160,8 +159,8 @@ inline DiffValue Interpolant::diff(double x)
         return DiffValue(f_vec[0],
                          df_vec[0]);
       case Extrapolation::linear:
-        return DiffValue(f_vec[0] + p1_vec[0]*(x-x_vec[0]), 
-                         df_vec[0] + p1d_vec[0]*(x-x_vec[0]));
+        return DiffValue((f_vec[1] - f_vec[0])*(x/step-a_div_step) + f_vec[0], //f_vec[0] + p1_vec[0]*(x-x_vec[0]), 
+                          (df_vec[1] - df_vec[0])*(x/step-a_div_step) + df_vec[0]);//df_vec[0] + p1d_vec[0]*(x-x_vec[0]));
       case Extrapolation::functor:
       default:
         return f_diff(x);      //otherwise compute original functor
@@ -177,8 +176,8 @@ inline DiffValue Interpolant::diff(double x)
         return DiffValue(f_vec[size_], 
                          df_vec[size_]);
       case Extrapolation::linear:
-        return DiffValue(f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]),
-                         df_vec[size_-1] + p1d_vec[size_-1]*(x-x_vec[size_-1]) );
+        return DiffValue((f_vec[size_] - f_vec[size_-1])*(x-bound_b_+step)/step + f_vec[size_-1], //f_vec[size_-1] + p1_vec[size_-1]*(x-x_vec[size_-1]),
+                          (df_vec[size_] - df_vec[size_-1])*(x-bound_b_+step)/step + df_vec[size_-1]);//df_vec[size_-1] + p1d_vec[size_-1]*(x-x_vec[size_-1]) );
       case Extrapolation::functor:
       default:
         return f_diff(x);      //otherwise compute original functor
@@ -208,11 +207,13 @@ inline DiffValue Interpolant::f_diff (double x)
   return d;           // Return function value
 }
 
+/*
 inline unsigned int Interpolant::find_interval(double x)
 {
   //counts in which interval x is (the last node before x)
   return floor((x - bound_a_) / step);
 }
+*/
 
 /* //CONSTANT INTERPOLATION
 inline double Interpolant::val_p0(double x)
@@ -233,41 +234,47 @@ inline DiffValue Interpolant::diff_p0(double x)
 inline double Interpolant::val_p1(double x)
 {
   /*
-[       OK ] InterpolantTest.FunctorEval (335 ms)
-[       OK ] InterpolantTest.InterpolantEval_val (600 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_p1 (1888 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (184 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (192 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_test (190 ms)
+  
+  When we used precomputed coeficients of P1 interpolation.
    */
-  unsigned int i = floor(x / step - a_div_step);
-  //unsigned int i = find_interval(x);
-  return p1_vec[i]*(x-x_vec[i]) + f_vec[i];
+  //unsigned int i = floor(x / step - a_div_step);
+  //return p1_vec[i]*(x-x_vec[i]) + f_vec[i];
   
   /*
-[       OK ] InterpolantTest.FunctorEval (335 ms)
-[       OK ] InterpolantTest.InterpolantEval_val (1880 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_p1 (1615 ms)
+[       OK ] InterpolantTest.InterpolantEval_val (162 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_p1 (163 ms)
+[       OK ] InterpolantTest.InterpolantEval_val_test (162 ms)
+
+These results are satisfying:
+ + the function val_p1 itself is by 14% faster than before
+ + we use only one array to keep the function values
+ + all three functions take the same time which means
+   that the collecting statistics and going through several IF commands
+   does not affect the evaluation time
   */
-  //double x_step = x / step;
-  //unsigned int i = floor(x_step - a_div_step);
+  double x_step = x / step;
+  unsigned int i = floor(x_step - a_div_step);
   
-  //return (f_vec[i+1] - f_vec[i])*(x_step-i-a_div_step) + f_vec[i];
-  
-  /*
-[       OK ] InterpolantTest.FunctorEval (337 ms)
-[       OK ] InterpolantTest.InterpolantEval_val (1926 ms)
-[       OK ] InterpolantTest.InterpolantEval_val_p1 (1855 ms)
-  */
-  //double q = x_step - i - a_div_step;
-  //return q*f_vec[i+1] + (1-q)*f_vec[i];
-  //*/
+  return (f_vec[i+1] - f_vec[i])*(x_step-i-a_div_step) + f_vec[i];
 }
 
 
 inline DiffValue Interpolant::diff_p1(double x)
 {
   DiffValue result;
-  unsigned int i = find_interval(x);
-  result.first = p1_vec[i]*(x-x_vec[i]) + f_vec[i];
-  result.second = p1d_vec[i]*(x-x_vec[i]) + df_vec[i];
+  //unsigned int i = find_interval(x);
+  //result.first = p1_vec[i]*(x-x_vec[i]) + f_vec[i];
+  //result.second = p1d_vec[i]*(x-x_vec[i]) + df_vec[i];
+  
+  double x_step = x / step;
+  unsigned int i = floor(x_step - a_div_step);
+  
+  result.first =  (f_vec[i+1] - f_vec[i])*(x_step-i-a_div_step) + f_vec[i];
+  result.second =  (df_vec[i+1] - df_vec[i])*(x_step-i-a_div_step) + df_vec[i];
+  
   return result;
 }
 
@@ -331,9 +338,27 @@ private:
 /********************************** InterpolantImplicit ********************************/
 
 template<template<class> class Func, class Type >
-void InterpolantImplicit::set_functor(Func<Type>* func) 
+void InterpolantImplicit::set_functor(Func<Type>* func, bool interpolate_derivative) 
 {
   this->func = func;
+  func_diff = new Func<B<Type> >();
+  func_diffn = new Func<T<Type> >();
+  
+  func_diff->set_param_from_func(func);
+  func_diffn->set_param_from_func(func);
+  
+  this->interpolate_derivative = interpolate_derivative;
+  
+  checks[Check::functor] = true;
+}
+
+template<template<class> class Func, class Type >
+InterpolantImplicit::InterpolantImplicit(Func<Type>* func, bool interpolate_derivative)
+  : func(func), 
+    interpolate_derivative(interpolate_derivative),
+    explicit_interpolant(NULL),
+    fix_(IFixVariable::no_fix)
+{
   func_diff = new Func<B<Type> >();
   func_diffn = new Func<T<Type> >();
   
@@ -356,15 +381,15 @@ void InterpolantImplicit::set_functor(Func<Type>* func)
     
     //constructor from templated implicit functor
     template<class TType>
-    FuncExplicit(IFunctorBase<TType>& func_impl, fix_var fix, double fix_val)
+    FuncExplicit(IFunctorBase<TType>& func_impl, IFixVariable::Type fix, double fix_val)
       : func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
     
-    virtual Type operator()(Type u)
+    Type operator()(Type u)
     {
       Type ret;
-      if(fix_ == InterpolantImplicit::fix_x)
+      if(fix_ == IFixVariable::fix_x)
         ret = func_impl->operator()(fix_val,u);
-      if(fix_ == InterpolantImplicit::fix_y)
+      if(fix_ == IFixVariable::fix_y)
         ret =  func_impl->operator()(u,fix_val);
       
       return ret;
@@ -372,8 +397,19 @@ void InterpolantImplicit::set_functor(Func<Type>* func)
     
   private:
     IFunctorBase<Type>* func_impl;
-    fix_var fix_;
+    IFixVariable::Type fix_;
     double fix_val;
   };
   
+  
+inline double InterpolantImplicit::val(double u)
+{
+  return explicit_interpolant->val(u);
+}
+
+inline DiffValue InterpolantImplicit::diff(double u)
+{
+  return explicit_interpolant->diff(u);
+}
+
 #endif //INTERPOLATION_IMPL_H
