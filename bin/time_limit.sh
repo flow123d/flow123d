@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-#set -x
+set -x
 
 # Parse parameters
 if [ "$1" == "-t" ]
@@ -54,7 +54,7 @@ fi
 
 
 # kill still running COMMAND and all its childs
-CPIDS="${COMMAND_PID} $(pgrep -P ${COMMAND_PID})"
+CPIDS="${COMMAND_PID} $(ps --ppid ${COMMAND_PID} -o pid | tail -n +2)"
 for ONE_PID in ${CPIDS}
 do
   kill -s SIGTERM ${ONE_PID}

@@ -105,7 +105,7 @@ doxy-doc: cmake update-build-tree
 # It does not generate new input reference file.
 .PHONY: ref-doc
 ref-doc: cmake update-build-tree
-	make -C $(BUILD_DIR)/doc/reference_manual ref-doc
+	make -C $(BUILD_DIR)/doc/reference_manual pdf
 
 
 ############################################################################################

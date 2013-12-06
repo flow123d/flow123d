@@ -15,6 +15,9 @@ message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension
 set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
+# object library used by tests, but can be build once
+add_library(gtest_mpi_obj OBJECT ${mpi_gtest_sources})
+add_dependencies(gtest_mpi_obj gtest gtest_main)
 
 # Defines macro for absolute path to unit_tests, so that unit tests can read
 # some test files in its source directory, while the binary of the test is created
@@ -123,7 +126,7 @@ macro(define_mpi_test class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else() 
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} ${mpi_gtest_sources}) 
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>) 
   	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
   	add_dependencies(${test_binary} mpiexec_link)      # make
   endif()	

@@ -229,8 +229,9 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
 
-    if (in_rec.find<Input::Record>("mass_balance") != NULL)
-    	mass_balance_ = new MassBalance(this, *in_rec.find<Input::Record>("mass_balance"));
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    if (it)
+    	mass_balance_ = new MassBalance(this, *it);
 
     // Set up physical parameters.
     data.set_mesh(&init_mesh);
