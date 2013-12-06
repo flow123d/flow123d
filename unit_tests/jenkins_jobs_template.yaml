@@ -4,6 +4,16 @@
 # Projects - Jenkins Jobs Builder way to generate templated jobs
 #########################################################################################
 
+- defaults:
+    name: flow123d-build
+    # default template fields
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+
 # Multijob  project - debug
 - project:
     name: "Multijob project debug"
@@ -55,11 +65,8 @@
 - job-template:
     name: "Flow123d-configure-{platform}-{build-type}"
     display-name: "{platform} {build-type} / configure "
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+
+    defaults: flow123d-build
     builders:
       - shell: |
           # configure
@@ -81,11 +88,12 @@
 - job-template:
     name: "Flow123d-build-libs-{platform}-{build-type}"
     display-name: "{platform} {build-type} / build libraries "
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           # configure
@@ -98,18 +106,19 @@
 - job-template:
     name: "Unit-test-{unit-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / unit-test / {unit-dir}"
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
     properties:
       # Limit number of concurrently running unit tests to 2
       - throttle:
           max-per-node: 2
           option: "category"
-          categories:
-            - Flow123d-category-unit-tests
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+#          categories:
+#            - "Flow123d-category-unit-tests"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           make -C flow123d/build_tree/unit_tests/{unit-dir} all-test
@@ -120,11 +129,12 @@
 - job-template:
     name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
@@ -135,11 +145,12 @@
 - job-template:
     name: "Flow123d-build-{platform}-{build-type}"
     display-name: "{platform} {build-type} / flow123d build "
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           # configure
@@ -152,8 +163,9 @@
 - job-template:
     name: "Test-{test-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / test / {test-dir}"
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
     properties:
       # Limit number of concurrently running integration tests to 2
       - throttle:
@@ -162,9 +174,9 @@
           categories:
             - Flow123d-category-integration-tests
 
-    wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           make -C flow123d/tests/{test-dir} test
@@ -174,8 +186,12 @@
 - job-template:
     name: "Flow123d-{platform}-{build-type}-packages"
     display-name: "{platform} {build-type} / make packages"
-    node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    defaults: flow123d-build
+#    node: "{platform}"
+#    workspace: "Flow123d-{platform}-{build-type}"
+#    wrappers:
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"    
     builders:
       - shell: |
           make -C flow123d/build-tree package
@@ -202,11 +218,12 @@
     name: "Flow123d-build-multijob-{platform}-debug"
     display-name: "{platform} debug Flow123d multijob"
     project-type: multijob
-    node: "{platform}"
+    defaults: flow123d-build
+#    node: "{platform}"
     block-downstream: yes
     # workspace                 - directory with per-branch builds and external-projects dir
     # workspace/flow123d        - directore git clone to
-    workspace: "Flow123d-{platform}-debug"
+#    workspace: "Flow123d-{platform}-debug"
 
     scm:
       - git:
@@ -218,14 +235,19 @@
     triggers: 
       - github
     wrappers:
-      - build-name:
-          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+
       - workspace-cleanup:
           dirmatch: true
           include:
             - "flow123d"
             - "build-*"
+      - inject:
+          script-content: 
+            "echo \"BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
+#      - build-name:
+#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
+      - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
@@ -262,11 +284,11 @@
     name: "Flow123d-build-multijob-{platform}-release"
     display-name: "{platform} release Flow123d multijob"
     project-type: multijob
-    node: "{platform}"
+#    node: "{platform}"
     block-downstream: yes
     # workspace                 - directory with per-branch builds and external-projects dir
     # workspace/flow123d        - directore git clone to
-    workspace: "Flow123d-{platform}-release"
+#    workspace: "Flow123d-{platform}-release"
     scm:
       - git:
           url: https://github.com/flow123d/flow123d.git
@@ -280,15 +302,20 @@
       - pollscm: "H H(0-6) * * *"
       #- github
     wrappers:
-      #- build-name:
-      #    name:  "#$BUILD_NUMBER"
       - workspace-cleanup:
           dirmatch: true
           include:
             - "flow123d"
             - "build-*"
             - "external_projects"
+        # format and save build name common to all downstream jobs    
+      - inject:
+          script-content: 
+            "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
+#      - build-name:
+#          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
     builders:
+      - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
