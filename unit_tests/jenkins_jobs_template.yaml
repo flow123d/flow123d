@@ -65,7 +65,6 @@
 - job-template:
     name: "Flow123d-configure-{platform}-{build-type}"
     display-name: "{platform} {build-type} / configure "
-
     defaults: flow123d-build
     builders:
       - shell: |
@@ -73,6 +72,7 @@
           cd flow123d
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
+        
 
 ####################################################################
 # Flow123d build libraries 
@@ -89,11 +89,6 @@
     name: "Flow123d-build-libs-{platform}-{build-type}"
     display-name: "{platform} {build-type} / build libraries "
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           # configure
@@ -107,18 +102,13 @@
     name: "Unit-test-{unit-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / unit-test / {unit-dir}"
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
     properties:
       # Limit number of concurrently running unit tests to 2
       - throttle:
           max-per-node: 2
           option: "category"
-#          categories:
-#            - "Flow123d-category-unit-tests"
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
+          categories:
+            - "Flow123d-category-unit-tests"
     builders:
       - shell: |
           make -C flow123d/build_tree/unit_tests/{unit-dir} all-test
@@ -130,11 +120,6 @@
     name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
@@ -146,11 +131,6 @@
     name: "Flow123d-build-{platform}-{build-type}"
     display-name: "{platform} {build-type} / flow123d build "
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           # configure
@@ -164,8 +144,6 @@
     name: "Test-{test-dir}-{platform}-{build-type}"
     display-name: "{platform} {build-type} / test / {test-dir}"
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
     properties:
       # Limit number of concurrently running integration tests to 2
       - throttle:
@@ -174,9 +152,6 @@
           categories:
             - Flow123d-category-integration-tests
 
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
     builders:
       - shell: |
           make -C flow123d/tests/{test-dir} test
@@ -187,11 +162,6 @@
     name: "Flow123d-{platform}-{build-type}-packages"
     display-name: "{platform} {build-type} / make packages"
     defaults: flow123d-build
-#    node: "{platform}"
-#    workspace: "Flow123d-{platform}-{build-type}"
-#    wrappers:
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"    
     builders:
       - shell: |
           make -C flow123d/build-tree package
@@ -209,7 +179,6 @@
 #########################################################################################
 
 
-
 ########################################################################
 # Main multijob -debug
 #
@@ -219,18 +188,14 @@
     display-name: "{platform} debug Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
-#    node: "{platform}"
-    block-downstream: yes
-    # workspace                 - directory with per-branch builds and external-projects dir
-    # workspace/flow123d        - directore git clone to
-#    workspace: "Flow123d-{platform}-debug"
 
+    block-downstream: yes
     scm:
       - git:
           url: https://github.com/flow123d/flow123d.git
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
-          browser-url: https://github.com/flow123d/flow123d
+          browser-url: https://github.com/flow123d/flow123d/
 
     triggers: 
       - github
@@ -244,8 +209,9 @@
       - inject:
           script-content: 
             "echo \"BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
-#      - build-name:
-#          name:  "${PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}  #${BUILD_NUMBER}"
+      # set build name different way to have it even at start of the job
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
       - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
       - multijob:
@@ -284,17 +250,15 @@
     name: "Flow123d-build-multijob-{platform}-release"
     display-name: "{platform} release Flow123d multijob"
     project-type: multijob
-#    node: "{platform}"
+    defaults: flow123d-build
+    
     block-downstream: yes
-    # workspace                 - directory with per-branch builds and external-projects dir
-    # workspace/flow123d        - directore git clone to
-#    workspace: "Flow123d-{platform}-release"
     scm:
       - git:
           url: https://github.com/flow123d/flow123d.git
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
-          browser-url: https://github.com/flow123d/flow123d
+          browser-url: https://github.com/flow123d/flow123d/
           branches:
             - master
     triggers:
@@ -312,8 +276,9 @@
       - inject:
           script-content: 
             "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
-#      - build-name:
-#          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+      # set build name different way to have it even at start of the job
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
       - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
       - multijob:
@@ -321,6 +286,7 @@
           condition: SUCCESSFUL
           projects:  
             - name: "Flow123d-configure-{platform}-release"
+            - name: "Flow123d-{platform}-release-make-doc"
       - multijob:
           name: "Build Flow123d libraries"
           condition: COMPLETED
