@@ -24,11 +24,17 @@
 # This file can be included by makefiles from particular tests
 # to use general rules: "test" and "clean"
 
-update:
+# disallow default rules (prevents making flow123d from flow123d.sh)
+.SUFFIXES:
+
+check_build_tree:
+	cd ../.. && bin/git_post_checkout_hook
+
+update: check_build_tree ../../bin/flow123d
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} update
 
-test:
+test: check_build_tree ../../bin/flow123d
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 clean:
-	rm -rf Results test_results; rm -f profiler_*; rm -f output/*; rm -f vystup.txt
+	rm -rf output Results test_results; rm -f profiler_*; rm -f vystup.txt

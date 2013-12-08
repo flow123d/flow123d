@@ -1023,7 +1023,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
-#ifdef HAVE_BDDCML
+
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
@@ -1041,8 +1041,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             // for BDDC no Schur complements for the moment
             n_schur_compls = 0;
         }
-        
-#endif 
+
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
             LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );

@@ -26,7 +26,7 @@ message(STATUS "BDDCML_ROOT: ${BDDCML_ROOT}")
 find_path (BDDCML_INCLUDES bddcml_interface_c.h  HINTS ${BDDCML_ROOT}/src )
 find_library (BDDCML_LIBRARY NAMES bddcml  HINTS ${BDDCML_ROOT}/lib )
 
-# message(STATUS "found: ${BDDCML_INCLUDES}, ${BDDCML_LIBRARIES} ")
+message(STATUS "found: ${BDDCML_INCLUDES}, ${BDDCML_LIBRARIES} ")
 
 if (BDDCML_INCLUDES)
   find_program (MAKE_EXECUTABLE NAMES make gmake)
@@ -45,7 +45,7 @@ show :
 
   ######################################
   macro (BDDCML_GET_VARIABLE name var)
-    set (${var} "NOTFOUND" CACHE INTERNAL "Cleared" FORCE)
+    set (${var} "${var}_NOTFOUND" CACHE INTERNAL "Cleared" FORCE)
     execute_process (COMMAND ${MAKE_EXECUTABLE} --no-print-directory -f ${config_makefile} show VARIABLE=${name}
       OUTPUT_VARIABLE ${var}
       RESULT_VARIABLE make_return)

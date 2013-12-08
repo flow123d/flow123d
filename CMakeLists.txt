@@ -1,7 +1,5 @@
 # CMAKE system TODO
 #
-# * make our own module FindPETSC  using native cmake support in PETSC version >3.2 
-# * check external packages in FindPETSC, in particular Parmetis
 #
 # * report compiler flags and used libraries in a summarizing table before own build
 #
@@ -11,9 +9,12 @@
 #
 #
 
+# check build_tree link,
+# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 # Include settings given by user first
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CONFIG_CMAKE "config.cmake")
 if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
@@ -46,6 +47,11 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
 
+# allow duplicate custom targets for makefiles
+set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+set(ALLOW_DUPLICATE_CUSTOM_TARGETS 1) #variable that can be tested
+
+
 ################################################################################# set CMake Modules
 # Set all module paths
 set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
@@ -75,6 +81,7 @@ if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
+  set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
   
 else(FLOW_CC_FLAGS)
@@ -83,16 +90,19 @@ else(FLOW_CC_FLAGS)
   if(FLOW_BUILD_TYPE STREQUAL "debug")
     # debug mode
     set(CMAKE_CXX_FLAGS "-g -O0")
+    set(CMAKE_C_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    add_definitions(-DDEBUG)
+    add_definitions(-DFlow123d_DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DNODEBUG)
+    set(CMAKE_C_FLAGS "-O3")
+    add_definitions(-DDEBUG_PROFILER)
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
-    add_definitions(-DDEBUG)
+    set(CMAKE_C_FLAGS "-O3")
+    add_definitions(-DFlow123d_DEBUG)
   else()
   endif()
   
@@ -103,7 +113,16 @@ endif(FLOW_CC_FLAGS)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
 	    execute_process(
 	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+	    if (CYGWIN)
+	        if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+	          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+	          add_definitions("-DCYGWIN")
+	          add_definitions("-DHAVE_CXX11_FULL")
+	          set(CMAKE_HAVE_CXX11 "true")
+	        else ()
+	          message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
+	        endif ()
+	    elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
 	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	        add_definitions("-DHAVE_CXX11_FULL")    
 	        set(CMAKE_HAVE_CXX11 "true")
@@ -214,6 +233,7 @@ endif(EXEC_INFO_H)
 #   Boost_${COMPONENT}_FOUND            True IF the Boost library "component" was found.
 #   Boost_${COMPONENT}_LIBRARY          Contains the libraries for the specified Boost
 
+message(STATUS "\n =======================================================")
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
@@ -237,7 +257,7 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
-#set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
 if (NOT Boost_FORCE_REBUILD)
     find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 endif()    
@@ -285,7 +305,11 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 #  PETSC_DEFINITIONS  - Compiler switches for using PETSc
 #  PETSC_MPIEXEC      - Executable for running MPI programs
 #  PETSC_VERSION      - Version string (MAJOR.MINOR.SUBMINOR)
+
+message(STATUS "\n =======================================================")
 include (FindPackageMultipass)
+
+# this export list is for possible BDDCML installation
 set(PETSC_EXPORT_LIST 
   MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
@@ -299,11 +323,8 @@ if (NOT PETSC_FOUND)
     else()    
         # Install PETSC
         # also set PETSC_DIR, PETSC_ARCH
-        set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
-        set(INSTALL_PETSC_URL http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.1.tar.gz)
-        if (INSTALL_PETSC_BDDCML)
-          set(INSTALL_PETSC_OPTIONS "${INSTALL_PETSC_OPTIONS} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes")
-        endif()
+        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        set(PETSC_INSTALL_URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.3.tar.gz\")
         include(InstallPetsc)
         
         set(PETSC_CURRENT "NO")
@@ -311,12 +332,7 @@ if (NOT PETSC_FOUND)
         
     endif()    
         
-        
-    
-    message(STATUS "PETSC_LIBS: ${PETSC_LIBRARIES}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${PETSC_EXTERNAL_LIB}")
-    message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
-    
+       
     # If we haven't PETSC, we try to find MPI
         
     # === Variables ===
@@ -366,6 +382,8 @@ if(PETSC_FOUND)
 endif(PETSC_FOUND)
 
 #find_package(PARMETIS)
+
+#message(STATUS "\n =======================================================")
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
 
@@ -397,6 +415,7 @@ endif()
 #  Armadillo_CONFIGURE_CMAKE - path to configure cmake script that introduce target 'armadillo'
 #                              with correctly set dependencies on other libraries
 
+message(STATUS "\n =======================================================")
 find_package(ArmadilloFlow 3.2.4)
 if (NOT Armadillo_FOUND)
   message(STATUS "Try to install our own Armadillo.")
@@ -444,15 +463,14 @@ else (CYGWIN)
   endif()  
 endif(CYGWIN)
 
-# check for subversion and prepare generating of file with revision info.
-#find_package(Subversion)
+message(STATUS "\n ======================================================= ")
 
 
-
-################################################################### set includes and libraries paths
+######################################################################################################################### 
+# set includes and libraries paths
 
 include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the svnversion.h file is generated    
+    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
@@ -463,70 +481,121 @@ include_directories(
     ${MPI_CXX_INCLUDE_PATH}
 )
 
+######################################################################################################################
+# custom targets
 
-##############
+
+#### Safety check of build_tree link
+# This check is called by every target, if it fails we are probably running makefile generated for another branch.
+# So we must break the build.
+add_custom_target(update_source_tree 
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/git_post_checkout_hook
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+   
+
+   
+#### create rev_num.h - file with some info about code origin
+# a custom target - is always built -> call cmake script to generate rev_num.h
+# Get the current working branch
+
+#message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+add_custom_target(rev_num_always 
+    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+)
+# rev_num.h is a generated file
+set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
+    PROPERTIES GENERATED TRUE
+    HEADER_FILE_ONLY TRUE)
+
+    
+    
+#### make a script which call correct mpiexec (taken from PETSC)
+# we can not use link, since mpiexec can be sript which reads its location from calling sequence
+#
+
+#message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
+if(PETSC_MPIEXEC)     
+      # missing CMAKE command to test working executable, moreover it could be without full path
+      
+      # resolve symlinks
+      get_filename_component(RESOLVED_MPIEXEC "${PETSC_MPIEXEC}" REALPATH)
+      message(STATUS "using petsc_mpiexec: ${RESOLVED_MPIEXEC}")
+      set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+else()
+      find_program(SYSTEM_MPIEXEC mpiexec)
+      if(SYSTEM_MPIEXEC)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")	
+	get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
+        set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
+      else()
+        message(WARNING "Missing any mpiexec.")
+      endif()
+endif()
+configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+
+
+##################################################################################################################### 
+# Macro to make usefull links in SOURCE_DIR
+##################################
+
+
+# initialize a global variable (cached)
+set(SOURCE_TREE_LINKS  "" CACHE INTERNAL "" FORCE)
+              
+
+macro(make_link_in_source FILE)
+  # get relative filename if absolute address is given
+  string(REPLACE "${CMAKE_SOURCE_DIR}/" "" rel_path "${FILE}")
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/build_tree/${rel_path} ${CMAKE_SOURCE_DIR}/${rel_path}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+  
+  set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
+endmacro()
+
+make_link_in_source(bin/flow123d)
+make_link_in_source(bin/mpiexec)
+make_link_in_source(bin/tests/Makefile)
+make_link_in_source(unit_tests/Makefile)
 
 ############################################################33 process subdirectories
 
 
 # add fparser sources
-message(STATUS "ad subdir FParser")
+message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
 
 # add various our sources
 add_subdirectory(src)
 add_subdirectory(doc)
+add_subdirectory(unit_tests) # this also adds third_party/gtest
 
-add_subdirectory(bin/tests)
-add_subdirectory(unit_tests)
+# optionally make targets for building reference_manual
+# we have to call separate instance of CMake since UseLatex.cmake
+# depends on many tools. If any of them miss CMake fails, while we can live
+# without targets for Latex doc.
+message(STATUS "==== child CMake for Latex sources ====") 
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc/reference_manual)
+execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}/doc/reference_manual
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/doc/reference_manual
+                RESULT_VARIABLE res_var)
+message(STATUS "==== back in main CMake ====")
+if(NOT "${res_var}" STREQUAL "0")
+  message(WARNING "Some problem with Latex, 'make ref-doc' may not work.")
+endif()
 
 
 #################################################################### add targets
 
 
 if( PETSC_FOUND )
-
-  #### create rev_num.h - file with some info about code origin
-  # a custom target - is always built -> call cmake script to generate rev_num.h
-  # Get the current working branch
-
-
-  message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
-  add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
-  )
   
-  # rev_num.h is a generated file
-  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/rev_num.h
-    PROPERTIES GENERATED TRUE
-    HEADER_FILE_ONLY TRUE)
-
-
-  #### make a script which call correct mpiexec (taken from PETSC)
-  # we can not use link, since mpiexec can be sript which reads its location from calling sequence
-  #
-  # TODO: otestovat if(EXISTS ...) pod Windows, na tomto miste se mu nedari nalezt mpiexec ktery existuje.
-  # ? Potrebuje pod Cygwin uplnou cestu C:\cygwin\ ...? 
-  message(STATUS "petsc_mpiexec: ${PETSC_MPIEXEC}")
-  if(PETSC_MPIEXEC)     # missing CMAKE command to test working executable, moreover it could be without full path
-      message(STATUS "using petsc_mpiexec: ${PETSC_MPIEXEC}")
-      set(MPIEXEC_PATH ${PETSC_MPIEXEC})
-  else()
-      if(COMMAND mpiexec)
-        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")
-        set(MPIEXEC_PATH mpiexec)
-      else()
-        message(WARNING "Missing any mpiexec.")
-      endif()
-  endif()
-  configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/mpiexec)
-  
-
-
   ### add target for flow123d binary
-  add_executable(flow123d src/main.cc)
-  target_link_libraries(flow123d  flow123d_lib ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(flow123d rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_executable(bin/flow123d src/main.cc)
+  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
@@ -537,6 +606,7 @@ endif()
 ###############################################################################
 # Summary
 
+  
 message(STATUS "=============== Summary ===================")
 message(STATUS "Boost:  ${BOOST_LIBRARYDIR}")
 message(STATUS "Petsc:  ${PETSC_LIBRARIES}")
@@ -544,5 +614,70 @@ message(STATUS "   + :  ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML: ${BDDCML_LIBRARIES}")
 message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
 
+####################################################################################
+# Install and Packaging
+
+if (UNIX)
+  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/Flow123d")
+endif()
+
+
+# mpiexec, hope this will work
+install(DIRECTORY config 			DESTINATION bin/)
+install(DIRECTORY bin/ndiff 			DESTINATION bin/)
+install(DIRECTORY bin/paraview 			DESTINATION bin/)
+install(DIRECTORY bin/py			DESTINATION bin/)
+install(PROGRAMS   bin/tests/run_test.sh 	DESTINATION bin/tests)
+
+install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
+install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
+install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
+install(TARGETS    bin/flow123d 
+	RUNTIME DESTINATION bin/)
+install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
+
+# make manual optional until we have Latex on Windows build machine
+install(FILES ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf 
+						DESTINATION doc/ OPTIONAL)
+install(FILES doc/petsc_options_help 		DESTINATION doc/)
+install(FILES doc/flow_json.xml			DESTINATION doc/)
+install(FILES LICENSE DESTINATION doc/)
+install(FILES GPL3    DESTINATION doc/)
+
+# clean tests directory before install
+find_program (MAKE_EXECUTABLE NAMES make gmake)
+install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
+install(DIRECTORY tests DESTINATION .)
+install(FILES README.md DESTINATION .)
+
+# To install MSVC runtime libraries ... ?
+INCLUDE(InstallRequiredSystemLibraries)
+
+
+
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
+SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+SET(CPACK_PACKAGE_VERSION_MINOR "8")
+SET(CPACK_PACKAGE_VERSION_PATCH "0.alpha")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+IF(WIN32 AND NOT UNIX)
+  # There is a bug in NSI that does not handle full unix paths properly. Make
+  # sure there is at least one set of four (4) backlasshes.
+#  SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
+#  SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
+  SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+  SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
+  SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
+  SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
+  SET(CPACK_NSIS_MODIFY_PATH ON)
+ELSE(WIN32 AND NOT UNIX)
+  SET(CPACK_STRIP_FILES "bin/MyExecutable")
+  SET(CPACK_SOURCE_STRIP_FILES "")
+ENDIF(WIN32 AND NOT UNIX)
+SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+INCLUDE(CPack)
 
 

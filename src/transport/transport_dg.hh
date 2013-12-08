@@ -85,6 +85,14 @@ public:
 	class EqData : public TransportBase::TransportEqData {
 	public:
 
+        enum BC_Type {
+            inflow=0,
+            dirichlet=1,
+            neumann=2,
+            robin=3
+        };
+        static Input::Type::Selection bc_type_selection;
+
 		EqData();
 		RegionSet read_boundary_list_item(Input::Record rec);
 
@@ -93,6 +101,10 @@ public:
 		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
 		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+
+        BCField<3, FieldValue<3>::EnumVector > bc_type;
+        BCField<3, FieldValue<3>::Vector > bc_flux;
+        BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
 
 	};
 
@@ -221,6 +233,8 @@ public:
 	 * @brief Getter for field data.
 	 */
 	virtual EqData *get_data() { return &data; }
+
+	TimeIntegrationScheme time_scheme() { return implicit_euler; }
 
 	/**
 	 * @brief Destructor.
@@ -469,13 +483,6 @@ private:
 
 	/// The mass matrix.
 	Mat mass_matrix;
-
-//	/// Element id -> local element index (-1 if not local)
-//    int *row_4_el;
-//    /// Local element index -> id
-//    int *el_4_loc;
-//    /// Distribution of elements
-//    Distribution *el_ds;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;

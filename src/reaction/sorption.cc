@@ -18,6 +18,8 @@
 #include "mesh/region.hh"
 #include "input/type_selection.hh"
 
+#include "coupling/time_governor.hh"
+
 const double pi = 3.1415;
 namespace it=Input::Type;
 
@@ -44,7 +46,9 @@ Record Sorption::input_type
 	.declare_key("solubility", Array(Double()), Default("-1.0"), //Default::obligatory(), //Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
     .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Containes region specific data necessery to construct isotherms.");
+                   	   	   "Containes region specific data necessery to construct isotherms.")//;
+	.declare_key("time", Double(), Default("1.0"),
+			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
 Sorption::EqData::EqData()
 : EqDataBase("Sorption")
@@ -97,6 +101,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 			isotherms[i_reg].push_back(iso_mob);
 		}
 	}
+
+    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());
 }
 
 Sorption::~Sorption(void)
@@ -137,8 +143,11 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 		else	xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
 	}
 
-	double rock_density;
+	make_tables();
+}
 
+void Sorption::make_tables(void)
+{
 	ElementAccessor<3> elm;
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
@@ -165,6 +174,8 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
+	START_TIMER("Sorption::isotherm_reinit");
+
 	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
 	double porosity = this->porosity_->value(elem.centre(),elem);
 
@@ -191,7 +202,6 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 			case MOBILE:
 			{*/
 				scale_aqua = por_m;
-				//scale_sorbed;
 				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
 					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 			/*}break;
@@ -209,6 +219,8 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 		isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
 	}
 
+	END_TIMER("Sorption::isotherm_reinit");
+
 	return;
 }
 
@@ -217,6 +229,7 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 
 double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
+    //START_TIMER("Computes reaction");
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
     double porosity;
     double rock_density;
@@ -229,85 +242,51 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 
     if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
 
-    //  If intersections of isotherm with mass balance lines are known, then interpolate.
-    	//  Measurements [c_a,c_s] will be rotated
-    	//  Rotated measurements must be projected on rotated isotherm, interpolate_datapoints()
-    	//  Projections need to be transformed back to original CS
-    //	If intersections are not known then solve the problem analytically (toms748_solve).
-
-    // Constant value of rock density and mobile porosity over the whole region
-    if(isotherms_vec[0].is_precomputed())
-	{
-		START_TIMER("new-sorption interpolation");
-		{
-			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-			{
-				Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-				int subst_id = substance_ids[i_subst];
-			    isotherm.compute_projection((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
-			}
-		    //xprintf(Msg, "interpolation table has been used for sorption simulation\n");
-		}
-		END_TIMER("new-sorption interpolation");
-	}else{
-		START_TIMER("new-sorption toms748_solve values-readed");
-		rock_density = data_.rock_density.value(elem->centre(),elem_access);
-		double porosity;
-		porosity = this->porosity_->value(elem->centre(),elem->element_accessor());
-
-		double phi = this->phi_->value(elem->centre(),elem->element_accessor());
-		double por_m = this->porosity_->value(elem->centre(),elem->element_accessor());
-		double por_imm = this->immob_porosity_->value(elem->centre(),elem->element_accessor());
-		END_TIMER("new-sorption toms748_solve values-readed");
-
-		double scale_aqua = por_m;
+    // Constant value of rock density and mobile porosity over the whole region => interpolation_table is precomputed
+    if(!(isotherms_vec[0].is_precomputed()))
+    {
 		isotherm_reinit(isotherms_vec, elem_access);
+    }
 
-		for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-		{
-			double scale_sorbed;
-			Isotherm & isotherm = isotherms_vec[i_subst];
-			int subst_id = substance_ids[i_subst];
-			// following condition is valid for adsorption in mobile pores
-			if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
-								xprintf(UsrErr, "Sorption::compute_reaction() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
-
-		    ConcPair conc(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
-			if(isotherm.limited_solubility_on_ && (concentration_matrix[subst_id][loc_el] > isotherm.table_limit_))
-			{
-				START_TIMER("new-sorption, var params, lim solub");
-				isotherm.precipitate(concentration_matrix[subst_id][loc_el], sorbed_conc_array[i_subst][loc_el]);
-				END_TIMER("new-sorption, var params, lim solub");
-			}else{
-				START_TIMER("new-sorption toms748_solve");
-		    	conc = isotherm.solve_conc(conc);
-				END_TIMER("new-sorption toms748_solve");
-			}
-		    concentration_matrix[subst_id][loc_el] = conc.first;
-		    sorbed_conc_array[i_subst][loc_el] = conc.second;
-		}
-	    //xprintf(Msg, "toms748_solve has been used for sorption simulation\n");
+	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	{
+		Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
+		int subst_id = substance_ids[i_subst];
+	    isotherm.compute_reaction((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
 	}
+    //END_TIMER("Computes reaction");
 
 	return concentrations;
 }
 
-// Computes sorption simulation over all the elements.
+// Computes adsorption simulation over all the elements.
 void Sorption::compute_one_step(void)
 {
-    START_TIMER("new_sorp_step");
+    data_.set_time(*time_); // set to the last computed time
+    //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
+	if((data_.rock_density.changed_during_set_time) &&
+		(data_.mult_coefs.changed_during_set_time) &&
+		(data_.second_params.changed_during_set_time) &&
+		(this->porosity_->changed_during_set_time) &&
+		(this->immob_porosity_->changed_during_set_time) &&
+		(this->phi_->changed_during_set_time))
+	{
+		make_tables();
+	}
+
+    START_TIMER("Computes reaction");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix, loc_el);
 	 }
-    END_TIMER("new_sorp_step");
-	 return;
+    END_TIMER("Computes reaction");
+
+	return;
 }
 
 
 void Sorption::print_sorption_parameters(void)
 {
-
     xprintf(Msg, "\nSorption parameters are defined as follows:\n");
 }
 

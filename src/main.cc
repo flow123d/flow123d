@@ -43,6 +43,7 @@
 #include <fstream>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/options_description.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -104,7 +105,7 @@ Application::Application( int argc,  char ** argv)
 
     //use_profiler=true;
     Profiler::initialize();
-    
+
     display_version();
   
     Input::Record i_rec = read_input();
@@ -332,7 +333,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         }
     }
 
-    stringstream(program_arguments_desc_) << desc;
+    ostringstream tmp_stream(program_arguments_desc_);
+    tmp_stream << desc;
     // TODO: catch specific exceptions and output usage messages
 }
 
@@ -343,7 +345,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 void Application::free_and_exit() {
     //close the Profiler
     //DBGMSG("prof: %d\n", use_profiler);
-    if (use_profiler) {
+    if (use_profiler && Profiler::is_initialized()) {
         Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();
     }

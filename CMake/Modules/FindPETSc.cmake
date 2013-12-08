@@ -135,9 +135,9 @@ find_package_multipass (PETSC petsc_config_current
   STATES DIR ARCH
   DEPENDENTS INCLUDES LIBRARIES COMPILER MPIEXEC EXTERNAL_LIB ${petsc_slaves})
   
-message(STATUS "petsc_external_lib: ${PETSC_EXTERNAL_LIB}\n")
-message(STATUS "petsc_inclides: ${PETSC_INCLUDES}\n")
-message(STATUS "petsc_config_current: ${petsc_config_current}\n")
+#message(STATUS "petsc_external_lib: ${PETSC_EXTERNAL_LIB}\n")
+#message(STATUS "petsc_includes: ${PETSC_INCLUDES}\n")
+#message(STATUS "petsc_config_current: ${petsc_config_current}\n")
 
   
 ########################################################## 
@@ -188,7 +188,7 @@ show :
   endmacro (PETSC_GET_VARIABLE)
 
   macro(PETSC_EXPORT_VARIABLES var_list)
-      message(STATUS ${var_list})   
+      #message(STATUS ${var_list})   
       
       foreach( var ${var_list} )
           petsc_get_variable(${var} PETSC_VAR_${var})
@@ -241,7 +241,7 @@ show :
 
   include (CorrectWindowsPaths)
   convert_cygwin_path(petsc_lib_dir)
-  message (STATUS "petsc_lib_dir ${petsc_lib_dir}")
+  #message (STATUS "petsc_lib_dir ${petsc_lib_dir}")
 
   ###############################################################################
   # Find PETSc libraries
@@ -269,7 +269,7 @@ show :
     petsc_find_library (TS   petscts)
     macro (PETSC_JOIN libs deps)
       list (APPEND PETSC_LIBRARIES_${libs} ${PETSC_LIBRARIES_${deps}})
-      message(STATUS "PETSC_LIBRARIES_${libs}: " ${PETSC_LIBRARIES_${libs}})       
+      #message(STATUS "PETSC_LIBRARIES_${libs}: " ${PETSC_LIBRARIES_${libs}})       
     endmacro (PETSC_JOIN libs deps)
     petsc_join (VEC  SYS)
     petsc_join (MAT  VEC)
@@ -347,9 +347,9 @@ int main(int argc,char *argv[]) {
 
   # Macro resolve_libraries comes from ResolveCompilerPaths, it tries resolve all libraries form given compiler line
   # Unfortunately this only mimics compiler resolutions and occasionally can be incorrect. In such a case use PETSC_ADDITIONAL_LIBS.
-  message(STATUS "[FindPETSc] Try to resolve libraries from: '${petsc_libs_external}'")
+  #message(STATUS "[FindPETSc] Try to resolve libraries from: '${petsc_libs_external}'")
   resolve_libraries (petsc_libraries_external "${petsc_libs_external}")
-  message(STATUS "[FindPETSc] Resolved path: '${petsc_libraries_external}'")
+  #message(STATUS "[FindPETSc] Resolved path: '${petsc_libraries_external}'")
   
   # Multipass_test_1 ####################
   petsc_test_runs ("${petsc_includes_minimal}" "${PETSC_LIBRARIES_TS}" petsc_works_minimal)

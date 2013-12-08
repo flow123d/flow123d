@@ -165,6 +165,7 @@ set(sources_lib_non_system
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
+    transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
 )
@@ -189,6 +190,7 @@ endif()
 # system_lib
 add_library(system_lib ${sources_lib_system})
 target_link_libraries(system_lib ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+add_dependencies(system_lib update_source_tree)
 
 
 # when the precompiled headers are used in the future

@@ -267,7 +267,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
     unsigned int next_free_dof = offset;
     // n_obj_dofs[element_dim][general_face_dim]
     // for every dim of ref. element, number of DoFs on its generalized face (face, edge, vertex)
-    unsigned int n_obj_dofs[3][4];
+    unsigned int n_obj_dofs[4][4];
 
 
     fe1d_ = &fe1d;

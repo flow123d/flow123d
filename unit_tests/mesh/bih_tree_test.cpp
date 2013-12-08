@@ -6,7 +6,6 @@
  */
 
 
-#define DEBUG
 
 #include <gtest/gtest.h>
 #include <cmath>

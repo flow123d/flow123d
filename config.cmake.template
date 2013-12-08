@@ -6,27 +6,26 @@
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
-
 # e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
 # set( PETSC_ADDITIONAL_LIBS "-lpthread")
 
-# Options for PETSC installer.
-#     PETSC_MPI_DIR      - pass MPI to PETSC configure 
-#     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
-#     INSTALL_PETSC_ONLY - install only petsc (possibly MPI and BLAS/LAPACK)
-#     INSTALL_PETSC_BDDCML - install also: metis, parmetis, hypre, ml, mumps
-#     INSTALL_PETSC_OPTIONS - add content of this variable to the PETSC configure command
+# If PETSC are not found we try to install them automatically.
+# Options for PETSC installer:
 #
-# set(INSTALL_PETSC_BDDCML "yes")
-# set(INSTALL_PETSC_OPTIONS "--download-hypre=yes")
-
-### BDDCML library #############################################################
-# BDDCML_ROOT - root directory of BDDCML library
-# tested with version 2.2
-# If BDDCML_ROOT is set and BDDCML library is not found it is installed automatically.
-# If the variable is unset, BDDCML is not used.
-# Note: For automatic installation you need MUMPS and ScaLapack, this can be automatically installed with PETSC 
-# if you set INSTALL_PETSC_BDDCML.
+#     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
+#     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
+#
+#     PETSC_INSTALL_CONFIG - possible values:
+#       mini             - only petsc + necessary MPI, BLAS, LAPACK
+#       flow123d_mini    - mini + metis + parmetis
+#       bddcml           - flow123d_mini + mumps + scalapack + blacs
+#       full             - bddcml + hypre + blopex + umfpack + sundials
+#
+#     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
+#
+# example:
+# set(PETSC_INSTALL_CONFIG "bddcml")
+# set(PETSC_INSTALL_OPTIONS "--download-hypre=yes")
 #
 # set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
@@ -36,8 +35,38 @@
 #
 # set(USE_PYTHON "yes")
 
-### Build setting ####################################################################
+### BDDCML library #############################################################
+# BDDCML_ROOT - root directory of BDDCML library
+# tested with version 2.2
+# If BDDCML_ROOT is set and BDDCML library is not found it is installed automatically.
+# If the variable is unset, BDDCML is not used.
+# Note: For automatic installation you need MUMPS and ScaLapack, this can be automatically installed with PETSC 
+# if you set PETSC_CONFIG=bddcml.
+#
+# example:
+# set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
 
+### Python setting ###############################################################
+# USE_PYTHON - only use python if this is set to "yes"
+# We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
+#
+# set(USE_PYTHON "yes")
+
+### Boost ######################
+# Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
+#
+#set(Boost_FORCE_REBUILD "yes")
+
+### Install Prefix ########################
+#
+# Root directory of Flow123d installation. Default is ${HOME}/local/Flow123d for Linux and
+# C:\Program Files\Flow123d for Windows.
+#
+# set(CMAKE_INSTALL_PREFIX "${HOME}/flow123d"
+
+
+
+### Build setting ####################################################################
 
 ### verbose mode ####
 # option to produce more verbose compiling
@@ -72,8 +101,8 @@
 
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags: "-g -DDEBUG"
-# "release" set flags: "-O3 -DNODEBUG"
+# "debug" set flags: "-g -DFlow123d_DEBUG"
+# "release" set flags: "-O3 -DDEBUG_PROFILER"
 #
 
 set(FLOW_BUILD_TYPE debug)
@@ -82,16 +111,16 @@ set(FLOW_BUILD_TYPE debug)
 # you can override these settings through variable FLOW_CC_FLAGS
 #
 # Flow recognize  following definitions:
-# NODEBUG					- all debug options off
-# DEBUG						- all debug options on
+# Flow123d_NODEBUG					- all debug options off
+# Flow123d_DEBUG					- all debug options on
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
 # DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
-# e.g. :
-#set(FLOW_CC_FLAGS "-O3 -DNODEBUG -pg ")
+# example:
+#set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
 
 

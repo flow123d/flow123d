@@ -40,7 +40,7 @@
 
 namespace it = Input::Type;
 
-#ifdef HAVE_BDDCML
+
 it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
     .derive_from(LinSys::input_type)
     .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
@@ -51,7 +51,7 @@ it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
                  "Use adaptive selection of constraints in BDDCML.")
     .declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
                  "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.");
-#endif // HAVE_BDDCML
+
 
 
 LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
@@ -102,6 +102,8 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
     PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
     ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
     CHKERRV( ierr );
+#else
+    xprintf(UsrErr, "Compiled without support for BDDCML solver.\n");  
 #endif // HAVE_BDDCML
 }
 

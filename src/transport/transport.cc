@@ -107,8 +107,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 {
     F_ENTRY;
 
-    time_scheme_ = explicit_euler;
-
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
@@ -123,6 +121,10 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
+
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    if (it)
+    	mass_balance_ = new MassBalance(this, *it);
 
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
@@ -234,6 +236,9 @@ void ConvectionTransport::make_transport_partitioning() {
 ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi, ph;
+
+    if (mass_balance_ != NULL)
+    	delete mass_balance_;
 
     //Destroy mpi vectors at first
     VecDestroy(&v_sources_corr);
@@ -541,6 +546,52 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
         }
 }
 
+void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigned int sbi) {
+
+	//temporary variables
+	unsigned int loc_el;
+	double conc_diff;
+	ElementAccessor<3> ele_acc;
+	arma::vec3 p;
+
+	double *pconc;
+	VecGetArray(vpconc[sbi], &pconc);
+
+	//TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
+
+	//checking if the data were changed
+	if( (data_.sources_density.changed_during_set_time)
+		  || (data_.sources_conc.changed_during_set_time)
+		  || (data_.sources_sigma.changed_during_set_time) )
+	{
+		START_TIMER("sources_reinit");
+		for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+		{
+			ele_acc = mesh_->element_accessor(el_4_loc[loc_el]);
+			p = ele_acc.centre();
+
+			//if(data_.sources_density.changed_during_set_time)
+			sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi);
+
+			//if(data_.sources_conc.changed_during_set_time)
+			sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
+
+			//if(data_.sources_sigma.changed_during_set_time)
+			sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi);
+		}
+	}
+
+    //now computing source concentrations: density - sigma (source_conc - actual_conc)
+    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+    	conc_diff = sources_conc[sbi][loc_el] - pconc[loc_el];
+    	if ( conc_diff > 0.0)
+    		sources_corr[loc_el] = sources_density[sbi][loc_el] + conc_diff * sources_sigma[sbi][loc_el];
+    	else
+            sources_corr[loc_el] = sources_density[sbi][loc_el];
+    }
+}
+
 
 void ConvectionTransport::compute_one_step() {
 
@@ -616,7 +667,7 @@ void ConvectionTransport::compute_one_step() {
     //time_->view("CONVECTION");
     time_->next_time(); // explicit scheme use values from previous time and then set then new time
 
-
+    START_TIMER("old_sorp_step");
     for (sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
       
@@ -636,7 +687,7 @@ void ConvectionTransport::compute_one_step() {
 
      //}
 
-     START_TIMER("dual porosity/old-sorption");
+     //START_TIMER("dual porosity/old-sorption");
      
     /*if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
     {
@@ -647,7 +698,6 @@ void ConvectionTransport::compute_one_step() {
           else cout << conc[MOBILE][i_subst][loc_el] << endl;
       }
 	}
-    START_TIMER("old_sorp_step");
     for (sbi = 0; sbi < n_subst_; sbi++) {*/
            
         if ((dual_porosity == true) || (sorption == true) )
@@ -661,9 +711,9 @@ void ConvectionTransport::compute_one_step() {
 
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
-      END_TIMER("dual porosity/old-sorption");
+      //END_TIMER("dual porosity/old-sorption");
     }
-    //END_TIMER("old_sorp_step");
+    END_TIMER("old_sorp_step");
     END_TIMER("convection-one step");
 }
 
@@ -1251,13 +1301,11 @@ int ConvectionTransport::get_n_substances() {
 
 void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
 {
-    double ***solution = conc;
-    // int *el_4_loc, *row_4_el;
-    // Distribution *el_ds;
     double mass_flux[n_substances()];
+    double *pconc[n_substances()];
 
-    //convection->get_par_info(el_4_loc, el_ds);
-    //row_4_el = convection->get_row_4_el();
+    for (int sbi=0; sbi<n_substances(); sbi++)
+    	VecGetArray(vpconc[sbi], &pconc[sbi]);
 
     FOR_BOUNDARIES(mesh_, bcd) {
 
@@ -1267,8 +1315,14 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         int loc_index = index-el_ds->begin();
 
         double water_flux = mh_dh->side_flux(*(bcd->side()));
-        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-            mass_flux[sbi] = water_flux*solution[MOBILE][sbi][loc_index];
+        if (water_flux < 0) {
+        	arma::vec bc_conc = data_.bc_conc.value( bcd->element()->centre(), bcd->element_accessor() );
+        	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        		mass_flux[sbi] = water_flux*bc_conc[sbi];
+        } else {
+        	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        		mass_flux[sbi] = water_flux*pconc[sbi][loc_index];
+        }
 
         Region r = bcd->region();
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", bcd->bc_ele_idx_, bcd->edge_idx_);
@@ -1287,32 +1341,29 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
 
 void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
 {
-  //the sources concentration is divided by dt cause it is multiplied by it before
-  
-    //int *el_4_loc, *row_4_el;
-    //Distribution *el_ds;
-    double ***solution = conc;
-
-    //convection->get_par_info(el_4_loc, el_ds);
-    //row_4_el = convection->get_row_4_el();
-
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
     {
-        compute_concentration_sources(sbi);
+        compute_concentration_sources_for_mass_balance(sbi);
         double *sources = sources_corr;
 
         FOR_ELEMENTS(mesh_,elem)
         {
+        	int index = row_4_el[elem.index()];
+        	if (!el_ds->is_local(index)) continue;
         	ElementAccessor<3> ele_acc = elem->element_accessor();
         	double por_m = data_.por_m.value(elem->centre(), ele_acc);
         	double csection = data_.cross_section->value(elem->centre(), ele_acc);
-            int index = row_4_el[elem.index()];
-            if (el_ds->is_local(index))
-            {
-            	int loc_index = index - el_ds->begin();
-                mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*solution[MOBILE][sbi][loc_index]*elem->measure();
-                src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
-            }
+        	int loc_index = index - el_ds->begin();
+			double sum_sol_phases = 0;
+
+			for (int ph=0; ph<MAX_PHASES; ph++)
+			{
+				if ((sub_problem & ph) == ph)
+					sum_sol_phases += conc[ph][sbi][loc_index];
+			}
+
+			mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*sum_sol_phases*elem->measure();
+			src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
         }
     }
 }
@@ -1326,7 +1377,8 @@ void ConvectionTransport::output_data() {
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
         if (field_output) field_output->write_data(time_->t());
-        mass_balance();
+        if (mass_balance() != NULL)
+        	mass_balance()->output(time_->t());
 
         //for synchronization when measuring time by Profiler
         MPI_Barrier(MPI_COMM_WORLD);
