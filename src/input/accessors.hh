@@ -98,7 +98,7 @@ template <class T> class Iterator;
  *
  * TODO:
  * - allow Address with NULL pointers, allow default constructor
- * - How we can get Address with NULL pointer to storage?
+ * - How we can get Address with NULL pointer to storage? (currently we need Array::empty_storage_)
  *   - default constructor (should be called only by empty accessors)
  *     see if we can not get empty accessor in json_to_storage
  *     => empty address is error in program
@@ -112,23 +112,23 @@ class Address {
 protected:
     struct AddressData {
         /**
-         * Pointer to data of parent node in the tree
+         * Pointer to data of parent node in the address tree
          */
         AddressData * parent_;
         /**
-         * Order what descendant of its parent actual node is.
+         * Index in StorageArray of the parent_ to get actual node.
          */
         unsigned int descendant_order_;
         /**
-         * Root Input::Type.
+         * Root of the Input::Type tree.
          */
         const Input::Type::TypeBase *root_type_;
         /**
-         *
+         * Root of the storage tree.
          */
         const StorageBase *root_storage_;
         /**
-         * Actual storage
+         * Actual storage - tip of the storage tree
          */
         const StorageBase * actual_storage_;
     };
@@ -288,9 +288,10 @@ public:
 
     /**
      * Returns true if the accessor is empty (after default constructor).
+     * TODO: have something similar for other accessors.
      */
     inline bool is_empty() const
-    { return (address_.storage_head() == NULL); }
+    { return (address_.storage_head() == Address().storage_head()); }
 
     /**
      * Returns address

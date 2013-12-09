@@ -168,6 +168,13 @@ protected:
     ::Input::Type::Selection *selection_ptr;
 };
 
+TEST_F(InputInterfaceTest, RecordDefaultConstructor) {
+	Input::Record ir=Input::Record();
+	EXPECT_TRUE(ir.is_empty());
+	Input::Record ir2=ir;
+	EXPECT_TRUE(ir2.is_empty());
+}
+
 TEST_F(InputInterfaceTest, RecordVal) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
