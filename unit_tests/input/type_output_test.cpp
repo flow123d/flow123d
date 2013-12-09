@@ -171,6 +171,7 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
 		sel_problem.add_value(0, "B_Record");
 		sel_problem.add_value(1, "C_Record");
 		sel_problem.add_value(2, "D_Record");
+		sel_problem.add_value(3, "E_Record");
 		sel_problem.close();
 	}
 
@@ -192,6 +193,12 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
     d_rec.declare_key("pause", Bool(), Default("false"), "");
     d_rec.close();
 
+    Record e_rec("E_Record", "Test record.");
+    e_rec.declare_key("TYPE", sel_problem, Default("E_Record"), "Type of problem");
+    e_rec.declare_key("e_val", String(), Default("Some value"), "");
+    e_rec.declare_key("pause", Bool(), Default("false"), "");
+    e_rec.close();
+
     // ancestor abstract record
     AbstractRecordTest a_rec_test("EqBase", "Base of equation records.");
     a_rec_test.close();
@@ -201,12 +208,30 @@ TEST(OutputTypeAbstractRecord, ad_hoc_abstract_record_test) {
 
     // adhoc abstract record - descendant of a_rec
     AdHocAbstractRecord adhoc_rec(a_rec);
-    adhoc_rec.finish();
     adhoc_rec.add_child(d_rec);
+    adhoc_rec.add_child(e_rec);
+    adhoc_rec.finish();
 
-    cout << "## " << "AdHocAbstractRecord printout" << endl;
-    OutputText output_text( &adhoc_rec, 0);
+    Record root_rec("Root", "Root record.");
+    root_rec.declare_key("problem", adhoc_rec, Default::obligatory(), "Base problem");
+    root_rec.declare_key("pause", Bool(), Default("false"), "");
+    root_rec.close();
+
+    cout << "## " << "AdHocAbstractRecord OutputText printout";
+    OutputText output_text( &root_rec, 0);
     output_text.print(cout);
+
+    cout << endl << "## " << "OutputJSONTemplate printout";
+    OutputJSONTemplate output_json_template( &root_rec, 0);
+    output_json_template.print(cout);
+
+    cout << endl << "## " << "OutputLatex printout";
+    OutputLatex output_latex( &root_rec, 0);
+    output_latex.print(cout);
+
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    OutputJSONMachine output_json_machine( &root_rec, 0);
+    output_json_machine.print(cout);
 }
 
 
