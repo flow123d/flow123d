@@ -32,6 +32,7 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
+#include <la/distribution.hh>
 #include <petscmat.h>
 
 struct Solver;
@@ -67,7 +68,7 @@ public:
      *
      * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
-    SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat = 4);
+    SchurComplement(LinSys *orig, IS ia);
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}

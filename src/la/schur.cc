@@ -343,7 +343,7 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 }
 #endif
 
-SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat)
+SchurComplement :: SchurComplement(LinSys *orig, IS ia)
 : IsA(ia), state(created), Orig(orig)
 {
         xprintf(Msg, "Constructor SchurComplement\n");
@@ -445,7 +445,6 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat
                 }
                 size_submat = max - min + 1;
                 ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
-                ASSERT_LESS(size_submat , max_size_submat);
 
                 ierr = MatRestoreRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
                 arma::mat submat2(size_submat, size_submat);

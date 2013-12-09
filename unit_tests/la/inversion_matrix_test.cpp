@@ -3,71 +3,78 @@
 #define TEST_USE_PETSC
 
 #include <gtest_mpi.hh>
-
+#include <la/distribution.hh>
 #include <la/schur.hh>
 #include <la/linsys.hh>
+#include "la/linsys_PETSC.hh"
 
 #include <petscmat.h>
 #include <math.h>
+#include <vector>
 
 
-PetscInt rows [] = {5,2,3,3,4,2};
+
+/**
+ * Fill random local part of block matrix
+ * A  B
+ * Bt 0
+ *
+ * where A is block diagonal. Local blocks sizes are rows[min_idx] .. rows[max_idx-1].
+ * Block B has number of columns equal to number of blocks.
+ */
+void fill_matrix(LinSys * lin_sys, int *blocks, Distribution &ds, Distribution &block_ds) {
 
 
-void fill_matrix(LinSys * lin_sys, int min_idx, int max_idx) {
-	unsigned int row_cnt = 0; //row counter
-	unsigned int local_min, local_max;
-	for (unsigned int i = 0; i < min_idx; i++) {
-		row_cnt += rows[i];
-	}
-	local_min = row_cnt;
+	// set B columns
+	int n_cols_B=block_ds.size();
+	std::vector<PetscInt> b_cols(n_cols_B);
+	for( int p=0;p<block_ds.np();p++)
+		for (unsigned int j=block_ds.begin(p); j<block_ds.end(p); j++) {
+			int proc=block_ds.get_proc(j);
+			b_cols[j]=ds.end(p)+j;
+		}
+
 
 	// create block A of matrix
-	for (unsigned int i = min_idx; i < max_idx; i++) {
-		std::vector<PetscScalar> a_vals;
-		a_vals.reserve(rows[i] * rows[i]);
-		for (unsigned int j=0; j<rows[i]*rows[i]; j++) {
-			a_vals.push_back( rand()%19 + 1 );
-		}
-		std::vector<int> a_rows_idx;
-		a_rows_idx.reserve(rows[i]);
-		for (unsigned int j=0; j<rows[i]; j++) {
-			a_rows_idx.push_back(row_cnt + min_idx + j);
-		}
-		int * insert_rows = &a_rows_idx[0];
-		PetscScalar * insert_vals = &a_vals[0];
-		lin_sys->mat_set_values(rows[i], insert_rows, rows[i], insert_rows, insert_vals);
-		row_cnt += rows[i];
-	}
-	local_max = row_cnt;
-	/*for (unsigned int i = max_idx; i < 6; i++) {
-		row_cnt += rows[i];
-	}*/
+	int local_idx=0;
+	for (unsigned int i = block_ds.begin(); i < block_ds.end(); i++) {
+		int block_size=blocks[i];
+		// make random block values
+		std::vector<PetscScalar> a_vals(block_size * block_size);
+		for (unsigned int j=0; j<block_size*block_size; j++)
+			a_vals[j]= rand()%19 + 1;
 
-	// create block B of matrix
-	std::vector<PetscScalar> b_vals((local_max - local_min) * (max_idx - min_idx), 1.0);
-	std::vector<int> b_rows_idx;
-	std::vector<int> b_cols_idx;
-	b_rows_idx.reserve(local_max - local_min);
-	b_cols_idx.reserve(max_idx - min_idx);
-	for (unsigned int i = local_min; i < local_max; i++) {
-		b_rows_idx.push_back(i + min_idx);
+		// set rows and columns indices
+		std::vector<PetscInt> a_rows(block_size);
+		for (unsigned int j=0; j<block_size; j++) {
+			a_rows[j]=ds.begin() + block_ds.begin() + local_idx;
+			local_idx++;
+		}
+		lin_sys->mat_set_values(block_size, &a_rows[0], block_size, &a_rows[0], &a_vals[0]);
+
+		// set B values
+		std::vector<PetscScalar> b_vals(block_size*n_cols_B);
+		for (unsigned int j=0; j<block_size*n_cols_B; j++)
+			b_vals[j] =rand()%19 + 1;
+
+		// must iterate per rows to get correct transpose
+		for(unsigned int row=0; row<block_size;row++) {
+			lin_sys->mat_set_values(1, &a_rows[row], n_cols_B, &b_cols[0], &b_vals[row*n_cols_B]);
+			lin_sys->mat_set_values(n_cols_B, &b_cols[0],1, &a_rows[row], &b_vals[row*n_cols_B]);
+		}
+
 	}
-	for (unsigned int i = min_idx; i < max_idx; i++) {
-		b_cols_idx.push_back(local_max + i);
-	}
-	int * b_insert_rows = &b_rows_idx[0];
-	int * b_insert_cols = &b_cols_idx[0];
-	PetscScalar * b_insert_vals = &b_vals[0];
-	lin_sys->mat_set_values((local_max - local_min), b_insert_rows, (max_idx - min_idx), b_insert_cols, b_insert_vals);
-	lin_sys->mat_set_values((max_idx - min_idx), b_insert_cols, (local_max - local_min), b_insert_rows, b_insert_vals); // */
 }
 
 
 TEST(la, inversion_matrix) {
-	srand(time(NULL));
+	int blocks [] = {5,2,3,3,4,2};
+	int n_blocks = 6;
+	int max_block_size=5;
 
-	int first_idx=0, size=0, submat_blocks=6;
+
+
+	int first_idx=0, size=0;
 	IS set;
 	// vytvorit rozdeleni bloku na procesory ve tvaru "part" (tj. indexy prvnich radku na procesorech)
     int np, rank;
@@ -76,29 +83,49 @@ TEST(la, inversion_matrix) {
 
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    block_size = (double)submat_blocks / (double)np;
-    min_idx = (int) ( round(block_size * rank) );
-    max_idx = (int) ( round(block_size * (rank + 1)) );
-    for (int i = 0; i < min_idx; i++) {
-    	first_idx += rows[i];
+
+	// assign blocks to processors
+    int total_size=0;
+    for(int i=0;i<n_blocks;i++) total_size+=blocks[i];
+    vector<int> blocks_part(n_blocks);
+    int proc=0;
+    int distributed=0;
+    int local_size=0;
+    int block_local_size=0;
+    for(int i=0;i<n_blocks;i++) {
+    	blocks_part[i]=proc;
+    	distributed+=blocks[i];
+    	if (proc==rank) {
+    		local_size+=blocks[i];
+    		block_local_size++;
+    	}
+    	if (distributed > total_size*(proc+1)/np) proc++;
+
     }
-    for (int i = min_idx; i < max_idx; i++) {
-    	size += rows[i];
-    }
+
+    Distribution ds(local_size, MPI_COMM_WORLD);
+    Distribution block_ds(block_local_size, MPI_COMM_WORLD);
+    Distribution all_ds(local_size+block_local_size, MPI_COMM_WORLD);
+    //cout << ds;
+    //cout << block_ds;
 
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
-	LinSys * lin_sys = new LinSys_MPIAIJ(size + max_idx - min_idx);
+	LinSys * lin_sys = new LinSys_PETSC(&all_ds);
+	lin_sys->set_solution(NULL);
 	lin_sys->set_symmetric();
 	lin_sys->start_allocation();
-	fill_matrix( lin_sys, min_idx, max_idx ); // preallocate matrix
+	time_t seed=time(NULL);
+	srand(seed);
+	fill_matrix( lin_sys, blocks, ds, block_ds); // preallocate matrix
 	lin_sys->start_add_assembly();
-	fill_matrix( lin_sys, min_idx, max_idx ); // fill matrix
-	lin_sys->finalize();
+	srand(seed);
+	fill_matrix( lin_sys, blocks, ds, block_ds); // fill matrix
+	lin_sys->finish_assembly();
 	MatView(lin_sys->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
 
-	ISCreateStride(PETSC_COMM_WORLD, size, first_idx + min_idx, 1, &set); // kazdy proc. lokalni cast indexsetu viz. schur.cc line 386
+	ISCreateStride(PETSC_COMM_WORLD, ds.lsize(), all_ds.begin(), 1, &set);
 	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
-	SchurComplement schurComplement(lin_sys, set, 6);
+	SchurComplement schurComplement(lin_sys, set);
 
 }
