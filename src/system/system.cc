@@ -379,6 +379,10 @@ void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
+void *operator new[] (std::size_t size, const std::nothrow_t&  ) throw() {
+	return xmalloc(size);
+}
+
 void operator delete( void *p) throw()
 {
     xfree(p);

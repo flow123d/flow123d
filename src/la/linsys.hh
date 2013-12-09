@@ -441,10 +441,12 @@ public:
      */
     virtual void set_from_input(const Input::Record in_rec)
     {
-    	in_rec_ = Input::Record( in_rec );
-        r_tol_  = in_rec.val<double>("r_tol");
-        max_it_ = in_rec.val<int>("max_it");
-        a_tol_  = 0.01 * r_tol_;
+    	if (! in_rec.is_empty()) {
+    		in_rec_ = Input::Record( in_rec );
+    		r_tol_  = in_rec.val<double>("r_tol");
+    		max_it_ = in_rec.val<int>("max_it");
+    		a_tol_  = 0.01 * r_tol_;
+    	}
     }
 
     ~LinSys()

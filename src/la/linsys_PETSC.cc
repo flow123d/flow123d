@@ -417,11 +417,13 @@ void LinSys_PETSC::gatherSolution_( )
 
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {
-    // common values
-	LinSys::set_from_input( in_rec );
+	if (! in_rec.is_empty()) {
+		// common values
+		LinSys::set_from_input( in_rec );
 
-    // PETSc specific setting
-    a_tol_  = in_rec.val<double>("a_tol");   
-    params_ = in_rec.val<string>("options");
+		// PETSc specific setting
+		a_tol_  = in_rec.val<double>("a_tol");
+		params_ = in_rec.val<string>("options");
+	}
 }
 
