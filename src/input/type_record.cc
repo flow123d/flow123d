@@ -563,6 +563,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 {
 	if ( TypeBase::was_constructed(&ancestor) ) {
 		parent_data_ = ancestor.child_data_;
+		parent_name_ = ancestor.type_name();
 		tmp_ancestor_ = NULL;
 	} else {
 		tmp_ancestor_ = &ancestor; //postponed
@@ -577,7 +578,7 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 	if ( TypeBase::was_constructed(&subrec) ) {
 		AbstractRecord::add_descendant(subrec);
 	} else {
-		unconstructed_childs.push_back( &subrec );
+		unconstructed_childs_.push_back( &subrec );
 	}
 
 	return *this;
@@ -593,16 +594,17 @@ bool AdHocAbstractRecord::finish()
 		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
 
         parent_data_ = tmp_ancestor_->child_data_;
+        parent_name_ = tmp_ancestor_->type_name();
 		tmp_ancestor_ = NULL;
 	}
 
-	while (unconstructed_childs.size()) {
-		const Record * rec = *(unconstructed_childs.begin());
+	while (unconstructed_childs_.size()) {
+		const Record * rec = *(unconstructed_childs_.begin());
 		if ( !TypeBase::was_constructed(rec) ) return false;
 
 	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), rec->type_name());
 	    child_data_->list_of_childs.push_back(*rec);
-	    unconstructed_childs.pop_front();
+	    unconstructed_childs_.pop_front();
 	}
 
 	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {

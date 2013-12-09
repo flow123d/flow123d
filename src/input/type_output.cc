@@ -117,6 +117,16 @@ const string & OutputBase::get_selection_description(const Selection *sel) {
 }
 
 
+const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_rec) {
+	return a_rec->parent_name_;
+}
+
+
+AbstractRecord::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
+	return a_rec->parent_data_->list_of_childs.begin();
+}
+
+
 
 
 const void * OutputBase::get_record_data(const Record *rec) {
@@ -167,7 +177,7 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 			print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
-		//print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
+		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
 		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
@@ -252,16 +262,6 @@ unsigned int OutputBase::ProcessedTypes::type_index(const void * type_data) cons
 
     return keys.size();
 }
-
-
-/*void OutputBase::ProcessedTypes::set_reference(const void * type_data, const string& ref) {
-	ProcessedTypes::key_to_index_const_iter data_it = key_to_index.find(type_data);
-
-	ASSERT(data_it != key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in set_reference method!\n", (static_cast<const Type::TypeBase *>(type_data))->type_name().c_str());
-
-	KeyIter it = keys.begin() + data_it->second;
-	(*it).reference_ = ref;
-}*/
 
 
 bool OutputBase::ProcessedTypes::was_written(const void * type_data, string full_name) {
@@ -438,6 +438,39 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 
 void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
+	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
+
+	switch (doc_type_) {
+	case key_record:
+		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
+			doc_flags_.mark_written( data_ptr, "AdHoc" + get_adhoc_parent_name(type) );
+		}
+		stream << "AdHocAbstractRecord '" << type->type_name() << "'" << endl;
+		stream << setw(padding_size + size_setw_) << "";
+		stream << "#### Derived from AbstractRecord '" << get_adhoc_parent_name(type) << "', ";
+		stream << "added Records: ";
+
+		{
+			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			bool add_comma = false;
+			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+				if ((*it).type_name() == (*parent_it).type_name()) {
+					++parent_it;
+				} else {
+					if (add_comma) stream << ", ";
+					else add_comma = true;
+
+					stream << "'" << (*it).type_name() << "'";
+				}
+			}
+		}
+		break;
+	case full_record:
+		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
+			xprintf(PrgErr, "Printout type full_record for AdhocAbstractRecord '%s' is not supported!", type->type_name().c_str());
+		}
+		break;
+	}
 }
 
 
@@ -564,7 +597,8 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
+					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)
+							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (typeid(*(it->type_.get())) == typeid(Type::Array))
@@ -717,6 +751,15 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 
 void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
+	switch (doc_type_) {
+		case key_record:
+			stream << "# ad hoc abstract record " << type->type_name();
+			break;
+		case full_record:
+			const AbstractRecord *a_rec = dynamic_cast<const Type::AbstractRecord *>(type);
+			print_impl(stream, a_rec, depth);
+			break;
+	}
 }
 
 
@@ -1134,6 +1177,34 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
 void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
+	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
+
+    switch (doc_type_) {
+    case key_record:
+		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
+			doc_flags_.mark_written( data_ptr, "AdHoc" + get_adhoc_parent_name(type) );
+		}
+
+        stream << "adhoc abstract type: " << internal::hyper_link("IT",type->type_name());
+        stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";
+
+		{
+			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+				if ((*it).type_name() == (*parent_it).type_name()) {
+					++parent_it;
+				} else {
+					stream << "\\Descendant{" << internal::hyper_link( "IT", (*it).type_name() ) << "}";
+				}
+			}
+		}
+        break;
+    case full_record:
+		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
+			xprintf(PrgErr, "Printout type full_record for AdhocAbstractRecord '%s' is not supported!", type->type_name().c_str());
+		}
+    	break;
+    }
 }
 
 
@@ -1292,35 +1363,20 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 	stream << "\"type\" : \"AbstractRecord\"," << endl;
 	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
-	// default descendant
-	const Record * desc = type->get_default_descendant();
-	stream << "\"default_descendant\" : \"";
-	if (desc) {
-		stream << desc->type_name();
-	}
-	stream << "\"," << endl;
-
-	stream << "\"keys\" : [" << endl;
-
-	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		if (it != type->begin_child_data()) {
-			stream << "," << endl;
-		}
-
-		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
-		stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description( &(*it) ), boost::regex("\\n"), "\\\\n") << "\"," << endl;
-		stream << "\"type\" : ";
-		print(stream, &*it, depth);
-		stream << "}";
-	}
-
-	stream << "]" << endl;
+	print_abstract_record_keys(stream, type);
 	stream << "}";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
-	// Print documentation of adhoc abstract record
+	stream << "{" << endl;
+	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	stream << "\"type\" : \"AdHocAbstractRecord\"," << endl;
+	stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
+
+	print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type));
+	stream << "}";
 }
 
 
@@ -1409,6 +1465,34 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
 	}
 
 	stream << "}";
+}
+
+
+void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type) {
+	// default descendant
+	const Record * desc = type->get_default_descendant();
+	stream << "\"default_descendant\" : \"";
+	if (desc) {
+		stream << desc->type_name();
+	}
+	stream << "\"," << endl;
+
+	// all keys
+	stream << "\"keys\" : [" << endl;
+
+	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+		if (it != type->begin_child_data()) {
+			stream << "," << endl;
+		}
+
+		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
+		stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description( &(*it) ), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+		stream << "\"type\" : ";
+		print(stream, &*it, 0);
+		stream << "}";
+	}
+
+	stream << "]" << endl;
 }
 
 

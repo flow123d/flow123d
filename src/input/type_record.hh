@@ -606,6 +606,7 @@ protected:
  * @ingroup input_types
  */
 class AdHocAbstractRecord : public AbstractRecord {
+	friend class OutputBase;
 public:
 	/**
 	 * Constructor
@@ -634,7 +635,10 @@ protected:
      * Temporary list of unconstructed descendants of AdHocAbstractRecord.
      * Items are checked and added to child_data_ in finish() method.
      */
-    std::deque< const Record * > unconstructed_childs;
+    std::deque< const Record * > unconstructed_childs_;
+
+    /// Name of parent AbstractRecord, used in printout
+    string parent_name_;
 };
 
 

@@ -96,6 +96,10 @@ protected:
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
     const string & get_selection_description(const Selection *sel);
+    /// Gets parent_name_ of the given AdHocAbstractRecord type.
+    const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
+    /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
+    AbstractRecord::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
 
 
     /// Gets pointer of inner data for given Record
@@ -441,6 +445,10 @@ protected:
     void print_impl(ostream& stream, const Bool *type, unsigned int depth);
     void print_impl(ostream& stream, const String *type, unsigned int depth);
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+
+
+    /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
 
 
 };
