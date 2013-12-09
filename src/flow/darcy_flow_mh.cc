@@ -1296,7 +1296,7 @@ void DarcyFlowMH_Steady::make_schur1() {
 	if (schur1 == NULL) {
 		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &IS1);
 		ASSERT(err == 0,"Error in ISCreateStride.");
-		schur1 = new SchurComplement(schur0, IS1, 5);
+		schur1 = new SchurComplement(schur0, IS1);
 	}
     
     END_TIMER("schur1 - create,inverse");
@@ -1323,7 +1323,7 @@ void DarcyFlowMH_Steady::make_schur2() {
     if (schur2 == NULL) {
         ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &IS2);
         ASSERT(ierr == 0, "Error in ISCreateStride.");
-        schur2 = new SchurComplement(schur1->get_system(), IS2, 5);
+        schur2 = new SchurComplement(schur1->get_system(), IS2);
 
     }
 
