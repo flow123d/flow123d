@@ -180,7 +180,7 @@ public:
      * @p isotherm is a functor object representing the isotherm. @p rock_density and @p porosity are
      * material parameters and final parameter is the @p molar_density of the adsorbed substance.
      */
-	void reinit(enum SorptionType sorption_type, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef);
+	void reinit(enum SorptionType sorption_type, bool limited_solubility_on, double aqua_density, double scale_aqua, double scale_sorbed, double c_aqua_limit, double mult_coef, double second_coef);
 	/**
      *
      */
@@ -196,6 +196,11 @@ public:
      */
     template<class Func>
     void solve_conc(double &c_aqua, double &c_sorbed, const Func &isotherm);
+    /**
+    *
+    */
+    /*template<class Func>
+    double upper_toms_bound(double c_aqua, double c_sorbed, const Func &isotherm);*/
     /**
     *
     */

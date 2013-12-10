@@ -90,7 +90,10 @@
           diff_m = 1e-1
         }
       ],
-      dg_variant = "symmetric"
+      dg_variant = "symmetric",
+      mass_balance = {
+        cumulative = true
+      }
     }
   }, 
 

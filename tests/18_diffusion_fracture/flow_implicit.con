@@ -96,6 +96,9 @@
       time = {
         end_time = 0.01, 
         init_dt = 0.001
+      },
+      mass_balance = {
+        cumulative = true
       }
     }
   }, 

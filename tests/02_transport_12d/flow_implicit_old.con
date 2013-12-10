@@ -80,7 +80,10 @@
           init_conc = 0,
           por_m = 0.25
         }
-      ]
+      ],
+      mass_balance = {
+        cumulative = true
+      }
     }
   }, 
 

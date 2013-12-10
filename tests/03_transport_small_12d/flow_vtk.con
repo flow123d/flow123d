@@ -74,6 +74,9 @@
 
       time = {
         end_time = 1.0
+      },
+      mass_balance = {
+        cumulative = true
       }
     } // secondary_equation
     

@@ -19,6 +19,7 @@ build_tree
 
 *~
 *.kate-swp
+*.kdev4
 
 .cproject
 .project

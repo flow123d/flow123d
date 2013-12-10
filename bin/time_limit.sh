@@ -15,6 +15,17 @@ else
   echo "Exit with the same exit code as the command. Code 143 if terminated by SIGTERM."
 fi
 
+# detect Cygwin
+UNAME_SYSTEM=`uname -o`
+if [ "${UNAME_SYSTEM}" == "Cygwin" ]
+then
+  HOST_OS="Cygwin"
+elif [ "${UNAME_SYSTEM}" == "GNU/Linux" ]
+then
+  HOST_OS="Linux"
+else
+  HOST_OS="unkonwn"
+fi  
 
 # wait $1 seconds for process with PID $2
 # return 0 if process ends before timeout $1
@@ -54,7 +65,12 @@ fi
 
 
 # kill still running COMMAND and all its childs
-CPIDS="${COMMAND_PID} $(pgrep -P ${COMMAND_PID})"
+if [ "${HOST_OS}" == "Cygwin" ]
+then
+  CPIDS="${COMMAND_PID} `ps | grep "^ *[0-9]\\+ *${PID}" | awk '{print $1}'`" 
+else
+  CPIDS="${COMMAND_PID} $(ps --ppid ${COMMAND_PID} -o pid | tail -n +2)"
+fi
 for ONE_PID in ${CPIDS}
 do
   kill -s SIGTERM ${ONE_PID}
