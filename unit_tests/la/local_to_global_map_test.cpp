@@ -6,7 +6,6 @@
  */
 
 
-#define DEBUG
 
 #define TEST_USE_PETSC
 

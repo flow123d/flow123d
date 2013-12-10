@@ -9,7 +9,7 @@ FLOW_CFLAGS=-O3
 # Uncomment to get version withou runtime checking
 # this should be used only for production version
 # 
-USE_NODEBUG=-DNODEBUG
+USE_NODEBUG=-DFlow123d_NODEBUG
 
 # Uncomment to print all messages from all parallel MPI processes.
 # This only has effect with USE_PARALLEL 

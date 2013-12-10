@@ -38,7 +38,7 @@
 /**
  * @def F_ENTRY
  *
- * Unless NODEBUG is defined, it creates instance of the Trace class, providing compile time information
+ * Unless Flow123d_NODEBUG is defined, it creates instance of the Trace class, providing compile time information
  * about the place of usage.
  *
  * @def F_STACK_SHOW
@@ -82,7 +82,7 @@ namespace flow
      *  Then the backtrace of the called functions can be reported in the case of an error.
      *  Operations with the stack should be only through #F_ENTRY and #F_STACK_SHOW(stream).
      *  To include a function in the call stack just use macro #F_ENTRY at the very beginning of the function.
-     *  #F_ENTRY macro is nonempty only for the debugging version. For the release version, i.e. when NODEBUG
+     *  #F_ENTRY macro is nonempty only for the debugging version. For the release version, i.e. when Flow123d_NODEBUG
      *  is defined, #F_ENTRY is empty and produce no run-time overhead.
      *
      */

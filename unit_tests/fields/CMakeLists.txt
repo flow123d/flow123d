@@ -23,11 +23,8 @@
 
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-
-
-add_custom_target( field_test )
-set(super_test "field_test")
-set(super_test_libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+add_test_directory("${libs}")
 
 
 if(CMAKE_HAVE_CXX11)

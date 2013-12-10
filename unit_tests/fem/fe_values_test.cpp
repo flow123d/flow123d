@@ -64,7 +64,8 @@ TEST(FeValues, test_all) {
         ElementVector el_vec(1);
         el_vec.add_item(0);
 
-        Element ele(1);
+        RegionIdx reg;
+        Element ele(1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
         ele.node = new Node * [ele.n_nodes()];
         for(int i =0; i < 2; i++) ele.node[i] = nodes(i);
@@ -97,7 +98,8 @@ TEST(FeValues, test_all) {
         ElementVector el_vec(1);
         el_vec.add_item(0);
 
-        Element ele(2);
+        RegionIdx reg;
+        Element ele(2, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
         ele.node = new Node * [ele.n_nodes()];
         for(int i =0; i < 3; i++) ele.node[i] = nodes(i);

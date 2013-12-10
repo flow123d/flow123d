@@ -36,6 +36,7 @@
 #include <vector>
 #include "fem/update_flags.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/mesh_types.hh"
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;

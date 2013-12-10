@@ -89,6 +89,9 @@
       time = {
 	end_time = 10.0, 
 	init_dt = 1.0
+      },
+      mass_balance = {
+        cumulative = true
       }
     }
   }, 
