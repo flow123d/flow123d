@@ -40,11 +40,15 @@ Record Sorption::input_type
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("species", Array(String()), Default::obligatory(),
 							"Names of all the adsorbing species")
-	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
+	.declare_key("molar_masses", Array(Double(0.0)), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
 	// if following key remains negative or zero after initialization, then no limited solubility is concidered
-	.declare_key("solubility", Array(Double()), Default("-1.0"), //Default::obligatory(), //Default::optional(), //("-1.0"), //
+	//.declare_key("solubility", Array(Double()), Default("-1.0"), //
+	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
+	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
+	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
+							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
                    	   	   "Containes region specific data necessery to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
@@ -89,7 +93,8 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
 	molar_masses.resize( nr_of_substances );
-	c_aq_max.resize( nr_of_substances );
+	//solubility_vec_.resize(nr_of_substances);
+	//table_limit_.resize(nr_of_substances);
 
 	//isotherms array resized bellow
 	isotherms.resize(nr_of_regions);
@@ -126,20 +131,38 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
-	Input::Array interp_table_limits = in_rec.val<Input::Array>("solubility");
-	if (interp_table_limits.size() == c_aq_max.size())   interp_table_limits.copy_to( c_aq_max );
-	  else
-	  {
-		double def_val;
-		if((def_val > 0.0) && (interp_table_limits.size() > 1)) xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", interp_table_limits.size(), c_aq_max.size());
-	  }
+	Input::Iterator<Input::Array> solub_iter = in_rec.find<Input::Array>("solubility");
+	if( solub_iter )
+	{
+		solub_iter->copy_to(solubility_vec_);
+		if (solubility_vec_.size() != nr_of_substances)
+		{
+			xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_vec_.size(), nr_of_substances);
+		}
+	}else{
+		// fill solubility_vec_ with zeros or resize it at least
+		solubility_vec_.resize(nr_of_substances);
+	}
+
+	Input::Iterator<Input::Array> interp_table_limits = in_rec.find<Input::Array>("table_limits");
+	if( interp_table_limits )
+	{
+		interp_table_limits->copy_to(table_limit_);
+		if (table_limit_.size() != nr_of_substances)
+		{
+			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", table_limit_.size(), nr_of_substances);
+		}/**/
+	}else{
+		// fill table_limit_ with zeros or resize it at least
+		table_limit_.resize(nr_of_substances);
+	}
 
 	Input::Array species_array = in_rec.val<Input::Array>("species");
 	unsigned int idx, i_spec = 0;
 	for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
 	{
 		idx = find_subst_name(*spec_iter);
-		if ((idx < n_substances()) && (idx >= 0))   substance_ids[i_spec] = idx;
+		if ((idx < n_substances()) && (idx >= 0)) substance_ids[i_spec] = idx;
 		else	xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
 	}
 
@@ -216,7 +239,15 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 				xprintf(UsrErr,"Unknown type of pores.\n");
 			break;
 	 	 }*/
-		isotherm.reinit(hlp_iso_type, solvent_dens, scale_aqua, scale_sorbed, c_aq_max[i_subst], mult_coef, second_coef); // hlp_iso_type, rock_density, solvent_dens, por_m, por_imm, phi, molar_masses[i_subst], c_aq_max[i_subst]);
+		bool limited_solubility_on = false;
+		if(solubility_vec_[i_subst] <= 0.0)
+		{
+			isotherm.reinit(hlp_iso_type, limited_solubility_on, solvent_dens, scale_aqua, scale_sorbed, table_limit_[i_subst], mult_coef, second_coef);
+
+		}else{
+			limited_solubility_on = true;
+			isotherm.reinit(hlp_iso_type, limited_solubility_on, solvent_dens, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
+		}
 	}
 
 	END_TIMER("Sorption::isotherm_reinit");
@@ -339,41 +370,41 @@ void Sorption::set_phi(pScalar phi)
 
 void Sorption::update_solution(void)
 {
-	cout << "1) Meaningless inherited method." << endl;
+	//cout << "1) Meaningless inherited method." << endl;
 	return;
 }
 void Sorption::choose_next_time(void)
 {
-	cout << "2) Meaningless inherited method." << endl;
+	//cout << "2) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step_constrain(double dt)
 {
-	cout << "3) Meaningless inherited method." << endl;
+	//cout << "3) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_parallel_solution_vector(Vec &vc)
 {
-	cout << "4) Meaningless inherited method." << endl;
+	//cout << "4) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::get_solution_vector(double* &vector, unsigned int &size)
 {
-	cout << "5) Meaningless inherited method." << endl;
+	//cout << "5) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step(double new_timestep)
 {
-	cout << "6) Meaningless inherited method." << endl;
+	//cout << "6) Meaningless inherited method." << endl;
 	return;
 }
 
 void Sorption::set_time_step(Input::Record in_rec)
 {
-	cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
+	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
 }
