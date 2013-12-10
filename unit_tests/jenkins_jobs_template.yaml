@@ -45,6 +45,7 @@
     
     jobs:
       - "Flow123d-configure-{platform}-{build-type}"
+      - "Flow123d-{platform}-{build-type}-make-doc"
       - "Flow123d-build-libs-{platform}-{build-type}"
       - "Unit-test-{unit-dir}-{platform}-{build-type}"
       - "Flow123d-build-{platform}-{build-type}"
@@ -72,7 +73,21 @@
           cd flow123d
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
-        
+
+
+####################################################################
+# Flow123d make doc + publish
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-make-doc"
+    display-name: "{platform} {build-type} / make doc"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          cd flow123d
+          make ref-doc
+          make doxy-doc
+# todo: publisher ...
+
 
 ####################################################################
 # Flow123d build libraries 
@@ -185,7 +200,7 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
     name: "Flow123d-build-multijob-{platform}-debug"
-    display-name: "{platform} debug Flow123d multijob"
+    display-name: "{platform} debug / Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
 
@@ -248,7 +263,7 @@
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
     name: "Flow123d-build-multijob-{platform}-release"
-    display-name: "{platform} release Flow123d multijob"
+    display-name: "{platform} release / Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
     
@@ -259,6 +274,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
+          wipe-workspace: yes
           branches:
             - master
     triggers:
@@ -266,21 +282,10 @@
       - pollscm: "H H(0-6) * * *"
       #- github
     wrappers:
-      - workspace-cleanup:
-          dirmatch: true
-          include:
-            - "flow123d"
-            - "build-*"
-            - "external_projects"
-        # format and save build name common to all downstream jobs    
-      - inject:
-          script-content: 
-            "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
-      # set build name different way to have it even at start of the job
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
-      - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
+      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
