@@ -565,9 +565,16 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 		parent_data_ = ancestor.child_data_;
 		parent_name_ = ancestor.type_name();
 		tmp_ancestor_ = NULL;
+
+		//test default descendant of ancestor
+		const Record * default_desc = ancestor.get_default_descendant();
+		if (default_desc) {
+			allow_auto_conversion( default_desc->type_name() );
+		}
 	} else {
 		tmp_ancestor_ = &ancestor; //postponed
 	}
+
 	this->close();
 
 }
@@ -595,6 +602,13 @@ bool AdHocAbstractRecord::finish()
 
         parent_data_ = tmp_ancestor_->child_data_;
         parent_name_ = tmp_ancestor_->type_name();
+
+		//test default descendant of ancestor
+		const Record * default_desc = tmp_ancestor_->get_default_descendant();
+		if (default_desc) {
+			allow_auto_conversion( default_desc->type_name() );
+		}
+
 		tmp_ancestor_ = NULL;
 	}
 
