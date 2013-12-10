@@ -136,7 +136,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  */
 
 
-bool Array::finish() const {
+bool Array::finish() {
 	return data_->finish();
 }
 
@@ -183,12 +183,6 @@ bool Array::ArrayData::finish()
 
 	return (finished = true);
 }
-
-
-
-/*void  Array::reset_doc_flags() const {
-	data_->type_of_values_->reset_doc_flags();
-}*/
 
 
 
@@ -267,9 +261,6 @@ ARRAY_CONSTRUCT(AbstractRecord);
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
  */
-/*void  Scalar::reset_doc_flags() const
-{}*/
-
 
 string Scalar::full_type_name() const {
     return type_name();
