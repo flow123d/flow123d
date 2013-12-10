@@ -37,9 +37,9 @@ void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_solubility
 	adsorption_type_ = adsorption_type;
 	rho_aqua_ = rho_aqua;
 	scale_aqua_ = scale_aqua;
-	assert(scale_aqua_ > 0 && "scale_aqua_ == por_m has negative value.");
+	ASSERT(scale_aqua_ > 0, "scale_aqua_ has negative value.");
 	scale_sorbed_ = scale_sorbed;
-	assert(scale_sorbed_ > 0 && "scale_sorbed_ = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) has negative value.");
+	ASSERT(scale_sorbed_ > 0, "scale_sorbed_ has negative value.");
     inv_scale_aqua_ = scale_aqua_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
     inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
     table_limit_ = c_aqua_limit;
