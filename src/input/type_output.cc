@@ -440,12 +440,8 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, un
 	// Print documentation of adhoc abstract record
 	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
 
-	switch (doc_type_) {
-	case key_record:
-		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
-			doc_flags_.mark_written( data_ptr, "AdHoc" + get_adhoc_parent_name(type) );
-		}
-		stream << "AdHocAbstractRecord '" << type->type_name() << "'" << endl;
+	if (doc_type_ == key_record) {
+		stream << "AdHocAbstractRecord" << endl;
 		stream << setw(padding_size + size_setw_) << "";
 		stream << "#### Derived from AbstractRecord '" << get_adhoc_parent_name(type) << "', ";
 		stream << "added Records: ";
@@ -464,12 +460,6 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, un
 				}
 			}
 		}
-		break;
-	case full_record:
-		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
-			xprintf(PrgErr, "Printout type full_record for AdhocAbstractRecord '%s' is not supported!", type->type_name().c_str());
-		}
-		break;
 	}
 }
 
@@ -753,7 +743,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *
 	// Print documentation of adhoc abstract record
 	switch (doc_type_) {
 		case key_record:
-			stream << "# ad hoc abstract record " << type->type_name();
+			stream << "# ad hoc abstract record";
 			break;
 		case full_record:
 			const AbstractRecord *a_rec = dynamic_cast<const Type::AbstractRecord *>(type);
@@ -1179,13 +1169,8 @@ void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, u
 	// Print documentation of adhoc abstract record
 	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
 
-    switch (doc_type_) {
-    case key_record:
-		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
-			doc_flags_.mark_written( data_ptr, "AdHoc" + get_adhoc_parent_name(type) );
-		}
-
-        stream << "adhoc abstract type: " << internal::hyper_link("IT",type->type_name());
+	if (doc_type_ == key_record) {
+        stream << "adhoc abstract type}";
         stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";
 
 		{
@@ -1198,12 +1183,6 @@ void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, u
 				}
 			}
 		}
-        break;
-    case full_record:
-		if (! doc_flags_.was_written(data_ptr, "AdHoc" + get_adhoc_parent_name(type)) ) {
-			xprintf(PrgErr, "Printout type full_record for AdhocAbstractRecord '%s' is not supported!", type->type_name().c_str());
-		}
-    	break;
     }
 }
 
@@ -1370,8 +1349,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"AdHocAbstractRecord\"," << endl;
 	stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
 
