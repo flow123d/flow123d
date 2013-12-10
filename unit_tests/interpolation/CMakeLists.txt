@@ -21,18 +21,12 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-#set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-
-set(libs system_lib)
+set(libs interpolation_lib)
 add_test_directory("${libs}")
 
-
-if(CMAKE_COMPILER_IS_GNUCXX)
     
-    #define_test(intersection)
-    
-endif()
+define_test(functors)
 
 
 
