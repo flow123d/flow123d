@@ -121,7 +121,10 @@ set(sources_fem_lib
     
 )
 
-
+set(sources_lib_interpolation
+    interpolation/interpolant.cc
+    interpolation/adaptivesimpson.cc
+)
 
 
 
@@ -222,6 +225,11 @@ target_link_libraries(mesh_lib
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
     system_lib mesh_lib armadillo ${Boost_LIBRARIES})
+    
+# interpolation_lib    
+add_library(interpolation_lib ${sources_lib_interpolation})
+target_link_libraries(interpolation_lib
+    system_lib )
 
 # field_lib  
 add_library(field_lib ${sources_lib_field})
@@ -236,7 +244,7 @@ target_link_libraries(coupling_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib
     coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib

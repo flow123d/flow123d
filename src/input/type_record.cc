@@ -186,7 +186,7 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 
 
-bool Record::finish() const
+bool Record::finish()
 {
 	if (data_->finished) return true;
 
@@ -226,7 +226,7 @@ bool Record::finish() const
             }
         }
         if (it->key_ != "TYPE") {
-            data_->finished = data_->finished && it->type_->finish();
+            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -305,7 +305,6 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 :description_(description),
  type_name_(type_name_in),
  p_parent_(0),
- //made_extensive_doc(false),
  finished(false),
  closed_(false),
  derived_(false),
@@ -367,7 +366,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
         // for Array, Double, Integer, we assume no static variables
-        if (type.finish()) check_key_default_value(default_value, type, key);
+    	if (const_cast<KeyType *>( &type )->finish()) check_key_default_value(default_value, type, key);
 
         boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
         data_->declare_key(key, type_copy, NULL, default_value, description);
@@ -423,6 +422,7 @@ RECORD_DECLARE_KEY(Selection);
 RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(AbstractRecord);
+RECORD_DECLARE_KEY(AdHocAbstractRecord);
 
 
 
@@ -494,14 +494,6 @@ void AbstractRecord::no_more_descendants()
 }
 
 
-/*void  AbstractRecord::reset_doc_flags() const {
-		Record::reset_doc_flags();
-        for(vector< Record >::const_iterator it=child_data_->list_of_childs.begin();
-                    it!= child_data_->list_of_childs.end(); ++it)
-            it->reset_doc_flags();
-}*/
-
-
 bool AbstractRecord::valid_default(const string &str) const
 {
     if (data_->keys.size() != 0)  { // skip for empty records
@@ -562,6 +554,80 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
 }
 
 
+/************************************************
+ * implementation of AdHocAbstractRecord
+ */
+
+AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
+: AbstractRecord("Derived AdHocAbstractRecord", "This description doesn't have print out.")
+{
+	if ( TypeBase::was_constructed(&ancestor) ) {
+		parent_data_ = ancestor.child_data_;
+		parent_name_ = ancestor.type_name();
+		tmp_ancestor_ = NULL;
+
+		//test default descendant of ancestor
+		const Record * default_desc = ancestor.get_default_descendant();
+		if (default_desc) {
+			allow_auto_conversion( default_desc->type_name() );
+		}
+	} else {
+		tmp_ancestor_ = &ancestor; //postponed
+	}
+
+	this->close();
+
+}
+
+
+AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
+{
+	if ( TypeBase::was_constructed(&subrec) ) {
+		AbstractRecord::add_descendant(subrec);
+	} else {
+		unconstructed_childs_.push_back( &subrec );
+	}
+
+	return *this;
+}
+
+
+bool AdHocAbstractRecord::finish()
+{
+	if (data_->finished) return true;
+
+	if (tmp_ancestor_ != 0) {
+		if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
+		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
+
+        parent_data_ = tmp_ancestor_->child_data_;
+        parent_name_ = tmp_ancestor_->type_name();
+
+		//test default descendant of ancestor
+		const Record * default_desc = tmp_ancestor_->get_default_descendant();
+		if (default_desc) {
+			allow_auto_conversion( default_desc->type_name() );
+		}
+
+		tmp_ancestor_ = NULL;
+	}
+
+	while (unconstructed_childs_.size()) {
+		const Record * rec = *(unconstructed_childs_.begin());
+		if ( !TypeBase::was_constructed(rec) ) return false;
+
+	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), rec->type_name());
+	    child_data_->list_of_childs.push_back(*rec);
+	    unconstructed_childs_.pop_front();
+	}
+
+	for (AbstractRecord::ChildDataIter it = parent_data_->list_of_childs.begin(); it != parent_data_->list_of_childs.end(); ++it) {
+	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), (*it).type_name());
+	    child_data_->list_of_childs.push_back(*it);
+	}
+
+	return Record::finish();
+}
 
 
 } // closing namespace Type
