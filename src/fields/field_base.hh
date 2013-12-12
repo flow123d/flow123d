@@ -654,7 +654,8 @@ INSTANCE_TO_ALL( field, 3) */
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server
 #define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 3)
+INSTANCE_TO_ALL( field, 3) \
+INSTANCE_TO_ALL( field, 2)
 // currently we use only 3D ambient space
 // INSTANCE_TO_ALL( field, 2)
 

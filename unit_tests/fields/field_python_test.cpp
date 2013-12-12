@@ -37,7 +37,7 @@ import math
 def func_xyz(x,y,z):
     return ( x*y*z , )     # one value tuple
 
-def func_circle(r,phi,z):
+def func_circle(r,phi):
     return ( r * math.cos(phi), r * math.sin(phi) )
 )CODE";
 
@@ -46,7 +46,7 @@ string input = R"INPUT(
    field_string={
        TYPE="FieldPython",
        function="func_circle",
-       script_string="import math\ndef func_circle(r,phi,z): return ( r * math.cos(phi), r * math.sin(phi) )"
+       script_string="import math\ndef func_circle(r,phi): return ( r * math.cos(phi), r * math.sin(phi) )"
    },
    field_file={
        TYPE="FieldPython",
@@ -68,13 +68,13 @@ TEST(FieldPython, vector_2D) {
 
     double pi = 4.0 * atan(1);
 
-    Space<3>::Point point_1, point_2;
+    Space<2>::Point point_1, point_2;
     point_1(0)=1.0; point_1(1)= pi / 2.0;
     point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
-    FieldPython<3, FieldValue<2>::VectorFixed > vec_func(0.0);
+    FieldPython<2, FieldValue<2>::VectorFixed > vec_func(0.0);
     vec_func.set_python_field_from_string(python_function, "func_circle");
-    ElementAccessor<3> elm;
+    ElementAccessor<2> elm;
 
     arma::vec2 result;
     {
@@ -108,7 +108,7 @@ TEST(FieldPython, double_3D) {
 
 
 TEST(FieldPython, read_from_input) {
-    typedef FieldBase<3, FieldValue<2>::VectorFixed > VectorField;
+    typedef FieldBase<2, FieldValue<2>::VectorFixed > VectorField;
     typedef FieldBase<3, FieldValue<3>::Scalar > ScalarField;
     double pi = 4.0 * atan(1);
 
@@ -128,11 +128,11 @@ TEST(FieldPython, read_from_input) {
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), 0.0);
     {
-        Space<3>::Point point_1, point_2;
+        Space<2>::Point point_1, point_2;
         point_1(0)=1.0; point_1(1)= pi / 2.0;
         point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
-        ElementAccessor<3> elm;
+        ElementAccessor<2> elm;
         arma::vec2 result;
 
         result = flux->value( point_1, elm);
