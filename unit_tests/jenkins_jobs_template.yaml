@@ -126,7 +126,7 @@
             - "Flow123d-category-unit-tests"
     builders:
       - shell: |
-          make -C flow123d/build_tree/unit_tests/{unit-dir} all-test
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
 
 
 ##################################################################
@@ -137,7 +137,7 @@
     defaults: flow123d-build
     builders:
       - shell: |
-          make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-tests
 
 
 ####################################################################
