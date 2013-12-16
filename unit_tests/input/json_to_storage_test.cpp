@@ -9,8 +9,7 @@
  * TODO: test catching of errors in JSON file format.
  */
 
-#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include <fstream>
 
 #include "input/json_to_storage.hh"

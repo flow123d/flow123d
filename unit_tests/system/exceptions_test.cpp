@@ -7,8 +7,7 @@
 
 
 #include "system/exceptions.hh"
-#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 
 #include <string>
 #include <iostream>

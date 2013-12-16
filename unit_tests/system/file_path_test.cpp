@@ -7,7 +7,7 @@
 
 
 
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include "system/file_path.hh"
 
 using namespace std;

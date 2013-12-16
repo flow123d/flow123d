@@ -6,7 +6,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <sstream>
 #include <string>
 

@@ -2,7 +2,7 @@
 
 #define TEST_USE_PETSC
 
-#include <gtest_mpi.hh>
+#include <flow_gtest_mpi.hh>
 
 #include <la/schur.hh>
 #include <la/linsys.hh>
@@ -65,7 +65,7 @@ void fill_matrix(LinSys * lin_sys, int min_idx, int max_idx) {
 
 
 TEST(la, inversion_matrix) {
-	srand(time(NULL));
+	srand(123);
 
 	int first_idx=0, size=0, submat_blocks=6;
 	IS set;

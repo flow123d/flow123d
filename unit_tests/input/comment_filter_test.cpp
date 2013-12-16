@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <fstream>
 #include <cerrno>
 #include <boost/iostreams/device/file.hpp>

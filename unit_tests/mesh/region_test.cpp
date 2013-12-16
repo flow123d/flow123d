@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include "mesh/region.hh"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
@@ -16,6 +16,7 @@
 
 TEST(Region, all) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
     RegionDB    region_db;
     region_db.add_region(0,"nothing_bc", 0, true);
     region_db.add_region(1,"nothing_bulk", 0, false);

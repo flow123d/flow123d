@@ -7,7 +7,7 @@
 
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 
 #include "fields/field_constant.hh"
