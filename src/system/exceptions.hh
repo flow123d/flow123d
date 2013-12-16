@@ -338,6 +338,13 @@ TYPEDEF_ERR_INFO( EI_Message, std::string);
 DECLARE_EXCEPTION( ExcAssertMsg, << "Violated Assert! " << EI_Message::val);
 
 
+/**
+ * Exception thrown in xprintf function.
+ */
+TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
+DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfMessage::val << ":\n");
+
+
 
 
 

@@ -48,9 +48,13 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/format.hpp>
 
 
 
+SystemInfo::~SystemInfo() {
+   	if (log) xfclose(log);
+}
 
 SystemInfo sys_info;
 
@@ -236,7 +240,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	if (mf.stop) {
 	    // explicit flush of all streams
 		fflush(NULL);
-        xterminate(true);
+		THROW( ExcXprintfMsg() << EI_XprintfMessage(
+				boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line )
+			));
 	}
 	return rc;
 }
@@ -278,7 +284,6 @@ int xterminate( bool on_error )
 	   petsc_initialized = false;
 	}
 #endif
-    if (sys_info.log) xfclose( sys_info.log );
 
     if (sys_info.pause_after_run) {
         printf("\nPress <ENTER> for closing the window\n");

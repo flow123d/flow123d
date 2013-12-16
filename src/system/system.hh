@@ -90,6 +90,8 @@ typedef struct SystemInfo {
     
     MPI_Comm comm;
 
+    ~SystemInfo();
+
 } SystemInfo;
 
 extern SystemInfo sys_info;
