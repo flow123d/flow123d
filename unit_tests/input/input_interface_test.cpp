@@ -9,7 +9,7 @@
  */
 
 
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include <vector>
 
 #include <input/accessors.hh>

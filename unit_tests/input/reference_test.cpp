@@ -2,8 +2,7 @@
  * reference_test.cpp
  */
 
-//#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 
 #include "input/type_base.hh"
 #include "input/accessors.hh"

@@ -8,7 +8,7 @@
 
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <sstream>
 #include <string>
 #include "system/tokenizer.hh"
@@ -27,6 +27,7 @@ something
 
 
 void test_tokenizer(Tokenizer &tok) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     EXPECT_TRUE( tok.eol() );
     EXPECT_EQ(0, tok.line_num());

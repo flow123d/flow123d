@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include "system/system.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
