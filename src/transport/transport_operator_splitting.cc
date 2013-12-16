@@ -126,7 +126,12 @@ TransportBase::~TransportBase()
 
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
-: TransportBase(init_mesh, in_rec)
+: TransportBase(init_mesh, in_rec),
+  convection(NULL),
+  decayRad(NULL),
+  sorptions(NULL),
+  sorptions_immob(NULL),
+  Semchem_reactions(NULL)
 {
 	Distribution *el_distribution;
 	int *el_4_loc;
