@@ -17,7 +17,7 @@
  */
 TEST(InputTypeRecord, declare_key_scalars) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
    // make auxiliary record and test declare_key for
@@ -145,7 +145,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, allow_convertible) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     {
     static Record sub_rec( "SubRecord", "");
@@ -176,7 +176,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
     Record record_record("RecordOfRecords", "");
@@ -258,7 +258,7 @@ TEST(InputTypeRecord, iterating) {
 
 TEST(InputTypeRecord, check_key_validity) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord",
             "Information about one file for field data.");
@@ -276,7 +276,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, RecordCopy) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord", "");
     output_record.declare_key("file", FileName::output(), "");
@@ -298,7 +298,7 @@ using namespace Input::Type;
 
 TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
@@ -410,7 +410,7 @@ IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
 
 TEST(InputTypeAdHocAbstractRecord, inheritance) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	AdHocDataTest::in_rec1.finish();
 	AdHocDataTest::in_rec2.finish();
 	AdHocDataTest::adhoc_1.finish();

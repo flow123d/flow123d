@@ -165,7 +165,7 @@ enum Colors {
 
 TEST(InputTypeSelection, construction) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Selection *sel1= new Selection("Colors");
     Selection sel2=*sel1;

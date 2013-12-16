@@ -35,7 +35,7 @@ string field_input = R"INPUT(
 
 namespace it = Input::Type;
 TEST(Field, init_from_input) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Profiler::initialize();
 
     Mesh mesh;
@@ -129,7 +129,7 @@ TEST(Field, init_from_input) {
     $EndPhysicalNames
  */
 TEST(Field, init_from_default) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -184,7 +184,7 @@ TEST(Field, init_from_default) {
 
 /// Test optional fields dependent e.g. on BC type
 TEST(Field, disable_where) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     enum {
         dirichlet,

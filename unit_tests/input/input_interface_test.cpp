@@ -285,7 +285,7 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -342,7 +342,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);

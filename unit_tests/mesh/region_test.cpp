@@ -15,7 +15,7 @@
 #include <boost/lexical_cast.hpp>
 
 TEST(Region, all) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     RegionDB    region_db;
     region_db.add_region(0,"nothing_bc", 0, true);
