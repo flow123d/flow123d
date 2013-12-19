@@ -58,53 +58,6 @@ SystemInfo::~SystemInfo() {
 
 SystemInfo sys_info;
 
-static bool petsc_initialized = false;
-
-/*!
- * @brief Read system parameters, open log.
- */
-void system_init( MPI_Comm comm,const  string &log_filename )
-{
-    int ierr;
-
-    //for(int i=0;i<argc;i++) xprintf(Msg,"%s,",argv[i]);
-     petsc_initialized = true;
-    sys_info.comm=comm; 
-
-
-    xio_init(); //Initialize XIO library
-
-    // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
-    // inicializaci systemu
-
-    ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
-    ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
-    ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
-
-    // determine logfile name or switch it off
-    stringstream log_name;
-
-    if ( log_filename == "\n" ) {
-           // -l option without given name -> turn logging off
-           sys_info.log=NULL;
-    } else
-   if (log_filename != "") {
-      // given log name
-           log_name << log_filename <<  "." << sys_info.my_proc << ".log";
-           sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-           sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    } else {
-        // use default name
-        log_name << "flow123."<< sys_info.my_proc << ".log";
-        sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-        sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    }
-
-    sys_info.verbosity=0;
-    sys_info.pause_after_run=0;
-}
 
 void system_set_from_options()
 {
@@ -240,6 +193,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	if (mf.stop) {
 	    // explicit flush of all streams
 		fflush(NULL);
+		F_STACK_SHOW( stderr );
 		THROW( ExcXprintfMsg() << EI_XprintfMessage(
 				boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line )
 			));
@@ -260,7 +214,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
  *
  */
 
-#ifdef HAVE_PETSC
+/*#ifdef HAVE_PETSC
 
 #include <petsc.h>
 #endif
@@ -299,7 +253,7 @@ int xterminate( bool on_error )
         exit( EXIT_FAILURE );
     else
         exit( EXIT_SUCCESS );
-}
+}*/
 
 /*!
  * @brief Memory allocation with checking.

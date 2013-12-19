@@ -96,8 +96,6 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-void system_init( MPI_Comm comm,const  string &log_fname );
-
 
 void    system_set_from_options();
 char * 	get_log_fname( void );
@@ -108,7 +106,7 @@ void	resume_log_file( void );
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-int    	xterminate( bool on_error );
+//int    	xterminate( bool on_error );
 void *	xmalloc(size_t size);
 void * xrealloc( void * ptr, size_t size );
 
