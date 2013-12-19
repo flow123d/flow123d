@@ -23,14 +23,25 @@ static bool petsc_initialized = false;
 
 
 /**
+ * Base virtual class of Flow123D application.
  *
+ * Contains base pure virtual methods of application
+ * and methods for initialization system and PETSC.
  */
 class ApplicationBase {
 public:
 
+	/**
+	 * Constructor
+	 */
 	ApplicationBase(int argc,  char ** argv);
 
 	virtual ~ApplicationBase();
+
+	/**
+	 * Finalize PETSC. If finalization failed return nonzero value.
+	 */
+	int petcs_finalize();
 
 protected:
 
@@ -47,11 +58,6 @@ protected:
 	 * Initialize PETSC.
 	 */
 	void petsc_initialize(int argc, char ** argv);
-
-	/**
-	 * Finalize PETSC. If finalization failed return nonzero value.
-	 */
-	int petcs_finalize();
 
     /**
      * Log file name argument - passed to system_init; "" menas default, "\n" means no logging

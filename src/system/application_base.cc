@@ -10,14 +10,7 @@
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
-{
-    petsc_initialize(argc, argv);
-
-    system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-	//try {
-	//	run();
-	//} catch (...) {}
-}
+{ }
 
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
@@ -62,12 +55,6 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     sys_info.pause_after_run=0;
 }
 
-
-
-#ifdef HAVE_PETSC
-
-
-#endif
 
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
