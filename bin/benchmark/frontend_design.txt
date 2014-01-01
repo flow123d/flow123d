@@ -1,0 +1,147 @@
+TODO:
+  
+Questions:
+- how to deal with changes in configuration file, should be able to add it as continuation of an existing configuration
+- should we share configurations between hosts ?
+  
+  
+Klicove koncepty:
+=================
+
+architecutre = host \times configuration
+
+host - stroj na kterem probehl build + testy, ma konkretni platformu (OS) a vykon
+configuration - konfigurace buildu (typicky debug a release)
+
+test_node - represents test file or directory, can either test_node childs (directory) or test_block childs (test_unit)
+test_unit - leaf test_node; logically contains test runs, where each test run has test parameters (num proc, task size, run id) and 
+            same internal test_block structure with metric data; however in database we probably use deduplication of block structure
+            and in front end we keep test_runs as part of test_case redundantly keeping test_run parameters along with matrics
+
+test_block - part of test_unit again in tree structure; one main block per test_unit always exists
+test_case - leaf of the test_block tree; contains one or more test_runs 
+            metrics can be collected also by non-leaf blocks, to keep structure simple, every block can have child __own__, 
+            with own data;
+
+
+test_run -  realization of test_case on particular architecture, for particular commit; for particular particular NP
+            collects metrics: status, time, memory, calls 
+
+status - possible values: compile fail (6) > link fail (5) > run fail (4) > output fail (3) > perf. regression (time, memory, ..) (1,2) > OK (0)
+
+performance_regression - test is in performance_regression if the value of a metric is higher by more REGRESSION_TRESHOLD % then minimum value of the metric after REGESSION_ORIGIN
+regression_tresshold - percentage we allow a metric to grow above minimum from REGRESSION_ORIGIN; set globally for every metric
+regression_origin - commit from which we track minimum reference value; stored individually per test_case, but can be changed for all childs of block or node
+
+            
+collective values - values computed for test_blocks and for test_nodes from child values
+    status - use maximum of own and child values (also over different architectures) 
+    other metrics - use sum of own and child metrics (also over different architectures)
+
+
+branch - git vetev, we never delete them; they are sorted according to date of last commit so old branches are worse accessible
+       - vetev zahrnuje vsechny commity svych predku setridene podle data
+commit - single git commit, for every commit we store: hash, date, author, message
+push - commit for which some test were done, usually commit with push
+           
+
+           
+Pozadovane grafy:
+=================
+ 
+dashboard view:
+Y: test nodes/cases, folding X: nove vlevo commits Color: success/failure/regression/failure somewhere/regression somewhere... Text: time
+* test nodes/blocks - links -> test_node view
+* status squares .. rozkliknuti ctverecku -> test_case view (souhrne info pro ruzne platformy, odkazy na dalsi grafy)
+* filter to view only failed blocks
+  filter for benchmark test cases
+* status views: a) totals for every possible status (like deal.ii)
+                b) total for most severe fails, total for ather fails, total for OK
+                c) total for all fails / all
+                
+test_node view:
+* list of subnodes (colored) links -> their test_node view
+* graph with cumulative metrics
+* selection of metrics
+* selection of architectures
+* selection of branch and commit range
+* selection of individual runs (by np or run ID)
+* plot with relative values to minimum (reference value)
+* possible statistical analysis, can give better regression detection
+* in plot mark : regresions and failed runs (metric not available, colored X axes)
+* Metriky: Time, Memory, Calls, Scale_8, Scale_64, Complexity(pro behy na ruznevelkych datech); vse tez relativne vuci zvolenemu commitu
+
+test_case view (test_node for particular commit):
+* values for all metrics, totals for all status types
+* list of subnodes
+* posibilities: 
+  * percentage of subnodes on metrics
+  * metrics for nproc.
+
+----
+
+Porovnani vice verzi:
+Y: bloky (rozklikavaci) X: metrika Colors: commits ; zadana metrika
+Complexity plot - cas v zavislosti na velikosti ulohy, colors selected Blocks
+
+Strong/Weak Scalability plot - X: pocet procesoru (velikost ulohy) Y: cas Colors: Optimal line (always), selected blocks
+
+
+Dalsi funkce:
+=============
+* branch selection
+* commit selection, commit link to github repository needs link between git repository and web interface
+  window with last 10 push commits, others available after unfolding, details after hoover
+  
+* coloring of branches and commits (colective status)
+
+* architecture selection (host and config), possibly more of them, results are colective over selected architectures
+* nodes and block tree, folding, coloring from last commit 
+  allows selection for cumulative graphs and results, directly connected with dashboard
+
+* help icons or hoover help
+
+
+requests:
+=============
+Selections:
+* get available hosts and their configurations... architectures  
+* branches and commits
+* nodes and block tree
+
+Dashboard:
+* get cumulative data for given nodes/blocks and given arch selection and every commit in given range
+  cumulative data: for every given block and commit : totals for individual statuses (number of runs with such result 
+  possibly filter benchmarks                                                                                    
+  
+Use: 
+AngularJS, 
+<SPAN > tag - get windows near mouse pointer, 
+angular-bootstrap-nav-tree
+see what is bootstrap
+  
+
+Plot types:
+plot history of something (CO + METRIKA/vypoctena metrika, nebo vice metrik v jednom grafu)
+has to deal with merge points
+vypoctene metriky: 
+skalovatelnost (pro dany pocet procesoru, silna/slaba)
+kumulativni TIME/MEMORY podbloku
+max TIME/MEMORY podbloku
+skalovaci grafy, pro konkretni commit (v zavislosti na poctu proc)
+veliciny: cas, skalovatelnost (silna/slaba), pamet + kumulativni
+slozeni bloku z podbloku, pro konkretni commit
+porovnani dvou commitu (zobrazit predchozi dva typy do jednoho grafu)
+
+webove rozhrani by melo umet definovat typ grafu a pak ho aplikovat na ruzne blok
+data na strance:
+klikaci cesta aktualne prohlizeneho bloku
+klikaci seznam potomku aktualniho bloku
+editor grafu
+seznam preddefinovanych grafu
+zobrazene commity jsou klikaci, rozkliknuti prejde na grafy jedne verze ...
+vyber rozsahu -> porovnavaci grafy
+moznost zobrazit jen podbloky a metriky aktualne v regresi
+moznost zmenit porovnavaci bod pro regrese, ze vsech novejsich commitu se spocita
+minimum a metrika nesmi byt vetsi nez X procent (limit pro regrese)
+provnavaci bod plati pro vsechny metriky a pro vsechny podbloky

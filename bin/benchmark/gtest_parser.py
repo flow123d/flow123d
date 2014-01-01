@@ -5,6 +5,8 @@ import platform
 import re
 import tempfile
 import subprocess
+import dateutil.parser
+import json
 
 class ExcWrongTag(Exception):
     def __init__(self, value):
@@ -104,57 +106,95 @@ def get_host_info():
     
     return result
 
-
-def get_source_info():
+def get_commit_info(commit_range) :
+    result = []
+    item = {}
+    out=subprocess.check_output(['git', 'log', commit_range])
+    for line in out.splitlines():
+        if (line.startswith("commit")) :
+            print item
+            if (item != {}) : result.append(item)
+            item={}
+            item["hash"] = re.sub("^commit","",line).strip()
+            item["message"]=""
+        elif (line.startswith("Author:")) :
+            item["author"] = re.sub("^Author:","",line).strip()
+        elif (line.startswith("Date:")) :
+            date_str=re.sub("^Date:","",line).strip() 
+            item["date_str"] = date_str
+        elif (line.startswith("  ")) :
+            item["message"] += line + "\n"
+    result.append(item)        
+    return result        
+        
+    
+def get_branch_info():
     """
-      git_branch:       
-      git_remote:       # URL of remote of actual branch
-      git_commit:       # hash
-      git_describe:     # 
-      git_message:      # commit message first line
+      { git_branch,
+        git_remote,
+        git_commit = 
+        { hash, message, author, date_str }
+      }  
     """
     result={}
     
     out=subprocess.check_output(['git', 'branch', '--list', '-vv'])
     match=re.search('\* (\w*)\s*([0-9a-f]*) (\[(.*)\] )?(.*)\n',out)    
     result['git_branch']=match.group(1)
-    result['git_short_commit']=match.group(2)
-    remote_branch=match.group(4)
-    result['git_message']=match.group(5)
+    result['git_commit']=get_commit_info("HEAD^..HEAD")[0]
+    remote_branch=match.group(4)    
     
     print remote_branch
     if (remote_branch != None) :
         remote=re.match('(\w*)/(.*)', remote_branch).group(1)
         out=subprocess.check_output(['git','remote','-v'])
-        result['git_remote']=re.search('('+remote+')\s*([^ ]*) \(fetch\)\n', out).group(2)
+        result['git_remote_branch']=re.search('('+remote+')\s*([^ ]*) \(fetch\)\n', out).group(2)
     else :
-        result['git_remote']=None
+        result['git_remote_branch']=None
     
-    result['git_describe']=subprocess.check_output(['git','describe'])  
+    #result['git_describe']=subprocess.check_output(['git','describe'])  
     return result
   
-def get_test_data():
-    pass
   
-def send_to_server(report):
-    import json
+  
+def get_exam_data():
+    return {}
+  
+  
+  
+def send_to_server():
     import requests
     
     url='http://localhost:8000'
     headers={'content-type': 'application/json'}
+    
+    report={
+      "request-type" : "add_report",
+      'host_info' : get_host_info(),
+      'branch_info' : get_branch_info(),
+      'exam_data' : get_exam_data()
+    }  
+    
     r=requests.post(url, data=json.dumps(report),headers=headers)
-    if (r.status_code != 201) :
+    
+    if (r.status_code == 200 and r.headers['content-type'] == "application/json") :
+        last_commit=r.json()['last_commit']
+        if (last_commit == 0) :
+            commits=get_commit_info("")
+        else :
+            commits=get_commit_info(last_commit+"..HEAD")
+        report={
+            "request-type" : "add_to_branch",
+            "branch_data" : commits
+        }    
+        r=requests.post(url, data=json.dumps(report),headers=headers)    
+    
+    if (r.status_code != 200) :
         raise(ExcMessage("Server do not accept the report."))
   
-def make_report():
-    report={
-      'host_info' : get_host_info(),
-      'source_info' : get_source_info(),
-      'test_data' : get_test_data()
-    }  
-      
-    return report
+
 # Main -----------------------------------
 
-send_to_server(make_report())
+send_to_server()
 
+#print json.dumps(get_commit_info("HEAD"), indent=2)

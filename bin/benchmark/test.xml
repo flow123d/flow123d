@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="13" failures="0" disabled="0" errors="0" time="0.051" name="AllTests">
+  <testsuite name="JSONPath" tests="2" failures="0" disabled="0" errors="0" time="0.01">
+    <testcase name="all" status="run" time="0.001" classname="JSONPath" />
+    <testcase name="errors" status="run" time="0.009" classname="JSONPath" />
+  </testsuite>
+  <testsuite name="InputJSONToStorageTest" tests="10" failures="0" disabled="0" errors="0" time="0.041">
+    <testcase name="Integer" status="run" time="0.003" classname="InputJSONToStorageTest" />
+    <testcase name="Double" status="run" time="0.003" classname="InputJSONToStorageTest" />
+    <testcase name="Selection" status="run" time="0.003" classname="InputJSONToStorageTest" />
+    <testcase name="String" status="run" time="0.002" classname="InputJSONToStorageTest" />
+    <testcase name="Bool" status="run" time="0.001" classname="InputJSONToStorageTest" />
+    <testcase name="Array" status="run" time="0.011" classname="InputJSONToStorageTest" />
+    <testcase name="Record" status="run" time="0.007" classname="InputJSONToStorageTest" />
+    <testcase name="AbstractRec" status="run" time="0.007" classname="InputJSONToStorageTest" />
+    <testcase name="AdHocAbstractRec" status="run" time="0.004" classname="InputJSONToStorageTest" />
+    <testcase name="default_values" status="run" time="0" classname="InputJSONToStorageTest" />
+  </testsuite>
+  <testsuite name="InputJSONToStorageTest_external" tests="1" failures="0" disabled="0" errors="0" time="0">
+    <testcase name="get_root_interface" status="run" time="0" classname="InputJSONToStorageTest_external" />
+  </testsuite>
+</testsuites>
