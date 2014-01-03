@@ -338,7 +338,22 @@
           projects:
             - name: "Flow123d-{platform}-packages"
 
-            
+######
+# Coverage with coberture
+# - install cobertura plugin
+# - build with gcc options:    -fprofile-arcs -ftest-coverage
+# - link with: -lgcov
+#   .. separate build for unit tests with separate config.cmake ??
+# - shell script:
+# make clean
+# make all
+# ./coverage --gtest_output=xml:coverage.junit.xml
+# chmod u+x gcovr
+# ./gcovr -x -r .. -e ".+\.test\.cpp*" > coverage.xml
+#
+# - publish JUnit results
+# - publis coverture report
+
 
 
 ##################################333
