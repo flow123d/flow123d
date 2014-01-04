@@ -27,22 +27,21 @@
  * TODO:
  * - START_GLOBAL_TIMER(tag) - this calls the start_timer, which creates local timer on the correct place in the hierarchy,
  *    further this timer is added to the list of global timers, this contains groups of timers with same tag, and
- *    collect/sum data from these timers in the report.
+ *    collect/sum data from these timers in the report. This can be handy in some cases but we do not need it right now.
  *
- * - Allow output even during calculation (not complete, but at least some thing)
+ * - Allow output even during calculation (not complete, but at least something)
  *    Report should contain time of start as well as time of creation of the report or time from start of the program.
  *
- * - When generating report we has to deal with possibly different trees at every MPI process.
+ * - Make better reduction of trees during output: 1) handle also different trees 2) separate reduction of data and its formating for output
+ *   3) make JSON machine readable output
  *
  * - test memory profiling
  *   in our own new and xmalloc functions - register allocatied and deallocated memory to active Profiler frame.
  *
- * - test in parallel
  * - extended output:
  *      cas na jedno volani (jina redukce nez pro kumulativni cas, pokud je pocet volani ruzny)
  *      procenta vuci predkovi
  *      code point (az nekde na konci radky)
- *
  *
  *  !!! Unfortunately using constexpr is worse (without optimization).
  *  This is probably due to use of static variable for

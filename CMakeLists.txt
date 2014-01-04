@@ -238,7 +238,7 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
+set(REQUIRED_Boost_COMPONENTS program_options serialization regex mpi)
  
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
