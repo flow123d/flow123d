@@ -51,7 +51,7 @@ public:
      * @param[in] argc       command line argument count
      * @param[in] argv       command line arguments
      */ 
-    void parse_cmd_line(const int argc, char ** argv);
+    virtual void parse_cmd_line(const int argc, char ** argv);
     
     /**
      * Displays program version and build info.
@@ -68,15 +68,17 @@ public:
      */ 
     Input::Record read_input();
     
-    /// TODO: should be destructor ?
-    //void free_and_exit();
+    /// Destructor
     virtual ~Application();
 
 protected:
 
+    /**
+     * Run application.
+     *
+     * Read input and solve problem.
+     */
     virtual void run();
-
-    virtual void before_flow_123d_init(const int argc, char ** argv);
 
 private:
 

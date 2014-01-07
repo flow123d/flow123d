@@ -93,24 +93,6 @@ Application::Application( int argc,  char ** argv)
   passed_argv_(0),
   use_profiler(true)
 {
-    // parse our own command line arguments, leave others for PETSc
-	before_flow_123d_init(argc, argv);
-
-    petsc_initialize(argc, argv);
-    // temporary moving PETSC stuff here from system.hh
-    // should be made better in JB_1.7.input
-    //PetscErrorCode ierr;
-    //ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-
-    system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
-	try {
-		run();
-	} catch (ExcXprintfMsg & e) {
-		xprintf(Msg, "%s\n", e.what());
-		exit( EXIT_FAILURE );
-	}
-
 	if (sys_info.pause_after_run) {
         printf("\nPress <ENTER> for closing the window\n");
         getchar();
@@ -369,12 +351,6 @@ void Application::run() {
         }
 
     }
-}
-
-
-
-void Application::before_flow_123d_init(const int argc, char ** argv) {
-	parse_cmd_line(argc, argv);
 }
 
 

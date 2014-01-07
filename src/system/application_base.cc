@@ -10,7 +10,9 @@
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
-{ }
+{
+	this->body(argc, argv);
+}
 
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
@@ -81,6 +83,23 @@ int ApplicationBase::petcs_finalize() {
 #endif
 
 	return 0;
+}
+
+
+void ApplicationBase::body(int argc, char ** argv) {
+    // parse our own command line arguments, leave others for PETSc
+	this->parse_cmd_line(argc, argv);
+
+	this->petsc_initialize(argc, argv);
+
+    this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
+
+	try {
+		this->run();
+	} catch (ExcXprintfMsg & e) {
+		exit( EXIT_FAILURE );
+	}
+
 }
 
 

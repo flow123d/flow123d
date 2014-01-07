@@ -36,6 +36,7 @@ public:
 	 */
 	ApplicationBase(int argc,  char ** argv);
 
+	/// Destructor
 	virtual ~ApplicationBase();
 
 	/**
@@ -43,11 +44,26 @@ public:
 	 */
 	int petcs_finalize();
 
+	/**
+	 * Parse command line parameters before Flow123D initialization.
+	 *
+	 * Method can be override in child class.
+	 */
+	virtual void parse_cmd_line(const int argc, char ** argv) {}
+
 protected:
 
+	/**
+	 * Run application.
+	 */
 	virtual void run() = 0;
 
-	virtual void before_flow_123d_init(const int argc, char ** argv) = 0;
+	/**
+	 * Auxiliary method that allows to call virtual methods from constructor.
+	 *
+	 * Initializes and runs the application.
+	 */
+	void body(int argc, char ** argv);
 
 	/**
 	 * Read system parameters, open log.
