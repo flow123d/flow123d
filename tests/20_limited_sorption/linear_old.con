@@ -40,12 +40,20 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
    
-      substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
+      substances = ["A", "As-lin", "Bs-lang",  "Cs-freund"],
+      sorption_enable = true, 
       
       bulk_data = [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25 
+          por_m = 0.25,
+
+          //alpha = 0.01,
+          phi = 1.0,
+          sorp_type = "linear",
+          sorp_coef0 = 0.6,
+          sorp_coef1 = 0
+
         }
       ],
       
@@ -64,8 +72,8 @@
       }, 
       time = {
         end_time = 15.0
-      },
-      
+      }//,
+      /*
       adsorptions = {
         solvent_dens = 1.0,
         species = ["A", "As-lin", "Bs-lang", "Cs-freund"],
@@ -80,7 +88,7 @@
 	    second_params = [0, 0, 0.6, 0.4]
           }
         ]
-      }
+      }*/
           
     } 
   }, 

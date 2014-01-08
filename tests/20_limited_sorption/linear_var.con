@@ -40,7 +40,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
    
-      substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
+      substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
       
       bulk_data = [
         { r_set = "ALL",
@@ -75,9 +75,10 @@
           {
             r_set="ALL",
             rock_density = 1.0,
-            sorption_types = [ "none", "linear", "langmuir", "freundlich"],
-            mult_coefs = [0, 0.6, 0.4, 0.6],
-	    second_params = [0, 0, 0.6, 0.4]
+            sorption_types =  "linear",
+            //mult_coefs = 0.6, 
+            mult_coefs = { TYPE="FieldFormula", value="0.6" },
+	    second_params = 0.4
           }
         ]
       }
