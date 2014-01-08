@@ -10,9 +10,7 @@
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
-{
-	this->body(argc, argv);
-}
+{ }
 
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
@@ -100,6 +98,7 @@ void ApplicationBase::body(int argc, char ** argv) {
 		exit( EXIT_FAILURE );
 	}
 
+	this->after_run();
 }
 
 

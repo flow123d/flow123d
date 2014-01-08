@@ -51,19 +51,19 @@ public:
 	 */
 	virtual void parse_cmd_line(const int argc, char ** argv) {}
 
-protected:
-
-	/**
-	 * Run application.
-	 */
-	virtual void run() = 0;
-
 	/**
 	 * Auxiliary method that allows to call virtual methods from constructor.
 	 *
 	 * Initializes and runs the application.
 	 */
 	void body(int argc, char ** argv);
+
+protected:
+
+	/**
+	 * Run application.
+	 */
+	virtual void run() = 0;
 
 	/**
 	 * Read system parameters, open log.
@@ -74,6 +74,11 @@ protected:
 	 * Initialize PETSC.
 	 */
 	void petsc_initialize(int argc, char ** argv);
+
+	/**
+	 * Execute part of program after run of simulation.
+	 */
+	virtual void after_run() {}
 
     /**
      * Log file name argument - passed to system_init; "" menas default, "\n" means no logging

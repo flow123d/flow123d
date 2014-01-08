@@ -83,6 +83,8 @@ protected:
      */
     virtual void run();
 
+    virtual void after_run();
+
 private:
 
     /// directory of main input file (used to resolve relative paths of other input files)

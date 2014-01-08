@@ -92,13 +92,7 @@ Application::Application( int argc,  char ** argv)
   passed_argc_(0),
   passed_argv_(0),
   use_profiler(true)
-{
-	if (sys_info.pause_after_run) {
-        printf("\nPress <ENTER> for closing the window\n");
-        getchar();
-    }
-
-}
+{}
 
 
 
@@ -354,6 +348,16 @@ void Application::run() {
 
 
 
+void Application::after_run() {
+	if (sys_info.pause_after_run) {
+        printf("\nPress <ENTER> for closing the window\n");
+        getchar();
+    }
+}
+
+
+
+
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
         Profiler::instance()->output(PETSC_COMM_WORLD);
@@ -373,6 +377,8 @@ int main(int argc, char **argv) {
 
     F_ENTRY;
     Application app(argc, argv);
+
+    app.body(argc, argv);
 
     // Say Goodbye
     return EXIT_SUCCESS;
