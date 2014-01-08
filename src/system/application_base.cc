@@ -105,5 +105,6 @@ void ApplicationBase::body(int argc, char ** argv) {
 
 ApplicationBase::~ApplicationBase() {
 	if (sys_info.log) xfclose(sys_info.log);
+	petcs_finalize();
 }
 
