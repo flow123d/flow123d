@@ -140,7 +140,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh, bool boundary_domai
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldElementwise<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
         ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
         ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
@@ -156,7 +156,7 @@ typename Value::return_type const & FieldElementwise<spacedim, Value>::value(con
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");

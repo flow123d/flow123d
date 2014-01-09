@@ -405,7 +405,7 @@ void SparseGraphMETIS::partition(int *part)
 
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
-
+        return;
     } else {
         if (vtx_distr.myp()==0) {
                   int n_vtx=vtx_distr.size();
@@ -491,7 +491,7 @@ void SparseGraphMETIS::partition(int *part)
                                           ubvec, options, &edgecut, part);
 #else
                       METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
-                                  vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
+                                  vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
                                   &n_proc,options,&edgecut,part);
 #endif
                   }     

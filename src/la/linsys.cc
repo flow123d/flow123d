@@ -35,6 +35,17 @@
 #include "system/system.hh"
 #include "la/linsys.hh"
 
+
+namespace it = Input::Type;
+
+it::AbstractRecord LinSys::input_type = it::AbstractRecord("LinSys", "Linear solver setting.")
+    .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+                "Relative residual tolerance (to initial error).")
+    .declare_key("max_it", it::Integer(0), it::Default("10000"),
+                "Maximum number of outer iterations of the linear solver.");
+
+#if 0
+
 /**
  *  @brief Constructs a parallel system with given local size.
  *
@@ -42,7 +53,6 @@
  *  For MPIAIJ matrix this is also distribution of its rows, but for IS matrix this is only size of
  *  principial local part without interface.
  */
-
 LinSys::LinSys(unsigned int vec_lsize, double *sol_array)
 :type(MAT_MPIAIJ),
  matrix(NULL),
@@ -130,7 +140,6 @@ LinSys:: ~LinSys()
     if (own_solution) xfree(v_solution);
 }
 
-#if 0
 
 // ======================================================================================
 // LSView - output assembled system in side,el,edge ordering
@@ -235,7 +244,7 @@ double *array;
         xfclose(f);
     }
 }
-
+*/
 
 //=========================================================================================
 /*! @brief convert linear system to pure CSR format
@@ -286,7 +295,6 @@ void LSFreeCSR( LinSystem *mtx )
     xfree(mtx->a);
 }
 
-#endif
 
 //**********************************************************************************************
 
@@ -539,6 +547,9 @@ LinSys_MATIS:: ~LinSys_MATIS()
      }
 
 }
+
+#endif
+
 
 #ifdef HAVE_ATLAS_ONLY_LAPACK
 /*

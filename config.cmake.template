@@ -1,5 +1,5 @@
 ### PETSC library ###################################################################
-# The Flow123 requires PETSC library (3.2.x), you have to set 
+# The Flow123 requires PETSC library (3.4.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
 # would to use system wide settings.
 # e.g.
@@ -16,20 +16,23 @@
 # If PETSC are not found we try to install them automatically.
 # Options for PETSC installer:
 #
-#     PETSC_MPI_DIR      - pass MPI to PETSC configure 
-#     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
+#     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
+#     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
 #
-#     PETSC_CONFIG - possible values:
+#     PETSC_INSTALL_CONFIG - possible values:
 #       mini             - only petsc + necessary MPI, BLAS, LAPACK
 #       flow123d_mini    - mini + metis + parmetis
 #       bddcml           - flow123d_mini + mumps + scalapack + blacs
 #       full             - bddcml + hypre + blopex + umfpack + sundials
 #
-#     INSTALL_PETSC_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
 #
 # example:
-# set(PETSC_CONFIG "bddcml")
-# set(INSTALL_PETSC_OPTIONS "--download-hypre=yes")
+# set(PETSC_INSTALL_CONFIG "bddcml")
+# set(PETSC_INSTALL_OPTIONS "--download-hypre=yes")
+
+
+
 
 ### BDDCML library #############################################################
 # BDDCML_ROOT - root directory of BDDCML library

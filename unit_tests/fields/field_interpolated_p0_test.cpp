@@ -155,7 +155,7 @@ public:
 
     Mesh *mesh;
     Input::Record rec;
-    Point<3> point;
+    Space<3>::Point point;
 
 };
 

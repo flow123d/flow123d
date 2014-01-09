@@ -42,7 +42,7 @@
  *
  * TODO:
  * - rename method find_element, radeji find_bounding_box
- * - new method find_point parametr Point<3> , #include "mesh/point.hh"
+ * - new method find_point parametr Space<3>::Point , #include "mesh/point.hh"
  *
  */
 class BIHTree {
@@ -85,7 +85,7 @@ public:
 	 * @param point Point which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_point(Point<3> &point, std::vector<unsigned int> &searchedElements);
+    void find_point(Space<3>::Point &point, std::vector<unsigned int> &searchedElements);
 
     /**
      * Browse tree and get its typical parameters

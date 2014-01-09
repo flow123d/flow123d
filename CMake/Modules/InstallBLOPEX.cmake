@@ -8,6 +8,18 @@ if (NOT EXTERNAL_BLOPEX_DIR)
     set(EXTERNAL_BLOPEX_DIR "${EXTERNAL_PROJECT_DIR}/blopex_build")
 endif()    
 
+
+################################################################################    
+# Create make.inc configuration file
+
+set(BLOPEX_ROOT  ${EXTERNAL_BLOPEX_DIR}/src)
+set(BLAS_LAPACK_LIBRARIES ${PETSC_VAR_BLASLAPACK_LIB})
+
+set(MAKE_INC ${EXTERNAL_BLOPEX_DIR}/blopex_make_inc)
+configure_file(${PROJECT_SOURCE_DIR}/CMake/Modules/blopex_make_inc.template ${MAKE_INC} @ONLY)
+
+
+
 ##########################################################################
 # Download BLOPEX
 # A temporary CMakeLists.txt
@@ -19,9 +31,13 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(BLOPEX
     DOWNLOAD_DIR ${EXTERNAL_BLOPEX_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/blopex.tar.gz\"
-    #URL \"/home/jb/local/blopex.tar.gz\"
+    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/blopex-read-only.tar.gz\"
+    #URL \"/home/jb/local/blopex_src/blopex-read-only.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BLOPEX_DIR}/src
+    BINARY_DIR ${EXTERNAL_BLOPEX_DIR}/src
+    CONFIGURE_COMMAND cp ${MAKE_INC} ${EXTERNAL_BLOPEX_DIR}/src/makefile.inc
+    BUILD_COMMAND make
+    INSTALL_COMMAND \"\"
   )
 ")
 
@@ -30,9 +46,9 @@ message(STATUS "=== Installing BLOPEX ===")
 execute_process(COMMAND ${CMAKE_COMMAND} ${EXTERNAL_BLOPEX_DIR} 
     WORKING_DIRECTORY ${EXTERNAL_BLOPEX_DIR})
 
-find_program (MAKE_EXECUTABLE NAMES make gmake)
+find_program (MAKE_EXECUTABLE NAMES make  gmake)
 # run make
-execute_process(COMMAND ${MAKE_EXECUTABLE} BLOPEX
+execute_process(COMMAND ${MAKE_EXECUTABLE} VERBOSE=1 BLOPEX
    WORKING_DIRECTORY ${EXTERNAL_BLOPEX_DIR})    
 
 
