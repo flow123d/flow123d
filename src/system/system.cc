@@ -560,7 +560,7 @@ char *xgetcwd( void )
  *  @param[in]      section     Section name to find.
  *  @return                     true - if we have found the section, false otherwise
  */
-bool skip_to( FILE *const in, const char *section )
+/*bool skip_to( FILE *const in, const char *section )
 {
     char line[ LINE_SIZE ];
     char string[ LINE_SIZE ];
@@ -579,7 +579,7 @@ bool skip_to( FILE *const in, const char *section )
     }
 
     return(false);
-}
+}*/
 
 
 
