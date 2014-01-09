@@ -85,7 +85,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} ${EXTERNAL_BDDCML_DIR}
 
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 # run make
-execute_process(COMMAND ${MAKE_EXECUTABLE} VERBOSE=1 BDDCML
+execute_process(COMMAND ${MAKE_EXECUTABLE} BDDCML
    WORKING_DIRECTORY ${EXTERNAL_BDDCML_DIR})    
 
 # copy FC_Magle.h to BDDCML sources

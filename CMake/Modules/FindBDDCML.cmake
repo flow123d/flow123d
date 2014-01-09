@@ -53,7 +53,7 @@ show :
   endmacro (BDDCML_GET_VARIABLE)
 
   bddcml_get_variable("BDDCML_LINK_SEQUENCE" BDDCML_LINK_SEQ)
-  bddcml_get_variable("BDDCML_CDEFS" BDDCML_CDEFS)
+  #bddcml_get_variable("BDDCML_CDEFS" BDDCML_CDEFS)
   
  
   #message(STATUS "BDDCML_LIBS: ${BDDCML_LINK_SEQ}")

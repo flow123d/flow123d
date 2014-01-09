@@ -383,7 +383,7 @@ endif(PETSC_FOUND)
 
 #find_package(PARMETIS)
 
-#message(STATUS "\n =======================================================")
+message(STATUS "\n =======================================================")
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
 
@@ -609,11 +609,13 @@ endif()
 
   
 message(STATUS "=============== Summary ===================")
-message(STATUS "Boost:  ${BOOST_LIBRARYDIR}")
-message(STATUS "Petsc:  ${PETSC_LIBRARIES}")
-message(STATUS "   + :  ${PETSC_ADDITIONAL_LIBS}")
-message(STATUS "BDDCML: ${BDDCML_LIBRARIES}")
+message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
+message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
+message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
+message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "===========================================")
 
 ####################################################################################
 # Install and Packaging

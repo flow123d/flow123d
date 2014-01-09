@@ -6,6 +6,10 @@
 #set(PETSC_DIR "$ENV{HOME}/local/petsc")
 #set(PETSC_ARCH "linux-gcc-dbg")
 
+# If PETSC are found but do not compile, it is probably due to some undefined references (usually nonstandard compiler libraries)
+# see file: BUILD_DIR/CMakeFiles/CMakeError.log 
+# and set following variable to add missing libraries using -L and -l parameters.
+#
 # e.g. Some PETSC installations have missing pthread library. So we use (assuming libpthread.a placed in /usr/lib):
 # set( PETSC_ADDITIONAL_LIBS "-lpthread")
 
@@ -26,14 +30,9 @@
 # example:
 # set(PETSC_INSTALL_CONFIG "bddcml")
 # set(PETSC_INSTALL_OPTIONS "--download-hypre=yes")
-#
-# set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
-### Python setting ###############################################################
-# USE_PYTHON - only use python if this is set to "yes"
-# We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
-#
-# set(USE_PYTHON "yes")
+
+
 
 ### BDDCML library #############################################################
 # BDDCML_ROOT - root directory of BDDCML library
