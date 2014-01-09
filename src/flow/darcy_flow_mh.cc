@@ -274,17 +274,12 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
     
-    //START_TIMER("solver init");
-    //solver = new (Solver);
-    //solver_init(solver, in_rec.val<AbstractRecord>("solver"));
-    //END_TIMER("solver init");
-    
+
     solution = NULL;
     schur0   = NULL;
     schur1   = NULL;
     schur2   = NULL;
-    IS1      = NULL;
-    IS2      = NULL;
+
     
     /*
     Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
@@ -389,8 +384,8 @@ void DarcyFlowMH_Steady::update_solution() {
     data.set_time(*time_);
     END_TIMER("data reinit");
 
-    xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
-    //time_->view("DARCY"); //time governor information output
+    //xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
+    time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
     int convergedReason;
@@ -414,7 +409,7 @@ void DarcyFlowMH_Steady::update_solution() {
         break;
     }
 
-    DBGMSG( "Solved linear problem with converged reason %d \n", convergedReason );
+    xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
 
     this -> postprocess();
@@ -662,8 +657,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         
         
         // D block: non-compatible conections and diagonal: element-element
-        //for (i = 0; i < ele->d_row_count; i++)
-        //    tmp_rows[i] = row_4_el[ele->d_el[i]];
+
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
 
         // D, E',E block: compatible connections: element-edge
@@ -1056,7 +1050,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
             ls->set_solution( NULL );
             schur0=ls;
-            // possible initialization particular to BDDC
+
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
             schur0->start_allocation();
@@ -1266,13 +1260,34 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
-    if (schur2 != NULL) delete schur2;
-    // if (schur1 != NULL) delete schur1;   // where shur1 should be deleted ??
+    if (schur2 != NULL) {
+    	delete schur2;
+    	//ISDestroy(&IS2);
+    }
+    if (schur1 != NULL) {
+    	delete schur1;
+    	//ISDestroy(&IS1);
+    }
+    if (schur0 != NULL) delete schur0;
 
-    //if ( IS1 != NULL ) ISDestroy( &IS1 );
-    //if ( IS2 != NULL ) ISDestroy( &IS2 );
+	delete edge_ds;
+	delete el_ds;
+	delete side_ds;
 
-    delete schur0;
+	xfree(el_4_loc);
+	xfree(row_4_el);
+	xfree(side_id_4_loc);
+	xfree(side_row_4_id);
+	xfree(edge_4_loc);
+	xfree(row_4_edge);
+
+	if (solution != NULL) {
+		VecDestroy(&sol_vec);
+		xfree(solution);
+	}
+
+	VecScatterDestroy(&par_to_all);
+
 }
 
 /*******************************************************************************
@@ -1294,9 +1309,10 @@ void DarcyFlowMH_Steady::make_schur1() {
 
     // create schur1 if does not exists
 	if (schur1 == NULL) {
-		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &IS1);
+		IS is;
+		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
 		ASSERT(err == 0,"Error in ISCreateStride.");
-		schur1 = new SchurComplement(schur0, IS1);
+		schur1 = new SchurComplement(schur0, is); // is is deallocated by SchurComplement
 	}
     
     END_TIMER("schur1 - create,inverse");
@@ -1321,9 +1337,10 @@ void DarcyFlowMH_Steady::make_schur2() {
 
     // create schur complement of the B block ( of the first complement )
     if (schur2 == NULL) {
-        ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &IS2);
+    	IS is;
+        ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &is);
         ASSERT(ierr == 0, "Error in ISCreateStride.");
-        schur2 = new SchurComplement(schur1->get_system(), IS2);
+        schur2 = new SchurComplement(schur1->get_system(), is); // is is deallocated by SchurComplement
 
     }
 

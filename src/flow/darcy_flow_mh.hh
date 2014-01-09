@@ -328,9 +328,6 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
 
-    IS IS1;									 //< parallel index set of schur1 complement
-    IS IS2;									 //< parallel index set of schur2 complement
-
     double mortar_sigma;
         
   EqData data;
