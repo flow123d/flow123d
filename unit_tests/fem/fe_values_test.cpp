@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <cmath>
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"

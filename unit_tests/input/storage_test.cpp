@@ -5,15 +5,15 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "input/storage.hh"
 
 //use namespace std;
 
 TEST(Storage, all) {
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 using namespace Input;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     StorageArray array(7);
     array.new_item(0, new StorageNull());
@@ -31,9 +31,7 @@ using namespace Input;
     sub_array1->new_item(1, new StorageInt(231));
     array.new_item(6, sub_array1);
 
-#ifdef DEBUG_ASSERTS
-    EXPECT_DEATH( {array.new_item(7, sub_array1);}, "out of array of size:");
-#endif
+    EXPECT_ASSERT_DEATH( {array.new_item(7, sub_array1);}, "out of array of size:");
 
     EXPECT_TRUE(array.get_item(0)->is_null());
     EXPECT_FALSE(array.get_item(1)->is_null());

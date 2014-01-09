@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <sstream>
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "interpolation/functors_impl.hh"
 #include "interpolation/interpolant_impl.hh"

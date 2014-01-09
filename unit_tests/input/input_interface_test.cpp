@@ -9,7 +9,7 @@
  */
 
 
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include <vector>
 
 #include <input/accessors.hh>
@@ -292,7 +292,7 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -349,7 +349,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);

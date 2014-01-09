@@ -5,7 +5,7 @@
  *      Author: viktor
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
