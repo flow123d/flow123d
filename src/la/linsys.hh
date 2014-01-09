@@ -68,7 +68,6 @@
  */
 
 #include "system/global_defs.h"
-#include "system/xio.h"
 #include "la/distribution.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -80,8 +79,8 @@
 
 // PETSc includes
 #include "petscmat.h"
-#include "petscvec.h"
-#include "petscksp.h"
+//#include "petscvec.h"
+//#include "petscksp.h"
 
 
 class LinSys

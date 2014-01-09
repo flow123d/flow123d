@@ -315,9 +315,6 @@ protected:
 	int	*side_row_4_id;		//< side id to matrix row
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
-	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
-
-        std::vector<int> element_part;  //< for aech element, index of subdomain
 
 	// MATIS related arrays
         std::vector<double>   solution_;                 //< sequantial scattered solution vector

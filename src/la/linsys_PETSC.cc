@@ -31,6 +31,9 @@
 
 // derived from base linsys
 #include "la/linsys_PETSC.hh"
+#include "petscvec.h"
+#include "petscksp.h"
+#include "petscmat.h"
 
 #include <boost/bind.hpp>
 

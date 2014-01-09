@@ -67,7 +67,7 @@ void fill_matrix(LinSys * lin_sys, int *blocks, Distribution &ds, Distribution &
 }
 
 
-TEST(la, inversion_matrix) {
+TEST(schur, inversion_matrix) {
 	int blocks [] = {5,2,3,3,4,2};
 	int n_blocks = 6;
 	int max_block_size=5;

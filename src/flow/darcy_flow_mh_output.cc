@@ -112,30 +112,28 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     
-    //TODO: multi_process output
-    //if( rank == 0)
-    {
 
-        result = OutputTime::register_node_data
-                (mesh_, "pressure_nodes", "L", in_rec.val<Input::Record>("output_stream"), node_pressure);
+	result = OutputTime::register_node_data
+			(mesh_, "pressure_nodes", "L", in_rec.val<Input::Record>("output_stream"), node_pressure);
 
-        result = OutputTime::register_elem_data
-                (mesh_, "pressure_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_pressure);
+	result = OutputTime::register_elem_data
+			(mesh_, "pressure_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_pressure);
 
-        if (output_piezo_head) {
-            result = OutputTime::register_elem_data
-                    (mesh_, "piezo_head_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_piezo_head);
-        }
+	if (output_piezo_head) {
+		result = OutputTime::register_elem_data
+				(mesh_, "piezo_head_elements", "L", in_rec.val<Input::Record>("output_stream"), ele_piezo_head);
+	}
 
-        result = OutputTime::register_elem_data
-                (mesh_, "velocity_elements", "L/T", in_rec.val<Input::Record>("output_stream"), ele_flux);
+	result = OutputTime::register_elem_data
+			(mesh_, "velocity_elements", "L/T", in_rec.val<Input::Record>("output_stream"), ele_flux);
 
-        Iterator<string> it = in_rec.find<string>("subdomains");
-        if (bool(it)) {
-            result = OutputTime::register_elem_data
-                    (mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
-        }
+	it = in_rec.find<string>("subdomains");
+	if (bool(it)) {
+		result = OutputTime::register_elem_data
+				(mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
+	}
 
+	if (rank == 0) {
         // temporary solution for balance output
         balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
@@ -148,8 +146,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
                 raw_output_file = xfopen(*it, "wt");
             }
         }
-
-    } //end of rank == 0
+    }
 }
 
 
@@ -214,18 +211,7 @@ void DarcyFlowMHOutput::output()
       water_balance();
 
       //compute_l2_difference();
-        /*
-      //int *partitioning;
-      //unsigned    lpartitioning;
-      //darcy_flow->get_partitioning_vector( partitioning, lpartitioning );
-      //int    lpartitioning_int = static_cast<int>( lpartitioning );
-      //if (lpartitioning_int > 0 ) {
 
-      //   output_writer->register_elem_data
-      //       (mesh_, "substructure", "", in_rec_.val<Input::Record>("output_stream"), partitioning, lpartitioning_int);
-      //}
-*/
-      //double time  = min(darcy_flow->solved_time(), 1.0E200);
       double time  = darcy_flow->solved_time();
 
       // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
