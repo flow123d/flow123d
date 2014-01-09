@@ -2,7 +2,8 @@
 
 #define TEST_USE_PETSC
 
-#include <gtest_mpi.hh>
+#include "flow_gtest_mpi.hh"
+
 #include <la/distribution.hh>
 #include <la/schur.hh>
 #include <la/linsys.hh>
