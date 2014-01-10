@@ -68,9 +68,9 @@ static int xio_verbosity = 0;  ///< internal XIO debug: print info at each XIO f
 
 //! @brief basic definitions
 /// @{
-static XFILE xstdin  = {strdup("stdin"),strdup("r"),0};
-static XFILE xstdout = {strdup("stdout"),strdup("w"),0};
-static XFILE xstderr = {strdup("stderr"),strdup("w"),0};
+//static XFILE xstdin  = {strdup("stdin"),strdup("r"),0};
+//static XFILE xstdout = {strdup("stdout"),strdup("w"),0};
+//static XFILE xstderr = {strdup("stderr"),strdup("w"),0};
 //! @}
 
 static XFILE * xio_getfptr( FILE * f );
@@ -82,12 +82,12 @@ static XFILE * xio_getfptr( FILE * f );
 /*!
  * @brief XIO library initialization
  */
-void xio_init( void )
+/*void xio_init( void )
 {
     xfiles_map[stdin]  = &xstdin;
     xfiles_map[stdout] = &xstdout;
     xfiles_map[stderr] = &xstderr;
-}
+}*/
 
 /*!
  * @brief Get file name from pointer to FILE structure.

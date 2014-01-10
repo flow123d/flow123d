@@ -47,7 +47,7 @@
 
 //! @brief XIO library extensions
 /// @{
-void   xio_init( void );             ///< XIO library initialization
+//void   xio_init( void );             ///< XIO library initialization
 char * xio_getfname( FILE * f );     ///< Get file name from file stream
 char * xio_getfmode( FILE * f );     ///< Get file mode from file stream
 int    xio_getlinesread( FILE * f ); ///< Get number of read lines from stream
