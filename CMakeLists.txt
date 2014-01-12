@@ -308,7 +308,12 @@ message(STATUS "Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
 message(STATUS "\n =======================================================")
 include (FindPackageMultipass)
-  
+
+# this export list is for possible BDDCML installation
+set(PETSC_EXPORT_LIST 
+  MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
+  METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
+  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB)  
 find_package(PETSc 3.4.0)
 
 
@@ -318,7 +323,8 @@ if (NOT PETSC_FOUND)
     else()    
         # Install PETSC
         # also set PETSC_DIR, PETSC_ARCH
-        set(EXTERNAL_PETSC_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        set(PETSC_INSTALL_DIR  ${EXTERNAL_PROJECT_DIR}/petsc_build)
+        set(PETSC_INSTALL_URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/petsc-lite-3.4.3.tar.gz\")
         include(InstallPetsc)
         
         set(PETSC_CURRENT "NO")
@@ -326,7 +332,7 @@ if (NOT PETSC_FOUND)
         
     endif()    
         
-        
+       
     # If we haven't PETSC, we try to find MPI
         
     # === Variables ===
@@ -375,15 +381,32 @@ if(PETSC_FOUND)
     message(STATUS "PETSC_EXTERNAL_LIB: ${petsc_libraries_external}")
 endif(PETSC_FOUND)
 
-find_package(PARMETIS)
+#find_package(PARMETIS)
 
-#message(STATUS "\n =======================================================")
+message(STATUS "\n =======================================================")
 #################################################################################
 #  BDDCML_FOUND - set to true if the library is found
-#set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
-#include(InstallBLOPEX)
-#set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
-#include(InstallBDDCML)
+
+if (BDDCML_ROOT) 
+    find_package(BDDCML)
+
+    if (NOT BDDCML_FOUND)
+        set(EXTERNAL_BLOPEX_DIR  ${EXTERNAL_PROJECT_DIR}/blopex_build)
+        include(InstallBLOPEX)
+        set(EXTERNAL_BDDCML_DIR  ${EXTERNAL_PROJECT_DIR}/bddcml_build)
+        include(InstallBDDCML)
+
+        set(BDDCML_bddcml_config_current "NO")
+        find_package(BDDCML)
+    endif()
+    
+    if (BDDCML_FOUND)
+        add_definitions(-DHAVE_BDDCML)
+    endif()
+else()
+    # set(BDDCML_LIBRARIES "")
+endif()    
+
 
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
@@ -425,9 +448,10 @@ IF (PETSC_FOUND)
 endif()
 
 # optionaly we use Python interface
-# We disallow python under cygwin since we are not able to extract correct libraries to make it work elsewhere.
+# We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
 if (CYGWIN)
 else (CYGWIN) 
+  if (USE_PYTHON)
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
@@ -436,6 +460,7 @@ else (CYGWIN)
 	set(PYTHON_INCLUDE_DIRS "")
 	set(PYTHON_LIBRARIES "")
     endif()
+  endif()  
 endif(CYGWIN)
 
 message(STATUS "\n ======================================================= ")
@@ -447,9 +472,11 @@ message(STATUS "\n ======================================================= ")
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
+    #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
+    ${BDDCML_INCLUDES}
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
@@ -577,13 +604,26 @@ else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
+###############################################################################
+# Summary
+
+  
+message(STATUS "=============== Summary ===================")
+message(STATUS "Boost:      ${BOOST_LIBRARIES}")
+message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
+message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
+message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
+message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
+message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "===========================================")
+
 ####################################################################################
 # Install and Packaging
 
 if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/Flow123d")
 endif()
-  
+
 
 # mpiexec, hope this will work
 install(DIRECTORY config 			DESTINATION bin/)

@@ -81,7 +81,8 @@ typedef enum {
     MATLAB=4,
     PETSC_SOLVER=6,
     ISOL=7,
-    PETSC_MATIS_SOLVER=8
+    PETSC_MATIS_SOLVER=8,
+    BDDCML_SOLVER=9 
 } SolverType;
 
 

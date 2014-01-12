@@ -24,7 +24,12 @@
 
 //#else
 
-#define Point arma::vec::fixed
+template<int spacedim>
+class Space {
+public:
+    typedef typename arma::vec::fixed<spacedim> Point;
+};
+//#define
 
 //#endif
 

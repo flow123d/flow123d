@@ -139,7 +139,7 @@ TEST(Field, init_from_default) {
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);
 
-    Point<3> p("1 2 3");
+    Space<3>::Point p("1 2 3");
 
     {
         Field<3, FieldValue<3>::Scalar > scalar_field;
