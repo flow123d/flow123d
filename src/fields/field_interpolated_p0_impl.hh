@@ -35,7 +35,7 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/problem.h"
+//#include "mesh/ngh/include/problem.h"
 #include "system/sys_profiler.hh"
 //#include "boost/lexical_cast.hpp"
 //#include "system/tokenizer.hh"
@@ -207,6 +207,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
 
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.element()->measure();
+
 		// gets suspect elements
 		if (elm.dim() == 0) {
 			//Point point;
@@ -263,6 +265,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			            break;
 			        }
 			    }
+
+
 
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {

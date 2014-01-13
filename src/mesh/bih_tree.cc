@@ -40,7 +40,6 @@ BIHTree::BIHTree(Mesh* mesh, unsigned int areaElementLimit) {
 	srand((unsigned)time(0));
 
 	mesh_ = mesh;
-	if (areaElementLimit == 0) areaElementLimit = 20;
 	nodes_.reserve(2 * mesh_->n_elements() / areaElementLimit);
 
 	//START_TIMER("BIH Tree");
@@ -280,7 +279,7 @@ unsigned int BIHTree::get_element_count() {
 }
 
 
-void BIHTree::find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
+void BIHTree::find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements)
 {
 	std::vector<unsigned int>::iterator it;
 	searchedElements.clear();
@@ -316,7 +315,7 @@ void BIHTree::find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned i
 }
 
 
-void BIHTree::find_point(Space<3>::Point &point, std::vector<unsigned int> &searchedElements) {
+void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &searchedElements) {
 	unsigned int node_index = 0; // index of actual walking node
 
 	searchedElements.clear();

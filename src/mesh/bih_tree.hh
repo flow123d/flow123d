@@ -55,9 +55,9 @@ public:
 	 *
 	 * Set class members and call functions which create tree
 	 * @param mesh Mesh is used for creation the tree
-	 * @param areaElementLimit limit of elements in area
+	 * @param areaElementLimit Maximal number of elements stored in a leaf node of BIH tree.
 	 */
-	BIHTree(Mesh* mesh, unsigned int areaElementLimit = 0);
+	BIHTree(Mesh* mesh, unsigned int areaElementLimit = 20);
 
 	/**
 	 * Destructor
@@ -77,7 +77,7 @@ public:
 	 * @param boundingBox Bounding box which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
+    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
 
 	/**
 	 * Gets elements which can have intersection with point
@@ -85,7 +85,7 @@ public:
 	 * @param point Point which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_point(Space<3>::Point &point, std::vector<unsigned int> &searchedElements);
+    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &searchedElements);
 
     /**
      * Browse tree and get its typical parameters

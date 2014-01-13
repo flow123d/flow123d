@@ -38,6 +38,20 @@ BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
 	maxCoordinates_ = maxCoor;
 }
 
+
+
+BoundingBox::BoundingBox(const vector<arma::vec3> &points) {
+	auto it = points.begin();
+	maxCoordinates_ = minCoordinates_ = *it;
+	for(++it; it != points.end(); ++it) {
+		for(unsigned int j=0; j<3; j++) {
+			minCoordinates_(j) = std::min( minCoordinates_(j), (*it)[j] );
+			maxCoordinates_(j) = std::max( maxCoordinates_(j), (*it)[j] );
+		}
+	}
+}
+
+
 void BoundingBox::set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor) {
 	minCoordinates_ = minCoor;
 	maxCoordinates_ = maxCoor;
@@ -55,7 +69,7 @@ arma::vec3 BoundingBox::get_center() const {
 	return (maxCoordinates_ + minCoordinates_) / 2;
 }
 
-bool BoundingBox::contains_point(Space<3>::Point &point) const {
+bool BoundingBox::contains_point(const Space<3>::Point &point) const {
 	for (unsigned int i=0; i<dimension; i++) {
 		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
 	}
@@ -63,7 +77,7 @@ bool BoundingBox::contains_point(Space<3>::Point &point) const {
 	return true;
 }
 
-bool BoundingBox::intersection(BoundingBox &b2) const {
+bool BoundingBox::intersection(const BoundingBox &b2) const {
 	for (unsigned int i=0; i<dimension; i++) {
 		if ((minCoordinates_(i) > b2.get_max()(i)) | (maxCoordinates_(i) < b2.get_min()(i))) return false;
 	}

@@ -53,6 +53,13 @@ public:
 	 */
 	BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor);
 
+
+
+	BoundingBox(const vector<arma::vec3> &points);
+
+
+
+
     /// get minimal coordinates of bounding box
     const arma::vec3 get_min() const;
     /// get maximal coordinates of bounding box
@@ -66,9 +73,9 @@ public:
      * @param point Testing point
      * @return True if box element contains point
      */
-    bool contains_point(Space<3>::Point &point) const;
+    bool contains_point(const Space<3>::Point &point) const;
 
-    bool intersection(BoundingBox &b2) const;
+    bool intersection(const BoundingBox &b2) const;
 
     /**
      * Set class members

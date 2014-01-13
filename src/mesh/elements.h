@@ -104,6 +104,22 @@ public:
      */
     void get_bounding_box(BoundingBox &bounding_box);
 
+    /**
+     * Return bounding box of the element.
+     */
+    inline BoundingBox bounding_box() {
+    	return BoundingBox(this->vertex_list());
+    }
+
+    /**
+     * Return list of element vertices.
+     */
+    inline vector<arma::vec3> vertex_list() {
+    	vector<arma::vec3> vertices(this->n_nodes());
+    	for(unsigned int i=0; i<n_nodes(); i++) vertices.push_back(node[i]->point());
+    	return vertices;
+    }
+
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge

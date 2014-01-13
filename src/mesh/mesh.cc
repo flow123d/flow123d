@@ -50,6 +50,8 @@
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 
+#include "mesh/bih_tree.hh"
+
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
 // instances of a Element valued field
@@ -756,6 +758,22 @@ void Mesh::read_intersections() {
 
 
 void Mesh::make_intersec_elements() {
+	/* Algorithm:
+	 *
+	 * 1) create BIH tree
+	 * 2) for every 1D, find list of candidates
+	 * 3) compute intersections for 1d, store it to master_elements
+	 *
+	 */
+
+	BIHTree bih_tree( this );
+	vector<unsigned int> candidate_list(20);
+
+	for(Element &ele : this->element) {
+		if (ele.dim() == 1) {
+			bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+		}
+	}
 
      // calculate sizes and make allocations
      vector<int >sizes(n_elements(),0);
