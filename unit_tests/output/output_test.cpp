@@ -5,7 +5,7 @@
  */
 
 #define TEST_USE_MPI
-#include <gtest_mpi.hh>
+#include <flow_gtest_mpi.hh>
 
 #include "io/output.h"
 

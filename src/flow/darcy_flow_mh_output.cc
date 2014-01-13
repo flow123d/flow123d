@@ -224,7 +224,7 @@ void DarcyFlowMHOutput::output()
       // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
       if (time == TimeGovernor::inf_time) time = 0.0;
 
-      if(output_writer) output_writer->write_data(time);
+      //if(output_writer) output_writer->write_data(time);
       
       output_internal_flow_data();
       
