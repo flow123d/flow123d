@@ -87,8 +87,11 @@
         TYPE = "Petsc", 
         a_tol = 1e-12,
         r_tol = 1e-12
+      },
+      mass_balance = {
+        cumulative = true
       }
-    }, 
+    },
 
     save_step = 5.0, 
     time = {

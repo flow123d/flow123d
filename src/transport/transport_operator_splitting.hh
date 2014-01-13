@@ -171,7 +171,7 @@ public:
 
     inline virtual void output_data() {};
 
-    TimeIntegrationScheme time_scheme() { return TimeIntegrationScheme::none; }
+    TimeIntegrationScheme time_scheme() { return none; }
 
 private:
 
@@ -230,7 +230,7 @@ public:
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
 
-    TimeIntegrationScheme time_scheme() { return TimeIntegrationScheme::none; }
+    TimeIntegrationScheme time_scheme() { return none; }
 
 
 private:

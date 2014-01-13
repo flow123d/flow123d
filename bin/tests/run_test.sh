@@ -92,11 +92,9 @@ TEST_RESULTS="./test_results"
 # 3 - execution of flow123d wasn't finished in time
 EXIT_STATUS=0
 
-# Set up memory limits that prevent too allocate too much memory.
-# The limit of virtual memory is 200MB (memory, that could be allocated)
-#
-# Seems that setting limits for virtual memory doesn't work under Cygwin.
-ulimit -S -v 200000
+# Set up memory limits (in MB) per process. Poor memory leak prevention.
+# Doesn't work under Cygwin (ulimit not supported).
+MEMORY_LIMIT=300
 
 
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
@@ -369,14 +367,14 @@ do
 		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
-                "${FLOW123D_SH}" --nice 10 -np ${NP} -ppn 1 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
+                "${FLOW123D_SH}" --nice 10 --mem ${MEMORY_LIMIT} -np ${NP} -ppn 1 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
                 # Get PID 
 		FLOW123D_PID=$!
 
 		echo -n "Running flow123d [proc:${NP}] ${INI_FILE} ."
 		IS_RUNNING=1
 
-		# Wait max TIMEOUT seconds, then flow123d processes should be killed by flo123d.sh script
+		# Wait max TIMEOUT seconds, then flow123d processes should be killed
 		while [ ${TIMER} -lt ${TIMEOUT} ]
 		do
 			TIMER=`expr ${TIMER} + 1`

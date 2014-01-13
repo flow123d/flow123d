@@ -3,6 +3,8 @@ profiler_info*.log
 flow*.log
 unit_tests/*/makefile
 unit_tests/makefile
+unit_tests/output/*.pvd
+unit_tests/output/*.msh
 bin/tests/makefile
 bin/flow123d
 bin/mpiexec
@@ -19,6 +21,7 @@ build_tree
 
 *~
 *.kate-swp
+*.kdev4
 
 .cproject
 .project

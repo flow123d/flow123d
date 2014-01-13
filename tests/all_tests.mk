@@ -37,4 +37,4 @@ test: check_build_tree ../../bin/flow123d
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 clean:
-	rm -rf Results test_results; rm -f profiler_*; rm -f output/*; rm -f vystup.txt
+	rm -rf output Results test_results; rm -f profiler_*; rm -f vystup.txt

@@ -1,176 +1,169 @@
 # Flow123d #
 
-[![Build Status](http://dev.nti.tul.cz:8080/job/Flow123d/badge/icon)](http://dev.nti.tul.cz:8080/job/Flow123d/)
+[![Build Status](http://ci2.nti.tul.cz/job/Flow123d%20build/badge/icon)](http://ci2.nti.tul.cz/job/Flow123d%20build/)
 
-[Source documentation](http://dev.nti.tul.cz:8080/job/make_doc/doxygen/)
+[Source documentation](http://ci2.nti.tul.cz/job/make_doc/doxygen/)
 
-[Reference manual](http://dev.nti.tul.cz:8080/job/make_doc/doclinks/1/)
+[Reference manual](http://ci2.nti.tul.cz/job/make_doc/doclinks/1/)
 
-Flow123d is a simulator of underground water flow and transport in fractured
+Flow123d is a simulator of underground water flow and transport processes in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
-we can combine continuum models and discrete fracture network models.
-
-Current version includes mixed-hybrid solver for steady and unsteady Darcy's
-flow, finite volume model for transport of several substances. Using operator
-splitting we support models for various local processes including dual
-porosity, sorption, decays and reactions.
-
-All computations can be run in parallel using PETSc and MPI. However, the
-mesh data and output operations are still sequential. Program supports output
-into VTK format for visualization and postprocessing in Paraview. 
+we can combine continuum models and discrete fracture network models. For details see:
+[Features](https://dev.nti.tul.cz/trac/flow123d/wiki/Features) page.
+  
 
 ## License ##
 
 The source code of Flow123d is licensed under GPL3 license. For details look
 at files LICENSE and GPL3.
 
-## Build Flow123 ##
+## Build Flow123d ##
 
-### Prerequisities ##
+### Windows OS prerequisities ###
 
 If you are running Windows, you have to install 'cygwin' for emulation of
 POSIX unix environment. Then all work has to be done in the directories under
-cygwin, e.g "C:\cygwin\home\user\".
+cygwin, e.g "C:\cygwin\home\user\". In addition to the packages mentioned for the Linux you will need:
 
-For build you will need some developement software packages. On Windows use
-cygwin to install them. On Linux use package manager of your distribution
-('apt-get' for Ubuntu and Debian, 'yum' for RedHat and Centos)
+* openssh (for MPICH)
+* some editor that can save Unix like text files (notepad++, vim under cygwin) 
 
-Requested packages are: 
+
+### Linux OS prerequisities ###
+Requested packages (Debian) are: 
 
 * gcc, gcc4-g++, gcc4-fortran     C/C++ compiler and Fortran77 compiler for compilation of BLAS library.
 * python, perl, cmake (>2.8)      Scripting languages 
 * make, cmake (>2.8), patch       Building tools
 * libboost                        General purpose C++ library 
 
-> Flow123d can install Boost automatically during configuration, but it may
-> take long.
-  
-Namely you need development version of the sub-libraries "Program Options" and
-"Serialize" in KUbuntu these are in separate packages:
+Namely you need development version of the Boost sub-libraries "Program Options" and
+"Serialize". In KUbuntu, these are in separate packages:
 
 * libboost-program-options-dev,
 * libboost-serialize-dev
 
-Under Cygwin you also need to install:  
-
-* openssh (for MPICH)
-* some editor that can save Unix like text files (notepad++, vim under cygwin) 
-
-optionaly you may be interested in:
+Flow123d downloads and installs Boost during configuration if it is not found in the system, but it may
+take long. Optionally you may use
 
 * doxygen, graphviz     source generated documentation and its support tool for diagrams 
+* tetex                 or other Latex package to build reference manual
 
-Other libraries that can be possibly useful for developers can be found on address:
+Flow123d depends also on PETSc library. It can be installed automatically during configuration,
+but for good parallel performance it has to be configured manually see appropriate section later on.
 
-http://dev.nti.tul.cz/trac/flow123d/wiki/Developement
-http://dev.nti.tul.cz/trac/flow123d/wiki/Software
 
-### Build Step 1 - Install PETSc Library ###
+### Compile Flow123 ###
 
-Flow versions 1.7.x depends on the PETSC library 3.4.0-xx.
-You can download this version from:
+Copy file `config.cmake.template` to `config.cmake`:
 
-http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
+    > cp config.cmake.template config.cmake
 
-Assume that you unpack the installation tree to the directory:
+Edit file `config.cmake`, set `PETSC_DIR` and `PETSC_ARCH` variables if you have your own installation of PETSc.
+For further options see comments in the template file.
 
-    $ cd /home/jb/local/petsc
+Then run the compilation by:
 
-Change to this directory and set this as your PETSC directory:
+    > make all
 
-    $ export PETSC_DIR=`pwd`
+This runs configuration and then the build process. If the configuration
+fails and you need to correct your `config.cmake` or other system setting
+you have to cleanup all files generated by unsuccessful cmake configuration by:
 
-For developelemt you will need at least debuging and production build of the
-library. First set a name for the debugging configuration:
+    > make clean-all
 
-    $ export PETSC_ARCH=linux-gcc-dbg
+Try this every time if your build doesn't work and you don't know why.
 
-And run the configuration script, for example with following options:
+** Parallel builds ** 
+Build can take quite long time when running on single processor. Use make's parameter '-j N' to 
+use N parallel processes. Developers can set appropriate alias in '.bashrc', e.g. :
+    
+    export NUMCPUS=`grep -c '^processor' /proc/cpuinfo`
+    alias pmake='time nice make -j$NUMCPUS --load-average=$NUMCPUS'
 
-    $ ./config/configure.py --with-debugging=1 --CFLAGS-O=-g --FFLAGS-O=-g \
-      --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
 
-This also automagically install BLAS, Lapack, MPICH, and ParMetis so it takes
-a while (it can be about 15 min). If everything is OK, you obtain table with
-used compilers and libraries. Finally compile PETSC with this configuration:
+> **Petsc Detection Problem:**
+>
+> CMake try to detect type of your PETSc installation and then test it
+> by compiling and running simple program. However, this can fail if the 
+> program has to be started under 'mpiexec'. In such a case, please, set:
+>
+>    set (PETSC_EXECUTABLE_RUNS YES)
+>
+> in your makefile.in.cmake file, and perform: `make clean-all; make all`
 
-    $ make all
+For further information about program usage see reference manual `doc/flow_doc`.
 
-To test the compilation run:
 
-    $ make test
+### Manual PETSc installation (optional) ###
 
-To obtain PETSC configuration for the production version you can use e.g.
+Flow versions 1.7.x depends on the PETSC library 3.4.x. It is installed automatically 
+if you do not set an existing installation in `config.cmake` file. However the manual installation 
+is necessary if
+- you want to switch between more configurations (debugging, release, ...) using `PETSC_ARCH` variable.
+- you want to achieve best performance configuring with system-wide MPI and/or BLAS and LAPACK libraries.
 
-    $ export PETSC_ARCH=linux-gcc-dbg
-    $./config/configure.py --with-debugging=0 --CFLAGS-O=-O3 --FFLAGS-O=-O3 \
+
+1.  download PeTSc 3.4.x from:
+    http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
+
+2.  unpack to working directory and go to it:
+
+ 
+        > cd /home/jb/local/petsc
+
+3.  Set variables:
+
+        > export PETSC_DIR=`pwd`
+
+    For development you will need at least debuging and production build of the
+    library. First set a name for the debugging configuration:
+
+        > export PETSC_ARCH=linux-gcc-dbg
+
+4. Run the configuration script, for example with following options:
+
+        > ./config/configure.py --with-debugging=1 --CFLAGS-O=-g --FFLAGS-O=-g \
+          --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
+
+    This also force cofigurator to install BLAS, Lapack, MPICH, and ParMetis so it takes
+    a while (it can be about 15 min). If everything is OK, you obtain table with
+    used compilers and libraries. 
+    
+5.  Finally compile PETSC with this configuration:
+
+        > make all
+
+    To test the compilation run:
+
+        > make test
+
+    To obtain PETSC configuration for the production version you can use e.g.
+
+    ```
+    > export PETSC_ARCH=linux-gcc-dbg
+    > ./config/configure.py --with-debugging=0 --CFLAGS-O=-O3 --FFLAGS-O=-O3 \
        --download-mpich=yes --download-metis=yes --download-f-blas-lapack=1
-    $ make all
-    $ make test
+    > make all
+    > make test
+    ```
 
-> ** Important Notes: **
-> 
-> * For some reasons if you let PETSc to download and install its own MPICH it
->   overrides your optimization flags for compiler. Workaround is to edit
->   file ${PETSC_DIR}/${PETSC_ARCH}/conf/petscvariables and modify variables
->   XXXFLAGS_O back to the values you wish.
-> * For production builds the PETSc configuration should use system wide
->   MPI implementation.
-> * You have to compile PETSc with Parmetis support.
-> * Configurations mentioned above are minimalistic. 
->   Next we describe several additional configure options which can be useful.
+### Notes: ###
+* You can have several PETSC configuration using different `PETSC_ARCH` value.
+* For some reasons if you let PETSc to download and install its own MPICH it
+  overrides your optimization flags for compiler. Workaround is to edit
+  file ${PETSC_DIR}/${PETSC_ARCH}/conf/petscvariables and modify variables
+  XXXFLAGS_O back to the values you wish.
+* PETSc configuration should use system wide MPI implementation for efficient parallel computations.
+* You have to compile PETSc at least with Metis support.
 
-#### Alternatives and Troubleshooting ####
+### Support for other libraries ##
 
-* Windows: If you use a shell script for PETSC configuration under cygwin,
-always check if you use UNIX line ends. It can be specified in the notepad
-of Windows 7.
-  
-* For some Windows versions it may be necessary to set in configuration of PETSC
-    --with-timer=nt 
+* **MKL** is implementation of BLAS and LAPACK libraries provided by Intel for its processors. 
+  Usually gives the best performance.
 
-* You may get strange errors during configuration of PETSc, like 
-
-    C:\cygwin\bin\python.exe: *** unable to remap C:\cygwin\bin\cygssl.dll to same address as parent(0xDF0000) != 0xE00000
-
-or other errors usually related to DLL conflicts.
-(see http://www.tishler.net/jason/software/rebase/rebase-2.4.2.README)
-To fix DLL libraries you should perform:
-
- 1. shutdown all Cygwin processes and services
- 2. start 'ash' (do not use bash or rxvt)
- 3. execute '/usr/bin/rebaseall' (in the ash window)
-
-Possible problem with 'rebase':
-    /usr/lib/cygicudata.dll: skipped because nonexist
-    .
-    .
-    .
-    FixImage (/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_sjlj-1.dll) failed with last error = 13
-
-   Solution (ATTENTION, depends on Cygwin version): 
-    add following to line 110 in the rebase script:
-    -e '/\/sys-root\/mingw\/bin/d'
-
-
-* For some Windows versions it may be necessary to set in configuration of PETSC
-  (TODO: symptoms of this issue ?)
-   
-    --with-timer=nt 
-
-* By default PETSC will create dynamically linked libraries, which can be shared be more applications. But on some systems 
-  (in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
-
-    --with-shared=0
-
-* If you want only serial version of PETSc (and Flow123d)
-  add --with-mpi=0 to the configure command line.
-
-* You can have several PETSC configuration using different PETSC_ARCH.
-  
-* PETSC use BLAS and few LAPACK functions for its local vector and matrix
+* **ATLAS library** PETSC use BLAS and few LAPACK functions for its local vector and matrix
   operations. The speed of BLAS and LAPACK have dramatic impact on the overall
   performance. There is a sophisticated implementation of BLAS called ATLAS.
   ATLAS performs extensive set of performance tests on your hardware then make
@@ -218,50 +211,45 @@ http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-current/docs/manualpages/M
 
 http://www.mcs.anl.gov/petsc/petsc-as/snapshots/petsc-dev/docs/manualpages/PC/PCHYPRE.html
 
-### Build Step 2 - Compile Flow123 ###
+#### Alternatives and Troubleshooting ####
 
-Copy file  makefile.in.cmake.template to makefile.in.cmake:
+* Windows: If you use a shell script for PETSC configuration under cygwin,
+always check if you use UNIX line ends. It can be specified in the notepad
+of Windows 7.
+  
+* For some Windows versions it may be necessary to set in configuration of PETSC
+    --with-timer=nt 
 
-    $ cp makefile.in.cmake.template makefile.in.cmake
+* You may get strange errors during configuration of PETSc, like 
 
-Edit file makefile.in.cmake, set PETSC_DIR and PETSC_ARCH variables.
+    C:\cygwin\bin\python.exe: *** unable to remap C:\cygwin\bin\cygssl.dll to same address as parent(0xDF0000) != 0xE00000
 
-You can specify type of build:
+or other errors usually related to DLL conflicts.
+(see http://www.tishler.net/jason/software/rebase/rebase-2.4.2.README)
+To fix DLL libraries you should perform:
 
-    $ set(CMAKE_BUILD_TYPE debug)
+ 1. shutdown all Cygwin processes and services
+ 2. start 'ash' (do not use bash or rxvt)
+ 3. execute '/usr/bin/rebaseall' (in the ash window)
 
-or 
+Possible problem with 'rebase':
+    /usr/lib/cygicudata.dll: skipped because nonexist
+    .
+    .
+    .
+    FixImage (/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_sjlj-1.dll) failed with last error = 13
 
-    $ set(CMAKE_BUILD_TYPE release)
+   Solution (ATTENTION, depends on Cygwin version): 
+    add following to line 110 in the rebase script:
+    -e '/\/sys-root\/mingw\/bin/d'
 
-or you can directly set flags for C and C++ compiler:
-      
-    $ set(CC_FLAGS "-O3 -DNODEBUG -pg ")
 
-Then run the compilation by:
+* By default PETSC will create dynamically linked libraries, which can be shared be more applications. But on some systems 
+  (in particular we have problems under Windows) this doesn't work, so one is forced to turn off dynamic linking by:
 
-    $ make all
+    --with-shared=0
 
-This should run configuration and then build process. If the configuration
-fails and you need to correct your makefile.in.cmake or other system setting
-you have to cleanup all files generated by unsuccessful cmake configuration by:
+* If you want only serial version of PETSc (and Flow123d)
+  add --with-mpi=0 to the configure command line.
 
-    $ make clean-all
-
-Try this every if your build doesn't work and you don't know why.
-
-> **Petsc Detection Problem:**
->
-> CMake try to detect type of your PETSc installation and then test it
-> by compiling and running simple program. However, this can fail if the 
-> program has to be started under 'mpiexec'. In such a case, please, set:
->
->    set (PETSC_EXECUTABLE_RUNS YES)
->
-> in your makefile.in.cmake file, and perform: `make clean-all; make all`
-
---------------------------------------------------------------------------------
-
-For further information about program usage see documentation in "./doc" in
-particular reference manual "doc/flow_doc".
-
+  

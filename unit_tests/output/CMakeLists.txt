@@ -17,10 +17,7 @@
 #
 
 
-add_custom_target( output_all_test )
+set(libs field_lib mesh_lib system_lib flow123d_lib)
+add_test_directory("${libs}")
 
-set( super_test "output_all_test" )
-
-set( super_test_libs field_lib mesh_lib system_lib flow123d_lib ) 
-    
 define_mpi_test( output 1 )

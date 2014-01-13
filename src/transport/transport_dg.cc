@@ -229,7 +229,9 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
 
-    mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    if (it)
+    	mass_balance_ = new MassBalance(this, *it);
 
     // Set up physical parameters.
     data.set_mesh(&init_mesh);
@@ -329,7 +331,7 @@ TransportDG::~TransportDG()
     delete[] stiffness_matrix;
     delete[] rhs;
     delete feo;
-    delete mass_balance_;
+    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
     subst_names_.clear();
@@ -490,7 +492,8 @@ void TransportDG::update_solution()
     }
     END_TIMER("solve");
 
-    mass_balance()->calculate(time_->t());
+    if (mass_balance() != NULL)
+    	mass_balance()->calculate(time_->t());
 
     //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
     
@@ -619,6 +622,9 @@ void TransportDG::output_data()
 
 		VecDestroy(&solution_vec);
 	}
+
+	if (mass_balance() != NULL)
+		mass_balance()->output(time_->t());
 
     END_TIMER("DG-OUTPUT");
 }

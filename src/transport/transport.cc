@@ -123,8 +123,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     n_subst_ = subst_names_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-
-    mass_balance_ = new MassBalance(this, ((string)FilePath("mass_balance.txt", FilePath::output_file)).c_str());
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    if (it)
+    	mass_balance_ = new MassBalance(this, *it);
 
     data_.init_conc.set_n_comp(n_subst_);
     data_.bc_conc.set_n_comp(n_subst_);
@@ -220,7 +221,8 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi, ph;
 
-    delete mass_balance_;
+    if (mass_balance_ != NULL)
+    	delete mass_balance_;
 
     //Destroy mpi vectors at first
     VecDestroy(&v_sources_corr);
@@ -649,7 +651,7 @@ void ConvectionTransport::compute_one_step() {
     //time_->view("CONVECTION");
     time_->next_time(); // explicit scheme use values from previous time and then set then new time
 
-
+    START_TIMER("old_sorp_step");
     for (sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
       
@@ -669,7 +671,7 @@ void ConvectionTransport::compute_one_step() {
 
      //}
 
-     START_TIMER("dual porosity/old-sorption");
+     //START_TIMER("dual porosity/old-sorption");
      
     /*if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
     {
@@ -680,7 +682,6 @@ void ConvectionTransport::compute_one_step() {
           else cout << conc[MOBILE][i_subst][loc_el] << endl;
       }
 	}
-    START_TIMER("old_sorp_step");
     for (sbi = 0; sbi < n_subst_; sbi++) {*/
            
         if ((dual_porosity == true) || (sorption == true) )
@@ -694,9 +695,9 @@ void ConvectionTransport::compute_one_step() {
 
             }
         // transport_node_conc(mesh_,sbi,problem->transport_sub_problem);  // vyresit prepocet
-      END_TIMER("dual porosity/old-sorption");
+      //END_TIMER("dual porosity/old-sorption");
     }
-    //END_TIMER("old_sorp_step");
+    END_TIMER("old_sorp_step");
     END_TIMER("convection-one step");
 }
 

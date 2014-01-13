@@ -54,8 +54,8 @@ then
   if [ ! -n CALLED_AS_HOOK ]
   then
       echo "Updating build_tree link stops the build. Please, run it again."
+      exit 1
   fi
-  exit 1
 fi  
 
 exit 0
