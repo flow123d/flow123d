@@ -6,8 +6,7 @@
  */
 
 
-#include <gtest/gtest.h>
-#include "gtest_throw_what.hh"
+#include <flow_gtest.hh>
 
 #include <input/type_record.hh>
 
@@ -18,7 +17,7 @@
  */
 TEST(InputTypeRecord, declare_key_scalars) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
    // make auxiliary record and test declare_key for
@@ -146,7 +145,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, allow_convertible) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     {
     static Record sub_rec( "SubRecord", "");
@@ -177,7 +176,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
     Record record_record("RecordOfRecords", "");
@@ -259,7 +258,7 @@ TEST(InputTypeRecord, iterating) {
 
 TEST(InputTypeRecord, check_key_validity) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord",
             "Information about one file for field data.");
@@ -277,7 +276,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, RecordCopy) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord", "");
     output_record.declare_key("file", FileName::output(), "");
@@ -299,7 +298,7 @@ using namespace Input::Type;
 
 TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
@@ -364,3 +363,63 @@ using namespace Input::Type;
 }
 
 
+/**
+ * Test AdHocAbstractRecord.
+ */
+namespace IT=Input::Type;
+
+class AdHocDataTest : public testing::Test {
+public:
+	static IT::Record rec;
+	static IT::Record in_rec1;
+	static IT::Record in_rec2;
+	static IT::AbstractRecord ancestor;
+	static IT::AdHocAbstractRecord adhoc_1;
+	static IT::AdHocAbstractRecord adhoc_2;
+
+protected:
+    virtual void SetUp() {
+    }
+    virtual void TearDown() {
+    };
+};
+
+
+IT::Record AdHocDataTest::in_rec1 = IT::Record("Record 1","")
+	.declare_key("val_1", IT::Integer(0), "value 1" )
+	.close();
+
+IT::AdHocAbstractRecord AdHocDataTest::adhoc_1 = IT::AdHocAbstractRecord(ancestor)
+	.add_child(AdHocDataTest::in_rec1)
+	.add_child(AdHocDataTest::in_rec2);
+
+IT::Record AdHocDataTest::rec = IT::Record("Problem","Base record")
+	.declare_key("adhoc_1", AdHocDataTest::adhoc_1, "" )
+	.declare_key("adhoc_2", AdHocDataTest::adhoc_2, "" );
+
+IT::AdHocAbstractRecord AdHocDataTest::adhoc_2 = IT::AdHocAbstractRecord(ancestor)
+	.add_child(AdHocDataTest::in_rec1)
+	.add_child(AdHocDataTest::in_rec2);
+
+IT::AbstractRecord AdHocDataTest::ancestor = IT::AbstractRecord("Ancestor","Base of equation records.");
+
+IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
+	.declare_key("val_2", IT::Integer(0), "value 2" )
+	.close();
+
+
+TEST(InputTypeAdHocAbstractRecord, inheritance) {
+using namespace Input::Type;
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	AdHocDataTest::in_rec1.finish();
+	AdHocDataTest::in_rec2.finish();
+	AdHocDataTest::adhoc_1.finish();
+	AdHocDataTest::adhoc_2.finish();
+	AdHocDataTest::rec.finish();
+
+	EXPECT_EQ( 1, AdHocDataTest::in_rec1.size());
+	EXPECT_EQ( 1, AdHocDataTest::in_rec2.size());
+	EXPECT_EQ( 2, AdHocDataTest::adhoc_1.child_size());
+	EXPECT_EQ( 2, AdHocDataTest::adhoc_2.child_size());
+	EXPECT_EQ( 2, AdHocDataTest::rec.size());
+}

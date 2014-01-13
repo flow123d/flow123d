@@ -14,7 +14,7 @@ add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension
-set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
+set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/_gtest_extensions/gtest_mpi.cc)
 # object library used by tests, but can be build once
 add_library(gtest_mpi_obj OBJECT ${mpi_gtest_sources})
 add_dependencies(gtest_mpi_obj gtest gtest_main)
@@ -162,7 +162,7 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
-#add_subdirectory("interpolation")
+add_subdirectory("interpolation")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("fields")

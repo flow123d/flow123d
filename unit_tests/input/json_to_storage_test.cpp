@@ -9,8 +9,7 @@
  * TODO: test catching of errors in JSON file format.
  */
 
-#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include <fstream>
 
 #include "input/json_to_storage.hh"
@@ -421,6 +420,67 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     }
 
 
+}
+
+TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    static Type::Selection sel_type("TYPE_selection");
+    sel_type.add_value(0, "EqDarcy");
+    sel_type.add_value(1, "EqTransp");
+    sel_type.finish();
+
+    static Type::Record b_rec("EqDarcy","");
+    b_rec.declare_key("TYPE", sel_type, Type::Default("EqDarcy"), "Type of problem");
+    b_rec.declare_key("a_val", Type::String(), Type::Default("Description"), "");
+    b_rec.declare_key("b_val", Type::Integer(), "");
+    b_rec.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Mesh.");
+    b_rec.finish();
+
+    static Type::Record c_rec("EqTransp","");
+    c_rec.declare_key("TYPE", sel_type, Type::Default("EqTransp"), "Type of problem");
+    c_rec.declare_key("a_val", Type::Double(),"");
+    c_rec.declare_key("c_val", Type::Integer(), "");
+    c_rec.finish();
+
+    static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
+    static Type::AdHocAbstractRecord ah_rec(a_rec);
+    ah_rec.add_child(b_rec);
+    ah_rec.add_child(c_rec);
+    ah_rec.finish();
+
+    {   // Try one correct type
+        stringstream ss("{ TYPE=\"EqDarcy\", b_val=4, mesh=\"some.msh\" }");
+        read_stream(ss, ah_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("Description", storage_->get_item(1)->get_string() );
+        EXPECT_EQ(4, storage_->get_item(2)->get_int() );
+        EXPECT_EQ("some.msh", storage_->get_item(3)->get_string() );
+    }
+
+    {   //Try other correct type
+        stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=5.5 }");
+        read_stream(ss, ah_rec);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3, storage_->get_array_size());
+        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ(5.5, storage_->get_item(1)->get_double() );
+        EXPECT_EQ(4, storage_->get_item(2)->get_int() );
+    }
+
+    {   // Missing TYPE
+        stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Missing key 'TYPE' in AbstractRecord.");
+    }
+
+    {   // Wrong derived value type
+        stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
+    }
 }
 
 TEST(InputJSONToStorageTest_external, get_root_interface) {

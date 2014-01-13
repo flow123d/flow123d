@@ -49,6 +49,7 @@ typedef enum  {
 
 
 
+
 /**
  * Base class for space-time function classes.
  */
@@ -56,6 +57,7 @@ template <int spacedim, class Value>
 class FieldBase {
 public:
        // expose template parameters
+       typedef typename Space<spacedim>::Point Point;
        typedef Value ValueType;
        static const unsigned int spacedim_=spacedim;
 
@@ -101,10 +103,10 @@ public:
         * Set new time value. Some Fields may and some may not implement time dependent values and
         * possibly various types of interpolation. There can not be unified approach to interpolation (at least not on this abstraction level)
         * since some fields (FieldFormula, FieldPython) provides naturally time dependent functions other fields like (FieldConstant, ...), however,
-        * can be equipped by various time interpolation schemes. In future, we obviously need interpolation of variable order so that
+        * can be equipped by various time interpolation schemes. In future, we obviously need time interpolation of higher order so that
         * we can use ODE integrators of higher order.
         *
-        * The method returns true if the value of the field change in the new time step.
+        * The method returns true if the value of the field has changed in the new time step.
         */
        virtual bool set_time(double time);
 
@@ -153,20 +155,20 @@ public:
         *  s having in part
         *
         */
-       virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)=0;
+       virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm)=0;
 
        /**
         * Pure virtual method. At least this has to be implemented by descendants.
         * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
         */
-       //virtual FieldResult value(const Point<spacedim> &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value) =0;
+       //virtual FieldResult value(const Space<spacedim>::Point &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value) =0;
 
        /**
         * Returns std::vector of scalar values in several points at once. The base class implements
         * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
         * but this overhead can be negligible for more complex fields as Python of Formula.
         */
-       virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+       virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
        /**
@@ -372,6 +374,7 @@ template<int spacedim, class Value>
 class Field : public FieldCommonBase {
 public:
     typedef FieldBase<spacedim, Value> FieldBaseType;
+    typedef typename FieldBase<spacedim, Value>::Point Point;
 
     /**
      * Default constructor.
@@ -450,14 +453,14 @@ public:
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once. The base class implements
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const  ElementAccessor<spacedim> &elm,
+    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 private:
@@ -601,7 +604,7 @@ private:
  */
 
 template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)  {
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)  {
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), this->name_.c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
@@ -611,7 +614,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 
 template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
@@ -652,7 +655,10 @@ INSTANCE_TO_ALL( field, 3) */
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server
 #define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 2)  \
-INSTANCE_TO_ALL( field, 3)
+INSTANCE_TO_ALL( field, 3) \
+INSTANCE_TO_ALL( field, 2)
+// currently we use only 3D ambient space
+// INSTANCE_TO_ALL( field, 2)
+
 
 #endif /* FUNCTION_BASE_HH_ */

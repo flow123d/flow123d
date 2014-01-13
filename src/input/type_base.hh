@@ -63,12 +63,6 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
 class TypeBase {
 public:
     /**
-     * In order to output documentation of complex types only once, we mark types that have printed their documentation.
-     * This method turns these marks off for the whole type subtree.
-     */
-    //virtual void  reset_doc_flags() const =0;
-
-    /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
      * this say nothing about child types referenced in particular type object.
      * In particular for Record and Selection, it returns true after @p finish() method is called.
@@ -134,7 +128,7 @@ public:
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
      */
-    virtual bool finish() const
+    virtual bool finish()
     { return true; };
 
     /**
@@ -144,12 +138,6 @@ public:
      * Return false if the validity can not be decided due to presence of unconstructed types (Record, Selection)
      */
     virtual bool valid_default(const string &str) const =0;
-
-    /*string reference() const
-    { return reference_; };
-
-    void set_reference(string ref) const
-    { reference_ = ref; };*/
 
 protected:
 
@@ -210,9 +198,6 @@ protected:
 
     static bool was_constructed(const TypeBase * ptr);
 
-    /// Reference to first output in tree (used in repeated output)
-    //mutable string reference_;
-
     friend class Array;
     friend class Record;
 };
@@ -272,7 +257,7 @@ public:
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish() const;
+    virtual bool finish();
 
     virtual bool is_finished() const {
         return data_->finished; }
@@ -285,9 +270,6 @@ public:
     /// Checks size of particular array.
     inline bool match_size(unsigned int size) const {
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
-
-    /// @brief Implements @p Type::TypeBase::reset_doc_flags.
-    //virtual void  reset_doc_flags() const;
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
     virtual string type_name() const;
@@ -323,8 +305,6 @@ private:
  */
 class Scalar : public TypeBase {
 public:
-
-    //virtual void  reset_doc_flags() const;
 
 	virtual string full_type_name() const;
 

@@ -126,6 +126,8 @@ private:
 
     TimeMark::Type output_mark_type;
 
+    /// Accessor to the input record for the DarcyFlow output.
+    Input::Record   in_rec_;
 
 
     /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by

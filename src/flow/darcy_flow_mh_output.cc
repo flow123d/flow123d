@@ -72,6 +72,7 @@ it::Record DarcyFlowMHOutput::input_type
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 : darcy_flow(flow), mesh_(&darcy_flow->mesh()),
+  in_rec_(in_rec),
   ele_flux(mesh_->n_elements(),std::vector<double>(3,0.0)),
   balance_output_file(NULL),raw_output_file(NULL)
 {
@@ -84,10 +85,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
     //local iterator it
     Iterator<string> it = in_rec.find<string>("piezo_head_p0");
-    output_piezo_head = bool(it);
+    output_piezo_head=bool(it);
     DBGMSG("piezo set: %d \n", output_piezo_head);
       
-    if(output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
+    if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
@@ -130,6 +131,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
         output_time = OutputTime::register_elem_data
             (mesh_, "velocity_p0", "L/T", in_rec, ele_flux, -1.0);
         if(output_time) this->output_streams[&ele_flux] = output_time;
+
+
+	it = in_rec.find<string>("subdomains");
+	if (bool(it)) {
+		result = OutputTime::register_elem_data
+				(mesh_, "subdomains", "", in_rec.val<Input::Record>("output_stream"), mesh_->get_part()->seq_output_partition() );
+	}
 #endif
 
         // temporary solution for balance output
@@ -149,6 +157,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput(){
+    //if (output_writer != NULL) delete output_writer;
+
     if (balance_output_file != NULL) xfclose(balance_output_file);
     if (raw_output_file != NULL) xfclose(raw_output_file);
 };
@@ -188,35 +198,38 @@ void DarcyFlowMHOutput::output()
     std::string eleVectorName = "velocity_elements";
     std::string eleVectorUnit = "L/T";
 
+    //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
+    
     // skip initial output for steady solver
     if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
     if (darcy_flow->time().is_current(output_mark_type)) {
 
-        make_element_vector();
-        //make_sides_scalar();
+      make_element_vector();
+      //make_sides_scalar();
 
-        make_node_scalar_param(node_pressure);
+      make_node_scalar_param(node_pressure);
 
-        //make_neighbour_flux();
+      //make_neighbour_flux();
 
-        DBGMSG("water_balance()\n");
-        water_balance();
+      DBGMSG("water_balance()\n");
+      water_balance();
 
-        //compute_l2_difference();
+      //compute_l2_difference();
 
-        //double time  = min(darcy_flow->solved_time(), 1.0E200);
-        double time  = darcy_flow->solved_time();
+      double time  = darcy_flow->solved_time();
 
-        // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
-        // consider begining of the interval of actual result as the output time. Or use
-        // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
-        if (time == TimeGovernor::inf_time) time = 0.0;
+      // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
+      // consider begining of the interval of actual result as the output time. Or use
+      // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.
+      if (time == TimeGovernor::inf_time) time = 0.0;
 
-        output_internal_flow_data();
-
-        //for synchronization when measuring time by Profiler
-        MPI_Barrier(MPI_COMM_WORLD);
+      if(output_writer) output_writer->write_data(time);
+      
+      output_internal_flow_data();
+      
+      //for synchronization when measuring time by Profiler
+      MPI_Barrier(MPI_COMM_WORLD);
     }
     
 }
@@ -657,8 +670,8 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 
 void DarcyFlowMHOutput::water_balance() {
     F_ENTRY;
-    if (balance_output_file == NULL) return;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+    if (balance_output_file == NULL) return;
 
     //BOUNDARY
     //struct Boundary *bcd;
@@ -721,7 +734,6 @@ void DarcyFlowMHOutput::water_balance() {
     fprintf(balance_output_file, bc_total_format.c_str(),w+wl+2,"total boundary balance",
                 w,total_balance, w, total_outflow, w, total_inflow);
 
-    
     //SOURCES
     string src_head_format = "# %-*s%-*s%-*s%-*s%-*s\n",
            src_format = "%*s%-*d%-*s  %-*g%-*s%-*g\n",
@@ -779,6 +791,8 @@ double calc_water_balance(Mesh* mesh, int c_water) {
 
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
+    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+
     if (raw_output_file == NULL) return;
     
     char dbl_fmt[ 16 ]= "%.8g ";
@@ -787,8 +801,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     xfprintf( raw_output_file, "$FlowField\nT=");
     xfprintf( raw_output_file, dbl_fmt, darcy_flow->time().t());
     xfprintf( raw_output_file, "\n%d\n", mesh_->n_elements() );
-
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     unsigned int i;
     int cit = 0;

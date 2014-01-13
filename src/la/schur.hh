@@ -32,6 +32,7 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
+#include <la/distribution.hh>
 #include <petscmat.h>
 
 struct Solver;
@@ -59,7 +60,7 @@ typedef enum SchurState {
 
 typedef class SchurComplement {
 public:
-    SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
+    //SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
     /**
      * Constructor
      *
@@ -67,10 +68,11 @@ public:
      *
      * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
-    SchurComplement(LinSys *orig, IS ia, PetscInt max_size_submat = 4);
+    SchurComplement(LinSys *orig, IS ia);
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
+    Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
     void set_spd();
     //void reuse() {state=created;}
@@ -115,6 +117,8 @@ private:
                                 //                A  B     Sol1      RHS1
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
     LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
+
+    Distribution *ds_;          // Distribution of B block
 } SchurComplement;
 
 #endif /* LA_SCHUR_HH_ */

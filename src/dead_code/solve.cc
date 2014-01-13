@@ -33,12 +33,14 @@
 
 #include <ctype.h>
 #include <strings.h>
-#include <petscksp.h>
-#include <petscviewer.h>
+//#include <petscksp.h>
+//#include <petscviewer.h>
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
 
 
 #include "la/distribution.hh"
@@ -52,7 +54,7 @@ static void RunExtern( struct Solver *solver,char *cmdline,void (*write_sys)(str
 static void clean_directory(void);
 
 // internal solvers
-static void solver_petsc(struct Solver *solver);
+//static void solver_petsc(struct Solver *solver);
 
 // drivers for external solvers
 // MATLAB
@@ -125,10 +127,10 @@ void solver_init(Solver * solver, Input::AbstractRecord in_rec) {
     }
 
     //! generic solver parameters
-    double solver_accurancy=   OptGetDbl("Solver","Solver_accurancy","1.0e-7");
+    double solver_accuracy=   OptGetDbl("Solver","Solver_accuracy","1.0e-7");
     solver->max_it=     OptGetInt("Solver", "max_it", "200" );
     solver->r_tol=      OptGetDbl("Solver", "r_tol", "-1" );
-    if (solver->r_tol < 0) solver->r_tol=solver_accurancy;
+    if (solver->r_tol < 0) solver->r_tol=solver_accuracy;
     solver->a_tol=      OptGetDbl("Solver", "a_tol", "1.0e-9" );
 
 	if (solver->type == ISOL) {
@@ -153,7 +155,8 @@ void solver_set_type( Solver *solver )
     F_ENTRY;
     solver->type=UNKNOWN;
     TEST_TYPE("petsc",PETSC_SOLVER);
-    TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
+    //TEST_TYPE("petsc_matis",PETSC_MATIS_SOLVER);
+    TEST_TYPE("bddcml",BDDCML_SOLVER);
     TEST_TYPE("si2",SI2);
     TEST_TYPE("gi8",GI8);
     TEST_TYPE("isol",ISOL);
@@ -189,7 +192,7 @@ START_TIMER("solve_system");
 			// internal solvers
 	        case PETSC_SOLVER:
 	        case PETSC_MATIS_SOLVER:
-	        	solver_petsc( solver );
+//	        	solver_petsc( solver );
 	            break;
 	        // external solvers
 	      	case ISOL:
@@ -326,9 +329,12 @@ void solver_petsc(Solver *solver)
 	F_ENTRY;
 
 	//LSView(sys);
+        
+        int np;
+        MPI_Comm_size(MPI_COMM_WORLD, &np);
 
 	if (solver->type == PETSC_MATIS_SOLVER) {
-           if (sys->ds().np() > 1) {
+           if (np > 1) {
 
 	       // parallel setting
               if (sys->is_positive_definite())
@@ -354,7 +360,7 @@ void solver_petsc(Solver *solver)
 	{
 	   // -mat_no_inode ... inodes are usefull only for
            //  vector problems e.g. MH without Schur complement reduction	
-           if (sys->ds().np() > 1) {
+           if (np > 1) {
 	       // parallel setting
               if (sys->is_positive_definite())
                   petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
@@ -617,12 +623,17 @@ void read_sol_matlab( struct Solver *solver )
 
 	in = xfopen( "solution.dat", "rt" );
 	int loc_row=0;
+        std::vector<double> solution(sys->size());
 	for( mi = 0; mi < sys->size(); mi++ )
 	{
         xfscanf( in, "%lf", value );
-        if (sys->ds().is_local(mi)) *(sys->get_solution_array() + loc_row)=value;
+
+        solution[mi] = value;
+
 	}
 	xfclose( in );
+
+        sys -> set_whole_solution( solution );
 }
 
 //-----------------------------------------------------------------------------

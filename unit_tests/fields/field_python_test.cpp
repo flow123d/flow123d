@@ -7,7 +7,7 @@
 
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <string>
 #include <cmath>
 
@@ -68,7 +68,7 @@ TEST(FieldPython, vector_2D) {
 
     double pi = 4.0 * atan(1);
 
-    Point<2> point_1, point_2;
+    Space<2>::Point point_1, point_2;
     point_1(0)=1.0; point_1(1)= pi / 2.0;
     point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
@@ -92,7 +92,7 @@ TEST(FieldPython, vector_2D) {
 
 
 TEST(FieldPython, double_3D) {
-    Point<3> point_1, point_2;
+    Space<3>::Point point_1, point_2;
     point_1(0)=1; point_1(1)=0; point_1(2)=0;
     point_2(0)=1; point_2(1)=2; point_2(2)=3;
 
@@ -128,7 +128,7 @@ TEST(FieldPython, read_from_input) {
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), 0.0);
     {
-        Point<2> point_1, point_2;
+        Space<2>::Point point_1, point_2;
         point_1(0)=1.0; point_1(1)= pi / 2.0;
         point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
@@ -146,7 +146,7 @@ TEST(FieldPython, read_from_input) {
 
     auto conc=ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("field_file"), 0.0);
     {
-        Point<3> point_1, point_2;
+        Space<3>::Point point_1, point_2;
         point_1(0)=1; point_1(1)=0; point_1(2)=0;
         point_2(0)=1; point_2(1)=2; point_2(2)=3;
         ElementAccessor<3> elm;

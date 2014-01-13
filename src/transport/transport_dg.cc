@@ -36,15 +36,15 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-#include "la/solve.h"
+//#include "la/solve.h"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 #include "flow/old_bcd.hh"
+#include "la/linsys_PETSC.hh"
 #include "mesh/partitioning.hh"
-
 
 using namespace Input::Type;
 
@@ -64,7 +64,7 @@ Selection TransportDG::EqData::bc_type_selection =
 Record TransportDG::input_type
 	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
 	.derive_from(TransportBase::input_type)
-    .declare_key("solver", Solver::input_type, Default::obligatory(),
+    .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()
     		.declare_key("old_boundary_file", IT::FileName::input(),
@@ -220,10 +220,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
-    
-    // set up solver
-    solver = new Solver;
-    solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
 
     // Read names of transported substances.
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
@@ -294,13 +290,17 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
     time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
-    
+
     // allocate matrix and vector structures
-    int lsize = feo->dh()->lsize();
+    
     ls    = new LinSys*[n_subst_];
-    ls_dt = new LinSys_MPIAIJ(lsize);
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	ls[sbi] = new LinSys_MPIAIJ(lsize);
+    ls_dt = new LinSys_PETSC(feo->dh()->distr());
+    ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
+    for (int sbi = 0; sbi < n_subst_; sbi++) {
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
+    	ls[sbi]->set_solution(NULL);
+    }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
 
@@ -315,9 +315,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 TransportDG::~TransportDG()
 {
-    //delete transport_output;
     delete time_;
-    delete solver;
     delete ls_dt;
 
     if (feo->dh()->el_ds()->myp() == 0)
@@ -390,7 +388,7 @@ void TransportDG::update_solution()
 	{
 		ls_dt->start_add_assembly();
 		assemble_mass_matrix();
-		ls_dt->finalize();
+		ls_dt->finish_assembly();
 		mass_matrix = ls_dt->get_matrix();
 	}
 
@@ -410,12 +408,12 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		MatZeroEntries(ls[i]->get_matrix());
+    		ls[i]->mat_zero_entries();
     	}
         assemble_stiffness_matrix();
         for (int i=0; i<n_subst_; i++)
         {
-        	ls[i]->finalize();
+        	ls[i]->finish_assembly();
 
         	if (stiffness_matrix[i] == NULL)
         		MatConvert(ls[i]->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
@@ -436,13 +434,13 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		VecSet(ls[i]->get_rhs(), 0);
+    		ls[i]->rhs_zero_entries();
     	}
     	set_sources();
     	set_boundary_conditions();
     	for (int i=0; i<n_subst_; i++)
     	{
-    		ls[i]->finalize();
+    		ls[i]->finish_assembly();
 
     		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
     		VecCopy(ls[i]->get_rhs(), rhs[i]);
@@ -468,35 +466,30 @@ void TransportDG::update_solution()
      *   A^k = A + 1/dt M.
      *
      */
-
+    Mat m;
     START_TIMER("solve");
     for (int i=0; i<n_subst_; i++)
     {
-		MatCopy(stiffness_matrix[i], ls[i]->get_matrix(), DIFFERENT_NONZERO_PATTERN);
-		// ls->get_matrix() = 1/dt*mass_matrix + ls->get_matrix()
-		MatAXPY(ls[i]->get_matrix(), 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
-		Vec y;
+    	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
+		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
+		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
+		Vec y,w;
 		VecDuplicate(rhs[i], &y);
-		// y = mass_matrix*ls->get_solution()
+		VecDuplicate(rhs[i], &w);
 		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		// ls->get_rhs() = 1/dt*y + rhs
-		VecWAXPY(ls[i]->get_rhs(), 1./time_->dt(), y, rhs[i]);
-
-		//MatView( ls->get_matrix(), PETSC_VIEWER_STDOUT_SELF );
+		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		ls[i]->set_rhs(w);
 
 		VecDestroy(&y);
+		VecDestroy(&w);
 
-		//VecView( ls->get_rhs(), PETSC_VIEWER_STDOUT_SELF );
-		// solve
-		solve_system(solver, ls[i]);
+		ls[i]->solve();
     }
     END_TIMER("solve");
 
     if (mass_balance() != NULL)
     	mass_balance()->calculate(time_->t());
 
-    //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
-    
     END_TIMER("DG-ONE STEP");
 }
 
@@ -1490,8 +1483,8 @@ void TransportDG::set_initial_condition()
 
 	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
-		ls[sbi]->finalize();
-		solve_system(solver, ls[sbi]);
+		ls[sbi]->finish_assembly();
+		ls[sbi]->solve();
 	}
 	END_TIMER("set_init_cond");
 }

@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "system/system.hh"
 #include "coupling/time_marks.hh"

@@ -26,7 +26,7 @@ FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spa
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldAddPotential<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldAddPotential<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     this->r_value_ = inner_field_->value(p,elm);
 
@@ -44,7 +44,7 @@ typename Value::return_type const & FieldAddPotential<spacedim, Value>::value(co
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT_EQUAL( point_list.size(), value_list.size() );

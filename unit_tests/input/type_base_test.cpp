@@ -6,8 +6,7 @@
  */
 
 
-#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 
 #include <input/input_type.hh>
 
@@ -60,8 +59,9 @@ TEST(InputTypeTypeBase, static_methods) {
  * Test all simple scalar types.
  */
 TEST(InputTypeScalar, all_types) {
-using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	using namespace Input::Type;
+
 
     // from_default methods
     // Bool
@@ -165,7 +165,7 @@ enum Colors {
 
 TEST(InputTypeSelection, construction) {
 using namespace Input::Type;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Selection *sel1= new Selection("Colors");
     Selection sel2=*sel1;

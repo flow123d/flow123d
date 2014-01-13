@@ -26,7 +26,7 @@
  */
 
 #define TEST_USE_MPI
-#include <gtest_mpi.hh>
+#include <flow_gtest_mpi.hh>
 
 #include "system/system.hh"
 #include "input/input_type.hh"
@@ -155,7 +155,7 @@ public:
 
     Mesh *mesh;
     Input::Record rec;
-    Point<3> point;
+    Space<3>::Point point;
 
 };
 

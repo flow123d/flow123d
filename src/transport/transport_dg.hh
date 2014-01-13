@@ -491,9 +491,6 @@ private:
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 	LinSys *ls_dt;
 
-	/// Solver for the linear algebraic system.
-	struct Solver *solver;
-
 	// @}
 
 

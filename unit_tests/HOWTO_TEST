@@ -1,9 +1,10 @@
+===================================
 How to make unit tests for Flow123d
 ===================================
 
 Basic structure of test that need not to use MPI is:
 ----------------------------------------
-#include "gtest/gtest.hh"
+#include "flow_gtest.hh"
 
 TEST( class_name, test_name ) {
 	...
@@ -11,13 +12,9 @@ TEST( class_name, test_name ) {
 ----------------------------------------
 
 If you want to use MPI just replace include with:
-#include <gtest_mpi.hh>
+#include <flow_gtest_mpi.hh>
 
-Optionally you can include "gtest_throw_what.hh", that provides macro
 
-EXPECT_THROW_WHAT( code_to_throw, exception_class, pattern_of_what_message )
-
-to test thrown exception together with message provided by standard what() method of the exception. 
 
 Neccessary modifications in CMakeLists.txt:
 1) to add new test file "some_test.cpp" in existing subdirectory "subdir", just add
@@ -32,7 +29,7 @@ Test files has to be named "*_test.cpp".
     src/CMakeLists.txt
 
 
-The CMake system provides macro UNIT_TESTS_SRC_DIR, that expands to root directory of
+The CMake system provides macro UNIT_TESTS_SRC_DIR, that expands to the root directory of
 unit tests, like "/home/jb/workspace/flow123d/trunk/test_units". This can be used to 
 read some test files stored under this path.
 
@@ -59,7 +56,7 @@ TEST_F(ClassTest, test_name) {
   ...
 }
 
-
+=================
 assert vs. expect
 =================
 ASSERT_EQ( expected, tested);	-- aborts test on failure
@@ -68,6 +65,7 @@ EXPECT_EQ( expected, tested);	-- continues test on failure
 FAIL(); 		// generate fatal failure -- aborts test
 ADD_FAILURE(); 		// generate non-fatal failure -- test continues
 
+====================
 expect/assert macros
 ====================
 EXPECT_TRUE( condition );
@@ -81,22 +79,42 @@ EXPECT_GT(val1, val2); 		val1 > val2
 EXPECT_GE(val1, val2); 		val1 >= val2
 
 EXPECT_STREQ(expected_str, actual_str); 	the two C strings have the same content
-EXPECT_STRNE(str1, str2); 			the two C strings have different content
-EXPECT_STRCASEEQ(expected_str, actual_str); 	the two C strings have the same content, ignoring case
-EXPECT_STRCASENE(str1, str2);			the two C strings have different content, ignoring case
+EXPECT_STRNE(str1, str2); 			        the two C strings have different content
+EXPECT_STRCASEEQ(expected_str, actual_str); the two C strings have the same content, ignoring case
+EXPECT_STRCASENE(str1, str2);			    the two C strings have different content, ignoring case
 
-EXPECT_FLOAT_EQ(expected, actual); 		the two float values are almost equal (relative error against 'expected', tolerance = 2 last bits)
+EXPECT_FLOAT_EQ(expected, actual); 		the two float values are almost equal 
+                                        (relative error against 'expected', tolerance = 2 last bits)
 EXPECT_DOUBLE_EQ(expected, actual);		the two double values are almost equal
 EXPECT_NEAR(val1, val2, abs_error);		abs(val1 - val2) < abs_error
 
 checking exceptions and error messages
+
 ======================================
-EXPECT_THROW(statement, exception_type); 	statement throws an exception of the given type
+Death tests
+======================================
+!! ATTENTION !!
+All death and exception tests are "fragile". When using these tests always put following line 
+at the  first line of the test:
+
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+
+EXPECT_THROW(statement, exception_type);statement throws an exception of the given type
 EXPECT_ANY_THROW(statement); 			statement throws an exception of any type
 EXPECT_NO_THROW(statement); 			statement doesn't throw any exception 
 
 EXPECT_DEATH(statement, regex); 		statement crashes with error containing 'regex' (regular expresion)
 
+
+EXPECT_THROW_WHAT(statement, exception_type, regex);
+                                        statement throws an exception of given type and with
+                                        message matching 'regex' 
+
+EXPECT_ASSERT_DEATH(statement, regex);  statement involves an assert which throws with message matching 'regex'
+                                        no code if DEBUG_ASSERTS is not defined                                       
+
+==================
 Using from Eclipse
 ==================
 Creating build configuration for input_test target.
@@ -108,4 +126,3 @@ Setup the configuration:
   Project ->Properties ->C/C++ Build -> Configuration ... select the new one
   Project ->Properties ->C/C++ Build -> Build command ... set:  make -C test_units/input input_test
   
-Thats all.  
