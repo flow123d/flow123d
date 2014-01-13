@@ -6,8 +6,7 @@
  */
 
 #define TEST_USE_MPI
-#include <gtest_mpi.hh>
-#include <gtest_throw_what.hh>
+#include <flow_gtest_mpi.hh>
 
 #include "fields/field_base.hh"
 #include "input/input_type.hh"
@@ -36,6 +35,7 @@ string field_input = R"INPUT(
 
 namespace it = Input::Type;
 TEST(Field, init_from_input) {
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Profiler::initialize();
 
     Mesh mesh;
@@ -84,7 +84,9 @@ TEST(Field, init_from_input) {
     conductivity.set_time(0.0);
 
     {	
+
 	    auto ele = mesh.element_accessor(5);
+
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 
 	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
@@ -96,14 +98,16 @@ TEST(Field, init_from_input) {
 
     {
 	//  using const accessor
-	    ElementAccessor<3> ele;
-	    EXPECT_THROW_WHAT( {sorption_type.value(ele.centre(), ele);} , ExcAssertMsg , "Invalid element accessor.");
+    	cout << "Second ele" << endl;
+    	ElementAccessor<3> ele;
+
+	    EXPECT_ASSERT_DEATH( {sorption_type.value(ele.centre(), ele);}  , "Invalid element accessor.");
 	    Region reg = mesh.region_db().find_id(40);
 	    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
 	    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
-	
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
+
    }
 
 
@@ -125,7 +129,7 @@ TEST(Field, init_from_input) {
     $EndPhysicalNames
  */
 TEST(Field, init_from_default) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -135,7 +139,7 @@ TEST(Field, init_from_default) {
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);
 
-    Point<3> p("1 2 3");
+    Space<3>::Point p("1 2 3");
 
     {
         Field<3, FieldValue<3>::Scalar > scalar_field;
@@ -180,7 +184,7 @@ TEST(Field, init_from_default) {
 
 /// Test optional fields dependent e.g. on BC type
 TEST(Field, disable_where) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     enum {
         dirichlet,

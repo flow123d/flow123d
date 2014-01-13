@@ -265,7 +265,7 @@ bool Field<spacedim, Value>::set_time(double time) {
 // helper functions
 template<int spacedim, class FieldBaseType>
 FieldEnum get_constant_enum_value_dispatch(boost::shared_ptr< FieldBaseType > region_field,  const boost::true_type&) {
-    return region_field->value(Point<spacedim>(), ElementAccessor<spacedim>());
+    return region_field->value( typename Space<spacedim>::Point(), ElementAccessor<spacedim>());
 }
 
 template<int spacedim,class FieldBaseType>

@@ -55,7 +55,7 @@ arma::vec3 BoundingBox::get_center() const {
 	return (maxCoordinates_ + minCoordinates_) / 2;
 }
 
-bool BoundingBox::contains_point(Point<3> &point) const {
+bool BoundingBox::contains_point(Space<3>::Point &point) const {
 	for (unsigned int i=0; i<dimension; i++) {
 		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
 	}

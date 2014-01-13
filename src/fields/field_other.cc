@@ -27,4 +27,4 @@ INSTANCE_ALL(FieldElementwise)
 INSTANCE_ALL(FieldInterpolatedP0)
 
 template class FieldAddPotential<3, FieldValue<0>::Scalar >;
-template class FieldAddPotential<2, FieldValue<0>::Scalar >;
+//template class FieldAddPotential<2, FieldValue<0>::Scalar >;

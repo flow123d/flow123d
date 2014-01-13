@@ -20,7 +20,7 @@
  */
 
 #define TEST_USE_MPI
-#include <gtest_mpi.hh>
+#include <flow_gtest_mpi.hh>
 
 #include <vector>
 #include <boost/foreach.hpp>
@@ -273,7 +273,7 @@ TEST_F(SomeEquation, values) {
     read_input(eq_data_input);
     // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
 
-    Point<3> p;
+    Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
     DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
@@ -335,7 +335,7 @@ TEST_F(SomeEquation, values) {
 TEST_F(SomeEquation, old_bcd_input) {
     read_input(eq_data_old_bcd);
 
-    Point<3> p;
+    Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
     DBGMSG("elements size: %d %d\n",mesh->element.size(), mesh->bc_elements.size());
