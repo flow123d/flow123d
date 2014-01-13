@@ -47,7 +47,7 @@ class Sorption:  public Reaction
 {
 	public:
 		/*
-		 * Static variable for new input data types input
+		 *   Static variable for new input data types input
 		 */
 		static Input::Type::Record input_type;
 
@@ -173,7 +173,7 @@ class Sorption:  public Reaction
 		*/
 		double **immob_concentration_matrix;
 	    /**
-	    * Mass transfer coefficients between mobile and immobile pores
+	    *   Mass transfer coefficients between mobile and immobile pores
 	    */
 	    std::vector<double> alpha_;
 		/**
