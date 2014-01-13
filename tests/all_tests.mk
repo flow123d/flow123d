@@ -26,19 +26,23 @@
 
 # disallow default rules (prevents making flow123d from flow123d.sh)
 .SUFFIXES:
+.SUFFIXES: .tst
+
+
+%.tst: check_build_tree ../../bin/flow123d %.con
+	../../bin/tests/run_test.sh $*.con ${NPROC} ${FLOW_PARAMS}
 
 check_build_tree:
 	cd ../.. && bin/git_post_checkout_hook
 
 update: check_build_tree ../../bin/flow123d
-	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS} update
+	../../bin/tests/run_test.sh --update ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 test: check_build_tree ../../bin/flow123d
 	../../bin/tests/run_test.sh ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
 
 test-all: check_build_tree ../../bin/flow123d
 	../../bin/tests/run_test.sh --all ${INI_FILES} ${NPROC} ${FLOW_PARAMS}
-
 
 clean:
 	rm -rf output Results test_results; rm -f profiler_*; rm -f vystup.txt

@@ -1,9 +1,9 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "TestXXX-pork",
+    description = "Adsorption all",
     mesh = {
-      mesh_file = "${INPUT}/test_20.msh"
+      mesh_file = "input/test_20.msh"
     }, 
     
     primary_equation = {
@@ -73,7 +73,7 @@
         solubility = [1.0, 1.0, 1.0, 1.0],
         bulk_data = [
           {
-            region = "rectangle",
+            r_set="ALL",
             rock_density = 1.0,
             sorption_types = [ "none", "linear", "langmuir", "freundlich"],
             mult_coefs = [0, 0.6, 0.4, 0.6],
@@ -81,6 +81,7 @@
           }
         ]
       }
+          
     } 
   }, 
   
