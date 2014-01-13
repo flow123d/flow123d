@@ -1,6 +1,6 @@
 #include <cmath>
 #include "mesh/ngh/include/mathfce.h"
-#include "mesh/ngh/include/problem.h"
+
 
 bool mathfce::IsZero(double x)
 {
@@ -16,27 +16,6 @@ bool mathfce::IsEqual(double x, double y)
   return false;
 }
 
-void mathfce::SortAsc(double *d, int size)
-{
-  double tmp;
-  int i;
-  bool test = true;
-  while (test)
-  {
-    test = false;
-    for (i = 0; i < size - 1; i++)
-    {
-      if (d[ i ] > d[ i + 1 ])
-      {
-        tmp = d[ i ];
-        d[ i ] = d[ i + 1 ];
-        d[ i + 1 ] = tmp;
-        test = true;
-      }
-    }
-  }
-  return;
-}
 
 double Determinant3( double a[ 3 ][ 3 ] )
 {

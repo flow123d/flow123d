@@ -1,3 +1,4 @@
+#include "system/exceptions.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/intersectionLocal.h"
 #include "mesh/ngh/include/matrix.h"
@@ -7,7 +8,7 @@
 #include <iostream>
 #include <armadillo>
 #include "mesh/ngh/include/polygon.h"
-#include "mesh/ngh/include/problem.h"
+//#include "mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -730,7 +731,7 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         	   }
            }
            if (cit != 2) {
-        	   mythrow((char*) "Error - pocet bodu pruniku != 2.\n", __LINE__, __FUNC__); //number of intersection points
+        	   THROW( ExcAssertMsg() << EI_Message("Error - pocet bodu pruniku != 2.\n") );
         	   return;
            } else {
         	   if (*(insec_point_tmp[0]) == *(insec_point_tmp[1])) { //lezi pres vrchol
