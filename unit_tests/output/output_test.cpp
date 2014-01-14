@@ -9,10 +9,13 @@
 
 #include "io/output.h"
 
+#include "mesh/mesh.h"
+
 #include "input/json_to_storage.hh"
 #include "input/accessors.hh"
 
 #include "system/sys_profiler.hh"
+#include "system/file_path.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_constant.hh"
@@ -186,5 +189,100 @@ TEST( OutputTest, test_register_elem_fields_data ) {
     /* All values has to be equal 10 */
     for(int i = 0; i < mesh.element.size(); i++) {
         EXPECT_EQ(((int*)output_data->data)[i], 10);
+    }
+}
+
+TEST( OutputTest, test_register_corner_fields_data ) {
+    Input::JSONToStorage reader_output;
+    /* Read input for output */
+    std::stringstream in_output(foo_output);
+    reader_output.read_stream(in_output, Foo::input_type);
+
+    Profiler::initialize();
+
+    FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+
+    Mesh mesh;
+    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
+    mesh.read_gmsh_from_stream(in);
+
+    Field<3, FieldValue<1>::Scalar> scalar_field;
+
+    /* Initialization of scalar field  with constant double values (1.0) */
+    scalar_field.set_default( Input::Type::Default("20") );
+    scalar_field.set_name("pressure_p0");
+    scalar_field.set_units("L");
+    scalar_field.set_mesh(&mesh);
+    scalar_field.set_time(0.0);
+
+    /* Register scalar (double) data */
+    OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
+            OutputTime::CORNER_DATA, &scalar_field);
+
+    Field<3, FieldValue<1>::Integer> integer_field;
+
+    /* Initialization of scalar field  with constant double values (1.0) */
+    integer_field.set_default( Input::Type::Default("100") );
+    integer_field.set_name("material_id");
+    integer_field.set_units("");
+    integer_field.set_mesh(&mesh);
+    integer_field.set_time(0.0);
+
+    /* Register integer data */
+    OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
+            OutputTime::CORNER_DATA, &integer_field);
+
+    /* There should be at least one output stream */
+    ASSERT_EQ(OutputTime::output_streams.size(), 1);
+
+    /* Get this OutputTime instance */
+    std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
+    OutputTime *output_time = *output_iter;
+
+    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream"));
+
+    /* There should be two items in vector of registered element data */
+    ASSERT_EQ(output_time->elem_data.size(), 2);
+
+    /* Get first registered corner data */
+    std::vector<OutputData*>::iterator output_data_iter = output_time->corner_data.begin();
+    OutputData *output_data = *output_data_iter;
+
+    /* There should be double data */
+    ASSERT_EQ(output_data->data_type, OutputData::DOUBLE);
+
+    /* All values has to be equal 20.0 */
+    ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
+    Node *node;
+    int node_id;
+    int corner_data_count, corner_id = 0;
+    FOR_ELEMENTS(&mesh, ele) {
+        FOR_ELEMENT_NODES(ele, node_id) {
+            EXPECT_EQ(((double*)output_data->data)[corner_id], 20.0);
+            corner_id++;
+        }
+    }
+
+    corner_data_count = corner_id;
+
+    /* Number of items should be equal to number of mesh elements */
+    EXPECT_EQ(output_data->item_count, corner_data_count);
+
+    /* Get next registered corner data */
+    output_data = *(++output_data_iter);
+
+    /* There should be double data */
+    ASSERT_EQ(output_data->data_type, OutputData::INT);
+
+    /* Number of items should be equal to number of mesh elements */
+    EXPECT_EQ(output_data->item_count, corner_data_count);
+
+    /* All values has to be equal 100 */
+    corner_id = 0;
+    FOR_ELEMENTS(&mesh, ele) {
+        FOR_ELEMENT_NODES(ele, node_id) {
+            EXPECT_EQ(((int*)output_data->data)[corner_id], 100);
+            corner_id++;
+        }
     }
 }

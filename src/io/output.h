@@ -86,7 +86,14 @@ class OutputVTK;
 class OutputMSH;
 
 /**
- * \brief This method is used for stored data that are copied from field.
+ * \brief This method is generic parent class for templated OutputData
+ */
+class OutputDataBase {
+
+};
+
+/**
+ * \brief This class is used for storing data that are copied from field.
  */
 class OutputData {
 public:
@@ -322,7 +329,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 {
     string name_ = field->name();
     OutputData *output_data;
-    unsigned int item_count = 0;
+    unsigned int item_count = 0, nod_id;
 
     // TODO: do not ty to find empty string and raise exception
 
@@ -350,6 +357,9 @@ void OutputTime::register_data(const Input::Record &in_rec,
     }
 
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh, NULL);
+    Node *node;
+    int corner_index = 0;
+    int ele_index = 0;
 
     /* This is problematic part, because of templates :-( */
     OutputData::DataType data_type;
@@ -374,12 +384,38 @@ void OutputTime::register_data(const Input::Record &in_rec,
     	item_count = mesh->n_nodes();
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
                 ref_type, data_type, item_count, spacedim);
-        /* TODO: register data */
+        /* TODO: register node data */
         break;
     case CORNER_DATA:
+        // Compute number of all corners
+        item_count = 0;
+        FOR_ELEMENTS(mesh, ele) {
+            item_count += ele->n_nodes();
+        }
+
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
                 ref_type, data_type, item_count, spacedim);
-        /* TODO: register data */
+
+        /* Copy data to array */
+        if(data_type == OutputData::DOUBLE) {
+            FOR_ELEMENTS(mesh, ele) {
+                FOR_ELEMENT_NODES(ele, nod_id) {
+                    node = ele->node[nod_id];
+                    ((double*)output_data->data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
+                    corner_index++;
+                }
+                ele_index++;
+            }
+        } else if(data_type == OutputData::INT) {
+            FOR_ELEMENTS(mesh, ele) {
+                FOR_ELEMENT_NODES(ele, nod_id) {
+                    node = ele->node[nod_id];
+                    ((int*)output_data->data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
+                    corner_index++;
+                }
+                ele_index++;
+            }
+        }
         break;
     case ELEM_DATA:
     	item_count = mesh->n_elements();
@@ -387,7 +423,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
                 ref_type, data_type, item_count, spacedim);
 
-        int ele_index = 0;
+        /* Copy data to array */
         if(data_type == OutputData::DOUBLE) {
             FOR_ELEMENTS(mesh, ele) {
                 ((double*)output_data->data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
