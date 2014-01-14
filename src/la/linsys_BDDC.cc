@@ -33,10 +33,13 @@
 
 // need BDDCML wrapper
 #ifdef HAVE_BDDCML
+  #include <map>
   #include "la/bddcml_wrapper.hpp"
 #endif // HAVE_BDDCML
+
 #include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
+
 
 namespace it = Input::Type;
 
