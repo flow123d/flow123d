@@ -24,7 +24,7 @@
 //     //             #include <sys/stat.h>
 //     //             #include <errno.h>
 //     //               #define DLL_EXPORT
-#define strcmpi strcasecmp
+//#define strcmpi strcasecmp
 //       //                   #define PATH_SEP "/"
 //       //
 #endif 

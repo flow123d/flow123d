@@ -27,7 +27,7 @@ char *current_directory(char *path) {
     return path;
 }
 
-bool GetBool(char *str) {
+/*bool GetBool(char *str) {
     if (
             (strcmpi(str, "true") == 0) ||
             (strcmpi(str, "YES") == 0) ||
@@ -37,4 +37,4 @@ bool GetBool(char *str) {
     } else {
         return false;
     }
-}
+}*/
