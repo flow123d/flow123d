@@ -69,6 +69,7 @@ namespace Input {
  */
 class EquationBase {
 public:
+
     /**
      * Default constructor. Necessary to make tests fixtures for equations.
      * TODO:
@@ -216,7 +217,10 @@ protected:
  */
 class EqDataBase {
 public:
-
+	TYPEDEF_ERR_INFO( EI_Domain, string);
+	DECLARE_EXCEPTION(ExcUnknownDomain,
+			<< "Unknown field domain: " << EI_Domain::val << "\n");
+	//		<< Input::EI_Address::val << endl);
     /**
      * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
      */
