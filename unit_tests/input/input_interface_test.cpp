@@ -240,10 +240,7 @@ TEST_F(InputInterfaceTest, RecordFind) {
     const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( main->begin()->type_.get() );
     Record record_child_rec(addr_child_rec, *child_type_rec );
 
-    Address addr_child_int( *(record_child_rec.get_address().down(1)) );
-
-    EXPECT_EQ("/some_record", record_child_rec.get_address().make_full_address());
-    EXPECT_EQ("/some_record/some_integer", addr_child_int.make_full_address());
+    EXPECT_EQ("/some_record", record_child_rec.address_string() );
 
     // read scalar keys
 

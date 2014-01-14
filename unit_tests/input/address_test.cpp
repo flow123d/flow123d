@@ -30,25 +30,26 @@ const string read_input_json = R"JSON(
 {
 	problem = {
 		TYPE = "SequentialCoupling",
-		description = "Basic solved problem.",
-		mesh_file = "./input.msh",
-		regions = {
-            name = "region_1",
-            id = 5,
-            element_list = [ 0, 3, 5, 12 ]
-        } 
-	},
-	pause_after_run = false
+		regions = [
+           { name = "region_1", id = 5, other={} },
+           { name = "region_2", id = 10, other={} }
+        ]
+    }
 }
 )JSON";
 
+DECLARE_EXCEPTION(ExcTest, << Input::EI_Address::val);
+
 TEST(InputAddress, address_output_test) {
 	IT::Selection sel_problem("Problem_TYPE_selection");
-	{
-		sel_problem.add_value(0, "SequentialCoupling", "sequential coupling problem");
-		sel_problem.add_value(1, "Other");
-		sel_problem.close();
-	}
+	sel_problem.add_value(0, "SequentialCoupling", "sequential coupling problem");
+    sel_problem.add_value(1, "Other");
+	sel_problem.close();
+
+	IT::Record other_record = IT::Record("Other", "Record with data for other problem")
+			.declare_key("TYPE", sel_problem, IT::Default("Other"),	"Type of problem")
+		    .close();
+
 
 	IT::Record region_input_type("Region", "Definition of region of elements.");
 	{
@@ -56,8 +57,8 @@ TEST(InputAddress, address_output_test) {
 		                "Label (name) of the region. Has to be unique in one mesh.\n");
 		region_input_type.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
 		                "The ID of the region to which you assign label.");
-		region_input_type.declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
-		                "Specification of the region by the list of elements. This is not recomended");
+		region_input_type.declare_key("other", other_record, IT::Default::obligatory(),
+		                "The ID of the region to which you assign label.");
 		region_input_type.close();
 	}
 
@@ -65,27 +66,11 @@ TEST(InputAddress, address_output_test) {
 	{
 		sequential_coupling_record.declare_key("TYPE", sel_problem, IT::Default("SequentialCoupling"),
 				"Type of problem");
-		sequential_coupling_record.declare_key("description", IT::String(), IT::Default::optional(),
-	             "Short description of the solved problem.");
-		sequential_coupling_record.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
-	             "Input file with mesh description.");
-		sequential_coupling_record.declare_key("regions", region_input_type,
+		sequential_coupling_record.declare_key("regions", IT::Array(region_input_type),IT::Default::obligatory(),
 	             "Definition of region.");
 		sequential_coupling_record.close();
 	}
 
-	IT::Record other_record("Other", "Record with data for other problem");
-	{
-		other_record.declare_key("TYPE", sel_problem, IT::Default("Other"),
-				"Type of problem");
-		other_record.declare_key("description", IT::String(), IT::Default::optional(),
-	             "Short description of the solved problem.");
-		other_record.declare_key("input_file", IT::FileName::input(), IT::Default::obligatory(),
-	             "Input file of solved problem.");
-		other_record.declare_key("steps", IT::Integer(0),
-	             "Count of steps.");
-		other_record.close();
-	}
 
 	AbstractRecordTest problemTest("Problem","Base problem.");
     {
@@ -100,9 +85,6 @@ TEST(InputAddress, address_output_test) {
     {
     	root_record.declare_key("problem", problem, IT::Default::obligatory(),
              "Simulation problem to be solved.");
-    	root_record.declare_key("pause_after_run", IT::Bool(), IT::Default("false"),
-             "If true, the program will wait for key press before it terminates.");
-    	root_record.close();
     }
 
     Input::JSONToStorage json_reader;
@@ -110,16 +92,16 @@ TEST(InputAddress, address_output_test) {
 	json_reader.read_stream( ss,  root_record);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
-	Input::Address a_problem( *(i_rec.get_address().down(0)) );
-	Input::Address a_description( *(a_problem.down(1)) );
-	Input::Address a_regions( *(a_problem.down(3)) );
-	Input::Address a_element_list( *(a_regions.down(2)) );
-	Input::Address a_element_1( *(a_element_list.down(1)) );
+	EXPECT_EQ("/", i_rec.address_string() );
+	Input::AbstractRecord problem_rec = i_rec.val<Input::AbstractRecord>("problem");
+	EXPECT_EQ("/problem", problem_rec.address_string() );
+	Input::Array regions = Input::Record(problem_rec).val<Input::Array>("regions");
+	EXPECT_EQ("/problem/regions", regions.address_string() );
+	Input::Record reg = *(regions.begin<Input::Record>() );
+	EXPECT_EQ("/problem/regions/0", reg.address_string() );
+	EXPECT_EQ("/problem/regions/0/other", reg.val<Input::Record>("other").address_string() );
 
-	EXPECT_EQ("/", i_rec.get_address().make_full_address());
-	EXPECT_EQ("/problem", a_problem.make_full_address());
-	EXPECT_EQ("/problem/description", a_description.make_full_address());
-	EXPECT_EQ("/problem/regions", a_regions.make_full_address());
-	EXPECT_EQ("/problem/regions/element_list", a_element_list.make_full_address());
-	EXPECT_EQ("/problem/regions/element_list/1", a_element_1.make_full_address());
+	EXPECT_THROW_WHAT({ THROW( ExcTest() << reg.ei_address());}, ExcTest, "Program Error: /problem/regions/0");
+
 }
+

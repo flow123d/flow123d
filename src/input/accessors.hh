@@ -58,6 +58,9 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 TYPEDEF_ERR_INFO( EI_ParamName, const string);
 DECLARE_EXCEPTION( ExcAddressNullPointer, << "NULL pointer in " << EI_ParamName::val << " parameter.");
 
+
+
+
 /**
  * Class that works as base type of all enum types. We need it to return integer from a Selection input without
  * knowing exact enum type. This class contains int and is convertible to int.
@@ -88,6 +91,8 @@ private:
 // Forward declaration
 class IteratorBase;
 template <class T> class Iterator;
+
+class JSONToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -175,13 +180,29 @@ public:
      */
     std::string make_full_address() const;
 
-
 protected:
+
     /**
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
+
+
 };
+
+/**
+ * Address output operator.
+ */
+inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
+	return stream << address.make_full_address();
+}
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
 
 /**
  * @brief Accessor to the data with type \p Type::Record.
@@ -220,6 +241,7 @@ protected:
 class Record {
 
 public:
+	typedef ::Input::Type::Record InputType;
     /**
      * Default constructor.
      *
@@ -294,17 +316,24 @@ public:
     { return (address_.storage_head() == Address().storage_head()); }
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const ;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
+
 
 
 protected:
+    /**
+     * Set address (currently necessary for creating root accessor)
+     */
+    void set_address(const Address &address);
+    friend JSONToStorage;
+
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
@@ -326,6 +355,8 @@ protected:
 
 class AbstractRecord {
 public:
+	typedef ::Input::Type::AbstractRecord InputType;
+
     /**
      * Default constructor creates an empty accessor.
      *
@@ -365,14 +396,14 @@ public:
     Input::Type::Record type() const;
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
 
 
 private:
@@ -422,6 +453,9 @@ private:
  */
 class Array {
 public:
+
+	typedef ::Input::Type::Array InputType;
+
     /**
      * Default constructor, empty accessor.
      *
@@ -466,14 +500,14 @@ public:
    void copy_to(Container &out) const;
 
    /**
-    * Returns address
+    * Returns address error info.
     */
-   const Address &get_address() const;
+   EI_Address ei_address() const ;
 
    /**
-    * Set address
+    * Get address as string.
     */
-   void set_address(const Address &address);
+   string address_string() const;
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;

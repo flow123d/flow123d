@@ -134,15 +134,15 @@ Record::Record(const Address &address, const Type::Record type)
 }
 
 
-const Input::Address & Record::get_address() const
+Input::EI_Address Record::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
 
-void Record::set_address(const Address &address)
+string Record::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 
@@ -184,15 +184,14 @@ Input::Type::Record AbstractRecord::type() const
 }
 
 
-const Input::Address & AbstractRecord::get_address() const
+Input::EI_Address AbstractRecord::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
-
-void AbstractRecord::set_address(const Address &address)
+string AbstractRecord::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 
@@ -219,15 +218,16 @@ Array::Array(const Address &address, const Type::Array type)
 }
 
 
-const Input::Address & Array::get_address() const
+Input::EI_Address Array::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
 
-void Array::set_address(const Address &address)
+
+string Array::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 

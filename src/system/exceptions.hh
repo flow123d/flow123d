@@ -132,14 +132,17 @@ public:
  * class Matrix;
  * TYPEDEF_ERR_INFO( EI_Matrix, Matrix);
  * DECLARE_EXCEPTION( ExcWrongMatrixState,
- *     << "Matrix state: " << EI_Matrix::ptr(*this)->state() << endl
+ *     << "Matrix state: " << EI_Matrix::ptr(*this)->state() << "\n"
  *     << "Matrix info: " << EI_Matrix::ref(*this).info() );
  * @endcode
  *
  * The example shows two ways how to call methods of the object of class Matrix passed through the exception. One can either get pointer to the object or
  * reference. The  @p ref method checks that the pointer to the object is not NULL (so that the object was actually passed).
- * The @p ptr method do not perform the check. However, when using one of these methods you have to guarantee that the @p error_info object is passed to the exception
- * at every throw point that use that exception. Otherwise you get an error, meaningful in case of the @p ref method, seg. fault for the @p ptr method.
+ * The @p ptr method do not perform the check. However, when using one of these methods you have to guarantee that the @p error_info object
+ * is passed to the exception at every throw point that use that exception. Otherwise you get an error,
+ * meaningful in case of the @p ref method, seg. fault for the @p ptr method.
+ *
+ * Currently implemented mechanism do no support standard stream modifiers, namely "endl". Please, use "\n" instead.
  *
  * @ingroup exceptions
  */
