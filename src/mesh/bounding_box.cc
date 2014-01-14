@@ -43,7 +43,10 @@ BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
 BoundingBox::BoundingBox(const vector<arma::vec3> &points) {
 	auto it = points.begin();
 	maxCoordinates_ = minCoordinates_ = *it;
-	for(++it; it != points.end(); ++it) {
+	//cout << "points: " << points.size() << endl;
+	//for(int i =0;i<points.size();i++) cout << points[i] << endl;
+	if (it != points.end()) ++it;
+	for(; it != points.end(); ++it) {
 		for(unsigned int j=0; j<3; j++) {
 			minCoordinates_(j) = std::min( minCoordinates_(j), (*it)[j] );
 			maxCoordinates_(j) = std::max( maxCoordinates_(j), (*it)[j] );

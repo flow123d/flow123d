@@ -702,6 +702,7 @@ void Mesh::setup_materials( MaterialDatabase &base)
 }
 */
 
+/*
 void Mesh::read_intersections() {
 
     using namespace boost;
@@ -714,7 +715,7 @@ void Mesh::read_intersections() {
 
     tokenizer<boost::char_separator<char> >::iterator tok;
 
-    xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
+    xprintf( Msg, "Reading intersections...");
     skip_to(in, "$Intersections");
     xfgets(tmp_line, LINE_SIZE - 2, in);
     int n_intersect = atoi(xstrtok(tmp_line));
@@ -752,9 +753,14 @@ void Mesh::read_intersections() {
 
     }
 
-    xprintf( Msg, "O.K.\n")/*orig verb 2*/;
+    xprintf( Msg, "O.K.\n");
 
 }
+*/
+
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
 
 
 void Mesh::make_intersec_elements() {
@@ -768,13 +774,28 @@ void Mesh::make_intersec_elements() {
 
 	BIHTree bih_tree( this );
 	vector<unsigned int> candidate_list(20);
+	master_elements.resize(n_elements());
 
-	for(Element &ele : this->element) {
+	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
+		Element &ele = this->element[i_ele];
+
 		if (ele.dim() == 1) {
 			bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+			for(int i_elm: candidate_list) {
+				ElementFullIter elm = this->element( i_elm );
+				if (elm->dim() == 2) {
+					IntersectionLocal *intersection;
+					if (intersection && intersection->get_type() == IntersectionLocal::line) {
+						GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
+						master_elements[i_ele].push_back( intersections.size() );
+						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
+				    }
+				}
+
+			}
 		}
 	}
-
+/*
      // calculate sizes and make allocations
      vector<int >sizes(n_elements(),0);
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
@@ -785,7 +806,7 @@ void Mesh::make_intersec_elements() {
      // fill intersec_elements
      for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
      master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
-
+*/
 }
 
 

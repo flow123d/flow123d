@@ -116,7 +116,7 @@ public:
      */
     inline vector<arma::vec3> vertex_list() {
     	vector<arma::vec3> vertices(this->n_nodes());
-    	for(unsigned int i=0; i<n_nodes(); i++) vertices.push_back(node[i]->point());
+    	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
     	return vertices;
     }
 

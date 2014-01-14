@@ -305,9 +305,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
-        mesh_->read_intersections();
         mesh_->make_intersec_elements();
-        mortar_sigma_ = in_rec.val<double>("mortar_sigma");
     }
 
 
@@ -789,6 +787,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             vector<int> l_dirich(3,0);
             vector<int> r_dirich(3,0);
 
+            double master_sigma=data.sigma.value( master_iter->centre(), master_iter->element_accessor());
+
 
             // rows
             for(i = 0; i <= it_master_list->size(); ++i) {
@@ -836,7 +836,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                         right_idx[2] = row_4_edge[isect.slave_iter()->side(2)->edge_idx()];
                         r_size = 3;
                     }
-                    product = -mortar_sigma * left_map * delta_i * delta_j * right_map / delta_0;
+                    product = -master_sigma * left_map * delta_i * delta_j * right_map / delta_0;
 
                     // Dirichlet modification
                     for(int ii=0;ii<l_size;ii++) if (l_dirich[ii]) {
@@ -877,6 +877,9 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
     // CYKLUS PRES INTERSECTIONS
     for (std::vector<Intersection>::iterator intersec = mesh_->intersections.begin(); intersec != mesh_->intersections.end(); ++intersec) {
 
+    	double master_sigma=data.sigma.value(
+    			intersec->master_iter()->centre(),
+    			intersec->master_iter()->element_accessor());
 /*
  * Local coordinates on 1D
  *         t0
@@ -945,7 +948,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
         arma::mat A(5, 5);
         for (int i = 0; i < 5; ++i) {
             for (int j = 0; j < 5; ++j) {
-                A(i, j) = -mortar_sigma * intersec->intersection_true_size() *
+                A(i, j) = -master_sigma * intersec->intersection_true_size() *
                         ( difference_in_Y[i] * difference_in_Y[j]
                           + difference_in_Y[i] * difference_in_X[j]/2
                           + difference_in_X[i] * difference_in_Y[j]/2
