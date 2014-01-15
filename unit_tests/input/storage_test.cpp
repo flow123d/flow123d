@@ -47,7 +47,7 @@ using namespace Input;
     EXPECT_EQ(321, array.get_item(6)->get_item(0)->get_int());
     EXPECT_EQ(231, array.get_item(6)->get_item(1)->get_int());
 
-    EXPECT_DEATH( {array.get_item(7);} , "out of array of size:");
+    EXPECT_THROW( {array.get_item(7);} , ExcXprintfMsg); //"out of array of size:"
 
     // StorageArray
     EXPECT_THROW( {array.get_int();}, ExcStorageTypeMismatch);

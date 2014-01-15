@@ -160,7 +160,7 @@ TEST(Field, init_from_default) {
 
         // test death of set_time without default value
         scalar_field.set_mesh(&mesh);
-        EXPECT_DEATH( {scalar_field.set_time(0.0);} , "Missing value of the field");
+        EXPECT_THROW( {scalar_field.set_time(0.0);} , ExcXprintfMsg); //"Missing value of the field"
     }
     //
     {
