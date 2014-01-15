@@ -45,6 +45,61 @@ template<unsigned int dim> class Quadrature;
 
 
 /**
+ * Auxiliary container class for Finite element and related objects of all dimensions.
+ * Its purpose is to provide templated access to these objects, applicable in
+ * the assembling methods.
+ */
+class FEObjects {
+public:
+
+	FEObjects(Mesh *mesh_, unsigned int fe_order);
+	~FEObjects();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim,3> *fe();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim,3> *fe_rt();
+
+	template<unsigned int dim>
+	inline Quadrature<dim> *q();
+
+	template<unsigned int dim>
+	inline Mapping<dim,3> *mapping();
+
+	inline DOFHandlerMultiDim *dh();
+
+private:
+
+	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<1,3> *fe1_;
+	FiniteElement<2,3> *fe2_;
+	FiniteElement<3,3> *fe3_;
+
+	/// Finite elements for the water velocity field.
+	FiniteElement<1,3> *fe_rt1_;
+	FiniteElement<2,3> *fe_rt2_;
+	FiniteElement<3,3> *fe_rt3_;
+
+	/// Quadratures used in assembling methods.
+	Quadrature<0> *q0_;
+	Quadrature<1> *q1_;
+	Quadrature<2> *q2_;
+	Quadrature<3> *q3_;
+
+	/// Auxiliary mappings of reference elements.
+	Mapping<0,3> *map0_;
+	Mapping<1,3> *map1_;
+	Mapping<2,3> *map2_;
+	Mapping<3,3> *map3_;
+
+	/// Object for distribution of dofs.
+	DOFHandlerMultiDim *dh_;
+};
+
+
+
+/**
  * @brief Transport with dispersion implemented using discontinuous Galerkin method.
  *
  * TransportDG implements the discontinuous Galerkin method for the transport and diffusion of substances.
@@ -78,11 +133,12 @@ template<unsigned int dim> class Quadrature;
  * @ingroup transport_mod
  *
  */
-class TransportDG : public TransportBase
+template<class Model>
+class TransportDG : public TransportBase, public Model
 {
 public:
 
-	class EqData : public TransportBase::TransportEqData {
+	class EqData : public Model::ModelEqData {
 	public:
 
         enum BC_Type {
@@ -94,11 +150,7 @@ public:
         static Input::Type::Selection bc_type_selection;
 
 		EqData();
-		RegionSet read_boundary_list_item(Input::Record rec);
 
-		Field<3, FieldValue<3>::Vector> disp_l;     ///< Longitudal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> disp_t;     ///< Transversal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
 		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
@@ -108,58 +160,7 @@ public:
 
 	};
 
-	/**
-	 * Auxiliary container class for Finite element and related objects of all dimensions.
-	 * Its purpose is to provide templated access to these objects, applicable in
-	 * the assembling methods.
-	 */
-	class FEObjects {
-	public:
 
-		FEObjects(Mesh *mesh_, unsigned int fe_order);
-		~FEObjects();
-
-		template<unsigned int dim>
-		inline FiniteElement<dim,3> *fe();
-
-		template<unsigned int dim>
-		inline FiniteElement<dim,3> *fe_rt();
-
-		template<unsigned int dim>
-		inline Quadrature<dim> *q();
-
-		template<unsigned int dim>
-		inline Mapping<dim,3> *mapping();
-
-		inline DOFHandlerMultiDim *dh();
-
-	private:
-
-		/// Finite elements for the solution of the advection-diffusion equation.
-		FiniteElement<1,3> *fe1_;
-		FiniteElement<2,3> *fe2_;
-		FiniteElement<3,3> *fe3_;
-
-		/// Finite elements for the water velocity field.
-		FiniteElement<1,3> *fe_rt1_;
-		FiniteElement<2,3> *fe_rt2_;
-		FiniteElement<3,3> *fe_rt3_;
-
-		/// Quadratures used in assembling methods.
-		Quadrature<0> *q0_;
-		Quadrature<1> *q1_;
-		Quadrature<2> *q2_;
-		Quadrature<3> *q3_;
-
-		/// Auxiliary mappings of reference elements.
-		Mapping<0,3> *map0_;
-		Mapping<1,3> *map1_;
-		Mapping<2,3> *map2_;
-		Mapping<3,3> *map3_;
-
-		/// Object for distribution of dofs.
-		DOFHandlerMultiDim *dh_;
-	};
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -227,14 +228,16 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
+	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) { Model::set_cross_section_field(cross_section); }
 
 	/**
 	 * @brief Getter for field data.
 	 */
-	virtual EqData *get_data() { return &data; }
+	virtual EqData *get_data() { return &data_; }
 
 	TimeIntegrationScheme time_scheme() { return implicit_euler; }
+
+	static const string &input_key_name() { static const string inp_key_name_ = Model::input_key_name() + "_DG"; return inp_key_name_; }
 
 	/**
 	 * @brief Destructor.
@@ -242,6 +245,21 @@ public:
 	~TransportDG();
 
 private:
+
+	typename Model::ModelEqData &data() { return data_; }
+
+    bool stiffness_matrix_changed() {
+    	return Model::stiffness_matrix_changed() ||
+    			data_.sigma_c.changed() ||
+				data_.dg_penalty.changed();
+    }
+
+    bool mass_matrix_changed() { return Model::mass_matrix_changed(); }
+
+    bool rhs_changed() {
+    	return Model::rhs_changed() ||
+    		data_.dg_penalty.changed();
+    }
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -362,7 +380,9 @@ private:
 	void set_DG_parameters_edge(const Edge &edg,
 	        const int s1,
 	        const int s2,
-	        const std::vector< std::vector<arma::mat33> > &K,
+	        const std::vector<arma::mat33> &K1,
+	        const std::vector<arma::mat33> &K2,
+	        const std::vector<double> &fluxes,
 	        const arma::vec3 &normal_vector,
 	        const double alpha1,
 	        const double alpha2,
@@ -376,6 +396,7 @@ private:
 	 * Assumption is that the edge consists of only 1 side.
 	 * @param side       		The boundary side.
 	 * @param K					Dispersivity tensor.
+	 * @param ad_vector         Advection vector.
 	 * @param normal_vector		Normal vector (assumed constant along the edge).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
@@ -383,6 +404,7 @@ private:
 	 */
 	void set_DG_parameters_boundary(const SideIter side,
 	            const std::vector<arma::mat33> &K,
+	            const double flux,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
 	            double &gamma);
@@ -442,14 +464,8 @@ private:
 	// @{
 
 	/// Field data for model parameters.
-	EqData data;
+	EqData data_;
 
-
-	/// True if sorption is considered.
-	bool sorption;
-
-	/// True if dual porosity is considered.
-	bool dual_porosity;
 	// @}
 
 
@@ -511,7 +527,7 @@ private:
 	// @{
 
     /// Indicates whether the fluxes have changed in the last time step.
-    bool flux_changed;
+//    bool flux_changed;
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;

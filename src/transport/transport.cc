@@ -76,6 +76,8 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
 {
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", IT::Default("0"));
+	ADD_FIELD(init_conc, "Initial concentrations.", IT::Default("0"));
     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", IT::Default("0"));
