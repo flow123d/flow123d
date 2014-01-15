@@ -760,13 +760,13 @@ void TransportDG::assemble_volume_integrals()
         		for (unsigned int i=0; i<ndofs; i++)
         		{
         			arma::vec3 Kt_grad_i = K.t()*fe_values.shape_grad(i,k);
-        			double velocity_dot_grad_i_times_JxW = arma::dot(velocity[k], fe_values.shape_grad(i,k))*fe_values.JxW(k);
+        			double velocity_dot_grad_i = arma::dot(velocity[k], fe_values.shape_grad(i,k));
 
         			for (unsigned int j=0; j<ndofs; j++)
         			{
-						local_matrix[i*ndofs+j] += arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))*por_times_csection_times_JxW
-												   -fe_values.shape_value(j,k)*velocity_dot_grad_i_times_JxW
-												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
+						local_matrix[i*ndofs+j] += (arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))
+												   -fe_values.shape_value(j,k)*velocity_dot_grad_i
+												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k))*fe_values.JxW(k);
 					}
 
 				}
@@ -921,7 +921,7 @@ void TransportDG::assemble_fluxes_element_element()
 					sd[1] = s2;
 
 #define AVERAGE(i,k,side_id)  (fe_values[sd[side_id]]->shape_value(i,k)*0.5)
-#define WAVERAGE(i,k,side_id) (por_m[k][sd[side_id]]*csection[k][sd[side_id]]*arma::dot(side_K[k][sd[side_id]]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
+#define WAVERAGE(i,k,side_id) (arma::dot(side_K[k][sd[side_id]]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values[sd[side_id]]->shape_value(i,k))
 
 					// For selected pair of elements:
@@ -1316,7 +1316,7 @@ void TransportDG::calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3
 	else
 		K.zeros();
 
-	K = (vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3))*arma::eye(3,3);
+	K = (vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3);
 }
 
 
