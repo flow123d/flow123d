@@ -18,7 +18,6 @@
 #include "coupling/time_governor.hh"
 #include "coupling/equation.hh"
 #include "transport/transport.h"
-#include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "flow/old_bcd.hh"
 

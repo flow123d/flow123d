@@ -36,7 +36,7 @@
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-
+#include "transport/advection_diffusion_model.hh"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 
@@ -121,10 +121,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             transport_reaction = new TransportOperatorSplitting(*mesh, *it);
             ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
         }
-        else if (it->type() == TransportDG::input_type)
+        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
         {
-            transport_reaction = new TransportDG(*mesh, *it);
-            ((TransportDG*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
+            transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
+            ((TransportDG<ConcentrationTransportModel>*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
         }
         else
         {
