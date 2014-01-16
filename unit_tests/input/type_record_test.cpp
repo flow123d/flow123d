@@ -43,7 +43,7 @@ using namespace Input::Type;
    Record rec_empty;
 
 #ifdef DEBUG_ASSERTS
-   EXPECT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, ".*into closed record 'EmptyRecord'.");
+   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg); //".*into closed record 'EmptyRecord'."
 #endif
 
    Record rec_fin("xx","");
