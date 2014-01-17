@@ -150,7 +150,7 @@ BoundingBox &TTriangle::get_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox.set_bounds(minCoor, maxCoor);
+	boundingBox=BoundingBox(minCoor, maxCoor);
 	return boundingBox;
 }
 

@@ -49,6 +49,8 @@ class BIHTree {
 public:
     /// count of dimensions
     static const unsigned int dimension = 3;
+    /// max count of elements to estimate median - value must be even
+    static const unsigned int max_median_sample_size = 1023;
 
     /**
 	 * Constructor
@@ -109,24 +111,31 @@ public:
     std::vector<BoundingBox> &get_elements() { return elements_; }
 
 private:
-    /// max count of elements of which is selected median - value must be even
-    static const unsigned int max_median_count = 1023;
     /// value indicates ratio of the number of element in node and number of elements of its child
-    static const double max_elements_in_child;
+    static const double min_reduce_factor;
     /// value indicates ratio of the number of element in node and number of elements of its children
-    static const double max_elements_in_children;
+    static const double max_grow_factor;
 
     /// create bounding boxes of element
     void element_boxes();
-    /// create tree
-    void create_tree(unsigned int areaElementLimit);
+    /**
+     * soft_leaf_size_limit - we try to split node if its size (number of elements) is
+     * greater then this limit. However we stop branching if number of redundant elements is to big.
+     */
+    void create_tree(unsigned int soft_leaf_size_limit);
     /// Creates root node of tree, finds its bounding coordinations
     /// and pushes elements to the vector using for creating tree
     void create_root_node();
-    /// Set axes_ class member (select maximal dimension) of actually processed node
-    void set_axes();
-    /// Set median_ class member of actually processed node
-    void set_median();
+
+    /**
+     * For given node takes projection of centers of bounding boxes of its elements to axis given by
+     * @p node::axis()
+     * and estimate median of these values. That is optimal split point.
+     * Precise median is computed for sets smaller then @p max_median_sample_size
+     * estimate from random sample is used for larger sets.
+     */
+    void set_node_median(unsigned char axis, BIHNode &node);
+
     /// Put indexes of elements to in_leaves_ vector if node is marked as leaf
     void put_leaf_elements();
     /// Deallocate memory reserved by vectors
@@ -154,10 +163,17 @@ private:
     std::vector<BoundingBox> elements_;
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
+
+
     /// vector stored elements for level-order walk of tree
     std::deque<unsigned int> queue_;
+
 	// temporary vector keeps coordinations of elements stored in queue_
-	std::deque<arma::vec6> queue_coors_;
+	// arma::vec6 stores minimal and maximal coordinations of area
+	// Mimics BoundingBox functionality.
+	// TODO: Possibly add suitable methods to BoundingBox in order to use it here.
+    std::deque<BoundingBox> box_queue_;
+
     /// vector stored element indexes in leaf nodes
     std::vector<unsigned int> in_leaves_;
     /// temporary vector stored element indexes in last complete level of the BFS tree

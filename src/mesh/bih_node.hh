@@ -38,48 +38,83 @@ class BIHNode {
 	friend class BIHTree;
 public:
 
+    /// count of subareas - don't change
+    static const unsigned int child_count = 2;
+    /// count of dimensions
+    static const unsigned char dimension = 3;
+
+
+    /**
+     * Constructor
+     *
+     * Default node is leaf node at depth 0.
+     */
+    BIHNode(unsigned int depth = 0)
+    : axis_( depth + dimension)
+    { }
 	/**
 	 * Destructor
 	 */
-	~BIHNode();
+	//~BIHNode();
+
+
+
+    /// return true if node is leaf
+    inline bool is_leaf() const
+    	{ return axis_ >= dimension; }
+
+    /// return depth of leaf node
+    inline unsigned char depth() const
+    {
+    	ASSERT( is_leaf(), "Not leaf node.");
+    	return axis_ - dimension;
+    }
+
+    inline unsigned int leaf_begin() const
+    {
+    	ASSERT( is_leaf(), "Not leaf node.");
+    	return child_[0];
+    }
+
+    inline unsigned int leaf_end() const
+    {
+    	ASSERT( is_leaf(), "Not leaf node.");
+    	return child_[1];
+    }
 
 	/**
 	 * Get count of elements stored in
 	 *
 	 * @return Count of elements contained in node
 	 */
-    unsigned int get_element_count();
-
-    /// return true if node is leaf
-    inline bool is_leaf()
-    	{ return axes_ >= dimension; }
-
-    /// return depth of leaf node
-    inline unsigned char depth()
+    unsigned int leaf_size() const
     {
-    	ASSERT(is_leaf(), "Call depth() function for inner node.\n");
-    	return axes_ - dimension;
+    	ASSERT( is_leaf(), "Not leaf node.");
+    	return child_[1] - child_[0];
     }
 
     /// return axes (coordination of splitting) of inner node
-    inline unsigned char axes()
+    inline unsigned char axis() const
     {
-    	ASSERT(!is_leaf(), "Call axes() function for leaf node.\n");
-    	return axes_;
+    	ASSERT(!is_leaf(), "Not in branch node.\n");
+    	return axis_;
     }
 
-private:
-    /// max count of elements of which is selected median - value must be even
-    static const unsigned int max_median_count = 1023;
-    /// count of subareas - don't change
-    static const unsigned int child_count = 2;
-    /// count of dimensions
-    static const unsigned char dimension = 3;
+    inline double median() const
+    {
+    	ASSERT(!is_leaf(), "Not in branch node.\n");
+    	return median_;
+    }
 
-    /**
-     * Empty constructor
-     */
-    BIHNode() { }
+    /// Return index of child node.
+    inline unsigned int child(unsigned int i_child)  const
+    {
+    	ASSERT(!is_leaf(), "Not in branch node.\n");
+    	ASSERT_LESS( i_child, child_count );
+    	return child_[i_child];
+    }
+private:
+
 
     /**
 	 * Constructor
@@ -87,7 +122,7 @@ private:
 	 * Set class members
 	 * @param depth Depth of node in tree.
 	 */
-	BIHNode(unsigned int depth);
+	//BIHNode(unsigned int depth);
 
 	/**
 	 * Set depth of node to axes_ class members
@@ -105,7 +140,7 @@ private:
      *  - values 0,1,2 indicate inner node of tree and coordination of splitting area
      *  - values 3 and greater indicate leaf node of tree and store depth of node (depth = axes_ - 3)
      */
-    unsigned char axes_;
+    unsigned char axis_;
 
 };
 

@@ -29,6 +29,7 @@
 #include "mesh/bounding_box.hh"
 #include "mesh/bih_tree.hh"
 
+/*
 BIHNode::BIHNode(unsigned int depth) {
 	//xprintf(Msg, " - BIHNode->BIHNode(unsigned int)\n");
 
@@ -39,12 +40,10 @@ BIHNode::~BIHNode() {
 
 }
 
-
+*/
 void BIHNode::set_depth(unsigned int depth) {
-	axes_ = depth + dimension;
+	axis_ = depth + dimension;
 }
 
 
-unsigned int BIHNode::get_element_count() {
-	return child_[1] - child_[0];
-}
+

@@ -29,7 +29,7 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
 	unsigned int insecElements = 0;
 
 	for (unsigned int i=0; i<boundingBoxes.size(); i++) {
-		if (bb.intersection(boundingBoxes[i])) insecElements++;
+		if (bb.intersect(boundingBoxes[i])) insecElements++;
 	}
 
 	return insecElements;
@@ -69,7 +69,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 	EXPECT_LT( maxDepth, (log2(elementLimit) - log2(mesh.n_elements())) / log2(0.8) );
 
 	// tests of intersection with bounding box out of mesh
-	bb.set_bounds(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
+	bb=BoundingBox(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
 	bt.find_bounding_box(bb, searchedElements);
 	EXPECT_EQ(0, searchedElements.size());
 
@@ -78,7 +78,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(-0.99, -0.97);
 		max(i) = f_rand(-0.96, -0.94);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements()); // get intersections by linear search
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -88,7 +88,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(-0.03, -0.01);
 		max(i) = f_rand(+0.01, +0.03);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -98,7 +98,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(0.07 + i * 0.4, 0.09 + i * 0.4);
 		max(i) = f_rand(0.11 + i * 0.4, 0.13 + i * 0.4);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -115,7 +115,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 	EXPECT_EQ(searchedElements.size(), insecSize);
 }
 
-
+/*
 TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
@@ -153,5 +153,28 @@ TEST(BIHTree_Test, mesh_27936_elements_refined) {
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
 
     create_test_tree(mesh_file);
+}
+
+
+
+*/
+TEST(BIH_Tree_Test, 2d_mesh) {
+    Profiler::initialize();
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/noncompatible_small.msh", FilePath::input_file);
+
+    Mesh mesh;
+	GmshMeshReader reader(mesh_file);
+
+	reader.read_mesh(&mesh);
+	unsigned int element_limit=20;
+	BIHTree bt(&mesh, element_limit);
+	std::vector<unsigned int> insec_list;
+
+	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0.1 0.1"), arma::vec3("-0.89 -0.1 -0.1")), insec_list);
+	for(auto i_ele : insec_list) {
+		cout << "idx: " << i_ele << "id: " << mesh.element.get_id( &(mesh.element[i_ele]) ) << endl;
+	}
+
+
 }
 

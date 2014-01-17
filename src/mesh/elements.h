@@ -101,7 +101,7 @@ public:
     unsigned int *permutation_idx_;
 
     /**
-     * Computes bounding box of element
+     * Computes bounding box of element (OBSOLETE)
      */
     void get_bounding_box(BoundingBox &bounding_box);
 
