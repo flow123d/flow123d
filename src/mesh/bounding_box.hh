@@ -29,81 +29,191 @@
 #define BOX_ELEMENT_HH_
 
 #include "system/system.hh"
+#include "system/global_defs.h"
 #include "mesh/point.hh"
+
+#include <vector>
 #include <armadillo>
 
 /**
- * Contains data of bounding box.
- * Used for areas and elements.
+ * @brief Bounding box in 3d ambient space.
  *
+ * Primary intention is usage in BIHTree and various speedups of non-compatible
+ * intersections.
  *
+ * Copy constructor and assignment are default provided by compiler.
+ * These can be used to set bounds latter on without particular method
+ * to this end:
+ *
+ * @code
+ * BoundingBox box;			// non-initialized box
+ * box=BoundingBox( arma::vec3("0 1 2"), arma::vec3("4 5 6") );
+ * @endcode
+ *
+ * Don;t worry about performance, all is inlined.
  */
 class BoundingBox {
 public:
+	TYPEDEF_ERR_INFO( EI_split_point, double);
+	TYPEDEF_ERR_INFO( EI_interval_left, double);
+	TYPEDEF_ERR_INFO( EI_interval_right, double);
+	DECLARE_EXCEPTION(ExcSplitting, << "Split point " << EI_split_point::val
+			                        << "out of bounds: <" << EI_interval_left::val
+			                        << ", " << EI_interval_right::val << ">\n");
+
+	/// Currently we set dimension to 3.
+	static const unsigned int dimension = 3;
+	/// Currently we assume
+	typedef Space<dimension>::Point Point;
 
 	/**
-	 * Empty constructor
+	 * Default constructor.
+	 * No initialization of vertices. Be very careful using this.
+	 * One necessary usage is vector of BoundigBox.
 	 */
-	BoundingBox();
+	BoundingBox() {}
+
+	/**
+	 * Constructor for point box.
+	 */
+	BoundingBox(const Point &min)
+	: min_vertex_(min), max_vertex_(min)
+	{};
 
 	/**
 	 * Constructor.
 	 *
-	 * Set class members
-	 * @param minCoor Set value to minCoordinates_
-	 * @param maxCoor Set value to maxCoordinates_
+	 * From given minimal and maximal vertex.
 	 */
-	BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor);
+	BoundingBox(const Point &min, const Point &max)
+	: min_vertex_(min), max_vertex_(max)
+	{};
+
+	/**
+	 * Constructor.
+	 *
+	 * Make bounding box for set of points.
+	 */
+	BoundingBox(const vector<Point> &points);
 
 
+	/**
+	 *  Return minimal vertex of the bounding box.
+	 */
+	const Point &min() const {
+		return min_vertex_;
+	}
 
-	BoundingBox(const vector<arma::vec3> &points);
+	/**
+	 *  Return maximal vertex of the bounding box.
+	 */
+	const Point &max() const {
+		return max_vertex_;
+	}
 
+	/**
+	 *  Return center of the bounding box.
+	 */
+	Point center() const {
+		return (max_vertex_ + min_vertex_) / 2.0;
+	}
 
-
-
-    /// get minimal coordinates of bounding box
-    const arma::vec3 get_min() const;
-    /// get maximal coordinates of bounding box
-    const arma::vec3 get_max() const;
-    /// get center coordinates of bounding box
-    arma::vec3 get_center() const;
+     /**
+     * Return center of projection of the bounding box to given @p axis.
+     * Axis coding is: 0 - axis x, 1 - axis y, 2 - axis z.
+     */
+    double projection_center(unsigned int axis) const {
+    	ASSERT_LESS(axis, dimension);
+    	return (max_vertex_[axis] + min_vertex_[axis])/2;
+    }
 
     /**
-     * Detects if box element contains point
+     * Returns true is the  box element contains @p point
      *
      * @param point Testing point
      * @return True if box element contains point
      */
-    bool contains_point(const Space<3>::Point &point) const;
+    bool contains_point(const Point &point) const
+    {
+    	for (unsigned int i=0; i<dimension; i++) {
+    		if ((point(i) + epsilon < min_vertex_(i)) ||
+    			(point(i) > epsilon + max_vertex_(i))) return false;
+    	}
+    	return true;
+    }
 
     /**
      * Returns true if two bounding boxes have intersection.
+     *
      * This serves as an estimate of intersection of elements.
      * To make it safe (do not exclude possible intersection) for
      * 1d and 2d elements aligned with axes, we use some tolerance.
      * Since this tolerance is fixed, there could be problem with
      * highly refined meshes (get false positive result).
      */
-    bool intersection(const BoundingBox &b2) const;
+    bool intersect(const BoundingBox &b2) const
+    {
+    	for (unsigned int i=0; i<dimension; i++) {
+    		//double delta = (max_vertex_(i) - min_vertex_(i)) *
+    		if ( (min_vertex_(i) > b2.max_vertex_(i) + epsilon) ||
+    			 (b2.min_vertex_(i)  > max_vertex_(i) + epsilon ) ) return false;
+    	}
+    	return true;
+    }
+
 
     /**
-     * Set class members
-     *
-	 * @param minCoor Set value to minCoordinates_
-	 * @param maxCoor Set value to maxCoordinates_
+     * Split box into two boxes along @p axis by the
+     * plane going through @p splitting_point on the axis.
      */
-    void set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor);
+    void split(unsigned int axis, double splitting_point,
+    		BoundingBox &left, BoundingBox &right ) const
+    {
+    	ASSERT_LESS(axis , dimension);
+    	if (min_vertex_[axis] <= splitting_point && splitting_point <= max_vertex_[axis] ) {
+    	   	left = *this;
+    	   	right = *this;
+    	 	left.max_vertex_[axis] = splitting_point;
+    		right.min_vertex_[axis] = splitting_point;
+    	} else {
+    		THROW( ExcSplitting() << EI_interval_left(min_vertex_[axis])
+    							  << EI_interval_right(max_vertex_[axis])
+    							  << EI_split_point(splitting_point) );
+    	}
+    }
+
+    /**
+     * Expand bounding box to contain also gitven @p point.
+     */
+    void expand(const Point &point) {
+		for(unsigned int j=0; j<dimension; j++) {
+			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
+			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
+		}
+    }
+
+    /**
+     * Return index of the axis in which the box has longest projection.
+     */
+   unsigned char longest_axis() const {
+	   auto diff=max_vertex_ - min_vertex_;
+	   return (diff[1] > diff[0])
+			   	   ?  ( diff[2] > diff[1] ? 2 : 1 )
+			   	   :  ( diff[2] > diff[0] ? 2 : 0 );
+   }
 
 private:
-    /// count of dimensions
-    static const unsigned int dimension = 3;
     /// stabilization parameter
     static const double epsilon;
     /// minimal coordinates of bounding box
-    arma::vec3 minCoordinates_;
+    Point min_vertex_;
     /// maximal coordinates of bounding box
-    arma::vec3 maxCoordinates_;
+    Point max_vertex_;
 };
+
+/// Overloads output operator for box.
+inline ostream &operator<<(ostream &stream, const BoundingBox &box) {
+	return stream << "Box(" << arma::trans(box.min()) << ", " << arma::trans(box.max()) << ") ";
+}
 
 #endif /* BOX_ELEMENT_HH_ */

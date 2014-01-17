@@ -29,66 +29,17 @@
 #include "mesh/bounding_box.hh"
 
 
-const double BoundingBox::epsilon = 4*numeric_limits<double>::epsilon();
+const double BoundingBox::epsilon = 64*numeric_limits<double>::epsilon();
 
 
-BoundingBox::BoundingBox() {
+BoundingBox::BoundingBox(const vector<Point> &points) {
+	ASSERT_LESS( 0, points.size() );
 
-}
-
-BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
-	minCoordinates_ = minCoor;
-	maxCoordinates_ = maxCoor;
-}
-
-
-
-BoundingBox::BoundingBox(const vector<arma::vec3> &points) {
 	auto it = points.begin();
-	maxCoordinates_ = minCoordinates_ = *it;
+	max_vertex_ = min_vertex_ = *it;
 	//cout << "points: " << points.size() << endl;
 	//for(int i =0;i<points.size();i++) cout << points[i] << endl;
-	if (it != points.end()) ++it;
-	for(; it != points.end(); ++it) {
-		for(unsigned int j=0; j<3; j++) {
-			minCoordinates_(j) = std::min( minCoordinates_(j), (*it)[j] );
-			maxCoordinates_(j) = std::max( maxCoordinates_(j), (*it)[j] );
-		}
-	}
+	++it;
+	for(; it != points.end(); ++it) expand( *it );
 }
 
-
-void BoundingBox::set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor) {
-	minCoordinates_ = minCoor;
-	maxCoordinates_ = maxCoor;
-}
-
-const arma::vec3 BoundingBox::get_min() const {
-	return minCoordinates_;
-}
-
-const arma::vec3 BoundingBox::get_max() const {
-	return maxCoordinates_;
-}
-
-arma::vec3 BoundingBox::get_center() const {
-	return (maxCoordinates_ + minCoordinates_) / 2;
-}
-
-bool BoundingBox::contains_point(const Space<3>::Point &point) const {
-	for (unsigned int i=0; i<dimension; i++) {
-		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
-	}
-
-	return true;
-}
-
-// We have to stabilize by small epsilon to get safe intersection estimate for
-// 1d or 2d elements aligned with axes.
-bool BoundingBox::intersection(const BoundingBox &b2) const {
-	for (unsigned int i=0; i<dimension; i++) {
-		if ( (minCoordinates_(i) > b2.maxCoordinates_(i) + epsilon) |
-			 (b2.minCoordinates_(i)  > maxCoordinates_(i) + epsilon ) ) return false;
-	}
-	return true;
-}
