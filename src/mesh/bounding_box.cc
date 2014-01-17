@@ -29,6 +29,9 @@
 #include "mesh/bounding_box.hh"
 
 
+const double BoundingBox::epsilon = 4*numeric_limits<double>::epsilon();
+
+
 BoundingBox::BoundingBox() {
 
 }
@@ -80,9 +83,12 @@ bool BoundingBox::contains_point(const Space<3>::Point &point) const {
 	return true;
 }
 
+// We have to stabilize by small epsilon to get safe intersection estimate for
+// 1d or 2d elements aligned with axes.
 bool BoundingBox::intersection(const BoundingBox &b2) const {
 	for (unsigned int i=0; i<dimension; i++) {
-		if ((minCoordinates_(i) > b2.get_max()(i)) | (maxCoordinates_(i) < b2.get_min()(i))) return false;
+		if ( (minCoordinates_(i) > b2.maxCoordinates_(i) + epsilon) |
+			 (b2.minCoordinates_(i)  > maxCoordinates_(i) + epsilon ) ) return false;
 	}
 	return true;
 }

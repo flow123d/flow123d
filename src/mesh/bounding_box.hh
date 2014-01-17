@@ -35,6 +35,8 @@
 /**
  * Contains data of bounding box.
  * Used for areas and elements.
+ *
+ *
  */
 class BoundingBox {
 public:
@@ -75,6 +77,14 @@ public:
      */
     bool contains_point(const Space<3>::Point &point) const;
 
+    /**
+     * Returns true if two bounding boxes have intersection.
+     * This serves as an estimate of intersection of elements.
+     * To make it safe (do not exclude possible intersection) for
+     * 1d and 2d elements aligned with axes, we use some tolerance.
+     * Since this tolerance is fixed, there could be problem with
+     * highly refined meshes (get false positive result).
+     */
     bool intersection(const BoundingBox &b2) const;
 
     /**
@@ -88,6 +98,8 @@ public:
 private:
     /// count of dimensions
     static const unsigned int dimension = 3;
+    /// stabilization parameter
+    static const double epsilon;
     /// minimal coordinates of bounding box
     arma::vec3 minCoordinates_;
     /// maximal coordinates of bounding box
