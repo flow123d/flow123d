@@ -5,7 +5,7 @@
 #include <cmath>
 #include <numeric>
 
-#include "system/exceptions.hh"
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/intersectionLocal.h"
 //#include "mesh/ngh/include/config.h"
 

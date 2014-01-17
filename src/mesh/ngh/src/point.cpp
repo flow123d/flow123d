@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "system/exceptions.hh"
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/mathfce.h"
 
