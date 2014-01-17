@@ -300,12 +300,6 @@ internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag,
 } // namespace internal
 
 
-/**
- * Assert exception with an string message.
- */
-TYPEDEF_ERR_INFO( EI_Message, std::string);
-DECLARE_EXCEPTION( ExcAssertMsg, << "Violated Assert! " << EI_Message::val);
-
 
 
 
