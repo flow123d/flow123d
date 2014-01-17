@@ -88,7 +88,7 @@ arma::vec Intersection::map_to_slave(const arma::vec &point) const
 	return result;
 }
 
-double Intersection::intersection_true_size() {
+double Intersection::intersection_true_size() const {
 
     static const double factorial[4] = {1.0, 1.0, 2.0, 6.0};
 	return (master->measure() * det(master_map) / factorial[dim]);

@@ -165,7 +165,7 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 }
 
 
-ElementAccessor< 3 > Element::element_accessor()
+ElementAccessor< 3 > Element::element_accessor() const
 {
   return mesh_->element_accessor( mesh_->element.index(this) );
 }

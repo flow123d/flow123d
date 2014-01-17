@@ -62,7 +62,7 @@ public:
     unsigned int n_nodes() const; // Number of nodes
     
     ///Gets ElementAccessor of this element
-    ElementAccessor<3> element_accessor();
+    ElementAccessor<3> element_accessor() const;
     
     double measure() const;
     arma::vec3 centre() const;
@@ -77,6 +77,7 @@ public:
 
     unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
+    inline const SideIter side(const unsigned int loc_index) const;
     Region region() const;
     inline RegionIdx region_idx() const
         { return region_idx_; }

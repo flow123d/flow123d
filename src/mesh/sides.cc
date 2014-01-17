@@ -77,7 +77,7 @@ arma::vec3 Side::normal() const {
 //=============================================================================
 
 arma::vec3 Side::normal_point() const {
-    ElementIter ele = element_;
+    const Element * ele = element_;
 
     arma::vec3 normal(ele->node[1]->point());
     normal -= ele->node[0] ->point();
@@ -93,7 +93,7 @@ arma::vec3 Side::normal_point() const {
 //=============================================================================
 
 arma::vec3 Side::normal_line() const {
-    ElementIter ele=element_;
+    const Element * ele=element_;
 
     // At first, we need vector of the normal of the element
     arma::vec3 elem_normal=arma::cross( ele->node[1]->point() - ele->node[0]->point(),
@@ -114,7 +114,7 @@ arma::vec3 Side::normal_line() const {
 //=============================================================================
 
 arma::vec3 Side::normal_triangle() const {
-    ElementIter ele=element_;
+    const Element * ele=element_;
 //    double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
 
     arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),

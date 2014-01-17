@@ -792,8 +792,8 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         // A1 i A2 ma byt v intervalu (0,1) -> vrati insec
         // pokud ne tak zkusi zkratit, nebo NULL (delete)
 
-    	IntersectionPoint* A1;
-    	IntersectionPoint* A2;
+    	const IntersectionPoint* A1;
+    	const IntersectionPoint* A2;
     	if (insec_tmp->get_point(0) != NULL) {
     	    if (insec_tmp->get_point(0)->el1_coord()[0] > insec_tmp->get_point(1)->el1_coord()[0]) {
     	    	A2 = insec_tmp->get_point(0);

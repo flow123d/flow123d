@@ -418,6 +418,13 @@ public:
          return FullIter( *this, begin()+idx );
      }
 
+     /// Gets iterator of the element specified by index.
+     inline const Iter operator()(unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return Iter( &(storage[idx]) );
+     }
+
 
      /// Alternative way to make FullFullIterer form FullIterer. This way you need not write
      /// the full FullFullIterer typename to call the constructor. Then the result can be assigned to

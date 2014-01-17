@@ -55,7 +55,7 @@ public:
     : element_(NULL), el_idx_(0)
     {}
 
-    inline Side(ElementIter ele, unsigned int set_lnum);
+    inline Side(const Element * ele, unsigned int set_lnum);
     double measure() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
@@ -126,7 +126,7 @@ private:
 
     // Topology of the mesh
 
-    Element * element_; // Pointer to element to which belonged
+    const Element * element_; // Pointer to element to which belonged
     unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
 };
