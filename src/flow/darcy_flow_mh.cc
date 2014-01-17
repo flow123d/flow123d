@@ -1022,7 +1022,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
        
 
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
-            LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
+            LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -1041,7 +1041,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
-            LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
+            LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
             // temporary solution; we have to set precision also for sequantial case of BDDC
             // final solution should be probably call of direct solver for oneproc case

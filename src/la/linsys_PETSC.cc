@@ -45,9 +45,8 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
     .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
 
 
-LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
-                            const MPI_Comm comm ) 
-        : LinSys( rows_ds, comm )
+LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
+        : LinSys( rows_ds )
 {
     // set type
     //type = LinSys::PETSC;
