@@ -781,14 +781,19 @@ void Mesh::make_intersec_elements() {
 
 		if (ele.dim() == 1) {
 			bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+			DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
 			for(int i_elm: candidate_list) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;
+					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
+					DBGMSG("2d el: %d %p\n", elm->index(), intersection);
 					if (intersection && intersection->get_type() == IntersectionLocal::line) {
-						GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
+
 						master_elements[i_ele].push_back( intersections.size() );
 						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
+						DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
+								intersections.back().intersection_true_size() );
 				    }
 				}
 
