@@ -168,10 +168,7 @@ private:
     /// vector stored elements for level-order walk of tree
     std::deque<unsigned int> queue_;
 
-	// temporary vector keeps coordinations of elements stored in queue_
-	// arma::vec6 stores minimal and maximal coordinations of area
-	// Mimics BoundingBox functionality.
-	// TODO: Possibly add suitable methods to BoundingBox in order to use it here.
+
     std::deque<BoundingBox> box_queue_;
 
     /// vector stored element indexes in leaf nodes

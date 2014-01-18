@@ -90,7 +90,7 @@ set(sources_mesh_lib
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    mesh/bih_node.cc
+    # mesh/bih_node.cc
     mesh/bih_tree.cc
     
     mesh/ngh/src/abscissa.cpp

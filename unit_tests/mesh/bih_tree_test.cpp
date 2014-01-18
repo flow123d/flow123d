@@ -170,7 +170,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	BIHTree bt(&mesh, element_limit);
 	std::vector<unsigned int> insec_list;
 
-	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0.1 0.1"), arma::vec3("-0.89 -0.1 -0.1")), insec_list);
+	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
 		cout << "idx: " << i_ele << "id: " << mesh.element.get_id( &(mesh.element[i_ele]) ) << endl;
 	}

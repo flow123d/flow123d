@@ -112,6 +112,7 @@ public:
     	ASSERT(!is_leaf(), "Not in branch node.\n");
     	ASSERT_LESS( i_child, child_count );
     	return child_[i_child];
+
     }
 private:
 
@@ -129,7 +130,9 @@ private:
 	 *
 	 * @param depth Depth of node in tree.
 	 */
-	void set_depth(unsigned int depth);
+    void set_depth(unsigned int depth) {
+    	axis_ = depth + dimension;
+    }
 
     /// child nodes indexes
     unsigned int child_[child_count];

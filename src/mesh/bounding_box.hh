@@ -87,7 +87,9 @@ public:
 	 */
 	BoundingBox(const Point &min, const Point &max)
 	: min_vertex_(min), max_vertex_(max)
-	{};
+	{
+		ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
+	};
 
 	/**
 	 * Constructor.
@@ -161,6 +163,23 @@ public:
     	return true;
     }
 
+    /**
+     * Returns true is projection of the box to @p axis is an interval
+     * less or equal (with tolerance) to given @p value.
+     */
+    bool projection_le(unsigned int axis, double value) const
+    {
+    	return max_vertex_(axis) - epsilon < value;
+    }
+
+    /**
+     * Returns true is projection of the box to @p axis is an interval
+     * greater or equal (with tolerance) to given @p value.
+     */
+    bool projection_ge(unsigned int axis, double value) const
+    {
+    	return max_vertex_(axis) + epsilon > value;
+    }
 
     /**
      * Split box into two boxes along @p axis by the
