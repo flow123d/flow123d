@@ -593,6 +593,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 EqData::BC_Type type = (EqData::BC_Type)data.bc_type.value(b_ele.centre(), b_ele);
+                //DBGMSG("BCD id: %d sidx: %d type: %d\n", ele->id(), i, type);
                 if ( type == EqData::none) {
                     // homogeneous neumann
                 } else if ( type == EqData::dirichlet ) {
@@ -766,15 +767,17 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 	}
 
 	dofs.resize(ele->n_sides());
+
 	for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
 		dofs[i_side]=darcy_.row_4_edge[ele->side(i_side)->edge_idx()];
 		Boundary * bcd = ele->side(i_side)->cond();
 		if (bcd) {
-			DBGMSG("pd ele BC: %d %d\n", ele->index(), i_side);
+			dirichlet.resize(ele->n_sides());
 			ElementAccessor<3> b_ele = bcd->element_accessor();
 			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data.bc_type.value(b_ele.centre(), b_ele);
+			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
 			if (type == DarcyFlowMH::EqData::dirichlet) {
-				DBGMSG("Dirichlet: %d\n", ele->index());
+				//DBGMSG("Dirichlet: %d\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
 				double bc_pressure = darcy_.data.bc_pressure.value(b_ele.centre(), b_ele);
 				dirichlet[i_side] = bc_pressure;

@@ -447,7 +447,7 @@ public:
     /** Returns Id of the element given by pointer i.e. Iter. FullIter i.e. FullIteratorId<T>
      * provides its own method for the same.
      */
-    inline int get_id(Iter it)
+    inline int get_id(const T * it)
     {
         return *(id_storage.begin() + this->index(it));
     }

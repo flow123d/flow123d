@@ -177,6 +177,10 @@ Region Element::region() const {
 }
 
 
+unsigned int Element::id() const {
+	mesh_->element.get_id(this);
+}
+
 double Element::quality_measure_smooth() {
     if (dim_==3) {
         double sum_faces=0;

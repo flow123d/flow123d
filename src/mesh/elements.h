@@ -82,6 +82,8 @@ public:
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
+    unsigned int id() const;
+
     int      pid;       // Id # of mesh partition
 
     // Type specific data
