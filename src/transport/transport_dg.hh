@@ -228,7 +228,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
+	void set_eq_data(DarcyFlowMH::EqData &water_data) { Model::set_eq_data(water_data); };
 
 	/**
 	 * @brief Getter for field data.
@@ -236,6 +236,8 @@ public:
 	virtual EqData *get_data() { return &data_; }
 
 	TimeIntegrationScheme time_scheme() { return implicit_euler; }
+
+	static const string &input_key_name() { static const string inp_key_name_ = Model::input_key_name() + "_DG"; return inp_key_name_; }
 
 	/**
 	 * @brief Destructor.

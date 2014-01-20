@@ -119,12 +119,12 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         if (it->type() == TransportOperatorSplitting::input_type)
         {
             transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-            ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
+            transport_reaction->set_eq_data( water->get_data() );
         }
         else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
         {
             transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
-            ((TransportDG<ConcentrationTransportModel>*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
+            transport_reaction->set_eq_data( water->get_data() );
         }
         else
         {

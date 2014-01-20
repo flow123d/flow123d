@@ -37,19 +37,10 @@
 
 using namespace Input::Type;
 
-AbstractRecord TransportBase::input_type
+AbstractRecord SecondaryEquation::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
-			"Time governor setting for the transport model.")
-	.declare_key("substances", Array(String()), Default::obligatory(),
-			"Names of transported substances.")
-	    // input data
-	.declare_key("sorption_enable", Bool(), Default("false"),
-			"Model of sorption.")
-	.declare_key("dual_porosity", Bool(), Default("false"),
-			"Dual porosity model.")
-	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
-			"Parameters of output stream.")
+			"Time governor setting for the secondary equation.")
 	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
 
 
@@ -76,16 +67,21 @@ Record TransportOperatorSplitting::input_type
             "Explicit FVM transport (no diffusion)\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
-    .derive_from(TransportBase::input_type)
+    .derive_from(SecondaryEquation::input_type)
+    .declare_key("substances", Array(String()), Default::obligatory(),
+    		"Names of transported substances.")
+    	    // input data
+    .declare_key("sorption_enable", Bool(), Default("false"),
+    		"Model of sorption.")
+    .declare_key("dual_porosity", Bool(), Default("false"),
+    		"Dual porosity model.")
+    .declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
+    		"Parameters of output stream.")
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
     .declare_key("adsorptions", Sorption::input_type, Default::optional(),
     			"Initialization of per element sorptions.")
-    .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()
-    		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
-    		.declare_key("bc_times", Array(Double()), Default::optional(),
-    				"Times for changing the boundary conditions (obsolete).")
-    		), IT::Default::obligatory(), "")
+    .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()), IT::Default::obligatory(), "")
     .declare_key("bulk_data", Array(ConvectionTransport::EqData().bulk_input_type()),
     		IT::Default::obligatory(), "");
 
@@ -94,8 +90,6 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 : EqDataBase(eq_name)
 {
 
-	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
-	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
 	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", Default("0"));
@@ -106,7 +100,7 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 
 
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
-: EquationBase(mesh, in_rec ),
+: SecondaryEquation(mesh, in_rec ),
   mh_dh(NULL),
   mass_balance_(NULL)
 {
@@ -317,9 +311,9 @@ void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &
 
 
 
-void TransportOperatorSplitting::set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section)
+void TransportOperatorSplitting::set_eq_data(DarcyFlowMH::EqData &water_data)
 {
-    convection->set_cross_section_field(cross_section);
+    convection->set_eq_data(water_data);
 
     /*if (Semchem_reactions != NULL) {
         Semchem_reactions->set_cross_section(cross_section);

@@ -165,6 +165,7 @@ set(sources_lib_non_system
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
+    transport/advection_diffusion_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc

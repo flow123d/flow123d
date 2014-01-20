@@ -36,12 +36,12 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-//#include "la/solve.h"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
+#include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
 #include "la/linsys_PETSC.hh"
 #include "mesh/partitioning.hh"
@@ -67,16 +67,10 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
 
 template<class Model>
 Record TransportDG<Model>::input_type
-	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
-	.derive_from(TransportBase::input_type)
+	= Record(Model::get_input_type("DG", "DG solver"))
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("bc_data", Array(TransportDG<Model>::EqData().boundary_input_type()
-    		.declare_key("old_boundary_file", IT::FileName::input(),
-    				"Input file with boundary conditions (obsolete).")
-    		.declare_key("bc_times", Array(Double()), Default::optional(),
-    				"Times for changing the boundary conditions (obsolete).")
-    		), IT::Default::obligatory(), "")
+    .declare_key("bc_data", Array(TransportDG<Model>::EqData().boundary_input_type()), IT::Default::obligatory(), "")
     .declare_key("bulk_data", Array(TransportDG<Model>::EqData().bulk_input_type()),
     		IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
@@ -202,7 +196,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
           mass_matrix(0),
           allocation_done(false)
 {
-    Model::flux_changed = true;
+	// Check that Model is derived from AdvectionDiffusionModel.
+	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
@@ -222,10 +217,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.bc_robin_sigma.set_n_comp(n_subst_);
     data_.sigma_c.set_n_comp(n_subst_);
     data_.dg_penalty.set_n_comp(n_subst_);
+    Model::init_data(n_subst_);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    Model::init_data(&init_mesh, n_subst_, in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data"));
     data_.set_time(*time_);
-//    Model::set_time(*time_);
 
     // DG variant
     dg_variant = in_rec.val<DGVariant>("dg_variant");
@@ -308,12 +302,6 @@ TransportDG<Model>::~TransportDG()
     subst_names_.clear();
 }
 
-
-template<class Model>
-void TransportDG<Model>::set_eq_data(Field< 3, FieldValue<3>::Scalar > *cross_section)
-{
-  data_.cross_section = cross_section;
-}
 
 
 template<class Model>
@@ -696,7 +684,6 @@ void TransportDG<Model>::assemble_volume_integrals()
     }
 
 	// assemble integral over elements
-//    for (typename DOFHandler<dim,3>::CellIterator cell = mesh_->element.begin(); cell != mesh_->element.end(); ++cell)
     for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = mesh_->element(feo->dh()->el_index(i_cell));
@@ -810,7 +797,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     vector<vector<vector<arma::mat33> > > dif_coef;
     vector<vector<vector<arma::vec3> > > ad_coef;
     vector<vector<arma::vec3> > side_velocity;
-//    vector<vector<double> > por_m(qsize), csection(qsize);
     vector<arma::vec> dg_penalty;
     double gamma_l, omega[2], transport_flux;
 
@@ -823,14 +809,10 @@ void TransportDG<Model>::assemble_fluxes_element_element()
         // TODO: Simplify resizing vectors by precomputing the maximum of edg->n_sides
         // over all edges in the mesh.
         side_velocity.resize(edg->n_sides);
-//        por_m.resize(edg->n_sides);
-//        csection.resize(edg->n_sides);
         ad_coef.resize(edg->n_sides);
         dif_coef.resize(edg->n_sides);
         for (unsigned int sid=0; sid<edg->n_sides; sid++)
         {
-//        	por_m[sid].resize(qsize);
-//        	csection[sid].resize(qsize);
         	ad_coef[sid].resize(n_subst_);
         	dif_coef[sid].resize(n_subst_);
         	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
@@ -856,12 +838,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 			fe_values[sid]->reinit(cell, edg->side(sid)->el_idx());
 			fsv_rt.reinit(cell, edg->side(sid)->el_idx());
 			calculate_velocity(cell, side_velocity[sid], fsv_rt);
-
-//			for (unsigned int k=0; k<qsize; k++)
-//			{
-//				por_m[sid][k] = data_.por_m.value(fe_values[sid]->point(k), ele_acc);
-//				csection[sid][k] = data_.cross_section->value(fe_values[sid]->point(k), ele_acc);
-//			}
 			Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], ele_acc, ad_coef[sid], dif_coef[sid]);
 			dg_penalty[sid] = data_.dg_penalty.value(cell->centre(), ele_acc);
 		}
@@ -972,7 +948,6 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     vector<vector<arma::mat33> > dif_coef(n_subst_);
     vector<vector<arma::vec3> > ad_coef(n_subst_);
     vector<arma::vec3> side_velocity;
-//    vector<double> por_m(qsize), csection(qsize);
     vector<arma::vec> robin_sigma(qsize);
     arma::vec dg_penalty;
     double gamma_l;
@@ -1002,8 +977,6 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 
         calculate_velocity(cell, side_velocity, fsv_rt);
         Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
-//        data_.por_m.value_list(fe_values_side.point_list(), ele_acc, por_m);
-//        data_.cross_section->value_list(fe_values_side.point_list(), ele_acc, csection);
         dg_penalty = data_.dg_penalty.value(cell->centre(), ele_acc);
         arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
 
@@ -1071,7 +1044,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 
     double transport_flux;
     double comm_flux[2][2];
-//    vector<double> csection(qsize);
 
     /*
      * Workaround for Clang compiler 3.0 which
@@ -1082,9 +1054,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
      * arma::vec sigma[qsize];
      */
     vector<double> mass_coef[2];
-//    double por_m_0[qsize], por_m_1[qsize];
-//    por_m[0] = por_m_0;
-//    por_m[1] = por_m_1;
     mass_coef[0].resize(qsize);
     mass_coef[1].resize(qsize);
 
@@ -1123,9 +1092,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		transport_flux = mh_dh->side_flux( *(nb->side()) )/nb->side()->measure();
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), nb->element()->element_accessor(), mass_coef[0]);
 		Model::compute_mass_matrix_coefficient(fe_values_side.point_list(), cell->element_accessor(), mass_coef[1]);
-//		data_.por_m.value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), por_m[0]);
-//		data_.por_m.value_list(fe_values_side.point_list(), cell->element_accessor(), por_m[1]);
-//		data_.cross_section->value_list(fe_values_side.point_list(), cell->element_accessor(), csection);
 		data_.sigma_c.value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), sigma);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)
@@ -1221,7 +1187,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
         fe_values_side.reinit(cell, side->el_idx());
 
-        data_.bc_conc.value_list(fe_values_side.point_list(), ele_acc, bc_values);
+        Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
         data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
         data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
 
@@ -1487,7 +1453,7 @@ void TransportDG<Model>::prepare_initial_condition()
     	feo->dh()->get_dof_indices(elem, dof_indices);
     	fe_values.reinit(elem);
 
-   		data_.init_conc.value_list(fe_values.point_list(), ele_acc, init_values);
+   		Model::compute_init_cond(fe_values.point_list(), ele_acc, init_values);
 
     	for (int sbi=0; sbi<n_subst_; sbi++)
     	{
@@ -1567,17 +1533,13 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
         if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
         unsigned int bc_region_idx = r.boundary_idx();
 
-//        water_flux = mh_dh->side_flux(*side)/side->measure();
-
 		fe_values.reinit(cell, side->el_idx());
 		fsv_rt.reinit(cell, side->el_idx());
 		feo->dh()->get_dof_indices(cell, dof_indices);
 		calculate_velocity(cell, side_velocity, fsv_rt);
 		Model::compute_advection_diffusion_coefficients(fe_values.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
+		Model::compute_dirichlet_bc(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
 
-//		data_.por_m.value_list(fe_values.point_list(), ele_acc, por_m);
-//		data_.cross_section->value_list(fe_values.point_list(), ele_acc, csection);
-		data_.bc_conc.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
 			mass_flux = 0;
@@ -1673,6 +1635,7 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 
 
 template class TransportDG<ConcentrationTransportModel>;
+template class TransportDG<HeatTransferModel>;
 
 
 

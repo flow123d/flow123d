@@ -91,6 +91,14 @@ public:
         /// Override generic method in order to allow specification of the boundary conditions through the old bcd files.
         RegionSet read_boundary_list_item(Input::Record rec);
 
+		/**
+		 * Boundary conditions (Dirichlet) for concentrations.
+		 * They are applied only on water inflow part of the boundary.
+		 */
+		BCField<3, FieldValue<3>::Vector> bc_conc;
+
+		/// Initial concentrations.
+		Field<3, FieldValue<3>::Vector> init_conc;
         Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
         Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
         Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
@@ -127,7 +135,7 @@ public:
 	 *
 	 * TODO: Make this and previous part of Transport interface in TransportBase.
 	 */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+	void set_eq_data(DarcyFlowMH::EqData &water_data);
 
 
     /**
