@@ -512,7 +512,7 @@ void OutputVTK::write_vtk_vtu(void)
             this->output_time->get_corner_data()->empty()==true*/)
     {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         this->write_vtk_geometry();

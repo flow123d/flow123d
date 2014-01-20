@@ -20,6 +20,7 @@
 #include "fields/field_base.hh"
 #include "fields/field_constant.hh"
 
+
 // Test input for output stream
 const string output_stream = R"JSON(
 {
@@ -37,12 +38,19 @@ const string output_stream = R"JSON(
 const string foo_output = R"JSON(
 {
   pressure_p0 = "flow_output_stream",
-  material_id = "flow_output_stream"
+  material_id = "flow_output_stream",
+  pressure_p1 = "flow_output_stream",
+  strangeness = "flow_output_stream"
 }
 )JSON";
 
+
 using namespace Input::Type;
 
+
+/**
+ * \brief Useless class used for testing of data output
+ */
 class Foo {
 public:
     Foo() {}
@@ -50,21 +58,32 @@ public:
     static Record input_type;
 };
 
+
 Record Foo::input_type
     = Record("Foo", "Output setting for foo equations.")
     .declare_key("pressure_p0", String(),
             "Name of output stream for P0 approximation of pressure.")
     .declare_key("material_id", String(),
-        "Name of output stream for material ID.");
+            "Name of output stream for material ID.")
+    .declare_key("pressure_p1", String(),
+            "Name of output stream for P1 approximation of pressure.")
+    .declare_key("strangeness", String(),
+            "Name of output stream for strangeness.");
 
+
+/**
+ * \brief Child class used for testing OutputTime
+ */
 class OutputTest : public testing::Test, public OutputTime {
 protected:
     virtual void SetUp() {}
-    virtual void TearDown() {
-    	OutputTime::destroy_all();
-    }
+    virtual void TearDown() {}
 };
 
+
+/**
+ * \brief Test of creating of OutputTime
+ */
 TEST( OutputTest, test_create_output_stream ) {
     Input::JSONToStorage reader_output_stream;
 
@@ -98,6 +117,9 @@ TEST( OutputTest, test_create_output_stream ) {
 }
 
 
+/**
+ *
+ */
 TEST( OutputTest, find_outputstream_by_name ) {
     /* There should be at least one output stream */
     ASSERT_EQ(OutputTime::output_streams.size(), 1);
@@ -190,7 +212,11 @@ TEST( OutputTest, test_register_elem_fields_data ) {
     for(int i = 0; i < mesh.element.size(); i++) {
         EXPECT_EQ(((int*)output_data->data)[i], 10);
     }
+
+    /* Try to write data to output file */
+    OutputTime::write_all_data();
 }
+
 
 TEST( OutputTest, test_register_corner_fields_data ) {
     Input::JSONToStorage reader_output;
@@ -210,7 +236,7 @@ TEST( OutputTest, test_register_corner_fields_data ) {
 
     /* Initialization of scalar field  with constant double values (1.0) */
     scalar_field.set_default( Input::Type::Default("20") );
-    scalar_field.set_name("pressure_p0");
+    scalar_field.set_name("pressure_p1");
     scalar_field.set_units("L");
     scalar_field.set_mesh(&mesh);
     scalar_field.set_time(0.0);
@@ -222,8 +248,8 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     Field<3, FieldValue<1>::Integer> integer_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    integer_field.set_default( Input::Type::Default("100") );
-    integer_field.set_name("material_id");
+    integer_field.set_default( Input::Type::Default("-1") );
+    integer_field.set_name("strangeness");
     integer_field.set_units("");
     integer_field.set_mesh(&mesh);
     integer_field.set_time(0.0);
@@ -242,7 +268,7 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->elem_data.size(), 2);
+    ASSERT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
     std::vector<OutputData*>::iterator output_data_iter = output_time->corner_data.begin();
@@ -281,8 +307,11 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     corner_id = 0;
     FOR_ELEMENTS(&mesh, ele) {
         FOR_ELEMENT_NODES(ele, node_id) {
-            EXPECT_EQ(((int*)output_data->data)[corner_id], 100);
+            EXPECT_EQ(((int*)output_data->data)[corner_id], -1);
             corner_id++;
         }
     }
+
+    OutputTime::destroy_all();
 }
+

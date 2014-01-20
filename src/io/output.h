@@ -329,7 +329,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 {
     string name_ = field->name();
     OutputData *output_data;
-    unsigned int item_count = 0, nod_id;
+    unsigned int item_count = 0, comp_count = 0, nod_id;
 
     // TODO: do not ty to find empty string and raise exception
 
@@ -363,15 +363,24 @@ void OutputTime::register_data(const Input::Record &in_rec,
 
     /* This is problematic part, because of templates :-( */
     OutputData::DataType data_type;
-    if(typeid(Value) == typeid(FieldValue<1>::Integer) ||
-            typeid(Value) == typeid(FieldValue<1>::IntVector)) {
+    if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
         data_type = OutputData::INT;
-    } else if(typeid(Value) == typeid(FieldValue<1>::Enum) ||
-            typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
+        comp_count = 1;
+    } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
+        data_type = OutputData::INT;
+        comp_count = 3;
+    } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
         data_type = OutputData::UINT;
-    } else if(typeid(Value) == typeid(FieldValue<1>::Scalar) ||
-            typeid(Value) == typeid(FieldValue<1>::Vector)) {
+        comp_count = 1;
+    } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
+        data_type = OutputData::UINT;
+        comp_count = 3;
+    } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
         data_type = OutputData::DOUBLE;
+        comp_count = 1;
+    } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
+        data_type = OutputData::DOUBLE;
+        comp_count = 3;
     } else {
         printf("not supported yet\n");
         /* TODO: raise exception */
@@ -383,7 +392,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
     case NODE_DATA:
     	item_count = mesh->n_nodes();
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
-                ref_type, data_type, item_count, spacedim);
+                ref_type, data_type, item_count, comp_count);
         /* TODO: register node data */
         break;
     case CORNER_DATA:
@@ -394,7 +403,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
         }
 
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
-                ref_type, data_type, item_count, spacedim);
+                ref_type, data_type, item_count, comp_count);
 
         /* Copy data to array */
         if(data_type == OutputData::DOUBLE) {
@@ -421,7 +430,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
     	item_count = mesh->n_elements();
 
         output_data = output_time->output_data_by_field((FieldCommonBase*)field,
-                ref_type, data_type, item_count, spacedim);
+                ref_type, data_type, item_count, comp_count);
 
         /* Copy data to array */
         if(data_type == OutputData::DOUBLE) {
