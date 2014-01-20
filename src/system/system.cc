@@ -53,7 +53,7 @@
 
 
 SystemInfo::~SystemInfo() {
-   	if (log) xfclose(log);
+   	//if (log) xfclose(log);
 }
 
 SystemInfo sys_info;
