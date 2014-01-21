@@ -427,7 +427,6 @@ void Mesh::make_neighbours_and_edges()
 
 			if (is_neighbour) { // edge connects elements of different dimensions
 			    neighbour.element_ = &(element[ngh_element_idx]);
-                neighbour.sigma = 1;
             } else { // edge connects only elements of the same dimension
                 // Allocate the array of sides.
                 last_edge_idx=edges.size();
@@ -687,76 +686,7 @@ void Mesh::element_to_neigh_vb()
 }
 
 
-/*
-void Mesh::setup_materials( MaterialDatabase &base)
-{
-  
-    xprintf( MsgVerb, "   Element to material... ");//orig verb 5;
-    FOR_ELEMENTS(this, ele ) {
-        ele->material=base.find_id(ele->region().id());
-        INPUT_CHECK( ele->material != base.end(),
-                "Reference to undefined material %d in element %d\n", ele->region().id(), ele.id() );
-    }
-    xprintf( MsgVerb, "O.K.\n");//orig verb 6
-  
-}
-*/
 
-/*
-void Mesh::read_intersections() {
-
-    using namespace boost;
-
-    ElementFullIter master(element), slave(element);
-
-    char tmp_line[LINE_SIZE];
-    string file_name = in_record_.val<FilePath>("neighbouring");
-    FILE *in = xfopen( file_name , "rt" );
-
-    tokenizer<boost::char_separator<char> >::iterator tok;
-
-    xprintf( Msg, "Reading intersections...");
-    skip_to(in, "$Intersections");
-    xfgets(tmp_line, LINE_SIZE - 2, in);
-    int n_intersect = atoi(xstrtok(tmp_line));
-    INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
-
-    intersections.reserve(n_intersect);
-
-    for (int i = 0; i < n_intersect; i++) {
-        xfgets(tmp_line, LINE_SIZE - 2, in);
-        string line = tmp_line;
-        tokenizer<boost::char_separator<char> > line_tokenizer(line, boost::char_separator<char>("\t \n"));
-
-        tok = line_tokenizer.begin();
-
-        try {
-            ++tok; // skip id token
-            int type = lexical_cast<int> (*tok);
-            ++tok;
-            int master_id = lexical_cast<int> (*tok);
-            ++tok;
-            int slave_id = lexical_cast<int> (*tok);
-            ++tok;
-            double sigma = lexical_cast<double> (*tok);
-            ++tok;
-
-            int n_intersect_points = lexical_cast<int> (*tok);
-            ++tok;
-            master = element.find_id(master_id);
-            slave = element.find_id(slave_id);
-
-            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, tok));
-        } catch (bad_lexical_cast &) {
-            xprintf(UsrErr, "Wrong number format at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
-        }
-
-    }
-
-    xprintf( Msg, "O.K.\n");
-
-}
-*/
 
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/abscissa.h"
@@ -780,38 +710,28 @@ void Mesh::make_intersec_elements() {
 		Element &ele = this->element[i_ele];
 
 		if (ele.dim() == 1) {
-			bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-			DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
-			for(int i_elm: candidate_list) {
+			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
+			//for(int i_elm: candidate_list) {
+			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;
 					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					DBGMSG("2d el: %d %p\n", elm->index(), intersection);
+					//DBGMSG("2d el: %d %p\n", elm->index(), intersection);
 					if (intersection && intersection->get_type() == IntersectionLocal::line) {
 
 						master_elements[i_ele].push_back( intersections.size() );
 						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-						DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
-								intersections.back().intersection_true_size() );
+						//DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
+						//		intersections.back().intersection_true_size() );
 				    }
 				}
 
 			}
 		}
 	}
-/*
-     // calculate sizes and make allocations
-     vector<int >sizes(n_elements(),0);
-     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
-     sizes[i->master_iter().index()]++;
-     master_elements.resize(n_elements());
-     for(unsigned int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
 
-     // fill intersec_elements
-     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
-     master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
-*/
 }
 
 
@@ -856,35 +776,5 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
     return bulk_elements_id_;
 }
 
-
-/*
-void Mesh::make_edge_list_from_neigh() {
-    int edi;
-    Mesh *mesh = this;
-    struct Neighbour *ngh;
-
-    xprintf( Msg, "Creating edges from neigbours... ");
-
-    int n_edges = mesh->n_sides;
-    FOR_NEIGHBOURS( ngh )
-        if (ngh->type == BB_E || ngh->type == BB_EL)
-            n_edges-=( ngh->n_elements - 1 );
-
-    mesh->edge.resize(n_edges);
-
-    xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges());
-
-    EdgeFullIter edg = mesh->edge.begin();
-    n_edges=0;
-    FOR_NEIGHBOURS( ngh )
-        if (ngh->type == BB_E || ngh->type == BB_EL) {
-            ngh->edge = edg;
-            edg->neigh_bb = ngh;
-            ++edg;
-            n_edges++;
-        }
-    xprintf( MsgVerb, "O.K. %d\n");
-
-}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

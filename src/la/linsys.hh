@@ -350,8 +350,6 @@ public:
 
     	for(unsigned int l_row = 0; l_row < row_dofs.size(); l_row++)
     		if (row_dofs[l_row] < 0) {
-    			cout << l_row << endl;
-    			cout << tmp.row(l_row) << endl;
     			tmp.row(l_row).zeros();
     			tmp_rhs(l_row)=0.0;
     			negative_row=true;
@@ -388,8 +386,6 @@ public:
     	if (negative_col)
     		for(int &col : col_dofs) col=abs(col);
 
-    	//cout << "Loc mat: \n" << tmp << endl;
-    	//cout << "RHS: \n" << tmp_rhs << endl;
 
         mat_set_values(row_dofs.size(), const_cast<int *>(&(row_dofs[0])),
         		       col_dofs.size(), const_cast<int *>(&(col_dofs[0])), tmp.memptr() );
