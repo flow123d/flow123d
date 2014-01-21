@@ -330,6 +330,7 @@ protected:
   EqData data;
 
   friend class P0_CouplingAssembler;
+  friend class P1_CouplingAssembler;
 };
 
 
@@ -374,6 +375,34 @@ private:
 	/// measure of master element, should be sum of intersection measures
 	double delta_0;
 };
+
+
+
+class P1_CouplingAssembler {
+public:
+	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  intersections_(darcy.mesh_->intersections),
+	  rhs(5),
+	  dofs(5),
+	  dirichlet(5)
+	{
+		rhs.zeros();
+	}
+
+	void assembly(LinSys &ls);
+	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+private:
+
+	const DarcyFlowMH_Steady &darcy_;
+	const vector<Intersection> &intersections_;
+
+	arma::vec rhs;
+	vector<int> dofs;
+	vector<double> dirichlet;
+};
+
+
 
 //void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
 //void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
