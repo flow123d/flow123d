@@ -448,15 +448,16 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
 #if 0
-        /* Write own data */
+        /* TODO: Write own data on nodes */
         if(node_data != NULL) {
             this->write_vtk_data_ascii(node_data);
         }
-
-        if(corner_data != NULL) {
-            this->write_vtk_data_ascii(corner_data);
-        }
 #endif
+
+        /* Write data in corners of elements */
+        if(this->corner_data.empty() == false) {
+            this->write_vtk_data_ascii(&this->corner_data);
+        }
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -508,8 +509,7 @@ void OutputVTK::write_vtk_vtu(void)
     this->write_vtk_vtu_head();
 
     /* When there is no discontinuous data, then write classical vtu */
-    if(1 /* TODO: this->output_time->get_corner_data() != NULL &&
-            this->output_time->get_corner_data()->empty()==true*/)
+    if(this->corner_data.empty() == true)
     {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
@@ -541,9 +541,6 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK scalar and vector data on nodes to the file */
         this->write_vtk_node_data();
-
-        /* Write VTK scalar and vector data in corners to the file */
-        //this->write_vtk_corner_data();
 
         /* Write VTK data on elements */
         this->write_vtk_element_data();

@@ -21,15 +21,28 @@
 #include "fields/field_constant.hh"
 
 
-// Test input for output stream
-const string output_stream = R"JSON(
+// Test #1 of input for output stream
+const string output_stream1 = R"JSON(
 {
   file = "./test1.pvd", 
   format = {
     TYPE = "vtk", 
     variant = "ascii"
   }, 
-  name = "flow_output_stream"
+  name = "flow_output_stream1"
+}
+)JSON";
+
+
+// Test #2 of input for output stream
+const string output_stream2 = R"JSON(
+{
+  file = "./test2.pvd", 
+  format = {
+    TYPE = "vtk", 
+    variant = "ascii"
+  }, 
+  name = "flow_output_stream2"
 }
 )JSON";
 
@@ -37,10 +50,10 @@ const string output_stream = R"JSON(
 // Test input for output data
 const string foo_output = R"JSON(
 {
-  pressure_p0 = "flow_output_stream",
-  material_id = "flow_output_stream",
-  pressure_p1 = "flow_output_stream",
-  strangeness = "flow_output_stream"
+  pressure_p0 = "flow_output_stream1",
+  material_id = "flow_output_stream1",
+  pressure_p1 = "flow_output_stream2",
+  strangeness = "flow_output_stream2"
 }
 )JSON";
 
@@ -87,17 +100,24 @@ protected:
 TEST( OutputTest, test_create_output_stream ) {
     Input::JSONToStorage reader_output_stream;
 
-    /* Read input for output stream */
-    std::stringstream in_output_stream(output_stream);
-    reader_output_stream.read_stream(in_output_stream, OutputTime::input_type);
+    /* Read input for first output stream */
+    std::stringstream in_output_stream1(output_stream1);
+    reader_output_stream.read_stream(in_output_stream1, OutputTime::input_type);
+
+    /* Create output stream as it is read during start of Flow */
+    OutputTime::output_stream(reader_output_stream.get_root_interface<Input::Record>());
+
+    /* Read input for first output stream */
+    std::stringstream in_output_stream2(output_stream2);
+    reader_output_stream.read_stream(in_output_stream2, OutputTime::input_type);
 
     /* Create output stream as it is read during start of Flow */
     OutputTime::output_stream(reader_output_stream.get_root_interface<Input::Record>());
 
     /* Make sure that there is one OutputTime instance */
-    ASSERT_EQ(OutputTime::output_streams.size(), 1);
+    ASSERT_EQ(OutputTime::output_streams.size(), 2);
 
-    /* Get this OutputTime instance */
+    /* Get first OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     OutputTime *output_time = (*output_iter);
 
@@ -107,7 +127,7 @@ TEST( OutputTest, test_create_output_stream ) {
 
     /* The name of instance has to be equal to configuration file:
      * "variable output_stream" */
-    EXPECT_EQ(*(output_time->name), "flow_output_stream");
+    EXPECT_EQ(*(output_time->name), "flow_output_stream1");
 
     /* The type of instance should be OutputVTK */
     EXPECT_EQ(output_time->file_format, OutputTime::VTK);
@@ -122,13 +142,13 @@ TEST( OutputTest, test_create_output_stream ) {
  */
 TEST( OutputTest, find_outputstream_by_name ) {
     /* There should be at least one output stream */
-    ASSERT_EQ(OutputTime::output_streams.size(), 1);
+    ASSERT_EQ(OutputTime::output_streams.size(), 2);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     OutputTime *output_time = *output_iter;
 
-    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream"));
+    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream1"));
 }
 
 
@@ -172,14 +192,14 @@ TEST( OutputTest, test_register_elem_fields_data ) {
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
             OutputTime::ELEM_DATA, &integer_field);
 
-    /* There should be at least one output stream */
-    ASSERT_EQ(OutputTime::output_streams.size(), 1);
+    /* There should be two output streams */
+    ASSERT_EQ(OutputTime::output_streams.size(), 2);
 
-    /* Get this OutputTime instance */
+    /* Get first OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     OutputTime *output_time = *output_iter;
 
-    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream"));
+    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream1"));
 
     /* There should be two items in vector of registered element data */
     ASSERT_EQ(output_time->elem_data.size(), 2);
@@ -258,14 +278,17 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
             OutputTime::CORNER_DATA, &integer_field);
 
-    /* There should be at least one output stream */
-    ASSERT_EQ(OutputTime::output_streams.size(), 1);
+    /* There should two output streams */
+    ASSERT_EQ(OutputTime::output_streams.size(), 2);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     OutputTime *output_time = *output_iter;
 
-    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream"));
+    /* Get second output stream */
+    output_time = *(++output_iter);
+
+    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream2"));
 
     /* There should be two items in vector of registered element data */
     ASSERT_EQ(output_time->corner_data.size(), 2);
@@ -311,6 +334,9 @@ TEST( OutputTest, test_register_corner_fields_data ) {
             corner_id++;
         }
     }
+
+    /* Try to write data to output file */
+    OutputTime::write_all_data();
 
     OutputTime::destroy_all();
 }
