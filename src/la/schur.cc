@@ -51,7 +51,6 @@
 //#include "solve.h"
 #include "system/system.hh"
 #include "la/linsys.hh"
-#include "la/linsys_PETSC.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
@@ -343,8 +342,8 @@ SchurComplement :: SchurComplement(LinSys *orig, Mat & inv_a, IS ia)
 }
 #endif
 
-SchurComplement :: SchurComplement(LinSys *orig, IS ia)
-: IsA(ia), state(created), Orig(orig)
+SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
+: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created), Orig(orig)
 {
         xprintf(Msg, "Constructor SchurComplement\n");
 

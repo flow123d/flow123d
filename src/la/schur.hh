@@ -33,6 +33,7 @@
 #define LA_SCHUR_HH_
 
 #include <la/distribution.hh>
+#include "la/linsys_PETSC.hh"
 #include <petscmat.h>
 
 struct Solver;
@@ -58,7 +59,7 @@ typedef enum SchurState {
     solved      // Resolved original Schur system
 } SchurState;
 
-typedef class SchurComplement {
+typedef class SchurComplement : public LinSys_PETSC {
 public:
     //SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
     /**
@@ -68,7 +69,7 @@ public:
      *
      * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
-    SchurComplement(LinSys *orig, IS ia);
+    SchurComplement(LinSys *orig, IS ia, Distribution *ds);
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
