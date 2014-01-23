@@ -53,10 +53,6 @@
 
 
 
-SystemInfo::~SystemInfo() {
-   	//if (log) xfclose(log);
-}
-
 SystemInfo sys_info;
 
 
@@ -202,59 +198,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 	return rc;
 }
 
-/*!
- * @brief     Terminates the program.
- *
- * @param[in] on_error Set true if the function is called as a result of an error. This produce backtrace.
- *
- * TODO: should be destructor of a main program object with pointer to the main application object, through deleting
- * application object it should delete all created objects, namely free all memory and close all files.
- * 
- * More over the application should be derived from ApplicationBase which collects functionality of system.cc
- * In descendants  of ApplicationBase we can call PetscFinalize, and keep ApplicationBase free of petsc.
- *
- */
-
-/*#ifdef HAVE_PETSC
-
-#include <petsc.h>
-#endif
-
-int xterminate( bool on_error )
-{
-
-
-    if (on_error) { F_STACK_SHOW( stderr ); }
-
-	//TODO: Free memory, close files
-
-#ifdef HAVE_PETSC	
-	if ( petsc_initialized )
-	{
-           PetscErrorCode ierr=0;
- 
-	   ierr = PetscFinalize(); CHKERRQ(ierr);
-           
-           on_error = (ierr != 0);
-	   petsc_initialized = false;
-	}
-#endif
-
-    if (sys_info.pause_after_run) {
-        printf("\nPress <ENTER> for closing the window\n");
-        getchar();
-    }
-
-    //fflush and fclose all files (including stdout, stderr, stdio)
-    //this function is GNU extension
-    fcloseall();
-
-    //select proper Return Code
-    if ( on_error ) //error in program or during PetscFinalize()
-        exit( EXIT_FAILURE );
-    else
-        exit( EXIT_SUCCESS );
-}*/
 
 /*!
  * @brief Memory allocation with checking.
@@ -558,33 +501,6 @@ char *xgetcwd( void )
 
     return(xstrcpy( tmp ));
 }
-
-/*!
- *  @brief Skip to given section in a given file.
- *  @param[in,out]  in          Handle of the file that we search.
- *  @param[in]      section     Section name to find.
- *  @return                     true - if we have found the section, false otherwise
- */
-/*bool skip_to( FILE *const in, const char *section )
-{
-    char line[ LINE_SIZE ];
-    char string[ LINE_SIZE ];
-
-    F_ENTRY;
-
-    ASSERT( NONULL( in ), "Null input file handle.\n");
-    ASSERT( NONULL( section ), "NULL section.\n");
-
-    while( xfgets( line, LINE_SIZE - 2, in ) != NULL ) {
-        sscanf( line, "%s", string ); // strip spaces
-        if( strcmpi( string, section ) == 0 )
-        {
-            return( true );
-        }
-    }
-
-    return(false);
-}*/
 
 
 

@@ -271,20 +271,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 
-/*void Application::free_and_exit() {
-    //close the Profiler
-    //DBGMSG("prof: %d\n", use_profiler);
-    if (use_profiler && Profiler::is_initialized()) {
-        Profiler::instance()->output(PETSC_COMM_WORLD);
-        Profiler::uninitialize();
-    }
-
-    xterminate(false);
-}*/
-
-
-
-
 void Application::run() {
     //use_profiler=true;
     Profiler::initialize();

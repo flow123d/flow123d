@@ -66,28 +66,12 @@ typedef map< FILE *, XFILE * > XFILEMAP; ///< mapping of ptr to regular file str
 static XFILEMAP xfiles_map;    ///< mapping instance
 static int xio_verbosity = 0;  ///< internal XIO debug: print info at each XIO function
 
-//! @brief basic definitions
-/// @{
-//static XFILE xstdin  = {strdup("stdin"),strdup("r"),0};
-//static XFILE xstdout = {strdup("stdout"),strdup("w"),0};
-//static XFILE xstderr = {strdup("stderr"),strdup("w"),0};
-//! @}
-
 static XFILE * xio_getfptr( FILE * f );
 
 #define XIO_WARN(f) xprintf(Warn, "File pointer '%p' not in xfiles_map. Opened with regular fopen() or already closed?\n", (f) )
 #define XIO_PRINT_INFO(f) printf( "XIO: In function '%s', %s\n", __func__, xio_getfulldescription( f ) )
 #define XIO_DEBUG(f) do { if ( xio_verbosity > 0 ) XIO_PRINT_INFO(f); } while (0)
 
-/*!
- * @brief XIO library initialization
- */
-/*void xio_init( void )
-{
-    xfiles_map[stdin]  = &xstdin;
-    xfiles_map[stdout] = &xstdout;
-    xfiles_map[stderr] = &xstderr;
-}*/
 
 /*!
  * @brief Get file name from pointer to FILE structure.
