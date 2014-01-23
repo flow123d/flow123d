@@ -7,8 +7,8 @@ set(TEST_TIMEOUT 30) # 30 s
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.6.0")
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.7.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.7.0")
 include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
@@ -24,6 +24,8 @@ add_dependencies(gtest_mpi_obj gtest gtest_main)
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
+# target to make all unit tests
+add_custom_target(all-unit-test)
 
 ######################################################################################################
 # Macro to make default targets and operations in current unit tests subdirectory, namely:
@@ -53,6 +55,8 @@ macro(add_test_directory libs)
                     #DEPENDS ${test_name}
                     )
   endif()
+  
+  add_dependencies(all-unit-test ${super_test})
   
   make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")    
 endmacro()
