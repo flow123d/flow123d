@@ -45,6 +45,7 @@
 //#include "io/read_ini.h"
 #include "system/xio.h"
 #include "system/file_path.hh"
+#include "system/application_base.hh"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -149,7 +150,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
         ierr = MPI_Barrier(sys_info.comm);
         if (ierr != MPI_SUCCESS ) {
             printf("MPI_Barrier() error in xprintf()\n"); //can not call xprintf() when xprintf() is failing
-            exit(EXIT_FAILURE);
+            exit( ApplicationBase::exit_failure );
         }
 
         // print global msg_id

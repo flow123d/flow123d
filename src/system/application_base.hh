@@ -58,6 +58,11 @@ public:
 	 */
 	void body(int argc, char ** argv);
 
+    /// Return codes of application
+	static const int exit_success = 0;
+    static const int exit_failure = 1;
+    static const int exit_output = 0;	//return code if printout (text, JSON or LaTeX) is run
+
 protected:
 
 	/**

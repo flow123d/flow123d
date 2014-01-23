@@ -38,8 +38,6 @@ using namespace std;
 #define MAIN_H
 
 
-#define EXIT_OUTPUT 0
-
 
 class Application : public ApplicationBase {
 public:

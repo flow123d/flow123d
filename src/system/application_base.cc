@@ -95,7 +95,7 @@ void ApplicationBase::body(int argc, char ** argv) {
 	try {
 		this->run();
 	} catch (ExcXprintfMsg & e) {
-		exit( EXIT_FAILURE );
+		exit( exit_failure );
 	}
 
 	this->after_run();

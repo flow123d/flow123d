@@ -118,7 +118,7 @@ Input::Record Application::read_input() {
    if (main_input_filename_ == "") {
         cout << "Usage error: The main input file has to be specified through -s parameter.\n\n";
         cout << program_arguments_desc_ << "\n";
-        exit( EXIT_FAILURE );
+        exit( exit_failure );
     }
     
     // read main input file
@@ -187,7 +187,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "help" option
     if (vm.count("help")) {
         cout << desc << "\n";
-        exit( EXIT_OUTPUT );
+        exit( exit_output );
     }
 
     // if there is "full_doc" option
@@ -196,13 +196,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputText type_output(&input_type);
         type_output.set_filter(":Field:.*");
         cout << type_output;
-        exit( EXIT_OUTPUT );
+        exit( exit_output );
     }
 
     if (vm.count("JSON_template")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONTemplate(&input_type);
-        exit( EXIT_OUTPUT );
+        exit( exit_output );
     }
 
     if (vm.count("latex_doc")) {
@@ -210,13 +210,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputLatex type_output(&input_type);
         type_output.set_filter("");
         cout << type_output;
-        exit( EXIT_OUTPUT );
+        exit( exit_output );
     }
 
     if (vm.count("JSON_machine")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONMachine(&input_type);
-        exit( EXIT_OUTPUT );
+        exit( exit_output );
     }
 
     // if there is "solve" option
@@ -381,7 +381,7 @@ int main(int argc, char **argv) {
     app.body(argc, argv);
 
     // Say Goodbye
-    return EXIT_SUCCESS;
+    return ApplicationBase::exit_success;
 }
 
 
