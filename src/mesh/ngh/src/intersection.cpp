@@ -729,8 +729,10 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         			   break;
         		   }
         	   }
+        	   return;
            }
            if (cit != 2) {
+        	   cout << "cit = " << cit << endl;
         	   THROW( ExcAssertMsg() << EI_Message("Error - pocet bodu pruniku != 2.\n") );
         	   return;
            } else {
