@@ -407,9 +407,8 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 
 	    VecGetArray( Sol2, &sol_array );
 	    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
-	    Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
-	    Compl->set_solution(sol_array);
-	    ( (LinSys_PETSC *)Compl )->set_from_input( Orig->in_rec_ );
+	    this->set_solution(sol_array);
+	    this->set_from_input( Orig->in_rec_ );
 	    VecRestoreArray( Sol2, &sol_array );
 
     	PetscInt ncols, pos_start, pos_start_IA;
@@ -502,9 +501,6 @@ void SchurComplement::solve(Solver *solver)
 
 }
 #endif
-
-void SchurComplement::set_spd()
-{Compl->set_positive_definite();}
 
 /**
  *  COMPUTE A SCHUR COMPLEMENT OF A PETSC MATRIX
@@ -602,13 +598,13 @@ void SchurComplement::form_schur()
        //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
        // get C block, locSizeB removed
-       ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
+       ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(this->get_matrix()) ) );
        // compute complement = (-1)cA+xA = Bt*IA*B - C
-       ierr+=MatScale(Compl->get_matrix(),-1.0);
+       ierr+=MatScale(this->get_matrix(),-1.0);
        //DBGMSG("C block:\n");
 
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
-       ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
+       ierr+=MatAXPY(this->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
        //DBGMSG("C block:\n");
        //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
        //
@@ -698,8 +694,8 @@ void SchurComplement::form_rhs()
 
     else if (Orig->type == LinSys::MAT_MPIAIJ)*/
 
-    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
-    VecAXPY(Compl->get_rhs(),-1,RHS2);
+    MatMultTranspose(IAB,RHS1,this->get_rhs());
+    VecAXPY(this->get_rhs(),-1,RHS2);
 
     state=formed;
 }
@@ -711,8 +707,8 @@ void SchurComplement::form_rhs()
 void SchurComplement ::scale(double scalar)
 {
     ASSERT( state == formed, "Object in wrong state!\n");
-    MatScale(Compl->get_matrix(), scalar);
-    VecScale(Compl->get_rhs(), scalar);
+    MatScale(this->get_matrix(), scalar);
+    VecScale(this->get_rhs(), scalar);
 }
 
 /**
@@ -746,7 +742,7 @@ void SchurComplement::resolve()
     }
     else if (Orig->type == LinSys::MAT_MPIAIJ) // */
     {
-       MatMult(IAB,Compl->get_solution(),Sol1);
+       MatMult(IAB,this->get_solution(),Sol1);
     }
 
     VecScale(Sol1,-1);
@@ -809,5 +805,4 @@ SchurComplement :: ~SchurComplement() {
 //    if      (Orig->type == LinSys::MAT_IS) {
 //        delete [] IsALocalIndices;
 //    }
-    delete Compl;
 }

@@ -396,14 +396,14 @@ void DarcyFlowMH_Steady::update_solution() {
         break;
     case 1: /* first schur complement of A block */
         make_schur1();
-        convergedReason = schur1->get_system()->solve();
+        convergedReason = schur1->solve();
         schur1->resolve();
         break;
     case 2: /* second schur complement of the max. dimension elements in B block */
         make_schur1();
         make_schur2();
 
-        convergedReason =schur2->get_system()->solve();
+        convergedReason =schur2->solve();
         schur2->resolve();
         schur1->resolve();
         break;
@@ -467,17 +467,17 @@ double DarcyFlowMH_Steady::solution_precision() const
 		break;
 	case 1: /* first schur complement of A block */
 		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-			r_tol = (schur1->get_system())->get_relative_accuracy();
-			a_tol = (schur1->get_system())->get_absolute_accuracy();
+			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
+			r_tol = schur1->get_relative_accuracy();
+			a_tol = schur1->get_absolute_accuracy();
 			precision = max(a_tol, r_tol*bnorm);
 		}
 		break;
 	case 2: /* second schur complement of the max. dimension elements in B block */
 		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-            r_tol = (schur1->get_system())->get_relative_accuracy();
-            a_tol = (schur1->get_system())->get_absolute_accuracy();
+			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
+            r_tol = schur1->get_relative_accuracy();
+            a_tol = schur1->get_absolute_accuracy();
             precision = max(a_tol, r_tol*bnorm);
 		}
 		break;
@@ -1312,7 +1312,8 @@ void DarcyFlowMH_Steady::make_schur1() {
 		IS is;
 		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
 		ASSERT(err == 0,"Error in ISCreateStride.");
-		schur1 = new SchurComplement(schur0, is, side_ds); // is is deallocated by SchurComplement
+		Distribution * ds = new Distribution(rows_ds->lsize() - side_ds->lsize(), PETSC_COMM_WORLD);
+		schur1 = new SchurComplement(schur0, is, ds); // is is deallocated by SchurComplement
 	}
     
     END_TIMER("schur1 - create,inverse");
@@ -1321,7 +1322,7 @@ void DarcyFlowMH_Steady::make_schur1() {
     START_TIMER("schur1 - form");
     
     schur1->form_schur();
-    schur1->set_spd();
+    schur1->set_positive_definite();
     
     END_TIMER("schur1 - form");
 }
@@ -1340,13 +1341,13 @@ void DarcyFlowMH_Steady::make_schur2() {
     	IS is;
         ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &is);
         ASSERT(ierr == 0, "Error in ISCreateStride.");
-        schur2 = new SchurComplement(schur1->get_system(), is, el_ds); // is is deallocated by SchurComplement
+        schur2 = new SchurComplement(schur1, is, edge_ds); // is is deallocated by SchurComplement
 
     }
 
     schur2->form_schur();
     schur2->scale(-1.0);
-    schur2->set_spd();
+    schur2->set_positive_definite();
 }
 
 // ================================================

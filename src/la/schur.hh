@@ -71,15 +71,13 @@ public:
      */
     SchurComplement(LinSys *orig, IS ia, Distribution *ds);
 
-    LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
     Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
-    void set_spd();
     //void reuse() {state=created;}
 
     void scale(double factor);
-    void solve(Solver *solver);
+    //void solve(Solver *solver);
     ~SchurComplement();
 
     // TODO: should be at least protected
@@ -117,7 +115,7 @@ private:
 
                                 //                A  B     Sol1      RHS1
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
-    LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
+    //LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
 
     Distribution *ds_;          // Distribution of B block
 } SchurComplement;
