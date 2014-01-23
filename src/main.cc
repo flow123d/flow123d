@@ -364,7 +364,7 @@ int main(int argc, char **argv) {
     F_ENTRY;
     Application app(argc, argv);
 
-    app.body(argc, argv);
+    app.init(argc, argv);
 
     // Say Goodbye
     return ApplicationBase::exit_success;
