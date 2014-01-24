@@ -9,9 +9,12 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "transport/transport.h"
+//#include "transport/transport.h"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
+
+#define MOBILE 0
+#define IMMOBILE 1
 
 //class Padde_approximant;
 

@@ -6,11 +6,13 @@
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "system/system.hh"
-#include "transport/transport.h"
+//#include "transport/transport.h"
 //#include "system/par_distribution.hh"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
+#define MOBILE 0
+#define IMMOBILE 1
 
 using namespace Input::Type;
 

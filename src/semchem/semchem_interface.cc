@@ -8,10 +8,13 @@
 
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
-#include "transport/transport.h"
+//#include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+
+#define MOBILE 0
+#define IMMOBILE 1
 
 using namespace std;
 

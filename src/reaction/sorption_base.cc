@@ -23,19 +23,19 @@
 const double pi = 3.1415;
 namespace it=Input::Type;
 
-it::Selection SorptionSimple::EqData::sorption_type_selection = it::Selection("SorptionType")
+it::Selection SorptionBase::EqData::sorption_type_selection = it::Selection("SorptionType")
 	.add_value(Isotherm::none,"none", "No adsorption considered")
 	.add_value(Isotherm::linear, "linear",
 			"Linear isotherm described adsorption considered.")
 	.add_value(Isotherm::langmuir, "langmuir",
 			"Langmuir isotherm described adsorption considered")
 	.add_value(Isotherm::freundlich, "freundlich",
-			"Freundlich isotherm described adsorption considered");/**/
+			"Freundlich isotherm described adsorption considered");
 
 using namespace Input::Type;
 
-Record SorptionSimple::input_type
-	= Record("SorptionSimple", "Information about all the limited solubility affected adsorptions.")
+Record SorptionBase::input_type
+	= Record("SorptionsBase", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( Reaction::input_type )
 	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
@@ -47,18 +47,15 @@ Record SorptionSimple::input_type
 							"Specifies molar masses of all the sorbing species")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
-	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("bulk_data", Array(SorptionSimple::EqData().bulk_input_type()), Default::obligatory(), //
+    .declare_key("bulk_data", Array(SorptionBase::EqData().bulk_input_type()), Default::obligatory(), //
                    	   	   "Containes region specific data necessery to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
-							"Key called time required by TimeGovernor in Sorption constructor.");
-	/*.declare_key("modification", Array(Double(0.0)), Default::optional(),
-							"It is here to make Record different from SorptionBase::input_type");/**/
+			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
-SorptionSimple::EqData::EqData()
-: EqDataBase("SorptionSimple")
+SorptionBase::EqData::EqData()
+: EqDataBase("SorptionBase")
 {
     ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
 
@@ -69,17 +66,16 @@ SorptionSimple::EqData::EqData()
 
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
 
-    //ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity).", Input::Type::Default("0"));
-
-	//ADD_FIELD(modification2, "SorptionSimple::EqData differs from SorptionBase.", Input::Type::Default("0.0"));
+    //ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
+            //" Vector, one value for every substance.", Input::Type::Default("0"));
 }/**/
 
 using namespace std;
 
-SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: SorptionBase(init_mesh, in_rec, names)
+SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
+	: Reaction(init_mesh, in_rec, names)
 {
-	/*cout << "Sorption constructor is running." << endl;
+	cout << "Sorption constructor is running." << endl;
 	TimeGovernor tg(0.0, 1.0);
     nr_of_regions = init_mesh.region_db().bulk_size();
     nr_of_substances = in_rec.val<Input::Array>("species").size();
@@ -109,20 +105,20 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<str
 		}
 	}
 
-    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());/**/
+    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());
 }
 
-SorptionSimple::~SorptionSimple(void)
+SorptionBase::~SorptionBase(void)
 {
 }
 
-/*void SorptionSimple::init_from_input(Input::Array bulk_list)
+void SorptionBase::init_from_input(Input::Array bulk_list)
 {
 	//Not sure what to write here.
 	return;
 }
 
-void SorptionSimple::prepare_inputs(Input::Record in_rec, int porosity_type)
+void SorptionBase::prepare_inputs(Input::Record in_rec, int porosity_type)
 {
 
     // Common data for all the isotherms loaded bellow
@@ -153,7 +149,7 @@ void SorptionSimple::prepare_inputs(Input::Record in_rec, int porosity_type)
 		if (table_limit_.size() != nr_of_substances)
 		{
 			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", table_limit_.size(), nr_of_substances);
-		}
+		}/**/
 	}else{
 		// fill table_limit_ with zeros or resize it at least
 		table_limit_.resize(nr_of_substances);
@@ -169,11 +165,11 @@ void SorptionSimple::prepare_inputs(Input::Record in_rec, int porosity_type)
 	}
 
 	make_tables();
-}/**/
+}
 
-void SorptionSimple::make_tables(void)
+void SorptionBase::make_tables(void)
 {
-	ElementAccessor<3> elm;
+	/*ElementAccessor<3> elm;
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
@@ -183,9 +179,9 @@ void SorptionSimple::make_tables(void)
 		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
 				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
 				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
-				(this->porosity_->get_const_accessor(reg_iter, elm))) /* &&
+				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
 				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
+				(this->phi_->get_const_accessor(reg_iter, elm)))
 		{
 			isotherm_reinit(isotherms[reg_idx],elm);
 			xprintf(Msg,"parameters are constant\n");
@@ -194,19 +190,20 @@ void SorptionSimple::make_tables(void)
 				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
 		}
-	}
-}/**/
+	}/**/
+	return;
+}
 
-void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
+void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
-	START_TIMER("SorptionSimple::isotherm_reinit");
+	/*START_TIMER("SorptionBase::isotherm_reinit");
 
 	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
-	//double porosity = this->porosity_->value(elem.centre(),elem);
+	double porosity = this->porosity_->value(elem.centre(),elem);
 
-	//double phi = this->phi_->value(elem.centre(),elem);
+	double phi = this->phi_->value(elem.centre(),elem);
 	double por_m = this->porosity_->value(elem.centre(),elem);
-	//double por_imm = this->immob_porosity_->value(elem.centre(),elem);
+	double por_imm = this->immob_porosity_->value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
 	arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
@@ -222,9 +219,9 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 		//scales are different for the case of sorption in mobile and immobile pores
 		double scale_aqua, scale_sorbed;
 		scale_aqua = por_m;
-		scale_sorbed = (1 - por_m) * rock_density * molar_masses[i_subst];
+		scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst];
 		if ( scale_sorbed == 0.0)
-			xprintf(UsrErr, "SorptionSimple::prepare_inputs() failed. Parameter scale_sorbed ((1 - por_m) * rock_density * molar_masses[i_subst]) is equal to zero.");
+			xprintf(UsrErr, "SorptionBase::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 		bool limited_solubility_on;
 		double table_limit;
 		if (solubility_vec_[i_subst] <= 0.0) {
@@ -240,15 +237,15 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 	}
 
-	END_TIMER("SorptionSimple::isotherm_reinit");
+	END_TIMER("SorptionBase::isotherm_reinit");/**/
 
 	return;
 }
 
-/*/ TODO: check duplicity of parents
+// TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
 
-double **SorptionSimple::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
+double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
     double porosity;
@@ -280,19 +277,19 @@ double **SorptionSimple::compute_reaction(double **concentrations, int loc_el) /
     }
 
 	return concentrations;
-}/**/
+}
 
 // Computes adsorption simulation over all the elements.
-void SorptionSimple::compute_one_step(void)
+void SorptionBase::compute_one_step(void)
 {
-    data_.set_time(*time_); // set to the last computed time
+    /*data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
 	if((data_.rock_density.changed_during_set_time) &&
 		(data_.mult_coefs.changed_during_set_time) &&
 		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time)) /* &&
+		(this->porosity_->changed_during_set_time) &&
 		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))/**/
+		(this->phi_->changed_during_set_time))
 	{
 		make_tables();
 	}
@@ -302,18 +299,18 @@ void SorptionSimple::compute_one_step(void)
 	 {
 	 	this->compute_reaction(concentration_matrix, loc_el);
 	 }
-    END_TIMER("Computes reaction");
+    END_TIMER("Computes reaction");/**/
 
 	return;
 }
 
 
-/*void SorptionSimple::print_sorption_parameters(void)
+void SorptionBase::print_sorption_parameters(void)
 {
     xprintf(Msg, "\nSorption parameters are defined as follows:\n");
 }
 
-void SorptionSimple::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
+void SorptionBase::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
 	concentration_matrix = ConcentrationMatrix;
 	distribution = conc_distr;
@@ -321,13 +318,13 @@ void SorptionSimple::set_concentration_matrix(double **ConcentrationMatrix, Dist
 	return;
 }
 
-void SorptionSimple::set_sorb_conc_array(double** sorb_conc_array)
+void SorptionBase::set_sorb_conc_array(double** sorb_conc_array)
 {
 	sorbed_conc_array = sorb_conc_array;
 	return;
 }
 
-void SorptionSimple::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be transposed to optimize computation speed
+void SorptionBase::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be transposed to optimize computation speed
 {
 	this->sorbed_conc_array = new double * [nr_of_substances];
     for (unsigned int sbi = 0; sbi < nr_of_substances; sbi++)
@@ -340,7 +337,7 @@ void SorptionSimple::set_sorb_conc_array(unsigned int nr_of_local_elm) // could 
     }
 }
 
-void SorptionSimple::set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
+/*void SorptionBase::set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
 	immob_concentration_matrix = ConcentrationMatrix;
 	distribution = conc_distr;
@@ -348,55 +345,56 @@ void SorptionSimple::set_immob_concentration_matrix(double **ConcentrationMatrix
 	return;
 }/**/
 
-void SorptionSimple::set_porosity(pScalar porosity)
+/*void SorptionBase::set_porosity(pScalar porosity, pScalar immob_porosity)
 {
-	porosity_ = porosity;
+	this->porosity_ = porosity;
+	this->immob_porosity_ = immob_porosity;
 	return;
-}
+}*/
 
-/*void SorptionSimple::set_phi(pScalar phi)
+/*void SorptionBase::set_phi(pScalar phi)
 {
 	phi_ = phi;
 	return;
-}
+}/**/
 
-void SorptionSimple::update_solution(void)
+void SorptionBase::update_solution(void)
 {
 	//cout << "1) Meaningless inherited method." << endl;
 	return;
 }
-void SorptionSimple::choose_next_time(void)
+void SorptionBase::choose_next_time(void)
 {
 	//cout << "2) Meaningless inherited method." << endl;
 	return;
 }
 
-void SorptionSimple::set_time_step_constrain(double dt)
+void SorptionBase::set_time_step_constrain(double dt)
 {
 	//cout << "3) Meaningless inherited method." << endl;
 	return;
 }
 
-void SorptionSimple::get_parallel_solution_vector(Vec &vc)
+void SorptionBase::get_parallel_solution_vector(Vec &vc)
 {
 	//cout << "4) Meaningless inherited method." << endl;
 	return;
 }
 
-void SorptionSimple::get_solution_vector(double* &vector, unsigned int &size)
+void SorptionBase::get_solution_vector(double* &vector, unsigned int &size)
 {
 	//cout << "5) Meaningless inherited method." << endl;
 	return;
 }
 
-void SorptionSimple::set_time_step(double new_timestep)
+void SorptionBase::set_time_step(double new_timestep)
 {
 	//cout << "6) Meaningless inherited method." << endl;
 	return;
 }
 
-void SorptionSimple::set_time_step(Input::Record in_rec)
+void SorptionBase::set_time_step(Input::Record in_rec)
 {
 	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
-}/**/
+}

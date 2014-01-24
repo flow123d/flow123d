@@ -25,7 +25,10 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/sorption.hh"
+//#include "reaction/sorption_base.hh"
+//#include "reaction/sorption_dp_mob.hh"
+//#include "reaction/sorption_immob.hh"
+//#include "reaction/sorption.hh"
 //#include "reaction/dual_por_exchange.hh"
 
 #include "semchem/semchem_interface.hh"
@@ -80,7 +83,7 @@ Record TransportOperatorSplitting::input_type
     .derive_from(TransportBase::input_type)
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
-    .declare_key("adsorptions", Sorption::input_type, Default::optional(),
+    .declare_key("adsorptions", SorptionBase::input_type, Default::optional(),
     			"Initialization of per element sorptions.")
     .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()
     		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
@@ -183,31 +186,44 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
 	if (sorptions_it){
-        // Part for mobile zone description follows.
-	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
-        convection->get_par_info(el_4_loc, el_distribution);
-	    sorptions->set_dual_porosity(convection->get_dual_porosity());
-	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
-	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
-	    sorptions->set_phi(&(convection->get_data()->phi));
-	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
-	    sorptions->prepare_inputs(*sorptions_it, MOBILE);
-	    //xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
 	    double ***conc_matrix = convection->get_concentration_matrix();
-	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
-	    sorptions->set_sorb_conc_array(el_distribution->lsize());
 
 	    if(convection->get_dual_porosity()){
-	    	sorptions_immob = new Sorption(init_mesh, *sorptions_it, subst_names_);
+	    	SorptionImmob si(init_mesh, *sorptions_it, subst_names_);
+	    	sorptions_immob = &si;
 	    	//dual_por_exchange = new Dual_por_exchange(init_mesh, *sorptions_it, subst_names_);
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
-	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
+	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m));
+		    sorptions->set_porosity_immobile(&(convection->get_data()->por_imm));
 	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
 		    sorptions_immob->prepare_inputs(*sorptions_it, IMMOBILE);
 		    sorptions_immob->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_immob_concentration_matrix(conc_matrix[IMMOBILE], el_distribution, el_4_loc);
-		    sorptions_immob->set_sorb_conc_array(el_distribution->lsize());
+		    sorptions_immob->set_sorb_conc_array(el_distribution->lsize());/**/
+
+	        // Part for mobile zone description follows.
+		    SorptionDpMob sm(init_mesh, *sorptions_it, subst_names_);
+		    sorptions = &sm;
+	        convection->get_par_info(el_4_loc, el_distribution);
+		    sorptions->set_dual_porosity(convection->get_dual_porosity());
+		    sorptions->set_porosity(&(convection->get_data()->por_m));
+		    sorptions->set_porosity_immobile(&(convection->get_data()->por_imm));
+		    (*sorptions).set_phi(&(convection->get_data()->phi));
+		    sorptions->prepare_inputs(*sorptions_it, MOBILE);
+		    double ***conc_matrix = convection->get_concentration_matrix();
+		    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
+		    sorptions->set_sorb_conc_array(el_distribution->lsize());/**/
 	    }else{
+	        // Part for mobile zone description follows.
+	    	SorptionSimple s(init_mesh, *sorptions_it, subst_names_);
+		    sorptions = &s;
+	        convection->get_par_info(el_4_loc, el_distribution);
+		    sorptions->set_dual_porosity(convection->get_dual_porosity());
+		    sorptions->set_porosity(&(convection->get_data()->por_m));
+		    sorptions->prepare_inputs(*sorptions_it, MOBILE);
+		    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
+		    sorptions->set_sorb_conc_array(el_distribution->lsize());
+
 		    sorptions_immob = NULL;
 	    }
 	  } else{

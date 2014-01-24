@@ -9,7 +9,11 @@
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
 #include "transport/mass_balance.hh"
-
+#include "reaction/sorption_base.hh"
+#include "reaction/sorption.hh"
+#include "reaction/sorption_dual.hh"
+#include "reaction/sorption_dp_mob.hh"
+#include "reaction/sorption_immob.hh"
 
 /// external types:
 //class LinSys;
@@ -22,7 +26,9 @@ class Mesh;
 class Reaction;
 class Linear_reaction;
 //class Pade_approximant;
-class Sorption;
+//class SorptionBase;
+//class SorptionSimple;
+//class SorptionImmob;
 //class Dual_por_exchange;
 class Semchem_interface;
 class ConvectionTransport;
@@ -245,8 +251,8 @@ private:
 
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
-    Sorption *sorptions;
-    Sorption *sorptions_immob;
+    SorptionBase *sorptions;
+    SorptionImmob *sorptions_immob;
     //Dual_por_exchange *dual_por_exchange;
     Semchem_interface *Semchem_reactions;
     //int steps;

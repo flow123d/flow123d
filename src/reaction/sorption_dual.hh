@@ -26,8 +26,8 @@
  *   Need prototype of dual-porosity reaction class to design precise placement of various involved fields.
  *
  */
-#ifndef SORPTION_SIMPLE
-#define SORPTION_SIMPLE
+#ifndef SORPTION_DUAL
+#define SORPTION_DUAL
 
 #include <vector>
 #include <input/input_type.hh>
@@ -41,40 +41,40 @@ class Mesh;
 class Distribution;
 class Reaction;
 class Isotherm;
+//class SorptionBase;
 
 typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
-class SorptionSimple:  public SorptionBase
+class SorptionDual:  public SorptionBase
 {
 	public:
 		/*
-		*   Static variable for new input data types input
-		*/
-		static Input::Type::Record input_type;
+		 *   Static variable for new input data types input
+		 */
+		/*static Input::Type::Record input_type;
 
 		class EqData : public EqDataBase // should be written in class Sorption
 		{
-		public:
+		public:/**/
 			/**
 			 * 	Sorption type specifies a kind of equilibrial description of adsorption.
 			 */
-			static Input::Type::Selection sorption_type_selection;
+			//static Input::Type::Selection sorption_type_selection;
 
 			/// Collect all fields
-		EqData();
+			//EqData();
 
-		/**
-		 * Overrides EqDataBase::read_bulk_list_item, implements reading of
-		 * - init_piezo_head key
-		 */
+			/**
+			 * Overrides EqDataBase::read_bulk_list_item, implements reading of
+			 * - init_piezo_head key
+			 */
 
-		Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
-		Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
-		Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
-		Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-		//Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
-		/**/
-		};
+			//Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
+			//Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
+			//Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
+			//Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+			//Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
+		//};
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */
@@ -83,16 +83,16 @@ class SorptionSimple:  public SorptionBase
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */
-	    //pScalar immob_porosity_;
+	    pScalar immob_porosity_;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
+		SorptionDual(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
 		/**
 		*	Destructor.
 		*/
-		~SorptionSimple(void);
+		~SorptionDual(void);
 		/**
 		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
@@ -100,11 +100,11 @@ class SorptionSimple:  public SorptionBase
 		/**
 		*
 		*/
-		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
+		virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		void compute_one_step(void);
+		virtual void compute_one_step(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
 		*/
@@ -132,11 +132,15 @@ class SorptionSimple:  public SorptionBase
 	    /**
 	    *
 	    */
-	    //void set_phi(pScalar phi);
+	    void set_phi(pScalar phi);
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		void set_porosity(pScalar por);
+		void set_porosity(pScalar por_m);
+		/**
+		*
+		*/
+		void set_porosity_immobile(pScalar por_imm);
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
@@ -148,11 +152,11 @@ class SorptionSimple:  public SorptionBase
 		/**
 		*
 		*/
-		void make_tables(void);
+		virtual void make_tables(void);
 		/**
 		* Meaningless inherited methods.
 		*/
-		/*virtual void update_solution(void);
+		virtual void update_solution(void);
 		virtual void choose_next_time(void);
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);
@@ -161,7 +165,7 @@ class SorptionSimple:  public SorptionBase
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
-		SorptionSimple();
+		SorptionDual();
 		/**
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
@@ -170,6 +174,14 @@ class SorptionSimple:  public SorptionBase
 		*	Pointer to thwodimensional array[species][elements] containing concentrations either in mobile or immobile zone.
 		*/
 		//double **concentration_matrix;
+		/**
+		*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
+		*/
+		//double **immob_concentration_matrix;
+	    /**
+	    *   Mass transfer coefficients between mobile and immobile pores
+	    */
+	    //std::vector<double> alpha_;
 		/**
 		* 	Number of regions.
 		*/
@@ -198,7 +210,7 @@ class SorptionSimple:  public SorptionBase
 		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
 		* pointer to phi field from transport
 		*/
-	    //pScalar phi_;
+	    pScalar phi_;
 		/**
 		* 	Critical concentrations of species dissolved in water.
 		*/
@@ -215,7 +227,7 @@ class SorptionSimple:  public SorptionBase
 		/**
 		* 	Region characteristic inputs.
 		*/
-		EqData data_;
+		//EqData data_;
 		/**
 		* Array for storage infos about sorbed species concentrations.
 		*/
