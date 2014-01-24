@@ -44,7 +44,7 @@ void test_tokenizer(Tokenizer &tok) {
     ++tok;                                                  
     EXPECT_TRUE( tok.eol() );                               
                                                             
-    EXPECT_THROW( { *tok; }, ExcXprintfMsg); //"Missing token, .* position: '2'"
+    EXPECT_THROW_WHAT( { *tok; }, ExcXprintfMsg, "User Error"); //"Missing token, .* position: '2'"
                                                             
     // tokenizer should not lead to seg fault if we iterate over the end of line
     ++tok;                                                  

@@ -91,7 +91,7 @@ TEST(Region, all) {
     EXPECT_EQ(1002, bulk[1].id());
     EXPECT_EQ(1003, bulk[2].id());
 
-    EXPECT_THROW( { region_db.add_region(1006,"side_", 2, true);}, ExcXprintfMsg); //"Can not add to closed region DB."
+    EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, ExcXprintfMsg, "Internal Error"); //"Can not add to closed region DB."
 
 }
 
