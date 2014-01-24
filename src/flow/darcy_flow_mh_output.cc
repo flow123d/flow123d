@@ -721,15 +721,18 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
+    double mask_vel_error;
     vector<double> pressure_diff;
     vector<double> velocity_diff;
     vector<double> div_diff;
+
 
     double * solution;
     const MH_DofHandler * dh;
     MHFEValues fe_values;
 
-    std::vector< std::vector<double>  > *ele_flux;
+    //std::vector< std::vector<double>  > *ele_flux;
+    std::vector<int> velocity_mask;
 
     DarcyFlowMH_Steady *darcy;
 };
@@ -816,6 +819,9 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
 
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
+    if (dim == 2) {
+    	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+    }
 
     result.pressure_diff[ele.index()] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
@@ -859,6 +865,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     static DiffData result;
 
+    // mask 2d elements crossing 1d
+    result.velocity_mask.resize(mesh_->n_elements(),0);
+    for(Intersection & isec : mesh_->intersections) {
+    	result.velocity_mask[ mesh_->element.index( isec.slave_iter() ) ]++;
+    }
+
     result.pressure_diff.resize( mesh_->n_elements() );
     result.velocity_diff.resize( mesh_->n_elements() );
     result.div_diff.resize( mesh_->n_elements() );
@@ -869,16 +881,17 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     result.pressure_error[1] = 0;
     result.velocity_error[1] = 0;
     result.div_error[1] = 0;
+    result.mask_vel_error=0;
 
-    result.ele_flux = &( ele_flux );
+    //result.ele_flux = &( ele_flux );
 
     //output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
     //output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
     //output_writer->register_elem_data("div_diff","0",result.div_diff);
 
     output_writer->register_elem_data(mesh_, "pressure_diff", "0", in_rec_.val<Input::Record>("output_stream") ,result.pressure_diff);
-    output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
-    output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
+    output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.velocity_diff);
+    output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.div_diff);
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
@@ -906,10 +919,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             "pressure error 2d: %g\n"
             "velocity error 1d: %g\n"
             "velocity error 2d: %g\n"
+    		"mask vel. error  : %g\n"
             "div error: %g (1d) %g (2d)\n",
             sqrt(result.pressure_error[0]), sqrt(result.pressure_error[1]),
             sqrt(result.velocity_error[0]), sqrt(result.velocity_error[1]),
-            sqrt(result.div_error[0]), sqrt(result.div_error[1])
+            sqrt(result.div_error[0]), sqrt(result.div_error[1]),
+            sqrt(result.mask_vel_error)
             );
 }
 
