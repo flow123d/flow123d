@@ -133,7 +133,33 @@ void OutputMSH::write_msh_ascii_cont_data(OutputData* output_data)
 
 void OutputMSH::write_msh_ascii_discont_data(OutputData* output_data)
 {
-    /* TODO */
+    Mesh *mesh = this->get_mesh();
+    ofstream &file = this->get_base_file();
+    long int item_id = 1;
+    unsigned int ele_id, it_id, offset;
+
+    /* Set precision to max */
+    file.precision(std::numeric_limits<float>::digits10);
+    file.precision(std::numeric_limits<double>::digits10);
+
+    offset = output_data->spacedim;
+
+    /* Write ascii data */
+    ele_id = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        file << ele.index() + 1 << " " << ele->n_nodes() << " ";
+        for(it_id=0; it_id < offset; it_id++) {
+            if(output_data->data_type == OutputData::INT) {
+                file << ((int*)output_data->data)[ele_id*offset + it_id] << " ";
+            } else if(output_data->data_type == OutputData::UINT) {
+                file << ((unsigned int*)output_data->data)[ele_id*offset + it_id] << " ";
+            } else if(output_data->data_type == OutputData::DOUBLE) {
+                file << ((double*)output_data->data)[ele_id*offset + it_id] << " ";
+            }
+        }
+        ele_id += ele->n_nodes();
+        file << std::endl;
+    }
 }
 
 

@@ -37,9 +37,9 @@ const string output_stream1 = R"JSON(
 // Test #2 of input for output stream
 const string output_stream2 = R"JSON(
 {
-  file = "./test2.pvd", 
+  file = "./test2.msh",
   format = {
-    TYPE = "vtk", 
+    TYPE = "gmsh",
     variant = "ascii"
   }, 
   name = "flow_output_stream2"
@@ -87,17 +87,19 @@ Record Foo::input_type
 /**
  * \brief Child class used for testing OutputTime
  */
-class OutputTest : public testing::Test, public OutputTime {
+class OutputTest : public testing::Test {
 protected:
     virtual void SetUp() {}
     virtual void TearDown() {}
+    static void SetUpTestCase() { /* SetUp test case here. */ }
+    static void TearDownTestCase() { OutputTime::destroy_all(); };
 };
 
 
 /**
  * \brief Test of creating of OutputTime
  */
-TEST( OutputTest, test_create_output_stream ) {
+TEST_F( OutputTest, test_create_output_stream ) {
     Input::JSONToStorage reader_output_stream;
 
     /* Read input for first output stream */
@@ -140,7 +142,7 @@ TEST( OutputTest, test_create_output_stream ) {
 /**
  *
  */
-TEST( OutputTest, find_outputstream_by_name ) {
+TEST_F( OutputTest, find_outputstream_by_name ) {
     /* There should be at least one output stream */
     ASSERT_EQ(OutputTime::output_streams.size(), 2);
 
@@ -152,7 +154,7 @@ TEST( OutputTest, find_outputstream_by_name ) {
 }
 
 
-TEST( OutputTest, test_register_elem_fields_data ) {
+TEST_F( OutputTest, test_register_elem_fields_data ) {
     Input::JSONToStorage reader_output;
     /* Read input for output */
     std::stringstream in_output(foo_output);
@@ -238,7 +240,7 @@ TEST( OutputTest, test_register_elem_fields_data ) {
 }
 
 
-TEST( OutputTest, test_register_corner_fields_data ) {
+TEST_F( OutputTest, test_register_corner_fields_data ) {
     Input::JSONToStorage reader_output;
     /* Read input for output */
     std::stringstream in_output(foo_output);
@@ -320,7 +322,7 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     /* Get next registered corner data */
     output_data = *(++output_data_iter);
 
-    /* There should be double data */
+    /* There should be integer data */
     ASSERT_EQ(output_data->data_type, OutputData::INT);
 
     /* Number of items should be equal to number of mesh elements */
@@ -338,6 +340,5 @@ TEST( OutputTest, test_register_corner_fields_data ) {
     /* Try to write data to output file */
     OutputTime::write_all_data();
 
-    OutputTime::destroy_all();
 }
 
