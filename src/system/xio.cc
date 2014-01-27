@@ -44,7 +44,6 @@
 #include <limits.h>
 
 #include <iostream>
-#include <map>
 #include <algorithm>
 #include <iterator>
 
@@ -52,25 +51,65 @@
 
 using namespace std;
 
-//! @brief XFILE structure holds additional info to generic FILE
+
+//! @brief basic definitions
 /// @{
-typedef struct xfile {
-    char * filename;  ///< file name in the time of opening
-    char * mode;      ///< opening mode
-    int    lineno;    ///< last read line (only for text files)
-} XFILE;
+static XFILE xstdin  = {"stdin","r",0};
+static XFILE xstdout = {"stdout","w",0};
+static XFILE xstderr = {"stderr","w",0};
 //! @}
-
-typedef map< FILE *, XFILE * > XFILEMAP; ///< mapping of ptr to regular file structure to extended structure
-
-static XFILEMAP xfiles_map;    ///< mapping instance
-static int xio_verbosity = 0;  ///< internal XIO debug: print info at each XIO function
 
 static XFILE * xio_getfptr( FILE * f );
 
 #define XIO_WARN(f) xprintf(Warn, "File pointer '%p' not in xfiles_map. Opened with regular fopen() or already closed?\n", (f) )
 #define XIO_PRINT_INFO(f) printf( "XIO: In function '%s', %s\n", __func__, xio_getfulldescription( f ) )
-#define XIO_DEBUG(f) do { if ( xio_verbosity > 0 ) XIO_PRINT_INFO(f); } while (0)
+#define XIO_DEBUG(f) do { if ( Xio::get_instance()->get_verbosity() > 0 ) XIO_PRINT_INFO(f); } while (0)
+
+
+/*******************************************************************
+ * implementation of Xio
+ */
+
+Xio * Xio::instance = NULL;
+
+Xio::Xio()
+: verbosity_(0)
+{
+    xfiles_map_[stdin]  = &xstdin;
+    xfiles_map_[stdout] = &xstdout;
+    xfiles_map_[stderr] = &xstderr;
+}
+
+Xio * Xio::get_instance()
+{
+	ASSERT( instance , "XIO library not initialized yet.\n");
+	return instance;
+}
+
+void Xio::init()
+{
+	if (instance == NULL) {
+		instance = new Xio();
+	} else {
+		xprintf(Warn, "The XIO library already initialized.\n");
+	}
+}
+
+void Xio::set_verbosity( int verb )
+{
+	verbosity_ = verb;
+}
+
+int Xio::get_verbosity( void )
+{
+    return verbosity_;
+}
+
+Xio::XFILEMAP Xio::get_xfile_map()
+{
+	return xfiles_map_;
+}
+
 
 
 /*!
@@ -196,30 +235,12 @@ static XFILE * xio_getfptr( FILE * f )
 {
     XFILE * xf = NULL;
 
-    if ( xfiles_map.find(f) != xfiles_map.end() )
+    if ( Xio::get_instance()->get_xfile_map().find(f) != Xio::get_instance()->get_xfile_map().end() )
     {
-        xf = xfiles_map[f];
+        xf = Xio::get_instance()->get_xfile_map()[f];
     }
 
     return xf;
-}
-
-/*!
- * @brief Enable/Disable XIO debug output for EACH XIO function call
- * @param[in] verb 0 to disable (default), positive int to enable
- */
-void xio_setverbose( int verb )
-{
-    xio_verbosity = verb;
-}
-
-/*!
- * @brief Get current XIO debug verbosity level
- * @return 0 as disabled, positive int as enabled
- */
-int xio_getverbose( void )
-{
-    return xio_verbosity;
 }
 
 FILE *xfopen( const std::string& fname, const char *mode )
@@ -253,7 +274,7 @@ FILE *xfopen( const char *fname, const char *mode )
     xf->mode = (char *)xmalloc(strlen(mode)+1);
     strcpy(xf->mode, mode);
     xf->lineno = 0;
-    xfiles_map[rc] = xf;
+    Xio::get_instance()->get_xfile_map()[rc] = xf;
 
     XIO_DEBUG( rc );
 
@@ -307,7 +328,7 @@ int xfclose( FILE *stream )
         xf = xio_getfptr(stream);
         if ( xf )
         {
-            xfiles_map.erase(stream);
+        	Xio::get_instance()->get_xfile_map().erase(stream);
             xfree( xf->filename );
             xfree( xf->mode );
             xfree( xf );
@@ -365,7 +386,7 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
         xf->mode = (char *)xmalloc(strlen(mode));
         strcpy(xf->mode, mode);
         xf->lineno = 0;
-        xfiles_map[rc] = xf;
+        Xio::get_instance()->get_xfile_map()[rc] = xf;
     }
 
     XIO_DEBUG( rc );

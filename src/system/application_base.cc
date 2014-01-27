@@ -21,6 +21,8 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     sys_info.comm=comm;
 
 
+    Xio::init(); //Initialize XIO library
+
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
 
