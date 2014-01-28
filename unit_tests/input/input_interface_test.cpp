@@ -316,7 +316,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     ++it;
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "Error"); //"out of array of size:"
+    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
 
 
 

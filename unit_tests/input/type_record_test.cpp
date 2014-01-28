@@ -43,19 +43,19 @@ using namespace Input::Type;
    Record rec_empty;
 
 #ifdef DEBUG_ASSERTS
-   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, "Internal Error"); //".*into closed record 'EmptyRecord'."
+   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
 #endif
 
    Record rec_fin("xx","");
    rec_fin.close();
-   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Internal Error"); //"Can not add .* into closed record"
+   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Can not add .* into closed record");
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.
    Record rec_unfin("yy","");
    rec.declare_key("yy", rec_unfin, "");
 
-   EXPECT_THROW_WHAT( { rec.declare_key("data_description", String(),"");}, ExcXprintfMsg, "Error"); //"Re-declaration of the key:"
+   EXPECT_THROW_WHAT( { rec.declare_key("data_description", String(),"");}, ExcXprintfMsg, "Re-declaration of the key:");
 
    EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); }, ExcWrongDefault,
            "Default value .* do not match type: 'Double';");
@@ -161,7 +161,7 @@ using namespace Input::Type;
     sub_rec.declare_key("bool_key", Bool(), "");
     sub_rec.declare_key("int_key", Integer(),  "");
     sub_rec.allow_auto_conversion("int_key");
-    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg, "Internal Error"); //"Finishing Record auto convertible from the key 'int_key', but other key: 'bool_key' has no default value."
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg, "Finishing Record auto convertible from the key 'int_key', but other key: 'bool_key' has no default value.");
     }
 
     {
@@ -262,13 +262,13 @@ using namespace Input::Type;
     Record output_record("OutputRecord",
             "Information about one file for field data.");
     EXPECT_THROW_WHAT( {output_record.declare_key("a b",Bool(),"desc."); },
-    		ExcXprintfMsg, "Internal Error" //"Invalid key identifier"
+    		ExcXprintfMsg, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("AB",Bool(),"desc."); },
-    		ExcXprintfMsg, "Internal Error" //"Invalid key identifier"
+    		ExcXprintfMsg, "Invalid key identifier"
             );
     EXPECT_THROW_WHAT( {output_record.declare_key("%$a",Bool(),"desc."); },
-    		ExcXprintfMsg, "Internal Error" //"Invalid key identifier"
+    		ExcXprintfMsg, "Invalid key identifier"
             );
 
 }
@@ -323,7 +323,7 @@ using namespace Input::Type;
     // auto conversion - default value for TYPE
     EXPECT_EQ("EqDarcy", a_rec.key_iterator("TYPE")->default_.value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Internal Error"); //"Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed."
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
 
     a_rec.no_more_descendants();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
@@ -357,7 +357,7 @@ using namespace Input::Type;
     // check of correct auto conversion value
     AbstractRecord  x("AR","");
     x.allow_auto_conversion("BR");
-    EXPECT_THROW_WHAT({ x.no_more_descendants(); }, ExcXprintfMsg, "Internal Error"); //"Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'."
+    EXPECT_THROW_WHAT({ x.no_more_descendants(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
 

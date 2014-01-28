@@ -176,15 +176,15 @@ using namespace Input::Type;
     sel2.add_value(white,"white","White color");
     sel1->add_value(black,"black");
     sel2.add_value(red,"red");
-    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, ExcXprintfMsg, "Internal Error"); //"already exists in Selection:"
-    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, ExcXprintfMsg, "Internal Error"); //"already exists in Selection:"
-    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, ExcXprintfMsg, "Internal Error"); //"conflicts with value"
-    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, ExcXprintfMsg, "Internal Error"); //"conflicts with value"
+    EXPECT_THROW_WHAT( {sel1->add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
+    EXPECT_THROW_WHAT( {sel2.add_value(green,"red");}, ExcXprintfMsg, "already exists in Selection:");
+    EXPECT_THROW_WHAT( {sel1->add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
+    EXPECT_THROW_WHAT( {sel2.add_value(blue,"blue1");}, ExcXprintfMsg, "conflicts with value");
 
 
     sel2.add_value(green,"green");
     sel2.close();
-    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, ExcXprintfMsg, "Internal Error"); //"in finished Selection type:"
+    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, ExcXprintfMsg, "in finished Selection type:");
 
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
