@@ -88,9 +88,9 @@ static struct MsgFmt msg_fmt[] = {
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
 	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},
-	{UsrErr,	true,  false,   SCR_STDERR,	true,	"User Error (%s, %s(), %d):\n"},
-	{Err,		true,  false,   SCR_STDERR,	true,	"Error (%s, %s(), %d):\n"},
-	{PrgErr,	true,  false,   SCR_STDERR, true,	"Internal Error (%s, %s(), %d):\n"}
+	{UsrErr,	true,  false,   SCR_NONE,	true,	"User Error (%s, %s(), %d):\n"},
+	{Err,		true,  false,   SCR_NONE,	true,	"Error (%s, %s(), %d):\n"},
+	{PrgErr,	true,  false,   SCR_NONE,	true,	"Internal Error (%s, %s(), %d):\n"}
 };
 
 /// @}
@@ -141,7 +141,24 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
         screen = NULL;
 #endif
 
-    //generate barrier and unique ID for MPI messages
+	{
+		va_list argptr;
+		if (mf.stop) {
+			char format_message[1024];
+			va_start( argptr, fmt );
+			vsprintf(format_message, fmt, argptr);
+			va_end( argptr );
+
+			// explicit flush of all streams
+			fflush(NULL);
+			F_STACK_SHOW( stderr );
+			BOOST_THROW_EXCEPTION( ExcXprintfMsg()
+				<< EI_XprintfHeader( boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line) )
+				<< EI_XprintfMessage( format_message ) );
+		}
+	}
+
+	//generate barrier and unique ID for MPI messages
     if (mf.mpi) {
         ierr = MPI_Barrier(sys_info.comm);
         if (ierr != MPI_SUCCESS ) {
@@ -186,15 +203,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 		}
 	}
 
-
-	if (mf.stop) {
-	    // explicit flush of all streams
-		fflush(NULL);
-		F_STACK_SHOW( stderr );
-		THROW( ExcXprintfMsg() << EI_XprintfMessage(
-				boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line )
-			));
-	}
 	return rc;
 }
 
