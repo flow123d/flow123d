@@ -80,6 +80,10 @@ public:
 	int      get_verbosity();
 	/// Get XIO mapping instance
 	XFILEMAP get_xfile_map();
+	/// Insert (or rewrite) member to xfiles_map_
+	void     add_to_map(FILE * f, XFILE * xf);
+	/// Erase member from xfiles_map_
+	void     erase_from_map(FILE * f);
 
 private:
 	// Singleton instance
