@@ -61,7 +61,6 @@ typedef enum SchurState {
 
 typedef class SchurComplement : public LinSys_PETSC {
 public:
-    //SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
     /**
      * Constructor
      *
@@ -77,7 +76,6 @@ public:
     //void reuse() {state=created;}
 
     void scale(double factor);
-    //void solve(Solver *solver);
     ~SchurComplement();
 
     // TODO: should be at least protected
