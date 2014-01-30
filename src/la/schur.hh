@@ -89,6 +89,10 @@ public:
      */
     void form_rhs();
     void resolve();
+    /// set complement object
+    void set_complement(LinSys_PETSC *ls);
+    /// get distribution of complement object if complement is defined
+    const Distribution *complement_distribution() const;
 
 private:
     Mat IA;                     // Inverse of block A
@@ -114,8 +118,8 @@ private:
     int orig_lsize;             ///< Size of local vector part of original system
 
                                 //                A  B     Sol1      RHS1
-    LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
-    //LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
+    LinSys *Orig;               // Original Linear System:  B' C  *  Sol2  =   RHS2
+    LinSys_PETSC *Compl;        // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
 
     Distribution *ds_;          // Distribution of B block
 } SchurComplement;

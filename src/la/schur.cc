@@ -777,6 +777,17 @@ void SchurComplement::resolve()
 
 }
 
+void SchurComplement::set_complement(LinSys_PETSC *ls)
+{
+	Compl = ls;
+}
+
+const Distribution *SchurComplement::complement_distribution() const
+{
+	ASSERT( Compl != NULL, "Complement is not defined.\n");
+	return Compl->get_ds();
+}
+
 /**
  * SCHUR COMPLEMENT destructor
  */
