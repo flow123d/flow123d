@@ -126,9 +126,14 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
             transport_reaction->set_eq_data( water->get_data() );
         }
+        else if (it->type() == TransportDG<HeatTransferModel>::input_type)
+        {
+        	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
+        	transport_reaction->set_eq_data( water->get_data() );
+        }
         else
         {
-            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecordout of set of descendants.\n");
+            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
         }
 
     } else {

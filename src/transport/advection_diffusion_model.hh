@@ -42,6 +42,8 @@ public:
 
 	virtual void set_eq_data(DarcyFlowMH::EqData &water_data) = 0;
 
+	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;
+
 	virtual bool mass_matrix_changed() = 0;
 
 	virtual bool stiffness_matrix_changed() = 0;
@@ -113,7 +115,7 @@ protected:
 	virtual ModelEqData &data() = 0;
 
 	static IT::Record &get_input_type(const string &implementation, const string &description) {
-		return IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+		static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
 				.derive_from(SecondaryEquation::input_type)
 				.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
 						"Names of transported substances.")
@@ -121,9 +123,9 @@ protected:
 				.declare_key("sorption_enable", IT::Bool(), IT::Default("false"),
 						"Model of sorption.")
 				.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
-						"Dual porosity model.")
-				.declare_key("output", TransportBase::input_type_output_record, IT::Default::obligatory(),
-						"Parameters of output stream.");
+						"Dual porosity model.");
+
+		return rec;
 	}
 
 	bool flux_changed;
@@ -138,6 +140,8 @@ public:
 	void init_data(unsigned int n_subst_);
 
 	void set_eq_data(DarcyFlowMH::EqData &water_data);
+
+	void set_component_names(std::vector<string> &names, const Input::Record &in_rec);
 
 	static string input_key_name() { return input_key_name_; }
 
@@ -192,10 +196,10 @@ public:
 	public:
 
 		/// Dirichlet boundary condition for temperature.
-		BCField<3, FieldValue<3>::Scalar> bc_conc;
+		BCField<3, FieldValue<3>::Scalar> bc_temperature;
 
 		/// Initial temperature.
-		Field<3, FieldValue<3>::Vector> init_temperature;
+		Field<3, FieldValue<3>::Scalar> init_temperature;
 		Field<3, FieldValue<3>::Scalar> porosity;
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		Field<3, FieldValue<3>::Scalar> fluid_heat_capacity;
@@ -205,8 +209,11 @@ public:
 		Field<3, FieldValue<3>::Scalar> solid_heat_conductivity;
 		Field<3, FieldValue<3>::Scalar> heat_dispersivity;
 
+		/// Pointer to DarcyFlow field cross_section
+		Field<3, FieldValue<3>::Scalar > *cross_section;
 
-		ModelEqData() : EqDataBase("HeatTransferDG") {};
+
+		ModelEqData();
 
 	};
 
@@ -229,52 +236,51 @@ protected:
 
 public:
 
-	HeatTransferModel() {};
+	HeatTransferModel();
 
-	void init_data(unsigned int n_subst_) {};
+	void init_data(unsigned int n_subst_);
 
-	void set_eq_data(DarcyFlowMH::EqData &water_data) {};
+	void set_eq_data(DarcyFlowMH::EqData &water_data);
+
+	void set_component_names(std::vector<string> &names, const Input::Record &in_rec);
 
 	static string input_key_name() { return input_key_name_; }
 
-	bool mass_matrix_changed() {};
+	bool mass_matrix_changed();
 
-	bool stiffness_matrix_changed() {};
+	bool stiffness_matrix_changed();
 
-	bool rhs_changed() {};
+	bool rhs_changed();
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) {};
-
-	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-			double Dm, double alphaL, double alphaT, double porosity, double cross_cut) {};
+			std::vector<double> &mm_coef);
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) {};
+			std::vector<std::vector<arma::mat33> > &dif_coef);
 
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) {};
+			std::vector< arma::vec > &init_values);
 
 	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) {};
+			std::vector< arma::vec > &bc_values);
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<arma::vec> &sources_conc,
 				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma) {};
+				std::vector<arma::vec> &sources_sigma);
 
 	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma) {};
+				std::vector<arma::vec> &sources_sigma);
 
-	~HeatTransferModel() {};
+	~HeatTransferModel();
 
 	static Input::Type::AbstractRecord input_type;
 };

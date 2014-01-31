@@ -41,7 +41,9 @@ AbstractRecord SecondaryEquation::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
-	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
+	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.")
+	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
+    		"Parameters of output stream.");
 
 
 Record TransportBase::input_type_output_record
@@ -75,8 +77,6 @@ Record TransportOperatorSplitting::input_type
     		"Model of sorption.")
     .declare_key("dual_porosity", Bool(), Default("false"),
     		"Dual porosity model.")
-    .declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
-    		"Parameters of output stream.")
 	.declare_key("reactions", Reaction::input_type, Default::optional(),
                 "Initialization of per element reactions.")
     .declare_key("adsorptions", Sorption::input_type, Default::optional(),
