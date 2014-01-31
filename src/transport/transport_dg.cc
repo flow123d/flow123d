@@ -67,7 +67,7 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
 
 template<class Model>
 Record TransportDG<Model>::input_type
-	= Record(Model::get_input_type("DG", "DG solver"))
+	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG<Model>::EqData().boundary_input_type()), IT::Default::obligatory(), "")
@@ -203,7 +203,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.
-    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
+    Model::set_component_names(subst_names_, in_rec);
     n_subst_ = subst_names_.size();
 
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
@@ -265,10 +265,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
+    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
     for (int sbi = 0; sbi < n_subst_; sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
+    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
