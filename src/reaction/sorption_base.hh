@@ -149,7 +149,7 @@ class SorptionBase:  public Reaction
 		/**
 		*
 		*/
-		virtual void make_tables(void);
+		virtual void make_tables(void){};
 		/**
 		* Meaningless inherited methods.
 		*/

@@ -167,9 +167,9 @@ void SorptionBase::prepare_inputs(Input::Record in_rec, int porosity_type)
 	make_tables();
 }
 
-void SorptionBase::make_tables(void)
+/*void SorptionBase::make_tables(void)
 {
-	/*ElementAccessor<3> elm;
+	ElementAccessor<3> elm;
 
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
@@ -190,9 +190,9 @@ void SorptionBase::make_tables(void)
 				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
 		}
-	}/**/
+	}
 	return;
-}
+}/**/
 
 void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
