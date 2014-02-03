@@ -110,16 +110,6 @@ Xio::XFILEMAP Xio::get_xfile_map()
 	return xfiles_map_;
 }
 
-void Xio::add_to_map(FILE * f, XFILE * xf)
-{
-	xfiles_map_[f] = xf;
-}
-
-void Xio::erase_from_map(FILE * f)
-{
-	xfiles_map_.erase(f);
-}
-
 
 
 /*!
@@ -247,7 +237,7 @@ static XFILE * xio_getfptr( FILE * f )
 
     if ( Xio::get_instance()->get_xfile_map().find(f) != Xio::get_instance()->get_xfile_map().end() )
     {
-        xf = Xio::get_instance()->get_xfile_map().find(f)->second;
+        xf = Xio::get_instance()->get_xfile_map()[f];
     }
 
     return xf;
@@ -284,7 +274,7 @@ FILE *xfopen( const char *fname, const char *mode )
     xf->mode = (char *)xmalloc(strlen(mode)+1);
     strcpy(xf->mode, mode);
     xf->lineno = 0;
-    Xio::get_instance()->add_to_map(rc, xf);
+    Xio::get_instance()->get_xfile_map()[rc] = xf;
 
     XIO_DEBUG( rc );
 
@@ -338,7 +328,7 @@ int xfclose( FILE *stream )
         xf = xio_getfptr(stream);
         if ( xf )
         {
-        	Xio::get_instance()->erase_from_map(stream);
+        	Xio::get_instance()->get_xfile_map().erase(stream);
             xfree( xf->filename );
             xfree( xf->mode );
             xfree( xf );
@@ -396,7 +386,7 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
         xf->mode = (char *)xmalloc(strlen(mode));
         strcpy(xf->mode, mode);
         xf->lineno = 0;
-        Xio::get_instance()->add_to_map(rc, xf);
+        Xio::get_instance()->get_xfile_map()[rc] = xf;
     }
 
     XIO_DEBUG( rc );
