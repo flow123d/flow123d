@@ -91,6 +91,8 @@ public:
     void set_complement(LinSys_PETSC *ls);
     /// get distribution of complement object if complement is defined
     const Distribution *complement_distribution() const;
+    /// create IA matrix and compute complement
+    void create_inversion_matrix();
 
 private:
     Mat IA;                     // Inverse of block A

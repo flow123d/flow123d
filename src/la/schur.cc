@@ -80,11 +80,12 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 
         // check type of LinSys, dimensions of matrix, index set
         ierr = MatGetSize(Orig->get_matrix(), &m, &n);
-        ASSERT(typeid(*Orig) == typeid(LinSys_PETSC), "Assumed PETSC type of Orig object.\n");
+        //ASSERT(typeid(*Orig) == typeid(LinSys_PETSC), "Assumed PETSC type of Orig object.\n");
         ASSERT(m == n, "Assumed square matrix.\n" );
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
         // initialize variables
+        Compl   = NULL;
         IA_sub  = NULL;
         B       = NULL;
         Bt      = NULL;
@@ -101,8 +102,6 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 	    // get distribution of original matrix
 	    MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
 	    MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
-	    MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
-	    //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
 
 	    // create A block index set
 	    ISGetLocalSize(IsA, &loc_size_A);
@@ -137,74 +136,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 	    this->set_from_input( Orig->in_rec_ );
 	    VecRestoreArray( Sol2, &sol_array );
 
-    	PetscInt ncols, pos_start, pos_start_IA;
-    	MatGetOwnershipRange(Orig->get_matrix(),&pos_start,PETSC_NULL);
-    	MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
-
-        std::vector<PetscInt> submat_rows;
-        const PetscInt *cols;
-        const PetscScalar *vals;
-
-        std::vector<unsigned int> processed_rows(loc_size_A,0);
-
-        unsigned int mat_block=1;   //actual processed block of matrix
-        for(unsigned int loc_row=0; loc_row < processed_rows.size(); loc_row++) {
-            if (processed_rows[loc_row] != 0) continue;
-
-            	PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
-            	unsigned int b_vals = 0; // count of values stored in B-block of Orig system
-                submat_rows.clear();
-                ierr = MatGetRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
-                for (PetscInt i=0; i<ncols; i++) {
-                	if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
-                		b_vals++;
-                	} else {
-                    	if (cols[i] < min) {
-                    		min=cols[i];
-                    	}
-                    	if (cols[i] > max) {
-                    		max=cols[i];
-                    	}
-                	}
-                }
-                size_submat = max - min + 1;
-                ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
-
-                ierr = MatRestoreRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
-                arma::mat submat2(size_submat, size_submat);
-                submat2.zeros();
-                for (PetscInt i=0; i<size_submat; i++) {
-                	processed_rows[ loc_row + i ] = mat_block;
-                	submat_rows.push_back( i + loc_row + pos_start_IA );
-                    ierr = MatGetRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
-                    for (PetscInt j=0; j<ncols; j++) {
-                    	if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
-                    		submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
-                    	}
-                    }
-                    ierr = MatRestoreRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
-                }
-                // test output
-//                xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);
-//                for (int i=0; i<size_submat; i++) {
-//                    for (int j=0; j<size_submat; j++) {
-//                        xprintf(Msg, "%2.0f ", submat2(i,j));
-//                    }
-//                    xprintf(Msg, "\n");
-//                }
-//                xprintf(Msg, "\n");
-
-                // get inversion matrix
-                arma::mat invmat = submat2.i();
-                // stored to inversion IA matrix
-                const PetscInt* rows = &submat_rows[0];
-                MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, invmat.memptr(), INSERT_VALUES);
-
-                mat_block++;
-        }
-
-        MatAssemblyBegin(IA, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(IA, MAT_FINAL_ASSEMBLY);
+        create_inversion_matrix();
 }
 
 
@@ -344,6 +276,82 @@ const Distribution *SchurComplement::complement_distribution() const
 	return Compl->get_ds();
 }
 
+void SchurComplement::create_inversion_matrix()
+{
+    PetscErrorCode ierr;
+    PetscInt ncols, pos_start, pos_start_IA;
+
+    MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
+    //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
+    MatGetOwnershipRange(Orig->get_matrix(),&pos_start,PETSC_NULL);
+    MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
+
+    std::vector<PetscInt> submat_rows;
+    const PetscInt *cols;
+    const PetscScalar *vals;
+
+    std::vector<unsigned int> processed_rows(loc_size_A,0);
+
+    unsigned int mat_block=1;   //actual processed block of matrix
+    for(unsigned int loc_row=0; loc_row < processed_rows.size(); loc_row++) {
+        if (processed_rows[loc_row] != 0) continue;
+
+        PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
+        unsigned int b_vals = 0; // count of values stored in B-block of Orig system
+        submat_rows.clear();
+        ierr = MatGetRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        for (PetscInt i=0; i<ncols; i++) {
+            if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
+                b_vals++;
+            } else {
+                if (cols[i] < min) {
+                    min=cols[i];
+                }
+                if (cols[i] > max) {
+                    max=cols[i];
+                }
+            }
+        }
+        size_submat = max - min + 1;
+        ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
+
+        ierr = MatRestoreRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        arma::mat submat2(size_submat, size_submat);
+        submat2.zeros();
+        for (PetscInt i=0; i<size_submat; i++) {
+            processed_rows[ loc_row + i ] = mat_block;
+            submat_rows.push_back( i + loc_row + pos_start_IA );
+            ierr = MatGetRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+            for (PetscInt j=0; j<ncols; j++) {
+                if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
+                    submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
+                }
+            }
+            ierr = MatRestoreRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+		}
+        // test output
+//            xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);
+//            for (int i=0; i<size_submat; i++) {
+//                for (int j=0; j<size_submat; j++) {
+//                    xprintf(Msg, "%2.0f ", submat2(i,j));
+//                }
+//                xprintf(Msg, "\n");
+//            }
+//            xprintf(Msg, "\n");
+        // get inversion matrix
+        arma::mat invmat = submat2.i();
+        // stored to inversion IA matrix
+        const PetscInt* rows = &submat_rows[0];
+        MatSetValues(IA, submat_rows.size(), rows, submat_rows.size(), rows, invmat.memptr(), INSERT_VALUES);
+
+        mat_block++;
+    }
+
+    MatAssemblyBegin(IA, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(IA, MAT_FINAL_ASSEMBLY);
+}
+
+
 /**
  * SCHUR COMPLEMENT destructor
  */
@@ -368,5 +376,7 @@ SchurComplement :: ~SchurComplement() {
     if ( xA_sub != NULL )         MatDestroy(&xA_sub);
     if ( IAB_sub != NULL )        MatDestroy(&IAB_sub);
     if ( sub_vec_block2 != NULL ) VecDestroy(&sub_vec_block2);
+
+    if (Compl != NULL)            delete Compl;
 
 }
