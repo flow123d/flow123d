@@ -86,21 +86,7 @@ private:
     int n_stacktrace_frames;
 };
 
-/**
- * @brief Base of exceptions due to user input.
- *
- * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
- * not by an internal error.
- *
- * @ingroup exceptions
- */
-class InputException : public virtual ExceptionBase
-{
-public:
-    virtual const char * what () const throw ();
-    virtual ~InputException() throw ();
 
-};
 
 
 
@@ -158,26 +144,6 @@ struct ExcName : public virtual ::ExceptionBase {                           \
 }
 
 /* ExcName const &_exc=*this; */
-
-
-/**
- * @brief Macro for simple definition of input exceptions.
- *
- * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
- * @p InputException. Meant to be used for exceptions due to wrong input from user.
- *
- * @ingroup exceptions
- */
-#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : public virtual ::InputException {                                   \
-     virtual void print_info(std::ostringstream &out) const {                     \
-         using namespace internal;                                          \
-         ::internal::ExcStream estream(out, *this);                                     \
-         estream Format ;                                                   \
-         out << std::endl;                                                  \
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
 
 
 

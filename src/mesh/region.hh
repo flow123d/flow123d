@@ -25,6 +25,8 @@
 #include "system/global_defs.h"
 #include "system/exceptions.hh"
 
+#include "input/accessors.hh"
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
@@ -324,6 +326,12 @@ public:
 
     DECLARE_EXCEPTION( ExcCantAdd, << "Can not add new region into DB, id: " << EI_ID::val <<", label: " << EI_Label::qval);
 
+    DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
+
+    DECLARE_INPUT_EXCEPTION( ExcUnknownSetOperand, << "Operation with unknown region set: " << EI_Label::qval);
+
+    TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
+    DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
 
     /// Default constructor
     RegionDB();
@@ -454,7 +462,8 @@ public:
     RegionSet union_sets( const string & set_name_1, const string & set_name_2);
 
     /**
-     * Get RegionSets of specified names and create their intersection
+     * Get RegionSets of specified names and create their intersection.
+     * Throws ExcUnknownSet for invalid name.
      *
      * @param set_name_1 Name of first RegionSet
      * @param set_name_2 Name of second RegionSet
@@ -464,6 +473,7 @@ public:
 
     /**
      * Get RegionSets of specified names and create their difference
+     * Throws ExcUnknownSet for invalid name.
      *
      * @param set_name_1 Name of first RegionSet
      * @param set_name_2 Name of second RegionSet
@@ -478,9 +488,9 @@ public:
      * "BOUNDARY" - set of all boundary regions
      *
      * @param set_name Name of set
-     * @return RegionSet of specified name
+     * @return RegionSet of specified name. Returns Empty vector if the set of given name doesn't exist.
      */
-    const RegionSet & get_region_set(const string & set_name) const;
+    RegionSet get_region_set(const string & set_name) const;
 
     /**
      * Reads region sets defined by user in input file
@@ -573,9 +583,17 @@ private:
 
     /**
      * Prepare region sets for union, intersection and difference operation.
-     * Get sets of names set_name_1 and set_name_2 and sort them
+     * Get sets of names set_name_1 and set_name_2 and sort them.
+     * Throws ExcUnknownSet if the set with given name does not exist.
      */
     void prepare_sets( const string & set_name_1, const string & set_name_2, RegionSet & set_1, RegionSet & set_2);
+
+    /**
+     * Read two operands from input array of strings and check if given names
+     * are existing sets. Return pair of checked set names.
+     */
+    pair<string,string> get_and_check_operands(const Input::Array & operands);
+
 };
 
 

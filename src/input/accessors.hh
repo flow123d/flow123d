@@ -34,12 +34,56 @@
 
 
 
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+
+
 namespace Input {
 
 using std::string;
 
-// exceptions and error_info types
 
+/**
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
+ */
+class Exception : public virtual ExceptionBase
+{
+public:
+    const char * what () const throw ();
+    virtual ~Exception() throw () {};
+};
+
+
+
+
+
+
+
+// exceptions and error_info types
 // throwed in Iterator<>
 TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
@@ -189,6 +233,14 @@ protected:
 
 
 };
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
+/**
 
 /**
  * Address output operator.

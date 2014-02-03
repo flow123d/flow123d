@@ -18,6 +18,24 @@
 
 #include "system/file_path.hh"
 
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
+}
+
+
+
+
+
+
+
     enum SelectionToRead {
         value_a = 0,
         value_b = 1,
