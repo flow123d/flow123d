@@ -50,36 +50,36 @@ class SorptionSimple:  public SorptionBase
 		/*
 		*   Static variable for new input data types input
 		*/
-		static Input::Type::Record input_type;
-
+		//static Input::Type::Record input_type;
+/*
 		class EqData : public EqDataBase // should be written in class Sorption
 		{
 		public:
 			/**
 			 * 	Sorption type specifies a kind of equilibrial description of adsorption.
 			 */
-			static Input::Type::Selection sorption_type_selection;
+	//		static Input::Type::Selection sorption_type_selection;
 
 			/// Collect all fields
-		EqData();
+//		EqData();
 
 		/**
 		 * Overrides EqDataBase::read_bulk_list_item, implements reading of
 		 * - init_piezo_head key
 		 */
-
+/*
 		Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
 		Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
 		Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 		Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 		//Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
 		/**/
-		};
+	//	};
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */
 	    //pScalar mob_porosity_;
-	    pScalar porosity_;
+	  //  pScalar porosity_;
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */

@@ -199,6 +199,8 @@ boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
     ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    ASSERT(this->region_fields_[reg.idx()], "Field %s on region %d not initialized.", this->name_.c_str(), reg.id() );
+
     return this->region_fields_[reg.idx()];
 }
 
