@@ -105,7 +105,7 @@ int Xio::get_verbosity( void )
     return verbosity_;
 }
 
-Xio::XFILEMAP Xio::get_xfile_map()
+Xio::XFILEMAP &Xio::get_xfile_map()
 {
 	return xfiles_map_;
 }

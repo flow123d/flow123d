@@ -79,7 +79,7 @@ public:
 	/// Get current XIO debug verbosity level
 	int      get_verbosity();
 	/// Get XIO mapping instance
-	XFILEMAP get_xfile_map();
+	XFILEMAP &get_xfile_map();
 
 private:
 	// Singleton instance
