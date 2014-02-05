@@ -194,7 +194,10 @@
       - shell: 
           cd build-master
           make package
+          rm -rf _CPack_Packages         
           make package_source
+          rm -rf _CPack_Packages
+          
     publishers:
       - cifs: 
           site: 'bacula'
