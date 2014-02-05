@@ -191,7 +191,7 @@
     display-name: "{platform} / make packages"
     defaults: flow123d-build
     builders:
-      - shell: 
+      - shell: |
           cd build-master
           make package
           rm -rf _CPack_Packages         
@@ -334,7 +334,7 @@
           name: "Pack and Install"
           condition: SUCCESSFUL
           projects:
-            - name: "Flow123d-{platform}-release-packages"
+            - name: "Flow123d-{platform}-packages"
 
             
 
