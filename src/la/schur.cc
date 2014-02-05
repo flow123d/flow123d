@@ -68,6 +68,41 @@
   *
  */
 
+SchurComplement::SchurComplement(IS ia, Distribution *ds)
+: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created), Orig(NULL)
+{
+        xprintf(Msg, "Constructor SchurComplement\n");
+
+        PetscErrorCode ierr;
+        PetscScalar *rhs_array, *sol_array;
+        int orig_first;
+
+        // check index set
+        ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
+
+        // initialize variables
+        Compl   = NULL;
+        IA_sub  = NULL;
+        B       = NULL;
+        Bt      = NULL;
+        B_sub   = NULL;
+        Bt_sub  = NULL;
+        xA      = NULL;
+        xA_sub  = NULL;
+        IAB     = NULL;
+        IAB_sub = NULL;
+        IsA     = NULL;
+        IsB     = NULL;
+        fullIsA = NULL;
+        fullIsB = NULL;
+        RHS1    = NULL;
+        RHS2    = NULL;
+        Sol1    = NULL;
+        Sol2    = NULL;
+        sub_vec_block2 = NULL;
+}
+
+
 SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 : LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created), Orig(orig)
 {
@@ -270,10 +305,52 @@ void SchurComplement::set_complement(LinSys_PETSC *ls)
 	Compl = ls;
 }
 
-const Distribution *SchurComplement::complement_distribution() const
+Distribution *SchurComplement::make_complement_distribution()
 {
-	ASSERT( Compl != NULL, "Complement is not defined.\n");
-	return Compl->get_ds();
+    PetscInt m, n;
+    PetscErrorCode ierr;
+    PetscScalar *rhs_array, *sol_array;
+    int orig_first;
+
+    // check dimensions of matrix
+    ierr = MatGetSize(matrix_, &m, &n);
+    ASSERT(m == n, "Assumed square matrix.\n" );
+
+    F_ENTRY;
+
+    // get distribution of original matrix
+    MatGetOwnershipRange(matrix_,&orig_first,PETSC_NULL);
+    MatGetLocalSize(matrix_,&orig_lsize,PETSC_NULL);
+
+    // create A block index set
+    ISGetLocalSize(IsA, &loc_size_A);
+    ISAllGather(IsA,&fullIsA);
+    //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
+
+    // create B block index set
+    locSizeB = orig_lsize-loc_size_A;
+    ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
+    ISAllGather(IsB,&fullIsB);
+    //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
+
+    // create complement system
+    // TODO: introduce LS as true object, clarify its internal states
+    // create RHS sub vecs RHS1, RHS2
+    VecGetArray(rhs_, &rhs_array);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+
+    // create Solution sub vecs Sol1, Compl->solution
+    VecGetArray(solution_, &sol_array);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
+
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+
+    VecRestoreArray(rhs_, &rhs_array);
+    VecRestoreArray(solution_, &sol_array);
+
+    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+	return ds_;
 }
 
 void SchurComplement::create_inversion_matrix()

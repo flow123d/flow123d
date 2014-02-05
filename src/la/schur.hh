@@ -69,6 +69,7 @@ public:
      * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
     SchurComplement(LinSys *orig, IS ia, Distribution *ds);
+    SchurComplement(IS ia, Distribution *ds);
 
     LinSys *get_orig_system() const {return (Orig);}
     Distribution *get_distribution() const {return (ds_);}
@@ -90,7 +91,7 @@ public:
     /// set complement object
     void set_complement(LinSys_PETSC *ls);
     /// get distribution of complement object if complement is defined
-    const Distribution *complement_distribution() const;
+    Distribution *make_complement_distribution();
     /// create IA matrix and compute complement
     void create_inversion_matrix();
 

@@ -147,7 +147,7 @@ private:
 
     void gatherSolution_( );
 
-private:
+protected:
 
     std::string params_;		 // command-line-like options for the PETSc solver
 
