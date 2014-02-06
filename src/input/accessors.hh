@@ -636,6 +636,9 @@ public:
     /// Prefix. Advance operator.
     inline Iterator<T> &operator ++ ();
 
+    /// Prefix. Back operator.
+    inline Iterator<T> &operator -- ();
+
     /**
      *  Dereference operator * ; Shouldn't we return type T, i.e. try to cast from OutputType to T ??
      */

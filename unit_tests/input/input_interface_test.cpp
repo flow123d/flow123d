@@ -313,8 +313,15 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(2, vec_int[1]);
 
     Iterator<int> it = array.begin<int>();
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    --it;
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    ++it;
+    EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
     ++it;
     EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
 
