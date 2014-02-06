@@ -73,10 +73,6 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 {
         xprintf(Msg, "Constructor SchurComplement\n");
 
-        PetscErrorCode ierr;
-        PetscScalar *rhs_array, *sol_array;
-        int orig_first;
-
         // check index set
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
@@ -91,7 +87,6 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         xA_sub  = NULL;
         IAB     = NULL;
         IAB_sub = NULL;
-        IsA     = NULL;
         IsB     = NULL;
         fullIsA = NULL;
         fullIsB = NULL;
@@ -302,7 +297,13 @@ void SchurComplement::resolve()
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-	Compl = ls;
+    PetscScalar *sol_array;
+
+    Compl = ls;
+    VecGetArray( Sol2, &sol_array );
+    Compl->set_solution( sol_array );
+    Compl->set_from_input( in_rec_ );
+    VecRestoreArray( Sol2, &sol_array );
 }
 
 Distribution *SchurComplement::make_complement_distribution()
