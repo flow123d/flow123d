@@ -568,20 +568,21 @@ mathematical models and numerical methods used in the Flow123d.
 \chapter{Mathematical models \\of physical reality}
 \label{PhysicalModels}
 
-Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
+Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of solutes. In this section, we describe 
 mathematical formulations of these models together with physical meaning and units of all involved quantities. In the first section we present 
-basic notation and assumptions about computational domains and meshes that combines different dimensions. In the next section we
-derive approximation of thin fractures by lower dimensional interfaces for general transport process. Latter sections describes details for models of particular
-physical processes. 
+basic notation and assumptions about computational domains and meshes that combine different dimensions. In the next section we
+derive approximation of thin fractures by lower dimensional interfaces for a general transport process. Latter sections describe details for models of particular
+physical processes.
 
 \section{Meshes of mixed dimension}
 Common and unique feature of all models in Flow123d is the support of
 domains with mixed dimension. 
 Let $\Omega_{3} \subset \Real^3$ be an open set representing continuous approximation of porous and fractured medium.
-Similarly, we consider open set $\Omega_2\subset \Real^2$ representing 2D fractures and open set $\Omega_1\subset \Real^3$ of 1D channels or preferential paths 
-(see Fig \ref{fig:multi-dim}).
-We assume that $\Omega_2$ and $\Omega_1$ are polygonal. For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
-that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that are tetrahedrons, triangles and lines.
+Similarly, we consider a 2D manifold $\Omega_2\subset\overline\Omega_3$, representing 2D fractures and a 1D manifold $\Omega_1\subset \overline\Omega_2$ of 1D channels or preferential paths (see Fig \ref{fig:multi-dim}).
+We assume that $\Omega_2$ and $\Omega_1$ are polytopic (i.e. polygonal and piecewise linear, respectively).
+For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
+that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$.
+The elements are simplices, i.e. lines, triangles and tetrahedra, respectively.
 
 \begin{figure}[h]
 \centering
@@ -592,7 +593,7 @@ that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elem
 }
 \end{figure}
 
-Present numerical methods requires meshes satisfying the compatibility conditions
+Present numerical methods require meshes satisfying the compatibility conditions
 \begin{equation}
         T_{d-1}^i \cap T_d \subset \mathcal{F}_d,   \qquad \text{where } \mathcal{F}_d = \bigcup_{k} \partial T_{d}^{k}
 \end{equation}
@@ -600,11 +601,11 @@ and
 \begin{equation}
         T_{d-1}^i \cap \mathcal{F}_d    \text{ is either $T_{d-1}^i$ or $\emptyset$}    
 \end{equation}
-for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
+for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is, the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
 match their sides or they poke out of $\Omega_d$. 
 
 \section{Advection-diffusion processes on fractures}
-In this section, we shall derive a model for a general advection-diffusion process on a domain of mixed dimensions using
+In this section, we shall derive a model for a general advection-diffusion process in a domain of mixed dimensions using
 simple approximations inspired by the paper \citet{martin_modeling_2005}. Let us consider a fracture as a strip domain 
 \[
  \Omega_f \subset [0,\delta] \times \Real^{d-1}
@@ -616,7 +617,7 @@ for $d=2$ or $d=3$ and surrounding continuum domains
 \]
 Further, we denote by $\gamma_i$, $i=1,2$ the fracture faces common with domains $\Omega_1$ and $\Omega_2$ respectively.
 By $x$, $\vc y$ we denote normal and tangential coordinate of a point in $\Omega_f$. 
-We consider the normal vector  $\vc n=(1,0,0)$.
+We consider the normal vector  $\vc n=\vc n_1=-\vc n_2=(1,0,0)^\top$.
 An advection-diffusion process is given by equations:
 \begin{align}
   \label{eq:fr:continuity}
@@ -650,7 +651,7 @@ The same notation will be used for normal and tangential part of the field $\vc 
 We integrate \eqref{eq:fr:continuity} over the fracture opening $[0,\delta]$ and use approximations to get
 \begin{equation}
     \label{eq:fracture_continuity}
-   \prtl_t (\delta W) + \vc j_2 \cdot \vc n - \vc j_1 \cdot \vc n + \div \vc J = F,
+   \prtl_t (\delta W) - \vc j_2 \cdot \vc n_2 - \vc j_1 \cdot \vc n_1 + \div \vc J = \delta F,
 \end{equation}
 where for the first term, we have used mean value theorem, first order Taylor expansion, 
 and boundedness of $\prtl_x w$ to obtain approximation:
@@ -669,7 +670,7 @@ Integration of the divergence of the tangential flux $\vc j_{\vc y}$ gives the f
 \]
 In fact, this flux on $\gamma$ is scalar for the case $d=2$. Finally, we integrate the right-hand side to get 
 \[
-    F(\vc y)=\int_0^\delta f(x,\vc y) \d x. 
+    \int_0^\delta f(x,\vc y) \d x = \delta F(\vc y) + O(\delta^2\abs{\prtl_x f}),\quad F(\vc y)=f(\delta/2,\vc y). 
 \]
 
 
@@ -691,7 +692,7 @@ where
 we obtain
 \begin{equation}
     \label{eq:fracture_darcy}
-   \vc J = -\tn A_t \delta \grad_{\vc y} U + \delta \vc B W.
+   \vc J = -\tn A_t \delta \grad_{\vc y} U + \delta \vc B W + O\big(\delta^2(\abs{\prtl_x\grad_{\vc y} u}+\abs{\prtl_x(\vc b_{\vc y} w)})\big).
 \end{equation}
 
 
