@@ -84,7 +84,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(100,TimeMark::every_type));
     
     //creating mark types of our own
-    xprintf(MsgDbg, "\nPredefined marktypes:\n\ttype_fixed_time_: %d\n\ttype_output_: %d\n\ttype_bc_change_: %d\n", tm.type_fixed_time(), tm.type_output(), tm.type_bc_change());
+    xprintf(MsgDbg, "\nPredefined marktypes:\n\ttype_fixed_time_: %d\n\ttype_output_: %d\n\ttype_input_: %d\n", tm.type_fixed_time(), tm.type_output(), tm.type_input());
     // type_fixed_time_, type_output_ type_bc_change_ has been created -> 
     // new_mark_type = next_mark_type = 0x05<<1 = 0x08
     TimeMark::Type my_mark_type = tm.new_mark_type();	
