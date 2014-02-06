@@ -64,8 +64,8 @@ public:
     /// Prints formated stacktrace into given stream @p out.
     void print_stacktrace(std::ostream &out) const;
     /**
-     * Purely virtual method, that should be implemented by descendants. Prints specific erro message into
-     * stream @p out. In particular you can use macros DECLARE_EXCEPTION or INPUT_EXCEPTION for easy decalrations.
+     * Purely virtual method, that should be implemented by descendants. Prints specific error message into
+     * stream @p out. In particular you can use macros DECLARE_EXCEPTION or DECLARE_INPUT_EXCEPTION for easy declarations.
      */
     virtual void print_info(std::ostringstream &out) const=0;
     /**
