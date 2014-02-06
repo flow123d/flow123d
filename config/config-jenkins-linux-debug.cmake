@@ -2,8 +2,8 @@
 
 set(FLOW_BUILD_TYPE debug)
 
-set(CMAKE_C_COMPILER "/opt/rh/devtoolset-2/root/usr/bin/gcc")
-set(CMAKE_CXX_COMPILER "/opt/rh/devtoolset-2/root/usr/bin/g++")
+#set(CMAKE_C_COMPILER "/opt/rh/devtoolset-2/root/usr/bin/gcc")
+#set(CMAKE_CXX_COMPILER "/opt/rh/devtoolset-2/root/usr/bin/g++")
 
 set(CMAKE_VERBOSE_MAKEFILE on)
 
