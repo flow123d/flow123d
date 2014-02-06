@@ -21,6 +21,9 @@
 
 \documentclass[12pt,a4paper]{report}
 
+% our own flow_doc.sty
+\usepackage{flow_doc}
+
 \usepackage{rotating}
 \usepackage{pdflscape}
 \usepackage{amssymb}
@@ -31,15 +34,16 @@
 \usepackage{colortbl}   %colorful tables
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+
+%these two can be found in caption package
 \usepackage{caption}
-\usepackage{packages/subcaption}
+\usepackage{subcaption}
+
 \usepackage[numbers]{natbib}
 
 \usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
 
 \usepackage{multicol}
-
-\usepackage{flow_doc}
 
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
