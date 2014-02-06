@@ -60,6 +60,7 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = "";
+    matrix_ = NULL;
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -370,7 +371,7 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
     delete[] v_rhs_;

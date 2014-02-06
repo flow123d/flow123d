@@ -67,6 +67,66 @@ void fill_matrix(LinSys * lin_sys, int *blocks, Distribution &ds, Distribution &
 	}
 }
 
+TEST(schur, complement) {
+	int blocks [] = {5,3,4,2};
+	int n_blocks = 4;
+	int max_block_size=5;
+
+	int first_idx=0, size=0;
+	IS set;
+	// vytvorit rozdeleni bloku na procesory ve tvaru "part" (tj. indexy prvnich radku na procesorech)
+    int np, rank;
+    double block_size;
+    int min_idx, max_idx;
+
+    MPI_Comm_size(PETSC_COMM_WORLD, &np);
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	// assign blocks to processors
+    int total_size=0;
+    for(int i=0;i<n_blocks;i++) total_size+=blocks[i];
+    vector<int> blocks_part(n_blocks);
+    int proc=0;
+    int distributed=0;
+    int local_size=0;
+    int block_local_size=0;
+    for(int i=0;i<n_blocks;i++) {
+    	blocks_part[i]=proc;
+    	distributed+=blocks[i];
+    	if (proc==rank) {
+    		local_size+=blocks[i];
+    		block_local_size++;
+    	}
+    	if (distributed > total_size*(proc+1)/np) proc++;
+
+    }
+
+    Distribution ds(local_size, MPI_COMM_WORLD);
+    Distribution block_ds(block_local_size, MPI_COMM_WORLD);
+    Distribution all_ds(local_size+block_local_size, MPI_COMM_WORLD);
+    //cout << ds;
+    //cout << block_ds;
+
+	ISCreateStride(PETSC_COMM_WORLD, ds.lsize(), all_ds.begin(), 1, &set);
+	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
+
+    // volat s lokalni velkosti = pocet radku na lokalnim proc.
+	SchurComplement * schurComplement = new SchurComplement(set, &all_ds);
+	schurComplement->set_solution(NULL);
+	schurComplement->set_symmetric();
+	schurComplement->start_allocation();
+	time_t seed=time(NULL);
+	srand(seed);
+	fill_matrix( schurComplement, blocks, ds, block_ds); // preallocate matrix
+	schurComplement->start_add_assembly();
+	srand(seed);
+	fill_matrix( schurComplement, blocks, ds, block_ds); // fill matrix
+	schurComplement->finish_assembly();
+	MatView(schurComplement->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+
+	LinSys * lin_sys = new LinSys_PETSC( schurComplement->make_complement_distribution() );
+
+}
 
 TEST(schur, inversion_matrix) {
 	int blocks [] = {5,2,3,3,4,2};
@@ -127,6 +187,6 @@ TEST(schur, inversion_matrix) {
 	ISCreateStride(PETSC_COMM_WORLD, ds.lsize(), all_ds.begin(), 1, &set);
 	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
-	SchurComplement schurComplement(lin_sys, set);
+	SchurComplement schurComplement(lin_sys, set, &ds);
 
 }
