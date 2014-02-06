@@ -22,7 +22,7 @@ OldBcdInput * OldBcdInput::instance() {
 
 // set all regions of the given Field<...> @p target
 template <int spacedim, class Value>
-void OldBcdInput::set_all( Field<spacedim,Value> &target, Mesh *mesh) {
+void OldBcdInput::set_all( Field<spacedim,Value> &target, const Mesh *mesh) {
     boost::shared_ptr< FieldElementwise<spacedim, Value> > in_field
         = boost::make_shared< FieldElementwise<spacedim, Value> >(target.n_comp());
 
@@ -120,7 +120,7 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
             unsigned int where  = lexical_cast<unsigned int>(*tok); ++tok;
 
             unsigned int eid, sid, bc_ele_idx, our_sid;
-            ElementIter ele;
+            Element * ele;
             Boundary * bcd;
 
             switch( where ) {
@@ -129,7 +129,9 @@ void OldBcdInput::read_flow(const FilePath &flow_bcd,
                     sid = lexical_cast<unsigned int>(*tok); ++tok;
 
                     // find and set the side
-                    ele = mesh_->element.find_id( eid );
+                    // const cast can be removed when get rid of FullIterators and whole sys_vector stuff
+                    // and have correct constantness for mesh classes
+                    ele = const_cast<Element *>(mesh_->element.find_id( eid ));
                     if( sid < 0 || sid >= ele->n_sides() )
                          xprintf(UsrErr,"Boundary %d has incorrect reference to side %d\n", id, sid );
                     our_sid=old_to_new_side_numbering[ele->dim()][sid];

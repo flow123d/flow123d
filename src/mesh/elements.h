@@ -102,7 +102,7 @@ public:
     /**
      * Computes bounding box of element
      */
-    void get_bounding_box(BoundingBox &bounding_box);
+    void get_bounding_box(BoundingBox &bounding_box) const;
 
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)

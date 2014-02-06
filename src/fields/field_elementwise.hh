@@ -69,7 +69,7 @@ public:
      *
      * See also description of the FieldBase<...>::set_mesh.
      */
-    virtual void set_mesh(Mesh *mesh, bool boundary_domain);
+    virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
 
 
     /**
@@ -106,7 +106,7 @@ private:
     unsigned int n_components_;
 
     GmshMeshReader *reader_;
-    Mesh *mesh_;
+    const Mesh *mesh_;
     std::string field_name_;
 };
 

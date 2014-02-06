@@ -58,7 +58,7 @@ unsigned int FieldCommonBase::n_comp() const
 { return n_comp_; }
 
 
-Mesh * FieldCommonBase::mesh() const
+const Mesh * FieldCommonBase::mesh() const
 { return mesh_; }
 
 

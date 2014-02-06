@@ -140,7 +140,7 @@ void FieldInterpolatedP0<spacedim, Value>::create_tetrahedron(Element *ele, TTet
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_triangle(Element *ele, TTriangle &tr) {
+void FieldInterpolatedP0<spacedim, Value>::create_triangle(const Element *ele, TTriangle &tr) {
 	ASSERT(( ele->dim() == 2 ), "Dimension of element must be 2!\n");
 
 	tr.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -151,7 +151,7 @@ void FieldInterpolatedP0<spacedim, Value>::create_triangle(Element *ele, TTriang
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_abscissa(Element *ele, TAbscissa &ab) {
+void FieldInterpolatedP0<spacedim, Value>::create_abscissa(const Element *ele, TAbscissa &ab) {
 	ASSERT(( ele->dim() == 1 ), "Dimension of element must be 1!\n");
 
 	ab.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
@@ -161,7 +161,7 @@ void FieldInterpolatedP0<spacedim, Value>::create_abscissa(Element *ele, TAbscis
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_point(Element *ele, TPoint &p) {
+void FieldInterpolatedP0<spacedim, Value>::create_point(const Element *ele, TPoint &p) {
 	ASSERT(( ele->dim() == 0 ), "Dimension of element must be 0!\n");
 
 	p.SetCoord( ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2) );

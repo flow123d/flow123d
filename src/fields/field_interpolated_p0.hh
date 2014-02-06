@@ -167,17 +167,17 @@ public:
 	/**
 	 * Create triangle from element
 	 */
-	static void create_triangle(Element *ele, TTriangle &tr);
+	static void create_triangle(const Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	static void create_abscissa(Element *ele, TAbscissa &ab);
+	static void create_abscissa(const Element *ele, TAbscissa &ab);
 
 	/**
 	 * Create point from element
 	 */
-	static void create_point(Element *ele, TPoint &p);
+	static void create_point(const Element *ele, TPoint &p);
 };
 
 

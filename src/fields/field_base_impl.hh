@@ -126,7 +126,7 @@ bool FieldBase<spacedim, Value>::set_time(double time) {
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::set_mesh(Mesh *mesh,  bool boundary_domain) {
+void FieldBase<spacedim, Value>::set_mesh(const Mesh *mesh,  bool boundary_domain) {
 }
 
 

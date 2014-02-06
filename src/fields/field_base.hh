@@ -116,7 +116,7 @@ public:
         * Optional parameter @p boundary_domain can be used to specify, that the field will be evaluated only on the boundary part of the mesh.
         * TODO: make separate mesh for the boundary, then we can drop this parameter.
         */
-       virtual void set_mesh(Mesh *mesh, bool boundary_domain);
+       virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
 
        /**
         * Returns number of rows, i.e. number of components for variable size vectors. For values of fixed size returns zero.
@@ -243,7 +243,7 @@ public:
     /**
      * Set internal mesh pointer.
      */
-    virtual inline void set_mesh(Mesh *mesh)                    { mesh_=mesh; }
+    virtual inline void set_mesh(const Mesh *mesh)                    { mesh_=mesh; }
 
     /**
      * Getters.
@@ -255,7 +255,7 @@ public:
     bool is_bc() const;
     bool is_enum_valued() const;
     unsigned int n_comp() const;
-    Mesh * mesh() const;
+    const Mesh * mesh() const;
     bool changed() const;
 
     /**
@@ -334,7 +334,7 @@ protected:
     /**
      * Pointer to the mesh on which the field lives.
      */
-    Mesh *mesh_;
+    const Mesh *mesh_;
 
     /**
      * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.

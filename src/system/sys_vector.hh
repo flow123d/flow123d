@@ -287,6 +287,14 @@ public:
          return storage[idx];
      }
 
+     /// Gets reference to the element specified by index.
+     inline const T & operator[](unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return storage[idx];
+     }
+
+
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
@@ -411,6 +419,15 @@ public:
          return storage[idx];
      }
 
+
+     /// Gets reference to the element specified by index.
+     inline const T & operator[](unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return storage[idx];
+     }
+
+
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
@@ -437,12 +454,29 @@ public:
              return FullIter(*this, this->storage.begin() + iter->second);
      }
 
+     /**
+      * Returns FullIter of the element with given id. This is implemented by std::map which use balanced trees and ensure access in O(nlog n) time.
+      */
+     inline const T * find_id(const int id) const
+     {
+         map<int,unsigned int>::const_iterator iter = id_map.find(id);
+         if ( iter == id_map.end() ) {
+             return &(*(this->storage.end()));
+         } else
+             return &(*(this->storage.begin() + iter->second));
+     }
+
     /** Returns Id of the element given by pointer i.e. Iter. FullIter i.e. FullIteratorId<T>
      * provides its own method for the same.
      */
-    inline int get_id(Iter it)
+    inline int get_id(Iter it) const
     {
         return *(id_storage.begin() + this->index(it));
+    }
+
+    inline int get_id(int idx) const
+    {
+        return *(id_storage.begin() + idx);
     }
 
     /// Reallocates the container space.
