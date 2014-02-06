@@ -252,4 +252,44 @@ Possible problem with 'rebase':
 * If you want only serial version of PETSc (and Flow123d)
   add --with-mpi=0 to the configure command line.
 
-  
+## Build Flow123d reference manual (LaTeX) ##
+
+The reference manual can be built by
+
+    > make ref-doc
+
+which calls LaTeX commands to make the final pdf file `doc/reference_manual/flow123d_doc.pdf`.
+The LaTeX source files depends on several packages that are needed for succesful build. In the list below 
+we provide a hint to find these packages (and names of distribution packages if you are using TeXLive under Ubuntu):
+
+* hyperref
+* colortbl
+* amsmath
+* natbib
+* graphicx
+* array (in CTAN package tools)
+* tabularx (in CTAN package tools)
+* multicol (in CTAN package tools)
+* longtable (in CTAN package tools)
+* pdflscape (in several distributions include in package bundle 'oberdiek')
+ 
+which can be found in Ubuntu in 'texlive-latex-base' package
+
+
+* caption
+* subcaption
+* fancyvrb
+* rotating
+
+which can be found in Ubuntu in 'texlive-latex-recommended' package
+
+* amssymb (in CTAN package amsfonts)
+
+which can be found in Ubuntu in 'texlive-base' package
+
+
+* etoolbox
+
+which can be found in Ubuntu in 'texlive-latex-extra' package, but is also enclosed in Flow123d reference manual source directory
+
+All these packages can be also obtained from [CTAN-Comprehensive TeX Archive Network](http://ctan.org/).

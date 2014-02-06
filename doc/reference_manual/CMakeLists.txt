@@ -10,8 +10,8 @@ cmake_minimum_required(VERSION 2.8)
   # Here add every new .tex (or other .txt, .sty etc.) file that you create and include
   # with \input \include \usepackage commands in the documentation.
   set(doc_inputs 
-       packages/subcaption.sty
        flow_doc.sty
+       ./packages/etoolbox.sty
        convection.tex
        darcy_flow.tex
        decay.tex
