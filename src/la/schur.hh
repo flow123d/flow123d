@@ -74,7 +74,6 @@ public:
     LinSys *get_orig_system() const {return (Orig);}
     Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
-    //void reuse() {state=created;}
 
     void scale(double factor);
     ~SchurComplement();
@@ -97,25 +96,17 @@ public:
 
 private:
     Mat IA;                     // Inverse of block A
-    Mat IA_sub;                 // Local inverse of block A in MATIS matrix
 
-    Mat B, Bt;                   // B and B' block (could be different from real B transpose)
-    Mat B_sub, Bt_sub;           // Local blocks B and B' in MATIS matrix
+    Mat B, Bt;                  // B and B' block (could be different from real B transpose)
     Mat xA;                     // Bt*IA*B
-    Mat xA_sub;                 // Bt*IA*B for MATIS matrix
     Mat IAB;                    // reconstruction matrix IA * B
-    Mat IAB_sub;                 // Local block IAB in MATIS matrix
-    int loc_size_A, locSizeB;     // loc size of the A and B block
+    int loc_size_A, loc_size_B; // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
-    IS IsA_sub, IsB_sub;        // parallel index sets of the A and B block local to subdomains
     IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc
     Vec RHS1, RHS2;             // A and B - part of the RHS
     Vec Sol1, Sol2;             // A and B part of solution
-    Vec sub_vec_block2;         // second block of subdomain vector (with overlaps)
 
     SchurState state;           // object internal state
-    PetscInt *IsALocalIndices;  ///< Array of local indices in Indexset IsA_sub
-    int orig_sub_size;          ///< Size of subdomain problem of original system
     int orig_lsize;             ///< Size of local vector part of original system
 
                                 //                A  B     Sol1      RHS1

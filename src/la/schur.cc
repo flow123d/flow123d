@@ -78,15 +78,11 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 
         // initialize variables
         Compl   = NULL;
-        IA_sub  = NULL;
+        IA      = NULL;
         B       = NULL;
         Bt      = NULL;
-        B_sub   = NULL;
-        Bt_sub  = NULL;
         xA      = NULL;
-        xA_sub  = NULL;
         IAB     = NULL;
-        IAB_sub = NULL;
         IsB     = NULL;
         fullIsA = NULL;
         fullIsB = NULL;
@@ -94,7 +90,6 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
-        sub_vec_block2 = NULL;
 }
 
 
@@ -116,16 +111,10 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 
         // initialize variables
         Compl   = NULL;
-        IA_sub  = NULL;
         B       = NULL;
         Bt      = NULL;
-        B_sub   = NULL;
-        Bt_sub  = NULL;
         xA      = NULL;
-        xA_sub  = NULL;
         IAB     = NULL;
-        IAB_sub = NULL;
-        sub_vec_block2 = NULL;
 
         F_ENTRY;
 
@@ -139,8 +128,8 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 	    //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
 	    // create B block index set
-	    locSizeB = orig_lsize-loc_size_A;
-	    ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
+	    loc_size_B = orig_lsize-loc_size_A;
+	    ISCreateStride(PETSC_COMM_WORLD,loc_size_B,orig_first+loc_size_A,1,&IsB);
 	    ISAllGather(IsB,&fullIsB);
 	    //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 
@@ -154,14 +143,14 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
 	    VecGetArray(Orig->get_solution(),&sol_array);
 	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
 	    VecRestoreArray(Orig->get_rhs(),&rhs_array);
 	    VecRestoreArray(Orig->get_solution(),&sol_array);
 
 	    VecGetArray( Sol2, &sol_array );
-	    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+	    ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
 	    this->set_solution(sol_array);
 	    this->set_from_input( Orig->in_rec_ );
 	    VecRestoreArray( Sol2, &sol_array );
@@ -211,7 +200,7 @@ void SchurComplement::form_schur()
     // nevertheless Petsc does not allows fill ratio below 1. so we use 1.1 for the first
     // and 1.5 for the second multiplication
 
-    // compute IAB=IA*B, locSizeB removed
+    // compute IAB=IA*B, loc_size_B removed
     ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, IsB, mat_reuse, &B);
     //DBGMSG(" B:\n");
     //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
@@ -224,7 +213,7 @@ void SchurComplement::form_schur()
     //DBGMSG("xA:\n");
     //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
 
-    // get C block, locSizeB removed
+    // get C block, loc_size_B removed
     ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(this->get_matrix()) ) );
     // compute complement = (-1)cA+xA = Bt*IA*B - C
     ierr+=MatScale(this->get_matrix(),-1.0);
@@ -329,8 +318,8 @@ Distribution *SchurComplement::make_complement_distribution()
     //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
     // create B block index set
-    locSizeB = orig_lsize-loc_size_A;
-    ISCreateStride(PETSC_COMM_WORLD,locSizeB,orig_first+loc_size_A,1,&IsB);
+    loc_size_B = orig_lsize-loc_size_A;
+    ISCreateStride(PETSC_COMM_WORLD,loc_size_B,orig_first+loc_size_A,1,&IsB);
     ISAllGather(IsB,&fullIsB);
     //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 
@@ -344,13 +333,13 @@ Distribution *SchurComplement::make_complement_distribution()
     VecGetArray(solution_, &sol_array);
     VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,locSizeB,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
     VecRestoreArray(rhs_, &rhs_array);
     VecRestoreArray(solution_, &sol_array);
 
-    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
+    ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
 	return ds_;
 }
 
@@ -449,11 +438,7 @@ SchurComplement :: ~SchurComplement() {
     if ( RHS2 != NULL )           VecDestroy(&RHS2);
     if ( Sol1 != NULL )           VecDestroy(&Sol1);
     if ( Sol2 != NULL )           VecDestroy(&Sol2);
-    if ( B_sub != NULL )          MatDestroy(&B_sub);
-    if ( Bt_sub != NULL )         MatDestroy(&Bt_sub);
-    if ( xA_sub != NULL )         MatDestroy(&xA_sub);
-    if ( IAB_sub != NULL )        MatDestroy(&IAB_sub);
-    if ( sub_vec_block2 != NULL ) VecDestroy(&sub_vec_block2);
+    if ( IA != NULL )             MatDestroy(&IA);
 
     if (Compl != NULL)            delete Compl;
 
