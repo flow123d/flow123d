@@ -42,7 +42,7 @@ update-build-tree:
 
 
 build-flow123d: update-build-tree cmake
-	@make -C $(BUILD_DIR) bin/flow123d
+	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
 
 
 # This target only configure the build process.
@@ -158,4 +158,3 @@ help:
 #	@echo "... linux-pack"
 .PHONY : help
 
-	

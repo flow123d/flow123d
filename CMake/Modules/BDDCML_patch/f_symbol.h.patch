@@ -1,0 +1,12 @@
+--- f_symbol.h	2013-07-16 14:16:35.354631954 +0200
++++ new_f_symbol.h	2013-07-16 14:10:49.000000000 +0200
+@@ -25,6 +25,9 @@
+ * inspired by MUMPS package
+ ******************************************/
+ 
++#include "FC_Magle.h"
++#define F_SYMBOL(name, NAME) FC_SYMBOLGLOBAL(name,NAME)
++
+ #ifndef F_SYMBOL
+ 
+ # if defined(UPPER) 

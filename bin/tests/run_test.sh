@@ -23,15 +23,19 @@
 #
 # Author(s): Jiri Hnidek <jiri.hnidek@tul.cz>
 #
-
+# For every input file and every processor count run Flow123d and compare result files against saved results.
+# Default behavior is to stop on first error in Flow123d run, but continue to the next input file when results do not match.
+#
 # Syntax:
 #
-#       run_test.sh   "<list of input files>"  "<list of processors counts>" "parameters passed to flow" [update]
+#       run_test.sh  [--update] [--all] "<list of input files>"  "<list of processors counts>" "parameters passed to flow" 
 #
-# 
-# For every input file and every processor count run Flow123d and compare result files against saved results.
-# If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
-# ask user to replace reference results.
+# --update:
+#       If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
+#       ask user to replace reference results. (experimental)
+#         
+# --all
+#       Go through all input files and all processor counts, do not stop on the first error.
 # 
 
 
@@ -84,18 +88,39 @@ REF_OUTPUT_DIR="./ref_output"
 TEST_RESULTS="./test_results"
 
 
-# Variable with exit status. Possible values:
+# Variable with exit status finally returned by the script.
+# Possible values:
 # 0 - no error, all tests were finished correctly
 # 1 - some important file (flow123d, ini file) doesn't exist or permission
 #     are not granted
 # 2 - flow123d was not finished correctly
 # 3 - execution of flow123d wasn't finished in time
+# 10 - output do not match reference results
+#
+# Returned exit status is set by the last of more possible errors.
 EXIT_STATUS=0
 
 # Set up memory limits (in MB) per process. Poor memory leak prevention.
 # Doesn't work under Cygwin (ulimit not supported).
 MEMORY_LIMIT=300
 
+UDATE_REFERENCE_RESULTS=
+GO_THROUGH_ALL=
+while [ "${1:0:2}" ==  "--" ]
+do
+    if [ "$1" == "--update" ]
+    then
+        # If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
+        # ask user to replace reference results.
+        UPDATE_REFERENCE_RESULTS="update"
+    elif [ "$1" == "--all" ]
+    then
+        GO_THROUGH_ALL="yes"
+    else
+        echo "unknown option: $1"  
+    fi
+    shift
+done  
 
 # First parameter has to be list of ini files; eg: "flow.ini flow_vtk.ini"
 INI_FILES="$1"
@@ -105,11 +130,6 @@ N_PROC="$2"
 
 # The last parameter could contain additional flow parameters
 FLOW_PARAMS="$3"
-
-# If the parameter 'update' is given, the script do not raise an error if the result files do not match but rather
-# ask user to replace reference results.
-UPDATE_REFERENCE_RESULTS="$4"
-
 
 # set executable for awk text processor
 AWK="awk"
@@ -359,12 +379,11 @@ do
 
 	for NP in ${N_PROC}
 	do
-
+                FLOW_EXIT_STATUS=
+                
 		# Erase content of ./output directory
 		rm -rf "${OUTPUT_DIR}"/*
 
-		# Reset timer
-		TIMER="0"
 
 		# Flow123d runs with changed priority (19 is the lowest priority)
                 "${FLOW123D_SH}" --nice 10 --mem ${MEMORY_LIMIT} -np ${NP} -ppn 1 --walltime ${TIMEOUT} -q "short" -- -s "${INI_FILE}" ${FLOW_PARAMS} >"${FLOW_SCRIPT_STDOUT}" &
@@ -375,6 +394,7 @@ do
 		IS_RUNNING=1
 
 		# Wait max TIMEOUT seconds, then flow123d processes should be killed
+                TIMER="0"
 		while [ ${TIMER} -lt ${TIMEOUT} ]
 		do
 			TIMER=`expr ${TIMER} + 1`
@@ -389,7 +409,7 @@ do
                               if [ $? -ne 0 ]
                               then
                                       IS_RUNNING="2"
-                                      wait_for_flow_script
+                                      wait_for_flow_script      # set $STDOUT_FILE
                               fi                              
 			else
                               # wait for flow to finish 
@@ -430,25 +450,28 @@ do
 			then
 				echo " [Success]"
 			else
+                                # Failure of comparison already reported by check_outputs
 				EXIT_STATUS=10
-				# Try next ini file
-				continue 2 
+				if [ -z "${GO_THROUGH_ALL}" ]
+				then
+                                    # go to the next input file
+                                    continue 2
+                                fi  
 			fi
 		else
 			echo " [Failed:error]"
+			echo "Error in execution: ${FLOW123D_SH} -s ${INI_FILE} ${FLOW_PARAMS}"
+                        cat "${FLOW123D_OUTPUT}"
 			EXIT_STATUS=1
-			# No other test will be executed
-			break 2
+                        if [ -z "${GO_THROUGH_ALL}" ]
+                        then
+                          # exit
+                          break 2
+                        fi  
 		fi
 	done
 done
 
-# Print redirected stdout to stdout only in situation, when some error occurred
-if [ $EXIT_STATUS -gt 0 -a $EXIT_STATUS -lt 10 ]
-then
-	echo "Error in execution: ${FLOW123D_SH} -s ${INI_FILE} ${FLOW_PARAMS}"
-	cat "${FLOW123D_OUTPUT}"
-fi
 
 rm -f "${FLOW123D_OUTPUT}"
 

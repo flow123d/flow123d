@@ -2,7 +2,7 @@
  * type_output_test.cpp
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "input/type_base.hh"
 #include "input/type_output.hh"

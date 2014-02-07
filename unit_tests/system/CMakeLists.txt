@@ -24,6 +24,9 @@
 set(libs system_lib)
 add_test_directory("${libs}")
 
+    define_test(empty)
+    define_mpi_test(empty_mpi 1)
+    define_mpi_test(empty_mpi 2)
 
     define_mpi_test(profiler 1)
     define_mpi_test(profiler 2)

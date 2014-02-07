@@ -25,12 +25,12 @@
       - $PLACEHOLDER_test_list$
     
     jobs:
-      - "Flow123d-configure-{platform}-{build-type}"
-      - "Flow123d-build-libs-{platform}-{build-type}"
-      - "Unit-test-{unit-dir}-{platform}-{build-type}"
-      - "Flow123d-build-{platform}-{build-type}"
-      - "Test-{test-dir}-{platform}-{build-type}"
-      - "Flow123d-build-multijob-{platform}-debug"
+      - "Flow123d-{platform}-{build-type}-configure"
+      - "Flow123d-{platform}-{build-type}-build-libs"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-debug-multijob"
 
 
 # Multijob  project - release
@@ -44,14 +44,14 @@
       - $PLACEHOLDER_test_list$
     
     jobs:
-      - "Flow123d-configure-{platform}-{build-type}"
+      - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-make-doc"
-      - "Flow123d-build-libs-{platform}-{build-type}"
-      - "Unit-test-{unit-dir}-{platform}-{build-type}"
-      - "Flow123d-build-{platform}-{build-type}"
-      - "Test-{test-dir}-{platform}-{build-type}"
-      - "Flow123d-{platform}-{build-type}-packages"
-      - "Flow123d-build-multijob-{platform}-release"
+      - "Flow123d-{platform}-{build-type}-build-libs"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-packages"
+      - "Flow123d-{platform}-release-multijob"
       
 
 
@@ -64,12 +64,14 @@
 ####################################################################
 # Flow123d configure 
 - job-template:
-    name: "Flow123d-configure-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-configure"
     display-name: "{platform} {build-type} / configure "
     defaults: flow123d-build
     builders:
       - shell: |
           # configure
+          echo "PATH: $PATH"
+          export PATH=/opt/rh/devtoolset-2/root/usr/bin:$PATH
           cd flow123d
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
@@ -86,7 +88,18 @@
           cd flow123d
           make ref-doc
           make doxy-doc
-# todo: publisher ...
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc'
+          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
+          remove-prefix: 'build-master/doc/reference_manual/'
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
+          source: 'build-master/doc/online-doc/flow123d/*'
+          remove-prefix: 'build-master/doc/online-doc/flow123d'
+            
 
 
 ####################################################################
@@ -101,7 +114,7 @@
 #   just present generated XML files and use parallel make to make all unit tests and libraries
 #   
 - job-template:
-    name: "Flow123d-build-libs-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-build-libs"
     display-name: "{platform} {build-type} / build libraries "
     defaults: flow123d-build
     builders:
@@ -110,11 +123,13 @@
           cd flow123d
           make -j 4 all
           make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+#    publishers:
+#      -github-notifier       
 
 ##################################################################
 # Unit test for given directory
 - job-template:
-    name: "Unit-test-{unit-dir}-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
     display-name: "{platform} {build-type} / unit-test / {unit-dir}"
     defaults: flow123d-build
     properties:
@@ -126,24 +141,24 @@
             - "Flow123d-category-unit-tests"
     builders:
       - shell: |
-          make -C flow123d/build_tree/unit_tests/{unit-dir} all-test
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
 
 
 ##################################################################
 # Unit tests benchmarks for given directory     (NOT USED YET)        
 - job-template:
-    name: "Unit-benchmark-{unit-dir}-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-unit-benchmark-{unit-dir}"
     display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
     defaults: flow123d-build
     builders:
       - shell: |
-          make -C flow123d/build_tree/unit_tests/{unit-dir} all-tests
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-tests
 
 
 ####################################################################
 # Flow123d build main binary
 - job-template:
-    name: "Flow123d-build-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-build"
     display-name: "{platform} {build-type} / flow123d build "
     defaults: flow123d-build
     builders:
@@ -156,7 +171,7 @@
 #################################################################
 # Integration test for given directory
 - job-template:
-    name: "Test-{test-dir}-{platform}-{build-type}"
+    name: "Flow123d-{platform}-{build-type}-test-{test-dir}"
     display-name: "{platform} {build-type} / test / {test-dir}"
     defaults: flow123d-build
     properties:
@@ -169,23 +184,28 @@
 
     builders:
       - shell: |
-          make -C flow123d/tests/{test-dir} test
+          make -C flow123d/tests/{test-dir} test-all
         
 #################################################################
 # Packaging
 - job-template:
-    name: "Flow123d-{platform}-{build-type}-packages"
-    display-name: "{platform} {build-type} / make packages"
+    name: "Flow123d-{platform}-packages"
+    display-name: "{platform} / make packages"
     defaults: flow123d-build
     builders:
       - shell: |
-          make -C flow123d/build-tree package
-          make -C flow123d/build-tree package_source
-#    publishers:
-#      - cifs:
-#          site: "bacula"
-#          target: 
-#          source: flow123d/build-tree/Flow123d-*  
+          cd build-master
+          make package
+          rm -rf _CPack_Packages         
+          make package_source
+          rm -rf _CPack_Packages
+          
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_packages/master_night_build'
+          source: 'build-master/Flow123d-*'
+          remove-prefix: 'build-master/'
 
 
 
@@ -199,7 +219,7 @@
 #
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
-    name: "Flow123d-build-multijob-{platform}-debug"
+    name: "Flow123d-{platform}-debug-multijob"
     display-name: "{platform} debug / Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
@@ -233,27 +253,27 @@
           name: "Configure Phase"
           condition: SUCCESSFUL
           projects:  
-            - name: "Flow123d-configure-{platform}-debug"
+            - name: "Flow123d-{platform}-debug-configure"
       - multijob:
           name: "Build Flow123d libraries"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-build-libs-{platform}-debug"
+            - name: "Flow123d-{platform}-debug-build-libs"
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:     #*UNIT-JOBS
-            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-debug"
+            - name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$"
       - multijob:
           name: "Build Flow123d"
           condition: SUCCESSFUL
           projects:
-            - name: "Flow123d-build-{platform}-debug"
+            - name: "Flow123d-{platform}-debug-build"
       - multijob:
           name: "Integration tests"
           condition: COMPLETED
           projects:
-            - name: "Test-$PLACEHOLDER_test_list$-{platform}-debug"
+            - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
             
 
 
@@ -262,7 +282,7 @@
 #
 # possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
 - job-template:
-    name: "Flow123d-build-multijob-{platform}-release"
+    name: "Flow123d-{platform}-release-multijob"
     display-name: "{platform} release / Flow123d multijob"
     project-type: multijob
     defaults: flow123d-build
@@ -290,33 +310,33 @@
           name: "Configure Phase"
           condition: SUCCESSFUL
           projects:  
-            - name: "Flow123d-configure-{platform}-release"
-            - name: "Flow123d-{platform}-release-make-doc"
+            - name: "Flow123d-{platform}-release-configure"
       - multijob:
           name: "Build Flow123d libraries"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-build-libs-{platform}-release"
+            - name: "Flow123d-{platform}-release-make-doc"
+            - name: "Flow123d-{platform}-release-build-libs"
       - multijob:
           name: "Unit tests"
           condition: COMPLETED
           projects:     #*UNIT-JOBS
-            - name: "Unit-test-$PLACEHOLDER_unit_list$-{platform}-release"
+            - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$"
       - multijob:
           name: "Build Flow123d"
           condition: SUCCESSFUL
           projects:
-            - name: "Flow123d-build-{platform}-release"
+            - name: "Flow123d-{platform}-release-build"
       - multijob:
           name: "Integration tests"
           condition: COMPLETED
           projects:
-            - name: "Test-$PLACEHOLDER_test_list$-{platform}-release"
+            - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
       - multijob:
           name: "Pack and Install"
           condition: SUCCESSFUL
           projects:
-            - name: "Pack-{platform}-release"
+            - name: "Flow123d-{platform}-packages"
 
             
 
