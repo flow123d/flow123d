@@ -21,7 +21,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     sys_info.comm=comm;
 
 
-    //xio_init(); //Initialize XIO library
+    Xio::init(); //Initialize XIO library
 
     // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
     // inicializaci systemu
@@ -84,7 +84,7 @@ int ApplicationBase::petcs_finalize() {
 }
 
 
-void ApplicationBase::body(int argc, char ** argv) {
+void ApplicationBase::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
 
@@ -95,7 +95,7 @@ void ApplicationBase::body(int argc, char ** argv) {
 	try {
 		this->run();
 	} catch (ExcXprintfMsg & e) {
-		exit( EXIT_FAILURE );
+		exit( exit_failure );
 	}
 
 	this->after_run();

@@ -38,8 +38,6 @@ using namespace std;
 #define MAIN_H
 
 
-#define EXIT_OUTPUT 0
-
 
 class Application : public ApplicationBase {
 public:
@@ -48,13 +46,6 @@ public:
     
     /// Application constructor. 
     Application(int argc, char ** argv);
-    
-    /**
-     * Parse command line parameters.
-     * @param[in] argc       command line argument count
-     * @param[in] argv       command line arguments
-     */ 
-    virtual void parse_cmd_line(const int argc, char ** argv);
     
     /**
      * Displays program version and build info.
@@ -83,7 +74,17 @@ protected:
      */
     virtual void run();
 
+    /**
+     * Check pause_after_run flag defined in input file.
+     */
     virtual void after_run();
+
+    /**
+     * Parse command line parameters.
+     * @param[in] argc       command line argument count
+     * @param[in] argv       command line arguments
+     */
+    virtual void parse_cmd_line(const int argc, char ** argv);
 
 private:
 

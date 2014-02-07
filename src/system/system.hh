@@ -90,8 +90,6 @@ typedef struct SystemInfo {
     
     MPI_Comm comm;
 
-    ~SystemInfo();
-
 } SystemInfo;
 
 extern SystemInfo sys_info;
@@ -106,7 +104,6 @@ void	resume_log_file( void );
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-//int    	xterminate( bool on_error );
 void *	xmalloc(size_t size);
 void * xrealloc( void * ptr, size_t size );
 
@@ -150,7 +147,6 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 
 //! @brief auxiliary
 /// @{
-//bool skip_to( FILE *const in, const char *section );
 bool skip_to( istream &in, const string &pattern );
 //! @}
 

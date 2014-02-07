@@ -25,14 +25,40 @@ static bool petsc_initialized = false;
 /**
  * Base virtual class of Flow123D application.
  *
- * Contains base pure virtual methods of application
- * and methods for initialization system and PETSC.
+ * Contains base methods of application for initialization, run and finalization which is used in derived class.
+ *
+ * Usage:
+ @code
+ class Application : public ApplicationBase {
+ public:
+   Application(int argc, char ** argv); // constructor
+ protected:
+   virtual void run(); // implementation of pure virtual method
+   virtual void after_run(); // overriding of parent method
+ }
+ @endcode
+ *
  */
 class ApplicationBase {
 public:
 
 	/**
+	 * Contains basic structure of application (initialization, run and finalization).
+	 * Method is call after constructor and allows to call virtual methods.
+	 */
+	void init(int argc, char ** argv);
+
+    /// Return codes of application
+	static const int exit_success = 0;
+    static const int exit_failure = 1;
+    static const int exit_output = 0;	//return code if printout (text, JSON or LaTeX) is run
+
+protected:
+
+	/**
 	 * Constructor
+	 *
+	 * Construction is done in init method. We need to call virtual methods during construction.
 	 */
 	ApplicationBase(int argc,  char ** argv);
 
@@ -40,28 +66,9 @@ public:
 	virtual ~ApplicationBase();
 
 	/**
-	 * Finalize PETSC. If finalization failed return nonzero value.
-	 */
-	int petcs_finalize();
-
-	/**
-	 * Parse command line parameters before Flow123D initialization.
-	 *
-	 * Method can be override in child class.
-	 */
-	virtual void parse_cmd_line(const int argc, char ** argv) {}
-
-	/**
-	 * Auxiliary method that allows to call virtual methods from constructor.
-	 *
-	 * Initializes and runs the application.
-	 */
-	void body(int argc, char ** argv);
-
-protected:
-
-	/**
 	 * Run application.
+	 *
+	 * Method must be implemented in derived class.
 	 */
 	virtual void run() = 0;
 
@@ -71,12 +78,26 @@ protected:
 	void system_init( MPI_Comm comm, const string &log_filename );
 
 	/**
+	 * Parse command line parameters before Flow123D initialization.
+	 *
+	 * Method can be override in derived class.
+	 */
+	virtual void parse_cmd_line(const int argc, char ** argv) {}
+
+	/**
 	 * Initialize PETSC.
 	 */
 	void petsc_initialize(int argc, char ** argv);
 
 	/**
+	 * Finalize PETSC. If finalization failed return nonzero value.
+	 */
+	int petcs_finalize();
+
+	/**
 	 * Execute part of program after run of simulation.
+	 *
+	 * Method can be override in derived class.
 	 */
 	virtual void after_run() {}
 
