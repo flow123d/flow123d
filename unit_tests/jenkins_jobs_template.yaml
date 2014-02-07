@@ -70,6 +70,8 @@
     builders:
       - shell: |
           # configure
+          echo "PATH: $PATH"
+          export PATH=/opt/rh/devtoolset-2/root/usr/bin:$PATH
           cd flow123d
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake

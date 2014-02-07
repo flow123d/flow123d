@@ -48,6 +48,7 @@
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
+#include <boost/algorithm/string.hpp>
 
 static struct Read_ini *read_ini = NULL;
 
@@ -275,21 +276,20 @@ double OptGetDbl( const char *section,const  char *key,const  char *defval )
 //=============================================================================
 // GET BOOL VARIABLE FROM INI FILE
 //=============================================================================
-#define SCMP(x)	(strcmpi( str, x ) == 0)
 bool OptGetBool( const char *section,const  char *key,const  char *defval )
 {
 	char *str;
 	char res;
 	str = OptGetStr(section, key, defval);
 
-	if ( SCMP("yes")||SCMP("true")||SCMP("1") ) res=true;
-	else if ( SCMP("no")||SCMP("false")||SCMP("0") ) res=false;
+	if ( boost::iequals(str, "yes") || boost::iequals(str, "true") || boost::iequals(str, "1") ) res=true;
+	else if ( boost::iequals(str, "no") || boost::iequals(str, "false") || boost::iequals(str, "0") ) res=false;
 	else {
 		xfree(str);
 		if (defval == NULL) xprintf(UsrErr,"Required parameter: [%s] %s is not a boolen.\n",section,key);
 		str=(char *)defval;
-		if ( SCMP("yes")||SCMP("true")||SCMP("1") ) res=true;
-		else if ( SCMP("no")||SCMP("false")||SCMP("0") ) res=false;
+		if ( boost::iequals(str, "yes") || boost::iequals(str, "true") || boost::iequals(str, "1") ) res=true;
+		else if ( boost::iequals(str, "no") || boost::iequals(str, "false") || boost::iequals(str, "0") ) res=false;
 		else xprintf(PrgErr,"Default value \"%s\" of parameter: [%s] %s is not a boolean.\n",defval,section,key);
 	}
 	return res;
