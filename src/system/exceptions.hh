@@ -301,6 +301,14 @@ internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag,
 
 
 
+/**
+ * Exception thrown in xprintf function.
+ */
+TYPEDEF_ERR_INFO( EI_XprintfHeader, std::string);
+TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
+DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
+
+
 
 
 
