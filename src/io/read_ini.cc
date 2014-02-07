@@ -79,7 +79,7 @@ void make_ini_item_list(const char *fname)
 	read_ini=(struct Read_ini*)xmalloc(sizeof(struct Read_ini));
 
 	ini=xfopen(fname,"rt");
-	ASSERT(NONULL(ini),"Failed to open the ini file: %s",fname);
+	ASSERT( ini,"Failed to open the ini file: %s",fname);
 
 
 	while( xfgets( line, LINE_SIZE - 2, ini ) != NULL ) {
@@ -303,7 +303,7 @@ void OptionsInit(const char *fname )
 	//char *path;
 	//int len;
 
-	ASSERT(NONULL(fname),"NULL file name\n");
+	ASSERT( fname,"NULL file name\n");
 
 	// take absolute path to the file
 	// this is completly wrong in the case the absolute path is alredy given

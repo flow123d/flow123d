@@ -131,7 +131,7 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
 
