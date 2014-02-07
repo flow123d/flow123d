@@ -1,6 +1,6 @@
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/config.h"
-#include "mesh/ngh/include/system.h"
+
 
 
 int TTriangle::numberInstance = 0;
@@ -92,7 +92,7 @@ const TAbscissa &TTriangle::GetAbscissa(const int i) const {
         case 3: return *A3;
             break;
         default:
-            mythrow((char*) "Unknown number of the abscissa of the triangle.",  __LINE__, __FUNC__);
+            THROW( ExcAssertMsg() << EI_Message( "Unknown number of the abscissa of the triangle.") );
 
     }
 }
@@ -105,7 +105,7 @@ const TPoint &TTriangle::GetPoint(int i) const {
             break;
         case 3: return X3;
             break;
-        default: mythrow((char*) "Unknown number of the point of the triangle.", __LINE__, __FUNC__);
+        default: THROW( ExcAssertMsg() << EI_Message( "Unknown number of the point of the triangle.") );
     }
 }
 

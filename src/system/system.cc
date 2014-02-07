@@ -406,7 +406,7 @@ int xchomp( char * s )
 
     F_ENTRY;
 
-    ASSERT(NONULL(s), "Can not chomp NULL string.");
+    ASSERT( s, "Can not chomp NULL string.");
 
     if ( *s ) //string not empty
     {
@@ -505,7 +505,7 @@ char *xgetcwd( void )
     F_ENTRY;
 
     rc = getcwd( tmp, PATH_MAX );
-    ASSERT(NONULL(rc),"Cannot get name of current working directory\n");
+    ASSERT( rc,"Cannot get name of current working directory\n");
 
     return(xstrcpy( tmp ));
 }

@@ -60,6 +60,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
+#define NDEF  -1
 
 namespace IT = Input::Type;
 
@@ -104,8 +105,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 
 void Mesh::reinit(Input::Record in_record)
 {
-
-    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;

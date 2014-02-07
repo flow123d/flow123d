@@ -34,12 +34,56 @@
 
 
 
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+
+
 namespace Input {
 
 using std::string;
 
-// exceptions and error_info types
 
+/**
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
+ */
+class Exception : public virtual ExceptionBase
+{
+public:
+    const char * what () const throw ();
+    virtual ~Exception() throw () {};
+};
+
+
+
+
+
+
+
+// exceptions and error_info types
 // throwed in Iterator<>
 TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
@@ -57,6 +101,9 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 // throwed in Address
 TYPEDEF_ERR_INFO( EI_ParamName, const string);
 DECLARE_EXCEPTION( ExcAddressNullPointer, << "NULL pointer in " << EI_ParamName::val << " parameter.");
+
+
+
 
 /**
  * Class that works as base type of all enum types. We need it to return integer from a Selection input without
@@ -88,6 +135,8 @@ private:
 // Forward declaration
 class IteratorBase;
 template <class T> class Iterator;
+
+class JSONToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -175,13 +224,37 @@ public:
      */
     std::string make_full_address() const;
 
-
 protected:
+
     /**
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
+
+
 };
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
+/**
+
+/**
+ * Address output operator.
+ */
+inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
+	return stream << address.make_full_address();
+}
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
 
 /**
  * @brief Accessor to the data with type \p Type::Record.
@@ -220,6 +293,7 @@ protected:
 class Record {
 
 public:
+	typedef ::Input::Type::Record InputType;
     /**
      * Default constructor.
      *
@@ -294,17 +368,24 @@ public:
     { return (address_.storage_head() == Address().storage_head()); }
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const ;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
+
 
 
 protected:
+    /**
+     * Set address (currently necessary for creating root accessor)
+     */
+    void set_address(const Address &address);
+    friend JSONToStorage;
+
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
@@ -326,6 +407,8 @@ protected:
 
 class AbstractRecord {
 public:
+	typedef ::Input::Type::AbstractRecord InputType;
+
     /**
      * Default constructor creates an empty accessor.
      *
@@ -365,14 +448,14 @@ public:
     Input::Type::Record type() const;
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
 
 
 private:
@@ -422,6 +505,9 @@ private:
  */
 class Array {
 public:
+
+	typedef ::Input::Type::Array InputType;
+
     /**
      * Default constructor, empty accessor.
      *
@@ -466,14 +552,14 @@ public:
    void copy_to(Container &out) const;
 
    /**
-    * Returns address
+    * Returns address error info.
     */
-   const Address &get_address() const;
+   EI_Address ei_address() const ;
 
    /**
-    * Set address
+    * Get address as string.
     */
-   void set_address(const Address &address);
+   string address_string() const;
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;

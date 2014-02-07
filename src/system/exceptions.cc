@@ -125,7 +125,7 @@ const char * ExceptionBase::what() const throw () {
     try {
         std::ostringstream converter;
 
-        converter << std::endl;
+        converter << std::endl << std::endl;
         converter << "--------------------------------------------------------" << std::endl;
         converter << "Program Error: ";
         print_info(converter);
@@ -154,43 +154,3 @@ const char * ExceptionBase::what() const throw () {
 
 
 
-/*************************************************************************************************************************************
- * Implementation of InputException
- */
-
-
-const char * InputException::what() const throw () {
-    // have preallocated some space for error message we want to return
-    // Is there any difference, if we move this into ExceptionBase ??
-    static std::string message(1024,' ');
-
-
-    // Be sure that this function do not throw.
-    try {
-        std::ostringstream converter;
-
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << "User Error: ";
-        print_info(converter);
-        converter << "--------------------------------------------------------" << std::endl;
-
-        message = converter.str();
-        return message.c_str();
-
-    } catch (std::exception &exc) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
-                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
-
-        std::abort();
-    } catch (...) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
-                << std::endl;
-
-        std::abort();
-    }
-    return 0;
-}
-
-
-InputException::~InputException() throw ()
-{}

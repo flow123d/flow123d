@@ -14,10 +14,10 @@
         { region = "1d_channel",
           anisotropy = 10
         },
-        { region = "2d_fraction_1",
+        { region = "2d_fracture_1",
           anisotropy = 1
         },
-        { region = "2d_fraction_2",
+        { region = "2d_fracture_2",
           anisotropy = 1
         },
         { region = "3d_cube",
@@ -33,14 +33,14 @@
             value = "x-z"
           }
         },
-        { region = ".2d_fraction_1",
+        { region = ".2d_fracture_1",
           bc_type = "dirichlet",
           bc_pressure = {
             TYPE = "FieldFormula",
             value = "x-z"
           }
         },
-        { region = ".2d_fraction_2",
+        { region = ".2d_fracture_2",
           bc_type = "dirichlet",
           bc_pressure = {
             TYPE = "FieldFormula",

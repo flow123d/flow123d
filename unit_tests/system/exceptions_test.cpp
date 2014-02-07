@@ -159,16 +159,6 @@ TEST(Exceptions, GettingValue) {
 
 
 
-//------------------------------------------------------------------------
-//Test InputException
-
-DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
-
-TEST(InputException, all) {
-
-
-    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
-}
 
 //------------------------------------------------------------------------
 // Test stack trace
