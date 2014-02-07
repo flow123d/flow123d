@@ -63,6 +63,15 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
     matrix_ = NULL;
 }
 
+LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
+	: LinSys(other), params_(other.params_), v_rhs_(NULL)
+{
+	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+	VecCopy(other.rhs_, rhs_);
+	VecCopy(other.on_vec_, on_vec_);
+	VecCopy(other.off_vec_, off_vec_);
+}
+
 void LinSys_PETSC::start_allocation( )
 {
     PetscErrorCode ierr;
@@ -374,7 +383,7 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
-    delete[] v_rhs_;
+    if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
 void LinSys_PETSC::gatherSolution_( )

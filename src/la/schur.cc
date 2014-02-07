@@ -45,6 +45,7 @@
 #include <limits>
 #include <petscmat.h>
 #include <armadillo>
+#include <petscis.h>
 
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
@@ -90,6 +91,26 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+}
+
+
+SchurComplement::SchurComplement(SchurComplement &other)
+: LinSys_PETSC(other),
+  loc_size_A(other.loc_size_A), loc_size_B(other.loc_size_B), state(other.state),
+  Orig(other.Orig), Compl(other.Compl), ds_(other.ds_)
+{
+	MatCopy(other.IA, IA, DIFFERENT_NONZERO_PATTERN);
+	MatCopy(other.IAB, IAB, DIFFERENT_NONZERO_PATTERN);
+	ISCopy(other.IsA, IsA);
+	ISCopy(other.IsB, IsB);
+	VecCopy(other.RHS1, RHS1);
+	VecCopy(other.RHS2, RHS2);
+	VecCopy(other.Sol1, Sol1);
+	VecCopy(other.Sol2, Sol2);
+
+	B   = NULL;
+	Bt  = NULL;
+	xA  = NULL;
 }
 
 

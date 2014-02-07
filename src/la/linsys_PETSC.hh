@@ -49,6 +49,11 @@ public:
                   const MPI_Comm comm = PETSC_COMM_WORLD ); 
 
     /**
+     * Copy constructor.
+     */
+    LinSys_PETSC( LinSys_PETSC &other );
+
+    /**
      * Returns whole Distribution class for distribution of the solution.
      */
     inline const Distribution* get_ds( )

@@ -133,6 +133,19 @@ public:
 
     };
 
+    /**
+     * Copy constructor.
+     */
+    LinSys(LinSys &other)
+    : r_tol_(other.r_tol_), a_tol_(other.a_tol_), max_it_(other.max_it_), comm_(other.comm_), status_(other.status_),
+      lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
+      positive_definite_(other.positive_definite_), spd_via_symmetric_general_(other.spd_via_symmetric_general_),
+      globalSolution_(other.globalSolution_), constraints_(other.constraints_), residual_norm_(other.residual_norm_),
+      in_rec_(other.in_rec_)
+    {
+    	set_solution(other.v_solution_);
+    };
+
     // Particular type of the linear system.
     //LinSysType type;  //!< anyone can inquire my type
 

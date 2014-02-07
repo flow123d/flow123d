@@ -71,6 +71,11 @@ public:
     SchurComplement(LinSys *orig, IS ia, Distribution *ds);
     SchurComplement(IS ia, Distribution *ds);
 
+    /**
+     * Copy constructor.
+     */
+    SchurComplement(SchurComplement &other);
+
     LinSys *get_orig_system() const {return (Orig);}
     Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
