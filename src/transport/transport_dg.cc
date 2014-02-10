@@ -1607,13 +1607,13 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 				}
 				// the penalty term has to be added otherwise the mass balance will not hold
 				if (mh_dh->side_flux(*side) < -mh_dh->precision())
-					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*fe_values.JxW(k);
+					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*por_m[k]*fe_values.JxW(k);
 
-				mass_flux += water_flux*conc*fe_values.JxW(k);
+				mass_flux += water_flux*conc*por_m[k]*fe_values.JxW(k);
 			}
 
 			bcd_balance[sbi][bc_region_idx] += mass_flux;
-			if (mass_flux > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
+			if (mh_dh->side_flux(*side) >= -mh_dh->precision()) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
 			else bcd_minus_balance[sbi][bc_region_idx] += mass_flux;
 		}
     }

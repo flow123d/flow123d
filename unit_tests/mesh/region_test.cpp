@@ -91,7 +91,7 @@ TEST(Region, all) {
     EXPECT_EQ(1002, bulk[1].id());
     EXPECT_EQ(1003, bulk[2].id());
 
-    EXPECT_DEATH( { region_db.add_region(1006,"side_", 2, true);}, "Can not add to closed region DB.");
+    EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, ExcXprintfMsg, "Can not add to closed region DB.");
 
 }
 
@@ -241,7 +241,7 @@ struct Item {
 
 void init_map(std::map<unsigned int, Item> &map,int size) {
 
-    for(int i=0; i<size; i++) {
+    for(unsigned int i=0; i<size; i++) {
         Item xx={i, "xyz", 1};
         map[i]=xx;
     }

@@ -163,7 +163,7 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-    ASSERT(NONULL(starts),"Distribution is not initialized.\n");
+    ASSERT( starts,"Distribution is not initialized.\n");
     ASSERT(idx < size(), "Index %d greater then distribution size %d.\n", idx, size());
 
     for(unsigned int i=0; i<np(); i++) {

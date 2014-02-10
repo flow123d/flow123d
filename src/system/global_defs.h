@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "system/exc_common.hh"
 
 
 /// @brief Global constants.
@@ -49,8 +50,8 @@
 /// @brief Macros to enhance readability
 /// @{
 
-#define NDEF  -1    ///< not defined positive integer (obsolete - ints should be initialized by value)
-#define NONULL(p)   ((p) != NULL)   /// true for non-null pointer
+//#define NDEF  -1    ///< not defined positive integer (obsolete - ints should be initialized by value)
+//#define NONULL(p)   ((p) != NULL)   /// true for non-null pointer
 
 
 // set array of pointers of given size to NULL
@@ -118,8 +119,6 @@
 
 #ifdef DEBUG_ASSERTS
 
-#include "system/exceptions.hh"
-
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
@@ -181,10 +180,32 @@
             xprintf(Msg,"i: %d int: %d\n",i__,(idx)[i__]); \
     } while (0)
 
+
+
+
+/**
+ * Usage:
+ * DBGCOUT( << "xy" <<endl );
+ */
+#define DBGCOUT(...) do { std::cout << "    DBG (" \
+									<< __FILE__ << ", " \
+									<< __func__ << ", " \
+									<< __LINE__ << ")" \
+									__VA_ARGS__; } while(0)
+
+
+/**
+ * Usage:
+ * DBGVAR( arma::vec( "1 2 3" ) );
+ */
+#define DBGVAR( var ) DBGCOUT( << #var << " = " << var << endl )
+
 #else
 
 #define DBGMSG(...)
 #define DBGPRINT_INT(...)
+#define DBGCOUT(...)
+#define DBGVAR(var)
 
 #endif
 

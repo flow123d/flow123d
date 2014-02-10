@@ -70,6 +70,7 @@ namespace Input {
  */
 class EquationBase {
 public:
+
     /**
      * Default constructor. Necessary to make tests fixtures for equations.
      * TODO:
@@ -131,7 +132,7 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
 
@@ -217,6 +218,9 @@ protected:
  */
 class EqDataBase {
 public:
+	TYPEDEF_ERR_INFO( EI_Domain, string);
+	DECLARE_INPUT_EXCEPTION(ExcUnknownDomain,
+			<< "Unknown field domain: " << EI_Domain::val << "\n");
 
     /**
      * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
