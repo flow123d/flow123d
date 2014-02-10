@@ -194,10 +194,14 @@ protected:
 
 
 
-/// Left and right time limit, used in the @p set_time() method.
+/**
+ *  Left and right time limit, used in the @p set_time() method.
+ *  Assigned values allow to index an array.
+ */
 enum class LimitSide {
-	left,
-	right
+	left=0,
+	right=1,
+	size=2 	// size of the enum
 };
 
 
@@ -286,7 +290,6 @@ public:
     bool is_enum_valued() const;
     unsigned int n_comp() const;
     const Mesh * mesh() const;
-    bool changed() const;
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -327,6 +330,14 @@ public:
     virtual  bool set_time(const TimeGovernor &time, LimitSide side) =0;
 
     /**
+     * Returns same value as last set_time method called with same @p side parameter.
+     * TODO: remove default value as soon as things get stabilized (namely in Sorption ...)
+     */
+    bool changed(LimitSide side=LimitSide::right) const
+    {
+    	return changed_flag_[static_cast<unsigned int>(side)];
+    }
+    /**
      * Virtual destructor.
      */
     virtual ~FieldCommonBase();
@@ -334,7 +345,7 @@ public:
     /**
      * Is true if the values of the field has changed during last set_time() call.
      */
-    bool changed_during_set_time;
+    bool changed_flag_[static_cast<unsigned int>(LimitSide::size)];
 
 protected:
 
@@ -377,11 +388,6 @@ protected:
      * Pointer to the mesh on which the field lives.
      */
     const Mesh *mesh_;
-
-    /**
-     * Set by other methods (namely set_field() and set_from_input()) that modify the field before the set_time is called.
-     */
-    bool changed_from_last_set_time_;
 
     /**
      * List of input field descriptors from which the field is set.
@@ -499,10 +505,13 @@ public:
 
 
     /**
-     * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field.
+     * Assigns given @p field to all regions in given region set @p domain.
+     * Field is added to the history with given time and possibly used in the next call of the set_time method.
+     * Caller is responsible for correct construction of given field.
+     *
      * Use this method only if necessary.
      */
-    //void set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
+    void set_field(double time, const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
 
     /**
      * Default implementation of @p read_field_descriptor_hook.

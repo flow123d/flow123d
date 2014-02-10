@@ -17,14 +17,15 @@
  */
 
 FieldCommonBase::FieldCommonBase(bool bc)
-: changed_during_set_time(false),       // reading this variable is in fact invalid up to the first call of the set_time
+: changed_flag_({false, false}),       // reading this variable is in fact invalid up to the first call of the set_time
   bc_(bc),
   n_comp_(0),
   element_selection_(NULL),
   default_( "" ),
-  mesh_(NULL),
-  changed_from_last_set_time_(false)
-{}
+  mesh_(NULL)
+{
+
+}
 
 
 
@@ -87,9 +88,6 @@ unsigned int FieldCommonBase::n_comp() const
 const Mesh * FieldCommonBase::mesh() const
 { return mesh_; }
 
-
-bool FieldCommonBase::changed() const
-{ return changed_during_set_time; }
 
 
 void FieldCommonBase::mark_input_times(TimeMark::Type mark_type) {

@@ -226,19 +226,32 @@ void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input
     set_field(domain, field);
 }
 
-
+*/
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field) {
+void Field<spacedim, Value>::set_field(
+		double time,
+		const RegionSet &domain,
+		boost::shared_ptr< FieldBaseType > field)
+{
     ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
     ASSERT_EQUAL( field->n_comp() , this->n_comp_);
     field->set_mesh( this->mesh_ , is_bc() );
-    BOOST_FOREACH(Region reg, domain) region_fields_[reg.idx()] = field;
-    changed_from_last_set_time_=true;
+
+    HistoryPoint hp = HistoryPoint(time, field);
+    BOOST_FOREACH(Region reg, domain) {
+    	RegionHistory &region_history = region_history_[reg.idx()];
+    	// insert hp into descending time sequence
+    	for(int i=0; i<region_history.size(); i++) {
+    		if (hp.first > region_history[i].first) {
+    			swap(hp, region_history[i]);
+    		}
+    	}
+    }
 }
-*/
+
 
 template<int spacedim, class Value>
 auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommonBase &field) -> SharedField
@@ -289,15 +302,11 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time, LimitSide side)
         	i_history=min(i_history, history_size - 1);
         	ASSERT(i_history >= 0, "Emtpty field history.");
         	region_fields_[reg.idx()]=region_history_[reg.idx()].at(i_history).second;
-
-//            bool changed = region_fields_[reg.idx()]->set_time(time);
-//            this->changed_from_last_set_time_ = this->changed_from_last_set_time_ || changed;
-
         }
 
-    this->changed_during_set_time = this->changed_from_last_set_time_;
-    this->changed_from_last_set_time_ = false;
-    return this->changed_during_set_time;
+//    this->changed_during_set_time = this->changed_from_last_set_time_;
+//    this->changed_from_last_set_time_ = false;
+    return true;
 }
 
 

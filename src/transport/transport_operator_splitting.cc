@@ -95,13 +95,13 @@ TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
 : EqDataBase(eq_name)
 {
 
-	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
-	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", Default("0"));
-	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
+	ADD_FIELD(init_conc, "Initial concentrations.", "0");
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0");
+	ADD_FIELD(por_m, "Mobile porosity", "1");
 
-	ADD_FIELD(sources_density, "Density of concentration sources.", Default("0"));
-	ADD_FIELD(sources_sigma, "Concentration flux.", Default("0"));
-	ADD_FIELD(sources_conc, "Concentration sources threshold.", Default("0"));
+	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
+	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
+	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
 
 }
 

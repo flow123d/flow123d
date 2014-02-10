@@ -57,17 +57,17 @@ Record Sorption::input_type
 Sorption::EqData::EqData()
 : EqDataBase("Sorption")
 {
-    ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
+    ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
               sorption_types.set_selection(&sorption_type_selection);
 
-    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
+    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", "1.0");
 
-    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
+    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", "1.0");
 
     ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-            " Vector, one value for every substance.", Input::Type::Default("0"));
+            " Vector, one value for every substance.", "0.0");
 }
 
 using namespace std;
@@ -295,12 +295,12 @@ void Sorption::compute_one_step(void)
 {
     data_.set_time(*time_, LimitSide::left); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-	if((data_.rock_density.changed_during_set_time) &&
-		(data_.mult_coefs.changed_during_set_time) &&
-		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time) &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))
+	if((data_.rock_density.changed() ) &&
+		(data_.mult_coefs.changed() ) &&
+		(data_.second_params.changed() ) &&
+		(this->porosity_->changed() ) &&
+		(this->immob_porosity_->changed() ) &&
+		(this->phi_->changed() ))
 	{
 		make_tables();
 	}

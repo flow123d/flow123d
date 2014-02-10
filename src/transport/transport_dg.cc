@@ -178,24 +178,24 @@ DOFHandlerMultiDim *TransportDG::FEObjects::dh() { return dh_; }
 
 TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
 {
-	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", Default("0"));
-	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", Default("0"));
-	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", Default("0"));
-	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", Default("0"));
+	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", "0");
+	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0");
+	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0");
+	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", "0");
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
-			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", Default("1.0"));
+			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
 
-    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", Default("inflow") );
+    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "inflow" );
     bc_type.set_selection(&bc_type_selection);
 
     std::vector<FieldEnum> list; list.push_back(neumann);
 //    bc_conc.disable_where(& bc_type, list );
 
-    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", Default("0.0"));
+    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", "0.0");
 //    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(robin);
 //    bc_flux.disable_where(& bc_type, list );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", Default("0.0"));
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
 //    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(neumann);
 //    bc_robin_sigma.disable_where(& bc_type, list );
 }
