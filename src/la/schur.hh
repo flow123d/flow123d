@@ -76,9 +76,11 @@ public:
      */
     SchurComplement(SchurComplement &other);
 
+    LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
     Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
+    void set_spd();
 
     void scale(double factor);
     ~SchurComplement();
