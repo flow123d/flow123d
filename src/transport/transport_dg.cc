@@ -199,7 +199,7 @@ TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
 //    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(neumann);
 //    bc_robin_sigma.disable_where(& bc_type, list );
 }
-
+/*
 RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
 	// Base method EqDataBase::read_boundary_list_item must be called first!
 	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
@@ -210,7 +210,7 @@ RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
 
     return domain;
-}
+}*/
 
 TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         : TransportBase(init_mesh, in_rec),
@@ -230,7 +230,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	mass_balance_ = new MassBalance(this, *it);
 
     // Set up physical parameters.
-    data.set_mesh(&init_mesh);
+    data.set_mesh(init_mesh);
     data.init_conc.set_n_comp(n_subst_);
     data.bc_conc.set_n_comp(n_subst_);
     data.bc_type.set_n_comp(n_subst_);
@@ -245,7 +245,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data.sources_sigma.set_n_comp(n_subst_);
     data.sources_conc.set_n_comp(n_subst_);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data.set_time(*time_);
+    data.set_time(*time_, LimitSide::left);
 
     // sorption and dual_porosity is currently not used in TransportDG
     sorption = in_rec.val<bool>("sorption_enable");
@@ -353,7 +353,7 @@ void TransportDG::update_solution()
     time_->view("TDG");
     
     START_TIMER("data reinit");
-    data.set_time(*time_);
+    data.set_time(*time_, LimitSide::right);
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation

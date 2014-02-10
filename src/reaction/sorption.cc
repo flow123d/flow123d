@@ -86,9 +86,9 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     data_.second_params.set_n_comp(nr_of_substances);
     int nr_transp_subst = names.size();
     data_.alphas.set_n_comp(nr_transp_subst);
-    data_.set_mesh(&init_mesh);
+    data_.set_mesh(init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-    data_.set_time(tg);
+    data_.set_time(tg, LimitSide::left);
 
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
@@ -293,7 +293,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 // Computes adsorption simulation over all the elements.
 void Sorption::compute_one_step(void)
 {
-    data_.set_time(*time_); // set to the last computed time
+    data_.set_time(*time_, LimitSide::left); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
 	if((data_.rock_density.changed_during_set_time) &&
 		(data_.mult_coefs.changed_during_set_time) &&

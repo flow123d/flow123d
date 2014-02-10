@@ -121,13 +121,24 @@ public:
          * - bc_piezo_head key
          * - flow_old_bcd_file
          */
-        RegionSet read_boundary_list_item(Input::Record rec);
+        //RegionSet read_boundary_list_item(Input::Record rec);
         
         /**
          * Overrides EqDataBase::read_bulk_list_item, implements reading of
          * - init_piezo_head key
          */
-        RegionSet read_bulk_list_item(Input::Record rec);
+        //RegionSet read_bulk_list_item(Input::Record rec);
+        inline static boost::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        {
+            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
+                Input::AbstractRecord field_a_rec;
+            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
+            		return boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
+            	} else {
+            		return field_ptr;
+            	}
+        }
        
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -145,7 +156,14 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-        arma::vec4 gravity_;
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         *
+         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
+         * introduce some kind of context pointer into @p FieldCommonBase.
+         */
+        static arma::vec4 gravity_;
     };
 
 

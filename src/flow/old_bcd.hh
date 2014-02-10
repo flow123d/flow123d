@@ -8,8 +8,9 @@
 #ifndef OLD_BCD_HH_
 #define OLD_BCD_HH_
 
-#include "fields/field_base.hh"
+#include "fields/field_elementwise.hh"
 #include "mesh/mesh.h"
+#include "input/accessors.hh"
 #include <map>
 
 /**
@@ -38,30 +39,126 @@
  */
 class OldBcdInput {
 public:
+	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> > FieldBaseScalar;
+	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Enum> > FieldBaseEnum;
+	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Vector> > FieldBaseVector;
+
+	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
+	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
+	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
+
+	typedef Field<3, FieldValue<3>::Scalar> Field_Scalar;
+	typedef Field<3, FieldValue<3>::Enum> Field_Enum;
+	typedef Field<3, FieldValue<3>::Vector> Field_Vector;
+
+    boost::shared_ptr<FieldEnum>	flow_type;
+    boost::shared_ptr<FieldScalar>  flow_pressure;
+    boost::shared_ptr<FieldScalar>  flow_flux;
+    boost::shared_ptr<FieldScalar>  flow_sigma;
+    boost::shared_ptr<FieldVector>  trans_conc;
+
     static OldBcdInput * instance();
 
-    void read_flow(const FilePath &flow_bcd,
-        Field<3,FieldValue<3>::Enum > &flow_type,
-        Field<3,FieldValue<3>::Scalar > &flow_pressure,
-        Field<3,FieldValue<3>::Scalar > &flow_flux,
-        Field<3,FieldValue<3>::Scalar > &flow_sigma);
+    // hooks
+    static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommonBase &field) {
+    	OldBcdInput *old_bcd = OldBcdInput::instance();
+    	auto field_ptr=Field_Enum::read_field_descriptor(rec, field);
+    	if (field_ptr) return field_ptr;
+    	else {
+    		old_bcd->read_flow_record(rec, field);
+    		return old_bcd->flow_type;
+    	}
+    }
+    static FieldBaseScalar flow_pressure_hook(Input::Record rec, const FieldCommonBase &field) {
+    	OldBcdInput *old_bcd = OldBcdInput::instance();
+    	auto field_ptr= Field_Scalar::read_field_descriptor(rec, field);
+    	if (field_ptr) return field_ptr;
+    	else {
+    		old_bcd->read_flow_record(rec, field);
+    		return old_bcd->flow_pressure;
+    	}
+    }
+    static FieldBaseScalar flow_flux_hook(Input::Record rec, const FieldCommonBase &field) {
+    	OldBcdInput *old_bcd = OldBcdInput::instance();
+    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
+    	if (field_ptr) return field_ptr;
+    	else {
+    		old_bcd->read_flow_record(rec, field);
+    		return old_bcd->flow_flux;
+    	}
+    }
+    static FieldBaseScalar flow_sigma_hook(Input::Record rec, const FieldCommonBase &field)  {
+    	OldBcdInput *old_bcd = OldBcdInput::instance();
+    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
+    	if (field_ptr) return field_ptr;
+    	else {
+    		old_bcd->read_flow_record(rec, field);
+    		return old_bcd->flow_sigma;
+    	}
+    }
+    static FieldBaseVector trans_conc_hook(Input::Record rec, const FieldCommonBase &field)  {
+    	OldBcdInput *old_bcd = OldBcdInput::instance();
+    	auto field_ptr = Field_Vector::read_field_descriptor(rec,field);
+    	if (field_ptr) return field_ptr;
+    	else {
+    		old_bcd->read_transport_record( rec, field);
+    		return old_bcd->trans_conc;
+    	}
+    }
 
-    void read_transport(const FilePath &transport_bcd,
-        Field<3,FieldValue<3>::Vector > &trans_conc);
+    void read_flow_record(Input::Record rec, const FieldCommonBase &field) {
+    	FilePath bcd_file;
+    	if (rec.opt_val("flow_old_bcd_file", bcd_file)
+    			&& string(bcd_file) != flow_input_file_) {
+    		ASSERT(field.mesh(),"Null mesh pointer.");
+    		read_flow(*(field.mesh()), bcd_file);
+    		flow_input_file_ = string(bcd_file);
+    	}
+    }
+
+
+    inline void read_transport_record(Input::Record rec, const FieldCommonBase &field);
+
+
+    /**
+     * Create flow_* fields from given input file.
+     */
+    void read_flow(const Mesh &mesh, const FilePath &flow_bcd);
+
+    /**
+     * Create trans_conc field from given input file.
+     */
+    void read_transport(unsigned int n_substances, const FilePath &transport_bcd);
 
     /// Maps ID to index of corresponding BC element.
     map<unsigned int, unsigned int> id_2_bcd_;
 
 private:
+ /*
     template <int spacedim, class Value>
     void set_all( Field<spacedim,Value> &target, const Mesh *mesh);
 
     template <int spacedim, class Value>
     void set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val);
-
+*/
     const Mesh *mesh_;
     Region  some_bc_region_;
+
+    string flow_input_file_;
+    string transport_input_file_;
+
 };
 
+
+
+void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommonBase &field) {
+	FilePath bcd_file;
+	if (rec.opt_val("old_boundary_file", bcd_file)
+			&& string(bcd_file) != transport_input_file_) {
+		ASSERT(field.mesh(),"Null mesh pointer.");
+		read_transport( field.n_comp(), bcd_file);
+		transport_input_file_ = string(bcd_file);
+	}
+}
 
 #endif /* OLD_BCD_HH_ */

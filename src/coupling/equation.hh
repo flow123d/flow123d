@@ -36,6 +36,7 @@
 #include "time_governor.hh"
 #include "time_marks.hh"
 #include "input/accessors.hh"
+#include "fields/field_base.hh"
 
 #include <petscvec.h>
 
@@ -227,7 +228,7 @@ public:
      * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
      * @p d_val with default value. This method is rather called through the macro ADD_FIELD
      */
-    void add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default d_val= Input::Type::Default::optional() );
+    void add_field( FieldCommonBase *field, const string &name, const string &desc, const string &d_val= "" );
 
     /**
      * This method returns a Record for
@@ -257,13 +258,13 @@ public:
      * - check that all fields are initialized
      *
      */
-    virtual void set_time(const TimeGovernor &time);
+    virtual void set_time(const TimeGovernor &time, LimitSide side);
 
     /**
      * Set mesh pointer in EqDataBase so that it can be set in  those fields that needs it.
      * The mesh has to be set before initialization of fields from input.
      */
-    void set_mesh(Mesh *mesh);
+    void set_mesh(const Mesh &mesh);
 
     /**
      * Set bulk and boundary region data list accessors.
@@ -279,32 +280,30 @@ public:
     /**
      * Reads input from one region - one time descriptor.
      */
-    virtual RegionSet read_boundary_list_item(Input::Record rec);
+    //virtual RegionSet read_boundary_list_item(Input::Record rec);
 
-    virtual RegionSet read_bulk_list_item(Input::Record rec);
+    //virtual RegionSet read_bulk_list_item(Input::Record rec);
 
     virtual ~EqDataBase();
 
 protected:
     EqDataBase();
 
-    void check_times(Input::Array &list);
+    //void check_times(Input::Array &list);
 
-    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions);
-
-    RegionSet read_list_item(Input::Record rec, bool bc_regions);
+    //RegionSet read_list_item(Input::Record rec, bool bc_regions);
 
     /// Pointer to mesh where the equation data fields live.
-    Mesh *mesh_;
+    const Mesh *mesh_;
     /// Equation name. Used to name input type records.
     std::string equation_name_;
     /// List of all fields.
     std::vector<FieldCommonBase *> field_list;
 
     /// Accessors to to bulk and boundary input arrays.
-    Input::Array bulk_input_array_, boundary_input_array_;
+    //Input::Array bulk_input_array_, boundary_input_array_;
     /// Iterators into these arrays pointing to the first unprocessed item.
-    Input::Iterator<Input::Record> bulk_it_, boundary_it_;
+    //Input::Iterator<Input::Record> bulk_it_, boundary_it_;
 };
 
 

@@ -24,12 +24,17 @@
 #include <string>
 #include <boost/type_traits.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/circular_buffer.hpp>
+#include <queue>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "system/exceptions.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
+#include "coupling/time_governor.hh"
+#include "coupling/time_marks.hh"
 
 #include "fields/field_values.hh"
 
@@ -189,6 +194,12 @@ protected:
 
 
 
+/// Left and right time limit, used in the @p set_time() method.
+enum class LimitSide {
+	left,
+	right
+};
+
 
 /**
  * @brief Common abstract parent of all Field<...> classes.
@@ -198,6 +209,13 @@ protected:
  */
 class FieldCommonBase {
 public:
+	TYPEDEF_ERR_INFO(EI_Time, double);
+	TYPEDEF_ERR_INFO(EI_Field, std::string);
+	DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
+			<< "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
+	DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
+			<< "Missing domain specification (region name, region ID, region set) in fields descriptor:");
+
     /**
      * Constructor, we denote if this is bulk or bc field.
      */
@@ -213,11 +231,15 @@ public:
     inline void set_desc(const string & desc)   { desc_ = desc; }
     /**
      * Set default value for the field's key from which the default constant valued field will be constructed.
-     * During the first call of the @p set_time method, the table that assign particular fields to the regions
-     * is checked for NULL pointers that corresponds to the regions without explicit field specification from the input.
-     * On these regions we use the default constant field.
+     *
+     * During the first call of the @p set_time method, we check that the field is defined on all regions.
+     * On regions where it is not set yet, we use given @p dflt string to get particular instance of
+     * FieldBase<> (see @p check_initialized_region_fields_).
+     * The default string is interpreted in the same way as if it appears in the input file
+     * as the value of the field. In particular it can be whole record with @p TYPE of the field etc.
+     * Most common choice is however mere constant.
      */
-    inline void set_default(const IT::Default &dflt)    { default_ = dflt; }
+    inline void set_default(const string &dflt)    { default_ = dflt; }
     /**
      * @brief Set basic units of the field.
      *
@@ -243,14 +265,22 @@ public:
     /**
      * Set internal mesh pointer.
      */
-    virtual inline void set_mesh(const Mesh *mesh)                    { mesh_=mesh; }
+    virtual void set_mesh(const Mesh &mesh) {};
+    /**
+     * Set the data list from which field will read its input. It is list of "filed descriptors".
+     * When reading from the input list we consider only field descriptors containing key of
+     * named by the field name. These field descriptors has to have times forming ascending sequence.
+     *
+     * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
+     */
+    void set_input_list(const Input::Array &list);
 
     /**
      * Getters.
      */
     const std::string &name() const;
     const std::string desc() const;
-    const IT::Default &get_default() const;
+    const std::string &get_default() const;
     const std::string &units() const;
     bool is_bc() const;
     bool is_enum_valued() const;
@@ -275,7 +305,17 @@ public:
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
+    //virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
+
+    /**
+     * Pass through the input array @p input_list_, collect all times where the field could change and
+     * put appropriate time marks into global TimeMarks object.
+     * Introduced time marks have both given @p mark_type and @p type_input() type.
+     *
+     * Further development:
+     * - we have to distinguish "jump" times and "smooth" times
+     */
+    void mark_input_times(TimeMark::Type mark_type);
 
     /**
      * Abstract method to update field to the new time level.
@@ -284,7 +324,7 @@ public:
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
      */
-    virtual bool set_time(double time) =0;
+    virtual  bool set_time(const TimeGovernor &time, LimitSide side) =0;
 
     /**
      * Virtual destructor.
@@ -297,6 +337,8 @@ public:
     bool changed_during_set_time;
 
 protected:
+
+
     /**
      * Name of the particular field. Used to name the key in the Field list Record.
      */
@@ -323,9 +365,9 @@ protected:
      */
     IT::Selection *element_selection_;
     /**
-     * Possible default value of the field. This implies TYPE=FieldConstant.
+     * Possible default value of the field.
      */
-    IT::Default default_;
+    string default_;
     /**
      * Is true if the value returned by the field is based on Enum
      *  (i.e. constant value is initialized by some Input::Type::Selection)
@@ -341,9 +383,20 @@ protected:
      */
     bool changed_from_last_set_time_;
 
-    /// Time of the last set time.
-    double last_set_time_;
+    /**
+     * List of input field descriptors from which the field is set.
+     */
+    Input::Array input_list_;
 
+    /**
+     * Iterator to current input field descriptor.
+     */
+    Input::Iterator<Input::Record> list_it_;
+
+    /**
+     * Maximum number of FieldBase objects we store per one region.
+     */
+    static const unsigned int history_length_limit_=3;
 };
 
 
@@ -372,8 +425,27 @@ protected:
 template<int spacedim, class Value>
 class Field : public FieldCommonBase {
 public:
+
+
+
     typedef FieldBase<spacedim, Value> FieldBaseType;
+    typedef boost::shared_ptr< FieldBaseType > SharedField;
     typedef typename FieldBase<spacedim, Value>::Point Point;
+
+
+    /**
+     * Pointer to function that creates an instance of FieldBase for
+     * field with name @p field_name based on data in field descriptor @p rec.
+     *
+     * Default implementation in method @p read_field_descriptor  just reads key given by
+     * @p field_name and creates instance using @p FieldBase<...>::function_factory.
+     * Function should return empty SharedField (that is shared_ptr to FieldBase).
+     *
+     * Hooks are necessary to implement:
+     * 1) backward compatibility with old BCD input files
+     * 2) setting pressure values are piezometric head values
+     */
+    SharedField (*read_field_descriptor_hook)(Input::Record rec, const FieldCommonBase &field);
 
     /**
      * Default constructor.
@@ -403,35 +475,58 @@ public:
      */
     void disable_where(const Field<spacedim, typename FieldValue<spacedim>::Enum > *control_field, const vector<FieldEnum> &value_list);
 
+
+
+    /**
+     * Set mesh pointer and resize region arrays.
+     *
+     * Implements abstract method.
+     */
+    void set_mesh(const Mesh &mesh);
+
+
     /**
      * Direct read access to the table of Field pointers on regions.
      */
-    boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
      * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true and sets
      * given ElementAccessor @p elm to "virtual" element on which Field::value returns constant value.
-     * Otherwise it returns false and invalidate @p elm (ElementAccessor::is_valid() returns false).
+     * Otherwise it returns false and invalidate @p elm; method ElementAccessor::is_valid() returns false.
      */
     bool get_const_accessor(Region reg, ElementAccessor<spacedim> &elm);
 
-    /**
-     * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
-     * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
-     */
-    void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
 
     /**
      * Assigns @p field to the given region @p reg. Caller is responsible for correct construction of given field.
      * Use this method only if necessary.
      */
-    void set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
+    //void set_field(const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
+
+    /**
+     * Default implementation of @p read_field_descriptor_hook.
+     *
+     * Reads key given by @p field_name and creates the field instance using
+     * @p FieldBase<...>::function_factory.
+     */
+    static SharedField read_field_descriptor(Input::Record rec, const FieldCommonBase &field);
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
-     *  and call set_time for every field in the field list.
+     * and call set_time for every field in the field list.
+     *
+     * Returns true if the field has been changed.
      */
-    bool set_time(double time);
+    bool set_time(const TimeGovernor &time, LimitSide side);
+
+
+
+    /**
+     * Returns true, if field is currently set to a time in which it is discontinuous.
+     */
+    //bool is_jump_time();
+
 
     /**
      * If the field returns a FieldEnum and is constant on the given region, the method return true and
@@ -463,14 +558,32 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 private:
+
+
+
+
+    /**
+     * Read input into @p regions_history_ possibly pop some old values from the
+     * history queue to keep its size less then @p history_length_limit_.
+     */
+    void update_history(const TimeGovernor &time);
+
+
+    /**
+	 * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
+	 * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
+	 */
+    //void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
+
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
      */
     void check_initialized_region_fields_();
 
     /**
-     * If this pointer is set, turn off check of initialization in the set_time method on the regions
-     * where the method get_constant_enum_value of the control field returns value from @p no_check_values_.
+     * If this pointer is set, turn off check of initialization in the
+     * @p set_time method on the regions where the method @p get_constant_enum_value
+     * of the control field returns value from @p no_check_values_.
      */
     const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
     std::vector<FieldEnum> no_check_values_;
@@ -480,10 +593,21 @@ private:
      */
     std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
 
+    /// Pair: time, pointer to FieldBase instance
+    typedef pair<double, boost::shared_ptr< FieldBaseType > > HistoryPoint;
+    /// Nearest history of one region.
+    typedef boost::circular_buffer<HistoryPoint> RegionHistory;
+
+    /// History for every region.
+    std::vector< RegionHistory > region_history_;
+
     /**
      * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
      */
     bool is_fully_initialized_;
+
+
+
 };
 
 
@@ -556,12 +680,12 @@ public:
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeGovernor &time, LimitSide side);
 
     /**
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
      */
-    virtual void set_mesh(Mesh *mesh);
+    virtual void set_mesh(const Mesh &mesh);
 
     /**
      * Virtual destructor.

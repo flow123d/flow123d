@@ -151,43 +151,50 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 
 
 
-
-
+// gravity vector + constant shift of values
+arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
 
 
 DarcyFlowMH::EqData::EqData(const std::string &name)
 : EqDataBase(name)
 {
-    gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
+    gravity_ = arma::vec4("0 0 -1 0");
 
-    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", Input::Type::Default("1.0"));
-    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0") );
-    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", Input::Type::Default("1.0") );
-    ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
-    ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
+    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
+    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", "1.0" );
+    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
+    ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
+    ADD_FIELD(water_source_density, "Water source density.", "0.0");
     
-    ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
-              bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_type,"Boundary condition type, possible values:", "none" );
+        bc_type.set_selection(&bc_type_selection);
+        bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-    std::vector<FieldEnum> list; list.push_back(none); list.push_back(neumann);
-    bc_pressure.disable_where(& bc_type, list );
+    	std::vector<FieldEnum> list; list.push_back(none); list.push_back(neumann);
+    	bc_pressure.disable_where(& bc_type, list );
+    	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
+
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
-    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(robin);
-    bc_flux.disable_where(& bc_type, list );
+    	list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(robin);
+    	bc_flux.disable_where(& bc_type, list );
+    	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
-    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
-    bc_robin_sigma.disable_where(& bc_type, list );
-    
+    	list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
+    	bc_robin_sigma.disable_where(& bc_type, list );
+    	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+
     //these are for unsteady
-    ADD_FIELD(init_pressure, "Initial condition as pressure", it::Default("0.0") );
-    ADD_FIELD(storativity,"Storativity.", it::Default("1.0") );
+    ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
+    ADD_FIELD(storativity,"Storativity.", "1.0" );
 }
 
 
 
+
+/*
 RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
     RegionSet domain=EqDataBase::read_boundary_list_item(rec);
     Input::AbstractRecord field_a_rec;
@@ -207,7 +214,7 @@ RegionSet DarcyFlowMH::EqData::read_bulk_list_item(Input::Record rec) {
                 init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
     }
     return domain;
-}
+}*/
 
 /* TODO: this can be applied when Unstedy is no longer descendant from Steady
 DarcyFlowMH_Unsteady::EqData::EqData()
@@ -259,14 +266,15 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     //connecting data fields with mesh
     START_TIMER("data init");
-    data.set_mesh(&mesh_in);
+    data.set_mesh(mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
         
     // steady time governor
     time_ = new TimeGovernor();
     
     //initializing data fields at the beginning (time = 0)
-    data.set_time(*time_);
+    // TODO: for steady case we need right side limit, for unsteady we need left side limit !!!
+    data.set_time(*time_, LimitSide::right);
     END_TIMER("data init");
     
     int ierr;
@@ -381,7 +389,7 @@ void DarcyFlowMH_Steady::update_solution() {
     //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
     //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
     //temporarily solved directly in field_elementwise and field_interpolatedP0
-    data.set_time(*time_);
+    data.set_time(*time_, LimitSide::right);
     END_TIMER("data reinit");
 
     //xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());

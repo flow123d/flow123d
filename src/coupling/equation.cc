@@ -75,7 +75,7 @@ EqDataBase::EqDataBase(const std::string& eq_name)
 
 
 
-void EqDataBase::add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default d_val) {
+void EqDataBase::add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val) {
     field->set_name( name );
     field->set_desc( desc );
     field->set_default( d_val );
@@ -132,17 +132,14 @@ IT::Record EqDataBase::bulk_input_type() {
 
 
 
-void EqDataBase::set_time(const TimeGovernor &time) {
-    /*
-     * - read records from arrays until we reach greater time then actual
-     * - update fields (delete the previous, use make factory for the new one.
-     */
-    set_time(time, boundary_input_array_, boundary_it_, true);
-    set_time(time, bulk_input_array_, bulk_it_, false);
+void EqDataBase::set_time(const TimeGovernor &time, LimitSide side) {
+	BOOST_FOREACH(FieldCommonBase * field, field_list) {
+		field->set_time(time, side);
+	}
 }
 
 
-
+/*
 void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions) {
     // read input up to given time
     if (list.size() != 0) {
@@ -162,15 +159,15 @@ void EqDataBase::set_time(const TimeGovernor &time, Input::Array &list, Input::I
         field->set_time( time.t() );
     }
 }
+*/
 
 
-
-void EqDataBase::set_mesh(Mesh *mesh) {
-    mesh_=mesh;
-    BOOST_FOREACH(FieldCommonBase * field, field_list) field->set_mesh( mesh_ );
+void EqDataBase::set_mesh(const Mesh &mesh) {
+    mesh_=&mesh;
+    BOOST_FOREACH(FieldCommonBase * field, field_list) field->set_mesh( mesh );
 }
 
-
+/*
 void EqDataBase::check_times(Input::Array &list) {
     double time,last_time=0.0;
     if (list.size() == 0) return;
@@ -181,10 +178,17 @@ void EqDataBase::check_times(Input::Array &list) {
         last_time=time;
     }
 }
+*/
 
 void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
     if (mesh_ == NULL) xprintf(PrgErr, "The mesh pointer wasn't set in the EqData of equation '%s'.\n", equation_name_.c_str());
 
+
+    BOOST_FOREACH(FieldCommonBase * field, field_list) {
+    	if (field->is_bc()) field->set_input_list(bc_list);
+    	else field->set_input_list(bulk_list);
+    }
+/*
     bulk_input_array_ = bulk_list;
     boundary_input_array_ = bc_list;
 
@@ -195,11 +199,11 @@ void EqDataBase::init_from_input(Input::Array bulk_list, Input::Array bc_list) {
     if (boundary_input_array_.size() !=0) {
         check_times(boundary_input_array_);
         boundary_it_ = boundary_input_array_.begin<Input::Record>();
-    }
+    }*/
 }
 
 
-
+/*
 
 RegionSet EqDataBase::read_boundary_list_item(Input::Record rec) {
     return read_list_item(rec, true);
@@ -251,7 +255,7 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
 
     return domain;
 }
-
+*/
 
 EqDataBase::~EqDataBase() {}
 

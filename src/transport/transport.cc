@@ -86,9 +86,12 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
             "Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
             "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
+
+    bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 }
 
-RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec) {
+/*
+RegionSet ConvectionTransport::EqData::read_descriptor_hook(Input::Record rec) {
     // Base method EqDataBase::read_boundary_list_item must be called first!
     RegionSet domain = EqDataBase::read_boundary_list_item(rec);
     FilePath bcd_file;
@@ -98,7 +101,7 @@ RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
 
     return domain;
-}
+}*/
 
 
 
@@ -135,9 +138,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.sources_density.set_n_comp(n_subst_);
     data_.sources_sigma.set_n_comp(n_subst_);
     data_.sources_conc.set_n_comp(n_subst_);
-    data_.set_mesh(&init_mesh);
+    data_.set_mesh(init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data_.set_time(*time_);
+    data_.set_time(*time_, LimitSide::left);
 
 
     sorption = in_rec.val<bool>("sorption_enable");
@@ -163,7 +166,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     // register output vectors
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     data_.conc_mobile.init(subst_names_);
-    data_.conc_mobile.set_mesh(mesh_);
+    data_.conc_mobile.set_mesh(*mesh_);
     data_.conc_mobile.set_name("conc_mobile");
     data_.conc_mobile.set_units("M/L^3");
 
@@ -600,7 +603,7 @@ void ConvectionTransport::compute_one_step() {
     unsigned int loc_el,sbi;
     
     START_TIMER("data reinit");
-    data_.set_time(*time_); // set to the last computed time
+    data_.set_time(*time_, LimitSide::left); // set to the last computed time
 
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
