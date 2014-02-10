@@ -64,8 +64,8 @@ public:
     /// Prints formated stacktrace into given stream @p out.
     void print_stacktrace(std::ostream &out) const;
     /**
-     * Purely virtual method, that should be implemented by descendants. Prints specific erro message into
-     * stream @p out. In particular you can use macros DECLARE_EXCEPTION or INPUT_EXCEPTION for easy decalrations.
+     * Purely virtual method, that should be implemented by descendants. Prints specific error message into
+     * stream @p out. In particular you can use macros DECLARE_EXCEPTION or DECLARE_INPUT_EXCEPTION for easy declarations.
      */
     virtual void print_info(std::ostringstream &out) const=0;
     /**
@@ -86,21 +86,7 @@ private:
     int n_stacktrace_frames;
 };
 
-/**
- * @brief Base of exceptions due to user input.
- *
- * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
- * not by an internal error.
- *
- * @ingroup exceptions
- */
-class InputException : public virtual ExceptionBase
-{
-public:
-    virtual const char * what () const throw ();
-    virtual ~InputException() throw ();
 
-};
 
 
 
@@ -132,14 +118,17 @@ public:
  * class Matrix;
  * TYPEDEF_ERR_INFO( EI_Matrix, Matrix);
  * DECLARE_EXCEPTION( ExcWrongMatrixState,
- *     << "Matrix state: " << EI_Matrix::ptr(*this)->state() << endl
+ *     << "Matrix state: " << EI_Matrix::ptr(*this)->state() << "\n"
  *     << "Matrix info: " << EI_Matrix::ref(*this).info() );
  * @endcode
  *
  * The example shows two ways how to call methods of the object of class Matrix passed through the exception. One can either get pointer to the object or
  * reference. The  @p ref method checks that the pointer to the object is not NULL (so that the object was actually passed).
- * The @p ptr method do not perform the check. However, when using one of these methods you have to guarantee that the @p error_info object is passed to the exception
- * at every throw point that use that exception. Otherwise you get an error, meaningful in case of the @p ref method, seg. fault for the @p ptr method.
+ * The @p ptr method do not perform the check. However, when using one of these methods you have to guarantee that the @p error_info object
+ * is passed to the exception at every throw point that use that exception. Otherwise you get an error,
+ * meaningful in case of the @p ref method, seg. fault for the @p ptr method.
+ *
+ * Currently implemented mechanism do no support standard stream modifiers, namely "endl". Please, use "\n" instead.
  *
  * @ingroup exceptions
  */
@@ -155,26 +144,6 @@ struct ExcName : public virtual ::ExceptionBase {                           \
 }
 
 /* ExcName const &_exc=*this; */
-
-
-/**
- * @brief Macro for simple definition of input exceptions.
- *
- * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
- * @p InputException. Meant to be used for exceptions due to wrong input from user.
- *
- * @ingroup exceptions
- */
-#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : public virtual ::InputException {                                   \
-     virtual void print_info(std::ostringstream &out) const {                     \
-         using namespace internal;                                          \
-         ::internal::ExcStream estream(out, *this);                                     \
-         estream Format ;                                                   \
-         out << std::endl;                                                  \
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
 
 
 
@@ -331,11 +300,13 @@ internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag,
 } // namespace internal
 
 
+
 /**
- * Assert exception with an string message.
+ * Exception thrown in xprintf function.
  */
-TYPEDEF_ERR_INFO( EI_Message, std::string);
-DECLARE_EXCEPTION( ExcAssertMsg, << "Violated Assert! " << EI_Message::val);
+TYPEDEF_ERR_INFO( EI_XprintfHeader, std::string);
+TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
+DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
 
 
 

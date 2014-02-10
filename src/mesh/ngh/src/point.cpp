@@ -1,8 +1,7 @@
 #include <iostream>
 
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/config.h"
-#include "mesh/ngh/include/system.h"
 #include "mesh/ngh/include/mathfce.h"
 
 using namespace mathfce;
@@ -122,7 +121,7 @@ double TPoint::Z() const {
 
 double TPoint::Get(int i) const {
     if (!(i >= 1 && i <= 3)) {
-        mythrow((char*) "Invalid specification of the element of the vector.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Invalid specification of the element of the vector.") );
     }
 
     switch (i) {

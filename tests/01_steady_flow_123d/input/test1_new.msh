@@ -5,10 +5,10 @@ $PhysicalNames
 8
 0 8 ".1d_channel"
 1 1 "1d_channel"
-1 6 ".2d_fraction_1"
-1 7 ".2d_fraction_2"
-2 2 "2d_fraction_1"
-2 3 "2d_fraction_2"
+1 6 ".2d_fracture_1"
+1 7 ".2d_fracture_2"
+2 2 "2d_fracture_1"
+2 3 "2d_fracture_2"
 2 5 ".3d_cube"
 3 4 "3d_cube"
 $EndPhysicalNames

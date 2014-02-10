@@ -1,8 +1,9 @@
 #include <cmath>
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"
-#include "mesh/ngh/include/system.h"
-#include "mesh/ngh/include/problem.h"
+//#include "mesh/ngh/include/system.h"
+//#include "mesh/ngh/include/problem.h"
 //#include <math.h>
 
 using namespace mathfce;
@@ -66,24 +67,24 @@ std::ostream & operator <<(std::ostream& stream, const TMVector& V) {
 
 void TMatrix::Set(int row, int col, double value) {
     if (row > nr)
-        mythrow((char*) "Number of the row is greater than number of rows in the matrix.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the row is greater than number of rows in the matrix.") );
     if (col > nc)
-        mythrow((char*) "Number of the column is greater than number of columns in the matrix.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the column is greater than number of columns in the matrix.") );
     elm[ (row - 1) * nc + col - 1 ] = value;
     return;
 }
 
 double TMatrix::Get(int row, int col) const {
     if (row > nr)
-        mythrow((char*) "Number of the row is greater than number of rows in the matrix.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the row is greater than number of rows in the matrix.") );
     if (col > nc)
-        mythrow((char*) "Number of the column is greater than number of columns in the matrix.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the column is greater than number of columns in the matrix.") );
     return elm[ (row - 1) * nc + col - 1 ];
 }
 
 void TMatrix::SwapRows(int r1, int r2) {
     if (r1 > nr || r2 > nr) {
-        mythrow((char*) "Number of the row is greater than number of rows in the matrix.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the row is greater than number of rows in the matrix.") );
     }
 
     for (int i = 1; i <= nc; i++) {
@@ -97,7 +98,7 @@ void TMatrix::SwapRows(int r1, int r2) {
 
 void TMVector::SwapElements(int i1, int i2) {
     if (i1 > size || i2 > size) {
-        mythrow((char*) "Number of the element is greater than size of the vector.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Number of the element is greater than size of the vector.") );
     }
 
     double tmp = elm[ i1 - 1 ];
@@ -109,15 +110,16 @@ void TMVector::SwapElements(int i1, int i2) {
 
 double TMVector::Get(int i) {
     if (i > size) {
-        mythrow((char*) "Number of the element is greater than size of the vector.", __LINE__, __FUNC__);
+    	THROW( ExcAssertMsg() << EI_Message("Number of the element is greater than size of the vector.") );
     }
+
 
     return elm[ i - 1 ];
 }
 
 void TMVector::Set(int i, double value) {
     if (i > size)
-        mythrow((char*) "Number of the element is greater than size of the vector.", __LINE__, __FUNC__);
+    	THROW( ExcAssertMsg() << EI_Message("Number of the element is greater than size of the vector.") );
     elm[ i - 1 ] = value;
     return;
 }

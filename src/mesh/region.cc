@@ -332,8 +332,9 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 		RegionSet & set_1, RegionSet & set_2) {
 	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
 	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
-	ASSERT( it_1 != sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
-	ASSERT( it_2 != sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
+
+	if ( it_1 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_1)); }
+	if ( it_2 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_2)); }
 
 	set_1 = (*it_1).second;
 	set_2 = (*it_2).second;
@@ -343,9 +344,29 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 }
 
 
-const RegionSet & RegionDB::get_region_set(const string & set_name) const {
+
+pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands)
+{
+	vector<string> names;
+	operands.copy_to(names);
+	if ( names.size() != 2 ) THROW(ExcWrongOpNumber() << EI_NumOp(names.size()) << operands.ei_address() );
+	auto ret_names = pair<string,string>(names[0], names[1]);
+	if ( sets_.find( ret_names.first ) == sets_.end() )
+		THROW( ExcUnknownSet()  << EI_Label( ret_names.first )
+								<< operands.ei_address() );
+	if ( sets_.find( ret_names.second ) == sets_.end() )
+		THROW( ExcUnknownSet()  << EI_Label( ret_names.second )
+								<< operands.ei_address() );
+	return ret_names;
+}
+
+
+
+RegionSet RegionDB::get_region_set(const string & set_name) const {
 	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
-	ASSERT( it != sets_.end(), "No region set with name: %s\n", set_name.c_str());
+	if ( it == sets_.end() ) {
+		return RegionSet();
+	}
 	return (*it).second;
 }
 
@@ -393,37 +414,37 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 			}
 		}
 
-		if (rec.opt_val("union", union_names) ) {
+		Input::Iterator<Input::Array> operands = rec.find<Input::Array>("union");
+		if ( operands ) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by union operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> union_set_1 = union_names.begin<string>();
-			Input::Iterator<string> union_set_2 = ++(union_names.begin<string>());
-			region_set = union_sets( (*union_set_1), (*union_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = union_sets( set_names.first, set_names.second );
 		}
 
-		if (rec.opt_val("intersection", intersection_names) ) {
+		operands = rec.find<Input::Array>("intersection");
+		if (operands) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by intersection operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> intersection_set_1 = intersection_names.begin<string>();
-			Input::Iterator<string> intersection_set_2 = ++(intersection_names.begin<string>());
-			region_set = intersection( (*intersection_set_1), (*intersection_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = intersection( set_names.first, set_names.second );
 		}
 
-		if (rec.opt_val("difference", difference_names) ) {
+		operands = rec.find<Input::Array>("difference");
+		if (operands) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by difference operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> difference_set_1 = difference_names.begin<string>();
-			Input::Iterator<string> difference_set_2 = ++(difference_names.begin<string>());
-			region_set = difference( (*difference_set_1), (*difference_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = difference( set_names.first, set_names.second );
 		}
 
 		add_set(set_name, region_set);
