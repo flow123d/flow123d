@@ -89,7 +89,7 @@ void OutputMSH::write_msh_topology(void)
 }
 
 
-void OutputMSH::write_msh_ascii_cont_data(OutputData* output_data)
+void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
 {
     ofstream &file = this->get_base_file();
     long int item_id = 1;
@@ -99,39 +99,22 @@ void OutputMSH::write_msh_ascii_cont_data(OutputData* output_data)
     file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-    offset = output_data->spacedim;
+    offset = output_data->vector_items_count;
 
     /* Write ascii data */
-    if(output_data->data_type == OutputData::INT) {
-        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
-            file << item_id << " ";
-            for(j=0; j < offset; j++) {
-                file << ((int*)output_data->data)[i*offset + j] << " ";
-            }
-            file << std::endl;
+    for(i=0; i < output_data->items_count; i += offset, ++item_id) {
+        file << item_id << " ";
+        for(j=0; j < offset; j++) {
+            output_data->print(file, i*offset + j);
+            file << " ";
         }
-    } else if(output_data->data_type == OutputData::UINT) {
-        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
-            file << item_id << " ";
-            for(j=0; j < offset; j++) {
-                file << ((unsigned int*)output_data->data)[i*offset + j] << " ";
-            }
-            file << std::endl;
-        }
-    } else if(output_data->data_type == OutputData::DOUBLE) {
-        for(i=0; i < output_data->item_count; i += offset, ++item_id) {
-            file << item_id << " ";
-            for(j=0; j < offset; j++) {
-                file << ((double*)output_data->data)[i*offset + j] << " ";
-            }
-            file << std::endl;
-        }
+        file << std::endl;
     }
 
 }
 
 
-void OutputMSH::write_msh_ascii_discont_data(OutputData* output_data)
+void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 {
     Mesh *mesh = this->get_mesh();
     ofstream &file = this->get_base_file();
@@ -142,20 +125,15 @@ void OutputMSH::write_msh_ascii_discont_data(OutputData* output_data)
     file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-    offset = output_data->spacedim;
+    offset = output_data->vector_items_count;
 
     /* Write ascii data */
     ele_id = 0;
     FOR_ELEMENTS(mesh, ele) {
         file << ele.index() + 1 << " " << ele->n_nodes() << " ";
         for(it_id=0; it_id < offset; it_id++) {
-            if(output_data->data_type == OutputData::INT) {
-                file << ((int*)output_data->data)[ele_id*offset + it_id] << " ";
-            } else if(output_data->data_type == OutputData::UINT) {
-                file << ((unsigned int*)output_data->data)[ele_id*offset + it_id] << " ";
-            } else if(output_data->data_type == OutputData::DOUBLE) {
-                file << ((double*)output_data->data)[ele_id*offset + it_id] << " ";
-            }
+            output_data->print(file, ele_id*offset + it_id);
+            file << " ";
         }
         ele_id += ele->n_nodes();
         file << std::endl;
@@ -167,10 +145,10 @@ void OutputMSH::write_msh_node_data(double time, int step)
 {
     ofstream &file = this->get_base_file();
     Mesh *mesh = this->get_mesh();
-    OutputData *output_data;
+    OutputDataBase *output_data;
 
     if(this->node_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->node_data.begin();
+        for(vector<OutputDataBase*>::iterator data = this->node_data.begin();
                     data != this->node_data.end();
                     ++data)
         {
@@ -186,15 +164,15 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->spacedim << endl;   // number of components
-            file << output_data->item_count << endl;  // number of values
+            file << output_data->vector_items_count << endl;   // number of components
+            file << output_data->items_count << endl;  // number of values
 
             this->write_msh_ascii_cont_data(output_data);
 
             file << "$EndNodeData" << endl;
         }
     } else if(this->corner_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->corner_data.begin();
+        for(vector<OutputDataBase*>::iterator data = this->corner_data.begin();
                     data != this->corner_data.end();
                     ++data)
         {
@@ -210,7 +188,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->spacedim << endl;   // number of components
+            file << output_data->vector_items_count << endl;   // number of components
             file << mesh->n_elements() << endl; // number of values
 
             this->write_msh_ascii_discont_data(output_data);
@@ -222,11 +200,11 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
-	OutputData* output_data;
+	OutputDataBase* output_data;
     ofstream &file = this->get_base_file();
 
     if(this->elem_data.empty() == false) {
-        for(vector<OutputData*>::iterator data = this->elem_data.begin();
+        for(vector<OutputDataBase*>::iterator data = this->elem_data.begin();
                     data != this->elem_data.end();
                     ++data)
         {
@@ -241,8 +219,8 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->spacedim << endl;   // number of components
-            file << output_data->item_count << endl;  // number of values
+            file << output_data->vector_items_count << endl;   // number of components
+            file << output_data->items_count << endl;  // number of values
 
             this->write_msh_ascii_cont_data(output_data);
 

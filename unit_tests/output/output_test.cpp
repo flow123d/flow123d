@@ -207,32 +207,26 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     ASSERT_EQ(output_time->elem_data.size(), 2);
 
     /* Get first registered data */
-    std::vector<OutputData*>::iterator output_data_iter = output_time->elem_data.begin();
-    OutputData *output_data = *output_data_iter;
-
-    /* There should be double data */
-    ASSERT_EQ(output_data->data_type, OutputData::DOUBLE);
+    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->elem_data.begin();
+    OutputDataBase *output_data = *output_data_iter;
 
     /* Number of items should be equal to number of mesh elements */
-    EXPECT_EQ(output_data->item_count, mesh.n_elements());
+    EXPECT_EQ(output_data->items_count, mesh.n_elements());
 
     /* All values has to be equal 2.0 */
     for(int i = 0; i < mesh.n_elements(); i++) {
-        EXPECT_EQ(((double*)output_data->data)[i], 2.0);
+        EXPECT_EQ((*(OutputData<double>*)output_data)[i], 2.0);
     }
 
     /* Get next registered data */
     output_data = *(++output_data_iter);
 
-    /* There should be double data */
-    ASSERT_EQ(output_data->data_type, OutputData::INT);
-
     /* Number of items should be equal to number of mesh elements */
-    EXPECT_EQ(output_data->item_count, mesh.n_elements());
+    EXPECT_EQ(output_data->items_count, mesh.n_elements());
 
     /* All values has to be equal 10 */
     for(int i = 0; i < mesh.element.size(); i++) {
-        EXPECT_EQ(((int*)output_data->data)[i], 10);
+        EXPECT_EQ((*(OutputData<int>*)output_data)[i], 10);
     }
 
     /* Try to write data to output file */
@@ -296,11 +290,8 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ASSERT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
-    std::vector<OutputData*>::iterator output_data_iter = output_time->corner_data.begin();
-    OutputData *output_data = *output_data_iter;
-
-    /* There should be double data */
-    ASSERT_EQ(output_data->data_type, OutputData::DOUBLE);
+    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->corner_data.begin();
+    OutputDataBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
     ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
@@ -309,7 +300,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     int corner_data_count, corner_id = 0;
     FOR_ELEMENTS(&mesh, ele) {
         FOR_ELEMENT_NODES(ele, node_id) {
-            EXPECT_EQ(((double*)output_data->data)[corner_id], 20.0);
+            EXPECT_EQ((*(OutputData<double>*)output_data)[corner_id], 20.0);
             corner_id++;
         }
     }
@@ -317,22 +308,19 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     corner_data_count = corner_id;
 
     /* Number of items should be equal to number of mesh elements */
-    EXPECT_EQ(output_data->item_count, corner_data_count);
+    EXPECT_EQ(output_data->items_count, corner_data_count);
 
     /* Get next registered corner data */
     output_data = *(++output_data_iter);
 
-    /* There should be integer data */
-    ASSERT_EQ(output_data->data_type, OutputData::INT);
-
     /* Number of items should be equal to number of mesh elements */
-    EXPECT_EQ(output_data->item_count, corner_data_count);
+    EXPECT_EQ(output_data->items_count, corner_data_count);
 
     /* All values has to be equal 100 */
     corner_id = 0;
     FOR_ELEMENTS(&mesh, ele) {
         FOR_ELEMENT_NODES(ele, node_id) {
-            EXPECT_EQ(((int*)output_data->data)[corner_id], -1);
+            EXPECT_EQ((*(OutputData<int>*)output_data)[corner_id], -1);
             corner_id++;
         }
     }

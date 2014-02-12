@@ -94,48 +94,11 @@ static inline void fix_GMSH_file_name(string *fname)
 }
 
 
-OutputData::OutputData(FieldCommonBase *field, DataType data_type, int item_count, int spacedim)
+OutputDataBase *OutputTime::output_data_by_field(FieldCommonBase *field,
+        RefType ref_type)
 {
-    this->field = field;
-    this->item_count = item_count;
-    this->data_type = data_type;
-    switch(this->data_type) {
-        case OutputData::INT:
-            this->data = new int[spacedim*item_count];
-            break;
-        case OutputData::UINT:
-            this->data = new unsigned int[spacedim*item_count];
-            break;
-        case OutputData::DOUBLE:
-            this->data = new double[spacedim*item_count];
-            break;
-    }
-    //this->data_type = data_type;
-    this->spacedim = spacedim;
-}
-
-OutputData::~OutputData()
-{
-    if(this->data) {
-        switch(this->data_type) {
-        case OutputData::INT:
-            delete[] (int*)this->data;
-            break;
-        case OutputData::UINT:
-            delete[] (unsigned int*)this->data;
-            break;
-        case OutputData::DOUBLE:
-            delete[] (double*)this->data;
-            break;
-        }
-    }
-}
-
-OutputData *OutputTime::output_data_by_field(FieldCommonBase *field,
-        RefType ref_type, OutputData::DataType data_type, int item_count, int spacedim)
-{
-    OutputData *output_data = NULL;
-    std::vector<OutputData*> *data_vector;
+    OutputDataBase *output_data = NULL;
+    std::vector<OutputDataBase*> *data_vector;
 
     switch(ref_type) {
     case NODE_DATA:
@@ -150,21 +113,14 @@ OutputData *OutputTime::output_data_by_field(FieldCommonBase *field,
     }
 
     /* Try to find existing data */
-    for(std::vector<OutputData*>::iterator data_iter = data_vector->begin();
+    for(std::vector<OutputDataBase*>::iterator data_iter = data_vector->begin();
             data_iter != data_vector->end();
             ++data_iter) {
-        OutputData *tmp = *data_iter;
+        OutputDataBase *tmp = *data_iter;
         if(tmp->field->name() == field->name()) {
             output_data = tmp;
             break;
         }
-    }
-
-    /* When such data doesn't exists yet, then create new one */
-    if(output_data == NULL) {
-        output_data = new OutputData((FieldCommonBase*)field, data_type,
-                item_count, spacedim);
-        data_vector->push_back(output_data);
     }
 
     return output_data;

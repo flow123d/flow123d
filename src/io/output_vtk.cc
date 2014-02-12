@@ -33,6 +33,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "system/xio.h"
 #include "io/output.h"
@@ -280,7 +281,7 @@ void OutputVTK::write_vtk_discont_topology(void)
 }
 
 
-void OutputVTK::write_vtk_ascii_data(OutputData *output_data)
+void OutputVTK::write_vtk_ascii_data(OutputDataBase *output_data)
 {
     ofstream &file = this->get_data_file();
     unsigned int i, j, offset;
@@ -289,34 +290,19 @@ void OutputVTK::write_vtk_ascii_data(OutputData *output_data)
     file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-    offset = output_data->spacedim;
+    offset = output_data->vector_items_count;
 
-    if(output_data->data_type == OutputData::INT) {
-		for(i=0; i < output_data->item_count; i += offset) {
-			for(j=0; j < offset; j++) {
-				file << ((int*)output_data->data)[i*offset + j] << " ";
-			}
-			file << " ";
-		}
-    } else if(output_data->data_type == OutputData::UINT) {
-		for(i=0; i < output_data->item_count; i += offset) {
-			for(j=0; j < offset; j++) {
-				file << ((unsigned int*)output_data->data)[i*offset + j] << " ";
-			}
-			file << " ";
-		}
-    } else if(output_data->data_type == OutputData::DOUBLE) {
-		for(i=0; i < output_data->item_count; i += offset) {
-			for(j=0; j < offset; j++) {
-				file << ((double*)output_data->data)[i*offset + j] << " ";
-			}
-			file << " ";
-		}
+    for(i=0; i < output_data->items_count; i += offset) {
+        for(j=0; j < offset; j++) {
+            output_data->print(file, i*offset + j);
+            file << " ";
+        }
+        file << " ";
     }
 }
 
 
-void OutputVTK::write_vtk_scalar_ascii(OutputData *output_data)
+void OutputVTK::write_vtk_scalar_ascii(OutputDataBase *output_data)
 {
     ofstream &file = this->get_data_file();
 
@@ -335,7 +321,7 @@ void OutputVTK::write_vtk_scalar_ascii(OutputData *output_data)
 }
 
 
-void OutputVTK::write_vtk_vector_ascii(OutputData *output_data)
+void OutputVTK::write_vtk_vector_ascii(OutputDataBase *output_data)
 {
     ofstream &file = this->get_data_file();
 
@@ -345,7 +331,7 @@ void OutputVTK::write_vtk_vector_ascii(OutputData *output_data)
             "_[" <<
             output_data->field->units() <<
             "]\" NumberOfComponents=\"" <<
-            output_data->spacedim <<
+            output_data->vector_items_count <<
             "\" format=\"ascii\">" <<
             endl;
 
@@ -356,20 +342,20 @@ void OutputVTK::write_vtk_vector_ascii(OutputData *output_data)
 }
 
 
-void OutputVTK::write_vtk_data_ascii(vector<OutputData*> *vec_output_data)
+void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> *vec_output_data)
 {
-	OutputData *output_data;
+	OutputDataBase *output_data;
 
     /* Write data on nodes or elements */
-    for(vector<OutputData*>::iterator data = vec_output_data->begin();
+    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
             data != vec_output_data->end();
             ++data)
     {
     	output_data = *data;
 
-        if(output_data->spacedim == 1) {
+        if(output_data->vector_items_count == 1) {
             this->write_vtk_scalar_ascii(output_data);
-        } else if(output_data->spacedim == 3) {
+        } else if(output_data->vector_items_count == 3) {
             this->write_vtk_vector_ascii(output_data);
         } else {
             /* TODO: not supported */
@@ -378,18 +364,18 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputData*> *vec_output_data)
 }
 
 
-void OutputVTK::write_vtk_scalar_data_names(vector<OutputData*> *vec_output_data)
+void OutputVTK::write_vtk_scalar_data_names(vector<OutputDataBase*> *vec_output_data)
 {
-	OutputData *output_data;
+	OutputDataBase *output_data;
     ofstream &file = this->get_data_file();
 
     /* Write names of scalars */
-    for(vector<OutputData*>::iterator data = vec_output_data->begin();
+    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
                 data != vec_output_data->end();
                 ++data)
     {
     	output_data = *data;
-        if(output_data->spacedim == 1) {
+        if(output_data->vector_items_count == 1) {
             file << output_data->field->name() << "_[" << output_data->field->units() << "]";
             file << ",";
         }
@@ -397,17 +383,17 @@ void OutputVTK::write_vtk_scalar_data_names(vector<OutputData*> *vec_output_data
 }
 
 
-void OutputVTK::write_vtk_vector_data_names(vector<OutputData*> *vec_output_data)
+void OutputVTK::write_vtk_vector_data_names(vector<OutputDataBase*> *vec_output_data)
 {
-	OutputData *output_data;
+	OutputDataBase *output_data;
     ofstream &file = this->get_data_file();
 
     /* Write names of vectors */
-    for(vector<OutputData*>::iterator data = vec_output_data->begin();
+    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
                 data != vec_output_data->end(); ++data)
     {
     	output_data = *data;
-        if(output_data->spacedim == 3) {
+        if(output_data->vector_items_count == 3) {
             file << output_data->field->name() << "_[" << output_data->field->units() << "]";
             file << ",";
         }

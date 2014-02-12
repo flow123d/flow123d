@@ -112,14 +112,14 @@ private:
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_cont_data(OutputData* output_data);
+    void write_msh_ascii_cont_data(OutputDataBase* output_data);
 
     /**
      * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_discont_data(OutputData* output_data);
+    void write_msh_ascii_discont_data(OutputDataBase* output_data);
 
     /**
      * \brief This function write all data on nodes to output file. This function
