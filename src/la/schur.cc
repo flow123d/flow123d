@@ -70,7 +70,7 @@
  */
 
 SchurComplement::SchurComplement(IS ia, Distribution *ds)
-: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created), Orig(NULL)
+: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created)
 {
         xprintf(Msg, "Constructor SchurComplement\n");
 
@@ -91,6 +91,8 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+
+        Orig = this; //temporary initialize
 }
 
 
@@ -229,15 +231,15 @@ void SchurComplement::form_schur()
     // compute IAB=IA*B, loc_size_B removed
     ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, IsB, mat_reuse, &B);
     //DBGMSG(" B:\n");
-    //MatView(Schur->B,PETSC_VIEWER_STDOUT_WORLD);
+    //MatView(B,PETSC_VIEWER_STDOUT_WORLD);
     ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
     //DBGMSG(" IAB:\n");
-    //MatView(Schur->IAB,PETSC_VIEWER_STDOUT_WORLD);
+    //MatView(IAB,PETSC_VIEWER_STDOUT_WORLD);
     // compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
     ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, IsA, mat_reuse, &(Bt));
     ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
     //DBGMSG("xA:\n");
-    //MatView(Schur->xA,PETSC_VIEWER_STDOUT_WORLD);
+    //MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
 
     // get C block, loc_size_B removed
     ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
@@ -245,7 +247,7 @@ void SchurComplement::form_schur()
     ierr+=MatScale(Compl->get_matrix(),-1.0);
     //DBGMSG("C block:\n");
 
-    //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
+    //MatView(Compl->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
     ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
     //DBGMSG("C block:\n");
     //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
