@@ -30,6 +30,9 @@
  *
  */
 
+
+#include <memory>
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
@@ -176,9 +179,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
          // create FieldElementwise for every substance, set it to data->conc_mobile
          data_.conc_mobile[subst_id].set_field(
-        		 time_->t(),
                  mesh_->region_db().get_region_set("ALL"),
-                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
+                 std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() ),
+                 time_->t()
                  );
 
 

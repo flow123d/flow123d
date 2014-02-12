@@ -8,6 +8,7 @@
 
 
 #include "fields/field_base_impl.hh"
+#include "coupling/time_governor.hh"
 #include "system/exceptions.hh"
 #include <limits>
 

@@ -6,9 +6,12 @@
  */
 
 #define TEST_USE_MPI
+
+#include <memory>
 #include <flow_gtest_mpi.hh>
 
 #include "fields/field_base.hh"
+
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
@@ -70,18 +73,20 @@ TEST(Field, init_from_input) {
     reader.read_stream( ss, main_record );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    sorption_type.set_mesh(&mesh);
-    init_conc.set_mesh(&mesh);
-    conductivity.set_mesh(&mesh);
+    sorption_type.set_mesh(mesh);
+    init_conc.set_mesh(mesh);
+    conductivity.set_mesh(mesh);
 
     auto r_set = mesh.region_db().get_region_set("BULK");
-    sorption_type.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
-    init_conc.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
-    conductivity.set_from_input(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
 
-    sorption_type.set_time(0.0);
-    init_conc.set_time(0.0);
-    conductivity.set_time(0.0);
+    sorption_type.set_field(r_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
+    init_conc.set_field(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
+    conductivity.set_field(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+
+
+    sorption_type.set_time();
+    init_conc.set_time();
+    conductivity.set_time();
 
     {	
 
@@ -145,9 +150,9 @@ TEST(Field, init_from_default) {
         Field<3, FieldValue<3>::Scalar > scalar_field;
 
         // test default initialization of scalar field
-        scalar_field.set_default( Input::Type::Default("45") );
-        scalar_field.set_mesh(&mesh);
-        scalar_field.set_time(0.0);
+        scalar_field.set_default( "45" );
+        scalar_field.set_mesh(mesh);
+        scalar_field.set_time();
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
@@ -159,8 +164,8 @@ TEST(Field, init_from_default) {
         BCField<3, FieldValue<3>::Scalar > scalar_field;
 
         // test death of set_time without default value
-        scalar_field.set_mesh(&mesh);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(0.0);} , ExcXprintfMsg, "Missing value of the field");
+        scalar_field.set_mesh(mesh);
+        EXPECT_THROW_WHAT( {scalar_field.set_time();} , ExcXprintfMsg, "Missing value of the field");
     }
     //
     {
@@ -171,9 +176,9 @@ TEST(Field, init_from_default) {
            .close();
 
         enum_field.set_selection(&sel);
-        enum_field.set_default( Input::Type::Default("none") );
-        enum_field.set_mesh(&mesh);
-        enum_field.set_time(0.0);
+        enum_field.set_default( "none" );
+        enum_field.set_mesh(mesh);
+        enum_field.set_time();
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
@@ -217,10 +222,10 @@ TEST(Field, disable_where) {
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);
 
-    bc_type.set_mesh(&mesh);
-    bc_flux.set_mesh(&mesh);
-    bc_value.set_mesh(&mesh);
-    bc_sigma.set_mesh(&mesh);
+    bc_type.set_mesh(mesh);
+    bc_flux.set_mesh(mesh);
+    bc_value.set_mesh(mesh);
+    bc_sigma.set_mesh(mesh);
 
     /*
     1       37      "1D diagonal"
@@ -233,11 +238,11 @@ TEST(Field, disable_where) {
 
     typedef FieldConstant<3, FieldValue<3>::Scalar > SConst;
     typedef FieldConstant<3, FieldValue<3>::Enum > EConst;
-    auto neumann_type = boost::make_shared<EConst>();
+    auto neumann_type = std::make_shared<EConst>();
     neumann_type->set_value(neumann);
-    auto robin_type = boost::make_shared<EConst>();
+    auto robin_type = std::make_shared<EConst>();
     robin_type->set_value(robin);
-    auto one = boost::make_shared<SConst>();
+    auto one = std::make_shared<SConst>();
     one->set_value(1.0);
 
     bc_type.set_field(RegionSet(1, mesh.region_db().find_id(101)), neumann_type );
@@ -250,9 +255,9 @@ TEST(Field, disable_where) {
     bc_type.set_field(RegionSet(1, mesh.region_db().find_id(-3)), neumann_type );
     bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(-3)), one );
 
-    bc_type.set_time(0.0);
-    bc_flux.set_time(0.0);
-    bc_value.set_time(0.0);
-    bc_sigma.set_time(0.0);
+    bc_type.set_time();
+    bc_flux.set_time();
+    bc_value.set_time();
+    bc_sigma.set_time();
 }
 

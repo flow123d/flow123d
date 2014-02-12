@@ -12,8 +12,6 @@
 
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 
 OldBcdInput * OldBcdInput::instance() {
     static OldBcdInput *obcd = new OldBcdInput;
@@ -68,12 +66,12 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
  * - read second file, check IDs agains ID list, fill fields
  */
 
-    flow_type = boost::make_shared< FieldEnum >(1);
-    flow_pressure = boost::make_shared< FieldScalar >(1);
+    flow_type = std::make_shared< FieldEnum >(1);
+    flow_pressure = std::make_shared< FieldScalar >(1);
     flow_pressure->set_mesh(mesh_, true);
-    flow_flux = boost::make_shared< FieldScalar >(1);
+    flow_flux = std::make_shared< FieldScalar >(1);
     flow_flux->set_mesh(mesh_, true);
-    flow_sigma = boost::make_shared< FieldScalar >(1);
+    flow_sigma = std::make_shared< FieldScalar >(1);
     flow_sigma->set_mesh(mesh_, true);
 
     Tokenizer tok(flow_bcd);
@@ -212,7 +210,7 @@ void OldBcdInput::read_transport(unsigned int n_substances, const FilePath &tran
     using namespace boost;
 
     ASSERT(mesh_ , "Null mesh pointer.\n");
-    trans_conc = boost::make_shared< FieldVector >( n_substances );
+    trans_conc = std::make_shared< FieldVector >( n_substances );
     trans_conc->set_mesh(mesh_, true);
 
     FieldValue<3>::Vector::return_type ele_value(n_substances);

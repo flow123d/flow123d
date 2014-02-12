@@ -8,10 +8,17 @@
 #ifndef OLD_BCD_HH_
 #define OLD_BCD_HH_
 
+
+#include <map>
+#include <memory>
+using namespace std;
+
+#include "fields/field_base.hh"
 #include "fields/field_elementwise.hh"
+
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
-#include <map>
+
 
 /**
  * @brief Old BC setting system for backward compatibility.
@@ -39,9 +46,6 @@
  */
 class OldBcdInput {
 public:
-	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> > FieldBaseScalar;
-	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Enum> > FieldBaseEnum;
-	typedef boost::shared_ptr< FieldBase<3, FieldValue<3>::Vector> > FieldBaseVector;
 
 	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
 	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
@@ -51,11 +55,15 @@ public:
 	typedef Field<3, FieldValue<3>::Enum> Field_Enum;
 	typedef Field<3, FieldValue<3>::Vector> Field_Vector;
 
-    boost::shared_ptr<FieldEnum>	flow_type;
-    boost::shared_ptr<FieldScalar>  flow_pressure;
-    boost::shared_ptr<FieldScalar>  flow_flux;
-    boost::shared_ptr<FieldScalar>  flow_sigma;
-    boost::shared_ptr<FieldVector>  trans_conc;
+	typedef Field_Scalar::FieldBasePtr FieldBaseScalar;
+	typedef Field_Enum::FieldBasePtr FieldBaseEnum;
+	typedef Field_Vector::FieldBasePtr FieldBaseVector;
+
+    shared_ptr<FieldEnum>	flow_type;
+    shared_ptr<FieldScalar>  flow_pressure;
+    shared_ptr<FieldScalar>  flow_flux;
+    shared_ptr<FieldScalar>  flow_sigma;
+    shared_ptr<FieldVector>  trans_conc;
 
     static OldBcdInput * instance();
 

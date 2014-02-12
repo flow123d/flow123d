@@ -48,6 +48,7 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include <memory>
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -128,13 +129,13 @@ public:
          * - init_piezo_head key
          */
         //RegionSet read_bulk_list_item(Input::Record rec);
-        inline static boost::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
+        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
         	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
         {
             	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
                 Input::AbstractRecord field_a_rec;
             	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
+            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
             	} else {
             		return field_ptr;
             	}

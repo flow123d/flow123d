@@ -22,8 +22,9 @@
 #define FIELD_BASE_HH_
 
 #include <string>
+#include <memory>
+
 #include <boost/type_traits.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/circular_buffer.hpp>
 #include <queue>
 
@@ -96,11 +97,13 @@ public:
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns shared pointer to  FunctionBase<>.
         */
-       static boost::shared_ptr< FieldBase<spacedim, Value> >
+       static std::shared_ptr< FieldBase<spacedim, Value> >
            function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
        /**
         *  Function can provide way to initialize itself from the input data.
+        *
+        *  TODO: make protected, should be called through function factory
         */
        virtual void init_from_input(const Input::Record &rec);
 
@@ -326,8 +329,11 @@ public:
      *
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
+     *
+     * Default values helps when creating steady field. Note that default TimeGovernor constructor
+     * set time to 0.0
      */
-    virtual  bool set_time(const TimeGovernor &time, LimitSide side) =0;
+    virtual  bool set_time(const TimeGovernor &time=TimeGovernor(), LimitSide side=LimitSide::right) =0;
 
     /**
      * Returns same value as last set_time method called with same @p side parameter.
@@ -435,7 +441,7 @@ public:
 
 
     typedef FieldBase<spacedim, Value> FieldBaseType;
-    typedef boost::shared_ptr< FieldBaseType > SharedField;
+    typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldBase<spacedim, Value>::Point Point;
 
 
@@ -451,7 +457,7 @@ public:
      * 1) backward compatibility with old BCD input files
      * 2) setting pressure values are piezometric head values
      */
-    SharedField (*read_field_descriptor_hook)(Input::Record rec, const FieldCommonBase &field);
+    FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommonBase &field);
 
     /**
      * Default constructor.
@@ -510,8 +516,16 @@ public:
      * Caller is responsible for correct construction of given field.
      *
      * Use this method only if necessary.
+     *
+     * Default time simplify setting steady fields.
      */
-    void set_field(double time, const RegionSet &domain, boost::shared_ptr< FieldBaseType > field);
+    void set_field(const RegionSet &domain, FieldBasePtr field, double time=0.0);
+
+    /**
+     * Same as before but the field is first created using FieldBase::function_factory(), from
+     * given abstract record accessor @p a_rec.
+     */
+    void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
     /**
      * Default implementation of @p read_field_descriptor_hook.
@@ -519,7 +533,7 @@ public:
      * Reads key given by @p field_name and creates the field instance using
      * @p FieldBase<...>::function_factory.
      */
-    static SharedField read_field_descriptor(Input::Record rec, const FieldCommonBase &field);
+    static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommonBase &field);
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
@@ -527,7 +541,7 @@ public:
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeGovernor &time, LimitSide side);
+    bool set_time(const TimeGovernor &time=TimeGovernor(), LimitSide side=LimitSide::right) override;
 
 
 
@@ -600,10 +614,10 @@ private:
     /**
      * Table with pointers to fields on individual regions.
      */
-    std::vector< boost::shared_ptr< FieldBaseType > > region_fields_;
+    std::vector< FieldBasePtr > region_fields_;
 
     /// Pair: time, pointer to FieldBase instance
-    typedef pair<double, boost::shared_ptr< FieldBaseType > > HistoryPoint;
+    typedef pair<double, FieldBasePtr> HistoryPoint;
     /// Nearest history of one region.
     typedef boost::circular_buffer<HistoryPoint> RegionHistory;
 
