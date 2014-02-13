@@ -101,11 +101,18 @@ void fill_matrix(LinSys * lin_sys, int rank, Distribution &ds, Distribution &blo
 		for (unsigned int j=0; j<block_size*n_cols_B; j++)
 			b_vals[j] = 1;
 
+		// set C values
+		std::vector<PetscScalar> c_vals(n_cols_B);
+		for (unsigned int j=0; j<n_cols_B; j++)
+			c_vals[j] = 0;
+
 		// must iterate per rows to get correct transpose
 		for(unsigned int row=0; row<block_size;row++) {
-			lin_sys->mat_set_values(1, &a_rows[row], n_cols_B, &b_cols[0], &b_vals[row*n_cols_B]);
-			lin_sys->mat_set_values(n_cols_B, &b_cols[0],1, &a_rows[row], &b_vals[row*n_cols_B]);
+			lin_sys->mat_set_values(1, &a_rows[row], 1, &b_cols[rank], &b_vals[row*n_cols_B]);
+			lin_sys->mat_set_values(1, &b_cols[rank],1, &a_rows[row], &b_vals[row*n_cols_B]);
 		}
+
+		lin_sys->mat_set_values(1, &b_cols[rank], 1, &b_cols[rank], &c_vals[rank]);
 
 	}
 }
@@ -136,9 +143,7 @@ TEST(schur, complement) {
 	schurComplement->set_symmetric();
 	schurComplement->start_allocation();
 	fill_matrix( schurComplement, rank, ds, block_ds); // preallocate matrix
-	VecZeroEntries(schurComplement->get_solution());
 	schurComplement->start_add_assembly();
-	VecZeroEntries(schurComplement->get_solution());
 	fill_matrix( schurComplement, rank, ds, block_ds); // fill matrix
 	schurComplement->finish_assembly();
 	MatView(schurComplement->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
@@ -146,10 +151,23 @@ TEST(schur, complement) {
 	LinSys * lin_sys = new LinSys_PETSC( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
 	schurComplement->create_inversion_matrix();
-	MatView(schurComplement->get_a_inv(),PETSC_VIEWER_STDOUT_WORLD);
 	schurComplement->form_schur();
-	//schurComplement->set_spd();
+	schurComplement->set_spd();
 
+	// test of computed values
+	{
+		PetscInt ncols;
+		const PetscInt *cols;
+		const PetscScalar *vals;
+		for (unsigned int i=0; i<block_size; i++) {
+			MatGetRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
+			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
+			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
+		}
+		MatGetRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+		EXPECT_FLOAT_EQ( ((double)block_size / (double)(rank + 2)), vals[0] );
+		MatRestoreRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+	}
 }
 
 /*TEST(schur, inversion_matrix) {
