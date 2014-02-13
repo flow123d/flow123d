@@ -13,7 +13,7 @@
 #include <memory>
 using namespace std;
 
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 #include "fields/field_elementwise.hh"
 
 #include "mesh/mesh.h"

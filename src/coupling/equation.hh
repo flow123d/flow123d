@@ -36,12 +36,11 @@
 #include "time_governor.hh"
 #include "time_marks.hh"
 #include "input/accessors.hh"
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 
 #include <petscvec.h>
 
 class Mesh;
-class FieldCommonBase;
 class Region;
 typedef std::vector<Region> RegionSet;
 

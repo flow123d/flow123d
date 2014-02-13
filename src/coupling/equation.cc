@@ -37,7 +37,7 @@
 #include "input/accessors.hh"
 
 #include <boost/foreach.hpp>
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 
 /*****************************************************************************************
  * Implementation of EqBase

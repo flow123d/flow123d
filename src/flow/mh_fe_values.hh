@@ -11,7 +11,7 @@
 #include "mesh/mesh_types.hh"
 #include <armadillo>
 
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 #include "fields/field_values.hh"
 
 typedef Field<3, FieldValue<3>::TensorFixed > FieldType;

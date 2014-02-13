@@ -10,6 +10,7 @@
 #include <memory>
 #include <flow_gtest_mpi.hh>
 
+#include "fields/fied.hh"
 #include "fields/field_base.hh"
 
 #include "input/input_type.hh"

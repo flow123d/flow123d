@@ -67,6 +67,7 @@
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
+#include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
 

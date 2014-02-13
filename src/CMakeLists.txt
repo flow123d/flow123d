@@ -130,7 +130,7 @@ set(sources_lib_interpolation
 set (sources_lib_coupling
     fields/field_values.cc
     fields/field_base.cc
-    fields/field_other.cc
+    fields/field.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc
