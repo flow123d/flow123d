@@ -93,7 +93,7 @@ FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, u
 	func=make_shared< FieldInterpolatedP0<spacedim,Value> >(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
-        func=boost::make_shared< FieldPython<spacedim, Value> >(n_comp);
+        func=make_shared< FieldPython<spacedim, Value> >(n_comp);
 #endif
     } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
         func=make_shared< FieldConstant<spacedim,Value> >(n_comp);
