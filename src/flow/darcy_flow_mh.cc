@@ -320,7 +320,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
-    make_schur0(in_rec.val<AbstractRecord>("solver"));
+    make_schurs(in_rec.val<AbstractRecord>("solver"));
 
     START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
@@ -395,18 +395,31 @@ void DarcyFlowMH_Steady::update_solution() {
         convergedReason = schur0->solve();
         break;
     case 1: /* first schur complement of A block */
-        make_schur1();
-        convergedReason = schur1->get_system()->solve();
-        schur1->resolve();
-        break;
+    	{
+    		SchurComplement * sc0 = (SchurComplement *)schur0;
+        	sc0->form_schur();
+            sc0->set_spd();
+            convergedReason = schur1->solve();
+            sc0->resolve();
+            break;
+    	}
     case 2: /* second schur complement of the max. dimension elements in B block */
-        make_schur1();
-        make_schur2();
+    	{
+			SchurComplement * sc0 = (SchurComplement *)schur0;
+			SchurComplement * sc1 = (SchurComplement *)schur1;
 
-        convergedReason =schur2->get_system()->solve();
-        schur2->resolve();
-        schur1->resolve();
-        break;
+			sc0->form_schur();
+			sc0->set_spd();
+
+			sc1->form_schur();
+			sc1->scale(-1.0);
+			sc1->set_spd();
+
+			convergedReason = schur2->solve();
+			sc1->resolve();
+			sc0->resolve();
+			break;
+    	}
     }
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
@@ -467,17 +480,17 @@ double DarcyFlowMH_Steady::solution_precision() const
 		break;
 	case 1: /* first schur complement of A block */
 		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-			r_tol = schur1->get_system()->get_relative_accuracy();
-			a_tol = schur1->get_system()->get_absolute_accuracy();
+			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
+			r_tol = schur1->get_relative_accuracy();
+			a_tol = schur1->get_absolute_accuracy();
 			precision = max(a_tol, r_tol*bnorm);
 		}
 		break;
 	case 2: /* second schur complement of the max. dimension elements in B block */
 		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-            r_tol = schur1->get_system()->get_relative_accuracy();
-            a_tol = schur1->get_system()->get_absolute_accuracy();
+			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
+            r_tol = schur1->get_relative_accuracy();
+            a_tol = schur1->get_absolute_accuracy();
             precision = max(a_tol, r_tol*bnorm);
 		}
 		break;
@@ -1000,12 +1013,15 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
+void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
     int i_loc, el_row;
     Element *ele;
     Vec aux;
+    PetscErrorCode err;
+
+    F_ENTRY;
 
     //xprintf(Msg,"****************** problem statistics \n");
     //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
@@ -1017,6 +1033,13 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
+    	if (in_rec.type() == LinSys_BDDC::input_type) {
+    		xprintf(Warn, "For BDDC is using no Schur complements.");
+            n_schur_compls = 0;
+    	} else if (n_schur_compls > 2) {
+            xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+            n_schur_compls = 2;
+        }
 
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
@@ -1029,27 +1052,33 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
             schur0=ls;
-            n_schur_compls = 0;
             END_TIMER("BDDC set mesh data");
-
-            // for BDDC no Schur complements for the moment
-            n_schur_compls = 0;
         }
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
-            LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
+        	if (n_schur_compls == 0) {
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
 
-            // temporary solution; we have to set precision also for sequantial case of BDDC
-            // final solution should be probably call of direct solver for oneproc case
-            if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
-            else {
-                ls->LinSys::set_from_input(in_rec); // get only common options
-                n_schur_compls=0; // has to prevent usage of SchurComplement since thay assume PETSC Input::Record
-            }
+                // temporary solution; we have to set precision also for sequantial case of BDDC
+                // final solution should be probably call of direct solver for oneproc case
+                if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
+                else {
+                    ls->LinSys::set_from_input(in_rec); // get only common options
+                }
 
-            ls->set_solution( NULL );
-            schur0=ls;
+                ls->set_solution( NULL );
+                schur0=ls;
+        	} else {
+        		IS is;
+        		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+        		ASSERT(err == 0,"Error in ISCreateStride.");
+
+        		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
+        		ls->set_from_input(in_rec);
+        		schur0=ls;
+        		ls->set_solution( NULL );
+        	}
 
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
@@ -1057,11 +1086,6 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             assembly_steady_mh_matrix(); // preallocation
             VecZeroEntries(schur0->get_solution());
             schur0->start_add_assembly(); // finish allocation and create matrix
-
-            if ((unsigned int) n_schur_compls > 2) {
-                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
-                n_schur_compls = 2;
-            }
 
             END_TIMER("PETSC PREALLOCATION");
 
@@ -1096,6 +1120,34 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
 
     // add time term
+
+    if (n_schur_compls>0) {
+
+    	// make schur1
+    	SchurComplement *sc0 = (SchurComplement *)schur0;
+    	Distribution *ds = sc0->make_complement_distribution();
+    	if (n_schur_compls==2) {
+			IS is;
+			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), sc0->get_distribution()->begin(), 1, &is);
+			ASSERT(err == 0,"Error in ISCreateStride.");
+			schur1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+    	} else {
+    		schur1 = new LinSys_PETSC(ds);
+    	}
+    	sc0->set_complement( schur1 );
+    	sc0->create_inversion_matrix();
+
+    	// make schur2
+    	if (n_schur_compls==2) {
+    		sc0->form_schur();
+    		//sc0->set_spd();
+
+            SchurComplement *sc1 = (SchurComplement *)schur1;
+        	schur2 = new LinSys_PETSC( sc1->make_complement_distribution() );
+        	sc1->set_complement( schur2 );
+        	sc1->create_inversion_matrix();
+    	}
+    }
 
 }
 
@@ -1290,64 +1342,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 
 }
 
-/*******************************************************************************
- * COMPUTE THE FIRST (A-block) SCHUR COMPLEMENT
- ******************************************************************************/
-// paralellni verze musi jeste sestrojit index set bloku A, to jde pres:
-// lokalni elementy -> lokalni sides -> jejich id -> jejich radky
-// TODO: reuse IA a Schurova doplnku
-
-
-void DarcyFlowMH_Steady::make_schur1() {
-    
-    START_TIMER("Schur 1");
-  
-    PetscErrorCode err;
-
-    F_ENTRY;
-    START_TIMER("schur1 - create,inverse");
-
-    // create schur1 if does not exists
-	if (schur1 == NULL) {
-		IS is;
-		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-		ASSERT(err == 0,"Error in ISCreateStride.");
-		schur1 = new SchurComplement(schur0, is, side_ds); // is is deallocated by SchurComplement
-	}
-    
-    END_TIMER("schur1 - create,inverse");
-    
-    
-    START_TIMER("schur1 - form");
-    
-    schur1->form_schur();
-    schur1->set_spd();
-    
-    END_TIMER("schur1 - form");
-}
-
-/*******************************************************************************
- * COMPUTE THE SECOND (B-block) SCHUR COMPLEMENT
- ******************************************************************************/
-void DarcyFlowMH_Steady::make_schur2() {
-    PetscScalar *vDiag;
-    PetscErrorCode ierr;
-    F_ENTRY;
-    START_TIMER("Schur 2");
-
-    // create schur complement of the B block ( of the first complement )
-    if (schur2 == NULL) {
-    	IS is;
-        ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &is);
-        ASSERT(ierr == 0, "Error in ISCreateStride.");
-        schur2 = new SchurComplement(schur1->get_system(), is, el_ds); // is is deallocated by SchurComplement
-
-    }
-
-    schur2->form_schur();
-    schur2->scale(-1.0);
-    schur2->set_spd();
-}
 
 // ================================================
 // PARALLLEL PART
