@@ -65,7 +65,7 @@ it::AbstractRecord FieldBase<spacedim, Value>::input_type
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(typename Value::ElementInputType *element_input_type) {
+Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
     it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
     type.allow_auto_conversion("FieldConstant");
 

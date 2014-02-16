@@ -23,7 +23,7 @@ it::Record FieldPython<spacedim, Value>::input_type= get_input_type( FieldBase<s
 
 template <int spacedim, class Value>
 Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
     it::Record type

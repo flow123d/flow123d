@@ -61,7 +61,7 @@ it::Record FieldInterpolatedP0<spacedim, Value>::input_type
 
 template <int spacedim, class Value>
 Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
     it::Record type=
