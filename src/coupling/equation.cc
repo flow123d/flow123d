@@ -76,9 +76,9 @@ EqDataBase::EqDataBase(const std::string& eq_name)
 
 
 void EqDataBase::add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val) {
-    field->set_name( name );
-    field->set_desc( desc );
-    field->set_default( d_val );
+    field->name( name );
+    field->desc( desc );
+    field->input_default( d_val );
     field_list.push_back(field);
 }
 
@@ -108,11 +108,8 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
                              "Apply field setting in this record after this time.\n"
                              "These times have to form an increasing sequence.");
 
-    BOOST_FOREACH(FieldCommonBase * field, field_list)
+    for(FieldCommonBase * field : field_list)
         if (bc_regions == field->is_bc()) {
-            if (field->is_enum_valued())
-                rec.declare_key(field->name(), field->make_input_tree(), field->desc() );
-            else
                 rec.declare_key(field->name(), field->get_input_type(), field->desc() );
         }
 
@@ -132,9 +129,9 @@ IT::Record EqDataBase::bulk_input_type() {
 
 
 
-void EqDataBase::set_time(const TimeGovernor &time, LimitSide side) {
-	BOOST_FOREACH(FieldCommonBase * field, field_list) {
-		field->set_time(time, side);
+void EqDataBase::set_time(const TimeGovernor &time) {
+	for(FieldCommonBase * field : field_list) {
+		field->set_time(time);
 	}
 }
 

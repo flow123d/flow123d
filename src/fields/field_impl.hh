@@ -21,35 +21,80 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: FieldCommonBase(false),
+: data_(std::make_shared<SharedData>()),
   read_field_descriptor_hook( &read_field_descriptor ),
-  no_check_control_field_(NULL),
   is_fully_initialized_(false)
 {
-    this->enum_valued_ = boost::is_same<typename Value::element_type, FieldEnum>::value;
+	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+	// this invariant is kept also by n_comp setter
+	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 }
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &  Field<spacedim,Value>::get_input_type() {
-    return FieldBaseType::input_type;
+Field<spacedim,Value>::Field(const string &name, bool bc)
+: data_(std::make_shared<SharedData>()),
+  read_field_descriptor_hook( &read_field_descriptor ),
+  is_fully_initialized_(false)
+
+{
+		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+		// this invariant is kept also by n_comp setter
+		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+		shared_->bc_=bc;
+		this->name( name );
+}
+
+
+
+template<int spacedim, class Value>
+Field<spacedim,Value>::Field(const Field &other)
+: FieldCommonBase(other),
+  data_(other.data_),
+  read_field_descriptor_hook( other.read_field_descriptor_hook ),
+  is_fully_initialized_(other.is_fully_initialized_)
+{
+
+}
+
+
+
+
+
+template<int spacedim, class Value>
+it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
+	/*
+	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
+	 * We have to return reference, which may be reference to not yet initialized static object.
+	 *
+	 * TODO: Have method to get persistent copy of an Input Type (which exists nevertheless)
+	 */
+	static vector<it::AbstractRecord> ar_list;
+
+	if (is_enum_valued) {
+		ar_list.push_back(make_input_tree());
+		return ar_list.back();
+	} else {
+		return FieldBaseType::input_type;
+	}
 }
 
 
 
 /// ---------- Helper function template for make_input_tree method
 template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(Input::Type::Selection *sel,  const boost::true_type&)
+IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection &sel,  const boost::true_type&)
 {
-    ASSERT( sel, "NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
-    return FieldBaseType::get_input_type(sel);
+    ASSERT( sel != Input::Type::Selection(),
+    		"NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
+    return FieldBaseType::get_input_type(&sel);
 }
 
 
 template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(Input::Type::Selection *sel,  const boost::false_type&)
+IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection &sel,  const boost::false_type&)
 {
-    return FieldBaseType::get_input_type(NULL);
+    return FieldBaseType::get_input_type(nullptr);
 }
 /// ---------- end helper function template
 
@@ -58,15 +103,36 @@ IT::AbstractRecord get_input_type_resolution(Input::Type::Selection *sel,  const
 
 template<int spacedim, class Value>
 it::AbstractRecord Field<spacedim,Value>::make_input_tree() {
-    return get_input_type_resolution<FieldBaseType>( this->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
+	ASSERT(is_enum_valued,
+			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
+    return get_input_type_resolution<FieldBaseType>( shared_->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
 }
 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::disable_where(const Field<spacedim, typename FieldValue<spacedim>::Enum > *control_field, const vector<FieldEnum> &value_list) {
-    no_check_control_field_=control_field;
-    no_check_values_=value_list;
+auto Field<spacedim, Value>::disable_where(
+		const Field<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
+		const vector<FieldEnum> &value_list) -> Field
+{
+    no_check_control_field_=std::make_shared<ControlField>(control_field);
+    shared_->no_check_values_=value_list;
+    return *this;
+}
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
+	shared_->mesh_ = &in_mesh;
+
+	ASSERT_EQUAL(0, region_fields_.size());
+	ASSERT_EQUAL(0, data_->region_history_.size());
+
+    // initialize table if it is empty, we assume that the RegionDB is closed at this moment
+	region_fields_.resize( mesh()->region_db().size() );
+	RegionHistory init_history(history_length_limit_);	// capacity
+    data_->region_history_.resize( mesh()->region_db().size(), init_history );
+
+    if (no_check_control_field_) no_check_control_field_->set_mesh(in_mesh);
 }
 
 
@@ -86,7 +152,7 @@ bool Field<spacedim, Value>::get_const_accessor(Region reg, ElementAccessor<spac
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        elm = ElementAccessor<spacedim>(mesh_, reg );
+        elm = ElementAccessor<spacedim>(mesh(), reg );
         return true;
     } else {
         return false;
@@ -108,21 +174,19 @@ void Field<spacedim, Value>::set_field(
 		FieldBasePtr field,
 		double time)
 {
-    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before set_field().\n");
+    ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQUAL( field->n_comp() , this->n_comp_);
-    field->set_mesh( this->mesh_ , is_bc() );
+    ASSERT_EQUAL( field->n_comp() , n_comp());
+    field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
-    BOOST_FOREACH(Region reg, domain) {
-    	RegionHistory &region_history = region_history_[reg.idx()];
+    for(const Region &reg: domain) {
+    	RegionHistory &region_history = data_->region_history_[reg.idx()];
     	// insert hp into descending time sequence
-    	for(int i=0; i<region_history.size(); i++) {
-    		if (hp.first > region_history[i].first) {
-    			swap(hp, region_history[i]);
-    		}
-    	}
+    	ASSERT( region_history.size() == 0 || region_history[0].first < hp.first, "Can not insert smaller time %g then last time %g in field's history.\n",
+    			hp.first, region_history[0].first );
+    	region_history.push_front(hp);
     }
 }
 
@@ -153,41 +217,41 @@ auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const Fiel
 
 
 template<int spacedim, class Value>
-bool Field<spacedim, Value>::set_time(const TimeGovernor &time, LimitSide side)
+bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 {
-	static double last_set_time = -numeric_limits<double>::infinity();
-	static LimitSide last_side;
+	ASSERT( mesh() , "NULL mesh pointer. set_mesh must be called before.\n");
 
     // We perform set_time only once for every time.
-    if (time.t() == last_set_time && side == last_side) return false;
-    last_set_time=time.t();
-    last_side = side;
+    if (time.t() == last_time_ ) return false;
+    last_time_=time.t();
 
+    DBGMSG("name: %s\n", name().c_str());
     // read all descriptors satifying time.ge(input_time)
     update_history(time);
     check_initialized_region_fields_();
 
     // set time on all regions
     // for regions that match type of the field domain
-    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
-        if (reg.is_boundary() == this->bc_ && region_fields_[reg.idx()] ) {
-        	double last_time_in_history = region_history_[reg.idx()].front().first;
-        	unsigned int history_size=region_history_[reg.idx()].size();
+    for(const Region &reg: this->shared_->mesh_->region_db().get_region_set("ALL") )
+        if (reg.is_boundary() == is_bc() && region_fields_[reg.idx()] ) {
+        	double last_time_in_history = data_->region_history_[reg.idx()].front().first;
+        	unsigned int history_size=data_->region_history_[reg.idx()].size();
         	unsigned int i_history;
         	if ( time.gt(last_time_in_history) ) {
         		// in smooth time
         		i_history=0;
         	} else {
         		// time .eq. input_time; i.e. jump time
-        		if (side == LimitSide::right) {
+        		if (limit_side_ == LimitSide::right) {
         			i_history=0;
         		} else {
         			i_history=1;
         		}
         	}
         	i_history=min(i_history, history_size - 1);
-        	ASSERT(i_history >= 0, "Emtpty field history.");
-        	region_fields_[reg.idx()]=region_history_[reg.idx()].at(i_history).second;
+        	ASSERT(i_history >= 0, "Empty field history.");
+        	DBGMSG("set on region: %d %d\n", reg.idx(), reg.id());
+        	region_fields_[reg.idx()]=data_->region_history_[reg.idx()].at(i_history).second;
         }
 
 //    this->changed_during_set_time = this->changed_from_last_set_time_;
@@ -229,106 +293,102 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
     else return result_none;
 }
 
-template<int spacedim, class Value>
-void Field<spacedim,Value>::set_mesh(const Mesh &mesh) {
-	this->mesh_ = &mesh;
-
-	ASSERT_EQUAL(0, region_fields_.size());
-	ASSERT_EQUAL(0, region_history_.size());
-
-    // initialize table if it is empty, we assume that the RegionDB is closed at this moment
-	region_fields_.resize( this->mesh_->region_db().size() );
-    region_history_.resize( this->mesh_->region_db().size() );
-}
 
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
-    ASSERT( this->mesh_, "Null mesh pointer, set_mesh() has to be called before.\n");
+    ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before.\n");
 
     // read input up to given time
 	double input_time;
-    if (input_list_.size() != 0) {
-        while( list_it_ != input_list_.end()
-        	   && time.ge( input_time = list_it_->val<double>("time") ) ) {
+    if (shared_->input_list_.size() != 0) {
+        while( shared_->list_it_ != shared_->input_list_.end()
+        	   && time.ge( input_time = shared_->list_it_->val<double>("time") ) ) {
 
+        	DBGMSG("update to time: %g <= %g\n", input_time, time.t());
         	// get domain specification
         	RegionSet domain;
         	std::string name;
         	unsigned int id;
-			if (list_it_->opt_val("r_set", name)) {
-				domain = mesh_->region_db().get_region_set(name);
+			if (shared_->list_it_->opt_val("r_set", name)) {
+				domain = mesh()->region_db().get_region_set(name);
 
-			} else if (list_it_->opt_val("region", name)) {
-				domain.push_back( mesh_->region_db().find_label(name) );    // try find region by label
+			} else if (shared_->list_it_->opt_val("region", name)) {
+				domain.push_back( mesh()->region_db().find_label(name) );    // try find region by label
 				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with label: '%s'\n", name.c_str());
 
-			} else if (list_it_->opt_val("rid", id)) {
-				domain.push_back( mesh_->region_db().find_id(id) );         // try find region by ID
+			} else if (shared_->list_it_->opt_val("rid", id)) {
+				domain.push_back( mesh()->region_db().find_id(id) );         // try find region by ID
 				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with id: '%d'\n", id);
 
 			} else {
-//				THROW(ExcMissingDomain() << list_it_->ei_address() );
+				THROW(ExcMissingDomain() /*<< list_it_->ei_address()*/ );
 			}
 		    if (domain.size() == 0) continue;
 
 			// get field instance
-			FieldBasePtr field_instance = read_field_descriptor_hook(*list_it_, *this);
-			if (! field_instance) continue; // skip descriptors without related keys
-
-			// add to history
-		    ASSERT_EQUAL( field_instance->n_comp() , this->n_comp_);
-		    field_instance->set_mesh( this->mesh_ , is_bc() );
-		    BOOST_FOREACH(Region reg, domain) {
-		    	region_history_[reg.idx()].push_front(
-		    			HistoryPoint(input_time, field_instance)
-		    	);
-		    }
-
-        	++list_it_;
+			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
+			if (field_instance)  // skip descriptors without related keys
+			{
+				// add to history
+				ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+				field_instance->set_mesh( mesh() , is_bc() );
+				for(const Region &reg: domain) {
+					data_->region_history_[reg.idx()].push_front(
+							HistoryPoint(input_time, field_instance)
+					);
+				}
+			}
+        	++shared_->list_it_;
         }
+        DBGMSG("not update to time: %g > %g\n", input_time, time.t());
     }
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
-	ASSERT(this->mesh_, "Null mesh pointer.");
+	ASSERT(mesh(), "Null mesh pointer.");
     if (is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value
     RegionSet regions_to_init; // empty vector
 
-    BOOST_FOREACH(const Region &reg, this->mesh_->region_db().get_region_set("ALL") )
-        if (reg.is_boundary() == this->bc_) {      		// for regions that match type of the field domain
-            if (! region_history_[reg.idx()].size() )   // empty region history
+    for(const Region &reg : mesh()->region_db().get_region_set("ALL") )
+        if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
+            RegionHistory &rh = data_->region_history_[reg.idx()];
+            DBGMSG("reg: %d , size: %d\n",reg.id(), rh.size());
+        	if ( rh.size() == 0 ||	! rh[0].second)   // empty region history
             {
                 if (no_check_control_field_) {      // is the check turned off?
                     FieldEnum value;
                     if (no_check_control_field_->get_constant_enum_value(reg, value)
-                        && ( std::find(no_check_values_.begin(), no_check_values_.end(), value)
-                             != no_check_values_.end() )
+                        && ( std::find(shared_->no_check_values_.begin(), shared_->no_check_values_.end(), value)
+                             != shared_->no_check_values_.end() )
                        ) continue;                  // the field is not needed on this region
                 }
-
-                if (this->default_ != "") {    // try to use default
+                DBGMSG("X reg: %d , size: %d\n",reg.id(), rh.size());
+                if (shared_->default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
-                	xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n", name_.c_str(), reg.id(), reg.label().c_str() );
+                    DBGMSG("Y reg: %d , size: %d\n",reg.id(), rh.size());
+                	xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n",
+                			name().c_str(), reg.id(), reg.label().c_str() );
                 }
             }
         }
 
     // possibly set from default value
     if ( regions_to_init.size() ) {
+    	xprintf(Warn, "Using default value '%s' for part of field '%s'.\n", input_default().c_str(), name().c_str());
         Input::JSONToStorage reader;
-        Input::Type::AbstractRecord a_rec_type = make_input_tree();
-        reader.read_from_default(this->default_, a_rec_type );
+        Input::Type::AbstractRecord a_rec_type = get_input_type();
+        reader.read_from_string( input_default(), a_rec_type );
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-        auto field_ptr = FieldBaseType::function_factory(a_rec, this->n_comp_);
-        field_ptr->set_mesh( this->mesh_ , is_bc() );
-        BOOST_FOREACH(Region reg, regions_to_init) {
-    		region_history_[reg.idx()]
+        auto field_ptr = FieldBaseType::function_factory(a_rec, n_comp() );
+        field_ptr->set_mesh( mesh(), is_bc() );
+        for(const Region &reg: regions_to_init) {
+    		data_->region_history_[reg.idx()]
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
         }
     }
@@ -337,8 +397,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
 
 
-template<int spacedim, class Value>
-BCField<spacedim, Value>::BCField() { this->bc_=true; }
+//template<int spacedim, class Value>
+//BCField<spacedim, Value>::BCField() { this->bc_=true; }
 
 
 
@@ -350,7 +410,7 @@ BCField<spacedim, Value>::BCField() { this->bc_=true; }
 
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
-: FieldCommonBase(false)
+: FieldCommonBase()
 {}
 
 
@@ -360,7 +420,7 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].set_name( this->name_ + "_" + sub_names_[i_comp] );
+        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] );
 }
 
 
@@ -385,12 +445,11 @@ void MultiField<spacedim, Value>::set_from_input(const RegionSet &domain, const 
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
-		const TimeGovernor &time,
-		LimitSide side)
+		const TimeGovernor &time)
 {
 	bool any=false;
 	for( SubFieldType &field : sub_fields_) {
-		any=any || field.set_time(time, side);
+		any=any || field.set_time(time);
 	}
     return any;
 }
@@ -399,7 +458,7 @@ bool MultiField<spacedim, Value>::set_time(
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
-    this->mesh_ = &mesh;
+    shared_->mesh_ = &mesh;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
         sub_fields_[i_comp].set_mesh(mesh);
 }

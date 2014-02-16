@@ -40,11 +40,6 @@ enum class LimitSide {
  * collective operations like @p set_time or @p init_from_input.
  */
 class FieldCommonBase {
-private:
-	//
-	struct SharedData {
-
-	};
 
 public:
 	TYPEDEF_ERR_INFO(EI_Time, double);
@@ -54,19 +49,19 @@ public:
 	DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
 			<< "Missing domain specification (region name, region ID, region set) in fields descriptor:");
 
-    /**
-     * Constructor, we denote if this is bulk or bc field.
-     */
-    FieldCommonBase(bool bc);
+
+
     /**
      *  Set name of the field, used for naming the field's key in EqData record.
      *  It can also be used to name a corresponding output data set, e.g. when outut the field into a VTK file.
      */
-    inline void set_name(const string & name)   { name_ = name;}
+    FieldCommonBase &name(const string & name)
+    { shared_->name_ = name; return *this;}
     /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
-    inline void set_desc(const string & desc)   { desc_ = desc; }
+    FieldCommonBase & desc(const string & desc)
+    { shared_->desc_ = desc; return *this;}
     /**
      * Set default value for the field's key from which the default constant valued field will be constructed.
      *
@@ -77,7 +72,8 @@ public:
      * as the value of the field. In particular it can be whole record with @p TYPE of the field etc.
      * Most common choice is however mere constant.
      */
-    inline void set_default(const string &dflt)    { default_ = dflt; }
+    FieldCommonBase & input_default(const string &dflt)
+    { shared_->default_ = dflt; return *this;}
     /**
      * @brief Set basic units of the field.
      *
@@ -89,17 +85,27 @@ public:
      * Possibly this allow using Boost::Units library, however, it seems to introduce lot of boilerplate code.
      * But can increase correctness of the calculations.
      */
-    inline void set_units(const string & units)         { units_ = units; }
-    /**
-     * Set number of components for run-time sized vectors. This is used latter when we construct
-     * objects derived from FieldBase<...>.
-     */
-    inline void set_n_comp( unsigned int n_comp)        { n_comp_ = n_comp; }
+    FieldCommonBase & units(const string & units)
+    { shared_->units_ = units; return *this;}
     /**
      * For the fields returning "Enum", we have to pass the Input::Type::Selection object to
      * the field implementations.
      */
-    inline void set_selection( Input::Type::Selection *element_selection)   { element_selection_=element_selection;}
+    FieldCommonBase & input_selection(const Input::Type::Selection &element_selection)
+    { shared_->element_selection_=element_selection; return *this;}
+
+
+
+
+    /**
+     * Set number of components for run-time sized vectors. This is used latter when we construct
+     * objects derived from FieldBase<...>.
+     *
+     * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
+     */
+    void n_comp( unsigned int n_comp)
+    { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
+
     /**
      * Set internal mesh pointer.
      */
@@ -114,16 +120,45 @@ public:
     void set_input_list(const Input::Array &list);
 
     /**
+     * Set side of limit when calling @p set_time
+     * with jump time. This method invalidate result of
+     * @p changed() so it should be called just before @p set_time.
+     * Do not change limit side for one field, rather use separate copy.
+     */
+    void set_limit_side(LimitSide side)
+    { limit_side_=side; }
+
+    /**
      * Getters.
      */
-    const std::string &name() const;
-    const std::string desc() const;
-    const std::string &get_default() const;
-    const std::string &units() const;
-    bool is_bc() const;
-    bool is_enum_valued() const;
-    unsigned int n_comp() const;
-    const Mesh * mesh() const;
+    const std::string &name() const
+    { return shared_->name_;}
+
+    const std::string desc() const
+    {return shared_->desc_;}
+
+    const std::string &input_default() const
+    { return shared_->default_;}
+
+    const std::string &units() const
+    { return shared_->units_;}
+
+    bool is_bc() const
+    { return shared_->bc_;}
+
+    unsigned int n_comp() const
+    { return shared_->n_comp_;}
+
+    const Mesh * mesh() const
+    { return shared_->mesh_;}
+
+
+    /**
+     * Common part of the field descriptor. To get finished record
+     * one has to add keys for individual fields. This is done automatically
+     * using FieldList::get_input_type().
+     */
+    static IT::Record field_descriptor_record(const string& list_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -164,82 +199,127 @@ public:
      * Default values helps when creating steady field. Note that default TimeGovernor constructor
      * set time to 0.0
      */
-    virtual  bool set_time(const TimeGovernor &time=TimeGovernor(), LimitSide side=LimitSide::right) =0;
+    virtual  bool set_time(const TimeGovernor &time=TimeGovernor()) =0;
 
     /**
      * Returns same value as last set_time method called with same @p side parameter.
-     * TODO: remove default value as soon as things get stabilized (namely in Sorption ...)
      */
-    bool changed(LimitSide side=LimitSide::right) const
+    bool changed() const
     {
-    	return changed_flag_[static_cast<unsigned int>(side)];
+    	ASSERT( status_ != TimeStatus::unknown, "Invalid time status.\n");
+    	return (status_ == TimeStatus::changed);
     }
+
     /**
      * Virtual destructor.
      */
     virtual ~FieldCommonBase();
 
-    /**
-     * Is true if the values of the field has changed during last set_time() call.
-     */
-    bool changed_flag_[static_cast<unsigned int>(LimitSide::size)];
 
 protected:
-
-
     /**
-     * Name of the particular field. Used to name the key in the Field list Record.
+     * Private default constructor. Should be used only Through
      */
-    std::string name_;
-    /**
-     * Description of corresponding key in the Field list Record.
-     */
-    std::string desc_;
-    /**
-     * Units of the field values. Currently just a string description.
-     */
-    std::string units_;
-    /**
-     * True for boundary fields.
-     */
-    bool bc_;
-    /**
-     * Number of components for fields that return variable size vectors. Zero in other cases.
-     */
-    unsigned int n_comp_;
-    /**
-     * For Enum valued fields this points to the input type selection that should be used
-     * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
-     */
-    IT::Selection *element_selection_;
-    /**
-     * Possible default value of the field.
-     */
-    string default_;
-    /**
-     * Is true if the value returned by the field is based on Enum
-     *  (i.e. constant value is initialized by some Input::Type::Selection)
-     */
-    bool enum_valued_;
-    /**
-     * Pointer to the mesh on which the field lives.
-     */
-    const Mesh *mesh_;
+    FieldCommonBase();
 
     /**
-     * List of input field descriptors from which the field is set.
+     * Setters for essential field properties.
      */
-    Input::Array input_list_;
+	/**
+	 *  Data shared among copies of the same field.
+	 *
+	 *  This allow field copies in different equations with different time setting, but
+	 *  sharing common input field descriptor array and common history.
+	 */
+	struct SharedData {
+	    /**
+	     * True for boundary fields.
+	     */
+	    bool bc_;
+	    /**
+	     * Number of components for fields that return variable size vectors. Zero in other cases.
+	     */
+	    unsigned int n_comp_;
+	    /**
+	     * Name of the particular field. Used to name the key in the Field list Record.
+	     */
+	    std::string name_;
+	    /**
+	     * Description of corresponding key in the Field list Record.
+	     */
+	    std::string desc_;
+	    /**
+	     * Units of the field values. Currently just a string description.
+	     */
+	    std::string units_;
+	    /**
+	     * For Enum valued fields this points to the input type selection that should be used
+	     * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
+	     *
+	     * Is nullptr for for non-enum values fields.
+	     */
+	    IT::Selection element_selection_;
+	    /**
+	     * Possible default value of the field.
+	     */
+	    string default_;
+	    /**
+	     * Pointer to the mesh on which the field lives.
+	     */
+	    const Mesh *mesh_;
+
+	    /**
+	     * List of input field descriptors from which the field is set.
+	     */
+	    Input::Array input_list_;
+
+	    /**
+	     * Iterator to current input field descriptor.
+	     */
+	    Input::Iterator<Input::Record> list_it_;
+
+	    /**
+	     * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
+	     */
+	    bool is_fully_initialized_;
+
+	    /**
+	     * For which values of an enum valued field we do not
+	     * check the field. User is responsible, that the value will not be called
+	     * on such regions.
+	     */
+	    std::vector<FieldEnum> no_check_values_;
+
+
+	};
+
+
+	std::shared_ptr<SharedData> shared_;
 
     /**
-     * Iterator to current input field descriptor.
+     *
      */
-    Input::Iterator<Input::Record> list_it_;
+    LimitSide limit_side_;
+
+
+
+    enum class TimeStatus {
+    	changed,
+    	constant,
+    	unknown
+    };
+
+    /**
+     *
+     */
+    TimeStatus status_;
 
     /**
      * Maximum number of FieldBase objects we store per one region.
      */
     static const unsigned int history_length_limit_=3;
+
+
 };
 
 
@@ -263,17 +343,19 @@ protected:
  * key methods @p value, and @p value_list are not virtual in this class by contrast these methods are inlined to minimize overhead for
  * simplest fields like FieldConstant.
  *
+ * TODO: currently it works only for spacedim==3 since we have only mesh in 3D ambient space.
  *
  */
 template<int spacedim, class Value>
 class Field : public FieldCommonBase {
 public:
 
-
-
     typedef FieldBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
     typedef typename FieldBase<spacedim, Value>::Point Point;
+
+    static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
+    static const unsigned int space_dim = spacedim;
 
 
     /**
@@ -296,27 +378,37 @@ public:
      */
     Field();
 
+    Field(const string &name, bool bc = false);
+
+    /**
+     * Copy.
+     */
+    Field(const Field &other);
+
+
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
      * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type();
+    IT::AbstractRecord &get_input_type() override;
 
     /**
      * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
      * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
      * that was set through @p FieldBaseCommon::set_selection() method.
      */
-    IT::AbstractRecord make_input_tree();
+    IT::AbstractRecord make_input_tree() override;
 
     /**
      * By this method you can allow that the field need not to be set on regions (and times) where the given @p control_field is
      * FieldConstant and has value in given @p value_list. We check this in the set_time method. Through this mechanism we
      * can switch of e.g. boundary data fields according to the type of the boundary condition.
      */
-    void disable_where(const Field<spacedim, typename FieldValue<spacedim>::Enum > *control_field, const vector<FieldEnum> &value_list);
+    auto disable_where(
+    		const Field<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
+    		const vector<FieldEnum> &value_list) -> Field;
 
 
 
@@ -325,7 +417,7 @@ public:
      *
      * Implements abstract method.
      */
-    void set_mesh(const Mesh &mesh);
+    void set_mesh(const Mesh &mesh) override;
 
 
     /**
@@ -372,7 +464,7 @@ public:
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeGovernor &time=TimeGovernor(), LimitSide side=LimitSide::right) override;
+    bool set_time(const TimeGovernor &time=TimeGovernor() ) override;
 
 
 
@@ -411,7 +503,7 @@ public:
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
-private:
+protected:
 
 
 
@@ -434,34 +526,47 @@ private:
      */
     void check_initialized_region_fields_();
 
-    /**
-     * If this pointer is set, turn off check of initialization in the
-     * @p set_time method on the regions where the method @p get_constant_enum_value
-     * of the control field returns value from @p no_check_values_.
-     */
-    const Field<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
-    std::vector<FieldEnum> no_check_values_;
-
-    /**
-     * Table with pointers to fields on individual regions.
-     */
-    std::vector< FieldBasePtr > region_fields_;
+    /**************** Shared data **************/
 
     /// Pair: time, pointer to FieldBase instance
     typedef pair<double, FieldBasePtr> HistoryPoint;
     /// Nearest history of one region.
     typedef boost::circular_buffer<HistoryPoint> RegionHistory;
 
-    /// History for every region.
-    std::vector< RegionHistory > region_history_;
+    struct SharedData {
+
+        /**
+         *  History for every region. Shared among copies.
+         */
+         std::vector< RegionHistory >  region_history_;
+    };
+
+    /**************** Data per copy **************/
+
+    std::shared_ptr<SharedData> data_;
+
+	/**
+	 * If this pointer is set, turn off check of initialization in the
+	 * @p set_time method on the regions where the method @p get_constant_enum_value
+	 * of the control field returns value from @p no_check_values_.
+	 */
+    typedef Field<spacedim, typename FieldValue<spacedim>::Enum > ControlField;
+	std::shared_ptr<ControlField>  no_check_control_field_;
+
+    /**
+     * Table with pointers to fields on individual regions.
+     */
+    std::vector< FieldBasePtr > region_fields_;
 
     /**
      * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
      */
     bool is_fully_initialized_;
 
-
-
+    /**
+     * Last set time.
+     */
+    double last_time_ = -numeric_limits<double>::infinity();
 };
 
 
@@ -536,7 +641,7 @@ public:
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
      */
-    bool set_time(const TimeGovernor &time, LimitSide side);
+    bool set_time(const TimeGovernor &time);
 
     /**
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
@@ -585,8 +690,9 @@ private:
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)  {
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), this->name_.c_str());
-    ASSERT( region_fields_[elm.region_idx().idx()] , "Null field ptr on region id: %d, field: %s\n", elm.region().id(), this->name_.c_str());
+           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
+    ASSERT( region_fields_[elm.region_idx().idx()] ,
+    		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
 

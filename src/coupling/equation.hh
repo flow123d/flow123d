@@ -261,7 +261,7 @@ public:
      * - check that all fields are initialized
      *
      */
-    virtual void set_time(const TimeGovernor &time, LimitSide side);
+    virtual void set_time(const TimeGovernor &time);
 
     /**
      * Set mesh pointer in EqDataBase so that it can be set in  those fields that needs it.
