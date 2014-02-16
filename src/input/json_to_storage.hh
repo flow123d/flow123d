@@ -207,11 +207,9 @@ public:
     void read_stream(istream &in, const Type::TypeBase &root_type);
 
     /**
-     * Read a storage from given default value using method storage_from_default.
-     *
-     * Maybe we should rather should make independent reader class for deafult strings.
+     * Read a storage from string (e.g. complex default value).
      */
-    void read_from_default( const string &default_str, const Type::TypeBase &root_type);
+    void read_from_string( const string &default_str, const Type::TypeBase &root_type);
 
     /**
      * Returns the root accessor. The template type \p T should correspond
