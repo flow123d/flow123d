@@ -160,11 +160,17 @@ public:
 
     ///  * dereference operator
     inline const TimeMark & operator *() const
-            { return *it_; }
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return *it_;
+    }
 
     /// -> dereference operator
     inline const TimeMark * operator ->() const
-            { return &(*(it_)); }
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return &(*(it_));
+    }
     
     inline bool operator ==(const TimeMarksIterator &other) const
         {return it_ == other.it_; }

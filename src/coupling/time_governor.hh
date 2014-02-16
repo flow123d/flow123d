@@ -156,9 +156,9 @@ public:
    TimeGovernor();
 
    /**
-    * DO NOT USE THIS, NOT TESTED YET.
-    *
     * The aim of this constuctor is simple way to make a time governor without Input interface.
+    *
+    * TODO: Partially tested as part of filed test. Need its own unit test.
     */
    TimeGovernor(double init_time, double dt);
 
