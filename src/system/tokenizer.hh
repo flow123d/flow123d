@@ -63,6 +63,11 @@ public:
      * Construct the tokenizer over given input stream @p in.
      * The stream is read from its actual position. The separator of the tokens is
      * either tabelator '\\t' or space ' '.
+     *
+     * Unfortunately, std::istream can not be passed by value nor by const reference. Thus you can not write, e.g.
+     *
+     * @code Tokenizer( ifstream("my_file") );
+     *
      */
     Tokenizer( std::istream &in);
 

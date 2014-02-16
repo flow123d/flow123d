@@ -117,10 +117,12 @@ public:
 
     /**
      * Constructor with input record given by string. Aimed for testing purpose.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(const std::string &input_str="{mesh_file=\"\"}", MPI_Comm com = MPI_COMM_WORLD);
     /**
      * Constructor from an input record.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
     /**
