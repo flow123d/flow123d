@@ -321,8 +321,16 @@ int LinSys_PETSC::solve()
     DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system);
+    // We set the KSP flag set_initial_guess_nonzero
+    // unless KSP type is preonly.
+    // In such case PETSc fails (version 3.4.1)
     if (init_guess_nonzero)
-    	ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    {
+    	KSPType type;
+    	KSPGetType(system, &type);
+    	if (strcmp(type, KSPPREONLY) != 0)
+    		ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    }
 
     ierr = KSPSolve(system, rhs_, solution_ ); 
     ierr = KSPGetConvergedReason(system,&reason); 
