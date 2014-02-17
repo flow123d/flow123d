@@ -49,7 +49,6 @@
 
 #include "la/distribution.hh"
 #include "la/local_to_global_map.hh"
-//#include "solve.h"
 #include "system/system.hh"
 #include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
@@ -91,15 +90,13 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
-
-        Orig = this; //temporary initialize
 }
 
 
 SchurComplement::SchurComplement(SchurComplement &other)
 : LinSys_PETSC(other),
   loc_size_A(other.loc_size_A), loc_size_B(other.loc_size_B), state(other.state),
-  Orig(other.Orig), Compl(other.Compl), ds_(other.ds_)
+  Compl(other.Compl), ds_(other.ds_)
 {
 	MatCopy(other.IA, IA, DIFFERENT_NONZERO_PATTERN);
 	MatCopy(other.IAB, IAB, DIFFERENT_NONZERO_PATTERN);
@@ -113,73 +110,6 @@ SchurComplement::SchurComplement(SchurComplement &other)
 	B   = NULL;
 	Bt  = NULL;
 	xA  = NULL;
-}
-
-
-SchurComplement :: SchurComplement(LinSys *orig, IS ia, Distribution *ds)
-: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created), Orig(orig)
-{
-        xprintf(Msg, "Constructor SchurComplement\n");
-
-        PetscInt m, n;
-        PetscErrorCode ierr;
-        PetscScalar *rhs_array, *sol_array;
-        int orig_first;
-
-        // check type of LinSys, dimensions of matrix, index set
-        ierr = MatGetSize(Orig->get_matrix(), &m, &n);
-        //ASSERT(typeid(*Orig) == typeid(LinSys_PETSC), "Assumed PETSC type of Orig object.\n");
-        ASSERT(m == n, "Assumed square matrix.\n" );
-        ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
-
-        // initialize variables
-        Compl   = NULL;
-        B       = NULL;
-        Bt      = NULL;
-        xA      = NULL;
-        IAB     = NULL;
-
-        F_ENTRY;
-
-	    // get distribution of original matrix
-	    MatGetOwnershipRange(Orig->get_matrix(),&orig_first,PETSC_NULL);
-	    MatGetLocalSize(Orig->get_matrix(),&orig_lsize,PETSC_NULL);
-
-	    // create A block index set
-	    ISGetLocalSize(IsA, &loc_size_A);
-	    ISAllGather(IsA,&fullIsA);
-	    //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
-
-	    // create B block index set
-	    loc_size_B = orig_lsize-loc_size_A;
-	    ISCreateStride(PETSC_COMM_WORLD,loc_size_B,orig_first+loc_size_A,1,&IsB);
-	    ISAllGather(IsB,&fullIsB);
-	    //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
-
-	    // create complement system
-	    // TODO: introduce LS as true object, clarify its internal states
-	    // create RHS sub vecs RHS1, RHS2
-	    VecGetArray(Orig->get_rhs(),&rhs_array);
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
-
-	    // create Solution sub vecs Sol1, Compl->solution
-	    VecGetArray(Orig->get_solution(),&sol_array);
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
-
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-	    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
-
-	    VecRestoreArray(Orig->get_rhs(),&rhs_array);
-	    VecRestoreArray(Orig->get_solution(),&sol_array);
-
-	    VecGetArray( Sol2, &sol_array );
-	    ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
-	    Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
-	    Compl->set_solution(sol_array);
-	    ( (LinSys_PETSC *)Compl )->set_from_input( Orig->in_rec_ );
-	    VecRestoreArray( Sol2, &sol_array );
-
-        create_inversion_matrix();
 }
 
 
@@ -216,7 +146,7 @@ void SchurComplement::form_schur()
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
     //DBGMSG("Compute Schur complement of\n");
-    //MatView(Orig->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+    //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
     //DBGMSG("inverse IA:\n");
     //MatView(Schur->IA,PETSC_VIEWER_STDOUT_WORLD);
     // compose Schur complement
@@ -229,20 +159,20 @@ void SchurComplement::form_schur()
     // and 1.5 for the second multiplication
 
     // compute IAB=IA*B, loc_size_B removed
-    ierr+=MatGetSubMatrix(Orig->get_matrix(), IsA, IsB, mat_reuse, &B);
+    ierr+=MatGetSubMatrix(matrix_, IsA, IsB, mat_reuse, &B);
     //DBGMSG(" B:\n");
     //MatView(B,PETSC_VIEWER_STDOUT_WORLD);
     ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
     //DBGMSG(" IAB:\n");
     //MatView(IAB,PETSC_VIEWER_STDOUT_WORLD);
     // compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
-    ierr+=MatGetSubMatrix(Orig->get_matrix(), IsB, IsA, mat_reuse, &(Bt));
+    ierr+=MatGetSubMatrix(matrix_, IsB, IsA, mat_reuse, &(Bt));
     ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
     //DBGMSG("xA:\n");
     //MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
 
     // get C block, loc_size_B removed
-    ierr+=MatGetSubMatrix( Orig->get_matrix(), IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
+    ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
     // compute complement = (-1)cA+xA = Bt*IA*B - C
     ierr+=MatScale(Compl->get_matrix(),-1.0);
     //DBGMSG("C block:\n");
@@ -376,9 +306,9 @@ void SchurComplement::create_inversion_matrix()
     PetscErrorCode ierr;
     PetscInt ncols, pos_start, pos_start_IA;
 
-    MatGetSubMatrix(Orig->get_matrix(), IsA, IsA, MAT_INITIAL_MATRIX, &IA);
+    MatGetSubMatrix(matrix_, IsA, IsA, MAT_INITIAL_MATRIX, &IA);
     //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
-    MatGetOwnershipRange(Orig->get_matrix(),&pos_start,PETSC_NULL);
+    MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
     std::vector<PetscInt> submat_rows;
@@ -394,7 +324,7 @@ void SchurComplement::create_inversion_matrix()
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
         unsigned int b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        ierr = MatGetRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        ierr = MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -410,19 +340,19 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
-        ierr = MatRestoreRow(Orig->get_matrix(), loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        ierr = MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
             processed_rows[ loc_row + i ] = mat_block;
             submat_rows.push_back( i + loc_row + pos_start_IA );
-            ierr = MatGetRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+            ierr = MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
             for (PetscInt j=0; j<ncols; j++) {
                 if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
                     submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
                 }
             }
-            ierr = MatRestoreRow(Orig->get_matrix(), i + loc_row + pos_start, &ncols, &cols, &vals);
+            ierr = MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
         // test output
 //            xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);
