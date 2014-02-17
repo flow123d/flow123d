@@ -143,6 +143,7 @@ public:
       globalSolution_(other.globalSolution_), constraints_(other.constraints_), residual_norm_(other.residual_norm_),
       in_rec_(other.in_rec_)
     {
+    	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
 
