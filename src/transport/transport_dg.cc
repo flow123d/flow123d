@@ -75,14 +75,14 @@ Record TransportDG<Model>::input_type
     		IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
-    .declare_key("dg_order", Integer(0,2), Default("1"),
+    .declare_key("dg_order", Integer(0,3), Default("1"),
     		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).");
 
 
 
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 {
-	unsigned int q_order;
+    unsigned int q_order;
 
 	switch (fe_order)
 	{
@@ -105,6 +105,13 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		fe1_ = new FE_P_disc<2,1,3>;
 		fe2_ = new FE_P_disc<2,2,3>;
 		fe3_ = new FE_P_disc<2,3,3>;
+		break;
+
+	case 3:
+		q_order = 6;
+		fe1_ = new FE_P_disc<3,1,3>;
+		fe2_ = new FE_P_disc<3,2,3>;
+		fe3_ = new FE_P_disc<3,3,3>;
 		break;
 
 	default:
