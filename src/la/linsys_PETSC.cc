@@ -322,7 +322,12 @@ int LinSys_PETSC::solve()
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system);
     if (init_guess_nonzero)
-    	ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    {
+    	KSPType type;
+    	KSPGetType(system, &type);
+    	if (strcmp(type, KSPPREONLY) != 0)
+    		ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    }
 
     ierr = KSPSolve(system, rhs_, solution_ ); 
     ierr = KSPGetConvergedReason(system,&reason); 
