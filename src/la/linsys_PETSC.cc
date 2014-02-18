@@ -61,10 +61,11 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
 
     params_ = "";
     matrix_ = NULL;
+    solution_precision_ = std::numeric_limits<double>::infinity();
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL)
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -334,6 +335,9 @@ int LinSys_PETSC::solve()
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
 
+    // get residual norm
+    ierr = KSPGetResidualNorm(system, &solution_precision_);
+
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
@@ -438,5 +442,11 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 		a_tol_  = in_rec.val<double>("a_tol");
 		params_ = in_rec.val<string>("options");
 	}
+}
+
+
+double LinSys_PETSC::get_solution_precision()
+{
+	return solution_precision_;
 }
 

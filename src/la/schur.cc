@@ -377,6 +377,15 @@ void SchurComplement::create_inversion_matrix()
 }
 
 
+double SchurComplement::get_solution_precision()
+{
+	if (Compl != NULL) {
+		return Compl->get_solution_precision();
+	}
+	return std::numeric_limits<double>::infinity();
+}
+
+
 /**
  * SCHUR COMPLEMENT destructor
  */

@@ -129,6 +129,8 @@ public:
      */
     void set_from_input(const Input::Record in_rec);
 
+    double get_solution_precision();
+
 
     ~LinSys_PETSC( );
 
@@ -163,6 +165,8 @@ protected:
 
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
+
+    double  solution_precision_; // precision of KSP system solver
 
 };
 

@@ -469,34 +469,7 @@ void DarcyFlowMH_Steady::postprocess()
 
 double DarcyFlowMH_Steady::solution_precision() const
 {
-	double precision = 0.0;
-        double r_tol = 0.0, a_tol = 0.0;
-	double bnorm=0.0;
-
-	switch (n_schur_compls) {
-	case 0: /* none */
-                //if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
-		if (schur0 != NULL) precision = schur0->get_residual_norm();
-		break;
-	case 1: /* first schur complement of A block */
-		if (schur1 != NULL) {
-			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
-			r_tol = schur1->get_relative_accuracy();
-			a_tol = schur1->get_absolute_accuracy();
-			precision = max(a_tol, r_tol*bnorm);
-		}
-		break;
-	case 2: /* second schur complement of the max. dimension elements in B block */
-		if (schur1 != NULL) {
-			VecNorm(schur1->get_rhs(), NORM_2, &bnorm);
-            r_tol = schur1->get_relative_accuracy();
-            a_tol = schur1->get_absolute_accuracy();
-            precision = max(a_tol, r_tol*bnorm);
-		}
-		break;
-	}
-
-	return precision;
+	return schur0->get_solution_precision();
 }
 
 

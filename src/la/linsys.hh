@@ -462,6 +462,11 @@ public:
     	}
     }
 
+    /**
+     * Get precision of solving
+     */
+    virtual double get_solution_precision() = 0;
+
     ~LinSys()
     { 
        PetscErrorCode ierr;

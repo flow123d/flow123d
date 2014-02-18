@@ -99,6 +99,8 @@ public:
     Distribution *make_complement_distribution();
     /// create IA matrix and compute complement
     void create_inversion_matrix();
+    /// get precision of solving
+    double get_solution_precision();
 
 private:
     Mat IA;                     // Inverse of block A
