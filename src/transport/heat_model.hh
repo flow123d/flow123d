@@ -89,49 +89,49 @@ public:
 
 	HeatTransferModel();
 
-	void init_data(unsigned int n_subst_);
+	void init_data(unsigned int n_subst_) override;
 
-	void set_eq_data(DarcyFlowMH::EqData &water_data);
+	void set_eq_data(DarcyFlowMH::EqData &water_data) override;
 
-	void set_component_names(std::vector<string> &names, const Input::Record &in_rec);
+	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
 
 	static string input_key_name() { return input_key_name_; }
 
-	bool mass_matrix_changed();
+	bool mass_matrix_changed() override;
 
-	bool stiffness_matrix_changed();
+	bool stiffness_matrix_changed() override;
 
-	bool rhs_changed();
+	bool rhs_changed() override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef);
+			std::vector<double> &mm_coef) override;
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef);
+			std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values);
+			std::vector< arma::vec > &init_values) override;
 
 	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values);
+			std::vector< arma::vec > &bc_values) override;
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<arma::vec> &sources_conc,
 				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma);
+				std::vector<arma::vec> &sources_sigma) override;
 
 	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma);
+				std::vector<arma::vec> &sources_sigma) override;
 
-	~HeatTransferModel();
+	~HeatTransferModel() override;
 
 };
 
