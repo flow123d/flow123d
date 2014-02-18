@@ -76,6 +76,21 @@ RegionSet ConcentrationTransportModel::ModelEqData::read_boundary_list_item(Inpu
 
 
 
+IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+{
+	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+			.derive_from(AdvectionProcessBase::input_type)
+			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
+					"Names of transported substances.")
+					// input data
+			.declare_key("sorption_enable", IT::Bool(), IT::Default("false"),
+					"Model of sorption.")
+			.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
+					"Dual porosity model.");
+
+	return rec;
+}
+
 
 ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)

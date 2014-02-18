@@ -526,9 +526,6 @@ private:
 	/// @name Other
 	// @{
 
-    /// Indicates whether the fluxes have changed in the last time step.
-//    bool flux_changed;
-
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
 
