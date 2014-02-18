@@ -159,9 +159,6 @@ public:
 
 		ModelEqData();
 
-		/// Reads boundary conditions in old format.
-        RegionSet read_boundary_list_item(Input::Record rec);
-
 	};
 
 protected:
