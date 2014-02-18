@@ -1036,32 +1036,30 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+        		update_values);
 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
+    vector<vector<arma::mat33> > dif_coef(n_subst_);
+	vector<vector<arma::vec3> > ad_coef(n_subst_);
+	vector<arma::vec3> velocity;
+	vector<arma::vec> robin_sigma(qsize);
+	arma::vec dg_penalty;
+	vector<double> csection(qsize);
+	double gamma_l;
 
     PetscScalar local_matrix[4*ndofs*ndofs];
 
-    double transport_flux;
     double comm_flux[2][2];
 
-    /*
-     * Workaround for Clang compiler 3.0 which
-     * ends with segfault on the original line:
-     * double por_m[2][qsize];
-     *
-     * Same problem with following line:
-     * arma::vec sigma[qsize];
-     */
-    vector<double> mass_coef[2];
-    mass_coef[0].resize(qsize);
-    mass_coef[1].resize(qsize);
-
-    //arma::vec sigma[qsize];
-    std::vector<arma::vec> sigma(qsize);
-
+    for (int k=0; k<n_subst_; k++)
+	{
+		ad_coef[k].resize(qsize);
+		dif_coef[k].resize(qsize);
+	}
 
     // index 0 = element with lower dimension,
     // index 1 = side of element with higher dimension
@@ -1090,11 +1088,10 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		element_id[0] = cell_sub.index();
 		element_id[1] = cell.index();
 
-		// flux from the higher dimension to the lower one
-		transport_flux = mh_dh->side_flux( *(nb->side()) )/nb->side()->measure();
-		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), nb->element()->element_accessor(), mass_coef[0]);
-		Model::compute_mass_matrix_coefficient(fe_values_side.point_list(), cell->element_accessor(), mass_coef[1]);
-		data_.sigma_c.value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), sigma);
+		fsv_rt.reinit(cell, nb->side()->el_idx());
+		calculate_velocity(cell, velocity, fsv_rt);
+		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity, nb->element()->element_accessor(), ad_coef, dif_coef);
+		data_.cross_section->value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), csection);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
@@ -1110,10 +1107,13 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				 * - "advective" term representing usual upwind
 				 */
 
-				comm_flux[0][0] =  (mass_coef[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[0][1] = -(mass_coef[0][k]*sigma[k][sbi]-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[1][0] = -(mass_coef[1][k]*sigma[k][sbi]+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[1][1] =  (mass_coef[1][k]*sigma[k][sbi]+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+				double sigma = arma::dot(dif_coef[sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*2./csection[k];
+				double transport_flux = arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k));
+
+				comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+				comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+				comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+				comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
 
 				for (int n=0; n<2; n++)
 				{

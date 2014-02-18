@@ -38,7 +38,7 @@
     },
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -61,6 +61,7 @@
         TYPE = "Petsc", 
         a_tol = 1e-12,
         r_tol = 1e-12
+        options="-ksp_type gmres -ksp_monitor"
       },
       bc_data=[
         {
