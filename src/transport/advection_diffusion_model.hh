@@ -35,49 +35,103 @@
 
 namespace IT = Input::Type;
 
+/**
+ * AdvectionDiffusionModel is a base class for description of a physical process described
+ * by the advection-diffusion partial differential equation (PDE). The derived classes define input parameters
+ * and implement methods that calculate coefficients of the PDE. These methods are then used by a template
+ * class for numerical solution, whose specialization derives from the model class.
+ */
 class AdvectionDiffusionModel {
 public:
 
+	/// Initialize model data. E.g. set vector field dimensions.
 	virtual void init_data(unsigned int n_subst_) = 0;
 
+	/// Temporary solution for sharing data from other equations.
 	virtual void set_eq_data(DarcyFlowMH::EqData &water_data) = 0;
 
+	/// Read or set names of solution components.
 	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;
 
+	/// Check if mass matrix coefficients have changed.
 	virtual bool mass_matrix_changed() = 0;
 
+	/// Check if stiffness matrix coefficients have changed.
 	virtual bool stiffness_matrix_changed() = 0;
 
+	/// Check if right hand side coefficients have changed.
 	virtual bool rhs_changed() = 0;
 
+	/**
+	 * Compute coefficients of mass matrix.
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param mm_coef      Coefficient vector (output).
+	 */
 	virtual void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) = 0;
 
+	/**
+	 * Compute coefficients of stiffness matrix.
+	 * @param point_list  Points at which to evaluate.
+	 * @param velocity    Velocity field (input). Temporary solution before we can pass data from other
+	 *                    equations.
+	 * @param ele_acc     Element accessor.
+	 * @param ad_coef     Coefficients of advection (output).
+	 * @param dif_coef    Coefficients of diffusion (output).
+	 */
 	virtual void compute_advection_diffusion_coefficients(const std::vector<arma::vec3> &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
 			std::vector<std::vector<arma::mat33> > &dif_coef) = 0;
 
+	/**
+	 * Compute initial conditions.
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param init_values  Vector of intial values (output).
+	 */
 	virtual void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &init_values) = 0;
 
+	/**
+	 * Computes the Dirichlet boundary condition values.
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param bc_values    Vector of b.c. values (output).
+	 */
 	virtual void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_values) = 0;
 
+	/**
+	 * Compute coefficients of volume sources.
+	 * @param point_list      Points at which to evaluate.
+	 * @param ele_acc         Element accessor.
+	 * @param sources_conc    Source concentrations (output).
+	 * @param sources_density Source densities (output).
+	 * @param sources_sigma   Source sigmas (output).
+	 */
 	virtual void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<arma::vec> &sources_conc,
 			std::vector<arma::vec> &sources_density,
 			std::vector<arma::vec> &sources_sigma) = 0;
 
+	/**
+	 * Compute coefficients of volume sources.
+	 * @param point_list      Points at which to evaluate.
+	 * @param ele_acc         Element accessor.
+	 * @param sources_sigma   Source sigmas (output).
+	 */
 	virtual void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<arma::vec> &sources_sigma) = 0;
 
+	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};
 
 
@@ -91,45 +145,37 @@ public:
 	class ModelEqData : public TransportBase::TransportEqData {
 	public:
 
-		/**
-		 * Boundary conditions (Dirichlet) for concentrations.
-		 * They are applied only on water inflow part of the boundary.
-		 */
+		/// Boundary conditions (Dirichlet) for concentrations.
 		BCField<3, FieldValue<3>::Vector> bc_conc;
-
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
-		Field<3, FieldValue<3>::Vector> disp_l;     ///< Longitudal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> disp_t;     ///< Transversal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
+		/// Longitudal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> disp_l;
+		/// Transversal dispersivity (for each substance).
+		Field<3, FieldValue<3>::Vector> disp_t;
+		/// Molecular diffusivity (for each substance).
+		Field<3, FieldValue<3>::Vector> diff_m;
 
 
 		ModelEqData();
 
+		/// Reads boundary conditions in old format.
         RegionSet read_boundary_list_item(Input::Record rec);
 
 	};
 
 protected:
 
+	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
-	static IT::Record &get_input_type(const string &implementation, const string &description) {
-		static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
-				.derive_from(SecondaryEquation::input_type)
-				.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
-						"Names of transported substances.")
-						// input data
-				.declare_key("sorption_enable", IT::Bool(), IT::Default("false"),
-						"Model of sorption.")
-				.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
-						"Dual porosity model.");
+	/// Create input type that can be passed to the derived class.
+	static IT::Record &get_input_type(const string &implementation, const string &description);
 
-		return rec;
-	}
-
+	/// Indicator of change in advection vector field.
 	bool flux_changed;
 
+	/// Name of the physical process (used in definition of input record).
 	static const char *input_key_name_;
 
 
@@ -197,16 +243,23 @@ public:
 
 		/// Dirichlet boundary condition for temperature.
 		BCField<3, FieldValue<3>::Scalar> bc_temperature;
-
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
+		/// Porosity of solid.
 		Field<3, FieldValue<3>::Scalar> porosity;
+		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
+		/// Heat capacity of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_heat_capacity;
+		/// Heat conductivity of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_heat_conductivity;
+		/// Density of solid.
 		Field<3, FieldValue<3>::Scalar> solid_density;
+		/// Heat capacity of solid.
 		Field<3, FieldValue<3>::Scalar> solid_heat_capacity;
+		/// Heat conductivity of solid.
 		Field<3, FieldValue<3>::Scalar> solid_heat_conductivity;
+		/// Heat dispersivity.
 		Field<3, FieldValue<3>::Scalar> heat_dispersivity;
 
 		/// Pointer to DarcyFlow field cross_section
@@ -219,18 +272,16 @@ public:
 
 protected:
 
+	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
-	static IT::Record &get_input_type(const string &implementation, const string &description) {
-		static IT::Record input_type = IT::Record("HeatTransfer_" + implementation, description + " for heat transfer.")
-				.derive_from(SecondaryEquation::input_type);
+	/// Create input type that can be passed to the derived class.
+	static IT::Record &get_input_type(const string &implementation, const string &description);
 
-		return input_type;
-
-	}
-
+	/// Indicator of change in advection vector field.
 	bool flux_changed;
 
+	/// Name of the physical process (used in definition of input record).
 	static const char *input_key_name_;
 
 
@@ -282,7 +333,6 @@ public:
 
 	~HeatTransferModel();
 
-	static Input::Type::AbstractRecord input_type;
 };
 
 

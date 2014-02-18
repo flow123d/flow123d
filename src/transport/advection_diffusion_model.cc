@@ -76,6 +76,21 @@ RegionSet ConcentrationTransportModel::ModelEqData::read_boundary_list_item(Inpu
 
 
 
+IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+{
+	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+			.derive_from(SecondaryEquation::input_type)
+			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
+					"Names of transported substances.")
+					// input data
+			.declare_key("sorption_enable", IT::Bool(), IT::Default("false"),
+					"Model of sorption.")
+			.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
+					"Dual porosity model.");
+
+	return rec;
+}
+
 
 ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)
@@ -242,6 +257,16 @@ HeatTransferModel::ModelEqData::ModelEqData() : EqDataBase("HeatTransfer")
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
 	ADD_FIELD(heat_dispersivity, "Heat dispersivity", Default("0"));
+}
+
+
+IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
+{
+	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation, description + " for heat transfer.")
+			.derive_from(SecondaryEquation::input_type);
+
+	return input_type;
+
 }
 
 
