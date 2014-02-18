@@ -143,8 +143,8 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 }
 
 
-void ConcentrationTransportModel::calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-		double Dm, double alphaL, double alphaT, double porosity, double cross_cut)
+void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
+		double Dm, double alphaL, double alphaT, double porosity, double cross_cut, arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
 
@@ -179,7 +179,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	for (unsigned int i=0; i<qsize; i++) {
 		for (int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
-			calculate_dispersivity_tensor(dif_coef[sbi][i], velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i]);
+			calculate_dispersivity_tensor(velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i], dif_coef[sbi][i]);
 		}
 	}
 }

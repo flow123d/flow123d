@@ -202,8 +202,23 @@ public:
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef);
 
-	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-			double Dm, double alphaL, double alphaT, double porosity, double cross_cut);
+	/**
+	 * Formula to calculate the dispersivity tensor.
+	 * @param velocity  Fluid velocity.
+	 * @param Dm        Molecular diffusivity.
+	 * @param alphaL    Longitudal dispersivity.
+	 * @param alphaT    Transversal dispersivity.
+	 * @param porosity  Porosity.
+	 * @param cross_cut Cross-section.
+	 * @param K         Dispersivity tensor (output).
+	 */
+	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
+			double Dm,
+			double alphaL,
+			double alphaT,
+			double porosity,
+			double cross_cut,
+			arma::mat33 &K);
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,
