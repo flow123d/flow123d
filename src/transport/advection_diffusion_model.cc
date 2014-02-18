@@ -60,19 +60,6 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 }
 
 
-RegionSet ConcentrationTransportModel::ModelEqData::read_boundary_list_item(Input::Record rec)
-{
-	// Base method EqDataBase::read_boundary_list_item must be called first!
-	RegionSet domain = EqDataBase::read_boundary_list_item(rec);
-    FilePath bcd_file;
-
-    // read transport boundary conditions using old file format .tbc
-    if (rec.opt_val("old_boundary_file", bcd_file) )
-        OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
-
-    return domain;
-}
-
 
 
 
