@@ -29,24 +29,25 @@
 
 #include "petscmat.h"
 #include <armadillo>
+#include <boost/foreach.hpp>
 #include "system/xio.h"
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
+#include "fem/fe_values.hh"
+#include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 #include "flow/darcy_flow_mh.hh"
-#include "flow/old_bcd.hh"
 #include "la/linsys_PETSC.hh"
 #include "mesh/partitioning.hh"
 #include "transport/advection_diffusion_model.hh"
-#include <boost/foreach.hpp>
+#include "transport/concentration_model.hh"
+#include "transport/heat_model.hh"
 
 using namespace Input::Type;
 
@@ -1651,7 +1652,6 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 		}
 	}
 }
-
 
 
 
