@@ -36,9 +36,10 @@
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-#include "transport/advection_diffusion_model.hh"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
+#include "transport/concentration_model.hh"
+#include "transport/heat_model.hh"
 
 
 namespace it = Input::Type;
@@ -129,7 +130,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         else if (it->type() == TransportDG<HeatTransferModel>::input_type)
         {
         	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
-        	transport_reaction->set_eq_data( water->get_data() );
+        	transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else
         {
