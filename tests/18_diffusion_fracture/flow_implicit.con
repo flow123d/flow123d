@@ -17,17 +17,15 @@
       
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test18.fbc"
+          bc_pressure = 0
         }
       ],
       
       bulk_data = [
         { rid = 20,
-          anisotropy = 10,
-          cross_section = 1e-1
+          cross_section = 1e-2
         },
         { rid = 24,
-          anisotropy = 1,
           cross_section = 1
         }
       ],
@@ -60,18 +58,17 @@
         {
           rid = 20,
           init_conc = 0,
-          por_m = 0.25,
-          sigma_c = 1e1
+          diff_m = 1e-1
         },
         {
           rid = 24,
           init_conc = 0,
-          por_m = 0.25
+          diff_m = 1e-1
+          dg_penalty = 100
         },
         {
           rid = 30,
-          init_conc = 1,
-          por_m = 0.25
+          init_conc = 1
         }
       ],
 
@@ -83,11 +80,9 @@
         save_step = 0.001
       }, 
 
-      dual_porosity = true, 
-
       substances = [
         "A"
-      ],      
+      ],
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-12,
