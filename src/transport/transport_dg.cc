@@ -177,7 +177,7 @@ DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
-	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", Default("0"));
+	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", Default("1"));
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
 			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", Default("1.0"));
 
@@ -1038,18 +1038,21 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-        		update_values);
+       		update_values);
+    FEValues<dim-1,3> fv_rt(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe_rt<dim-1>(),
+       		update_values);
 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
-    vector<vector<arma::mat33> > dif_coef(n_subst_);
-	vector<vector<arma::vec3> > ad_coef(n_subst_);
-	vector<arma::vec3> velocity;
-	vector<arma::vec> robin_sigma(qsize);
-	arma::vec dg_penalty;
-	vector<double> csection(qsize);
+    vector<vector<arma::mat33> > dif_coef_lower(n_subst_), dif_coef_higher(n_subst_);
+	vector<vector<arma::vec3> > ad_coef_lower(n_subst_), ad_coef_higher(n_subst_);
+	vector<arma::vec3> velocity_higher, velocity_lower;
+	vector<arma::vec> sigma_c(qsize);
+//	vector<arma::vec> robin_sigma(qsize);
+//	arma::vec dg_penalty;
+	vector<double> csection_lower(qsize), csection_higher(qsize);
 	double gamma_l;
 
     PetscScalar local_matrix[4*ndofs*ndofs];
@@ -1058,8 +1061,10 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 
     for (int k=0; k<n_subst_; k++)
 	{
-		ad_coef[k].resize(qsize);
-		dif_coef[k].resize(qsize);
+		ad_coef_lower[k].resize(qsize);
+		dif_coef_lower[k].resize(qsize);
+		ad_coef_higher[k].resize(qsize);
+		dif_coef_higher[k].resize(qsize);
 	}
 
     // index 0 = element with lower dimension,
@@ -1090,9 +1095,14 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		element_id[1] = cell.index();
 
 		fsv_rt.reinit(cell, nb->side()->el_idx());
-		calculate_velocity(cell, velocity, fsv_rt);
-		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity, nb->element()->element_accessor(), ad_coef, dif_coef);
-		data_.cross_section->value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), csection);
+		fv_rt.reinit(cell_sub);
+		calculate_velocity(cell, velocity_higher, fsv_rt);
+		calculate_velocity(cell_sub, velocity_lower, fv_rt);
+		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub->element_accessor(), ad_coef_lower, dif_coef_lower);
+		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_higher, dif_coef_higher);
+		data_.cross_section->value_list(fe_values_vb.point_list(), nb->element()->element_accessor(), csection_lower);
+		data_.cross_section->value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
+		data_.sigma_c.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), sigma_c);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
@@ -1108,8 +1118,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				 * - "advective" term representing usual upwind
 				 */
 
-				double sigma = arma::dot(dif_coef[sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*2./csection[k];
-				double transport_flux = arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k));
+				double sigma = sigma_c[k][sbi]*arma::dot(dif_coef_lower[sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*2.*pow(csection_higher[k]/csection_lower[k],2);
+				double transport_flux = arma::dot(ad_coef_higher[sbi][k], fe_values_side.normal_vector(k));
 
 				comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
 				comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
