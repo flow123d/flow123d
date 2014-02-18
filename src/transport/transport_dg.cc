@@ -265,12 +265,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
-    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
+//    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
     for (int sbi = 0; sbi < n_subst_; sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
-    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
@@ -278,6 +277,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // set initial conditions
     set_initial_condition();
+    for (int sbi = 0; sbi < n_subst_; sbi++)
+    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
 }
 

@@ -47,7 +47,8 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 
 LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
                             const MPI_Comm comm ) 
-        : LinSys( rows_ds, comm )
+        : LinSys( rows_ds, comm ),
+          init_guess_nonzero(false)
 {
     // set type
     //type = LinSys::PETSC;
