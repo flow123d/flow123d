@@ -48,7 +48,7 @@
     }, 
  
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
 
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
