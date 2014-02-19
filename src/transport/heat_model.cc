@@ -41,8 +41,6 @@ using namespace Input::Type;
 
 
 
-const char *HeatTransferModel::input_key_name_ = "HeatTransfer";
-
 
 
 
