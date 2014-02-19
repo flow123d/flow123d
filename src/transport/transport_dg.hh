@@ -237,8 +237,6 @@ public:
 
 	TimeIntegrationScheme time_scheme() { return implicit_euler; }
 
-	static const string &input_key_name() { static const string inp_key_name_ = Model::input_key_name() + "_DG"; return inp_key_name_; }
-
 	/**
 	 * @brief Destructor.
 	 */

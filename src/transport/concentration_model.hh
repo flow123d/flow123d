@@ -61,14 +61,16 @@ protected:
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
-	/// Create input type that can be passed to the derived class.
+	/**
+	 * Create input type that can be passed to the derived class.
+	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
+	 * @param description    Comment used to describe the record key.
+	 * @return
+	 */
 	static IT::Record &get_input_type(const string &implementation, const string &description);
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
-
-	/// Name of the physical process (used in definition of input record).
-	static const char *input_key_name_;
 
 
 public:
@@ -80,8 +82,6 @@ public:
 	void set_eq_data(DarcyFlowMH::EqData &water_data) override;
 
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
-
-	static string input_key_name() { return input_key_name_; }
 
 	bool mass_matrix_changed() override;
 

@@ -41,8 +41,6 @@ using namespace Input::Type;
 
 
 
-const char *ConcentrationTransportModel::input_key_name_ = "AdvectionDiffusion";
-
 
 
 
