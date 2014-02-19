@@ -150,9 +150,8 @@ TEST(schur, complement) {
 
 	LinSys * lin_sys = new LinSys_PETSC( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
-	schurComplement->create_inversion_matrix();
 	schurComplement->form_schur();
-	schurComplement->set_spd();
+	schurComplement->set_complement_spd();
 
 	// test of computed values
 	{

@@ -90,6 +90,19 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+
+        F_ENTRY;
+
+        // create A block index set
+        ISGetLocalSize(IsA, &loc_size_A);
+        ISAllGather(IsA,&fullIsA);
+        //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
+
+        // create B block index set
+        loc_size_B = rows_ds_->lsize() - loc_size_A;
+        ISCreateStride(PETSC_COMM_WORLD,loc_size_B,rows_ds_->begin()+loc_size_A,1,&IsB);
+        ISAllGather(IsB,&fullIsB);
+        //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 
@@ -113,8 +126,8 @@ SchurComplement::SchurComplement(SchurComplement &other)
 }
 
 
-void SchurComplement::set_spd()
-{Compl->set_positive_definite();}
+void SchurComplement::set_complement_spd(bool flag)
+{Compl->set_positive_definite(flag);}
 
 
 /**
@@ -144,6 +157,10 @@ void SchurComplement::form_schur()
 
     mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+
+    if (IA == NULL) {
+    	create_inversion_matrix();
+    }
 
     //DBGMSG("Compute Schur complement of\n");
     //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
@@ -244,42 +261,9 @@ void SchurComplement::resolve()
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-    PetscScalar *sol_array;
-
-    Compl = ls;
-    VecGetArray( Sol2, &sol_array );
-    Compl->set_solution( sol_array );
-    Compl->set_from_input( in_rec_ );
-    VecRestoreArray( Sol2, &sol_array );
-}
-
-Distribution *SchurComplement::make_complement_distribution()
-{
-    PetscInt m, n;
-    PetscErrorCode ierr;
     PetscScalar *rhs_array, *sol_array;
-    int orig_first;
-
-    // check dimensions of matrix
-    ierr = MatGetSize(matrix_, &m, &n);
-    ASSERT(m == n, "Assumed square matrix.\n" );
 
     F_ENTRY;
-
-    // get distribution of original matrix
-    MatGetOwnershipRange(matrix_,&orig_first,PETSC_NULL);
-    MatGetLocalSize(matrix_,&orig_lsize,PETSC_NULL);
-
-    // create A block index set
-    ISGetLocalSize(IsA, &loc_size_A);
-    ISAllGather(IsA,&fullIsA);
-    //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
-
-    // create B block index set
-    loc_size_B = orig_lsize-loc_size_A;
-    ISCreateStride(PETSC_COMM_WORLD,loc_size_B,orig_first+loc_size_A,1,&IsB);
-    ISAllGather(IsB,&fullIsB);
-    //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 
     // create complement system
     // TODO: introduce LS as true object, clarify its internal states
@@ -297,6 +281,16 @@ Distribution *SchurComplement::make_complement_distribution()
     VecRestoreArray(rhs_, &rhs_array);
     VecRestoreArray(solution_, &sol_array);
 
+    Compl = ls;
+    VecGetArray( Sol2, &sol_array );
+    Compl->set_solution( sol_array );
+    Compl->set_from_input( in_rec_ );
+    VecRestoreArray( Sol2, &sol_array );
+}
+
+
+Distribution *SchurComplement::make_complement_distribution()
+{
     ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
 	return ds_;
 }
@@ -383,6 +377,16 @@ double SchurComplement::get_solution_precision()
 		return Compl->get_solution_precision();
 	}
 	return std::numeric_limits<double>::infinity();
+}
+
+
+int SchurComplement::solve() {
+	Compl->set_positive_definite();
+
+	int converged_reason = Compl->solve();
+	this->resolve();
+
+	return converged_reason;
 }
 
 

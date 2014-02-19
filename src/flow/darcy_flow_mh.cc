@@ -391,36 +391,17 @@ void DarcyFlowMH_Steady::update_solution() {
     int convergedReason;
 
     switch (n_schur_compls) {
-    case 0: /* none */
-        convergedReason = schur0->solve();
-        break;
     case 1: /* first schur complement of A block */
-    	{
-    		SchurComplement * sc0 = (SchurComplement *)schur0;
-        	sc0->form_schur();
-            sc0->set_spd();
-            convergedReason = schur1->solve();
-            sc0->resolve();
-            break;
-    	}
+		( (SchurComplement *)schur0 )->form_schur();
+		break;
     case 2: /* second schur complement of the max. dimension elements in B block */
-    	{
-			SchurComplement * sc0 = (SchurComplement *)schur0;
-			SchurComplement * sc1 = (SchurComplement *)schur1;
-
-			sc0->form_schur();
-			sc0->set_spd();
-
-			sc1->form_schur();
-			sc1->scale(-1.0);
-			sc1->set_spd();
-
-			convergedReason = schur2->solve();
-			sc1->resolve();
-			sc0->resolve();
-			break;
-    	}
+		( (SchurComplement *)schur0 )->form_schur();
+		( (SchurComplement *)schur1 )->form_schur();
+		( (SchurComplement *)schur1 )->scale(-1.0);
+		break;
     }
+
+    convergedReason = schur0->solve();
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
@@ -1049,8 +1030,20 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
         		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
         		ls->set_from_input(in_rec);
-        		schur0=ls;
         		ls->set_solution( NULL );
+
+        		// make schur1
+            	Distribution *ds = ls->make_complement_distribution();
+            	if (n_schur_compls==2) {
+        			IS is;
+        			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+        			ASSERT(err == 0,"Error in ISCreateStride.");
+        			schur1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+            	} else {
+            		schur1 = new LinSys_PETSC(ds);
+            	}
+            	ls->set_complement( schur1 );
+        		schur0=ls;
         	}
 
             START_TIMER("PETSC PREALLOCATION");
@@ -1094,33 +1087,12 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
     // add time term
 
-    if (n_schur_compls>0) {
-
-    	// make schur1
-    	SchurComplement *sc0 = (SchurComplement *)schur0;
-    	Distribution *ds = sc0->make_complement_distribution();
-    	if (n_schur_compls==2) {
-			IS is;
-			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), sc0->get_distribution()->begin(), 1, &is);
-			ASSERT(err == 0,"Error in ISCreateStride.");
-			schur1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
-    	} else {
-    		schur1 = new LinSys_PETSC(ds);
-    	}
-    	sc0->set_complement( schur1 );
-    	sc0->create_inversion_matrix();
-
-    	// make schur2
-    	if (n_schur_compls==2) {
-    		sc0->form_schur();
-    		//sc0->set_spd();
-
-            SchurComplement *sc1 = (SchurComplement *)schur1;
-        	schur2 = new LinSys_PETSC( sc1->make_complement_distribution() );
-        	sc1->set_complement( schur2 );
-        	sc1->create_inversion_matrix();
-    	}
-    }
+	if (n_schur_compls==2) {
+		// make schur2
+		SchurComplement *sc1 = (SchurComplement *)schur1;
+		schur2 = new LinSys_PETSC( sc1->make_complement_distribution() );
+		sc1->set_complement( schur2 );
+	}
 
 }
 

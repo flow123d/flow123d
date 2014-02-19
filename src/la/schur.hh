@@ -79,7 +79,10 @@ public:
     LinSys *get_system() const {return (Compl);}
     Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
-    void set_spd();
+    /**
+     * Set flag about positive definiteness. If set value is false matrix is negative definite.
+     */
+    void set_complement_spd(bool flag = true);
 
     void scale(double factor);
     ~SchurComplement();
@@ -92,17 +95,21 @@ public:
      *  possibly call only form_rhs, then this can be protected
      */
     void form_rhs();
-    void resolve();
     /// set complement object
     void set_complement(LinSys_PETSC *ls);
     /// get distribution of complement object if complement is defined
     Distribution *make_complement_distribution();
-    /// create IA matrix and compute complement
-    void create_inversion_matrix();
     /// get precision of solving
     double get_solution_precision();
 
+    int solve();
+
 private:
+    /// create IA matrix
+    void create_inversion_matrix();
+
+    void resolve();
+
     Mat IA;                     // Inverse of block A
 
     Mat B, Bt;                  // B and B' block (could be different from real B transpose)
