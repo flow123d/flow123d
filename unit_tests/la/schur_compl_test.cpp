@@ -69,53 +69,70 @@ const int block_count = 1;
 	}
 }*/
 
-void fill_matrix(LinSys * lin_sys, int rank, Distribution &ds, Distribution &block_ds) {
+class SchurComplementTest : public SchurComplement {
+public:
+	SchurComplementTest(IS ia, Distribution *ds)
+	: SchurComplement(ia, ds)
+	{}
 
-	// set B columns
-	int n_cols_B=block_ds.size();
-	std::vector<PetscInt> b_cols(n_cols_B);
-	for( int p=0;p<block_ds.np();p++)
-		for (unsigned int j=block_ds.begin(p); j<block_ds.end(p); j++) {
-			int proc=block_ds.get_proc(j);
-			b_cols[j]=ds.end(p)+j;
+	Mat get_a_inv() const {return (IA);}
+
+	void fill_matrix(int rank, Distribution &ds, Distribution &block_ds) {
+
+		// set B columns
+		int n_cols_B=block_ds.size();
+		std::vector<PetscInt> b_cols(n_cols_B);
+		for( int p=0;p<block_ds.np();p++)
+			for (unsigned int j=block_ds.begin(p); j<block_ds.end(p); j++) {
+				int proc=block_ds.get_proc(j);
+				b_cols[j]=ds.end(p)+j;
+			}
+
+		// create block A of matrix
+		int local_idx=0;
+		for (unsigned int i = block_ds.begin(); i < block_ds.end(); i++) {
+			// make random block values
+			std::vector<PetscScalar> a_vals(block_size * block_size, 0);
+			for (unsigned int j=0; j<block_size; j++)
+				a_vals[ j + j*block_size ]= (rank + 2);
+
+			// set rows and columns indices
+			std::vector<PetscInt> a_rows(block_size);
+			for (unsigned int j=0; j<block_size; j++) {
+				a_rows[j]=ds.begin() + block_ds.begin() + local_idx;
+				local_idx++;
+			}
+			mat_set_values(block_size, &a_rows[0], block_size, &a_rows[0], &a_vals[0]);
+
+			// set B values
+			std::vector<PetscScalar> b_vals(block_size*n_cols_B);
+			for (unsigned int j=0; j<block_size*n_cols_B; j++)
+				b_vals[j] = 1;
+
+			// set C values
+			std::vector<PetscScalar> c_vals(n_cols_B);
+			for (unsigned int j=0; j<n_cols_B; j++)
+				c_vals[j] = 0;
+
+			// must iterate per rows to get correct transpose
+			for(unsigned int row=0; row<block_size;row++) {
+				mat_set_values(1, &a_rows[row], 1, &b_cols[rank], &b_vals[row*n_cols_B]);
+				mat_set_values(1, &b_cols[rank],1, &a_rows[row], &b_vals[row*n_cols_B]);
+			}
+
+			mat_set_values(1, &b_cols[rank], 1, &b_cols[rank], &c_vals[rank]);
+
 		}
-
-	// create block A of matrix
-	int local_idx=0;
-	for (unsigned int i = block_ds.begin(); i < block_ds.end(); i++) {
-		// make random block values
-		std::vector<PetscScalar> a_vals(block_size * block_size, 0);
-		for (unsigned int j=0; j<block_size; j++)
-			a_vals[ j + j*block_size ]= (rank + 2);
-
-		// set rows and columns indices
-		std::vector<PetscInt> a_rows(block_size);
-		for (unsigned int j=0; j<block_size; j++) {
-			a_rows[j]=ds.begin() + block_ds.begin() + local_idx;
-			local_idx++;
-		}
-		lin_sys->mat_set_values(block_size, &a_rows[0], block_size, &a_rows[0], &a_vals[0]);
-
-		// set B values
-		std::vector<PetscScalar> b_vals(block_size*n_cols_B);
-		for (unsigned int j=0; j<block_size*n_cols_B; j++)
-			b_vals[j] = 1;
-
-		// set C values
-		std::vector<PetscScalar> c_vals(n_cols_B);
-		for (unsigned int j=0; j<n_cols_B; j++)
-			c_vals[j] = 0;
-
-		// must iterate per rows to get correct transpose
-		for(unsigned int row=0; row<block_size;row++) {
-			lin_sys->mat_set_values(1, &a_rows[row], 1, &b_cols[rank], &b_vals[row*n_cols_B]);
-			lin_sys->mat_set_values(1, &b_cols[rank],1, &a_rows[row], &b_vals[row*n_cols_B]);
-		}
-
-		lin_sys->mat_set_values(1, &b_cols[rank], 1, &b_cols[rank], &c_vals[rank]);
-
 	}
-}
+};
+
+class LinSysPetscTest : public LinSys_PETSC {
+public:
+	LinSysPetscTest(Distribution *ds, const MPI_Comm comm = PETSC_COMM_WORLD )
+	: LinSys_PETSC(ds, comm)
+	{ r_tol_ = 1e-12; a_tol_ = 1e-12; }
+};
+
 
 TEST(schur, complement) {
 	IS set;
@@ -138,20 +155,20 @@ TEST(schur, complement) {
 	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
 
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
-	SchurComplement * schurComplement = new SchurComplement(set, &all_ds);
+	SchurComplementTest * schurComplement = new SchurComplementTest(set, &all_ds);
 	schurComplement->set_solution(NULL);
 	schurComplement->set_symmetric();
 	schurComplement->start_allocation();
-	fill_matrix( schurComplement, rank, ds, block_ds); // preallocate matrix
+	schurComplement->fill_matrix( rank, ds, block_ds); // preallocate matrix
 	schurComplement->start_add_assembly();
-	fill_matrix( schurComplement, rank, ds, block_ds); // fill matrix
+	schurComplement->fill_matrix( rank, ds, block_ds); // fill matrix
 	schurComplement->finish_assembly();
 	MatView(schurComplement->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
 
-	LinSys * lin_sys = new LinSys_PETSC( schurComplement->make_complement_distribution() );
+	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
 	schurComplement->form_schur();
-	schurComplement->set_complement_spd();
+	schurComplement->solve();
 
 	// test of computed values
 	{

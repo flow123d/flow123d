@@ -77,7 +77,6 @@ public:
 
     LinSys *get_system() const {return (Compl);}
     Distribution *get_distribution() const {return (ds_);}
-    Mat get_a_inv() const {return (IA);}
     /**
      * Set flag about positive definiteness. If set value is false matrix is negative definite.
      */
@@ -103,7 +102,7 @@ public:
 
     int solve();
 
-private:
+protected:
     /// create IA matrix
     void create_inversion_matrix();
 
