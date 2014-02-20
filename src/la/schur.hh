@@ -68,7 +68,6 @@ public:
      *
      * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
      */
-    SchurComplement(LinSys *orig, IS ia, Distribution *ds);
     SchurComplement(IS ia, Distribution *ds);
 
     /**

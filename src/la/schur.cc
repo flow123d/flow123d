@@ -154,9 +154,33 @@ void SchurComplement::form_schur()
 {
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
+    PetscScalar *rhs_array, *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+
+    F_ENTRY;
+
+    // create complement system
+    // TODO: introduce LS as true object, clarify its internal states
+    // create RHS sub vecs RHS1, RHS2
+    VecGetArray(rhs_, &rhs_array);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+
+    // create Solution sub vecs Sol1, Compl->solution
+    VecGetArray(solution_, &sol_array);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
+
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+
+    VecRestoreArray(rhs_, &rhs_array);
+    VecRestoreArray(solution_, &sol_array);
+
+    VecGetArray( Sol2, &sol_array );
+    Compl->set_solution( sol_array );
+    Compl->set_from_input( in_rec_ );
+    VecRestoreArray( Sol2, &sol_array );
 
     if (IA == NULL) {
     	create_inversion_matrix();
@@ -261,31 +285,7 @@ void SchurComplement::resolve()
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-    PetscScalar *rhs_array, *sol_array;
-
-    F_ENTRY;
-
-    // create complement system
-    // TODO: introduce LS as true object, clarify its internal states
-    // create RHS sub vecs RHS1, RHS2
-    VecGetArray(rhs_, &rhs_array);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
-
-    // create Solution sub vecs Sol1, Compl->solution
-    VecGetArray(solution_, &sol_array);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
-
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
-
-    VecRestoreArray(rhs_, &rhs_array);
-    VecRestoreArray(solution_, &sol_array);
-
     Compl = ls;
-    VecGetArray( Sol2, &sol_array );
-    Compl->set_solution( sol_array );
-    Compl->set_from_input( in_rec_ );
-    VecRestoreArray( Sol2, &sol_array );
 }
 
 

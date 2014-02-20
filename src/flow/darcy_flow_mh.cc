@@ -1038,7 +1038,12 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         			IS is;
         			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
         			ASSERT(err == 0,"Error in ISCreateStride.");
-        			schur1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+        			SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+
+        			// make schur2
+        			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+        			ls1->set_complement( schur2 );
+        			schur1 = ls1;
             	} else {
             		schur1 = new LinSys_PETSC(ds);
             	}
@@ -1086,14 +1091,6 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
 
     // add time term
-
-	if (n_schur_compls==2) {
-		// make schur2
-		SchurComplement *sc1 = (SchurComplement *)schur1;
-		schur2 = new LinSys_PETSC( sc1->make_complement_distribution() );
-		sc1->set_complement( schur2 );
-	}
-
 }
 
 
