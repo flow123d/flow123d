@@ -1,0 +1,6 @@
+Test 21
+------------
+
+- test case for flow and heat transfer through 2D domain with fracture parallel to the flow
+- due to larger hydraulic conductivity in fracture, the temperature is distributed faster
+- the 2D domain is heated by the fracture due to diffusive transfer

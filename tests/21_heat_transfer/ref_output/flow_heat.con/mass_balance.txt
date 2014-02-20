@@ -1,0 +1,352 @@
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 0.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   0             0             0             
+  2             .fracture_top            temperature   0             0             0             
+  4             .left                    temperature   0             0             0             
+  5             .right                   temperature   0             0             0             
+  6             .rock_bottom             temperature   0             0             0             
+  7             .rock_top                temperature   0             0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   0             0             0             
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   0             0             
+  8             rock                     temperature   0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   0             0             
+
+
+# Cumulative mass balance on time interval [0,0]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             0             0             0             0             0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 1.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.1911      0             -50.1911      
+  2             .fracture_top            temperature   1.63231       1.63231       0             
+  4             .left                    temperature   9.82778e-15   3.66906e-14   -2.68628e-14  
+  5             .right                   temperature   -7.82868e-15  2.67721e-14   -3.46007e-14  
+  6             .rock_bottom             temperature   -22.6707      0             -22.6707      
+  7             .rock_top                temperature   0.0768384     0.0768384     0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -71.1527      1.70915       -72.8618      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   14.8697       0             
+  8             rock                     temperature   56.283        0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   71.1527       0             
+
+
+# Cumulative mass balance on time interval [0,1]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -71.1527      71.1527       71.1527       -3.53815e-06  4.97262e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 2.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0932      0             -50.0932      
+  2             .fracture_top            temperature   4.7707        4.7707        0             
+  4             .left                    temperature   1.12562e-14   7.5355e-14    -6.40988e-14  
+  5             .right                   temperature   2.20521e-14   7.40815e-14   -5.20294e-14  
+  6             .rock_bottom             temperature   -14.4705      0             -14.4705      
+  7             .rock_top                temperature   0.275969      0.275969      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -59.517       5.04667       -64.5637      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   22.2477       0             
+  8             rock                     temperature   108.422       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   130.67        0             
+
+
+# Cumulative mass balance on time interval [0,2]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -130.67       130.67        130.67        -3.14301e-06  2.40531e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 3.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0438      0             -50.0438      
+  2             .fracture_top            temperature   8.45201       8.45201       0             
+  4             .left                    temperature   6.06037e-15   1.14605e-13   -1.08545e-13  
+  5             .right                   temperature   6.45939e-14   1.31095e-13   -6.65014e-14  
+  6             .rock_bottom             temperature   -12.2457      0             -12.2457      
+  7             .rock_top                temperature   0.587381      0.587381      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -53.2501      9.03939       -62.2895      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   26.967        0             
+  8             rock                     temperature   156.953       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   183.92        0             
+
+
+# Cumulative mass balance on time interval [0,3]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -183.92       183.92        183.92        -2.92354e-06  1.58957e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 4.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0249      0             -50.0249      
+  2             .fracture_top            temperature   12.0729       12.0729       0             
+  4             .left                    temperature   -1.83817e-15  1.53037e-13   -1.54876e-13  
+  5             .right                   temperature   1.09591e-13   1.8955e-13    -7.99583e-14  
+  6             .rock_bottom             temperature   -11.3351      0             -11.3351      
+  7             .rock_top                temperature   0.980868      0.980868      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -48.3062      13.0538       -61.36        
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   30.4094       0             
+  8             rock                     temperature   201.817       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   232.226       0             
+
+
+# Cumulative mass balance on time interval [0,4]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -232.226      232.226       232.226       -2.77258e-06  1.19392e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 5.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0157      0             -50.0157      
+  2             .fracture_top            temperature   15.4489       15.4489       0             
+  4             .left                    temperature   -1.06744e-14  1.89063e-13   -1.99737e-13  
+  5             .right                   temperature   1.52258e-13   2.44889e-13   -9.26309e-14  
+  6             .rock_bottom             temperature   -10.8594      0             -10.8594      
+  7             .rock_top                temperature   1.42884       1.42884       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -43.9973      16.8777       -60.8751      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   33.1286       0             
+  8             rock                     temperature   243.095       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   276.223       0             
+
+
+# Cumulative mass balance on time interval [0,5]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -276.223      276.223       276.223       -2.68261e-06  9.71173e-09   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 6.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0105      0             -50.0105      
+  2             .fracture_top            temperature   18.5722       18.5722       0             
+  4             .left                    temperature   -1.96597e-14  2.21771e-13   -2.41431e-13  
+  5             .right                   temperature   1.90647e-13   2.95174e-13   -1.04526e-13  
+  6             .rock_bottom             temperature   -10.5787      0             -10.5787      
+  7             .rock_top                temperature   1.91099       1.91099       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -40.1059      20.4832       -60.5891      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   35.3848       0             
+  8             rock                     temperature   280.944       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   316.329       0             
+
+
+# Cumulative mass balance on time interval [0,6]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -316.329      316.329       316.329       -2.63607e-06  8.33333e-09   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 7.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0072      0             -50.0072      
+  2             .fracture_top            temperature   21.4727       21.4727       0             
+  4             .left                    temperature   -2.83878e-14  2.50876e-13   -2.79264e-13  
+  5             .right                   temperature   2.24269e-13   3.39892e-13   -1.15624e-13  
+  6             .rock_bottom             temperature   -10.4013      0             -10.4013      
+  7             .rock_top                temperature   2.41271       2.41271       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -36.523       23.8854       -60.4085      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   37.3108       0             
+  8             rock                     temperature   315.541       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   352.852       0             
+
+
+# Cumulative mass balance on time interval [0,7]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -352.852      352.852       352.852       -2.61676e-06  7.41601e-09   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 8.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0051      0             -50.0051      
+  2             .fracture_top            temperature   24.1751       24.1751       0             
+  4             .left                    temperature   -3.6627e-14   2.76466e-13   -3.13093e-13  
+  5             .right                   temperature   2.53297e-13   3.79204e-13   -1.25907e-13  
+  6             .rock_bottom             temperature   -10.2841      0             -10.2841      
+  7             .rock_top                temperature   2.92296       2.92296       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -33.1912      27.098        -60.2892      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   38.9803       0             
+  8             rock                     temperature   347.063       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   386.043       0             
+
+
+# Cumulative mass balance on time interval [0,8]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -386.043      386.043       386.043       -1.88697e-05  4.88797e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 9.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0037      0             -50.0037      
+  2             .fracture_top            temperature   26.6934       26.6934       0             
+  4             .left                    temperature   -4.42456e-14  2.98807e-13   -3.43053e-13  
+  5             .right                   temperature   2.78165e-13   4.1354e-13    -1.35375e-13  
+  6             .rock_bottom             temperature   -10.2043      0             -10.2043      
+  7             .rock_top                temperature   3.43309       3.43309       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -30.0815      30.1265       -60.208       
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   40.4378       0             
+  8             rock                     temperature   375.687       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   416.125       0             
+
+
+# Cumulative mass balance on time interval [0,9]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -416.125      416.125       416.125       -3.24337e-05  7.79422e-08   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 10.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .fracture_bottom         temperature   -50.0027      0             -50.0027      
+  2             .fracture_top            temperature   29.0351       29.0351       0             
+  4             .left                    temperature   -5.11782e-14  3.18229e-13   -3.69407e-13  
+  5             .right                   temperature   2.9937e-13    4.43409e-13   -1.44039e-13  
+  6             .rock_bottom             temperature   -10.1488      0             -10.1488      
+  7             .rock_top                temperature   3.93611       3.93611       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     temperature   -27.1803      32.9712       -60.1515      
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  3             fracture                 temperature   41.7139       0             
+  8             rock                     temperature   401.591       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       temperature   443.305       0             
+
+
+# Cumulative mass balance on time interval [0,10]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  temperature   0             0             -443.305      443.305       443.305       -4.36035e-05  9.83599e-08   
+
+
