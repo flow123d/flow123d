@@ -73,21 +73,25 @@ public:
 
     PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
+        matrix_changed_ = true;
     	return MatCopy(matrix, matrix_, str);
     }
 
     PetscErrorCode set_rhs(Vec &rhs)
     {
+        rhs_changed_ = true;
     	return VecCopy(rhs, rhs_);
     }
 
     PetscErrorCode mat_zero_entries()
     {
+        matrix_changed_ = true;
     	return MatZeroEntries(matrix_);
     }
 
     PetscErrorCode rhs_zero_entries()
     {
+        rhs_changed_ = true;
     	return VecSet(rhs_, 0);
     }
 
@@ -167,6 +171,8 @@ protected:
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
     double  solution_precision_; // precision of KSP system solver
+    bool    matrix_changed_;     // indicate if matrix was changed since the last solving
+    bool    rhs_changed_;        // indicate if right side was changed since the last solving
 
 };
 
