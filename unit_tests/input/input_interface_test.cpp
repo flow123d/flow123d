@@ -169,7 +169,7 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        delete storage;
+        //delete storage; // deleted by ~AddressData
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;

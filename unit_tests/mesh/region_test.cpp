@@ -142,11 +142,8 @@ const string read_sets_json = R"JSON(
 )JSON";
 
 TEST(Region, read_sets_from_input) {
-
-	Input::JSONToStorage json_reader;
-	stringstream ss(read_sets_json.c_str());
 	Input::Type::Array region_set_array_input_type( RegionDB::region_set_input_type );
-	json_reader.read_stream( ss,  region_set_array_input_type);
+	Input::JSONToStorage json_reader( read_sets_json,  region_set_array_input_type);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
@@ -202,10 +199,8 @@ const string read_element_map_json = R"JSON(
 
 TEST(Region, read_element_map_from_input) {
 
-	Input::JSONToStorage json_reader;
-	stringstream ss(read_element_map_json.c_str());
 	Input::Type::Array element_map_array_input_type( RegionDB::region_input_type );
-	json_reader.read_stream( ss,  element_map_array_input_type);
+	Input::JSONToStorage json_reader( read_element_map_json,  element_map_array_input_type);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;

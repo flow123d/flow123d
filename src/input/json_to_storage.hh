@@ -192,24 +192,17 @@ public:
             << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
-    /**
-     * Default constructor. Do nothing.
-     *
-     * Do not use instance with NULL storage_.
-     * Call read_stream or other such method which fills storage_ after creating this object.
-     */
-    JSONToStorage();
 
     /**
-     * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
-     * store the data into private storage tree using \p StorageBase classes.
+     * Read a storage from input stream. Parameter @p root_type
+     * provides input type tree declaration. See @p read_from_stream for details.
      */
-    void read_stream(istream &in, const Type::TypeBase &root_type);
+    JSONToStorage(istream &in, const Type::TypeBase &root_type);
 
     /**
      * Read a storage from string (e.g. complex default value).
      */
-    void read_from_string( const string &default_str, const Type::TypeBase &root_type);
+    JSONToStorage( const string &default_str, const Type::TypeBase &root_type);
 
     /**
      * Returns the root accessor. The template type \p T should correspond
@@ -220,6 +213,19 @@ public:
 
 
 protected:
+
+    /**
+     * Default constructor.
+     * Provides common initialization for public constructors.
+     */
+    JSONToStorage();
+
+    /**
+     * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
+     * store the data into private storage tree using \p StorageBase classes.
+     */
+    void read_stream(istream &in, const Type::TypeBase &root_type);
+
     /**
      * Getter for root of the storage tree.
      */
@@ -253,7 +259,7 @@ protected:
 
 
     /// helper envelope for get_root_interface
-    StorageArray *envelope;
+    //StorageArray *envelope;
 
     /// Storage of the read and checked input data
     StorageBase *storage_;
@@ -288,13 +294,14 @@ protected:
 template <class T>
 T JSONToStorage::get_root_interface() const
 {
-	ASSERT(envelope, "NULL pointer to storage object envelope!!! \n");
+	ASSERT(storage_, "NULL pointer to storage !!! \n");
 
 	Address addr(storage_, root_type_);
 	// try to create an iterator just to check type
 	Iterator<T>( *root_type_, addr, 0);
 
-    return T( addr, static_cast<const typename T::InputType &>(*root_type_) );
+	auto tmp_root_type = static_cast<const typename T::InputType &>(*root_type_);
+    return T( addr, tmp_root_type );
 }
 
 
@@ -302,8 +309,6 @@ T JSONToStorage::get_root_interface() const
 
 } // namespace Input
 
-class Some {
 
-};
 
 #endif /* JSON_TO_STORAGE_HH_ */

@@ -217,9 +217,7 @@ protected:
 
     void read_input(const string &input) {
         // read input string
-        std::stringstream ss(input);
-        Input::JSONToStorage reader;
-        reader.read_stream( ss, input_type );
+        Input::JSONToStorage reader( input, input_type );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);

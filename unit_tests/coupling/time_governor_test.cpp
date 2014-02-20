@@ -109,11 +109,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     in_rec.finish();
     }
     
-    Input::JSONToStorage json_reader;
-    //creating stream out of the json input string 
-    std::stringstream in_stream(flow_json);
     //json reading according to keys defined in in_rec
-    json_reader.read_stream(in_stream, in_rec);
+    Input::JSONToStorage json_reader(flow_json, in_rec);
     
     //getting root record
     Input::Record input = json_reader.get_root_interface<Input::Record>();

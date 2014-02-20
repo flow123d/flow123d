@@ -180,6 +180,17 @@ protected:
          * Actual storage - tip of the storage tree
          */
         const StorageBase * actual_storage_;
+
+        /**
+         * Delete whole storage tree when last root input accessor is destroyed.
+         */
+        ~AddressData() {
+        	if (	parent_ == nullptr
+        			&& root_storage_ == actual_storage_
+        			&& root_type_ ) {
+        		delete root_storage_;
+        	}
+        }
     };
 
 public:

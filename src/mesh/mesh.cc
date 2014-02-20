@@ -84,9 +84,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
-    Input::JSONToStorage reader;
-    std::stringstream in(input_str);
-    reader.read_stream( in, Mesh::input_type );
+
+    Input::JSONToStorage reader( input_str, Mesh::input_type );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
