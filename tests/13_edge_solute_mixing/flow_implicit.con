@@ -62,7 +62,7 @@
       bc_data = [
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test13.tbc"
+          bc_conc = 1
         }
       ],
 
