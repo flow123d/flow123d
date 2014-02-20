@@ -280,6 +280,10 @@ public:
      */
     void init_from_input(Input::Array bulk_list, Input::Array bc_list);
 
+    void set_limit_side(LimitSide side) {
+    	for(FieldCommonBase * field : field_list) field->set_limit_side(side);
+    }
+
     /**
      * Reads input from one region - one time descriptor.
      */

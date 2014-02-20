@@ -82,8 +82,8 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("Transpor
     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", "0.0");
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", "0.0");
-    ADD_FIELD(sorp_type, "Type of sorption isotherm.", "none");
-    sorp_type.set_selection(&sorption_type_selection);
+    ADD_FIELD(sorp_type, "Type of sorption isotherm.", "\"none\"");
+    sorp_type.input_selection(&sorption_type_selection);
     ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", "0.0");
     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
             "Vector, one value for every substance.", "1.0");
@@ -132,18 +132,20 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     if (it)
     	mass_balance_ = new MassBalance(this, *it);
 
-    data_.init_conc.set_n_comp(n_subst_);
-    data_.bc_conc.set_n_comp(n_subst_);
-    data_.alpha.set_n_comp(n_subst_);
-    data_.sorp_type.set_n_comp(n_subst_);
-    data_.sorp_coef0.set_n_comp(n_subst_);
-    data_.sorp_coef1.set_n_comp(n_subst_);
-    data_.sources_density.set_n_comp(n_subst_);
-    data_.sources_sigma.set_n_comp(n_subst_);
-    data_.sources_conc.set_n_comp(n_subst_);
+    data_.init_conc.n_comp(n_subst_);
+    data_.bc_conc.n_comp(n_subst_);
+    data_.alpha.n_comp(n_subst_);
+    data_.sorp_type.n_comp(n_subst_);
+    data_.sorp_coef0.n_comp(n_subst_);
+    data_.sorp_coef1.n_comp(n_subst_);
+    data_.sources_density.n_comp(n_subst_);
+    data_.sources_sigma.n_comp(n_subst_);
+    data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data_.set_time(*time_, LimitSide::left);
+
+    data_.set_limit_side(LimitSide::right);
+    data_.set_time(*time_);
 
 
     sorption = in_rec.val<bool>("sorption_enable");
@@ -170,8 +172,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     data_.conc_mobile.init(subst_names_);
     data_.conc_mobile.set_mesh(*mesh_);
-    data_.conc_mobile.set_name("conc_mobile");
-    data_.conc_mobile.set_units("M/L^3");
+    data_.conc_mobile.name("conc_mobile");
+    data_.conc_mobile.units("M/L^3");
 
     field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
@@ -607,7 +609,7 @@ void ConvectionTransport::compute_one_step() {
     unsigned int loc_el,sbi;
     
     START_TIMER("data reinit");
-    data_.set_time(*time_, LimitSide::left); // set to the last computed time
+    data_.set_time(*time_); // set to the last computed time
 
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary

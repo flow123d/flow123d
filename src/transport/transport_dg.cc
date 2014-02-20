@@ -185,8 +185,8 @@ TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
 			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
 
-    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "inflow" );
-    bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "\"inflow\"" );
+    bc_type.input_selection(&bc_type_selection);
 
     std::vector<FieldEnum> list; list.push_back(neumann);
 //    bc_conc.disable_where(& bc_type, list );
@@ -198,6 +198,7 @@ TransportDG::EqData::EqData() : TransportBase::TransportEqData("TransportDG")
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
 //    list.clear(); list.push_back(inflow); list.push_back(dirichlet); list.push_back(neumann);
 //    bc_robin_sigma.disable_where(& bc_type, list );
+    bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 }
 /*
 RegionSet TransportDG::EqData::read_boundary_list_item(Input::Record rec) {
@@ -231,21 +232,23 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data.set_mesh(init_mesh);
-    data.init_conc.set_n_comp(n_subst_);
-    data.bc_conc.set_n_comp(n_subst_);
-    data.bc_type.set_n_comp(n_subst_);
-    data.bc_flux.set_n_comp(n_subst_);
-    data.bc_robin_sigma.set_n_comp(n_subst_);
-    data.diff_m.set_n_comp(n_subst_);
-    data.disp_l.set_n_comp(n_subst_);
-    data.disp_t.set_n_comp(n_subst_);
-    data.sigma_c.set_n_comp(n_subst_);
-    data.dg_penalty.set_n_comp(n_subst_);
-    data.sources_density.set_n_comp(n_subst_);
-    data.sources_sigma.set_n_comp(n_subst_);
-    data.sources_conc.set_n_comp(n_subst_);
+    data.init_conc.n_comp(n_subst_);
+    data.bc_conc.n_comp(n_subst_);
+    data.bc_type.n_comp(n_subst_);
+    data.bc_flux.n_comp(n_subst_);
+    data.bc_robin_sigma.n_comp(n_subst_);
+    data.diff_m.n_comp(n_subst_);
+    data.disp_l.n_comp(n_subst_);
+    data.disp_t.n_comp(n_subst_);
+    data.sigma_c.n_comp(n_subst_);
+    data.dg_penalty.n_comp(n_subst_);
+    data.sources_density.n_comp(n_subst_);
+    data.sources_sigma.n_comp(n_subst_);
+    data.sources_conc.n_comp(n_subst_);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data.set_time(*time_, LimitSide::left);
+
+    data.set_limit_side(LimitSide::left);
+    data.set_time(*time_);
 
     // sorption and dual_porosity is currently not used in TransportDG
     sorption = in_rec.val<bool>("sorption_enable");
@@ -353,7 +356,7 @@ void TransportDG::update_solution()
     time_->view("TDG");
     
     START_TIMER("data reinit");
-    data.set_time(*time_, LimitSide::right);
+    data.set_time(*time_);
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation

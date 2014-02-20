@@ -28,16 +28,7 @@
 
 
 
-string field_input = R"INPUT(
-{
-   sorption_type="linear",   
-   init_conc=[ 10, 20, 30],    // FieldConst
-   conductivity={ //3x3 tensor
-       TYPE="FieldFormula",
-       value=["x","y", "z"]
-   }
-}
-)INPUT";
+
 
 
 
@@ -62,7 +53,7 @@ public:
 
 
 	    field_.name("test_field");
-	    field_.input_selection(test_selection);
+	    field_.input_selection(&test_selection);
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
@@ -77,8 +68,9 @@ public:
 
 		string field_input = "[{a=314}]";
 		if (this->is_enum_valued) field_input = "[{a=\"white\"}]";
-		Input::Record x_rec = *(input_list(field_input)
-						.begin<Input::Record>());
+
+		root_input = input_list(field_input);
+		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
 		my_field_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
 
@@ -90,25 +82,37 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
-		reader_.read_from_string( str, *test_input_list );
-		return reader_.get_root_interface<Input::Array>();
+		Input::JSONToStorage reader(str, *test_input_list );
+		return reader.get_root_interface<Input::Array>();
 	}
 
+	// RegionHistory for given region index
 	typename FieldType::RegionHistory &rh( int r_idx) { return this->data_->region_history_[r_idx]; };
+	// time of HistoryPoint given by region index and position in circular buffer.
 	double rh_time(int r_idx, int j) { return this->rh(r_idx)[j].first; }
 
 	typedef typename FieldType::FieldBaseType::ValueType Value;
+	// const value of HistoryPoint given by region index and position in circular buffer.
 	typename Value::element_type rh_value(int r_idx, int j) {
 		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
 		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 , this->is_bc() );
 		auto val = fb->value(elm.centre(), elm);
 		return (Value(val))(0,0);
 	}
+	// const value of region_field_ on some region
+	typename Value::element_type _value_(FieldType &f) {
+		Region r = f.mesh()->region_db().get_region_set("BULK")[1];
 
-	Input::JSONToStorage reader_;
+		auto elm = ElementAccessor<FieldType::space_dim>( f.mesh(), r );
+		auto val = f.value( point_, elm);
+		return (Value(val))(0,0);
+	}
 
 	// simple selection with values "black" and "White"
 	Input::Type::Selection test_selection;
+
+	// has to keep root accessor to prevent delete of the storage tree
+	Input::Array root_input;
 
 	// Field<..> instance with name "test_field" and selection test_selection
 	FieldType field_;
@@ -125,6 +129,8 @@ public:
 	    $EndPhysicalNames
 	 */
 	Mesh *my_mesh;
+
+	typename FieldType::Point point_;
 
 	// BULK domain
 	RegionSet my_domain;
@@ -251,12 +257,6 @@ TYPED_TEST(FieldFix, set_mesh) {
 }
 
 
-// Check copy constructor and assignment oprerator
-TYPED_TEST(FieldFix, constructors) {
-	typename TestFixture::FieldType f2(this->field_);
-	typename TestFixture::FieldType f3;
-	f3 = this->field_;
-}
 
 /*
 
@@ -311,7 +311,6 @@ TYPED_TEST(FieldFix, update_history) {
 			"{time=5, r_set=\"ALL\", a =1}"
 			"]";
 	if (this->is_enum_valued) {
-		DBGMSG("Enum Valued\n");
 		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
 		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
 	}
@@ -432,21 +431,121 @@ TYPED_TEST(FieldFix, update_history) {
 
 }
 
+TYPED_TEST(FieldFix, set_time) {
+	string list_ok = "["
+			"{time=0, r_set=\"ALL\", a =0, b =0},"
+			"{time=1, r_set=\"BULK\", a =1, b =0},"
+			"{time=2, r_set=\"BOUNDARY\", a =1, b =0},"
+			"{time=3, r_set=\"ALL\", b =0},"
+			"{time=4, r_set=\"ALL\", a =0},"
+			"{time=5, r_set=\"ALL\", a =1}"
+			"]";
 
-/*
-TEST_F(FiledFix, set_time) {
+	if (this->is_enum_valued) {
+		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
+		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+	}
+
+	this->name("a");
+	this->set_mesh(*(this->my_mesh));
+	this->set_input_list( this->input_list(list_ok) );
+	this->set_limit_side(LimitSide::right);
+
+	// time = 0.0
+	TimeGovernor tg(0.0, 1.0);
+	this->set_time(tg);
+	this->_value_( *this );
 
 }
 
 
 
+// Check copy constructor and assignment oprerator
+TYPED_TEST(FieldFix, constructors) {
+	// default constructor
+	typename TestFixture::FieldType field_default;
+	EXPECT_EQ("", field_default.name());
+	EXPECT_FALSE(field_default.is_bc());
 
+	// copies
+	// check that we can have copies in different times
+	this->field_.name("a");
+	field_default.name("b");
+	this->field_.set_mesh( *(this->my_mesh) );
+	field_default.set_mesh( *(this->my_mesh) );
+
+	string list_ok = "["
+			"{time=2,  r_set=\"BULK\", a=0, b=1}, "
+			"{time=3,  r_set=\"BULK\", b=1}, "
+			"{time=4,  r_set=\"BULK\", a=1},"
+			"{time=5,  r_set=\"BULK\", a=0, b=0}]";
+
+	if (this->is_enum_valued) {
+		list_ok = boost::regex_replace(list_ok, boost::regex("=1"), "=\"white\"");
+		list_ok = boost::regex_replace(list_ok, boost::regex("=0"), "=\"black\"");
+	}
+
+	this->field_.set_input_list(this->input_list(list_ok));
+	field_default.set_input_list(this->input_list(list_ok));
+	this->field_.set_limit_side(LimitSide::right);
+	field_default.set_limit_side(LimitSide::right);
+
+	TimeGovernor tg(2.0, 1.0);
+
+	typename TestFixture::FieldType f2(this->field_);	// default constructor
+	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
+	f2.set_limit_side(LimitSide::right);
+
+	// tg = 2.0
+	f2.set_time(tg);
+	EXPECT_EQ(0,this->_value_(f2));
+	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
+	this->field_.set_time(tg);
+	EXPECT_EQ(0,this->_value_(this->field_));
+
+	// tg = 3.0
+	tg.next_time();
+	this->field_.set_time(tg);
+	EXPECT_EQ(0,this->_value_(this->field_));
+
+	// tg = 4.0
+	tg.next_time();
+	this->field_.set_time(tg);
+	EXPECT_EQ(1,this->_value_(this->field_));
+	EXPECT_EQ(0,this->_value_(f2));
+	EXPECT_ASSERT_DEATH( {field_default.set_time(tg);}, "Must set limit side");
+
+	field_default.set_limit_side(LimitSide::right);
+	field_default.set_time(tg);
+	EXPECT_EQ(1,this->_value_(field_default));
+}
+
+
+
+
+
+/*
 TEST_F(FiledFix, check_initialized_region_field) {
 
 }
 
 */
-/*
+
+
+
+
+
+string field_input = R"INPUT(
+{
+   sorption_type="linear",   
+   init_conc=[ 10, 20, 30],    // FieldConst
+   conductivity={ //3x3 tensor
+       TYPE="FieldFormula",
+       value=["x","y", "z"]
+   }
+}
+)INPUT";
+
 namespace it = Input::Type;
 TEST(Field, init_from_input) {
 //    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -468,7 +567,7 @@ TEST(Field, init_from_input) {
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
-    sorption_type.input_selection(sorption_type_sel);
+    sorption_type.input_selection(&sorption_type_sel);
     init_conc.n_comp(3);
 
     it::Record main_record =
@@ -479,9 +578,7 @@ TEST(Field, init_from_input) {
 
 
     // read input string
-    std::stringstream ss(field_input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, main_record );
+    Input::JSONToStorage reader( field_input, main_record );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     sorption_type.set_mesh(mesh);
@@ -494,6 +591,9 @@ TEST(Field, init_from_input) {
     init_conc.set_field(r_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_field(r_set, in_rec.val<Input::AbstractRecord>("conductivity"));
 
+    sorption_type.set_limit_side(LimitSide::right);
+    init_conc.set_limit_side(LimitSide::right);
+    conductivity.set_limit_side(LimitSide::right);
 
     sorption_type.set_time();
     init_conc.set_time();
@@ -505,16 +605,19 @@ TEST(Field, init_from_input) {
 
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 
-	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
-	    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - conductivity.value(ele.centre(), ele);
+	    auto vec_value = init_conc.value(ele.centre(), ele);
+	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == vec_value ) );
+
+	    auto result =conductivity.value(ele.centre(), ele);
+	    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - result;
+
 	    double norm=arma::norm(diff, 1);
 	    EXPECT_DOUBLE_EQ( 0.0, norm );
     }
 
     {
 	//  using const accessor
-    	cout << "Second ele" << endl;
     	ElementAccessor<3> ele;
 
 	    EXPECT_ASSERT_DEATH( {sorption_type.value(ele.centre(), ele);}  , "Invalid element accessor.");
@@ -551,11 +654,12 @@ TEST(Field, init_from_default) {
     Space<3>::Point p("1 2 3");
 
     {
-        Field<3, FieldValue<3>::Scalar > scalar_field;
+        Field<3, FieldValue<3>::Scalar > scalar_field("scalar_test");
 
         // test default initialization of scalar field
-        scalar_field.input_default( "45" );
+        scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
+        scalar_field.set_limit_side(LimitSide::right);
         scalar_field.set_time();
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
@@ -569,6 +673,7 @@ TEST(Field, init_from_default) {
 
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
+        scalar_field.set_limit_side(LimitSide::right);
         EXPECT_THROW_WHAT( {scalar_field.set_time();} , ExcXprintfMsg, "Missing value of the field");
     }
     //
@@ -579,9 +684,10 @@ TEST(Field, init_from_default) {
            .add_value(1,"dirichlet")
            .close();
 
-        enum_field.input_selection(sel);
-        enum_field.input_default( "none" );
+        enum_field.input_selection(&sel);
+        enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
+        enum_field.set_limit_side(LimitSide::right);
         enum_field.set_time();
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
@@ -632,7 +738,7 @@ TEST(Field, disable_where) {
     3       39      "3D back"
     3       40      "3D front"
      */
-/*
+
 
     typedef FieldConstant<3, FieldValue<3>::Scalar > SConst;
     typedef FieldConstant<3, FieldValue<3>::Enum > EConst;
@@ -653,6 +759,11 @@ TEST(Field, disable_where) {
     bc_type.set_field(RegionSet(1, mesh.region_db().find_id(-3)), neumann_type );
     bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(-3)), one );
 
+    bc_type.set_limit_side(LimitSide::right);
+    bc_flux.set_limit_side(LimitSide::right);
+    bc_value.set_limit_side(LimitSide::right);
+    bc_sigma.set_limit_side(LimitSide::right);
+
     bc_type.set_time();
     bc_flux.set_time();
     bc_value.set_time();
@@ -660,4 +771,5 @@ TEST(Field, disable_where) {
 }
 
 
-*/
+
+

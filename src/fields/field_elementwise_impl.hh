@@ -114,8 +114,8 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
 
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
-    // set mesh only once
-    ASSERT(mesh_ == NULL, "Trying to change mesh of the FieldElementwise.");
+    // set mesh only once or to same value
+    ASSERT(mesh_ == nullptr || mesh_ == mesh, "Trying to change mesh of the FieldElementwise.");
     boundary_domain_ = boundary_domain;
 
     mesh_=mesh;

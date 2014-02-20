@@ -116,7 +116,7 @@ protected:
 	BIHTree* bih_tree_;
 
 	/// stored index to last computed element
-	unsigned int computed_elm_idx_;
+	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;
