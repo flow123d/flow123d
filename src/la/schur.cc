@@ -84,8 +84,6 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         xA      = NULL;
         IAB     = NULL;
         IsB     = NULL;
-        fullIsA = NULL;
-        fullIsB = NULL;
         RHS1    = NULL;
         RHS2    = NULL;
         Sol1    = NULL;
@@ -95,13 +93,11 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
-        ISAllGather(IsA,&fullIsA);
         //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
         // create B block index set
         loc_size_B = rows_ds_->lsize() - loc_size_A;
         ISCreateStride(PETSC_COMM_WORLD,loc_size_B,rows_ds_->begin()+loc_size_A,1,&IsB);
-        ISAllGather(IsB,&fullIsB);
         //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 }
 
@@ -403,8 +399,6 @@ SchurComplement :: ~SchurComplement() {
     if ( IAB != NULL )            MatDestroy(&IAB);
     if ( IsA != NULL )            ISDestroy(&IsA);
     if ( IsB != NULL )            ISDestroy(&IsB);
-    if ( fullIsA != NULL )        ISDestroy(&fullIsA);
-    if ( fullIsB != NULL )        ISDestroy(&fullIsB);
     if ( RHS1 != NULL )           VecDestroy(&RHS1);
     if ( RHS2 != NULL )           VecDestroy(&RHS2);
     if ( Sol1 != NULL )           VecDestroy(&Sol1);

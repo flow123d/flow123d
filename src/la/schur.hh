@@ -115,7 +115,6 @@ protected:
     Mat IAB;                    // reconstruction matrix IA * B
     int loc_size_A, loc_size_B; // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
-    IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc
     Vec RHS1, RHS2;             // A and B - part of the RHS
     Vec Sol1, Sol2;             // A and B part of solution
 
