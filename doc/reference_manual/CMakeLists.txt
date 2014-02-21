@@ -16,6 +16,7 @@ cmake_minimum_required(VERSION 2.8)
        darcy_flow.tex
        decay.tex
   #    flow_ini.tex
+       flow_version.tex
        input_files.tex
        input_reference.tex
        JSON_input.tex

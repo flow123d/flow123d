@@ -107,7 +107,7 @@ void Application::display_version() {
     
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
-    xprintf(Msg, "This is Flow123d, version %s revison: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
     xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
