@@ -1034,7 +1034,9 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
         		// make schur1
             	Distribution *ds = ls->make_complement_distribution();
-            	if (n_schur_compls==2) {
+            	if (n_schur_compls==1) {
+            		schur1 = new LinSys_PETSC(ds);
+            	} else {
         			IS is;
         			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
         			ASSERT(err == 0,"Error in ISCreateStride.");
@@ -1044,8 +1046,6 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
         			ls1->set_complement( schur2 );
         			schur1 = ls1;
-            	} else {
-            		schur1 = new LinSys_PETSC(ds);
             	}
             	ls->set_complement( schur1 );
         		schur0=ls;
