@@ -96,54 +96,62 @@ void Record::make_derive_from(AbstractRecord &parent) const {
     parent.finish();
     parent.add_descendant(*this);
 
-    // copy keys form parent
-    std::vector<Key>::iterator it = data_->keys.begin();
-    int n_inserted = 0;
-    for(KeyIter pit=parent.data_->keys.begin(); pit != parent.data_->keys.end(); ++pit) {
-        Key tmp_key=*pit;    // make temporary copy of the key
-        KeyHash key_h = key_hash(tmp_key.key_);
-
-        tmp_key.derived = true;
-
-        // we have to copy TYPE also since there should be place in storage for it
-        // however we change its Default to name of actual Record
-        if (tmp_key.key_=="TYPE")
-            tmp_key.default_=Default( type_name() );
-
-        // check for duplicate keys, save only the key derived by the descendant
-        RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
-        if (kit != data_->key_to_index.end()) {
-            Key *k = &(data_->keys[kit->second+n_inserted]);
-            
-            //does not work with intel c++ compiler
-            //tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
-
-            tmp_key.key_ = k->key_;
-            tmp_key.description_ = k->description_;
-            tmp_key.type_ = k->type_;
-            tmp_key.p_type = k->p_type;
-            tmp_key.default_ = k->default_;
-            tmp_key.derived = false;
-            k->key_ = "";
-        }
-
-        data_->key_to_index[key_h] = tmp_key.key_index;
-
-        it = data_->keys.insert(it, tmp_key)+1;
-        n_inserted++;
-    }
-    // delete duplicate keys and update key indices
-    for (int i=0; i<data_->keys.size(); i++) {
-        if (data_->keys[i].key_.compare("") == 0) {
-            data_->keys.erase( data_->keys.begin()+i);
-            i--;
-        } else {
-            data_->keys[i].key_index = i;
-            data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
-        }
-    }
+    make_copy_keys(parent);
 
     data_->derived_ = true;
+}
+
+
+
+void Record::make_copy_keys(Record &origin) const {
+
+	origin.finish();
+
+	std::vector<Key>::iterator it = data_->keys.begin();
+	int n_inserted = 0;
+	for(KeyIter pit=origin.data_->keys.begin(); pit != origin.data_->keys.end(); ++pit) {
+		Key tmp_key=*pit;    // make temporary copy of the key
+		KeyHash key_h = key_hash(tmp_key.key_);
+
+		tmp_key.derived = true;
+
+		// we have to copy TYPE also since there should be place in storage for it
+		// however we change its Default to name of actual Record
+		if (tmp_key.key_=="TYPE")
+			tmp_key.default_=Default( type_name() );
+
+		// check for duplicate keys, save only the key derived by the descendant
+		RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
+		if (kit != data_->key_to_index.end()) {
+			Key *k = &(data_->keys[kit->second+n_inserted]);
+
+			//does not work with intel c++ compiler
+			//tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
+
+			tmp_key.key_ = k->key_;
+			tmp_key.description_ = k->description_;
+			tmp_key.type_ = k->type_;
+			tmp_key.p_type = k->p_type;
+			tmp_key.default_ = k->default_;
+			tmp_key.derived = false;
+			k->key_ = "";
+		}
+
+		data_->key_to_index[key_h] = tmp_key.key_index;
+
+		it = data_->keys.insert(it, tmp_key)+1;
+		n_inserted++;
+	}
+	// delete duplicate keys and update key indices
+	for (int i=0; i<data_->keys.size(); i++) {
+		if (data_->keys[i].key_.compare("") == 0) {
+			data_->keys.erase( data_->keys.begin()+i);
+			i--;
+		} else {
+			data_->keys[i].key_index = i;
+			data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
+		}
+	}
 }
 
 
