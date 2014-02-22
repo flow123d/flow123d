@@ -67,6 +67,7 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
  */
 
     flow_type = std::make_shared< FieldEnum >(1);
+    flow_type->set_mesh(mesh_, true);
     flow_pressure = std::make_shared< FieldScalar >(1);
     flow_pressure->set_mesh(mesh_, true);
     flow_flux = std::make_shared< FieldScalar >(1);

@@ -47,6 +47,16 @@ using namespace std;
 class OldBcdInput {
 public:
 
+	/**
+	 * Use this to declare the key with filename.
+	 */
+	static string flow_old_bcd_file_key() {
+		return "flow_old_bcd_file";
+	}
+	static string transport_old_bcd_file_key() {
+		return "transport_old_bcd_file";
+	}
+
 	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
 	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
 	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
@@ -116,7 +126,7 @@ public:
 
     void read_flow_record(Input::Record rec, const FieldCommonBase &field) {
     	FilePath bcd_file;
-    	if (rec.opt_val("flow_old_bcd_file", bcd_file)
+    	if (rec.opt_val(flow_old_bcd_file_key(), bcd_file)
     			&& string(bcd_file) != flow_input_file_) {
     		ASSERT(field.mesh(),"Null mesh pointer.");
     		read_flow(*(field.mesh()), bcd_file);
@@ -155,13 +165,14 @@ private:
     string flow_input_file_;
     string transport_input_file_;
 
+
 };
 
 
 
 void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommonBase &field) {
 	FilePath bcd_file;
-	if (rec.opt_val("old_boundary_file", bcd_file)
+	if (rec.opt_val(transport_old_bcd_file_key(), bcd_file)
 			&& string(bcd_file) != transport_input_file_) {
 		ASSERT(field.mesh(),"Null mesh pointer.");
 		read_transport( field.n_comp(), bcd_file);

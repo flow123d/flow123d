@@ -20,12 +20,24 @@
 
 FieldCommonBase::FieldCommonBase()
 : shared_( std::make_shared<SharedData>() ),
-  status_(TimeStatus::unknown)
+  limit_side_(LimitSide::unknown),
+  set_time_result_(TimeStatus::unknown)
 {
+	shared_->bc_=false;
 	shared_->default_="";
 	shared_->n_comp_ = 0;
 	shared_->mesh_ = nullptr;
+	shared_->is_fully_initialized_=false;
 }
+
+
+
+FieldCommonBase::FieldCommonBase(const FieldCommonBase & other)
+: shared_(other.shared_),
+  set_time_result_(TimeStatus::unknown),
+  limit_side_(LimitSide::unknown)
+{}
+
 
 
 IT::Record FieldCommonBase::field_descriptor_record(const string& record_name) {
@@ -63,8 +75,8 @@ void FieldCommonBase::set_input_list(const Input::Array &list)
 		    	cout << shared_->input_list_.address_string();
 		    	THROW( ExcNonascendingTime()
 		    			<< EI_Time(time)
-		    			<< EI_Field(name()) );
-//		    			<< input_list_.ei_address());
+		    			<< EI_Field(name())
+		    			<< shared_->input_list_.ei_address());
 		    }
 		    last_time=time;
 

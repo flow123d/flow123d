@@ -83,7 +83,7 @@ Record TransportOperatorSplitting::input_type
     .declare_key("adsorptions", Sorption::input_type, Default::optional(),
     			"Initialization of per element sorptions.")
     .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()
-    		.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
+    		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "Input file with boundary conditions (obsolete).")
     		.declare_key("bc_times", Array(Double()), Default::optional(),
     				"Times for changing the boundary conditions (obsolete).")
     		), IT::Default::obligatory(), "")

@@ -60,7 +60,7 @@ Sorption::EqData::EqData()
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
-              sorption_types.set_selection(&sorption_type_selection);
+              sorption_types.input_selection(&sorption_type_selection);
 
     ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", "1.0");
 
@@ -81,14 +81,16 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     nr_of_substances = in_rec.val<Input::Array>("species").size();
     nr_of_points = in_rec.val<int>("substeps");
 
-    data_.sorption_types.set_n_comp(nr_of_substances);
-    data_.mult_coefs.set_n_comp(nr_of_substances);
-    data_.second_params.set_n_comp(nr_of_substances);
+    data_.sorption_types.n_comp(nr_of_substances);
+    data_.mult_coefs.n_comp(nr_of_substances);
+    data_.second_params.n_comp(nr_of_substances);
     int nr_transp_subst = names.size();
-    data_.alphas.set_n_comp(nr_transp_subst);
+    data_.alphas.n_comp(nr_transp_subst);
     data_.set_mesh(init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-    data_.set_time(tg, LimitSide::left);
+
+    data_.set_limit_side(LimitSide::right);
+    data_.set_time(tg);
 
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
@@ -293,7 +295,7 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 // Computes adsorption simulation over all the elements.
 void Sorption::compute_one_step(void)
 {
-    data_.set_time(*time_, LimitSide::left); // set to the last computed time
+    data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
 	if((data_.rock_density.changed() ) &&
 		(data_.mult_coefs.changed() ) &&

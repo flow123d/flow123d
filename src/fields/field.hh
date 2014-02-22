@@ -29,7 +29,7 @@ using namespace std;
 enum class LimitSide {
 	left=0,
 	right=1,
-	size=2 	// size of the enum
+	unknown=2 	// undefined value
 };
 
 
@@ -47,7 +47,9 @@ public:
 	DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
 			<< "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
 	DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
-			<< "Missing domain specification (region name, region ID, region set) in fields descriptor:");
+			<< "Missing domain specification (region, r_id, or r_set) in fields descriptor:");
+	DECLARE_EXCEPTION(ExcFieldMeshDifference,
+			<< "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
 
 
 
@@ -90,9 +92,14 @@ public:
     /**
      * For the fields returning "Enum", we have to pass the Input::Type::Selection object to
      * the field implementations.
+     *
+     * We must save raw pointer since selection may not be yet initialized (during static initialization phase).
      */
-    FieldCommonBase & input_selection(const Input::Type::Selection &element_selection)
-    { shared_->element_selection_=element_selection; return *this;}
+    FieldCommonBase & input_selection(const Input::Type::Selection *element_selection)
+    {
+      shared_->element_selection_=element_selection;
+      return *this;
+    }
 
 
 
@@ -202,12 +209,19 @@ public:
     virtual  bool set_time(const TimeGovernor &time=TimeGovernor()) =0;
 
     /**
-     * Returns same value as last set_time method called with same @p side parameter.
+     * Check that @p other is instance of the same Field<..> class and
+     * perform assignment. Polymorphic copy.
+     */
+    virtual void make_copy(const FieldCommonBase & other) =0;
+
+    /**
+     * Returns true if set_time_result_ is not @p TimeStatus::constant.
+     * Returns the same value as last set_time method.
      */
     bool changed() const
     {
-    	ASSERT( status_ != TimeStatus::unknown, "Invalid time status.\n");
-    	return (status_ == TimeStatus::changed);
+    	ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
+    	return ( (set_time_result_ == TimeStatus::changed) );
     }
 
     /**
@@ -218,9 +232,25 @@ public:
 
 protected:
     /**
-     * Private default constructor. Should be used only Through
+     * Private default constructor. Should be used only through
+     * Field<...>
      */
     FieldCommonBase();
+
+    /**
+     * Private copy constructor. Should be used only through
+     * Field<...>
+     */
+    FieldCommonBase(const FieldCommonBase & other);
+
+    /**
+     * Invalidate last time in order to force set_time method
+     * update region_fields_.
+     */
+    void set_history_changed()
+    {
+    	last_time_ = -numeric_limits<double>::infinity();
+    }
 
     /**
      * Setters for essential field properties.
@@ -253,12 +283,14 @@ protected:
 	     */
 	    std::string units_;
 	    /**
-	     * For Enum valued fields this points to the input type selection that should be used
+	     * For Enum valued fields this is the input type selection that should be used
 	     * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
 	     *
-	     * Is nullptr for for non-enum values fields.
+	     * Is empty selection for for non-enum values fields.
+	     *
+	     * In fact we must use raw pointer since selection may not be constructed yet (static variable).
 	     */
-	    IT::Selection element_selection_;
+	    const IT::Selection *element_selection_;
 	    /**
 	     * Possible default value of the field.
 	     */
@@ -297,22 +329,26 @@ protected:
 	std::shared_ptr<SharedData> shared_;
 
     /**
-     *
+     * Which value is returned for times where field is discontinuous.
      */
     LimitSide limit_side_;
 
-
-
+    /**
+     * Result of last set time method
+     */
     enum class TimeStatus {
-    	changed,
-    	constant,
-    	unknown
+    	changed, 	//<  Field changed during last set time call.
+    	constant,	//<  Field doesn't change.
+    	unknown		//<  Before first call of set_time.
     };
 
+    /// Status of @p history.
+    TimeStatus set_time_result_;
+
     /**
-     *
+     * Last set time.
      */
-    TimeStatus status_;
+    double last_time_ = -numeric_limits<double>::infinity();
 
     /**
      * Maximum number of FieldBase objects we store per one region.
@@ -381,9 +417,16 @@ public:
     Field(const string &name, bool bc = false);
 
     /**
-     * Copy.
+     * Copy constructor. Keeps shared history, declaration data, mesh.
      */
     Field(const Field &other);
+
+    /**
+     * Assignment operator. Same properties as copy constructor.
+     *
+     * Question: do we really need this, isn't copy constructor enough?
+     */
+    Field &operator=(const Field &other);
 
 
     /**
@@ -466,6 +509,10 @@ public:
      */
     bool set_time(const TimeGovernor &time=TimeGovernor() ) override;
 
+    /**
+     * Check that other has same type and assign from it.
+     */
+    void make_copy(const FieldCommonBase & other) override;
 
 
     /**
@@ -548,7 +595,9 @@ protected:
 	/**
 	 * If this pointer is set, turn off check of initialization in the
 	 * @p set_time method on the regions where the method @p get_constant_enum_value
-	 * of the control field returns value from @p no_check_values_.
+	 * of the control field returns value from @p no_check_values_. This
+	 * field is private copy, its set_time method is called from the
+	 * set_Time method of actual object.
 	 */
     typedef Field<spacedim, typename FieldValue<spacedim>::Enum > ControlField;
 	std::shared_ptr<ControlField>  no_check_control_field_;
@@ -558,15 +607,8 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
-    /**
-     * True after check_initialized_region_fields_ is called. That happen at first call of the set_time method.
-     */
-    bool is_fully_initialized_;
 
-    /**
-     * Last set time.
-     */
-    double last_time_ = -numeric_limits<double>::infinity();
+
 };
 
 
@@ -579,7 +621,7 @@ protected:
 template<int spacedim, class Value>
 class BCField : public Field<spacedim, Value> {
 public:
-    BCField();
+    BCField() : Field<spacedim,Value>("anonymous_bc", true) {}
 };
 
 
@@ -625,14 +667,14 @@ public:
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    virtual IT::AbstractRecord &get_input_type();
+    IT::AbstractRecord &get_input_type() override;
 
-    virtual IT::AbstractRecord make_input_tree();
+    IT::AbstractRecord make_input_tree() override;
 
     /**
      * Abstract method for initialization of the field on one region.
      */
-    virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
+    //void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) override;
 
     /**
      * Abstract method to update field to the new time level.
@@ -641,12 +683,18 @@ public:
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
      */
-    bool set_time(const TimeGovernor &time);
+    bool set_time(const TimeGovernor &time) override;
 
     /**
      * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
      */
-    virtual void set_mesh(const Mesh &mesh);
+    void set_mesh(const Mesh &mesh) override;
+
+
+    /**
+     * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
+     */
+    void make_copy(const FieldCommonBase & other) override;
 
     /**
      * Virtual destructor.
@@ -689,10 +737,11 @@ private:
 
 template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)  {
+
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] ,
-    		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
+    		"Null field ptr on region id: %d, idx: %d, field: %s\n", elm.region().id(), elm.region_idx().idx(), name().c_str());
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
 
@@ -702,6 +751,12 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
+
+    ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
+           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
+    ASSERT( region_fields_[elm.region_idx().idx()] ,
+    		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
+
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }
 

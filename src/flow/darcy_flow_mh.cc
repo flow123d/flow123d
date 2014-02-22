@@ -110,7 +110,7 @@ it::Record DarcyFlowMH_Steady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Steady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
+                .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
                 DarcyFlowMH_Steady::EqData().bulk_input_type() 
@@ -167,24 +167,24 @@ DarcyFlowMH::EqData::EqData(const std::string &name)
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
     ADD_FIELD(water_source_density, "Water source density.", "0.0");
     
-    ADD_FIELD(bc_type,"Boundary condition type, possible values:", "none" );
-        bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
+        bc_type.input_selection(&bc_type_selection);
         bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	std::vector<FieldEnum> list; list.push_back(none); list.push_back(neumann);
-    	bc_pressure.disable_where(& bc_type, list );
+    	bc_pressure.disable_where(bc_type, list );
     	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
 
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(robin);
-    	bc_flux.disable_where(& bc_type, list );
+    	bc_flux.disable_where(bc_type, list );
     	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
-    	bc_robin_sigma.disable_where(& bc_type, list );
+    	bc_robin_sigma.disable_where(bc_type, list );
     	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
 
     //these are for unsteady
@@ -269,13 +269,14 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     START_TIMER("data init");
     data.set_mesh(mesh_in);
     data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data.set_limit_side(LimitSide::right);
         
     // steady time governor
     time_ = new TimeGovernor();
     
     //initializing data fields at the beginning (time = 0)
     // TODO: for steady case we need right side limit, for unsteady we need left side limit !!!
-    data.set_time(*time_, LimitSide::right);
+    data.set_time(*time_);
     END_TIMER("data init");
     
     int ierr;
@@ -390,7 +391,8 @@ void DarcyFlowMH_Steady::update_solution() {
     //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
     //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
     //temporarily solved directly in field_elementwise and field_interpolatedP0
-    data.set_time(*time_, LimitSide::right);
+
+    data.set_time(*time_);
     END_TIMER("data reinit");
 
     //xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
