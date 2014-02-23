@@ -241,8 +241,6 @@ protected:
 TYPEDEF_ERR_INFO( EI_Address, const Address);
 
 /**
-
-/**
  * Address output operator.
  */
 inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
@@ -384,7 +382,7 @@ protected:
      * Set address (currently necessary for creating root accessor)
      */
     void set_address(const Address &address);
-    friend JSONToStorage;
+    friend class JSONToStorage;
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
