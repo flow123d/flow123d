@@ -77,7 +77,7 @@
         max_nondecr_it = 30,
         number_of_levels = 2,
         use_adaptive_bddc = false,
-        bddcml_verbosity_level = 0
+        bddcml_verbosity_level = 1
       } 
     }
   }, 

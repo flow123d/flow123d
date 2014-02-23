@@ -14,6 +14,7 @@
 
 #include <system/global_defs.h>
 #include <system/xio.h>
+#include "system/sys_profiler.hh"
 
 extern "C" { 
     #include <bddcml_interface_c.h>

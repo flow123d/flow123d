@@ -492,9 +492,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int weights_type              = 3;
 
     // setup multilevel BDDC preconditioner
+    START_TIMER("BDDC preconditioner setup");
     bddcml_setup_preconditioner( & matrixTypeInt, & use_defaults_int, 
                                  & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int,
                                  & weights_type );
+    END_TIMER("BDDC preconditioner setup");
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;
@@ -518,9 +520,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int max_number_of_stored_vectors = 100;
 
     // call iterative solver
+    START_TIMER("BDDC solve");
     bddcml_solve( & commInt, & method, & tol, & maxIt, & ndecrMax, 
                   & recycling_int, & max_number_of_stored_vectors,
                   & numIter_, & convergedReason_, & condNumber_);
+    END_TIMER("BDDC solve");
 
 
     //============= downloading solution from BDDCML solver

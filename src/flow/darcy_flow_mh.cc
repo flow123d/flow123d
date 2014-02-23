@@ -390,6 +390,7 @@ void DarcyFlowMH_Steady::update_solution() {
     modify_system(); // hack for unsteady model
     int convergedReason;
 
+    START_TIMER("solve linear system");
     switch (n_schur_compls) {
     case 0: /* none */
         convergedReason = schur0->solve();
@@ -408,6 +409,7 @@ void DarcyFlowMH_Steady::update_solution() {
         schur1->resolve();
         break;
     }
+    END_TIMER("solve linear system");
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
@@ -564,7 +566,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
-    std::map<int,double> subdomain_diagonal_map;
+    // diagonal of the matrix for uploading weights to BDDCML 
+    // S = -C - B*inv(A)*B'
+    // diag(S) ~ - diag(C) - 1./diag(A)
+    // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+    // to a continuous one
+    // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+    // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
+    std::map<int,double> subdomain_diagonal_map; 
     F_ENTRY;
 
     //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
@@ -683,8 +692,10 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // update matrix for weights in BDDCML
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
-               double new_val = value;
+               // there is -value on diagonal
+               double new_val = - value;
                std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
+               ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
                if ( it != subdomain_diagonal_map.end() ) {
                   new_val = new_val + it->second;
                }
@@ -1017,6 +1028,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
+        // with BDDCML v 2.4 and above, it is possible to run in serial
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
 #ifdef HAVE_BDDCML
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
@@ -1040,7 +1052,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
         }
 
 
-        // use PETSC for serial case even when user want BDDC
+        // use PETSC for serial case even when user wants BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
             LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
 
