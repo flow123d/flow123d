@@ -124,7 +124,8 @@ public:
     LinSys( Distribution * rows_ds,
             MPI_Comm comm = MPI_COMM_WORLD )
       : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ), solution_(NULL), v_solution_(NULL),
-        positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
+        positive_definite_( false ), negative_definite_( false ), symmetric_( false ),
+        spd_via_symmetric_general_( false ), status_( NONE )
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
@@ -139,9 +140,9 @@ public:
     LinSys(LinSys &other)
     : r_tol_(other.r_tol_), a_tol_(other.a_tol_), max_it_(other.max_it_), comm_(other.comm_), status_(other.status_),
       lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
-      positive_definite_(other.positive_definite_), spd_via_symmetric_general_(other.spd_via_symmetric_general_),
-      globalSolution_(other.globalSolution_), constraints_(other.constraints_), residual_norm_(other.residual_norm_),
-      in_rec_(other.in_rec_)
+      positive_definite_(other.positive_definite_), negative_definite_( other.negative_definite_ ),
+      spd_via_symmetric_general_(other.spd_via_symmetric_general_), globalSolution_(other.globalSolution_),
+      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_)
     {
     	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
@@ -395,7 +396,10 @@ public:
     inline void set_symmetric(bool flag = true)
     {
         symmetric_ = flag;
-        if (!flag) set_positive_definite(false);
+        if (!flag) {
+        	set_positive_definite(false);
+        	set_negative_definite(false);
+        }
     }
 
     inline bool is_symmetric()
@@ -407,11 +411,29 @@ public:
     inline void set_positive_definite(bool flag = true)
     {
         positive_definite_ = flag;
-        if (flag) set_symmetric();
+        if (flag) {
+        	set_symmetric();
+        	set_negative_definite(false);
+        }
+    }
+
+    /**
+     * Provides user knowledge about negative definiteness.
+     */
+    inline void set_negative_definite(bool flag = true)
+    {
+    	negative_definite_ = flag;
+        if (flag) {
+        	set_symmetric();
+        	set_positive_definite(false);
+        }
     }
 
     inline bool is_positive_definite()
     { return positive_definite_; }
+
+    inline bool is_negative_definite()
+    { return negative_definite_; }
 
     /// TODO: In fact we want to know if the matrix is already preallocated
     /// However to do this we need explicit finalisation of preallocating cycle.
@@ -489,6 +511,7 @@ protected:
 
     bool             symmetric_;
     bool             positive_definite_;
+    bool             negative_definite_;
     bool             spd_via_symmetric_general_;
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
