@@ -735,7 +735,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     }
 
     if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-       ls->load_diagonal( subdomain_diagonal_map );
+       static_cast<LinSys_BDDC*>(ls)->load_diagonal( subdomain_diagonal_map );
     }
 
     //if (! mtx->ins_mod == ALLOCATE ) {
@@ -1120,11 +1120,19 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // prepare mesh for BDDCML
     // initialize arrays
+    // auxiliary map for creating coordinates of local dofs and global-to-local numbering
     std::map<int,arma::vec3> localDofMap;
+    // connectivity for the subdomain, i.e. global dof numbers on element, stored element-by-element
+    // Indices of Nodes on Elements
     std::vector<int> inet;
+    // number of degrees of freedom on elements - determines elementwise chunks of INET array
+    // Number of Nodes on Elements
     std::vector<int> nnet;
+    // Indices of Subdomain Elements in Global Numbering - for local elements, their global indices
     std::vector<int> isegn;
 
+    // This array is currently not used in BDDCML, it was used as an interface scaling alternative to scaling
+    // by diagonal. It corresponds to the rho-scaling.
     std::vector<double> element_permeability;
 
     // maximal and minimal dimension of elements
@@ -1203,9 +1211,15 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         element_permeability.push_back( 1. / coef );
     }
     //convert set of dofs to vectors
+    // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
     ASSERT_EQUAL( numNodeSub, global_row_4_sub_row->size() );
+    // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
+    // pseudo-coordinates of local nodes (i.e. dofs)
+    // they need not be exact, they are used just for some geometrical considerations in BDDCML, 
+    // such as selection of corners maximizing area of a triangle, bounding boxes fro subdomains to 
+    // find candidate neighbours etc.
     std::vector<double> xyz( numNodeSub * 3 ) ;
     int ind = 0;
     std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
@@ -1221,7 +1235,8 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     }
     localDofMap.clear();
 
-    // nndf is trivially one
+    // Number of Nodal Degrees of Freedom
+    // nndf is trivially one - dofs coincide with nodes
     std::vector<int> nndf( numNodeSub, 1 );
 
     // prepare auxiliary map for renumbering nodes
