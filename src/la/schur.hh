@@ -85,8 +85,6 @@ public:
     void scale(double factor);
     ~SchurComplement();
 
-    // TODO: should be at least protected
-    void form_schur();
     /** Compute only right hand side.
      *  This is useful when you change only rhs of the original system.
      *  TODO: We should ask original system if the matrix has changed (using LazyDependency) and
@@ -105,6 +103,8 @@ public:
 protected:
     /// create IA matrix
     void create_inversion_matrix();
+
+    void form_schur();
 
     void resolve();
 

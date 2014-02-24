@@ -157,7 +157,7 @@ TEST(schur, complement) {
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
 	SchurComplementTest * schurComplement = new SchurComplementTest(set, &all_ds);
 	schurComplement->set_solution(NULL);
-	schurComplement->set_symmetric();
+	schurComplement->set_positive_definite();
 	schurComplement->start_allocation();
 	schurComplement->fill_matrix( rank, ds, block_ds); // preallocate matrix
 	schurComplement->start_add_assembly();
@@ -167,7 +167,6 @@ TEST(schur, complement) {
 
 	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
-	schurComplement->form_schur();
 	schurComplement->solve();
 
 	// test of computed values

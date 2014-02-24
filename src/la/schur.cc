@@ -241,6 +241,7 @@ void SchurComplement::form_schur()
 
     state=formed;
 
+    if ( is_negative_definite() ) scale(-1.0);
 }
 
 void SchurComplement::form_rhs()
@@ -377,7 +378,7 @@ double SchurComplement::get_solution_precision()
 
 
 int SchurComplement::solve() {
-	Compl->set_positive_definite();
+	this->form_schur();
 
 	int converged_reason = Compl->solve();
 	this->resolve();

@@ -388,20 +388,7 @@ void DarcyFlowMH_Steady::update_solution() {
     time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
-    int convergedReason;
-
-    switch (n_schur_compls) {
-    case 1: /* first schur complement of A block */
-		( (SchurComplement *)schur0 )->form_schur();
-		break;
-    case 2: /* second schur complement of the max. dimension elements in B block */
-		( (SchurComplement *)schur0 )->form_schur();
-		( (SchurComplement *)schur1 )->form_schur();
-		( (SchurComplement *)schur1 )->scale(-1.0);
-		break;
-    }
-
-    convergedReason = schur0->solve();
+    int convergedReason = schur0->solve();
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
@@ -1031,6 +1018,7 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
         		ls->set_from_input(in_rec);
         		ls->set_solution( NULL );
+        		ls->set_positive_definite();
 
         		// make schur1
             	Distribution *ds = ls->make_complement_distribution();
@@ -1041,6 +1029,7 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
         			ASSERT(err == 0,"Error in ISCreateStride.");
         			SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+        			ls1->set_negative_definite();
 
         			// make schur2
         			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
