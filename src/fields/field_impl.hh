@@ -393,7 +393,6 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 				ASSERT_EQUAL( field_instance->n_comp() , n_comp());
 				field_instance->set_mesh( mesh() , is_bc() );
 				for(const Region &reg: domain) {
-					//DBGMSG("set on reg: %d\n", reg.idx());
 					data_->region_history_[reg.idx()].push_front(
 							HistoryPoint(input_time, field_instance)
 					);
@@ -415,10 +414,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     for(const Region &reg : mesh()->region_db().get_region_set("ALL") )
         if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
             RegionHistory &rh = data_->region_history_[reg.idx()];
-
-        	if ( rh.empty() ||	! (rh[0].second) )   // empty region history
+        	if ( rh.empty() ||	! rh[0].second)   // empty region history
             {
-        		// DBGMSG("Empty RH on reg id: %d idx: %d, size: %d\n", reg.id(), reg.idx(), rh.size() );
                 if (no_check_control_field_) {      // is the check turned off?
                     FieldEnum value;
                     if (no_check_control_field_->get_constant_enum_value(reg, value)
