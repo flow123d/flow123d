@@ -90,7 +90,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     //local iterator it
     Iterator<string> it = in_rec.find<string>("piezo_head_p0");
     output_piezo_head=bool(it);
-    DBGMSG("piezo set: %d \n", output_piezo_head);
+    //DBGMSG("piezo set: %d \n", output_piezo_head);
       
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
@@ -99,7 +99,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
     marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
           darcy_flow->time().end_time(), output_mark_type );
-    DBGMSG("end create output\n");
+    //DBGMSG("end create output\n");
 
       
     // testing MPI rank so that the files are opened only once

@@ -94,7 +94,6 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
                             value_input_address_.c_str() );
             }
             if (time_dependent) {
-                // DBGMSG("set t= %g\n", time);
                 parser_matrix_[row][col].AddConstant("t", time);
             }
 

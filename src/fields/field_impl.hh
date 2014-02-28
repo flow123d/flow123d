@@ -281,6 +281,7 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
         	double last_time_in_history = rh.front().first;
         	unsigned int history_size=rh.size();
         	unsigned int i_history;
+        	// set history index
         	if ( time.gt(last_time_in_history) ) {
         		// in smooth time
         		i_history=0;
@@ -294,12 +295,15 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
         	}
         	i_history=min(i_history, history_size - 1);
         	ASSERT(i_history >= 0, "Empty field history.");
+        	// possibly update field pointer
         	auto new_ptr = rh.at(i_history).second;
         	if (new_ptr != region_fields_[reg.idx()]) {
         		region_fields_[reg.idx()]=new_ptr;
-        		new_ptr->set_time(time.t());
         		set_time_result_ = TimeStatus::changed;
         	}
+        	// let FieldBase implementation set the time
+    		//DBGMSG("Call particular set time, field: %s t: %g\n",this->name().c_str(), time.t());
+    		if ( new_ptr->set_time(time.t()) )  set_time_result_ = TimeStatus::changed;
 
         }
     }

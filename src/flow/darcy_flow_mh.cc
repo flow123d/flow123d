@@ -566,7 +566,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
-    DBGMSG("fill_matrix: %d\n", fill_matrix);
+    //DBGMSG("fill_matrix: %d\n", fill_matrix);
     int el_row, side_row, edge_row;
     int tmp_rows[100];
     //int  nsides;

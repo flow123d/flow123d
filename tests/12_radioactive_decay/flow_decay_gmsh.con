@@ -49,7 +49,7 @@
       bc_data = [
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/flow_decay/sit_decay.tbc"
+          transport_old_bcd_file = "./input/flow_decay/sit_decay.tbc"
         }
       ],
  

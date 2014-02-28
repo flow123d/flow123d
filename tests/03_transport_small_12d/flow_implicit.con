@@ -57,7 +57,7 @@
       
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test3.tbc"
+          transport_old_bcd_file = "./input/test3.tbc"
         }
       ],
 

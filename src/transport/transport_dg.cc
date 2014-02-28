@@ -67,7 +67,7 @@ Record TransportDG::input_type
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()
-    		.declare_key("old_boundary_file", IT::FileName::input(),
+    		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(),
     				"Input file with boundary conditions (obsolete).")
     		.declare_key("bc_times", Array(Double()), Default::optional(),
     				"Times for changing the boundary conditions (obsolete).")

@@ -63,12 +63,12 @@
       bc_data = [
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test15_tbc_000",
+          transport_old_bcd_file = "./input/test15_tbc_000",
           time = 0.0
         },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test15_tbc_001",
+          transport_old_bcd_file = "./input/test15_tbc_001",
           time = 0.2
         }
       ],
