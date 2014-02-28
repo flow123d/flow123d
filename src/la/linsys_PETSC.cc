@@ -48,6 +48,7 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
                             const MPI_Comm comm ) 
         : LinSys( rows_ds, comm ),
+          matrix_(0),
           init_guess_nonzero(false)
 {
     // set type
@@ -190,6 +191,10 @@ void LinSys_PETSC::preallocate_matrix()
     VecDestroy(&off_vec_);
 
     // create PETSC matrix with preallocation
+    if (matrix_ != NULL)
+    {
+    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 

@@ -326,7 +326,12 @@ TransportDG<Model>::~TransportDG()
 			delete[] output_solution[i];
     }
 
-    for (int i=0; i<n_subst_; i++) delete ls[i];
+    for (int i=0; i<n_subst_; i++)
+    {
+    	delete ls[i];
+    	MatDestroy(&stiffness_matrix[i]);
+    	VecDestroy(&rhs[i]);
+    }
     delete[] ls;
     delete[] stiffness_matrix;
     delete[] rhs;
