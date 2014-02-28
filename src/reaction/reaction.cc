@@ -154,3 +154,13 @@ unsigned int Reaction::find_subst_name(const string &name)
 
 	return k;
 }
+
+void Reaction::set_mesh(Mesh &mesh)
+{
+	mesh_ = &mesh;
+}
+
+void Reaction::set_names(const std::vector<string> &names)
+{
+	names_ = names;
+}

@@ -86,6 +86,10 @@ class Reaction: public EquationBase
 		* Function for getting dual porosity.
 		*/
 		bool get_dual_porosity(void);
+		/// Set mesh used by the model.
+		void set_mesh(Mesh &mesh);
+		/// Set names of substances.
+		void set_names(const std::vector<string> &names);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
