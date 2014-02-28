@@ -95,3 +95,8 @@ void Dual_por_exchange::set_porosity(pScalar porosity, pScalar immob_porosity)
 	this->immob_porosity_ = immob_porosity;
 	return;
 }
+
+void Dual_por_exchange::init_from_input(Input::Record in_rec)
+{
+	// Initialize from input interface
+}

@@ -90,6 +90,8 @@ class Reaction: public EquationBase
 		void set_mesh(Mesh &mesh);
 		/// Set names of substances.
 		void set_names(const std::vector<string> &names);
+		/// Initialize from input interface.
+		virtual void init_from_input(Input::Record in_rec);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

@@ -138,7 +138,7 @@ class Sorption:  public Reaction
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void prepare_inputs(Input::Record in_rec, int porosity_type);
+		virtual void init_from_input(Input::Record in_rec);
 		/**
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/

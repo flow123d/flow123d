@@ -197,8 +197,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
 	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
-	    sorptions->prepare_inputs(*sorptions_it, MOBILE);
-	    //xprintf(Msg,"sorption->prepare_inputs() finished successfuly.\n");
+	    sorptions->init_from_input(*sorptions_it);
+	    //xprintf(Msg,"sorption->init_from_input() finished successfuly.\n");
 	    double ***conc_matrix = convection->get_concentration_matrix();
 	    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 	    sorptions->set_sorb_conc_array(el_distribution->lsize());
@@ -210,7 +210,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
 	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
 	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
-		    sorptions_immob->prepare_inputs(*sorptions_it, IMMOBILE);
+		    sorptions_immob->init_from_input(*sorptions_it);
 		    sorptions_immob->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_immob_concentration_matrix(conc_matrix[IMMOBILE], el_distribution, el_4_loc);
 		    sorptions_immob->set_sorb_conc_array(el_distribution->lsize());

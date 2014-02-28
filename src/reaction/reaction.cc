@@ -164,3 +164,8 @@ void Reaction::set_names(const std::vector<string> &names)
 {
 	names_ = names;
 }
+
+void Reaction::init_from_input(Input::Record in_rec)
+{
+	cout << "Reaction::init_from_input() needs to be re-implemented in ancestors." << endl;
+}

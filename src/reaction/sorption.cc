@@ -120,7 +120,7 @@ void Sorption::init_from_input(Input::Array bulk_list)
 	return;
 }
 
-void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
+void Sorption::init_from_input(Input::Record in_rec)
 {
 
     // Common data for all the isotherms loaded bellow
@@ -226,14 +226,14 @@ void Sorption::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const Eleme
 			{*/
 				scale_aqua = por_m;
 				if((scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
-					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+					xprintf(UsrErr, "Sorption::init_from_input() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 			/*}break;
 			case IMMOBILE:
 			{
 				scale_aqua = por_imm;
 				scale_sorbed;
 				if((scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) == 0.0)
-					xprintf(UsrErr, "Sorption::prepare_inputs() failed. Parameter scale_sorbed ((1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+					xprintf(UsrErr, "Sorption::init_from_input() failed. Parameter scale_sorbed ((1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 			}break;
 			default:
 				xprintf(UsrErr,"Unknown type of pores.\n");

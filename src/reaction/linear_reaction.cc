@@ -61,7 +61,7 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 	//xprintf(Msg,"\n3. Linear_reaction constructor runs.\n");
 	//set_bifurcation(in_rec); //this probably fails
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
-	prepare_inputs(in_rec);
+	init_from_input(in_rec);
     allocate_reaction_matrix();
 
 	//set_time_step(0.5);
@@ -199,7 +199,7 @@ void Linear_reaction::print_half_lives(int nr_of_substances) {
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
-void Linear_reaction::prepare_inputs(Input::Record in_rec)
+void Linear_reaction::init_from_input(Input::Record in_rec)
 {
     unsigned int idx;
 

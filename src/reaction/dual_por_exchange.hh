@@ -74,6 +74,8 @@ class Dual_por_exchange:  public Reaction
 		*
 		*/
 		void set_porosity(pScalar porosity, pScalar immob_porosity);
+		/// Initialize from input interface.
+		virtual void init_from_input(Input::Record in_rec);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

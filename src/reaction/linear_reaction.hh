@@ -78,7 +78,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void prepare_inputs(Input::Record in_rec);
+		virtual void init_from_input(Input::Record in_rec);
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/

@@ -46,13 +46,7 @@ using namespace std;
 Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
       : Linear_reaction(init_mesh, in_rec, names)
 {
-	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
-	den_pol_deg = in_rec.val<int>("den_pol_deg");
-	if((nom_pol_deg + den_pol_deg) < 0){
-		cout << "You did not specify Pade approximant required polynomial degrees." << endl;
-		//This occasion should cause an error.
-		//break;
-	}
+	init_from_input(in_rec);
 	cout << "Pade_approximant constructor is running." << endl;
 	allocate_reaction_matrix();
 }
@@ -291,4 +285,15 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
     }
 
 	return concentrations;
+}
+
+void Pade_approximant::init_from_input(Input::Record in_rec)
+{
+	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
+	den_pol_deg = in_rec.val<int>("den_pol_deg");
+	if((nom_pol_deg + den_pol_deg) < 0){
+		cout << "You did not specify Pade approximant required polynomial degrees." << endl;
+		//This occasion should cause an error.
+		//break;
+	}
 }
