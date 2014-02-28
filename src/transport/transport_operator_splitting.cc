@@ -142,10 +142,14 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     n_subst_ = subst_names_.size();
 	convection = new ConvectionTransport(*mesh_, in_rec);
 
+	output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), output_mark_type );
+
 	Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
 	        decayRad =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
+	        decayRad->set_time(*time_);
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
@@ -157,6 +161,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type) {
             decayRad = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
+            decayRad->set_time(*time_);
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
@@ -185,7 +190,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	if (sorptions_it){
         // Part for mobile zone description follows.
 	    sorptions = new Sorption(init_mesh, *sorptions_it, subst_names_);
-        convection->get_par_info(el_4_loc, el_distribution);
+	    sorptions->set_time(*time_);
+	    convection->get_par_info(el_4_loc, el_distribution);
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
 	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
 	    sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
@@ -199,6 +205,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	    if(convection->get_dual_porosity()){
 	    	sorptions_immob = new Sorption(init_mesh, *sorptions_it, subst_names_);
+	    	sorptions_immob->set_time(*time_);
 	    	//dual_por_exchange = new Dual_por_exchange(init_mesh, *sorptions_it, subst_names_);
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
 	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm));
@@ -215,9 +222,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    sorptions_immob = NULL;
 	}
 	
-	output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), output_mark_type );
-
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()

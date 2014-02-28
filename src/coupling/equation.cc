@@ -59,6 +59,12 @@ EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
 {}
 
 
+void EquationBase::set_time(TimeGovernor &time)
+{
+	time_ = &time;
+}
+
+
 /*****************************************************************************************
  * Implementation of EqDataBase
  */
