@@ -118,9 +118,9 @@ F_C^1 = \frac{\delta_2}{\delta_1}q^c_{32} + q^c_{21}.
 
 
 \paragraph{Dual porosity.}
-Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into to zones the mobile zone and the immbile zone. 
-Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is traped and can not pass through.
-The rest of the pore volume is ocuppied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
+Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into two zones -- the mobile zone and the immobile zone. 
+Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is trapped and cannot pass through.
+The rest of the pore volume is occupied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
 We consider simple nonequilibrium linear model:
 \begin{align}
     \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
@@ -133,8 +133,8 @@ where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration 
 
 The solution of this system is:
 \begin{align}
-     c_m(t) &= (c_m(0) - c_a(0)) \exp(- \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0), \\
-     c_i(t) &= (c_i(0) - c_a(0)) \exp(- \alpha(\frac{1}{\theta_m} + \frac{1}{\theta_i}) t) + c_a(0)
+     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0), \\
+     c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0)
 \end{align}
 where $c_a$ is weighted average:
 \[
@@ -148,7 +148,7 @@ $$ m^i(0) + \int_0^t s^i(\tau) \,d\tau - \int_0^t f^i(\tau) \,d\tau = m^i(t) $$
 for any instant $t$ in the computational time interval and any substance $i$.
 Here
 $$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}\delta_d\th c^i(t,\vc x)\,d\vc x, $$
-$$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S(t,\vc x)\,d\vc x, $$
+$$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S^i(t,\vc x)\,d\vc x, $$
 $$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\th\delta_d c^i(t,\vc x)\vc q(t,\vc x)\tn I - \th\delta_d\D^i\nabla c^i(t,\vc x)\right)\cdot\vc n \,d\vc x $$
 is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \units{1}{}{-1} of $i$-th substance at time $t$, respectively.
 The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
