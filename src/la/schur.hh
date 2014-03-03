@@ -72,10 +72,6 @@ public:
 
     LinSys *get_system() const {return (Compl);}
     Distribution *get_distribution() const {return (ds_);}
-    /**
-     * Set flag about positive definiteness. If set value is false matrix is negative definite.
-     */
-    void set_complement_spd(bool flag = true);
 
     void scale(double factor);
     ~SchurComplement();

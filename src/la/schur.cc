@@ -89,8 +89,6 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         Sol1    = NULL;
         Sol2    = NULL;
 
-        F_ENTRY;
-
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
         //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
@@ -122,10 +120,6 @@ SchurComplement::SchurComplement(SchurComplement &other)
 }
 
 
-void SchurComplement::set_complement_spd(bool flag)
-{Compl->set_positive_definite(flag);}
-
-
 /**
  *  COMPUTE A SCHUR COMPLEMENT OF A PETSC MATRIX
  *
@@ -154,8 +148,6 @@ void SchurComplement::form_schur()
 
     mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
-
-    F_ENTRY;
 
     // create complement system
     // TODO: introduce LS as true object, clarify its internal states
@@ -276,8 +268,6 @@ void SchurComplement ::scale(double scalar)
 
 void SchurComplement::resolve()
 {
-    F_ENTRY;
-
     MatMult(IAB,Compl->get_solution(),Sol1);
 
     VecScale(Sol1,-1);
@@ -397,8 +387,6 @@ int SchurComplement::solve() {
  * SCHUR COMPLEMENT destructor
  */
 SchurComplement :: ~SchurComplement() {
-
-    F_ENTRY;
 
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
