@@ -178,9 +178,12 @@ void SchurComplement::form_schur()
     Compl->set_from_input( in_rec_ );
     VecRestoreArray( Sol2, &sol_array );
 
+    // TODO: compute inversion also when matrix has changed
     if (IA == NULL) {
     	create_inversion_matrix();
     }
+
+    // TODO: recompute matrix only if we have flag matrix_changed_
 
     //DBGMSG("Compute Schur complement of\n");
     //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
@@ -241,11 +244,13 @@ void SchurComplement::form_schur()
 
     state=formed;
 
+    // move into form matrix part above
     if ( is_negative_definite() ) scale(-1.0);
 }
 
 void SchurComplement::form_rhs()
 {
+	// TODO: compute only if we have rhs_changed_ or matrix_changed_
     MatMultTranspose(IAB,RHS1,Compl->get_rhs());
     VecAXPY(Compl->get_rhs(),-1,RHS2);
 
@@ -255,7 +260,8 @@ void SchurComplement::form_rhs()
 /**
  *  @brief Scale formed complement system. Mainly to make it positive definite.
  */
-
+// TODO: delete this method, use matrix scale in form_Schur and VecScale in form_rhs
+// both under test for is_negative_definite()
 void SchurComplement ::scale(double scalar)
 {
     ASSERT( state == formed, "Object in wrong state!\n");
