@@ -140,7 +140,7 @@ public:
      *
      * Used to set pointer to common time governor of Transport Operator Splitting.
      */
-    void set_time(TimeGovernor &time);
+    virtual void set_time(TimeGovernor &time);
 
     /**
      * Most actual planned time for solution.

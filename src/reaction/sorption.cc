@@ -88,7 +88,6 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     data_.alphas.set_n_comp(nr_transp_subst);
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-    data_.set_time(tg);
 
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
@@ -407,4 +406,9 @@ void Sorption::set_time_step(Input::Record in_rec)
 {
 	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
+}
+
+void Sorption::set_time(TimeGovernor &time)
+{
+	data_.set_time(time);
 }

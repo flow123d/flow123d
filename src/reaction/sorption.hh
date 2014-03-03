@@ -155,6 +155,7 @@ class Sorption:  public Reaction
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);
 		virtual void get_solution_vector(double* &vector, unsigned int &size);
+		virtual void set_time(TimeGovernor &time);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
