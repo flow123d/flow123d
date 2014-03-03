@@ -160,6 +160,7 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
+	friend class AdHocAbstractRecord;
 
 public:
 
@@ -253,19 +254,11 @@ public:
      */
     virtual bool is_finished() const;
 
-    /**
-     * Set made_extensive_doc = false for this Record and all its descendants.
-     */
-    //virtual void  reset_doc_flags() const;
-
     /// Record type name getter.
     virtual string type_name() const;
 
     /// Record type full name getter.
     virtual string full_type_name() const;
-
-    /// Record description getter.
-    virtual string description() const;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
@@ -321,32 +314,15 @@ public:
     inline unsigned int size() const;
 
     /**
-     * Returns value of made_extensive_doc in the SelectionData
-     */
-    //inline bool made_extensive_doc() const;
-
-    /**
-     * Sets value of made_extensive_doc in the SelectionData
-     */
-    //inline void set_made_extensive_doc(bool val) const;
-
-    /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish() const;
+    bool finish();
 
 protected:
 
 
     /// Check that given default value is valid for given type of the key.
     bool check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const;
-
-    /**
-     * Assertion for non-empty Type::Record handle.
-     */
-    //inline void empty_check() const {
-    //    ASSERT( data_.use_count() != 0, "Empty Record handle.\n");
-    //}
 
     /**
      * Assertion for finished Type::Record.
@@ -384,8 +360,6 @@ protected:
 
         Record::KeyIter auto_conversion_key_iter() const;
 
-        //void  reset_doc_flags() const;
-
         /// Database of valid keys
         std::map<KeyHash, unsigned int> key_to_index;
         typedef std::map<KeyHash, unsigned int>::const_iterator key_to_index_const_iter;
@@ -406,22 +380,6 @@ protected:
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
         boost::shared_ptr<AbstractRecord> parent_ptr_;
-
-        /**
-         * Auxiliary variable which saves the shared_ptr to the actual RecordData.
-         * It is shared_ptr version of 'this' ptr.
-         * It is used in the finish() method of RecordData for derived types, where
-         * we need to make instance of Record from method of RecordData class.
-         */
-        //boost::shared_ptr<RecordData> descendant_data_;
-
-        /**
-         * This flag is set to true when documentation of the Record was called with extensive==true
-         * and full description of the Record was produced.
-         *
-         * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
-         */
-        //mutable bool made_extensive_doc;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -491,6 +449,7 @@ protected:
 
 class AbstractRecord : public Record {
 	friend class OutputBase;
+	friend class AdHocAbstractRecord;
 
 protected:
 
@@ -575,10 +534,6 @@ public:
     void no_more_descendants();
 
     /**
-     * Set made_extensive_doc = false for this Record and all its descendants.
-     */
-    //virtual void  reset_doc_flags() const;
-    /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
@@ -637,6 +592,53 @@ protected:
     void add_descendant(const Record &subrec);
 
     friend class Record;
+};
+
+
+/** ******************************************************************************************************************************
+ * Class for declaration of polymorphic Record.
+ *
+ * AbstractRecord extends on list of descendants provided immediately
+ * after construction by add_descendant(). These descendants derive
+ * only keys from common AR. AdHocAR has separate instance for every
+ * key of this type.
+ *
+ * @ingroup input_types
+ */
+class AdHocAbstractRecord : public AbstractRecord {
+	friend class OutputBase;
+public:
+	/**
+	 * Constructor
+	 */
+	AdHocAbstractRecord(const AbstractRecord &ancestor);
+
+    /**
+     * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
+     * calls close() and complete keys with non-null pointers to lazy types.
+     */
+    bool finish();
+
+    /**
+     * Add inherited Record.
+     */
+    AdHocAbstractRecord &add_child(const Record &subrec);
+
+protected:
+    /// Pointer to actual data of the parent AbstractRecord.
+    boost::shared_ptr<ChildData> parent_data_;
+
+    /// Temporary value of ancestor AbstractRecord
+    const AbstractRecord *tmp_ancestor_;
+
+    /*
+     * Temporary list of unconstructed descendants of AdHocAbstractRecord.
+     * Items are checked and added to child_data_ in finish() method.
+     */
+    std::deque< const Record * > unconstructed_childs_;
+
+    /// Name of parent AbstractRecord, used in printout
+    string parent_name_;
 };
 
 
@@ -709,20 +711,9 @@ inline bool Record::has_key(const string& key) const
 
 inline unsigned int Record::size() const {
     finished_check();
-    ASSERT( data_->keys.size() == data_->key_to_index.size(),
-            "Sizes of Type:Record doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index.size(), data_->keys.size());
+    ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }
-
-
-/*inline bool Record::made_extensive_doc() const {
-	return data_->made_extensive_doc;
-}*/
-
-
-/*inline void Record::set_made_extensive_doc(bool val) const {
-	data_->made_extensive_doc = val;
-}*/
 
 
 

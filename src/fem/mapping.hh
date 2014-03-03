@@ -156,7 +156,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    virtual void fill_fe_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+    virtual void fill_fe_values(const typename DOFHandlerBase::CellIterator &cell,
                         const Quadrature<dim> &q,
                         MappingInternalData &data,
                         FEValuesData<dim,spacedim> &fv_data) = 0;
@@ -171,7 +171,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    virtual void fill_fe_side_values(const typename DOFHandler<dim,spacedim>::CellIterator &cell,
+    virtual void fill_fe_side_values(const typename DOFHandlerBase::CellIterator &cell,
                             unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -212,7 +212,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
     arma::vec::fixed<dim+1> el_bar_coords;
     arma::vec::fixed<dim> side_bar_coords;
 
-    for (int k=0; k<q.size(); k++)
+    for (unsigned int k=0; k<q.size(); k++)
     {
         // Calculate barycentric coordinates on the side of the k-th
         // quadrature point.
@@ -227,7 +227,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
         side_bar_coords(dim-1) = 1.-lambda;
 
         // transform to element coordinates
-        for (int i=0; i<dim; i++)
+        for (unsigned int i=0; i<dim; i++)
             el_bar_coords((RefElement<dim>::side_nodes[sid][RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1)) = side_bar_coords((i+dim-1)%dim);
         q.set_point(k, el_bar_coords.subvec(0,dim-1));
         q.set_weight(k, subq.weight(k));

@@ -32,6 +32,9 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
+#include <la/distribution.hh>
+#include <petscmat.h>
+
 struct Solver;
 class LinSys;
 
@@ -57,10 +60,19 @@ typedef enum SchurState {
 
 typedef class SchurComplement {
 public:
-    SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
+    //SchurComplement(LinSys *orig,Mat & inv_a, IS ia = NULL);
+    /**
+     * Constructor
+     *
+     * Gets linear system with original matrix A and creates its inversion (IA matrix)
+     *
+     * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
+     */
+    SchurComplement(LinSys *orig, IS ia);
 
     LinSys *get_system() const {return (Compl);}
     LinSys *get_orig_system() const {return (Orig);}
+    Distribution *get_distribution() const {return (ds_);}
     Mat get_a_inv() const {return (IA);}
     void set_spd();
     //void reuse() {state=created;}
@@ -89,7 +101,7 @@ private:
     Mat xA_sub;                 // Bt*IA*B for MATIS matrix
     Mat IAB;                    // reconstruction matrix IA * B
     Mat IAB_sub;                 // Local block IAB in MATIS matrix
-    int locSizeA, locSizeB;     // loc size of the A and B block
+    int loc_size_A, locSizeB;     // loc size of the A and B block
     IS IsA, IsB;                // parallel index sets of the A and B block
     IS IsA_sub, IsB_sub;        // parallel index sets of the A and B block local to subdomains
     IS fullIsA,fullIsB;         // whole IsA  and IsB on each proc
@@ -105,6 +117,8 @@ private:
                                 //                A  B     Sol1      RHS1
     LinSys *Orig;     // Original Linear System:  B' C  *  Sol2  =   RHS2
     LinSys *Compl;    // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
+
+    Distribution *ds_;          // Distribution of B block
 } SchurComplement;
 
 #endif /* LA_SCHUR_HH_ */

@@ -36,8 +36,9 @@
 #include <vector>
 #include "fem/update_flags.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/mesh_types.hh"
 
-template<unsigned int dim, unsigned int spacedim> class DOFHandler;
+class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -133,7 +134,7 @@ public:
     /**
      * @brief Iterator to the last reinit-ed cell.
      */
-    typename DOFHandler<dim,spacedim>::CellIterator *present_cell;
+    ElementFullIter *present_cell;
 
 };
 
@@ -291,6 +292,12 @@ public:
     const arma::vec::fixed<spacedim> point(const unsigned int point_no);
 
     /**
+	 * @brief Return coordinates of all quadrature points in the actual cell system.
+	 *
+	 */
+	const vector<arma::vec::fixed<spacedim> > &point_list();
+
+    /**
      * @brief Returns the normal vector to a side at given quadrature point.
      *
      * @param point_no Number of the quadrature point.
@@ -385,7 +392,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(typename DOFHandler<dim,spacedim>::CellIterator &cell);
+    void reinit(ElementFullIter &cell);
 
 
 };
@@ -435,7 +442,7 @@ public:
 	 * @param cell The actual cell.
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(typename DOFHandler<dim,spacedim>::CellIterator &cell,
+    void reinit(ElementFullIter &cell,
         		unsigned int sid);
 
 

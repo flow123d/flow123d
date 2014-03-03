@@ -3,6 +3,8 @@
  *
  *  Created on: Dec 6, 2012
  *      Author: jb
+ *
+ *
  */
 
 #ifndef FIELD_VALUES_HH_
@@ -167,6 +169,17 @@ template <class RT> inline RT & set_raw_fix(RT &val, FieldEnum *raw_data) { val 
  * ET is type of elements, n_cols and n_rows gives fixed dimensions of the tensor value (nx1 is vector, 1x1 is scalar,
  * 0x1 is variable size vector, 0x0 is variable size tensor (not implemented yet) )
  *
+ * TODO:
+ * This wrapper serves at least to several different things:
+ * - Unified reading of input values (for FieldConstant, FieldFormula, etc.)
+ *    provided by init_from_input
+ * - Unified InputType objects, provided by type_name(), get_input_type()
+ *
+ * - For unified matrix-like access even to scalar and vector values, without compromising performance.
+ *    provided by operator(); n_cols, n_rows, from_raw, ...
+ *
+ * Maybe it could be better to split these two functions into two distinguish but related classes.
+ *
  */
 template <int NRows, int NCols, class ET>
 class FieldValue_ {
@@ -226,10 +239,13 @@ public:
                                 ++it;
                             } else value_.at(row,col) = value_.at(col,row);
                 } else {
-                    THROW( ExcFV_Input() << EI_InputMsg(
-                            boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
-                                % NRows % NCols % rec.size() % NRows % ((NRows+1)*NRows/2))
-                         ));
+                    THROW( ExcFV_Input()
+                    		<< EI_InputMsg(
+                    				boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
+                                	% NRows % NCols % rec.size() % NRows % ((NRows+1)*NRows/2)))
+                    		<< rec.ei_address()
+
+                         );
                 }
             }
         } else {
@@ -238,16 +254,19 @@ public:
 
                 for (unsigned int row = 0; row < NRows; row++, ++it) {
                     if (it->size() != NCols)
-                        THROW( ExcFV_Input());
+                        THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
+                        		             << rec.ei_address());
                     Input::Iterator<ET> col_it = it->begin<ET>();
                     for (unsigned int col = 0; col < NCols; col++, ++col_it)
                         value_.at(row, col) = *col_it;
                 }
             } else {
-                THROW( ExcFV_Input() << EI_InputMsg(
-                        boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
-                            % NRows % NCols % rec.size() % it->size() )
-                     ));
+                THROW( ExcFV_Input()
+                		<< EI_InputMsg(
+                				boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
+                					% NRows % NCols % rec.size() % it->size() ))
+                		<< rec.ei_address()
+                     );
             }
         }
     }
@@ -292,6 +311,11 @@ public:
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
+
+    /**
+     * Returns reference to the return_type (i.e. double, or arma::vec or arma::mat); with data provided by the parameter @p raw_data.
+     * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
+     */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
@@ -350,10 +374,12 @@ public:
                 value_.at(i)=ET(*it);
             }
         } else {
-            THROW( ExcFV_Input() << EI_InputMsg(
-                    boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
-                        % n_rows() % rec.size() )
-                 ));
+            THROW( ExcFV_Input()
+            		<< EI_InputMsg(
+            				boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
+                        		% n_rows() % rec.size() ))
+                    << rec.ei_address()
+                 );
         }
     }
 
@@ -404,10 +430,12 @@ public:
             for(unsigned int i=0; i< NRows; i++, ++it)
                 value_.at(i)=*it;
         } else {
-            THROW( ExcFV_Input() << EI_InputMsg(
-                    boost::str(boost::format("Initializing fixed vector of size %d by vector of size %d.")
-                        % n_rows() % rec.size() )
-                 ));
+            THROW( ExcFV_Input()
+            		<< EI_InputMsg(
+            				boost::str(boost::format("Initializing fixed vector of size %d by vector of size %d.")
+                        		% n_rows() % rec.size() ))
+                    << rec.ei_address()
+                 );
         }
     }
 

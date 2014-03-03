@@ -24,7 +24,7 @@
 template <int spacedim, class Value>
 class FieldAddPotential : public FieldBase<spacedim, Value> {
 public:
-
+    typedef typename Space<spacedim>::Point Point;
     /**
      *
      */
@@ -33,15 +33,21 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 
+    /**
+     * Update time and possibly update data.
+     */
+    virtual bool set_time(double time);
+    
+    
     virtual ~FieldAddPotential();
 
 private:

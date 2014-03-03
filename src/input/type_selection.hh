@@ -87,7 +87,7 @@ public:
     /**
      * Creates a handle pointing to the new SelectionData.
      */
-    Selection(const string &name);
+    Selection(const string &name, const std::string &description = "");
 
     /**
      * Adds one new @p value with name given by @p key to the Selection. The @p description of meaning of the value could be provided.
@@ -102,9 +102,6 @@ public:
 
     /// Implements \p TypeBase::is_finished
     virtual bool is_finished() const;
-
-    /// Implements \p TypeBase::reset_doc_flags
-    //virtual void reset_doc_flags() const;
 
     /// Implements \p TypeBase::type_name
     virtual string type_name() const;
@@ -158,18 +155,8 @@ public:
      */
     inline unsigned int size() const;
 
-    /**
-     * Returns value of made_extensive_doc in the SelectionData
-     */
-    //inline bool made_extensive_doc() const;
 
-    /**
-     * Sets value of made_extensive_doc in the SelectionData
-     */
-    //inline void set_made_extensive_doc(bool val) const;
-
-
-    bool finish() const
+    bool finish()
         { close(); return true; }
 private:
 
@@ -210,13 +197,8 @@ private:
         /// Vector of values of the Selection
         std::vector<Key> keys_;
 
-        /**
-         * This flag is set to true when documentation of the Record was called with extensive==true
-         * and full description of the Record was produced.
-         *
-         * This member is marked 'mutable' since it doesn't change structure or description of the type. It only influence the output.
-         */
-        //mutable bool made_extensive_doc;
+        /// Text description of the whole Selection object.
+        std::string description_;
 
         /// Indicator of finished Selection.
         mutable bool finished;
@@ -252,8 +234,9 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
-            "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
+    //ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
+    //        "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
+    ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
 }
 
@@ -286,18 +269,6 @@ inline Selection::keys_const_iterator Selection::key_iterator(const string& key)
     finished_check();
     return begin() + name_to_int(key);
 }
-
-
-/*inline bool Selection::made_extensive_doc() const
-{
-	return data_->made_extensive_doc;
-}
-
-
-inline void Selection::set_made_extensive_doc(bool val) const
-{
-	data_->made_extensive_doc = val;
-}*/
 
 
 } // closing namespace Type

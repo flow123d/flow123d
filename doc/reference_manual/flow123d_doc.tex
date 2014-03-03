@@ -21,20 +21,29 @@
 
 \documentclass[12pt,a4paper]{report}
 
+% our own flow_doc.sty
+\usepackage{flow_doc}
+
+\usepackage{rotating}
+\usepackage{pdflscape}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{array}
 \usepackage{longtable}
+\usepackage[usenames,dvipsnames]{color}   %colors
+\usepackage{colortbl}   %colorful tables
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+
+%these two can be found in caption package
 \usepackage{caption}
 \usepackage{subcaption}
+
+\usepackage[numbers]{natbib}
 
 \usepackage{fancyvrb}   % extended verbatim environments (for examples of IO files)
 
 \usepackage{multicol}
-
-\usepackage{flow_doc}
 
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
@@ -80,10 +89,13 @@
 \def\Lapl{\Delta}
 \def\grad{\nabla}
 \def\Real{{\mathbf R}}
-
-
+\def\d {\,{\rm d}}
 %% ini_table members
 
+
+%paths to images
+\def\fig{figures}
+\def\test_fig{test_graphics}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BEGIN DOCUMENT
 %% set specific page layout
@@ -116,7 +128,7 @@ Flow123d
 
 \vspace{1cm}
 \textbf{\Large{
-version 1.7.0
+\input{flow_version}
 }}
 
 \vspace{1cm}
@@ -131,14 +143,14 @@ and brief user manual.
 
 
 
-\noindent \textbf{\Large{Liberec, 2012}}
+\noindent \textbf{\Large{Liberec, 2013}}
 
 \vspace{1cm}
 \pagebreak
 \end{center}
 
 \noindent
-{\bf Authors} (of version 1.7.0)
+{\bf Authors} (of version 1.7.1)
 
 \vspace{3ex}    
 \noindent
@@ -177,7 +189,8 @@ i.e. exchange between mobile and immobile
 pores. There are also models for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
 linear adsorption, Freundlich isotherm and Langmuir isotherm. The solute transport model uses finite volume discretization 
 with up-winding in space and explicit Euler discretization in time. The dual porosity and the adsorption are introduced into transport by operator splitting.
-The dual porosity model use analytic solution and the non-linear adsorption is solved numerically by the Newton method.
+The dual porosity model use analytic solution and the non-linear adsorption can be either solved numerically by the $toms748\_solve(...)$ 
+command (which is a part of boost package) or it can be approximated through interpolation which uses precomputed functional values lying on selected type of isotherm.
 
 Reaction between transported substances can be modeled either by a SEMCHEM module, which is slow, but can describe all sorts of reactions. On the other hand,
 for reactions of the first order, i.e. linear reactions or decays, we provide our own solver which is much faster. Reactions are coupled with transport 
@@ -432,7 +445,7 @@ Notice the reference used on line 29 pointing to the definition of the output st
 
 \subsubsection{Transport setting}
 We also consider subsequent transport problem with the porosity $\theta = 0.25$ and zero initial concentration. The boundary condition is equal to $1$ and is automatically applied only on the 
-inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case, but we do not discuss this topic here for the sake of simplicity.
+inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case. Adsorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:sorptions}.%, but we do not discuss this topic here for the sake of simplicity.
 %see Section \ref{} for the description. 
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -440,19 +453,13 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
       TYPE = "TransportOperatorSplitting", 
 
       dual_porosity = true, 
-      sorption_enable = true, 
-      substances = [ "age", "U235" ],
+      substances = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
       
       bulk_data = [
         { r_set = "ALL",
           init_conc = 0,
           por_m = 0.25,
-          por_imm = 0.25,
-          alpha = [0.01, 0.01],
-          phi = 0.5,
-          sorp_type = [1, 2],
-          sorp_coef0 = [0.02, 0.02],
-          sorp_coef1 = [0, 0.5]
+          por_imm = 0.25
         }
       ],
       
@@ -468,17 +475,42 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
         mobile_p0 = "transport_output_stream"
       }, 
 
-      time = { end_time = 1.0 }
+      time = { end_time = 1.0 }      
+
+      reactions = {
+        TYPE="Sorptions",
+        solvent_dens = 1.0,
+        species = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
+        molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0],
+        solubility = [1.0, 1.0, 1.0, 1.0, 1.0],
+        substeps = 50,
+        bulk_data = [
+          {
+            region = "2d",
+            rock_density = {TYPE="FieldFormula", value = "1.0*x/x"},
+            sorption_types = [ "none",  "none", "linear", "langmuir", "freundlich"],
+            mult_coefs = [0, 0, 0.6, 0.4, 0.6],
+	    second_params = [0, 0, 0, 0.6, 0.4]
+          }
+        ]
+      }
     } // secondary_equation
   }, // problem
 \end{Verbatim}
 For the transport problem we use implementation called ``TransportOperatorSplitting'' which is explicit finite volume solver of the convection equation (without diffusion), 
-the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model. Both of these are switched on as we can see on lines 40, 41. On the next line, 
+the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation. Dual porosity is switched on as we can see on lines 40. On the next line, 
 we set names of transported substances, here it is the age of the water and the uranium 235. On lines 44 -- 55, we set the bulk fields in particular the porosity 'por\_m' and the initial concentrations 
 ( one for every substance ). However, on line 46, we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
 On line 53, we can see vector that set different adsorption coefficients for the two substances. Then, on lines 57 -- 61, we set the boundary fields namely the concentration on the inflow part of the boundary.
 We need not to specify type of the condition since currently this is the only one available. In the output record we have to specify the save step (line 65) for the output fields. And finally,
 we have to set the time setting, here only the end time of the simulation since the step size is determined from the CFL condition, however you can set smaller time step if you want.
+
+\subsubsection{Sorption settings}\label{subsubsec:sorptions}
+The input information for equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reactions}{$reactions =\{\ldots\}$}. The type of simulated, chemical interactions is determinated by the label $TYPE="Sorptions",$. It is possible to set the value of the solvent (obviously water) density \hyperA{Sorptions::solvent-dens}{$solvent\_dens = 1.0,$}. The solvent density is supposed to be constant all over the simulated area. The vector \hyperA{Sorptions::species}{$species$} containes the list of soluted substances whose concentrations is concidered to be affected by sorptions. Material characteristics of all the sorbing species can be defined by vectors \hyperA{Sorptions::molar-masses}{$molar\_masses$} and \hyperA{Sorptions::solubility}{$solubility$}. Elements of the vector $sollubility$ defines the upper bound of an aqueous concentrations which can appear, because some substances have limmited solubility and if the solubility exceeds this limit they start to precipitate. $solubility$ is 
+a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorptions::substeps}{$substeps$} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Default value is set to be $100$.
+
+The record \hyperA{Sorptions::bulk-data}{$bulk\_data$} colects information about regions specific, several isotherms desribed adsorption. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-BulkData::rock-density}{$rock\_density$} can be either constant or specified by $FieldFormula$. The implemented \hyperA{Sorption-BulkData::sorption-types}{$sorption\_types$} can have one of four possible values $\{ "none", "linear", "freundlich", "langmuir"\}$ and except of first one are those types empiricaly described by appropriate type of isotherm. Linear isotherm described adsorption needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see the section \ref{sec:sorp_math}. Isothermaly described sorption simulation can be used in 
+the case of low concenttrated solutions without competition between multiple disoved species.
 
 \subsubsection{Output streams and results}
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -508,7 +540,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
     \centering
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
-        \includegraphics[scale=0.4]{./03_flow.pdf}
+        \includegraphics[scale=0.4]{\fig/03_flow.pdf}
         % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
         \caption{Elementwise pressure head\\and velocity field (triangles).}
         \label{fig:tut-flow}
@@ -516,7 +548,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
     ~
     \begin{subfigure}[b]{0.45\textwidth}
         \centering
-        \includegraphics[scale=0.4]{./03_trans.pdf}
+        \includegraphics[scale=0.4]{\fig/03_trans.pdf}
         % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
         \caption{Propagation of U235 from the inflow part of the boundary.}
         \label{fig:tut-trans}
@@ -534,25 +566,34 @@ mathematical models and numerical methods used in the Flow123d.
 
 
 \chapter{Mathematical models \\of physical reality}
+\label{PhysicalModels}
 
-Flow123d provides models for Dary flow in porous media as well as for the transport and reactions of soluted substances. In this section, we describe 
-mathematical formulations of these models together with physical meaning and units of all involved quantities. Common and unique feature of all models is support of
-domains with mixed dimension. Let $\Omega_{3} \subset \Real^3$ be an open set representing continuum approximation of porous and fractured medium.
-Similarly, we consider open set $\Omega_2\subset \Real^2$ representing 2D fractures and open set $\Omega_1\subset \Real^3$ of 1D channels or preferential paths 
-(see Fig \ref{fig:multi-dim}).
-We assume that $\Omega_2$ and $\Omega_1$ are polygonal. For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
-that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$. The elements are simplexes that is tetrahedrons, triangles and lines.
+Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of solutes. In this section, we describe 
+mathematical formulations of these models together with physical meaning and units of all involved quantities. In the first section we present 
+basic notation and assumptions about computational domains and meshes that combine different dimensions. In the next section we
+derive approximation of thin fractures by lower dimensional interfaces for a general transport process. Latter sections describe details for models of particular
+physical processes.
+
+\section{Meshes of mixed dimension}
+Common and unique feature of all models in Flow123d is the support of
+domains with mixed dimension. 
+Let $\Omega_{3} \subset \Real^3$ be an open set representing continuous approximation of porous and fractured medium.
+Similarly, we consider a 2D manifold $\Omega_2\subset\overline\Omega_3$, representing 2D fractures and a 1D manifold $\Omega_1\subset \overline\Omega_2$ of 1D channels or preferential paths (see Fig \ref{fig:multi-dim}).
+We assume that $\Omega_2$ and $\Omega_1$ are polytopic (i.e. polygonal and piecewise linear, respectively).
+For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
+that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$.
+The elements are simplices, i.e. lines, triangles and tetrahedra, respectively.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=10cm]{ground_fractures}
+\includegraphics[width=10cm]{\fig/ground_fractures}
 \caption{
     \label{fig:multi-dim}
     Scheme of a problem with domains of multiple dimensions.
 }
 \end{figure}
 
-Present numerical methods requires meshes satisfying the compatibility conditions
+Present numerical methods require meshes satisfying the compatibility conditions
 \begin{equation}
         T_{d-1}^i \cap T_d \subset \mathcal{F}_d,   \qquad \text{where } \mathcal{F}_d = \bigcup_{k} \partial T_{d}^{k}
 \end{equation}
@@ -560,16 +601,148 @@ and
 \begin{equation}
         T_{d-1}^i \cap \mathcal{F}_d    \text{ is either $T_{d-1}^i$ or $\emptyset$}    
 \end{equation}
-for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
+for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is, the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
 match their sides or they poke out of $\Omega_d$. 
+
+\section{Advection-diffusion processes on fractures}
+\label{sc:ad_on_fractures}
+In this section, we shall derive a model for a general advection-diffusion process in a domain of mixed dimensions using
+simple approximations inspired by the paper \citet{martin_modeling_2005}. Let us consider a fracture as a strip domain 
+\[
+ \Omega_f \subset [0,\delta] \times \Real^{d-1}
+\]
+for $d=2$ or $d=3$ and surrounding continuum domains
+\[
+ \Omega_1 \subset (-\infty,0)\times \Real^{d-1},
+ \Omega_2 \subset (\delta,\infty)\times \Real^{d-1}.
+\]
+Further, we denote by $\gamma_i$, $i=1,2$ the fracture faces common with domains $\Omega_1$ and $\Omega_2$ respectively.
+By $x$, $\vc y$ we denote normal and tangential coordinate of a point in $\Omega_f$. 
+We consider the normal vector  $\vc n=\vc n_1=-\vc n_2=(1,0,0)^\top$.
+An advection-diffusion process is given by equations:
+\begin{align}
+  \label{eq:fr:continuity}
+  \prtl_t w_i + \div \vc j_i &= f_i&&  \text{on } \Omega_i,\ i=1,2,f,\\
+  \label{eq:fr:flux}
+  \vc j_i &= - \tn A_i\grad u_i + \vc b_i w_i&& \text{on } \Omega_i,\ i=1,2,f,\\
+  \label{eq:fr:Dirichlet}
+  u_i &= u_f&& \text{on } \gamma_i,\ i=1,2,\\
+  \label{eq:fr:Neumann}
+  \vc j_i \cdot \vc n &= \vc j_f \cdot \vc n&& \text{on } \gamma_i,\ i=1,2,
+\end{align}
+where $w_i=w_i(u_i)$ is the conservative quantity and $u_i$ is the principal unknown, $\vc j_i$ is the flux of $w_i$, $f_i$ is the source term,
+$\tn A_i$ is the diffusivity tensor and $\vc b_i$ is the velocity field. We assume that the tensor $\tn A_f$ is symmetric positive definite 
+with one eigenvector in the direction $\vc n$. Consequently the tensor has the form:
+\[
+ A_f = \begin{pmatrix} 
+            a_n & 0  \\
+            0 & \tn A_t
+       \end{pmatrix}
+\]
+Furthermore, we assume that $\tn A_f(x, \vc y)=\tn A_f(\vc y)$ is constant in the normal direction.
+
+Our next aim is to integrate equations on the fracture $\Omega_f$ in the normal direction 
+and obtain their approximations on the surface $\gamma=\Omega_f \cap \{x=\delta/2\}$ running through the middle of the fracture. 
+For the sake of clarity, we will not write subscript $f$ for quantities on the fracture. 
+To make the following procedure mathematicaly correct we have to assume that functions
+$\prtl_x w$, $\prtl_x \grad_{\vc y} u$, $\prtl_x \vc b_{\vc y}$ are continuous and bounded on $\Omega_f$. Here and later on 
+$\vc b_x=(\vc b \cdot \vc n)\, \vc n$ is the normal part of the velocity field and $\vc b_{\vc y} = \vc b - \vc b_x$ is the tangential part.
+The same notation will be used for normal and tangential part of the field $\vc q$.
+
+We integrate \eqref{eq:fr:continuity} over the fracture opening $[0,\delta]$ and use approximations to get
+\begin{equation}
+    \label{eq:fracture_continuity}
+   \prtl_t (\delta W) - \vc j_2 \cdot \vc n_2 - \vc j_1 \cdot \vc n_1 + \div \vc J = \delta F,
+\end{equation}
+where for the first term, we have used mean value theorem, first order Taylor expansion, 
+and boundedness of $\prtl_x w$ to obtain approximation:
+\[
+    \int_0^\delta w(x,\vc y) \d x=\delta w(\xi_{\vc y}, \vc y) = \delta W(\vc y) + O(\delta^2\abs{\prtl_x w}),
+\]
+where
+\[
+    W(\vc y)=w(\delta / 2,\vc y)=w(u(\delta/2,\vc y))=w(U(\vc y)).
+\]
+Next two terms in \eqref{eq:fracture_continuity} come from the exact integration 
+of the divergence of the normal flux $\vc j_x$.
+Integration of the divergence of the tangential flux $\vc j_{\vc y}$ gives the fourth term, where we introduced
+\[
+\vc J(\vc y) = \int_0^\delta \vc j_{\vc y}(x, \vc y) \d x.
+\]
+In fact, this flux on $\gamma$ is scalar for the case $d=2$. Finally, we integrate the right-hand side to get 
+\[
+    \int_0^\delta f(x,\vc y) \d x = \delta F(\vc y) + O(\delta^2\abs{\prtl_x f}),\quad F(\vc y)=f(\delta/2,\vc y). 
+\]
+
+
+Due to the particular form of the tensor $\tn A_f$, we can separately integrate tangential and normal
+part of the flux given by \eqref{eq:fr:flux}. Integrating the tangential part and using approximations
+\[
+    \int_0^\delta  \grad_{\vc y} u(x, \vc y) \d x = \delta \grad_{\vc y} u (\xi_{\vc y}, \vc y) 
+    = \delta \grad_{\vc y} U( \vc y) + O\big( \delta^2 \abs{\prtl_x\grad_{\vc y} u} \big) 
+\]
+and
+\[
+ \int_0^\delta \big(\vc b_{\vc y} w\big)(x, \vc y) \d x 
+  = \delta \vc B(\vc y) W(\vc y) + O\big(\delta^2 \abs{\prtl_x(\vc b_{\vc y} w)} \big)
+\]
+where
+\[
+  \vc B(\vc y) = \vc b_{\vc y}(\delta/2, \vc y),
+\]
+we obtain
+\begin{equation}
+    \label{eq:fracture_darcy}
+   \vc J = -\tn A_t \delta \grad_{\vc y} U + \delta \vc B W + O\big(\delta^2(\abs{\prtl_x\grad_{\vc y} u}+\abs{\prtl_x(\vc b_{\vc y} w)})\big).
+\end{equation}
+
+
+So far, we have derived equations for the state quantities $U$ and $\vc J$ on the fracture manifold $\gamma$. In order to
+get a well possed problem, we have to prescribe two conditions for boundaries $\gamma_i$, $i=1,2$. To this end, we
+perform integration of the normal flux $\vc j_x$, given by \eqref{eq:fr:flux}, separately for the left and right half of the fracture.
+Similarly as before we use approximations
+\[
+ \int_0^{\delta/2} \vc j_x \d x = (\vc j_1 \cdot \vc n_1)\frac{\delta}{2} + O(\delta^2 \abs{\prtl_x \vc j_x})
+\]
+and 
+\[
+ \int_0^{\delta/2} \vc b_x w \d x = (\vc b_1 \cdot \vc n_1)\tilde{w}_1\frac{\delta}{2} + O(\delta^2 \abs{\prtl_x \vc b_x}\abs{w} + \delta^2\abs{\vc b_x}\abs{\prtl_x w})
+\]
+and their counter parts on the interval $(\delta/2, \delta)$ to get
+\begin{align}
+    \label{eq:fracture_normal_1}
+     \vc j_1 \cdot \vc n_1 &= -\frac{2a_n}{\delta} (U - u_1) + \vc b_1\cdot \vc n_1 \tilde{w}_1\\
+    \label{eq:fracture_normal_2}
+    \vc j_2 \cdot \vc n_2 &= -\frac{2a_n}{\delta} (U - u_2) + \vc b_2\cdot \vc n_2 \tilde{w}_2
+\end{align}
+where $\tilde w_i$ can be any convex combination of $w_i$ and $W$. Equations \eqref{eq:fracture_normal_1}  
+and \eqref{eq:fracture_normal_2} have meaning of a semi-discretized flux from domains $\Omega_i$ into fracture.
+In order to get a stable numerical scheme, we introduce a kind of upwind already on this level using a different convex 
+combination for each flow direction:
+\begin{align}
+   \notag 
+   \vc j_i \cdot \vc n_i
+       = &-\sigma_i (U - u_i)      \\ 
+   \notag
+      &+ \big[\vc b_i\cdot \vc n_i\big]^{+} \big(\xi w_i + (1-\xi) W\big)       \\
+      \label{eq:fracture_normal}
+      &+ \big[\vc b_i\cdot \vc n_i\big]^{-} \big((1-\xi) w_i + \xi W\big), \qquad i=1,2
+\end{align}
+where $\sigma_i = \frac{2a_n}{\delta}$ is the transition coefficient and the parameter $\xi\in [\frac12, 1]$ can be used to interpolate
+between upwind ($\xi = 1$) and central difference ($\xi=\frac12$) scheme. Equations \eqref{eq:fracture_continuity}, \eqref{eq:fracture_darcy}, and
+\eqref{eq:fracture_normal} describe the general form of the advection-diffusion process on the fracture and its communication with 
+the surrounding continuum which we shall later apply to individual processes.
+
+
 
 \input{darcy_flow}
 
 \input{transport_model}
 
+\input{sorpce}
 
-%\input{convection}
-%\chapter{Numerical methods}
+\input{numerical}
+
 
 
 %\input{decay}
@@ -587,19 +760,23 @@ match their sides or they poke out of $\Omega_d$.
 %\input{pos_12}   
 
 
-%\chapter{Test and tutorial problems}
-%\input{tests}
+\chapter{Test and tutorial problems (WORK IN PROGRESS)}
+ \label{chapter:tests}
+ \input{tests}
+% 
+ \chapter{Comparision of versions (WORK IN PROGRESS)}
+ \label{chapter:version_comparision}
+ \input{version_comparision}
 
 \chapter{Main input file reference}
 \label{chapter:input-tree-reference}
 % support macros
 
-
 % generated file
 \input{input_reference}
 
 
-\bibliographystyle{plain}
+\bibliographystyle{abbrvnat}
 \bibliography{flow123d_doc.bib}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

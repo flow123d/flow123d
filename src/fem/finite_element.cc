@@ -52,7 +52,7 @@ void FiniteElement<dim,spacedim>::init()
 {
     number_of_dofs = 0;
     is_scalar_fe = true;
-    for (int i = 0; i <= dim; i++)
+    for (unsigned int i = 0; i <= dim; i++)
     {
         number_of_single_dofs[i] = 0;
         number_of_pairs[i] = 0;
@@ -62,7 +62,7 @@ void FiniteElement<dim,spacedim>::init()
 }
 
 template<unsigned int dim, unsigned int spacedim> inline
-const unsigned int FiniteElement<dim,spacedim>::n_dofs()
+const unsigned int FiniteElement<dim,spacedim>::n_dofs() const
 {
     return number_of_dofs;
 }
@@ -84,6 +84,8 @@ const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
     case DOF_SEXTUPLE:
         return number_of_sextuples[object_dim];
     }
+
+    return 0;
 }
 
 template<unsigned int dim, unsigned int spacedim> inline
@@ -93,8 +95,8 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
 
     arma::mat M(number_of_dofs, number_of_dofs);
 
-    for (int i = 0; i < number_of_dofs; i++)
-        for (int j = 0; j < number_of_dofs; j++) {
+    for (unsigned int i = 0; i < number_of_dofs; i++)
+        for (unsigned int j = 0; j < number_of_dofs; j++) {
             M(j, i) = basis_value(j, get_generalized_support_points()[i]);
 
         }
@@ -110,9 +112,9 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
     {
         arma::vec values(number_of_dofs);
         data->basis_values.resize(q.size());
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int j=0; j<number_of_dofs; j++)
+            for (unsigned int j=0; j<number_of_dofs; j++)
                 values[j] = basis_value(j, q.point(i));
             data->basis_values[i] = node_matrix * values;
         }
@@ -122,9 +124,9 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
     {
         arma::mat grads(number_of_dofs, dim);
         data->basis_grads.resize(q.size());
-        for (int i=0; i<q.size(); i++)
+        for (unsigned int i=0; i<q.size(); i++)
         {
-            for (int j=0; j<number_of_dofs; j++)
+            for (unsigned int j=0; j<number_of_dofs; j++)
                 grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
             data->basis_grads[i] = node_matrix * grads;
         }
@@ -153,14 +155,14 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     // shape values
     if (fv_data.update_flags & update_values)
     {
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
             fv_data.shape_values[i] = data.basis_values[i];
     }
 
     // shape gradients
     if (fv_data.update_flags & update_gradients)
     {
-        for (int i = 0; i < q.size(); i++)
+        for (unsigned int i = 0; i < q.size(); i++)
         {
             fv_data.shape_gradients[i] = data.basis_grads[i] * fv_data.inverse_jacobians[i];
         }

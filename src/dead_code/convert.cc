@@ -692,24 +692,24 @@ void output_convert(struct Problem *problem){
 //==============================================================================
 static void write_transport_ascii_data(FILE *out, struct Problem *problem, struct Node **nodes, struct TElement **elements, int time_steps, int ph)
 {
-        int k,sbi,li,j,n_subst;
+        int k,sbi,li,j,n_subst_;
         Mesh* mesh;
         ElementIter ele;
         Node* nod;
         char dbl_fmt[ 16 ];
         double norm,vconc[3];
 
-        n_subst = problem->transport->n_substances;
+        n_subst_ = problem->transport->n_subst_;
         mesh = problem->mesh;
         sprintf( dbl_fmt, "%%.%dg ", problem->out_digit );
 
         write_ascii_header(problem, out); // header in POS for user view
 
         for( k = 0; k < 2; k++){  // nodes and elements
-    for( sbi = 0; sbi < n_subst; sbi++ ) {
+    for( sbi = 0; sbi < n_subst_; sbi++ ) {
 
                 xfprintf( out, "View \"Concentration in %s of %s\" {\n",
-                (k == 0) ? "node" : "element",problem->transport->substance_name[ sbi ] );
+                (k == 0) ? "node" : "element",problem->transport->subst_names_[ sbi ] );
 
 
         FOR_ELEMENTS( ele ){
@@ -761,7 +761,7 @@ static void write_transport_ascii_data(FILE *out, struct Problem *problem, struc
        // CONC VECTOR IN MOBILE ZONE FOR STEADY SATURATED PROBEM
         if((ph == 0) & (k == 1) & (problem->type == STEADY_SATURATED)){
        xfprintf( out, "View \"Concentration vector of %s\" {\n",
-            problem->transport->substance_name[ sbi ] );
+            problem->transport->subst_names_[ sbi ] );
          FOR_ELEMENTS( ele ){
                 xfprintf( out, "VP (" );
         xfprintf( out, dbl_fmt, ele->centre[ 0 ] );
@@ -801,14 +801,14 @@ static void write_transport_ascii_data(FILE *out, struct Problem *problem, struc
 //==============================================================================
 static void write_transport_binary_data(FILE *out, struct Problem *problem, struct Node **nodes, struct TElement **elements, int time_steps, int ph)
 {
-        int k,sbi,i,li,j,n_subst;
+        int k,sbi,i,li,j,n_subst_;
         double ts;
         Mesh* mesh;
         ElementIter ele;
         int one = 1;
         double norm,vconc[3],vconct[3];
 
-        n_subst = problem->transport->n_substances;
+        n_subst_ = problem->transport->n_subst_;
         mesh = problem->mesh;
 
         xfprintf(out, "$PostFormat\n");
@@ -816,9 +816,9 @@ static void write_transport_binary_data(FILE *out, struct Problem *problem, stru
         xfprintf(out, "$EndPostFormat\n");
 
         for( k = 0; k < 2; k++){  // nodes and elements
-            for( sbi = 0; sbi < n_subst; sbi++ ) {
+            for( sbi = 0; sbi < n_subst_; sbi++ ) {
                         xfprintf( out, "$View\nConcentration^in^%s^of^%s ",
-            (k == 0) ? "node" : "element",problem->transport->substance_name[ sbi ] );
+            (k == 0) ? "node" : "element",problem->transport->subst_names_[ sbi ] );
         //uprava
        // mesh->n_tetrahedras = 0;
         xfprintf(out, "%d 0 0 0 %d 0 0 %d 0 0 0 0 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n",time_steps,mesh->n_lines,mesh->n_triangles,mesh->n_tetrahedras);
@@ -841,8 +841,8 @@ static void write_transport_binary_data(FILE *out, struct Problem *problem, stru
                 }
         }
         //  Vector conc
-        for( sbi = 0; sbi < n_subst; sbi++ ) {
-                xfprintf( out, "$View\nConcentration^vector^of^%s ",problem->transport->substance_name[ sbi ] );
+        for( sbi = 0; sbi < n_subst_; sbi++ ) {
+                xfprintf( out, "$View\nConcentration^vector^of^%s ",problem->transport->subst_names_[ sbi ] );
         xfprintf(out, "%d 0 %d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n",time_steps,mesh->n_elements());
         xfwrite(&one, sizeof(int), 1, out);
         ts = 0;
@@ -882,7 +882,7 @@ void output_transport_convert(struct Problem *problem){
         int li,time_steps,j,id,ph;
         double value;
         int sbi;
-        int n_subst = problem->transport->n_substances;
+        int n_subst_ = problem->transport->n_subst_;
         bool found;
 
 
@@ -912,19 +912,19 @@ void output_transport_convert(struct Problem *problem){
 
     // allocate and initialize tmp nodes conc
         for (li = 0; li <= mesh->max_nod_id; li++){
-                nodes[ph][li].conc = (double **)xmalloc(n_subst * sizeof(double*));
-        for( sbi = 0; sbi < n_subst; sbi++ )
+                nodes[ph][li].conc = (double **)xmalloc(n_subst_ * sizeof(double*));
+        for( sbi = 0; sbi < n_subst_; sbi++ )
             nodes[ph][li].conc[sbi] = (double *)xmalloc(time_steps* sizeof(double));
-        for( sbi = 0; sbi < n_subst; sbi++ )
+        for( sbi = 0; sbi < n_subst_; sbi++ )
                     for (j = 0; j < time_steps; j++)
                           nodes[ph][li].conc[sbi][j] = 0;
         }
     // allocate and initialize tmp element conc
         for (li = 0; li <= mesh->max_elm_id; li++){
-                elements[ph][li].conc = (double **)xmalloc(n_subst * sizeof(double*));
-        for( sbi = 0; sbi < n_subst; sbi++ )
+                elements[ph][li].conc = (double **)xmalloc(n_subst_ * sizeof(double*));
+        for( sbi = 0; sbi < n_subst_; sbi++ )
             elements[ph][li].conc[sbi] = (double *)xmalloc(time_steps* sizeof(double));
-        for( sbi = 0; sbi < n_subst; sbi++ )
+        for( sbi = 0; sbi < n_subst_; sbi++ )
                     for (j = 0; j < time_steps; j++)
                           elements[ph][li].conc[sbi][j] = 0;
         }
@@ -941,7 +941,7 @@ void output_transport_convert(struct Problem *problem){
             for (li = 0; li < mesh->n_nodes; li++){
                                 xfgets( line, LINE_SIZE - 2, in[ph] );
                 id = atoi( xstrtok( line) );
-                for( sbi = 0; sbi < n_subst; sbi++ ) {
+                for( sbi = 0; sbi < n_subst_; sbi++ ) {
                     value = atof ( xstrtok( NULL) );
                     nodes[ph][id].conc[sbi][j] = value;
                 }
@@ -962,7 +962,7 @@ void output_transport_convert(struct Problem *problem){
             for (li = 0; li < mesh->n_elements(); li++){
                                 xfgets( line, LINE_SIZE - 2, in[ph] );
                 id = atoi( xstrtok( line) );
-                for( sbi = 0; sbi < n_subst; sbi++ ) {
+                for( sbi = 0; sbi < n_subst_; sbi++ ) {
                     value = atof ( xstrtok( NULL) );
                     elements[ph][id].conc[sbi][j] = value;
                 }

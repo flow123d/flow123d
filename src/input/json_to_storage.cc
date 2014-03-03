@@ -105,6 +105,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
     string::size_type new_pos = 0;
     string address = ref_address + '/';
     string tmp_str;
+    bool relative_ref = false;
 
     std::set<string>::iterator it = previous_references_.find(ref_address);
     if (it == previous_references_.end()) {
@@ -134,6 +135,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
             }
 
         } else if (tmp_str == "..") {
+        	relative_ref = true;
             if (ref_path.level() <= 0 ) {
                 THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("can not go up from root") );
@@ -149,6 +151,9 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
                         << EI_Specification("key '"+tmp_str+"' not found") );
         }
         pos = new_pos+1;
+    }
+    if (relative_ref) {
+    	xprintf(Msg, "Key '%s' is set to value of key '%s'\n", this->str().c_str(), ref_path.str().c_str());
     }
     return ref_path;
 }
@@ -201,7 +206,7 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
  */
 
 JSONToStorage::JSONToStorage()
-:storage_(&Array::empty_storage_), root_type_(NULL), envelope(NULL)
+: envelope(NULL), storage_(&Array::empty_storage_), root_type_(NULL)
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
@@ -306,9 +311,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     if (typeid(*type) == typeid(Type::Record)) {
         return make_storage(p, static_cast<const Type::Record *>(type) );
     } else
-    if (typeid(*type) == typeid(Type::AbstractRecord)) {
-        return make_storage(p, static_cast<const Type::AbstractRecord *>(type) );
-    } else
     if (typeid(*type) == typeid(Type::Array)) {
         return make_storage(p, static_cast<const Type::Array *>(type) );
     } else
@@ -324,6 +326,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
+    	const Type::AbstractRecord * abstract_record_type = dynamic_cast<const Type::AbstractRecord *>(type);
+    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
+
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
@@ -389,7 +394,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             // try auto conversion
             stringstream ss;
             ss << p;
-            xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
+            //xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
 
             StorageArray *storage_array = new StorageArray(record->size());
             for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
@@ -398,7 +403,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
                     storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
                 } else {
                     ASSERT( it->default_.has_value_at_declaration() ,
-                            "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().");
+                            "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
                     // other key from default values
                     storage_array->new_item(it->key_index,
                             make_storage_from_default( it->default_.value(), it->type_.get() ) );
@@ -449,7 +454,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
     // perform automatic conversion
     stringstream ss;
     ss << p;
-    xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
+    // xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
 
     return make_storage(p, abstr_rec->get_default_descendant() );
 }
@@ -597,12 +602,11 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
-        if (typeid(*type) == typeid(Type::AbstractRecord) ) {
-            // an auto-convertible AbstractRecord can be initialized form default value
-            const Type::AbstractRecord *a_record = static_cast<const Type::AbstractRecord *>(type);
-
-            if (a_record->begin()->default_.has_value_at_declaration() )
-                make_storage_from_default( dflt_str, a_record->get_default_descendant() );
+        // an auto-convertible AbstractRecord can be initialized form default value
+    	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
+    	if (a_record != NULL ) {
+            if (a_record->begin()->default_.has_value_at_declaration() )    // a_record->bagin() ... TYPE key
+                return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
             else
                 xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", typeid(type).name());
         } else
@@ -618,7 +622,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                         storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
                     } else {
                         ASSERT( it->default_.has_value_at_declaration() ,
-                                "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().");
+                                "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
                         // other key from theirs default values
                         storage_array->new_item(it->key_index,
                                 make_storage_from_default( it->default_.value(), it->type_.get() ) );
@@ -668,6 +672,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         throw;
     }
 
+    //return NULL;
 }
 
 

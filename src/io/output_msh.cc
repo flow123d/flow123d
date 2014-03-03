@@ -78,7 +78,7 @@ void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->output_time->get_base_file();
     Mesh* mesh = this->output_time->get_mesh();
-    int i;
+    unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
     // Write information about elements
@@ -192,7 +192,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputData *out_data)
     ofstream &file = this->output_time->get_base_file();
     Mesh *mesh = this->output_time->get_mesh();
     Node* node;
-    int li, tmp = 0, corner_id = 0;
+    unsigned int li, corner_id = 0;
 
     switch(out_data->type) {
     case OutputData::OUT_VECTOR_INT_SCA:

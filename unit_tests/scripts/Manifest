@@ -1,0 +1,3 @@
+run_test.sh             - script for running test for whole flow123d program
+flow123d.s.test         - script for testing ../flow123d.sh and ../time_limit.sh
+tester_mpi.cc           - simple mpi program to test flow123d.sh

@@ -14,10 +14,10 @@
         { rid = 62,     // 1D channel
           anisotropy = 10
         },
-        { rid = 63,     // 2D fraction
+        { rid = 63,     // 2D fracture
           anisotropy = 1
         },
-        { rid = 64,     // 2D fraction
+        { rid = 64,     // 2D fracture
           anisotropy = 1
         }, 
         { rid = 65,     // 3D cube
@@ -43,7 +43,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        r_tol = 1.0e-10,
+        a_tol = 1.0e-10
       } 
     }
   }, 

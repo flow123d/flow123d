@@ -74,7 +74,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
     F_ENTRY;
-    int i=0;
+    //int i=0;
     using namespace Input;
 
     // Initialize Time Marks
@@ -161,7 +161,7 @@ void HC_ExplicitSequential::run_simulation()
 
     double velocity_interpolation_time;
     bool velocity_changed;
-    Vec velocity_field;
+    //Vec velocity_field;
 
 
     // following cycle is designed to support independent time stepping of
@@ -236,11 +236,11 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    delete mesh;
     //delete material_database;
     delete water;
     delete water_output;
     delete transport_reaction;
+    delete mesh;
 }
 
 

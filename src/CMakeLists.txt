@@ -50,6 +50,7 @@ set(sources_lib_system
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
+    system/application_base.cc
 )
 
 set(sources_lib_input
@@ -64,6 +65,17 @@ set(sources_lib_input
     input/accessors.cc
 )
 
+
+set(sources_lib_la
+	la/distribution.cc
+	la/local_to_global_map.cc
+    la/schur.cc
+    la/linsys.cc
+    la/linsys_BDDC.cc
+    la/linsys_PETSC.cc
+    la/sparse_graph.cc
+)
+
 set(sources_mesh_lib
     mesh/region.cc
     mesh/msh_gmshreader.cc
@@ -76,6 +88,7 @@ set(sources_mesh_lib
     mesh/sides.cc
     mesh/intersection.cc
     mesh/ref_element.cc
+    mesh/partitioning.cc
     
     mesh/bounding_box.cc
     mesh/bih_node.cc
@@ -90,7 +103,7 @@ set(sources_mesh_lib
     mesh/ngh/src/plain.cpp
     mesh/ngh/src/point.cpp
     mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/system.cpp
+    #mesh/ngh/src/system.cpp
     mesh/ngh/src/tetrahedron.cpp
     mesh/ngh/src/triangle.cpp
     mesh/ngh/src/vector.cpp
@@ -122,15 +135,11 @@ set(sources_fem_lib
     
 )
 
-
-set(sources_lib_la
-	la/distribution.cc
-	la/local_to_global_map.cc
-    la/schur.cc
-    la/solve.cc
-    la/linsys.cc
-    la/sparse_graph.cc
+set(sources_lib_interpolation
+    interpolation/interpolant.cc
+    interpolation/adaptivesimpson.cc
 )
+
 
 
 set(sources_lib_field
@@ -166,12 +175,14 @@ set(sources_lib_non_system
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
     reaction/sorption.cc
+    #reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
+    transport/mass_balance.cc
 
     coupling/hc_explicit_sequential.cc
 )
@@ -195,7 +206,8 @@ endif()
 
 # system_lib
 add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${MPI_CXX_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+target_link_libraries(system_lib ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+add_dependencies(system_lib update_source_tree)
 
 
 # when the precompiled headers are used in the future
@@ -215,12 +227,13 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
+#set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
 target_link_libraries(mesh_lib
-    input_lib system_lib armadillo ${Boost_LIBRARIES})
+    input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
     
 # fast_intersection_lib
 add_library(fast_intersection_lib ${sources_fast_intersection})
@@ -232,11 +245,16 @@ target_link_libraries(fast_intersection_lib
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
     system_lib mesh_lib armadillo ${Boost_LIBRARIES})
+    
+# interpolation_lib    
+add_library(interpolation_lib ${sources_lib_interpolation})
+target_link_libraries(interpolation_lib
+    system_lib )
 
 # field_lib  
 add_library(field_lib ${sources_lib_field})
 target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo  ${Boost_LIBRARIES})
+    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
  
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
@@ -246,8 +264,8 @@ target_link_libraries(coupling_lib
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib
-    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${Boost_LIBRARIES})
+    fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib
+    coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

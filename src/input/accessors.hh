@@ -34,12 +34,56 @@
 
 
 
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+
+
 namespace Input {
 
 using std::string;
 
-// exceptions and error_info types
 
+/**
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
+ */
+class Exception : public virtual ExceptionBase
+{
+public:
+    const char * what () const throw ();
+    virtual ~Exception() throw () {};
+};
+
+
+
+
+
+
+
+// exceptions and error_info types
 // throwed in Iterator<>
 TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
@@ -57,6 +101,9 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 // throwed in Address
 TYPEDEF_ERR_INFO( EI_ParamName, const string);
 DECLARE_EXCEPTION( ExcAddressNullPointer, << "NULL pointer in " << EI_ParamName::val << " parameter.");
+
+
+
 
 /**
  * Class that works as base type of all enum types. We need it to return integer from a Selection input without
@@ -89,6 +136,8 @@ private:
 class IteratorBase;
 template <class T> class Iterator;
 
+class JSONToStorage;
+
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
  *
@@ -98,7 +147,7 @@ template <class T> class Iterator;
  *
  * TODO:
  * - allow Address with NULL pointers, allow default constructor
- * - How we can get Address with NULL pointer to storage?
+ * - How we can get Address with NULL pointer to storage? (currently we need Array::empty_storage_)
  *   - default constructor (should be called only by empty accessors)
  *     see if we can not get empty accessor in json_to_storage
  *     => empty address is error in program
@@ -112,18 +161,25 @@ class Address {
 protected:
     struct AddressData {
         /**
-         * Pointers to all nodes in the storage tree along the path from the root to the storage of actual accessor.
-         * TODO: Possibly can be shared.
+         * Pointer to data of parent node in the address tree
          */
-        std::vector<unsigned int> path_;
+        AddressData * parent_;
         /**
-         * Root Input::Type.
+         * Index in StorageArray of the parent_ to get actual node.
+         */
+        unsigned int descendant_order_;
+        /**
+         * Root of the Input::Type tree.
          */
         const Input::Type::TypeBase *root_type_;
         /**
-         *
+         * Root of the storage tree.
          */
         const StorageBase *root_storage_;
+        /**
+         * Actual storage - tip of the storage tree
+         */
+        const StorageBase * actual_storage_;
     };
 
 public:
@@ -150,39 +206,53 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    void down(unsigned int idx);
+    const Address * down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	ASSERT(actual_storage_, "NULL pointer to storage in address object!!! \n");
+    	ASSERT(data_->actual_storage_, "NULL pointer to storage in address object!!! \n");
 
-    	return actual_storage_;
+    	return data_->actual_storage_;
     }
 
     /**
      * Produce a full address, i.e. sequence of keys and indices separated by '/',
      * that leads from the root storage and root Input::Type::TypeBase to the actual node in the storage
-     * that is path_[actual_node_].
+     * that is nodes_[actual_node_].
      */
-    std::string make_full_address();
-
+    std::string make_full_address() const;
 
 protected:
+
     /**
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
-    /**
-     * Actual node in the @p path_. Currently the last element, useful for shared @p path_ vector.
-     */
-    unsigned int actual_node_;
-    /**
-     * Actual storage
-     */
-    const StorageBase * actual_storage_;
+
+
 };
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
+/**
+ * Address output operator.
+ */
+inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
+	return stream << address.make_full_address();
+}
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const Address);
+
 
 /**
  * @brief Accessor to the data with type \p Type::Record.
@@ -221,6 +291,7 @@ protected:
 class Record {
 
 public:
+	typedef ::Input::Type::Record InputType;
     /**
      * Default constructor.
      *
@@ -289,17 +360,30 @@ public:
 
     /**
      * Returns true if the accessor is empty (after default constructor).
+     * TODO: have something similar for other accessors.
      */
     inline bool is_empty() const
-    { return (address_.storage_head() == NULL); }
+    { return (address_.storage_head() == Address().storage_head()); }
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    Address &get_address();
+    EI_Address ei_address() const ;
+
+    /**
+     * Get address as string.
+     */
+    string address_string() const;
+
 
 
 protected:
+    /**
+     * Set address (currently necessary for creating root accessor)
+     */
+    void set_address(const Address &address);
+    friend class JSONToStorage;
+
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
@@ -321,6 +405,8 @@ protected:
 
 class AbstractRecord {
 public:
+	typedef ::Input::Type::AbstractRecord InputType;
+
     /**
      * Default constructor creates an empty accessor.
      *
@@ -360,9 +446,14 @@ public:
     Input::Type::Record type() const;
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    Address &get_address();
+    EI_Address ei_address() const ;
+
+    /**
+     * Get address as string.
+     */
+    string address_string() const;
 
 
 private:
@@ -380,7 +471,11 @@ private:
  *
  * There are two possible ways how to retrieve data from Array accessor. First, you can use generic
  * @p copy_to function to copy the data into a given container. Second, you can get an Iterator<Type>
- * and iterate through the Array.
+ * and iterate through the Array. Unfortunately, you have to provide Type to the begin() method so this
+ * implementation is not fully compliant with standard library. The reason is that in order to speed up compilation of many
+ * classes using input accessors we wouldn't have Input::Array a class template that it can be compiled only once.
+ * By this reason one can not use BOOST_FOREACH to iterate over Input::Array.
+ * TODO: Make Input::Array<Type> wrapper which is compliant with standard library.
  *
  * In either case correspondence between resulting type (i.e. type of elements of the container or type of the Iterator)
  * and the type of the data in the Array is checked only once.
@@ -408,6 +503,9 @@ private:
  */
 class Array {
 public:
+
+	typedef ::Input::Type::Array InputType;
+
     /**
      * Default constructor, empty accessor.
      *
@@ -452,9 +550,14 @@ public:
    void copy_to(Container &out) const;
 
    /**
-    * Returns address
+    * Returns address error info.
     */
-   Address &get_address();
+   EI_Address ei_address() const ;
+
+   /**
+    * Get address as string.
+    */
+   string address_string() const;
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
@@ -532,7 +635,9 @@ class IteratorBase {
 public:
 
     /**
-     * Constructor of iterator without type and dereference methods.
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     *
      */
     IteratorBase(const Address &address, const unsigned int index)
     : address_(address), index_(index)
@@ -556,13 +661,13 @@ public:
     /**
      * Returns address
      */
-    Address &get_address()
+    const Address &get_address() const
     { return address_; }
 
 
 protected:
-    unsigned int index_;
     Address address_;
+    unsigned int index_;
 };
 
 
@@ -602,9 +707,13 @@ public:
     Iterator() : IteratorBase( Address(), 0) {}
 
     /**
-     * Constructor with Type of data
+     * Constructor. Creates iterator effectively pointing to data address_->get_storage()->get_item(index),
+     * that is parameter @p address points to StorageArray and parameter @p index gives index into this array.
+     * Parameter @p type is Input::Type of object the iterator points to.
+     *
+     *
      */
-    Iterator(const Input::Type::TypeBase &type,const Address &address, const unsigned int index)
+    Iterator(const Input::Type::TypeBase &type, const Address &address, const unsigned int index)
     : IteratorBase(address, index), type_( type_check_and_convert(type))
     {}
 

@@ -36,7 +36,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-12,
+        r_tol = 1e-12
       }
     },
 
@@ -57,7 +58,7 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         },
@@ -68,11 +69,11 @@
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
-          sorp_type = [1, 2],
+          sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
         }
-      ]
+      ],
 
       output = {
         mobile_p0 = "transport_output_stream", 
@@ -90,6 +91,9 @@
       ], 
       time = {
 	end_time = 5.0
+      },
+      mass_balance = {
+        cumulative = true
       }
     }
   }, 

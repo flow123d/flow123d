@@ -21,10 +21,16 @@ namespace Type {
 /**
  * @brief Base abstract class for output description of the Input::Type tree.
  *
- * Output into various formats is implemented by derived classes.
+ * Output into various formats is implemented by derived classes:
+ * - OutputText - for human readable description
+ * - OutputJSONTemplate - for creating a template of the input file
+ * - OutputLatex - for printed documentation (with support of particular Latex macros)
+ * - OutputJSONMachine - for full machine readable description in standard JSON format
  *
- * Usage:
+ * Usage example:
+ * @code
  * cout << OutputText( &my_record, 3) << endl;
+ * @endcode
  *
  * @ingroup input_types
  */
@@ -32,15 +38,17 @@ class OutputBase {
 public:
 
     /**
-     * Performs output of the documentation into given @p stream.
+     * @brief Performs output of the documentation into given @p stream. The same effect has the reloaded operator '<<'.
      * Returns reference to the same stream.
      */
     virtual ostream& print(ostream& stream);
 
     /**
-     * Initializes and allocates regular expression filter_.
+     * @brief Initializes and allocates regular expression filter @p regex_filter.
      *
-     * If filter_ is initialized for printout is used regular expression filter functionality of internal ProcessedTypes class.
+     * Full names of Input::Type::Record objects are passed through the filter, deleting the first match of the regular expression given by @p regex_filter.
+     * Full Record description is performed only for the first occurrence of the filtered name, further Records with same filtered name are ignored
+     * (reported only in short descriptions of individual keys or array subtype, etc.) See @p ProcessedTypes for details.
      */
 	void set_filter(string regex_filter);
 
@@ -72,6 +80,8 @@ protected:
     // data getters
     /// Gets range of array
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
+    /// Gets description of the given record type.
+    const string & get_record_description(const Record *rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
@@ -84,6 +94,14 @@ protected:
     void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
+    /// Gets description of the given selection type.
+    const string & get_selection_description(const Selection *sel);
+    /// Gets parent_name_ of the given AdHocAbstractRecord type.
+    const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
+    /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
+    AbstractRecord::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
+
+
     /// Gets pointer of inner data for given Record
     const void * get_record_data(const Record *rec);
     /// Gets pointer of inner data for given AbstractRecord
@@ -114,6 +132,10 @@ protected:
      * Implements printout of AbstractRecord @p type
      */
     virtual void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
+    /**
+     * Implements printout of AdHocAbstractRecord @p type
+     */
+    virtual void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) = 0;
     /**
      * Implements printout of Selection @p type
      */
@@ -274,6 +296,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
 	void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -323,6 +346,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
 	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
 	void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -377,6 +401,7 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
     void print_impl(ostream& stream, const Double *type, unsigned int depth);
@@ -413,12 +438,17 @@ protected:
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
     void print_impl(ostream& stream, const Selection *type, unsigned int depth);
     void print_impl(ostream& stream, const Integer *type, unsigned int depth);
     void print_impl(ostream& stream, const Double *type, unsigned int depth);
     void print_impl(ostream& stream, const Bool *type, unsigned int depth);
     void print_impl(ostream& stream, const String *type, unsigned int depth);
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+
+
+    /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
 
 
 };

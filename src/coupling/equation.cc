@@ -31,6 +31,7 @@
 #include <petscmat.h>
 #include "time_governor.hh"
 
+
 #include "equation.hh"
 #include "system/system.hh"
 #include "input/accessors.hh"
@@ -66,8 +67,8 @@ namespace IT=Input::Type;
 
 
 EqDataBase::EqDataBase(const std::string& eq_name)
-: equation_name_(eq_name),
-  mesh_(NULL)
+: mesh_(NULL),
+  equation_name_(eq_name)
 {
     if (equation_name_ == "") xprintf(PrgErr, "You have to provide non-empty equation name when constructing EqDataBase.\n");
 }
@@ -110,7 +111,7 @@ IT::Record EqDataBase::generic_input_type(bool bc_regions) {
     BOOST_FOREACH(FieldCommonBase * field, field_list)
         if (bc_regions == field->is_bc()) {
             if (field->is_enum_valued())
-                rec.declare_key(field->name(), field->make_input_tree(),  field->desc() );
+                rec.declare_key(field->name(), field->make_input_tree(), field->desc() );
             else
                 rec.declare_key(field->name(), field->get_input_type(), field->desc() );
         }
@@ -134,7 +135,7 @@ IT::Record EqDataBase::bulk_input_type() {
 void EqDataBase::set_time(const TimeGovernor &time) {
     /*
      * - read records from arrays until we reach greater time then actual
-     * - update fields (delete the previous, use mekae factory for the new one.
+     * - update fields (delete the previous, use make factory for the new one.
      */
     set_time(time, boundary_input_array_, boundary_it_, true);
     set_time(time, bulk_input_array_, bulk_it_, false);
@@ -219,14 +220,18 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     unsigned int id;
     if (rec.opt_val("r_set", name)) {     
         domain = mesh_->region_db().get_region_set(name);
+        if ( domain.size() == 0 || ! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("r_set = " + name) << rec.ei_address() );
 
     } else if (rec.opt_val("region", name)) {
         domain.push_back( mesh_->region_db().find_label(name) );    // try find region by label
-        if (! domain[0].is_valid() ) xprintf(UsrErr, "Unknown region with label: '%s'\n", name.c_str());
+        if (! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("region = " + name) << rec.ei_address() );
 
     } else if (rec.opt_val("rid", id)) {
         domain.push_back( mesh_->region_db().find_id(id) );         // try find region by ID
-        if (! domain[0].is_valid() ) xprintf(UsrErr, "Unknown region with id: '%d'\n", id);
+        if (! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("rid = " + std::to_string(id) ) << rec.ei_address() );
 
     } else {
         if (bc_regions) {

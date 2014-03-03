@@ -54,6 +54,8 @@ double Side::measure() const {
             return 0.5*arma::norm( arma::cross(diff0, diff1), 2);
         }
     }
+
+    return 0.0;
 }
 
 //=============================================================================
@@ -113,15 +115,15 @@ arma::vec3 Side::normal_line() const {
 
 arma::vec3 Side::normal_triangle() const {
     ElementIter ele=element_;
-    double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
+//    double u[ 3 ], v[ 3 ], in[ 3 ], normal[3];
 
     arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),
                                         node(2)->point() - node(0)->point() );
     side_normal /= norm( side_normal, 2);
 
-    in[ 0 ] = ele->centre()[ 0 ] - node( 0 )->getX();
-    in[ 1 ] = ele->centre()[ 1 ] - node( 0 )->getY();
-    in[ 2 ] = ele->centre()[ 2 ] - node( 0 )->getZ();
+//    in[ 0 ] = ele->centre()[ 0 ] - node( 0 )->getX();
+//    in[ 1 ] = ele->centre()[ 1 ] - node( 0 )->getY();
+//    in[ 2 ] = ele->centre()[ 2 ] - node( 0 )->getZ();
     if ( dot(side_normal, ele->centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else

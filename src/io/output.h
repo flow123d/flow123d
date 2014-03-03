@@ -27,34 +27,14 @@
  *
  *
  * TODO:
- * - remove Output, keep OutputTime only (done)
+ * - remove Output, keep OutputTime only
  * - remove parameter mesh from static method OutputTime::output_stream (done)
  * - move initialization of streams from hc_expolicit_sequantial to
  *     Aplication::Aplication() constructor (done)
- * - OutputTime::register_XXX_data - should accept iterator to output record of particular equation, ask for presence of the key
- *   that has same name as the name of the quantity to output, extract the string with stream name from this key, find the stream
- *   and perform output.
+ * - OutputTime::register_XXX_data - use MultiField and Field parameters
+ * - set type of data output (element, corner, point) through parameter not function name
  *
- *   on input:
- *
- *   { // darcy flow
- *      output = {
- *          pressure_nodes="nodal_data",
- *          pressure_elements="el_data"
- *      }
- *   }
- *
- *   output_streams=[
- *      {name="nodal_data", ... },
- *      {name="el_data", ... }
- *   ]
- *
- *   in code:
- *
- *   Input::Record out_rec = in_rec.val<Input::Record>("output");
- *   OutputTime::register_node_data(mesh_, "pressure_nodes", "L", out_rec, node_pressure);
- *   OutputTime::register_elem_data(mesh_, "pressure_elements", "L", out_rec, ele_pressure);
- *   ...
+ * - make profiling and optimization - output is very slow
  *
  * - use exceptions instead of returning result, see declaration of exceptions through DECLARE_EXCEPTION macro
  * - move write_data from equations into coupling, write all streams
@@ -78,6 +58,12 @@
 #include "mesh/mesh.h"
 
 #include "input/accessors.hh"
+
+template<int spacedim, class Value>
+class MultiField;
+template<int spacedim, class Value>
+class Field;
+
 
 class OutputFormat;
 
@@ -183,6 +169,8 @@ public:
      * units.
      */
     OutputData(std::string name, std::string unit, std::vector< vector<double> > &data);
+
+
 
     /**
      * \brief Destructor for OutputData
@@ -512,6 +500,36 @@ public:
             const Input::Record &in_rec,
             std::vector<_Data> &data);
 
+
+    /**
+     * Proposed declaration.
+     */
+    template<int spacedim, class Value>
+    static int register_elem_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
+
+    template<int spacedim, class Value>
+    static int register_corner_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
+
+    // this can be done by averaging of corner data
+    template<int spacedim, class Value>
+    static int register_point_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
+
+    /**
+     * Proposed declaration.
+     *
+     * use field to get : mesh, name, units
+     * use field.value(...) to get values on individual elements of the mesh
+     */
+    template<int spacedim, class Value>
+    static int register_elem_data(const Input::Record &in_rec, Field<spacedim, Value> field);
+
+    template<int spacedim, class Value>
+    static int register_corner_data(const Input::Record &in_rec, Field<spacedim, Value> field);
+
+    // this can be done by averaging of corner data
+    template<int spacedim, class Value>
+    static int register_point_data(const Input::Record &in_rec, Field<spacedim, Value> field);
+
     /**
      * \brief This is depreciated method. Every file format should specify its own
      * method for writing data to output file. This method will not be public
@@ -603,7 +621,7 @@ int OutputTime::register_corner_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *corner_data = output_time->get_corner_data();
 
-    int corner_count = output_time->get_corner_count();
+    unsigned int corner_count = output_time->get_corner_count();
     ASSERT(corner_count == size,
             "output_time->get_corner_count(): %d != size: %d",
             corner_count,
@@ -696,10 +714,7 @@ int OutputTime::register_node_data(Mesh *mesh,
     int found = 0;
     std::vector<OutputData> *node_data = output_time->get_node_data();
 
-    ASSERT(mesh->node_vector.size() == data.size(),
-            "mesh->node_vector.size(): %d != size: %d",
-            mesh->node_vector.size(),
-            data.size());
+    ASSERT_EQUAL(mesh->node_vector.size(), data.size() );
 
     for(std::vector<OutputData>::iterator od_iter = node_data->begin();
             od_iter != node_data->end();

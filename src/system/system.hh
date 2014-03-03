@@ -58,6 +58,13 @@
 #define strcmpi strcasecmp
 #define DIR_DELIMITER '/'
 
+#ifdef HAVE_CXX11_FULL
+  #define OPERATOR_NEW_THROW_EXCEPTION
+#else
+  #define OPERATOR_NEW_THROW_EXCEPTION throw(std::bad_alloc)
+#endif
+
+
 using namespace std;
 
 
@@ -87,8 +94,6 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-void system_init( MPI_Comm comm,const  string &log_fname );
-
 
 void    system_set_from_options();
 char * 	get_log_fname( void );
@@ -99,7 +104,6 @@ void	resume_log_file( void );
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-int    	xterminate( bool on_error );
 void *	xmalloc(size_t size);
 void * xrealloc( void * ptr, size_t size );
 
@@ -111,7 +115,7 @@ void * xrealloc( void * ptr, size_t size );
               } \
     } while (0) /// test & free memory
 #endif
-//        F_STACK_SHOW( stdout ); \
+/*        F_STACK_SHOW( stdout ); \ */
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
@@ -123,8 +127,8 @@ void * xrealloc( void * ptr, size_t size );
  */
 // @{
 
-void *operator new (std::size_t size) throw(std::bad_alloc);
-void *operator new[] (std::size_t size) throw(std::bad_alloc);
+void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
+void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
 void operator delete( void *p) throw();
 void operator delete[]( void *p) throw();
 // @}
@@ -143,7 +147,6 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 
 //! @brief auxiliary
 /// @{
-bool skip_to( FILE *const in, const char *section );
 bool skip_to( istream &in, const string &pattern );
 //! @}
 

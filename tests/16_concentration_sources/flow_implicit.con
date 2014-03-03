@@ -37,8 +37,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
-        parameters = ""
+        a_tol = 1e-12,
+        r_tol = 1e-12
       }, 
       time = {
         REF = "../../time"
@@ -72,7 +72,7 @@
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",
             field_name = "sigma"
-          }
+          },
           sources_conc = {
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",
@@ -102,7 +102,11 @@
       },
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      },
+      mass_balance = {
+        cumulative = true
       }
     }, 
     time = {

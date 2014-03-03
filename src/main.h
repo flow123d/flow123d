@@ -29,6 +29,8 @@
 
 #include <string>
 #include "input/input_type.hh"
+#include "input/accessors.hh"
+#include "system/application_base.hh"
 
 using namespace std;
 
@@ -36,26 +38,68 @@ using namespace std;
 #define MAIN_H
 
 
-class Application {
-public:
-    Application(int argc, char ** argv);
-    static Input::Type::Record input_type;
-    void parse_cmd_line(const int argc, char ** argv);
-    void free_and_exit();
-private:
 
-    string main_input_dir_;
-    string main_input_filename_;
+class Application : public ApplicationBase {
+public:
+    /// Root of the Input::Type tree. Description of whole input structure.
+    static Input::Type::Record input_type;
+    
+    /// Application constructor. 
+    Application(int argc, char ** argv);
+    
+    /**
+     * Displays program version and build info.
+     * Pass version information to Profiler.
+     * 
+     * TODO: Split these two functionalities.
+     */ 
+    void display_version();
+    
+    /**
+     * Read main input file
+     * 
+     * Returns accessor to the root Record.
+     */ 
+    Input::Record read_input();
+    
+    /// Destructor
+    virtual ~Application();
+
+protected:
 
     /**
-     * Log file name argument - passed to system_init; "" menas default, "\n" means no logging
-     * TODO: move whole system_init into Application, use singleton for some runtime global options
-     * for the Flow123d library.
+     * Run application.
+     *
+     * Read input and solve problem.
      */
-    string log_filename_;
+    virtual void run();
+
+    /**
+     * Check pause_after_run flag defined in input file.
+     */
+    virtual void after_run();
+
+    /**
+     * Parse command line parameters.
+     * @param[in] argc       command line argument count
+     * @param[in] argv       command line arguments
+     */
+    virtual void parse_cmd_line(const int argc, char ** argv);
+
+private:
+
+    /// directory of main input file (used to resolve relative paths of other input files)
+    string main_input_dir_;
+    /// filename of main input file
+    string main_input_filename_;
+
     int passed_argc_;
     char ** passed_argv_;
+    
+    /// Description of possible command line arguments.
+    string program_arguments_desc_;
 
+    /// If true, we do output of profiling information.
     bool use_profiler;
 };
 

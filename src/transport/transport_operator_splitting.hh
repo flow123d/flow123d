@@ -8,6 +8,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+#include "transport/mass_balance.hh"
 
 
 /// external types:
@@ -22,6 +23,7 @@ class Reaction;
 class Linear_reaction;
 //class Pade_approximant;
 class Sorption;
+//class Dual_por_exchange;
 class Semchem_interface;
 class ConvectionTransport;
 
@@ -32,73 +34,113 @@ class ConvectionTransport;
  * Here one has to specify methods for setting or getting data particular to
  * transport equations.
  */
-class TransportBase : public EquationBase {
+class TransportBase : public EquationBase, public EquationForMassBalance {
 public:
 
+    /**
+     * Class with fields that are common to all transport models.
+     */
 	class TransportEqData : public EqDataBase {
 	public:
 
 		TransportEqData(const std::string& eq_name);
-		virtual ~TransportEqData() {};
+		inline virtual ~TransportEqData() {};
 
-		Field<3, FieldValue<3>::Vector> init_conc; ///< Initial concentrations.
-		Field<3, FieldValue<3>::Scalar> por_m;     ///< Mobile porosity
+		/// Initial concentrations.
+		Field<3, FieldValue<3>::Vector> init_conc;
+		/// Mobile porosity
+		Field<3, FieldValue<3>::Scalar> por_m;
 
 		/**
 		 * Boundary conditions (Dirichlet) for concentrations.
-		 * They are applied only in water inflow.
+		 * They are applied only on water inflow part of the boundary.
 		 */
 		BCField<3, FieldValue<3>::Vector> bc_conc;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
 
-		/// Concentration sources
+		/// Concentration sources - density of substance source, only positive part is used.
 		Field<3, FieldValue<3>::Vector> sources_density;
+		/// Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc)
 		Field<3, FieldValue<3>::Vector> sources_sigma;
 		Field<3, FieldValue<3>::Vector> sources_conc;
 
 	};
 
+	/// Common specification of the Transport input record.
+    static Input::Type::AbstractRecord input_type;
+    /**
+     * Specification of the output record. Need not to be used by all transport models, but they should
+     * allow output of similar fields.
+     */
+    static Input::Type::Record input_type_output_record;
+
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
-
-
-    virtual TransportEqData *get_data() = 0;
 
 
     /**
      * This method takes sequential PETSc vector of side velocities and update
      * transport matrix. The ordering is same as ordering of sides in the mesh.
+     * We just keep the pointer, but do not destroy the object.
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) {
         mh_dh=&dh;
     }
+
+    /**
+     * @brief Sets pointer to data of other equations.
+     * TODO: there should be also passed the sigma parameter between dimensions
+     * @param cross_section is pointer to cross_section data of Darcy flow equation
+     */
+    //virtual void set_cross_section_field(Field<3, FieldValue<3>::Scalar > *cross_section) =0;
+
+    /**
+     * @brief Write computed fields.
+     */
     virtual void output_data() =0;
 
     /**
-     * Calculate mass balance: flux through boundary and volume sources
+     * Getter for mass balance class
      */
-    void mass_balance();
+    MassBalance *mass_balance() { return mass_balance_; }
 
-    virtual unsigned int n_substances() = 0;
+    /// Returns number of trnasported substances.
+    inline unsigned int n_substances() { return n_subst_; }
 
-    virtual vector<string> &substance_names() = 0;
+    /// Returns reference to the vector of substnace names.
+    inline vector<string> &substance_names() { return subst_names_; }
 
-    static Input::Type::AbstractRecord input_type;
-    static Input::Type::Record input_type_output_record;
-
-    const MH_DofHandler *mh_dh;
 
 protected:
 
-    virtual void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) = 0;
-    virtual void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) = 0;
+    /// Returns the region database.
+    const RegionDB *region_db() { return &mesh_->region_db(); }
 
-    FILE *balance_output_file;
+    /// Number of transported substances.
+    unsigned int n_subst_;
 
+    /// Names of transported substances.
+    std::vector<string> subst_names_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
+    /**
+     * Mark type mask that is true for time marks of output points of the transport model.
+     * E.g. for TransportOperatorSplitting this is same as the output points of its transport sub-model.
+     */
+    TimeMark::Type output_mark_type;
+
+    /// object for calculation and writing the mass balance to file.
+    MassBalance *mass_balance_;
 };
 
 
@@ -108,7 +150,7 @@ protected:
  */
 class TransportNothing : public TransportBase {
 public:
-   TransportNothing(Mesh &mesh_in)
+    inline TransportNothing(Mesh &mesh_in)
     : TransportBase(mesh_in, Input::Record() )
     {
         // make module solved for ever
@@ -116,7 +158,10 @@ public:
         time_->next_time();
     };
 
-    virtual void get_solution_vector(double * &vector, unsigned int &size) {
+    inline virtual ~TransportNothing()
+    {}
+
+    inline virtual void get_solution_vector(double * &vector, unsigned int &size) {
         ASSERT( 0 , "Empty transport class do not provide solution!");
     }
 
@@ -124,52 +169,32 @@ public:
         ASSERT( 0 , "Empty transport class do not provide solution!");
     };
 
-    virtual void set_velocity_field(Vec &velocity_field) {};
+    inline virtual void output_data() {};
 
-    virtual void output_data() {};
-
-    virtual TransportEqData *get_data() { return 0; };
-
-    unsigned int n_substances() { return 0; };
-
-    vector<string> &substance_names() {};
-
+    TimeIntegrationScheme time_scheme() { return none; }
 
 private:
 
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
+    inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
+    inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
+
 };
 
 
 
 /**
- * @brief Reaction transport implemented by operator splitting.
+ * @brief Coupling of a transport model with a reaction model by operator splitting.
+ *
+ * Outline:
+ * Transport model is any descendant of TransportBase (even TransportOperatorSplitting itself). This
+ * should perform the transport possibly with diffusion and usually without coupling between substances and phases.
+ *
+ * Reaction is any descendant of the ReactionBase class. This represents reactions in general way of any coupling that
+ * happens between substances and phases on one element or more generally on one DoF.
  */
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-
-	class EqData : public TransportBase::TransportEqData {
-	public:
-
-		EqData();
-		virtual ~EqData() {};
-
-        RegionSet read_boundary_list_item(Input::Record rec);
-
-		Field<3, FieldValue<3>::Scalar> por_imm;   ///< Immobile porosity
-		Field<3, FieldValue<3>::Vector> alpha;	   ///< Coefficients of non-equilibrium exchange
-// TODO: sorp_type should be IntVector
-		Field<3, FieldValue<3>::Vector> sorp_type;///< Type of sorption for each substance
-		Field<3, FieldValue<3>::Vector> sorp_coef0;///< Coefficient of sorption for each substance
-		Field<3, FieldValue<3>::Vector> sorp_coef1;///< Coefficient of sorption for each substance
-		Field<3, FieldValue<3>::Scalar> phi;       ///< solid / solid mobile
-
-	};
-
-    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
-    virtual ~TransportOperatorSplitting();
 
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
@@ -177,23 +202,25 @@ public:
      * TODO: The question is if this should be a general coupling class
      * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
      * To make this a coupling class we should modify all main input files for transport problems.
-     *
      */
     static Input::Type::Record input_type;
+
+    /// Constructor.
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
+    /// Destructor.
+    virtual ~TransportOperatorSplitting();
+
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
     virtual void update_solution();
     //virtual void compute_one_step();
     //virtual void compute_until();
-    void compute_internal_step();
-    void output_data();
     virtual void get_parallel_solution_vector(Vec &vc);
     virtual void get_solution_vector(double* &vector, unsigned int &size);
+
     void compute_until_save_time();
-
-    unsigned int n_substances();
-    vector<string> &substance_names();
-
+    void compute_internal_step();
+    void output_data();
 
    
     /**
@@ -203,27 +230,31 @@ public:
      */
     void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
 
-    virtual EqData *get_data() { return &data; };
-
+    TimeIntegrationScheme time_scheme() { return none; }
 
 
 private:
-
+    /**
+     * Implements the virtual method EquationForMassBalance::calc_fluxes().
+     */
     void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    /**
+     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
+     */
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
-
-    EqData data;
 
     ConvectionTransport *convection;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     Sorption *sorptions;
+    Sorption *sorptions_immob;
+    //Dual_por_exchange *dual_por_exchange;
     Semchem_interface *Semchem_reactions;
     //int steps;
-    OutputTime *field_output;
 
-    TimeMark::Type output_mark_type;
 
 };
+
+
 
 
 

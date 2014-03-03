@@ -1,0 +1,395 @@
+
+
+#########################################################################################
+# Projects - Jenkins Jobs Builder way to generate templated jobs
+#########################################################################################
+
+- defaults:
+    name: flow123d-build
+    # default template fields
+    node: "{platform}"
+    workspace: "Flow123d-{platform}-{build-type}"
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+
+# Multijob  project - debug
+- project:
+    name: "Multijob project debug"
+    platform: linux
+    build-type: debug
+    unit-dir: 
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    
+    jobs:
+      - "Flow123d-{platform}-{build-type}-configure"
+      - "Flow123d-{platform}-{build-type}-build-libs"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-debug-multijob"
+
+
+# Multijob  project - release
+- project:
+    name: "Multijob project release"
+    platform: [ linux, windows ]
+    build-type: release
+    unit-dir: 
+      - $PLACEHOLDER_unit_list$
+    test-dir:
+      - $PLACEHOLDER_test_list$
+    
+    jobs:
+      - "Flow123d-{platform}-{build-type}-configure"
+      - "Flow123d-{platform}-{build-type}-make-doc"
+      - "Flow123d-{platform}-{build-type}-build-libs"
+      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+      - "Flow123d-{platform}-{build-type}-build"
+      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
+      - "Flow123d-{platform}-packages"
+      - "Flow123d-{platform}-release-multijob"
+      
+
+
+#########################################################################################
+# Single Job Templates
+#########################################################################################
+
+
+
+####################################################################
+# Flow123d configure 
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-configure"
+    display-name: "{platform} {build-type} / configure "
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          # configure
+          echo "PATH: $PATH"
+          export PATH=/opt/rh/devtoolset-2/root/usr/bin:$PATH
+          cd flow123d
+          cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
+          make cmake
+
+
+####################################################################
+# Flow123d make doc + publish
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-make-doc"
+    display-name: "{platform} {build-type} / make doc"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          cd flow123d
+          make ref-doc
+          make doxy-doc
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc'
+          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
+          remove-prefix: 'build-master/doc/reference_manual/'
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
+          source: 'build-master/doc/online-doc/flow123d/*'
+          remove-prefix: 'build-master/doc/online-doc/flow123d'
+            
+
+
+####################################################################
+# Flow123d build libraries 
+# - we need separate step for this since unit tests can run even if 
+#   libraries do not build well
+# - on other hand we want to prevent parallel build of same files if 
+#   Jenkins execute run tests in parallel
+# - we can still get this parallel problem when some library do not build
+#   and two unit tests try to rebuild it
+# - ultimate solution may be: do not have independent jobs for individual unit tests
+#   just present generated XML files and use parallel make to make all unit tests and libraries
+#   
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-build-libs"
+    display-name: "{platform} {build-type} / build libraries "
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          # configure
+          cd flow123d
+          make -j 4 all
+          make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+#    publishers:
+#      -github-notifier       
+
+##################################################################
+# Unit test for given directory
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+    display-name: "{platform} {build-type} / unit-test / {unit-dir}"
+    defaults: flow123d-build
+    properties:
+      # Limit number of concurrently running unit tests to 2
+      - throttle:
+          max-per-node: 2
+          option: "category"
+          categories:
+            - "Flow123d-category-unit-tests"
+    builders:
+      - shell: |
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
+
+
+##################################################################
+# Unit tests benchmarks for given directory     (NOT USED YET)        
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-unit-benchmark-{unit-dir}"
+    display-name: "{platform} {build-type} / unit-bench / {unit-dir}"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-tests
+
+
+####################################################################
+# Flow123d build main binary
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-build"
+    display-name: "{platform} {build-type} / flow123d build "
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          # configure
+          cd flow123d
+          make all
+
+        
+#################################################################
+# Integration test for given directory
+- job-template:
+    name: "Flow123d-{platform}-{build-type}-test-{test-dir}"
+    display-name: "{platform} {build-type} / test / {test-dir}"
+    defaults: flow123d-build
+    properties:
+      # Limit number of concurrently running integration tests to 2
+      - throttle:
+          max-per-node: 2
+          option: "category"
+          categories:
+            - Flow123d-category-integration-tests
+
+    builders:
+      - shell: |
+          make -C flow123d/tests/{test-dir} test-all
+        
+#################################################################
+# Packaging
+- job-template:
+    name: "Flow123d-{platform}-packages"
+    display-name: "{platform} / make packages"
+    defaults: flow123d-build
+    builders:
+      - shell: |
+          cd build-master
+          make package
+          rm -rf _CPack_Packages         
+          make package_source
+          rm -rf _CPack_Packages
+          
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_packages/master_night_build'
+          source: 'build-master/Flow123d-*'
+          remove-prefix: 'build-master/'
+
+
+
+#########################################################################################
+# Multijob Job Templates
+#########################################################################################
+
+
+########################################################################
+# Main multijob -debug
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
+- job-template:
+    name: "Flow123d-{platform}-debug-multijob"
+    display-name: "{platform} debug / Flow123d multijob"
+    project-type: multijob
+    defaults: flow123d-build
+
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          basedir: flow123d     # workspace/flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d/
+
+    triggers: 
+      - github
+    wrappers:
+
+      - workspace-cleanup:
+          dirmatch: true
+          include:
+            - "flow123d"
+            - "build-*"
+      - inject:
+          script-content: 
+            "echo \"BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
+      # set build name different way to have it even at start of the job
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+    builders:
+      - shell: "cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
+      - multijob:
+          name: "Configure Phase"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-{platform}-debug-configure"
+      - multijob:
+          name: "Build Flow123d libraries"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-build-libs"
+      - multijob:
+          name: "Unit tests"
+          condition: COMPLETED
+          projects:     #*UNIT-JOBS
+            - name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$"
+      - multijob:
+          name: "Build Flow123d"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-debug-build"
+      - multijob:
+          name: "Integration tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
+            
+
+
+########################################################################
+# Main multijob - release
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
+- job-template:
+    name: "Flow123d-{platform}-release-multijob"
+    display-name: "{platform} release / Flow123d multijob"
+    project-type: multijob
+    defaults: flow123d-build
+    
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/flow123d.git
+          basedir: flow123d     # workspace/flow123d
+          browser: githubweb
+          browser-url: https://github.com/flow123d/flow123d/
+          wipe-workspace: yes
+          branches:
+            - master
+    triggers:
+      # once a day same time between 00:00 to 06:00; if source changed
+      - pollscm: "H H(0-6) * * *"
+      #- github
+    wrappers:
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+    builders:
+      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
+      - multijob:
+          name: "Configure Phase"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Flow123d-{platform}-release-configure"
+      - multijob:
+          name: "Build Flow123d libraries"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-make-doc"
+            - name: "Flow123d-{platform}-release-build-libs"
+      - multijob:
+          name: "Unit tests"
+          condition: COMPLETED
+          projects:     #*UNIT-JOBS
+            - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$"
+      - multijob:
+          name: "Build Flow123d"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-release-build"
+      - multijob:
+          name: "Integration tests"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+      - multijob:
+          name: "Pack and Install"
+          condition: SUCCESSFUL
+          projects:
+            - name: "Flow123d-{platform}-packages"
+
+######
+# Coverage with coberture
+# - install cobertura plugin
+# - build with gcc options:    -fprofile-arcs -ftest-coverage
+# - link with: -lgcov
+#   .. separate build for unit tests with separate config.cmake ??
+# - shell script:
+# make clean
+# make all
+# ./coverage --gtest_output=xml:coverage.junit.xml
+# chmod u+x gcovr
+# ./gcovr -x -r .. -e ".+\.test\.cpp*" > coverage.xml
+#
+# - publish JUnit results
+# - publis coverture report
+
+
+
+##################################333
+# Modules      
+
+#    triggers:
+#      - github
+      #
+      # - timed: "H * * * *"
+      #
+      # Needs: BuildResultTrigger plugin, 
+      # advantage over default mechanism: monitored jobs do not know about trigger
+      # - build-result: 
+      #   - jobs:  # jobs to monitor
+      #   - results:
+
+#    wrappers:
+#      - build-name:
+#          name:  "$GIT_BRANCH #$BUILD_NUMBER"
+      # This may be useful for large data benchmarks.
+      # We can not store large data in repository, but can copy them from 
+      # Jenkins master, possibly download them first, e.g. from bacula.
+      # needs Copy To Slave Plugin
+      #- copy-to-slave:
+      #
+
+#    publishers:
+      # - cifs: 
+      # - email-ext:
+      # - html-publisher:
+      # - junit
+      # - logparser: !!!
+      # - performance: 
+      # - pipeline: 
+      # - plot:
+
+
+    
+  

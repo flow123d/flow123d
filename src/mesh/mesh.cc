@@ -34,11 +34,13 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
+#include "input/json_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
+#include <boost/make_shared.hpp>
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
@@ -46,6 +48,7 @@
 // think about following dependencies
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
+#include "mesh/partitioning.hh"
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -57,34 +60,44 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
+#define NDEF  -1
 
-using namespace Input::Type;
+namespace IT = Input::Type;
 
 
-Record Mesh::input_type
-	= Record("Mesh","Record with mesh related data." )
-	.declare_key("mesh_file", FileName::input(), Default::obligatory(),
+IT::Record Mesh::input_type
+	= IT::Record("Mesh","Record with mesh related data." )
+	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 			"Input file with mesh description.")
-	.declare_key("regions", Array( RegionDB::region_input_type ), Default::optional(),
+	.declare_key("regions", IT::Array( RegionDB::region_input_type ), IT::Default::optional(),
 	        "List of additional region definitions not contained in the mesh.")
-	.declare_key("sets", Array( RegionDB::region_set_input_type), Default::optional(),
+	.declare_key("sets", IT::Array( RegionDB::region_set_input_type), IT::Default::optional(),
 	        "List of region set definitions. There are three region sets implicitly defined:\n"
 	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
+	.declare_key("partitioning", Partitioning::input_type, IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
 	.close();
 
 
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh()
+Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
+:comm_(comm)
 {
+    Input::JSONToStorage reader;
+    std::stringstream in(input_str);
+    reader.read_stream( in, Mesh::input_type );
+    in_record_ = reader.get_root_interface<Input::Record>();
+
     reinit(in_record_);
 }
 
 
 
-Mesh::Mesh(Input::Record in_record)
-: in_record_(in_record) {
+Mesh::Mesh(Input::Record in_record, MPI_Comm com)
+: in_record_(in_record),
+  comm_(com)
+{
     reinit(in_record_);
 }
 
@@ -92,8 +105,6 @@ Mesh::Mesh(Input::Record in_record)
 
 void Mesh::reinit(Input::Record in_record)
 {
-
-    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -146,6 +157,12 @@ unsigned int Mesh::n_sides()
 }
 
 
+
+Partitioning *Mesh::get_part() {
+    return part_.get();
+}
+
+
 //=============================================================================
 // COUNT ELEMENT TYPES
 //=============================================================================
@@ -170,7 +187,7 @@ void Mesh::count_element_types() {
 
 void Mesh::read_gmsh_from_stream(istream &in) {
   
-    START_TIMER("READING MESH - from_stream");
+    START_TIMER("Reading mesh - from_stream");
     
     GmshMeshReader reader(in);
     reader.read_mesh(this);
@@ -182,7 +199,7 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     F_ENTRY;
 
-    START_TIMER("READING MESH - init_from_input");
+    START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
     RegionDB::MapElementIDToRegionID el_to_reg_map;
@@ -223,13 +240,13 @@ void Mesh::setup_topology() {
     count_side_types();
 
     region_db_.close();
+    part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 }
 
 
 //
 void Mesh::count_side_types()
 {
-    struct Side *sde;
 
     n_insides = 0;
     n_exsides = 0;
@@ -349,7 +366,7 @@ void Mesh::make_neighbours_and_edges()
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
-                xprintf(Warn, "Lonely boundary element, id: %d, dimension %d.\n", bc_ele.id(), bc_ele->dim());
+                xprintf(Warn, "Lonely boundary element, id: %d, region: %d, dimension %d.\n", bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -474,7 +491,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            ASSERT( is_neighbour || edg->n_sides == intersection_list.size(), "Some connected sides were not found.\n");
+            ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
 		} // for element sides
 	}   // for elements
 
@@ -495,12 +512,12 @@ void Mesh::make_edge_permutations()
 			map<const Node*,unsigned int> node_numbers;
 			unsigned int permutation[edg->side(0)->n_nodes()];
 
-			for (int i=0; i<edg->side(0)->n_nodes(); i++)
+			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
 				node_numbers[edg->side(0)->node(i)] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
-				for (int i=0; i<edg->side(0)->n_nodes(); i++)
+				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
 					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
 
 				switch (edg->side(0)->dim())
@@ -526,10 +543,10 @@ void Mesh::make_edge_permutations()
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (int i=0; i<nb->element()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
 			node_numbers[nb->element()->node[i]] = i;
 
-		for (int i=0; i<nb->side()->n_nodes(); i++)
+		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
 			permutation[node_numbers[nb->side()->node(i)]] = i;
 
 		switch (nb->side()->dim())
@@ -688,44 +705,39 @@ void Mesh::read_intersections() {
 
     ElementFullIter master(element), slave(element);
 
-    char tmp_line[LINE_SIZE];
+    //char tmp_line[LINE_SIZE];
     string file_name = in_record_.val<FilePath>("neighbouring");
-    FILE *in = xfopen( file_name , "rt" );
-
-    tokenizer<boost::char_separator<char> >::iterator tok;
+    Tokenizer tok( FilePath(in_record_.val<FilePath>("neighbouring")) );
 
     xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
-    skip_to(in, "$Intersections");
-    xfgets(tmp_line, LINE_SIZE - 2, in);
-    int n_intersect = atoi(xstrtok(tmp_line));
+    tok.skip_to("$Intersections");
+    tok.next_line();
+    int n_intersect = lexical_cast<unsigned int>(*tok); ++tok;
     INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
 
     intersections.reserve(n_intersect);
 
     for (int i = 0; i < n_intersect; i++) {
-        xfgets(tmp_line, LINE_SIZE - 2, in);
-        string line = tmp_line;
-        tokenizer<boost::char_separator<char> > line_tokenizer(line, boost::char_separator<char>("\t \n"));
-
-        tok = line_tokenizer.begin();
+    	tok.next_line();
 
         try {
-            ++tok; // skip id token
-            int type = lexical_cast<int> (*tok);
-            ++tok;
-            int master_id = lexical_cast<int> (*tok);
-            ++tok;
-            int slave_id = lexical_cast<int> (*tok);
-            ++tok;
-            double sigma = lexical_cast<double> (*tok);
-            ++tok;
+        	int type = lexical_cast<int> (*tok);
+        	++tok;
+        	int master_id = lexical_cast<int> (*tok);
+        	++tok;
+        	int slave_id = lexical_cast<int> (*tok);
+        	++tok;
+        	double sigma = lexical_cast<double> (*tok);
+        	++tok;
 
-            int n_intersect_points = lexical_cast<int> (*tok);
-            ++tok;
+        	int n_intersect_points = lexical_cast<int> (*tok);
+        	++tok;
             master = element.find_id(master_id);
             slave = element.find_id(slave_id);
 
-            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, tok));
+            tokenizer<boost::char_separator<char> > line_tokenizer(tok.line(), boost::char_separator<char>("\t \n"));
+            tokenizer<boost::char_separator<char> >::iterator isec_tok = line_tokenizer.begin();
+            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, isec_tok));
         } catch (bad_lexical_cast &) {
             xprintf(UsrErr, "Wrong number format at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
         }
@@ -760,23 +772,38 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::all_elements_id() {
-    if (all_elements_id_.size() ==0) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+    if (bulk_elements_id_.size() ==0) {
+        std::vector<int>::iterator map_it;
+        int last_id;
 
-        all_elements_id_.resize(n_all_input_elements_);
-        std::vector<int>::iterator all_it = all_elements_id_.begin();
-        unsigned int last_id = element.begin().id();
-
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+        bulk_elements_id_.resize(n_elements());
+        map_it = bulk_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
+            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+            last_id=*map_it = it.id();
+//            DBGMSG("bulk map: %d\n", *map_it);
         }
-        for(ElementFullIter it=bc_elements.begin(); all_it!=all_elements_id_.end(); ++it, ++all_it) {
-            if (last_id > it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*all_it = it.id();
+
+        boundary_elements_id_.resize(bc_elements.size());
+        map_it = boundary_elements_id_.begin();
+        last_id = -1;
+        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+            // We set ID for boundary elements created by the mesh itself to "-1"
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // and thus report error for any remaining data lines
+            if (it.id() < 0) last_id=*map_it=-1;
+            else {
+                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
+                last_id=*map_it = it.id();
+            }
+//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
-    return all_elements_id_;
+
+    if (boundary_domain) return boundary_elements_id_;
+    return bulk_elements_id_;
 }
 
 

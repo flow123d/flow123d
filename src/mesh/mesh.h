@@ -31,6 +31,8 @@
 #define MAKE_MESH_H
 
 #include <vector>
+#include <mpi.h>
+
 #include "mesh/mesh_types.hh"
 
 #include "mesh/nodes.hh"
@@ -43,12 +45,13 @@
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "boost/shared_ptr.hpp"
 
 // Forward declarations
 template <int spacedim>
 class ElementAccessor;
 class GmshMeshReader;
-
+class Partitioning;
 
 
 #define ELM  0
@@ -107,13 +110,22 @@ public:
     static const unsigned int undef_idx=-1;
     static Input::Type::Record input_type;
 
-    Input::Record in_record_;
+
 
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
-    Mesh();
-    Mesh(Input::Record in_record);
+    /**
+     * Constructor with input record given by string. Aimed for testing purpose.
+     */
+    Mesh(const std::string &input_str="{mesh_file=\"\"}", MPI_Comm com = MPI_COMM_WORLD);
+    /**
+     * Constructor from an input record.
+     */
+    Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
+    /**
+     * Common part of both previous constructors and way how to reinitialize a mesh from the  given input record.
+     */
     void reinit(Input::Record in_record);
 
     inline unsigned int n_elements() const {
@@ -130,6 +142,16 @@ public:
     inline const RegionDB &region_db() const {
         return region_db_;
     }
+
+    /**
+     * Returns pointer to partitioning object. Partitioning is created during setup_topology.
+     */
+    Partitioning *get_part();
+
+    /**
+     * Returns MPI communicator of the mesh.
+     */
+    inline MPI_Comm get_comm() const { return comm_; }
 
     void read_intersections();
     void make_intersec_elements();
@@ -150,18 +172,10 @@ public:
     void init_from_input();
 
 
-
     /**
-     * This set pointers from elements to materials. Mesh should store only material IDs of indices.
-     * This implies that element->volume can not be mesh property. Since fracture openning is material parameter.
+     * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    //void setup_materials( MaterialDatabase &base);
-    //void make_element_geometry();
-
-    /**
-     * Returns vector of ID numbers of elements from both element and bc_elements vectors.
-     */
-    vector<int> const &all_elements_id();
+    vector<int> const & elements_id_maps( bool boundary_domain);
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -275,6 +289,7 @@ protected:
      */
     void setup_topology();
 
+
     void element_to_neigh_vb();
     void create_external_boundary();
 
@@ -287,14 +302,31 @@ protected:
     /// in input mesh file and has ID assigned.
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    vector<int> all_elements_id_;
+    vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
 
+    /**
+     * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
+     * domain that allows setting of different data and boundary conditions on them.
+     */
     RegionDB region_db_;
+    /**
+     * Mesh partitioning. Created in setup_topology.
+     */
+    boost::shared_ptr<Partitioning> part_;
+    /**
+     * Accessor to the input record for the mesh.
+     */
+    Input::Record in_record_;
+
+    /**
+     * MPI communicator used for partitioning and ...
+     */
+    MPI_Comm comm_;
 
     friend class GmshMeshReader;
 };

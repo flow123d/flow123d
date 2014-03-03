@@ -32,6 +32,7 @@ template <int spacedim, class Value>
 class FieldFormula : public FieldBase<spacedim, Value>
 {
 public:
+    typedef typename FieldBase<spacedim, Value>::Point Point;
 
     FieldFormula(unsigned int n_comp=0);
 
@@ -42,28 +43,41 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
+    /**
+     * For time dependent formulas returns always true. For time independent formulas returns true only for the first time.
+     */
     virtual bool set_time(double time);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 
     virtual ~FieldFormula();
 
 private:
+    // FieldValue_ wrapper for matrix of strings
     typedef FieldValue_<Value::NRows_, Value::NCols_, std::string> StringValue;
 
+    // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     typename StringValue::return_type formula_matrix_;
+
+    // FieldValue_ wrapper for unified reading of the input
     StringValue formula_matrix_helper_;
+
+    // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
+
+    // Full address of the FiledFormula 'value' key.
+    // Necessary in the case of an error during parsing.
+    std::string value_input_address_;
 
 };
 

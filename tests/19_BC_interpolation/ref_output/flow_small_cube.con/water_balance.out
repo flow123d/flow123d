@@ -1,0 +1,22 @@
+# ---------------------------------------- WATER BALANCE ----------------------------------------
+# Time of computed water balance: inf
+
+
+# Boundary water balance:
+# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
+# -----------------------------------------------------------------------------------------------
+  -3            IMPLICIT BOUNDARY          -8.01492e-10  9.95217       -9.95217      inf           
+# -----------------------------------------------------------------------------------------------
+# total boundary balance                   -8.01492e-10  9.95217       -9.95217      
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [total_balance]                            [time]        
+# -----------------------------------------------------------------------------------------------
+  63            region_63                  0                                         inf           
+  64            region_64                  0                                         inf           
+  65            region_65                  0                                         inf           
+# -----------------------------------------------------------------------------------------------
+# total sources balance                    0             
+
+

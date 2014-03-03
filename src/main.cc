@@ -43,6 +43,7 @@
 #include <fstream>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/options_description.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -85,39 +86,41 @@ it::Record Application::input_type
 
 
 Application::Application( int argc,  char ** argv)
-: main_input_dir_("."),
+: ApplicationBase(argc, argv),
+  main_input_dir_("."),
   main_input_filename_(""),
-  log_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
-  use_profiler(false)
-{
-    // parse our own command line arguments, leave others for PETSc
-    parse_cmd_line(argc, argv);
+  use_profiler(true)
+{}
 
-    // temporary moving PETSC stuff here from system.hh
-    // should be made better in JB_1.7.input
-    PetscErrorCode ierr;
-    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
-    system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
-    use_profiler=true;
-    Profiler::initialize();
-    
+void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
     string version(_PROGRAM_VERSION_);
-    string revision(_PROGRAM_REVISION_);
-    string branch(_PROGRAM_BRANCH_);
+    string revision(_GIT_REVISION_);
+    string branch(_GIT_BRANCH_);
+    string url(_GIT_URL_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
-    xprintf(Msg, "This is Flow123d, version %s rev: %s\n", version.c_str(),revision.c_str());
-    xprintf(Msg, "Build: %s MPI size: %d\n", build.c_str() , mpi_size);
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
+}
 
+
+
+Input::Record Application::read_input() {
+   if (main_input_filename_ == "") {
+        cout << "Usage error: The main input file has to be specified through -s parameter.\n\n";
+        cout << program_arguments_desc_ << "\n";
+        exit( exit_failure );
+    }
+    
     // read main input file
     Input::JSONToStorage json_reader;
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
@@ -133,13 +136,155 @@ Application::Application( int argc,  char ** argv)
     } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
       e << Input::JSONToStorage::EI_File(fname); throw;
     }  
+    
+    return json_reader.get_root_interface<Input::Record>();
+}
+
+
+
+
+void Application::parse_cmd_line(const int argc, char ** argv) {
+	namespace po = boost::program_options;
+
+
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("solve,s", po::value< string >(), "Main input file to solve.")
+        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
+        ("log,l", po::value< string >(), "Set base name for log files.")
+        ("version", "Display version and build information and exit.")
+        ("no_log", "Turn off logging.")
+        ("no_profiler", "Turn off profiler output.")
+        ("full_doc", "Prints full structure of the main input file.")
+        ("JSON_template", "Prints description of the main input file as a valid CON file.")
+        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
+    ;
+
+    // parse the command line
+    po::variables_map vm;
+    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    po::store(parsed, vm);
+    po::notify(vm);
+
+    // get unknown options
+    vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+    passed_argc_ = to_pass_further.size();
+    passed_argv_ = new char * [passed_argc_+1];
+
+    // first copy the program executable in argv[0]
+    int arg_i=0;
+    if (argc > 0) passed_argv_[arg_i++] = xstrcpy( argv[0] );
+
+    for(int i=0; i < passed_argc_; i++) {
+        passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
+    }
+    passed_argc_ = arg_i;
+
+    // if there is "help" option
+    if (vm.count("help")) {
+        cout << desc << "\n";
+        exit( exit_output );
+    }
+
+    // if there is "full_doc" option
+    if (vm.count("full_doc")) {
+        Input::Type::TypeBase::lazy_finish();
+        Input::Type::OutputText type_output(&input_type);
+        type_output.set_filter(":Field:.*");
+        cout << type_output;
+        exit( exit_output );
+    }
+
+    if (vm.count("JSON_template")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputJSONTemplate(&input_type);
+        exit( exit_output );
+    }
+
+    if (vm.count("latex_doc")) {
+        Input::Type::TypeBase::lazy_finish();
+        Input::Type::OutputLatex type_output(&input_type);
+        type_output.set_filter("");
+        cout << type_output;
+        exit( exit_output );
+    }
+
+    if (vm.count("JSON_machine")) {
+        Input::Type::TypeBase::lazy_finish();
+        cout << Input::Type::OutputJSONMachine(&input_type);
+        exit( exit_output );
+    }
+
+    // if there is "solve" option
+    if (vm.count("solve")) {
+        string input_filename = vm["solve"].as<string>();
+
+
+        // Try to find absolute or relative path in fname
+        size_t delim_pos=input_filename.find_last_of(DIR_DELIMITER);
+        if (delim_pos < input_filename.npos) {
+
+            // It seems, that there is some path in fname ... separate it
+            main_input_dir_ =input_filename.substr(0,delim_pos);
+            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
+        } else {
+            main_input_dir_ = ".";
+            main_input_filename_ = input_filename;
+        }
+    } 
+
+    // possibly turn off profilling
+    if (vm.count("no_profiler")) use_profiler=false;
+
+    string input_dir;
+    string output_dir;
+    if (vm.count("input_dir")) {
+        input_dir = vm["input_dir"].as<string>();
+    }
+    if (vm.count("output_dir")) {
+            output_dir = vm["output_dir"].as<string>();
+    }
+
+    // assumes working directory "."
+    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+
+    if (vm.count("no_log")) {
+        log_filename_="\n";     // do not open log files
+    } else {
+        if (vm.count("log_filename")) {
+            log_filename_ = vm["log"].as<string>();
+        } else {
+            log_filename_ = ""; // use default
+        }
+    }
+
+    ostringstream tmp_stream(program_arguments_desc_);
+    tmp_stream << desc;
+    // TODO: catch specific exceptions and output usage messages
+}
+
+
+
+
+
+void Application::run() {
+    //use_profiler=true;
+    Profiler::initialize();
+
+    display_version();
+
+    Input::Record i_rec = read_input();
+
 
     {
         using namespace Input;
         int i;
 
         // get main input record handle
-        Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
         // should flow123d wait for pressing "Enter", when simulation is completed
         sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");
@@ -184,175 +329,28 @@ Application::Application( int argc,  char ** argv)
         }
 
     }
-
-    free_and_exit();
-
 }
 
 
 
 
-
-/**
- * @brief Main flow initialization
- * @param[in] argc       command line argument count
- * @param[in] argv       command line arguments
-
- * TODO: this parsing function should be in main.cc
- *
- */
-//@param[out] ini_fname Init file name
-//@param[out] goal      Flow computation goal
-void Application::parse_cmd_line(const int argc, char ** argv) {
-    namespace po = boost::program_options;
-
-    const char USAGE_MSG[] = "\n\
-    Usage: flow123d [options] ini_file\n\
-    Options:\n\
-    -s       Compute MH problem (Obsolete)\n\
-             Source files have to be in the current directory.\n\
-    -S       Compute MH problem\n\
-             Source files have to be in the same directory as ini file.\n\
-    -i       String used to change the 'variable' ${INPUT} in the file path.\n\
-    -o       Absolute path to output directory.\n\
-    -l file  Set base name of log files or turn logging off if no name is given.\n";
-
-    //xprintf(MsgLog, "Parsing program parameters ...\n");
-
-    // Declare the supported options.
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help", "produce help message")
-        ("solve,s", po::value< string >(), "Main input file to solve.")
-        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
-        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
-        ("log,l", po::value< string >(), "Set base name for log files.")
-        ("no_log", "Turn off logging.")
-        ("no_profiler", "Turn off profiler output.")
-        ("full_doc", "Prints full structure of the main input file.")
-        ("JSON_template", "Prints description of the main input file as a valid CON file.")
-        ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
-    ;
-
-    // parse the command line
-    po::variables_map vm;
-    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
-    po::store(parsed, vm);
-    po::notify(vm);
-
-    // get unknown options
-    vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
-    passed_argc_ = to_pass_further.size();
-    passed_argv_ = new char * [passed_argc_+1];
-
-    // first copy the program executable in argv[0]
-    int arg_i=0;
-    if (argc > 0) passed_argv_[arg_i++] = xstrcpy( argv[0] );
-
-    for(int i=0; i < passed_argc_; i++) {
-        passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
+void Application::after_run() {
+	if (sys_info.pause_after_run) {
+        printf("\nPress <ENTER> for closing the window\n");
+        getchar();
     }
-    passed_argc_ = arg_i;
-
-    // if there is "help" option
-    if (vm.count("help")) {
-        cout << desc << "\n";
-        free_and_exit();
-    }
-
-    // if there is "full_doc" option
-    if (vm.count("full_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&input_type);
-        type_output.set_filter(":Field:.*");
-        cout << type_output;
-        free_and_exit();
-    }
-
-    if (vm.count("JSON_template")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONTemplate(&input_type);
-        free_and_exit();
-    }
-
-    if (vm.count("latex_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&input_type);
-        type_output.set_filter("");
-        cout << type_output;
-        free_and_exit();
-    }
-
-    if (vm.count("JSON_machine")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONMachine(&input_type);
-        free_and_exit();
-    }
-
-    // if there is "solve" option
-    if (vm.count("solve")) {
-        string input_filename = vm["solve"].as<string>();
-
-
-        // Try to find absolute or relative path in fname
-        int delim_pos=input_filename.find_last_of(DIR_DELIMITER);
-        if (delim_pos < input_filename.npos) {
-            // It seems, that there is some path in fname ... separate it
-            main_input_dir_ =input_filename.substr(0,delim_pos);
-            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
-        } else {
-            main_input_dir_ = ".";
-            main_input_filename_ = input_filename;
-        }
-    } else {
-        cout << "Usage error: The main input file has to be specified.\n\n";
-        cout << desc << "\n";
-        free_and_exit();
-    }
-
-    // possibly turn off profilling
-    if (vm.count("no_profiler")) use_profiler=false;
-
-    string input_dir;
-    string output_dir;
-    if (vm.count("input_dir")) {
-        input_dir = vm["input_dir"].as<string>();
-    }
-    if (vm.count("output_dir")) {
-            output_dir = vm["output_dir"].as<string>();
-    }
-
-    // assumes working directory "."
-    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
-
-    if (vm.count("no_log")) {
-        log_filename_="\n";     // do not open log files
-    } else {
-        if (vm.count("log_filename")) {
-            log_filename_ = vm["log"].as<string>();
-        } else {
-            log_filename_ = ""; // use default
-        }
-    }
-
-    // TODO: catch specific exceptions and output usage messages
 }
 
 
 
 
-
-void Application::free_and_exit() {
-    //close the Profiler
-    DBGMSG("prof: %d\n", use_profiler);
-    if (use_profiler) {
+Application::~Application() {
+    if (use_profiler && Profiler::is_initialized()) {
         Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();
     }
-
-    xterminate(false);
 }
+
 
 //=============================================================================
 
@@ -365,8 +363,11 @@ int main(int argc, char **argv) {
 
     F_ENTRY;
     Application app(argc, argv);
+
+    app.init(argc, argv);
+
     // Say Goodbye
-    return xterminate(false);
+    return ApplicationBase::exit_success;
 }
 
 

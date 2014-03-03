@@ -49,10 +49,11 @@ extern "C" {
 
 SparseGraph::SparseGraph(const Distribution &distr)
     : vtx_distr(distr),
-      adj_of_proc( vtx_distr.np() ),
-      adj(NULL),
       rows(NULL),
-      adj_weights(NULL)
+      adj(NULL),
+      adj_weights(NULL),
+      part_to_check(NULL),
+      adj_of_proc( vtx_distr.np() )
 {
     F_ENTRY;
 
@@ -64,12 +65,12 @@ SparseGraph::SparseGraph(const Distribution &distr)
 
 
 
-SparseGraph::SparseGraph(int loc_size)
-    : vtx_distr(loc_size),
-      adj_of_proc( vtx_distr.np() ),
-      adj(NULL),
+SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
+    : vtx_distr(loc_size, comm),
       rows(NULL),
-      adj_weights(NULL)
+      adj(NULL),
+      adj_weights(NULL),
+      adj_of_proc( vtx_distr.np() )
 {
     F_ENTRY;
 
@@ -241,7 +242,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     std::vector<bool> checked_proc(vtx_distr.np(), false);
 
     int n_proc=0;
-    for(int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
+    for(unsigned int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
         if (checked_vtx[vtx] != 2) {
             proc_to_check=part_to_check[vtx];
             // check if the processor is still unvisited
@@ -265,7 +266,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
  */
 void SparseGraph::DFS(int vtx)
 {
-    ASSERT( vtx>=0 && vtx<vtx_distr.size(),"Invalid entry vertex %d in DFS.\n",vtx);
+    ASSERT( vtx>=0 && vtx< (int) vtx_distr.size(),"Invalid entry vertex %d in DFS.\n",vtx);
     int neighbour;
     for(int i_neigh=rows[vtx]; i_neigh< rows[vtx+1];i_neigh++) {
         neighbour = adj[i_neigh];
@@ -281,10 +282,10 @@ void SparseGraph::DFS(int vtx)
 
 void SparseGraph::view()
 {
-    ASSERT(NONULL(adj),"Can not view non finalized graph.\n");
+    ASSERT( adj,"Can not view non finalized graph.\n");
     int row,col;
     xprintf(Msg,"SparseGraph\n");
-    for(row=0; row < vtx_distr.lsize(); row++) {
+    for(row=0; row < (int) vtx_distr.lsize(); row++) {
         xprintf(Msg,"edges from this vertex: %d\n",rows[row+1]);
         for(col=rows[row]; col<rows[row+1]; col++) {
             xprintf(Msg,"edge (v1, v2): %d %d\n",row+vtx_distr.begin(), adj[col]);
@@ -295,12 +296,12 @@ void SparseGraph::view()
 
 bool SparseGraph::is_symmetric()
 {
-    ASSERT( NONULL(rows) && NONULL(adj), "Graph is not yet finalized.");
+    ASSERT( rows && adj, "Graph is not yet finalized.");
 
     int loc_row, row, row_pos;
     int col_pos,col,loc_col;
 
-    for(loc_row=0;loc_row<vtx_distr.lsize();loc_row++) {
+    for(loc_row=0;loc_row< (int) vtx_distr.lsize();loc_row++) {
         row=loc_row+vtx_distr.begin();
         for(row_pos=rows[loc_row];row_pos<rows[loc_row+1];row_pos++) {
             col=adj[row_pos];
@@ -352,7 +353,7 @@ void SparseGraphPETSC::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphPETSC::partition(int *loc_part)
 {
-    ASSERT(NONULL(adj) && NONULL(rows),"Can not make partition of non finalized graph.\n");
+    ASSERT( adj && rows,"Can not make partition of non finalized graph.\n");
 
     MatCreateMPIAdj(vtx_distr.get_comm(), vtx_distr.lsize(),vtx_distr.size(),
             rows, adj,adj_weights, &petsc_adj_mat);
@@ -403,29 +404,97 @@ void SparseGraphMETIS::partition(int *part)
             "METIS could be used only with localized distribution.\n");
 
     if (vtx_distr.np()==1) {
-        for(int i=0;i<vtx_distr.size();i++) part[i]=0;
-
+        for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
+        return;
     } else {
-
-
-        int n_vtx=vtx_distr.size();
-        int n_proc=vtx_distr.np();
-        int wght_flag=3;    // which wghts are given (0-none,1-edges,2-vtxs,3-both)
-        int num_flag=0;     // indexing style (0-C, 1-Fortran)
-        int options[8];
-        int edgecut;
-
-
         if (vtx_distr.myp()==0) {
-            options[0]=0;
-            options[4]=255;  //dbg_lvl
+                  int n_vtx=vtx_distr.size();
+                  int n_proc=vtx_distr.np();
+                  int num_flag=0;     // indexing style (0-C, 1-Fortran)
+                  int edgecut;
 
-            DBGMSG("METIS call\n");
-            METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
-                vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
-                &n_proc,options,&edgecut,part);
+/***********************************************************************************
+ *  SETTING OPTIONS
+ */        
+#if (METIS_VER_MAJOR >= 5)
+                  if ( sizeof(idx_t) != sizeof(int) ) {
+                    printf("ERROR in GRAPH_DIVIDE_C: Wrong type of integers for METIS.\n");
+                    abort();
+                  }
+                  /*printf(" METIS >=5.0 recognized.\n");*/
+                  int ncon = 1;
+                  real_t ubvec[1];
+                  ubvec[0] = 1.001;
+                  /*int *options = NULL;*/
+                  int options[METIS_NOPTIONS];
 
-            DBGMSG("Graph edge cut: %d\n",edgecut);
+                  for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
+                  
+                  options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
+                  options[METIS_OPTION_CTYPE]     = METIS_CTYPE_RM;
+                  options[METIS_OPTION_IPTYPE]    = METIS_IPTYPE_GROW;
+                  options[METIS_OPTION_RTYPE]     = METIS_RTYPE_GREEDY;
+                  options[METIS_OPTION_NCUTS]     = 1;
+                  options[METIS_OPTION_NSEPS]     = 1;
+                  options[METIS_OPTION_NUMBERING] = num_flag;
+                  options[METIS_OPTION_NITER]     = 10;
+                  options[METIS_OPTION_SEED]      = 12345;
+                  options[METIS_OPTION_MINCONN]   = 1;
+                  options[METIS_OPTION_CONTIG]    = 0;
+                  options[METIS_OPTION_COMPRESS]  = 0;
+                  options[METIS_OPTION_CCORDER]   = 0;
+                  options[METIS_OPTION_UFACTOR]   = 0;
+                  /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
+                  options[METIS_OPTION_DBGLVL]    = 0;
+#else
+                  /*printf(" METIS < 5.0 recognized.\n");*/
+                  /* weights */
+                  int wgtflag=3;
+                  int options[5];
+                  for (unsigned int  i = 0; i < 5; i++ )  options[i] = 0;
+              
+              //                options[0]=0;
+              //            options[4]=255;  //dbg_lvl
+
+
+#endif
+                  
+
+                  /* Initialize parts */
+                  for (unsigned int  i = 0; i < vtx_distr.lsize(); i++ )   part[i] = num_flag;
+
+/***********************************************************************************
+ *  CALL METIS using optimal algorithm depending on the number of partitions
+ */        
+
+                  if (n_proc  <= 8) {
+
+#if (METIS_VER_MAJOR >= 5)
+                      options[METIS_OPTION_PTYPE]     = METIS_PTYPE_RB;
+                      options[METIS_OPTION_UFACTOR]   = 1;
+                      METIS_PartGraphRecursive(&n_vtx, &ncon, rows, adj,
+                                                vtx_weights, NULL, adj_weights, &n_proc, NULL,
+                                                ubvec, options, &edgecut,part);
+#else
+                      // has to be checked
+                      METIS_PartGraphRecursive(&n_vtx, rows, adj, 
+                                                vtx_weights, adj_weights, &wgtflag, &num_flag, 
+                                                &n_proc, options, &edgecut, part);
+#endif
+                  } else {
+    
+#if (METIS_VER_MAJOR >= 5)
+                      options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
+                      options[METIS_OPTION_UFACTOR]   = 30;
+                      METIS_PartGraphKway(&n_vtx, &ncon, rows, adj,
+                                          vtx_weights, NULL, adj_weights, &n_proc, NULL,
+                                          ubvec, options, &edgecut, part);
+#else
+                      METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
+                                  vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
+                                  &n_proc,options,&edgecut,part);
+#endif
+                  }     
         }
     }
 }

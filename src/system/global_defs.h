@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "system/exc_common.hh"
 
 
 /// @brief Global constants.
@@ -49,8 +50,8 @@
 /// @brief Macros to enhance readability
 /// @{
 
-#define NDEF  -1    ///< not defined positive integer (obsolete - ints should be initialized by value)
-#define NONULL(p)   ((p) != NULL)   /// true for non-null pointer
+//#define NDEF  -1    ///< not defined positive integer (obsolete - ints should be initialized by value)
+//#define NONULL(p)   ((p) != NULL)   /// true for non-null pointer
 
 
 // set array of pointers of given size to NULL
@@ -90,13 +91,13 @@
  * DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
  * DEBUG_FUNCTION_STACK  - use function stack introduced by F_ENTRY
  *
- * You can turn all off defining: NODEBUG
- * or turn all on defining: DEBUG
+ * You can turn all off defining: Flow123d_NODEBUG
+ * or turn all on defining: Flow123d_DEBUG
  *
- * DEBUG overrides NODEBUG
+ * Flow123d_DEBUG overrides Flow123d_NODEBUG
  */
 
-#ifdef NODEBUG
+#ifdef Flow123d_NODEBUG
 
 #undef  DEBUG_MESSAGES
 #undef  DEBUG_ASSERTS
@@ -106,7 +107,7 @@
 #endif
 
 
-#ifdef DEBUG
+#ifdef Flow123d_DEBUG
 
 #define  DEBUG_MESSAGES
 #define  DEBUG_ASSERTS
@@ -117,8 +118,6 @@
 
 
 #ifdef DEBUG_ASSERTS
-
-#include "system/exceptions.hh"
 
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
@@ -181,10 +180,32 @@
             xprintf(Msg,"i: %d int: %d\n",i__,(idx)[i__]); \
     } while (0)
 
+
+
+
+/**
+ * Usage:
+ * DBGCOUT( << "xy" <<endl );
+ */
+#define DBGCOUT(...) do { std::cout << "    DBG (" \
+									<< __FILE__ << ", " \
+									<< __func__ << ", " \
+									<< __LINE__ << ")" \
+									__VA_ARGS__; } while(0)
+
+
+/**
+ * Usage:
+ * DBGVAR( arma::vec( "1 2 3" ) );
+ */
+#define DBGVAR( var ) DBGCOUT( << #var << " = " << var << endl )
+
 #else
 
 #define DBGMSG(...)
 #define DBGPRINT_INT(...)
+#define DBGCOUT(...)
+#define DBGVAR(var)
 
 #endif
 

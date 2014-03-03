@@ -37,8 +37,6 @@ OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
 
 ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
-
-	const void *data_ptr = get_type_base_data(type_);
 	doc_flags_.clear();
 
 	print(stream, type_, depth_);
@@ -52,10 +50,38 @@ void OutputBase::set_filter(string regex_filter) {
 }
 
 
+
+void OutputBase::get_integer_bounds(Integer integer, int &lower , int &upper ) {
+    lower = integer.lower_bound_;
+    upper = integer.upper_bound_;
+}
+
+
+
+void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
+    lower = dbl.lower_bound_;
+    upper = dbl.upper_bound_;
+}
+
+
+
 void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int &upper ) {
 	lower = array.data_->lower_bound_;
 	upper = array.data_->upper_bound_;
 }
+
+
+
+void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+    arr_type = array.data_->type_of_values_;
+}
+
+
+
+const string & OutputBase::get_record_description(const Record *rec) {
+    return rec->data_->description_;
+}
+
 
 
 void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &key) {
@@ -64,26 +90,11 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 }
 
 
-void OutputBase::get_integer_bounds(Integer integer, int &lower , int &upper ) {
-	lower = integer.lower_bound_;
-	upper = integer.upper_bound_;
-}
-
-
-void OutputBase::get_double_bounds(Double dbl, double &lower , double &upper ) {
-	lower = dbl.lower_bound_;
-	upper = dbl.upper_bound_;
-}
-
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
 	parent_ptr = rec.data_->parent_ptr_;
 }
 
-
-void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
-	arr_type = array.data_->type_of_values_;
-}
 
 
 void OutputBase::get_default(Record::KeyIter it, string &type, string &value) {
@@ -101,15 +112,30 @@ void OutputBase::get_default(Record::KeyIter it, string &type, string &value) {
 }
 
 
+const string & OutputBase::get_selection_description(const Selection *sel) {
+    return sel->data_->description_;
+}
+
+
+const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_rec) {
+	return a_rec->parent_name_;
+}
+
+
+AbstractRecord::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
+	return a_rec->parent_data_->list_of_childs.begin();
+}
+
+
+
+
 const void * OutputBase::get_record_data(const Record *rec) {
 	return rec->data_.get();
 }
 
-
 const void * OutputBase::get_abstract_record_data(const AbstractRecord *a_rec) {
 	return a_rec->child_data_.get();
 }
-
 
 const void * OutputBase::get_selection_data(const Selection *sel) {
 	return sel->data_.get();
@@ -148,7 +174,10 @@ void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth
 		print_impl(stream, static_cast<const Type::Array *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-		print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+			print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+	} else
+	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
+		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
 		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
@@ -235,16 +264,6 @@ unsigned int OutputBase::ProcessedTypes::type_index(const void * type_data) cons
 }
 
 
-/*void OutputBase::ProcessedTypes::set_reference(const void * type_data, const string& ref) {
-	ProcessedTypes::key_to_index_const_iter data_it = key_to_index.find(type_data);
-
-	ASSERT(data_it != key_to_index.end(), "Invalid key '%s' in OutputBase::OutputData object in set_reference method!\n", (static_cast<const Type::TypeBase *>(type_data))->type_name().c_str());
-
-	KeyIter it = keys.begin() + data_it->second;
-	(*it).reference_ = ref;
-}*/
-
-
 bool OutputBase::ProcessedTypes::was_written(const void * type_data, string full_name) {
 	KeyIter it = keys.begin() + type_index(type_data);
 	bool has_extensive = it != keys.end();
@@ -323,8 +342,8 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 			}
 
 			stream << "" << " (" << type->size() << " keys).";
+		    write_description(stream, OutputBase::get_record_description(type), 0);
 		    stream << endl;
-		    stream << "" << "# " << type->description() << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
 		    // keys
 		    doc_type_ = key_record;
@@ -390,8 +409,8 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
+            write_description(stream, OutputBase::get_record_description( type ), 0);
             stream << endl;
-            stream << "" << "# " << type->description() << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
             doc_type_ = key_record;
@@ -399,7 +418,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             	size_setw_ = 0;
                 stream << setw(padding_size) << "";
                 stream << "" << "Record '" << (*it).type_name() << "'";
-                write_description(stream, it->description(), padding_size+size_setw_);
+                write_description(stream, OutputBase::get_record_description( &(*it) ), padding_size+size_setw_);
                 stream << endl;
             }
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
@@ -413,6 +432,34 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             }
         }
 		break;
+	}
+}
+
+
+void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
+	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
+
+	if (doc_type_ == key_record) {
+		stream << "AdHocAbstractRecord" << endl;
+		stream << setw(padding_size + size_setw_) << "";
+		stream << "#### Derived from AbstractRecord '" << get_adhoc_parent_name(type) << "', ";
+		stream << "added Records: ";
+
+		{
+			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			bool add_comma = false;
+			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+				if ((*it).type_name() == (*parent_it).type_name()) {
+					++parent_it;
+				} else {
+					if (add_comma) stream << ", ";
+					else add_comma = true;
+
+					stream << "'" << (*it).type_name() << "'";
+				}
+			}
+		}
 	}
 }
 
@@ -432,7 +479,9 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 		if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values." << endl;
+			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
+			write_description(stream, OutputBase::get_selection_description( type ), 0);
+			stream << endl;
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
 		    // keys
 		    for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
@@ -533,13 +582,13 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 				doc_flags_.mark_written( data_ptr, type->full_type_name(), reference_ );
 
 				stream << "{";
-				if (type->description().size()) {
+				if (OutputBase::get_record_description(type).size()) {
 					size_setw_ = depth+1;
-					write_description(stream, type->description(), padding_size*size_setw_, 2);
+					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					const void *it_ptr = get_type_base_data(it->type_.get());
-					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)) {
+					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)
+							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
 							| (typeid(*(it->type_.get())) == typeid(Type::Array))
@@ -599,7 +648,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			if ( (typeid(*(array_type.get())) == typeid(Type::Record))
 					| (typeid(*(array_type.get())) == typeid(Type::AbstractRecord))
 					| (typeid(*(array_type.get())) == typeid(Type::Array))) {
-				const void * it_ptr = get_type_base_data(array_type.get());
 				reference_ = doc_flags_.get_reference(data_ptr) + "/0";
 			}
 
@@ -629,11 +677,11 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			print(stream, array_type.get(), depth+1);
 
 			doc_type_ = full_record;
-			if ( ! (typeid( *(array_type.get()) ) == typeid(Type::Integer)
-					| typeid( *(array_type.get()) ) == typeid(Type::Double)
-					| typeid( *(array_type.get()) ) == typeid(Type::Bool)
-					| typeid( *(array_type.get()) ) == typeid(Type::String)
-					| typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) {
+			if ( ! ( (typeid( *(array_type.get()) ) == typeid(Type::Integer))
+					| (typeid( *(array_type.get()) ) == typeid(Type::Double))
+					| (typeid( *(array_type.get()) ) == typeid(Type::Bool))
+					| (typeid( *(array_type.get()) ) == typeid(Type::String))
+					| (typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) ) {
 				print(stream, array_type.get(), depth+1);
 			}
 			//if (lower_size > 1) {
@@ -660,7 +708,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			string rec_name = key_name_;
 
 			std::vector<string> refs;
-			const void *data_ptr = get_abstract_record_data(type); // get pointer to type->child_data_
 			boost::split(refs, reference_, boost::is_any_of("#"));
 		    ASSERT( refs.size() == 2, "Invalid reference of %s, size %d\n", type->type_name().c_str(), refs.size());
 
@@ -669,7 +716,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 			stream << "# " << std::setfill('-') << setw(20) << "" << std::setfill(' ') << " DESCENDANTS FOLLOWS";
 
 		    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		    	const void *it_ptr = get_type_base_data(&*it);
 		    	reference_ = refs[0] + it->type_name() + "_" + refs[1];
 
 		    	key_name_ = it->type_name() + "_" + rec_name;
@@ -682,7 +728,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 		    	stream << endl;
 		    	stream << setw((depth) * padding_size) << "";
 		    	print(stream, &*it, depth);
-		    	write_description(stream, it->description(), padding_size*size_setw_);
+		    	write_description(stream, OutputBase::get_record_description( &(*it) ), padding_size*size_setw_);
 		    	doc_type_ = full_record;
 		    	print(stream, &*it, depth);
 		    }
@@ -693,12 +739,33 @@ void OutputJSONTemplate::print_impl(ostream& stream, const AbstractRecord *type,
 }
 
 
+void OutputJSONTemplate::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
+	switch (doc_type_) {
+		case key_record:
+			stream << "# ad hoc abstract record";
+			break;
+		case full_record:
+			const AbstractRecord *a_rec = dynamic_cast<const Type::AbstractRecord *>(type);
+			print_impl(stream, a_rec, depth);
+			break;
+	}
+}
+
+
 void OutputJSONTemplate::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
 	switch (doc_type_) {
 		case key_record: {
 			unsigned int max_size = 0; // maximal size for setw of description
 
-			stream << "# Selection of " << type->size() << " values:";
+			stream << "# Selection of " << type->size() << " values";
+
+			if (OutputBase::get_selection_description(type).size()) {
+				//size_setw_ = depth+1;
+				write_description(stream, OutputBase::get_selection_description(type), padding_size*depth, 2);
+			}
+
+			stream << endl << setw(depth * padding_size) << "" << "# Possible values:";
 
 			for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
 				max_size = std::max(max_size, (unsigned int)(it->key_.size()) );
@@ -984,7 +1051,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() +"}}{"  << type->description() << "}";
+            stream << "{\\AddDoc{" << type->type_name() +"}}{"  << OutputBase::get_record_description(type) << "}";
             stream << endl;
 
             // keys
@@ -1005,9 +1072,11 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 } else {
                     stream << "{" << it->default_.value() << "}";
                 }
-
+                
+                string temp_desc = it->description_;
+                boost::replace_all(temp_desc, "\n", "\\\\");
                 stream << "{\\AddDoc{" << type->type_name() << "::" << it->key_ << "}}{"
-                       << it->description_ << "}" << endl;
+                       << temp_desc << "}" << endl;
             }
 
             stream << "\\end{RecordType}" << endl;
@@ -1072,7 +1141,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << type->description() << "}" << endl;
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_record_description(type) << "}" << endl;
 
             // descendants
             doc_type_ = key_record;
@@ -1096,6 +1165,28 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 }
 
 
+void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
+	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
+
+	if (doc_type_ == key_record) {
+        stream << "adhoc abstract type}";
+        stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";
+
+		{
+			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+				if ((*it).type_name() == (*parent_it).type_name()) {
+					++parent_it;
+				} else {
+					stream << "\\Descendant{" << internal::hyper_link( "IT", (*it).type_name() ) << "}";
+				}
+			}
+		}
+    }
+}
+
+
 void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
     if (! type->is_finished()) {
         xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
@@ -1114,7 +1205,8 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
     	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}" <<endl;
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}";
+            stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
                 stream << "\\KeyItem{" <<  ( it->key_ ) << "}{" << it->description_ << "}" << endl;
@@ -1184,7 +1276,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"Record\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace(type->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace(OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
 	// parent record
 	boost::shared_ptr<AbstractRecord> parent_ptr;
@@ -1248,31 +1340,19 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"AbstractRecord\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace(type->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
-	// default descendant
-	const Record * desc = type->get_default_descendant();
-	stream << "\"default_descendant\" : \"";
-	if (desc) {
-		stream << desc->type_name();
-	}
-	stream << "\"," << endl;
+	print_abstract_record_keys(stream, type);
+	stream << "}";
+}
 
-	stream << "\"keys\" : [" << endl;
 
-	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		if (it != type->begin_child_data()) {
-			stream << "," << endl;
-		}
+void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	stream << "{" << endl;
+	stream << "\"type\" : \"AdHocAbstractRecord\"," << endl;
+	stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
 
-		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
-		stream << "\"description\" : \"" << boost::regex_replace(it->description(), boost::regex("\\n"), "\\\\n") << "\"," << endl;
-		stream << "\"type\" : ";
-		print(stream, &*it, depth);
-		stream << "}";
-	}
-
-	stream << "]" << endl;
+	print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type));
 	stream << "}";
 }
 
@@ -1282,6 +1362,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"type\" : \"Selection\"," << endl;
+	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_selection_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
 	stream << "\"values\" : [" << endl;
 
@@ -1361,6 +1442,34 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
 	}
 
 	stream << "}";
+}
+
+
+void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type) {
+	// default descendant
+	const Record * desc = type->get_default_descendant();
+	stream << "\"default_descendant\" : \"";
+	if (desc) {
+		stream << desc->type_name();
+	}
+	stream << "\"," << endl;
+
+	// all keys
+	stream << "\"keys\" : [" << endl;
+
+	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+		if (it != type->begin_child_data()) {
+			stream << "," << endl;
+		}
+
+		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
+		stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description( &(*it) ), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+		stream << "\"type\" : ";
+		print(stream, &*it, 0);
+		stream << "}";
+	}
+
+	stream << "]" << endl;
 }
 
 

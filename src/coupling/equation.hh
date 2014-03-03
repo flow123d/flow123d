@@ -69,6 +69,7 @@ namespace Input {
  */
 class EquationBase {
 public:
+
     /**
      * Default constructor. Necessary to make tests fixtures for equations.
      * TODO:
@@ -130,7 +131,7 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
 
@@ -187,14 +188,38 @@ protected:
  *          ...
  *          }
  *          ...
+ *
+ *          ///
+ *          EqData data_;
  *      }
  * @endcode
  * The @p SomeEquation::EqData class should be used to introduce all necessary data of the equation in terms of bulk (Field)
  * and boundary (BCField) fields. The base class EqDataBase implements some common operations with these fields as
  * construction of the Input::Type objects, reading fields from the input and calling set_time methods.
+ *
+ *
+ * TODO:
+ * Mechanism to access fields in EqData from other equations and vice versa, set (or copy) field from somewhere else.
+ * - Is it necessary to have EqDataBase as separate class from EqBase ?
+ * - getter mechanism:
+ *   template <int spacedim, class T>
+ *   Field<spacedim, T> *get_field(string &name) {
+ *      FieldCommonBase *base_field = get_field_(name); // EqDataBase should have some name database
+ *      if ( typeid(base_field) == typeid(Field<spacedim, T> *)
+ *      return static_cast<...>(base_field)
+ *   }
+ *
+ * - setter mechanism:
+ *   - Should it suppress field on the input? Not easy to accomplish.
+ *     Need way how to modify an Input::Type tree from higher levels,
+ *     e.g. Let Equation1 to make its Input::Type::Record, make its deep_copy & modify it and use it by Equation_2
+ *     After all Input::Type tree is just a definition of input structure. Seems that we made it too rigid.
  */
 class EqDataBase {
 public:
+	TYPEDEF_ERR_INFO( EI_Domain, string);
+	DECLARE_INPUT_EXCEPTION(ExcUnknownDomain,
+			<< "Unknown field domain: " << EI_Domain::val << "\n");
 
     /**
      * The only constructor. The name of the equation has to be provided by parameter @p eq_name.

@@ -83,48 +83,62 @@ RegionDB::RegionDB()
 
 
 Region RegionDB::implicit_boundary_region() {
-    return add_region(Region::undefined-2, "IMPLICIT BOUNDARY", 0, Region::boundary);
+    return add_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
 }
 
+
+void RegionDB::check_dim_consistency(IDIter it_id, unsigned int dim) {
+    // check dimension
+    if (it_id->dim_ != dim) {
+        // User can introduce regions through the mesh input record, however without dim
+        // specification. Here we allow overwriting dimension in this case
+        if (it_id->dim_ == undefined_dim) {
+            RegionItem item(it_id->index, it_id->id, it_id->label, dim);
+            region_set_.replace(
+                    region_set_.get<Index>().find( it_id->index ),
+                    item);
+        }
+        else THROW(ExcInconsistentDimension() << EI_Label(it_id->label) << EI_ID(it_id->id) );
+    }
+
+}
 
 
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
     if (closed_) xprintf(PrgErr, "Can not add to closed region DB.\n");
 
-    Region r_id = find_id(id);
-    Region r_label=find_label(label);
+    IDIter it_id = region_set_.get<ID>().find(id);
+    LabelIter it_label = region_set_.get<Label>().find(label);
 
-    if (r_id.is_valid()) {
-        if (r_id != r_label)
-            xprintf(Warn, "Can not assign label '%s' to ID %d, it already has label: '%s'.\n", label.c_str(), id, r_id.label().c_str());
+    if (it_id != region_set_.get<ID>().end() ) {
+        unsigned int index = it_id->index;
+        if (it_id->dim_ != undefined_dim  && index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
 
+        check_dim_consistency(it_id, dim); // possibly update DB
+
+        Region r_id=Region(index, *this);
         // check boundary
-        if ( r_id.is_boundary() != boundary ) {
-            THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
-        }
-        // check dimension
-        if (r_id.dim() != dim) {
-            if (r_id.dim() == 0) {
-                RegionItem item(r_id.idx(), r_id.id(), r_id.label(), dim);
-                region_set_.replace(
-                        region_set_.get<Index>().find( r_id.idx() ),
-                        item);
-            }
-            else THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) );
-        }
+        if ( r_id.is_boundary() != boundary )
+            THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(id) );
+
         return r_id;
     } else
-    if (r_label.is_valid()) {
+    if (it_label != region_set_.get<Label>().end() ) {
         // ID is free, not label
-        THROW(ExcInconsistentAdd() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(r_label.id()) );
+        THROW(ExcNonuniqueLabel() << EI_Label(label) << EI_ID(id) << EI_IDOfOtherLabel(it_label->id) );
     } else {
         // if DB is open add new entry
         if (closed_)
             THROW( ExcAddingIntoClosed() << EI_Label(label) <<EI_ID(id) );
         else {
             unsigned int index;
-            if (boundary) (index = (n_boundary_ <<1)), n_boundary_++;
-            else (index = (n_bulk_ << 1)+1),  n_bulk_++;
+            if (boundary) {
+                index = (n_boundary_ <<1);
+                n_boundary_++;
+            } else  {
+                index = (n_bulk_ << 1)+1;
+                n_bulk_++;
+            }
             if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
             if ( ! region_set_.insert( RegionItem(index, id, label, dim) ).second )
                THROW( ExcCantAdd()  << EI_Label(label) <<EI_ID(id) );
@@ -133,7 +147,6 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
     }
     return Region(); // should not happen
 }
-
 
 
 Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned int dim) {
@@ -148,10 +161,13 @@ Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned 
 }
 
 
-
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
-    Region r_id = find_id(id);
-    if (r_id.is_valid()) return add_region(id, r_id.label(), dim, r_id.is_boundary() );
+    RegionTable::index<ID>::type::iterator it_id = region_set_.get<ID>().find(id);
+    if ( it_id!=region_set_.get<ID>().end() ) {
+        // just check dimension
+        check_dim_consistency(it_id, dim);
+        return Region(it_id->index, *this);
+    }
     // else
     stringstream ss;
     ss << "region_" << id;
@@ -162,16 +178,18 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
 
 Region RegionDB::find_label(const std::string &label) const
 {
-    RegionTable::index<Label>::type::iterator it_label = region_set_.get<Label>().find(label);
+    LabelIter it_label = region_set_.get<Label>().find(label);
     if (it_label==region_set_.get<Label>().end()  ) return Region();
     return Region(it_label->index, *this);
 }
 
 
 
+
+
 Region RegionDB::find_id(unsigned int id) const
 {
-    RegionTable::index<ID>::type::iterator it_id = region_set_.get<ID>().find(id);
+    IDIter it_id = region_set_.get<ID>().find(id);
     if ( it_id==region_set_.get<ID>().end() ) return Region();
     return Region(it_id->index, *this);
 }
@@ -314,8 +332,9 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 		RegionSet & set_1, RegionSet & set_2) {
 	std::map<std::string, RegionSet>::iterator it_1 = sets_.find(set_name_1);
 	std::map<std::string, RegionSet>::iterator it_2 = sets_.find(set_name_2);
-	ASSERT( it_1 != sets_.end(), "No region set with name: %s\n", set_name_1.c_str());
-	ASSERT( it_2 != sets_.end(), "No region set with name: %s\n", set_name_2.c_str());
+
+	if ( it_1 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_1)); }
+	if ( it_2 == sets_.end() ) { THROW(ExcUnknownSet() << EI_Label(set_name_2)); }
 
 	set_1 = (*it_1).second;
 	set_2 = (*it_2).second;
@@ -325,9 +344,29 @@ void RegionDB::prepare_sets( const string & set_name_1, const string & set_name_
 }
 
 
-const RegionSet & RegionDB::get_region_set(const string & set_name) const {
+
+pair<string,string> RegionDB::get_and_check_operands(const Input::Array & operands)
+{
+	vector<string> names;
+	operands.copy_to(names);
+	if ( names.size() != 2 ) THROW(ExcWrongOpNumber() << EI_NumOp(names.size()) << operands.ei_address() );
+	auto ret_names = pair<string,string>(names[0], names[1]);
+	if ( sets_.find( ret_names.first ) == sets_.end() )
+		THROW( ExcUnknownSet()  << EI_Label( ret_names.first )
+								<< operands.ei_address() );
+	if ( sets_.find( ret_names.second ) == sets_.end() )
+		THROW( ExcUnknownSet()  << EI_Label( ret_names.second )
+								<< operands.ei_address() );
+	return ret_names;
+}
+
+
+
+RegionSet RegionDB::get_region_set(const string & set_name) const {
 	std::map<std::string, RegionSet>::const_iterator it = sets_.find(set_name);
-	ASSERT( it != sets_.end(), "No region set with name: %s\n", set_name.c_str());
+	if ( it == sets_.end() ) {
+		return RegionSet();
+	}
 	return (*it).second;
 }
 
@@ -355,7 +394,7 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 						region_set.push_back(reg); // add region if doesn't exist
 					}
 				} else {
-					xprintf(Err, "Region with id %d doesn't exist.\n", (*it_ids));
+					xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 				}
 			}
 		}
@@ -370,42 +409,42 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 						region_set.push_back(reg); // add region if doesn't exist
 					}
 				} else {
-					xprintf(Err, "Region with label %s doesn't exist.\n", (*it_labels).c_str());
+					xprintf(Warn, "Region with label %s doesn't exist. Skipping\n", (*it_labels).c_str());
 				}
 			}
 		}
 
-		if (rec.opt_val("union", union_names) ) {
+		Input::Iterator<Input::Array> operands = rec.find<Input::Array>("union");
+		if ( operands ) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by union operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> union_set_1 = union_names.begin<string>();
-			Input::Iterator<string> union_set_2 = ++(union_names.begin<string>());
-			region_set = union_sets( (*union_set_1), (*union_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = union_sets( set_names.first, set_names.second );
 		}
 
-		if (rec.opt_val("intersection", intersection_names) ) {
+		operands = rec.find<Input::Array>("intersection");
+		if (operands) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by intersection operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> intersection_set_1 = intersection_names.begin<string>();
-			Input::Iterator<string> intersection_set_2 = ++(intersection_names.begin<string>());
-			region_set = intersection( (*intersection_set_1), (*intersection_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = intersection( set_names.first, set_names.second );
 		}
 
-		if (rec.opt_val("difference", difference_names) ) {
+		operands = rec.find<Input::Array>("difference");
+		if (operands) {
 
 			if (region_set.size() != 0) {
 				xprintf(Warn, "Overwriting previous initialization of region set '%s' by difference operation.\n", set_name.c_str());
 			}
 
-			Input::Iterator<string> difference_set_1 = difference_names.begin<string>();
-			Input::Iterator<string> difference_set_2 = ++(difference_names.begin<string>());
-			region_set = difference( (*difference_set_1), (*difference_set_2) );
+			pair<string,string> set_names = get_and_check_operands(*operands);
+			region_set = difference( set_names.first, set_names.second );
 		}
 
 		add_set(set_name, region_set);
@@ -442,7 +481,7 @@ void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToR
 		Input::Record rec = (*it);
 		string region_name = rec.val<string>("name");
 		unsigned int region_id = rec.val<unsigned int>("id");
-		add_region(region_id, region_name, 0);
+		add_region(region_id, region_name, undefined_dim);
 
         Input::Array element_list;
 		if (rec.opt_val("element_list", element_list) ) {

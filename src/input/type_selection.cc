@@ -28,10 +28,11 @@ Selection::Selection(const Selection& other)
 
 
 
-Selection::Selection(const string &name)
+Selection::Selection(const string &name, const string &desc)
 : data_(boost::make_shared<SelectionData>(name))
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
+    data_->description_=desc;
 }
 
 
@@ -62,13 +63,6 @@ bool Selection::valid_default(const string &str) const {
 bool Selection::is_finished() const {
     return data_->finished;
 }
-
-
-
-/*void Selection::reset_doc_flags() const {
-   data_->made_extensive_doc = false;
-}*/
-
 
 
 string Selection::type_name() const {

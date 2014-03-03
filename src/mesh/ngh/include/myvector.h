@@ -2,7 +2,7 @@
 #define vectorH
 
 class TPoint;
-#include "system.h"
+//#include "system.h"
 
 
 class TVector {

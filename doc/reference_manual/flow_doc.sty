@@ -1,8 +1,8 @@
 % Various macros and environments for Flow123d manual
 
-\RequirePackage{etoolbox}
-\RequirePackage{hyperref}   % hypertext capabilities, should by last package
-\hypersetup{backref,colorlinks=true, raiselinks=true}  %setup hyperef package
+\RequirePackage{packages/etoolbox}
+\RequirePackage[backref]{hyperref}   % hypertext capabilities, should by last package
+\hypersetup{colorlinks=true, raiselinks=true}  %setup hyperef package
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
@@ -36,7 +36,8 @@
 \def\UNIT#1#2{\ifstrempty{#2}{}{%
 \ifstrequal{#2}{1}{\mathrm{#1}}{\mathrm{#1}^{#2}}%
 }}
-\def\units#1#2#3{$[ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} ]$}
+\def\units#1#2#3{\ifstrempty{#1#2#3}{$[-]$}{$[ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} ]$}}	%with brackets
+\def\unitss#1#2#3{\ifstrempty{#1#2#3}{$-$}{$ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} $}}	%without brackets
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,12 +153,12 @@
 % SelectionType environment
 %
 % usage:
-% \begin{SelectionType}{<selection name>}    
+% \begin{SelectionType}{<selection name>}{< selection description>}    
 %       \KeyItem{<value name>}{<value>}
 %       Key value description.
 % \end{SelectionType}
 
-\newenvironment{SelectionType}[1]
+\newenvironment{SelectionType}[2]
 {\par
  \vskip 2ex
  \hrule%
@@ -170,6 +171,8 @@
  \hrule%
  \vskip 0.3ex
  \hrule
+ {#2}
+ 
  Possible values:
  \par
  \begingroup%records of steady field type which we describe right now 

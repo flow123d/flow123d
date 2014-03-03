@@ -25,19 +25,40 @@
  * @file
  * @brief  Support classes for parallel programing.
  *
+ * TODO:
+ *
+ * * need better resolution of constructors
  */
+
 
 #ifndef MESH_PARTITION_HH_
 #define MESH_PARTITION_HH_
 
+#include <mpi.h>
+#include <ostream>
 #include <petscvec.h>
 
+class DistributionType {
+public:
+explicit DistributionType(int type) : type_(type) {}
+int type_;
+};
+
+class DistributionBlock : public DistributionType {
+public: DistributionBlock() : DistributionType(-1) {}
+};
+
+class DistributionLocalized : public DistributionType {
+public: DistributionLocalized() : DistributionType(-2) {}
+};
 
 
 
 /**
  * Continuous distribution of an 1D array of indexes.
- * Default is PETSC_COMM_WORLD communicator, but you can provide another.
+ * TODO: after inclusion of LibMesh sources:
+ * - replace constructor Distribution(Vec) with NumericVector.get_distribution()
+ * - derive from ParalellObjectS
  */
 
 class Distribution {
@@ -58,8 +79,8 @@ public:
      * COLLECTIVE
      * @param size Local size on calling processor.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int size);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const unsigned int size, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from given array of sizes of processors.
@@ -68,8 +89,8 @@ public:
      *
      * @param sizes Int array with sizes.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const unsigned int * const sizes);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const unsigned int * const sizes, MPI_Comm comm);
 
     /**
      * Constructor. It makes distribution from distribution of a PETSC vector.
@@ -77,7 +98,6 @@ public:
      * NOT COLLECTIVE, but still use MPI to provide information about processors.
      * @param petsc_vector
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
     Distribution(const Vec &petsc_vector);
 
     /**
@@ -87,8 +107,8 @@ public:
      * @param type Either Block or Localized distribution of indices.
      * @param global_size Total number of indices to distribute.
      */
-    //@param comm (optional) MPI Communicator. Default PETSC_COMM_WORLD.
-    Distribution(const SpecialDistribution type,unsigned int global_size);
+    //@param comm (optional) MPI Communicator.
+    Distribution(const DistributionType &type, unsigned int global_size, MPI_Comm comm);
 
     /**
      * Copy Constructor.
@@ -96,30 +116,33 @@ public:
     Distribution(const Distribution &distr);
 
     /// get num of processors
-    inline int np() const {return num_of_procs;}
+    inline unsigned int np() const {return num_of_procs;}
     /// get my processor
-    inline int myp() const {return my_proc;}
+    inline unsigned int myp() const {return my_proc;}
     /// get starting local index
-    inline int begin(int proc) const {return (starts[proc]);}
-    inline int begin() const {return ( begin(myp()) );}
+    inline unsigned int begin(int proc) const {return (starts[proc]);}
+    inline unsigned int begin() const {return ( begin(myp()) );}
     /// get last local index +1
-    inline int end(int proc) const {return (starts[proc+1]);}
-    inline int end()  const {return ( end(myp()) );}
+    inline unsigned int end(int proc) const {return (starts[proc+1]);}
+    inline unsigned int end()  const {return ( end(myp()) );}
     /// get local size
-    inline int lsize(int proc) const {return (end(proc)-begin(proc));}
-    inline int lsize() const {return ( lsize(myp()) );}
+    inline unsigned int lsize(int proc) const {return (end(proc)-begin(proc));}
+    inline unsigned int lsize() const {return ( lsize(myp()) );}
     /// get global size
-    inline int size() const {return (starts[np()]);}
+    inline unsigned int size() const {return (starts[np()]);}
     /// identify local index
-    inline bool is_local(int idx) const {return ( begin()<=(idx) && (idx)<end() );}
-    inline bool is_on_proc(int idx,int proc) const {return ( begin(proc)<=(idx) && (idx)<end(proc) );}
+    inline bool is_local(unsigned int idx) const {return ( begin()<=(idx) && (idx)<end() );}
+    inline bool is_on_proc(unsigned int idx, unsigned int proc) const {return ( begin(proc)<=(idx) && (idx)<end(proc) );}
     /// get processor of the given index
-    int get_proc(int idx) const;
+    unsigned int get_proc(unsigned int idx) const;
     /// get local sizes array
-    const int * get_lsizes_array();
-    inline MPI_Comm get_comm() {return communicator;}
+    const unsigned int * get_lsizes_array();
+    /// get local starts array
+    const unsigned int * get_starts_array() const;
+    /// Returns communicator.
+    inline MPI_Comm get_comm() const {return communicator;}
     /// distribution view
-    void view();
+    void view(std::ostream &stream) const;
     ~Distribution();
 private:
     /// communicator
@@ -129,11 +152,13 @@ private:
     /// my proc number
     int my_proc;
     /// starts[i] index of the first index on the proc i; starts[n_procs]=size of whole array
-    int *starts;
+    unsigned int *starts;
     /// local sizes
-    int *lsizes;
+    unsigned int *lsizes;
 };
-typedef class Distribution Distribution;
+
+inline std::ostream & operator <<(std::ostream &stream, const Distribution &distr)
+    { distr.view(stream); return stream; }
 
 
 

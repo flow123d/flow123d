@@ -69,14 +69,14 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 
 Linear_reaction::~Linear_reaction()
 {
-	int i, rows, n_subst;
+	//int i, rows, n_subst;
 
 	release_reaction_matrix();
 }
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
-	int rows, cols;
+	unsigned int rows, cols;
 
 	DBGMSG("We are going to allocate reaction matrix\n");
 	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
@@ -144,19 +144,19 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are supposed to be known
         {
     unsigned int index_par;
-    double rel_step, prev_rel_step;
+    double rel_step;
 
     if (reaction_matrix == NULL) {
         xprintf(Warn, "\nReaction matrix pointer is NULL.\n");
         return NULL;
     }
 
-    for (int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
+    for (unsigned int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
         index_par = substance_ids[i_decay][0];
         rel_step = time_step / half_lives[i_decay];
         reaction_matrix[index_par][index_par] = pow(0.5, rel_step);
 
-        for (int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product)
+        for (unsigned int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product)
             reaction_matrix[index_par][ substance_ids[i_decay][i_product] ]
                                        = (1 - pow(0.5, rel_step))* bifurcation[i_decay][i_product-1];
     }
@@ -166,7 +166,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
 
 double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-    int cols, rows;
+    unsigned int cols, rows;
 
     if (reaction_matrix == NULL) return concentrations;
 
@@ -286,11 +286,13 @@ void Linear_reaction::set_time_step(double new_timestep)
 
 void Linear_reaction::compute_one_step(void)
 {
+    //data_.set_time(*time_); // set to the last computed time
+	//if timestep changed then modify_reaction_matrix(), not implemented yet
     //DBGMSG("decay step\n");
     if (reaction_matrix == NULL)   return;
 
-    START_TIMER("decay-one step");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+    START_TIMER("linear reaction step");
+	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
 	    if (dual_porosity_on == true) {
@@ -298,16 +300,16 @@ void Linear_reaction::compute_one_step(void)
 	    }
 
 	 }
-    END_TIMER("decay-one step");
+    END_TIMER("linear reaction step");
 	 return;
 }
 
 void Linear_reaction::release_reaction_matrix(void)
 {
-	int i;
+	//int i;
 	if(reaction_matrix != NULL)
 	{
-		for(i = 0; i < n_substances(); i++)
+		for(unsigned int i = 0; i < n_substances(); i++)
 		{
 			if(reaction_matrix[i] != NULL)
 			{
@@ -341,7 +343,7 @@ void Linear_reaction::print_indices(int dec_nr, int nr_of_substances)
 
 void Linear_reaction::print_reaction_matrix(void)
 {
-	int cols,rows;
+	unsigned int cols,rows;
 
 	DBGMSG("r mat: %p\n", reaction_matrix);
 	if(reaction_matrix != NULL){
