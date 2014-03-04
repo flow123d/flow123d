@@ -1,5 +1,5 @@
 #include <cmath>
-#include "system/exceptions.hh"
+#include "system/exc_common.hh"
 
 #include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"

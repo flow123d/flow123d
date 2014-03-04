@@ -1,4 +1,4 @@
-#include "system/exceptions.hh"
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/intersectionLocal.h"
 #include "mesh/ngh/include/matrix.h"

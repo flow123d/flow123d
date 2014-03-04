@@ -50,6 +50,7 @@ set(sources_lib_system
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
+    system/application_base.cc
 )
 
 set(sources_lib_input

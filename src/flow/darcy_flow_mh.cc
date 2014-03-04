@@ -997,8 +997,8 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
-
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
+#ifdef HAVE_BDDCML
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
@@ -1014,7 +1014,11 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
             // for BDDC no Schur complements for the moment
             n_schur_compls = 0;
+#else
+            xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+#endif
         }
+
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {

@@ -220,7 +220,7 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     unsigned int id;
     if (rec.opt_val("r_set", name)) {     
         domain = mesh_->region_db().get_region_set(name);
-        if (! domain[0].is_valid() )
+        if ( domain.size() == 0 || ! domain[0].is_valid() )
         	THROW( ExcUnknownDomain() << EI_Domain("r_set = " + name) << rec.ei_address() );
 
     } else if (rec.opt_val("region", name)) {

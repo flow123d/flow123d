@@ -35,7 +35,6 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
-//#include "mesh/ngh/include/problem.h"
 #include "system/sys_profiler.hh"
 //#include "boost/lexical_cast.hpp"
 //#include "system/tokenizer.hh"

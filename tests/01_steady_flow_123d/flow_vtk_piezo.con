@@ -8,7 +8,8 @@
     mesh = {
       mesh_file = "./input/test1_new.msh",
       sets=[
-         {name="all_2d", labels=[ "2d_fracture_1", "2d_fracture_2" ]}
+         {name="all_2d", 
+          region_labels=[ "2d_fracture_1", "2d_fracture_2" ]}
         ]
     }, 
 

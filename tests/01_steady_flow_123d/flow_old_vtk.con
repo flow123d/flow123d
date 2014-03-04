@@ -14,10 +14,10 @@
         { rid = 62,     // 1D channel
           anisotropy = 10
         },
-        { rid = 63,     // 2D fraction
+        { rid = 63,     // 2D fracture
           anisotropy = 1
         },
-        { rid = 64,     // 2D fraction
+        { rid = 64,     // 2D fracture
           anisotropy = 1
         }, 
         { rid = 65,     // 3D cube

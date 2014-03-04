@@ -131,7 +131,7 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
 
@@ -218,7 +218,7 @@ protected:
 class EqDataBase {
 public:
 	TYPEDEF_ERR_INFO( EI_Domain, string);
-	DECLARE_EXCEPTION(ExcUnknownDomain,
+	DECLARE_INPUT_EXCEPTION(ExcUnknownDomain,
 			<< "Unknown field domain: " << EI_Domain::val << "\n");
 	//		<< Input::EI_Address::val << endl);
     /**

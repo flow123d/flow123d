@@ -18,6 +18,24 @@
 
 #include "system/file_path.hh"
 
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
+}
+
+
+
+
+
+
+
     enum SelectionToRead {
         value_a = 0,
         value_b = 1,
@@ -313,7 +331,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     ++it;
     ++it;
-    EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
+    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
 
 
 

@@ -62,6 +62,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
+#define NDEF  -1
 
 namespace IT = Input::Type;
 
@@ -106,8 +107,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 
 void Mesh::reinit(Input::Record in_record)
 {
-
-    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -701,7 +700,6 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-
 	BIHTree bih_tree( this );
 	vector<unsigned int> candidate_list(20);
 	master_elements.resize(n_elements());

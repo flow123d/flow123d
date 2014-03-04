@@ -50,7 +50,7 @@
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-test-{test-dir}"
-      - "Flow123d-{platform}-{build-type}-packages"
+      - "Flow123d-{platform}-packages"
       - "Flow123d-{platform}-release-multijob"
       
 
@@ -70,6 +70,8 @@
     builders:
       - shell: |
           # configure
+          echo "PATH: $PATH"
+          export PATH=/opt/rh/devtoolset-2/root/usr/bin:$PATH
           cd flow123d
           cp config/config-jenkins-{platform}-{build-type}.cmake ./config.cmake
           make cmake
@@ -86,7 +88,18 @@
           cd flow123d
           make ref-doc
           make doxy-doc
-# todo: publisher ...
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc'
+          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
+          remove-prefix: 'build-master/doc/reference_manual/'
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
+          source: 'build-master/doc/online-doc/flow123d/*'
+          remove-prefix: 'build-master/doc/online-doc/flow123d'
+            
 
 
 ####################################################################
@@ -110,6 +123,8 @@
           cd flow123d
           make -j 4 all
           make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+#    publishers:
+#      -github-notifier       
 
 ##################################################################
 # Unit test for given directory
@@ -174,18 +189,23 @@
 #################################################################
 # Packaging
 - job-template:
-    name: "Flow123d-{platform}-{build-type}-packages"
-    display-name: "{platform} {build-type} / make packages"
+    name: "Flow123d-{platform}-packages"
+    display-name: "{platform} / make packages"
     defaults: flow123d-build
     builders:
       - shell: |
-          make -C flow123d/build-tree package
-          make -C flow123d/build-tree package_source
-#    publishers:
-#      - cifs:
-#          site: "bacula"
-#          target: 
-#          source: flow123d/build-tree/Flow123d-*  
+          cd build-master
+          make package
+          rm -rf _CPack_Packages         
+          make package_source
+          rm -rf _CPack_Packages
+          
+    publishers:
+      - cifs: 
+          site: 'bacula'
+          target: 'jan.brezina/public_html/flow123d_packages/master_night_build'
+          source: 'build-master/Flow123d-*'
+          remove-prefix: 'build-master/'
 
 
 
@@ -301,7 +321,7 @@
           name: "Unit tests"
           condition: COMPLETED
           projects:     #*UNIT-JOBS
-            - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$-"
+            - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$"
       - multijob:
           name: "Build Flow123d"
           condition: SUCCESSFUL
@@ -311,14 +331,29 @@
           name: "Integration tests"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$-"
+            - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
       - multijob:
           name: "Pack and Install"
           condition: SUCCESSFUL
           projects:
-            - name: "Flow123d-{platform}-release-packages"
+            - name: "Flow123d-{platform}-packages"
 
-            
+######
+# Coverage with coberture
+# - install cobertura plugin
+# - build with gcc options:    -fprofile-arcs -ftest-coverage
+# - link with: -lgcov
+#   .. separate build for unit tests with separate config.cmake ??
+# - shell script:
+# make clean
+# make all
+# ./coverage --gtest_output=xml:coverage.junit.xml
+# chmod u+x gcovr
+# ./gcovr -x -r .. -e ".+\.test\.cpp*" > coverage.xml
+#
+# - publish JUnit results
+# - publis coverture report
+
 
 
 ##################################333
