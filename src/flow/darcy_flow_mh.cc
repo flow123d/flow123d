@@ -875,10 +875,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 void P1_CouplingAssembler::assembly(LinSys &ls) {
 
-
-    // CYKLUS PRES INTERSECTIONS
-    for (const Intersection &intersec : intersections_) {
-    	//DBGMSG()
+	for (const Intersection &intersec : intersections_) {
     	const Element * master = intersec.master_iter();
        	const Element * slave = intersec.slave_iter();
 
@@ -912,13 +909,13 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 
         arma::vec point_Y(1);
         point_Y.fill(1.0);
-        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); //lokalni souradnice Y na slave rozsirene o 1
-        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //lokalni souradnice Y na masteru rozsirene o 1
+        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); // local coordinates of  Y on slave
+        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //  local coordinates of  Y on master
 
         arma::vec point_X(1);
         point_X.fill(0.0);
-        arma::vec point_2D_X(intersec.map_to_slave(point_X)); //lokalni souradnice X na slave rozsirene o 1
-        arma::vec point_1D_X(intersec.map_to_master(point_X)); //lokalni souradnice X na masteru rozsirene o 1
+        arma::vec point_2D_X(intersec.map_to_slave(point_X)); // local coordinates of  X on slave
+        arma::vec point_1D_X(intersec.map_to_master(point_X)); // local coordinates of  X on master
 
         arma::mat base_2D(3, 3);
         // base fce = a0 + a1*t0 + a2*t1

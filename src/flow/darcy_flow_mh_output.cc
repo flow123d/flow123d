@@ -832,6 +832,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
 
 void DarcyFlowMHOutput::compute_l2_difference() {
     DBGMSG("l2 norm output\n");
+    ofstream os( FilePath("solution_error", FilePath::output_file) );
 
     const unsigned int order = 4; // order of Gauss quadrature
 
@@ -899,17 +900,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
         }
     }
 
-    DBGMSG("l2 norm output\n");
-    xprintf(Msg,
-            "\n"
-            "pressure error 1d: %g\n"
-            "pressure error 2d: %g\n"
-            "velocity error 1d: %g\n"
-            "velocity error 2d: %g\n"
-            "div error: %g (1d) %g (2d)\n",
-            sqrt(result.pressure_error[0]), sqrt(result.pressure_error[1]),
-            sqrt(result.velocity_error[0]), sqrt(result.velocity_error[1]),
-            sqrt(result.div_error[0]), sqrt(result.div_error[1])
-            );
+    os 	<< "l2 norm output\n\n"
+    	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
+    	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
+    	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
+    	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
+    	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
+    	<< "div error 2d: " << sqrt(result.div_error[1]);
 }
 
