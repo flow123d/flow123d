@@ -93,7 +93,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
     bddcml_ = new Bddcml_( size_,
                            numDofsSub,
                            matrixType,
-                           comm, 
+                           rows_ds->get_comm(),
                            numSubLoc );
 
     // prepare space for local solution
