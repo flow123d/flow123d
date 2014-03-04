@@ -792,6 +792,7 @@ SchurComplement :: ~SchurComplement() {
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
     if ( xA != NULL )             MatDestroy(&xA);
+    if ( IA != NULL )             MatDestroy(&IA);
     if ( IAB != NULL )            MatDestroy(&IAB);
     if ( IsA != NULL )            ISDestroy(&IsA);
     if ( IsB != NULL )            ISDestroy(&IsB);

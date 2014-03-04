@@ -76,6 +76,8 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
 {
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", IT::Default("0"));
+	ADD_FIELD(init_conc, "Initial concentrations.", IT::Default("0"));
     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", IT::Default("0"));
@@ -305,8 +307,8 @@ void ConvectionTransport::set_flow_field_vector(const MH_DofHandler &dh){
 };
 */
 
-void ConvectionTransport::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {
-    data_.cross_section = cross_section;
+void ConvectionTransport::set_eq_data(DarcyFlowMH::EqData &water_data) {
+    data_.cross_section = &water_data.cross_section;
 }
 
 

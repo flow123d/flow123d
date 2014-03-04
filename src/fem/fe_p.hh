@@ -346,9 +346,9 @@ FE_P<degree,dim,spacedim>::FE_P()
     for (int i=0; i<=dim; i++)
     {
         number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +dof_distribution.number_of_pairs[i]
-                         +dof_distribution.number_of_triples[i]
-                         +dof_distribution.number_of_sextuples[i];
+                         +2*dof_distribution.number_of_pairs[i]
+                         +3*dof_distribution.number_of_triples[i]
+                         +6*dof_distribution.number_of_sextuples[i];
 
         number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
         number_of_pairs[i] = dof_distribution.number_of_pairs[i];
@@ -476,6 +476,11 @@ DofDistribution<1,1>::DofDistribution();
 template<>
 DofDistribution<2,1>::DofDistribution();
 
+// P3 cubic element
+template<>
+DofDistribution<3,1>::DofDistribution();
+
+
 /*** 2D finite elements ***/
 
 // P0 constant element
@@ -490,6 +495,10 @@ DofDistribution<1,2>::DofDistribution();
 // P2 quadratic element
 template<>
 DofDistribution<2,2>::DofDistribution();
+
+// P3 cubic element
+template<>
+DofDistribution<3,2>::DofDistribution();
 
 
 
@@ -508,6 +517,10 @@ DofDistribution<1,3>::DofDistribution();
 // P2 quadratic element
 template<>
 DofDistribution<2,3>::DofDistribution();
+
+// P3 cubic element
+template<>
+DofDistribution<3,3>::DofDistribution();
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 

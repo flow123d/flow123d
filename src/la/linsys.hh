@@ -448,7 +448,7 @@ public:
     	}
     }
 
-    ~LinSys()
+    virtual ~LinSys()
     { 
        PetscErrorCode ierr;
        if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }

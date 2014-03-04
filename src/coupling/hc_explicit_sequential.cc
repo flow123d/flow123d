@@ -36,9 +36,10 @@
 #include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
-
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
+#include "transport/concentration_model.hh"
+#include "transport/heat_model.hh"
 
 
 namespace it = Input::Type;
@@ -119,16 +120,21 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         if (it->type() == TransportOperatorSplitting::input_type)
         {
             transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-            ((TransportOperatorSplitting*)transport_reaction)->set_eq_data( &(water->get_data().cross_section) );
+            transport_reaction->set_eq_data( water->get_data() );
         }
-        else if (it->type() == TransportDG::input_type)
+        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
         {
-            transport_reaction = new TransportDG(*mesh, *it);
-            ((TransportDG*)transport_reaction)->set_eq_data( &(water->get_data().cross_section));
+            transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
+            transport_reaction->set_eq_data( water->get_data() );
+        }
+        else if (it->type() == TransportDG<HeatTransferModel>::input_type)
+        {
+        	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
+        	transport_reaction->set_eq_data( water->get_data() );
         }
         else
         {
-            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecordout of set of descendants.\n");
+            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
         }
 
     } else {

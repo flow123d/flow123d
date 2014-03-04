@@ -318,6 +318,7 @@ public:
      */
     bool finish();
 
+
 protected:
 
 
@@ -338,6 +339,9 @@ protected:
      * Actually perform registration in the parent AbstractRecord and copy keys from it.
      */
     void make_derive_from(AbstractRecord &parent) const;
+
+    /// Auxiliary method that actually makes the copy of keys.
+    void make_copy_keys(Record &origin) const;
 
     /**
      * Internal data class.
