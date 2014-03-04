@@ -140,7 +140,7 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 	data().cross_section->value_list(point_list, ele_acc, elem_csec);
 	data().por_m.value_list(point_list, ele_acc, por_m);
 
-	for (unsigned int i=0; i<mm_coef.size(); i++)
+	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*por_m[i];
 }
 
