@@ -1715,6 +1715,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     VecCopy(schur0->get_rhs(), steady_rhs);
 
     solution_changed_for_scatter=true;
+    schur0->set_matrix_changed();
 }
 
 void DarcyFlowMH_Unsteady::modify_system() {
@@ -1724,11 +1725,13 @@ void DarcyFlowMH_Unsteady::modify_system() {
 
       VecScale(new_diagonal, time_->last_dt()/time_->dt());
       MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+      schur0->set_matrix_changed();
   }
 
     // modify RHS - add previous solution
     VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
     VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    schur0->set_rhs_changed();
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());
@@ -1805,6 +1808,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      VecDuplicate(schur0->get_rhs(), &time_term);
 
      solution_changed_for_scatter=true;
+     schur0->set_matrix_changed();
 
 }
 
@@ -1814,11 +1818,13 @@ void DarcyFlowLMH_Unsteady::modify_system() {
         MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
         VecScale(new_diagonal, time_->last_dt()/time_->dt());
         MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+        schur0->set_matrix_changed();
     }
 
     // modify RHS - add previous solution
     VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
     VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    schur0->set_rhs_changed();
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());

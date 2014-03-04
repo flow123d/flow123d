@@ -170,13 +170,6 @@ void SchurComplement::form_schur()
     Compl->set_from_input( in_rec_ );
     VecRestoreArray( Sol2, &sol_array );
 
-    // TODO: compute inversion also when matrix has changed
-    if (IA == NULL) {
-    	create_inversion_matrix();
-    }
-
-    // TODO: recompute matrix only if we have flag matrix_changed_
-
     //DBGMSG("Compute Schur complement of\n");
     //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
     //DBGMSG("inverse IA:\n");
@@ -190,76 +183,80 @@ void SchurComplement::form_schur()
     // nevertheless Petsc does not allows fill ratio below 1. so we use 1.1 for the first
     // and 1.5 for the second multiplication
 
-    // compute IAB=IA*B, loc_size_B removed
-    ierr+=MatGetSubMatrix(matrix_, IsA, IsB, mat_reuse, &B);
-    //DBGMSG(" B:\n");
-    //MatView(B,PETSC_VIEWER_STDOUT_WORLD);
-    ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
-    //DBGMSG(" IAB:\n");
-    //MatView(IAB,PETSC_VIEWER_STDOUT_WORLD);
-    // compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
-    ierr+=MatGetSubMatrix(matrix_, IsB, IsA, mat_reuse, &(Bt));
-    ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
-    //DBGMSG("xA:\n");
-    //MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
+    if (matrix_changed_) {
+       	create_inversion_matrix();
 
-    // get C block, loc_size_B removed
-    ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
-    // compute complement = (-1)cA+xA = Bt*IA*B - C
-    ierr+=MatScale(Compl->get_matrix(),-1.0);
-    //DBGMSG("C block:\n");
+       	// compute IAB=IA*B, loc_size_B removed
+		ierr+=MatGetSubMatrix(matrix_, IsA, IsB, mat_reuse, &B);
+		//DBGMSG(" B:\n");
+		//MatView(B,PETSC_VIEWER_STDOUT_WORLD);
+		ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
+		//DBGMSG(" IAB:\n");
+		//MatView(IAB,PETSC_VIEWER_STDOUT_WORLD);
+		// compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
+		ierr+=MatGetSubMatrix(matrix_, IsB, IsA, mat_reuse, &(Bt));
+		ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
+		//DBGMSG("xA:\n");
+		//MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
 
-    //MatView(Compl->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
-    ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
-    //DBGMSG("C block:\n");
-    //MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
-    //
-    //TODO: MatAXPY - umoznuje nasobit -1, t.j. bylo by lepe vytvorit konvencni Schuruv doplnek zde,
-    // a ve funkci schur1 (a ne v schur2) uzit metodu "scale" z tohoto objektu - kvuli negativni definitnosti
-    // usetri se tim jeden MatScale
+		// get C block, loc_size_B removed
+		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
+		// compute complement = (-1)cA+xA = Bt*IA*B - C
+		if ( is_negative_definite() ) {
+			ierr+=MatAXPY(Compl->get_matrix(), -1, xA, SUBSET_NONZERO_PATTERN);
+		} else {
+			ierr+=MatScale(Compl->get_matrix(),-1.0);
+			ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
+		}
+		Compl->set_matrix_changed();
+		//DBGMSG("C block:\n");
 
-    ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
+		//MatView(Compl->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+		//DBGMSG("C block:\n");
+		//MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
+		//
+		//TODO: MatAXPY - umoznuje nasobit -1, t.j. bylo by lepe vytvorit konvencni Schuruv doplnek zde,
+		// a ve funkci schur1 (a ne v schur2) uzit metodu "scale" z tohoto objektu - kvuli negativni definitnosti
+		// usetri se tim jeden MatScale
 
-    /*
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matAinv.output",&myViewer);
-    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-    MatView( IA, myViewer );
-    PetscViewerDestroy(myViewer);
+		ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
 
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matSchur.output",&myViewer);
-    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-    MatView( Compl->get_matrix( ), myViewer );
-    PetscViewerDestroy(myViewer);
+    }
+
+	/*
+	PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matAinv.output",&myViewer);
+	PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+	MatView( IA, myViewer );
+	PetscViewerDestroy(myViewer);
+
+	PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matSchur.output",&myViewer);
+	PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+	MatView( Compl->get_matrix( ), myViewer );
+	PetscViewerDestroy(myViewer);
 */
 
     form_rhs();
 
-    state=formed;
+	matrix_changed_ = false;
 
-    // move into form matrix part above
-    if ( is_negative_definite() ) scale(-1.0);
+    state=formed;
 }
 
 void SchurComplement::form_rhs()
 {
-	// TODO: compute only if we have rhs_changed_ or matrix_changed_
-    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
-    VecAXPY(Compl->get_rhs(),-1,RHS2);
+	if (rhs_changed_ || matrix_changed_) {
+	    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
+	    VecAXPY(Compl->get_rhs(),-1,RHS2);
+	    if ( is_negative_definite() ) {
+	    	VecScale(Compl->get_rhs(), -1.0);
+	    }
+	    Compl->set_rhs_changed();
+	    rhs_changed_ = false;
+	}
 
     state=formed;
 }
 
-/**
- *  @brief Scale formed complement system. Mainly to make it positive definite.
- */
-// TODO: delete this method, use matrix scale in form_Schur and VecScale in form_rhs
-// both under test for is_negative_definite()
-void SchurComplement ::scale(double scalar)
-{
-    ASSERT( state == formed, "Object in wrong state!\n");
-    MatScale(Compl->get_matrix(), scalar);
-    VecScale(Compl->get_rhs(), scalar);
-}
 
 /**
  * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS

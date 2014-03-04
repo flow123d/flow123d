@@ -204,6 +204,22 @@ public:
     }
     
     /**
+     * Sets matrix changed flag  (only for PETSC solvers)
+     */
+    virtual void set_matrix_changed()
+    {
+        ASSERT( false, "Function set_matrix_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    /**
+     * Sets rhs changed flag  (only for PETSC solvers)
+     */
+    virtual void set_rhs_changed()
+    {
+        ASSERT( false, "Function set_rhs_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    /**
      * Sets PETSC matrix (only for PETSC solvers)
      */
     virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)

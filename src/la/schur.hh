@@ -73,7 +73,6 @@ public:
     LinSys *get_system() const {return (Compl);}
     Distribution *get_distribution() const {return (ds_);}
 
-    void scale(double factor);
     ~SchurComplement();
 
     /** Compute only right hand side.
