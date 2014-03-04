@@ -42,8 +42,24 @@ class LinSys;
 /**
  * @brief Schur complement class for a PETSC based linear system
  *
- * TODO: ... describe usage.
+ * Linear system consists of Matrix, inversion matrix, RHS, solution and pointer to Complement.
+ * It provides methods for:
+ * - set complement system
+ * - create distribution of complement system
+ * - create inversion matrix of system
+ * - form Schur complement and rhs
+ * - solve and resolve system
  *
+ * Usage example:
+ * @CODE
+ *   SchurComplement * schur = new SchurComplement(is, &distr);
+ *
+ *   ... // allocation and assembly of matrix
+ *
+ *   LinSys_PETSC * ls = new LinSys_PETSC( schur->make_complement_distribution() );
+ *   schur->set_complement( ls );
+ *   schur->solve();
+ * @ENDCODE
  *
  * Input record is passed to the complement system.
  */

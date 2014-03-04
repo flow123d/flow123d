@@ -189,6 +189,13 @@ public:
 
     /**
      * Returns PETSC matrix (only for PETSC solvers)
+     *
+     * If matrix is changed, method set_matrix_changed() must be called.
+     * Example:
+	 * @CODE
+	 *   MatDiagonalSet(schur->get_matrix(), new_diagonal, ADD_VALUES);
+	 *   schur->set_matrix_changed();
+	 * @ENDCODE
      */
     virtual const Mat &get_matrix()
     {
@@ -197,6 +204,13 @@ public:
 
     /**
      * Returns RHS vector  (only for PETSC solvers)
+     *
+     * If vector is changed, method set_rhs_changed() must be called.
+     * Example:
+	 * @CODE
+	 *   VecScale(schur->get_rhs(), -1.0);
+	 *   schur->set_rhs_changed();
+	 * @ENDCODE
      */
     virtual const Vec &get_rhs()
     {
