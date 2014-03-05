@@ -46,7 +46,7 @@ Dual_por_exchange::~Dual_por_exchange(void)
 {
 }
 
-void Dual_por_exchange::compute_one_step(void) {
+void Dual_por_exchange::update_solution(void) {
 
     double conc_avg = 0.0;
     unsigned int loc_el,sbi;

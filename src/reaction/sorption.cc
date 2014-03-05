@@ -289,31 +289,6 @@ double **Sorption::compute_reaction(double **concentrations, int loc_el) // Sorp
 	return concentrations;
 }
 
-// Computes adsorption simulation over all the elements.
-void Sorption::compute_one_step(void)
-{
-    data_.set_time(*time_); // set to the last computed time
-    //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-	if((data_.rock_density.changed_during_set_time) &&
-		(data_.mult_coefs.changed_during_set_time) &&
-		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time) &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))
-	{
-		make_tables();
-	}
-
-    START_TIMER("Computes reaction");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	 {
-	 	this->compute_reaction(concentration_matrix, loc_el);
-	 }
-    END_TIMER("Computes reaction");
-
-	return;
-}
-
 
 void Sorption::print_sorption_parameters(void)
 {
@@ -369,9 +344,28 @@ void Sorption::set_phi(pScalar phi)
 
 void Sorption::update_solution(void)
 {
-	//cout << "1) Meaningless inherited method." << endl;
+    data_.set_time(*time_); // set to the last computed time
+    //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
+	if((data_.rock_density.changed_during_set_time) &&
+		(data_.mult_coefs.changed_during_set_time) &&
+		(data_.second_params.changed_during_set_time) &&
+		(this->porosity_->changed_during_set_time) &&
+		(this->immob_porosity_->changed_during_set_time) &&
+		(this->phi_->changed_during_set_time))
+	{
+		make_tables();
+	}
+
+    START_TIMER("Computes reaction");
+	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	{
+	 	this->compute_reaction(concentration_matrix, loc_el);
+	}
+    END_TIMER("Computes reaction");
+
 	return;
 }
+
 void Sorption::choose_next_time(void)
 {
 	//cout << "2) Meaningless inherited method." << endl;

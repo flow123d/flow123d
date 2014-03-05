@@ -285,11 +285,11 @@ void TransportOperatorSplitting::update_solution() {
 	    // one internal step
 	    convection->compute_one_step();
 		//Just temporarly commented.
-	    //if (dual_por_exchange) dual_por_exchange->compute_one_step();
-	    if(decayRad) decayRad->compute_one_step();
-	    if(Semchem_reactions) Semchem_reactions->compute_one_step();
-	    if(sorptions) sorptions->compute_one_step();//equilibrial sorption at the end of simulated time-step
-	    if(sorptions_immob) sorptions_immob->compute_one_step();
+	    //if (dual_por_exchange) dual_por_exchange->update_solution();
+	    if(decayRad) decayRad->update_solution();
+	    if(Semchem_reactions) Semchem_reactions->update_solution();
+	    if(sorptions) sorptions->update_solution();//equilibrial sorption at the end of simulated time-step
+	    if(sorptions_immob) sorptions_immob->update_solution();
 	    if (convection->mass_balance() != NULL)
 	    	convection->mass_balance()->calculate(convection->time().t());
 	}

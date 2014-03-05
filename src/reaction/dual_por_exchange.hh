@@ -65,7 +65,7 @@ class Dual_por_exchange:  public Reaction
 		/**
 		*
 		*/
-		void compute_one_step(void);
+		void update_solution(void);
 		/**
 		*
 		*/

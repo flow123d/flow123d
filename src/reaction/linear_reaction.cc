@@ -284,7 +284,7 @@ void Linear_reaction::set_time_step(double new_timestep)
 	return;
 }
 
-void Linear_reaction::compute_one_step(void)
+void Linear_reaction::update_solution(void)
 {
     //data_.set_time(*time_); // set to the last computed time
 	//if timestep changed then modify_reaction_matrix(), not implemented yet

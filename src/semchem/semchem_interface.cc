@@ -122,7 +122,7 @@ void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por
 	return;
 }*/
 
-void Semchem_interface::compute_one_step(void)
+void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
 	{

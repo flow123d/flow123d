@@ -42,10 +42,6 @@ class Reaction: public EquationBase
 		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		virtual double **compute_reaction(double **concentrations, int loc_el);
-		/**
-		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-		*/
-		virtual void compute_one_step(void);
 
 		/**
 		 * Returns number of substances involved in reactions. This should be same as number of substances in transport.

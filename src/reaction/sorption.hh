@@ -100,10 +100,6 @@ class Sorption:  public Reaction
 		*/
 		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
 		/**
-		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-		*/
-		void compute_one_step(void);
-		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
 		*/
 		void set_time_step(double new_timestep);

@@ -50,13 +50,6 @@ double **Reaction::compute_reaction(double **concentrations, int loc_el) //multi
 	return concentrations;
 }
 
-void Reaction::compute_one_step(void)
-{
-	cout << "Reaction::compute_one_step() needs to be re-implemented in ancestors." << endl;
-	 return;
-}
-
-
 void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
 	concentration_matrix = ConcentrationMatrix;
