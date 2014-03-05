@@ -78,6 +78,7 @@ class Reaction: public EquationBase
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);
 		virtual void get_solution_vector(double* &vector, unsigned int &size);
+		virtual void set_concentration_vector(Vec &vec);
 		/**
 		* Function for setting dual porosity.
 		*/

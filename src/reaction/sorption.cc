@@ -412,3 +412,10 @@ void Sorption::set_time(TimeGovernor &time)
 {
 	data_.set_time(time);
 }
+
+void Sorption::set_concentration_vector(Vec &vc)
+{
+	//cout << "7) Meaningless inherited method." << endl;
+	return;
+}
+

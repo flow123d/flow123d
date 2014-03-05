@@ -169,3 +169,8 @@ void Reaction::init_from_input(Input::Record in_rec)
 {
 	cout << "Reaction::init_from_input() needs to be re-implemented in ancestors." << endl;
 }
+
+void Reaction::set_concentration_vector(Vec &vec)
+{
+	cout << "Reaction.set_concentration_vector(Vec &vec) is not implemented." << endl;
+}

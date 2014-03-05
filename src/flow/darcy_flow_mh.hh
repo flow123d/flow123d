@@ -188,6 +188,8 @@ public:
     
     virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
 
+    virtual void set_concentration_vector(Vec &vc){};
+
 
 protected:
     void setup_velocity_vector() {

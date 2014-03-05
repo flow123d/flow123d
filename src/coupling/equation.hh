@@ -178,6 +178,11 @@ public:
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
+    /**
+     * Child class have to implement setter for local part concentration vector.
+     */
+    virtual void set_concentration_vector(Vec &vector) =0;
+
 protected:
     Mesh * mesh_;
     TimeGovernor *time_;
