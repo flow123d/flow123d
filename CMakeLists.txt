@@ -98,6 +98,7 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
     add_definitions(-DDEBUG_PROFILER)
+    add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")

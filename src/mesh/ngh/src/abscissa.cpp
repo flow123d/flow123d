@@ -13,29 +13,29 @@ TAbscissa::TAbscissa() {
     id = generateId();
 }
 
-TAbscissa::TAbscissa(const TPoint& PP0, const TPoint& PP1) : TBisector(PP0, PP1) {
+TAbscissa::TAbscissa(const TPoint& PP0, const TPoint& PP1)
+: TBisector(PP0, PP1)
+{
     id = generateId();
-
-//    P0 = new TPoint(PP0);
-//    P1 = new TPoint(PP1);
-
-    //    *(*this)P0 = *PP0;
-    //    *P1 = PP1;
 
     ComputeLength();
 }
 
+
+TAbscissa::TAbscissa(const Element & ele)
+: TBisector(ele)
+{
+    id = generateId();
+
+    ComputeLength();
+}
+
+
+
 TAbscissa & TAbscissa::operator =(const TAbscissa& a) {
-    //  U = new TVector();
-    //  X0 = new TPoint();
-    //  P0 = new TPoint();
-    //  P1 = new TPoint();
 
     *U = *(a.U);
     *X0 = *(a.X0);
-
-//    *(*this).P0 = *a.P0;
-//    *(*this).P1 = *a.P1;
 
     length = a.length;
 
@@ -73,7 +73,7 @@ BoundingBox &TAbscissa::get_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox.set_bounds(minCoor, maxCoor);
+	boundingBox=BoundingBox(minCoor, maxCoor);
 
 	return boundingBox;
 }

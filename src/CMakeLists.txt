@@ -91,7 +91,7 @@ set(sources_mesh_lib
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    mesh/bih_node.cc
+    # mesh/bih_node.cc
     mesh/bih_tree.cc
     
     mesh/ngh/src/abscissa.cpp
@@ -165,6 +165,8 @@ set(sources_lib_non_system
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
+    transport/concentration_model.cc
+    transport/heat_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc

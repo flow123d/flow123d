@@ -24,6 +24,7 @@ public:
     TAbscissa();
 //    TAbscissa(double, double);
     TAbscissa(const TPoint&, const TPoint&);
+    TAbscissa(const Element&);
     ~TAbscissa();
 
     TAbscissa & operator =(const TAbscissa&);

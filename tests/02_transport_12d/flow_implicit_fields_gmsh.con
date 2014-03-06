@@ -38,7 +38,7 @@
     },
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -61,6 +61,7 @@
         TYPE = "Petsc", 
         a_tol = 1e-12,
         r_tol = 1e-12
+        options="-ksp_type gmres -ksp_monitor"
       },
       bc_data=[
         {
@@ -79,6 +80,7 @@
             value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
           por_m = 0.25
+          dg_penalty=10
         },
         {
           rid=184,
@@ -88,6 +90,7 @@
           },
           por_m = 0.25,
           diff_m = 1e-1
+          dg_penalty=10
         }
       ],
       dg_variant = "symmetric",

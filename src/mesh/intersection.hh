@@ -40,7 +40,9 @@
 
 #include "mesh/mesh_types.hh"
 #include <armadillo>
-#include <boost/tokenizer.hpp>
+//#include <boost/tokenizer.hpp>
+
+#include "mesh/ngh/include/intersectionLocal.h"
 
 
 
@@ -133,8 +135,8 @@
 
 class Intersection {
 public:
-    Intersection(unsigned int dimension, ElementFullIter ele_master, ElementFullIter ele_slave,
-            boost::tokenizer<boost::char_separator<char> >::iterator &tok);
+    Intersection(const ElementFullIter ele_master, const ElementFullIter ele_slave,
+    			 const IntersectionLocal *isec);
 
     /// dimension of the master element
     unsigned int master_dim();
@@ -142,14 +144,14 @@ public:
     /// dimension of the slave element
     unsigned int slave_dim();
 
-    ElementFullIter &master_iter()
-        {return master;}
-    ElementFullIter &slave_iter()
-        {return slave;}
+    const Element * master_iter() const
+        {return const_cast<Element *>( (Element *)(master) );}
+    const Element * slave_iter() const
+        {return const_cast<Element *>( (Element *)(slave) );}
 
     arma::vec map_to_master(const arma::vec &point) const;
     arma::vec map_to_slave(const arma::vec &point) const;
-    double intersection_true_size();
+    double intersection_true_size() const;
 private:
     /// dimenze pruniku
     unsigned int dim;
@@ -159,7 +161,7 @@ private:
     arma::Mat<double> master_map, slave_map;
     /// shift vector of the linear transform
     arma::vec master_shift, slave_shift;
-    void read_intersection_point(arma::vec &, arma::vec &, boost::tokenizer<boost::char_separator<char> >::iterator &);
+    void intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2);
 };
 
 

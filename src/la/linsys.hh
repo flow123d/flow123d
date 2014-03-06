@@ -76,6 +76,7 @@
 #include <mpi.h>
 
 #include <vector>
+#include <armadillo>
 
 // PETSc includes
 #include "petscmat.h"
@@ -121,9 +122,8 @@ public:
      * TODO: Vector solution_ is now initialized to NULL, but it should be rather allocated
      * in the constructor instead of the method set_solution().
      */
-    LinSys( Distribution * rows_ds,
-            MPI_Comm comm = MPI_COMM_WORLD )
-      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( comm ), solution_(NULL), v_solution_(NULL),
+    LinSys(const  Distribution *rows_ds)
+      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( rows_ds->get_comm() ), solution_(NULL), v_solution_(NULL),
         positive_definite_( false ), negative_definite_( false ), symmetric_( false ),
         spd_via_symmetric_general_( false ), status_( NONE )
     { 
@@ -362,19 +362,79 @@ public:
     void rhs_set_value(int row,double val)
     { rhs_set_values(1,&row,&val); }
 
-    /**
-     * Shortcut to assembly into matrix and RHS in one call.
-     * This can also apply constrains at assembly time (only in add assembly regime).
-     *
-     * Constrains can either be set before through add_constraint. Or by additional parameters if we
-     * have only per element knowledge about boundary conditions.
-     *
-     */
-    void set_values( int nrow,int *rows,int ncol,int *cols,double *mat_vals, double *rhs_vals )
-//                            std::vector<bool> &constrains_row_mask=std::vector<bool>(), double * constrain_values=NULL )
+
+    /// Set values in the system matrix and values in the right-hand side vector on corresponding rows.
+    inline void set_values(int nrow,int *rows,int ncol,int *cols,PetscScalar *mat_vals, PetscScalar *rhs_vals)
     {
         mat_set_values(nrow, rows, ncol, cols, mat_vals);
         rhs_set_values(nrow, rows, rhs_vals);
+    }
+
+    /**
+     * Shortcut to assembly into matrix and RHS in one call, possibly apply Dirichlet boundary conditions.
+     * @p row_dofs - are global indices of rows of dense @p matrix and rows of dense vector @rhs in global system
+     * @p col_dofs - are global indices of columns of the matrix, and possibly
+     *
+     * Application of Dirichlet conditions:
+     * 1) Rows with negative dofs are set to zero.
+     * 2) Cols with negative dofs are eliminated.
+     * 3) If there are entries on global diagonal. We determine value K either from diagonal of local matrix, or (if it is zero) from
+     *    diagonal average.
+     *
+     *
+     */
+    void set_values(std::vector<int> &row_dofs, std::vector<int> &col_dofs,
+    		        const arma::mat &matrix, const arma::vec &rhs,
+    		        const arma::vec &row_solution, const arma::vec &col_solution)
+
+    {
+    	arma::mat tmp = matrix;
+    	arma::vec tmp_rhs = rhs;
+    	bool negative_row = false;
+    	bool negative_col = false;
+
+    	for(unsigned int l_row = 0; l_row < row_dofs.size(); l_row++)
+    		if (row_dofs[l_row] < 0) {
+    			tmp.row(l_row).zeros();
+    			tmp_rhs(l_row)=0.0;
+    			negative_row=true;
+    		}
+
+    	for(unsigned int l_col = 0; l_col < col_dofs.size(); l_col++)
+    		if (col_dofs[l_col] < 0) {
+    			tmp_rhs -= tmp.col(l_col) * col_solution[l_col];
+    			negative_col=true;
+    		}
+
+    	if (negative_row && negative_col) {
+    		// look for diagonal entry
+        	for(unsigned int l_row = 0; l_row < row_dofs.size(); l_row++)
+        		if (row_dofs[l_row] < 0)
+        	    	for(unsigned int l_col = 0; l_col < col_dofs.size(); l_col++)
+        	    		if (col_dofs[l_col] < 0 && row_dofs[l_row] == col_dofs[l_col]) {
+        	    			double new_diagonal = fabs(matrix.at(l_row,l_col));
+        	    			if (new_diagonal == 0.0)
+        	    				if (matrix.is_square()) {
+        	    					new_diagonal = arma::sum( abs(matrix.diag())) / matrix.n_rows;
+        	    				} else {
+        	    					new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
+        	    			}
+        	    			tmp.at(l_row, l_col) = new_diagonal;
+        	    			tmp_rhs(l_row) = new_diagonal * row_solution[l_row];
+        	    		}
+
+    	}
+
+    	if (negative_row)
+    		for(int &row : row_dofs) row=abs(row);
+
+    	if (negative_col)
+    		for(int &col : col_dofs) col=abs(col);
+
+
+        mat_set_values(row_dofs.size(), const_cast<int *>(&(row_dofs[0])),
+        		       col_dofs.size(), const_cast<int *>(&(col_dofs[0])), tmp.memptr() );
+        rhs_set_values(row_dofs.size(), const_cast<int *>(&(row_dofs[0])), tmp_rhs.memptr() );
     }
 
     /**
@@ -519,7 +579,7 @@ public:
      */
     virtual double get_solution_precision() = 0;
 
-    ~LinSys()
+    virtual ~LinSys()
     { 
        PetscErrorCode ierr;
        if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }

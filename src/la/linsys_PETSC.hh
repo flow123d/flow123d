@@ -45,8 +45,7 @@ class LinSys_PETSC : public LinSys
 public:
     static Input::Type::Record input_type;
 
-    LinSys_PETSC( Distribution * rows_ds,
-                  const MPI_Comm comm = PETSC_COMM_WORLD ); 
+    LinSys_PETSC(const  Distribution * rows_ds);
 
     /**
      * Copy constructor.
@@ -115,6 +114,8 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
+    void set_initial_guess_nonzero(bool set_nonzero = true);
+
     int solve();
 
     /**
@@ -168,7 +169,9 @@ private:
 
 protected:
 
-    std::string params_;		 // command-line-like options for the PETSc solver
+    std::string params_;		 //!< command-line-like options for the PETSc solver
+
+    bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.

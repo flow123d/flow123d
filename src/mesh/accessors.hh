@@ -74,8 +74,8 @@ public:
         { return dim_; }
 
     inline const ElementIter element() const {
-        if (boundary_) return &(mesh_->bc_elements[element_idx_]);
-        else return &(mesh_->element[element_idx_]);
+        if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
+        else return  (Element *)(mesh_->element(element_idx_)) ;
     }
 
     inline arma::vec::fixed<spacedim> centre() const {
@@ -116,7 +116,7 @@ private:
     unsigned int dim_;
 
     /// Pointer to the mesh owning the element.
-    Mesh *mesh_;
+    const Mesh *mesh_;
     /// True if the element is boundary, i.e. stored in Mesh::bc_elements, bulk elements are stored in Mesh::element
     bool boundary_;
 

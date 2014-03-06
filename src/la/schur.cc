@@ -69,7 +69,7 @@
  */
 
 SchurComplement::SchurComplement(IS ia, Distribution *ds)
-: LinSys_PETSC(ds, MPI_COMM_WORLD), IsA(ia), state(created)
+: LinSys_PETSC(ds), IsA(ia), state(created)
 {
         xprintf(Msg, "Constructor SchurComplement\n");
 
@@ -388,6 +388,7 @@ SchurComplement :: ~SchurComplement() {
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
     if ( xA != NULL )             MatDestroy(&xA);
+    if ( IA != NULL )             MatDestroy(&IA);
     if ( IAB != NULL )            MatDestroy(&IAB);
     if ( IsA != NULL )            ISDestroy(&IsA);
     if ( IsB != NULL )            ISDestroy(&IsB);

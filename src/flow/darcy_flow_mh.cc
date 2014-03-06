@@ -281,19 +281,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     schur2   = NULL;
 
     
-    /*
-    Iterator<Record> it_bc = in_rec.find<Record>("boundary_conditions");
-    if (it_bc) {
-        bc_function = FunctionBase<3>::function_factory(it_bc->val<AbstractRecord>("value"));
-
-        // set bcd groups for correct water_balance
-        //FOR_BOUNDARIES(mesh_, bcd) bcd->group=0;
-        //mesh_->bcd_group_id.add_item(0);
-
-    } else {
-        read_boundary(mesh_, in_rec.val<FilePath>("boundary_file", FilePath("NO_BCD_FILE", FilePath::input_file) ) );
-        bc_function=NULL;
-    }*/
     
     // init paralel structures
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
@@ -305,9 +292,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
-        mesh_->read_intersections();
         mesh_->make_intersec_elements();
-        mortar_sigma_ = in_rec.val<double>("mortar_sigma");
     }
 
 
@@ -549,6 +534,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 EqData::BC_Type type = (EqData::BC_Type)data.bc_type.value(b_ele.centre(), b_ele);
+                //DBGMSG("BCD id: %d sidx: %d type: %d\n", ele->id(), i, type);
                 if ( type == EqData::none) {
                     // homogeneous neumann
                 } else if ( type == EqData::dirichlet ) {
@@ -561,7 +547,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 } else if ( type == EqData::neumann) {
                     double bc_flux = data.bc_flux.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-		    //DBGMSG("neumann edge_row, ele_index,el_idx: %d \t %d \t %d\n", edge_row, ele->index(), ele->side(i)->el_idx());
+                    //DBGMSG("neumann edge_row, ele_index,el_idx: %d \t %d \t %d\n", edge_row, ele->index(), ele->side(i)->el_idx());
 
                 } else if ( type == EqData::robin) {
                     double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
@@ -699,117 +685,132 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 
     if (mortar_method_ == MortarP0) {
-        coupling_P0_mortar_assembly();
+    	P0_CouplingAssembler(*this).assembly(*ls);
     } else if (mortar_method_ == MortarP1) {
-        mh_abstract_assembly_intersection();
+        P1_CouplingAssembler(*this).assembly(*ls);
     }  
 }
 
+void P0_CouplingAssembler::pressure_diff(int i_ele,
+		vector<int> &dofs, unsigned int &ele_type, double &delta, arma::vec &dirichlet) {
+
+	const Element *ele;
+
+	if (i_ele == ml_it_->size() ) { // master element .. 1D
+		ele_type = 0;
+		delta = -delta_0;
+		ele=master_;
+	} else {
+		ele_type = 1;
+		const Intersection &isect=intersections_[ (*ml_it_)[i_ele] ];
+		delta = isect.intersection_true_size();
+		ele = isect.slave_iter();
+	}
+
+	dofs.resize(ele->n_sides());
+
+	for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
+		dofs[i_side]=darcy_.row_4_edge[ele->side(i_side)->edge_idx()];
+		Boundary * bcd = ele->side(i_side)->cond();
+		if (bcd) {
+			dirichlet.resize(ele->n_sides());
+			ElementAccessor<3> b_ele = bcd->element_accessor();
+			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data.bc_type.value(b_ele.centre(), b_ele);
+			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
+			if (type == DarcyFlowMH::EqData::dirichlet) {
+				//DBGMSG("Dirichlet: %d\n", ele->index());
+				dofs[i_side] = -dofs[i_side];
+				double bc_pressure = darcy_.data.bc_pressure.value(b_ele.centre(), b_ele);
+				dirichlet[i_side] = bc_pressure;
+			}
+		}
+	}
+
+}
 
 /**
  * Works well but there is large error next to the boundary.
  */
- void DarcyFlowMH_Steady::coupling_P0_mortar_assembly() {
-    for (vector<vector<unsigned int> >::iterator it_master_list = mesh_->master_elements.begin(); it_master_list
-            != mesh_->master_elements.end(); ++it_master_list) {
+ void P0_CouplingAssembler::assembly(LinSys &ls) {
+	double delta_i, delta_j;
+	arma::mat product;
+	arma::vec dirichlet_i, dirichlet_j;
+	unsigned int ele_type_i, ele_type_j;
+
+	unsigned int i,j;
+	vector<int> dofs_i,dofs_j;
+
+	for(ml_it_ = master_list_.begin(); ml_it_ != master_list_.end(); ++ml_it_) {
+
+    	if (ml_it_->size() == 0) continue; // skip empty masters
 
 
-        if (it_master_list->size() != 0) // skip empty masters
-        {
-            // on the intersection element we consider
-            // * intersection dofs for master and slave
-            //   those are dofs of the space into which we interpolate
-            //   base functions from individual master and slave elements
-            //   For the master dofs both are usualy eqivalent.
-            // * original dofs - for master same as intersection dofs, for slave
-            //   all dofs of slave elements
+		// on the intersection element we consider
+		// * intersection dofs for master and slave
+		//   those are dofs of the space into which we interpolate
+		//   base functions from individual master and slave elements
+		//   For the master dofs both are usualy eqivalent.
+		// * original dofs - for master same as intersection dofs, for slave
+		//   all dofs of slave elements
 
-            // form list of intersection dofs, in this case pressures in barycenters
-            // but we do not use those form MH system in order to allow second schur somplement. We rather map these
-            // dofs to pressure traces, i.e. we use averages of traces as barycentric values.
-            arma::mat master_map(1,2);
-            master_map.fill(1.0 / 2);
-            arma::mat slave_map(1,3);
-            slave_map.fill(-1.0 / 3);
-
-            vector<int> global_idx;
-
-            ElementFullIter master_iter(mesh_->intersections[it_master_list->front()].master_iter());
-            double delta_0 = master_iter->measure();
-            double delta_i, delta_j;
-            arma::mat left_map, right_map,product;
-            int left_idx[3], right_idx[3], l_size, r_size; 
-            unsigned int i,j;
-            vector<int> l_dirich(3,0);
-            vector<int> r_dirich(3,0);
+		// form list of intersection dofs, in this case pressures in barycenters
+		// but we do not use those form MH system in order to allow second schur somplement. We rather map these
+		// dofs to pressure traces, i.e. we use averages of traces as barycentric values.
 
 
-            // rows
-            for(i = 0; i <= it_master_list->size(); ++i) {
+		master_ = intersections_[ml_it_->front()].master_iter();
+		delta_0 = master_->measure();
 
-                if (i == it_master_list->size()) { // master element
-                    delta_i = delta_0;
-                    left_map = arma::trans(master_map);
-                    left_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
-                    left_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
-                    // Dirichlet bounndary conditions
-                    // if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) l_dirich[0]=1; else l_dirich[0]=0;
-                    // if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) l_dirich[1]=1; else l_dirich[1]=0;
-                    l_size = 2;
-                } else {
-                    l_dirich[0]=0;
-                    l_dirich[1]=0;
-                    Intersection &isect=mesh_->intersections[(*it_master_list)[i]];
-                    delta_i = isect.intersection_true_size();
-                    left_map = arma::trans(slave_map);
-                    left_idx[0] = row_4_edge[isect.slave_iter()->side(0)->edge_idx()];
-                    left_idx[1] = row_4_edge[isect.slave_iter()->side(1)->edge_idx()];
-                    left_idx[2] = row_4_edge[isect.slave_iter()->side(2)->edge_idx()];
-                    l_size = 3;
-                }
-                //columns
-                for (j = 0; j <=it_master_list->size(); ++j) {
-                    if (j == it_master_list->size()) { // master element
-                        delta_j = delta_0;
-                        right_map = master_map;
-                        right_idx[0] = row_4_edge[master_iter->side(0)->edge_idx()];
-                        right_idx[1] = row_4_edge[master_iter->side(1)->edge_idx()];
-                        // Dirichlet bounndary conditions
-                        // if (master_iter->side(0)->cond() != NULL && master_iter->side(0)->cond()->type == DIRICHLET) r_dirich[0]=1; else r_dirich[0]=0;
-                        // if (master_iter->side(1)->cond() != NULL && master_iter->side(1)->cond()->type == DIRICHLET) r_dirich[1]=1; else r_dirich[1]=0;
-                        r_size = 2;
-                    } else {
-                        r_dirich[0]=0;
-                        r_dirich[1]=0;
+		double master_sigma=darcy_.data.sigma.value( master_->centre(), master_->element_accessor());
 
-                        Intersection &isect=mesh_->intersections[(*it_master_list)[j]];
-                        delta_j = isect.intersection_true_size();
-                        right_map = slave_map;
-                        right_idx[0] = row_4_edge[isect.slave_iter()->side(0)->edge_idx()];
-                        right_idx[1] = row_4_edge[isect.slave_iter()->side(1)->edge_idx()];
-                        right_idx[2] = row_4_edge[isect.slave_iter()->side(2)->edge_idx()];
-                        r_size = 3;
-                    }
-                    product = -mortar_sigma * left_map * delta_i * delta_j * right_map / delta_0;
+		// rows
+		for(i = 0; i <= ml_it_->size(); ++i) {
+			//cout << "Intersection:" << master_->index() << ", "
+			//		<<  intersections_[ (*ml_it_)[i] ].slave_iter()->index();
+			pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
+			//columns
+			for (j = 0; j <= ml_it_->size(); ++j) {
+				pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
 
-                    // Dirichlet modification
-                    for(int ii=0;ii<l_size;ii++) if (l_dirich[ii]) {
-                        for(int jj=0;jj<r_size;jj++) product(ii,jj)=0.0;
-                    }
-                    for(int jj=0;jj<r_size;jj++) if (r_dirich[jj])
-                        for(int ii=0;ii<l_size;ii++) {
-                            //schur0->rhs_set_value(left_idx[ii], -master_iter->side(jj)->cond()->scalar * product(ii,jj));
-                            product(ii,jj)=0.0;
-                        }
+				double scale =  -master_sigma * delta_i * delta_j / delta_0;
+				product = scale * tensor_average[ele_type_i][ele_type_j];
 
-                    //DBGMSG("(i,j): %d %d %f %f %f\n",i,j, delta_i, delta_j, delta_0);
-                    //product.print("A:");
-                    schur0->mat_set_values(l_size, left_idx, r_size, right_idx, product.memptr());
-                }
-            }
-        }
-    }
+
+				//cout << product << endl;
+
+
+				arma::vec rhs(dofs_i.size());
+				rhs.zeros();
+				ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+			}
+		}
+    } // loop over master elements
+}
+
+
+
+ void P1_CouplingAssembler::add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
+ {
+
+		for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
+			dofs[shift+i_side] =  darcy_.row_4_edge[ele->side(i_side)->edge_idx()];
+			Boundary * bcd = ele->side(i_side)->cond();
+
+			if (bcd) {
+				ElementAccessor<3> b_ele = bcd->element_accessor();
+				DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data.bc_type.value(b_ele.centre(), b_ele);
+				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
+				if (type == DarcyFlowMH::EqData::dirichlet) {
+					//DBGMSG("Dirichlet: %d\n", ele->index());
+					dofs[shift + i_side] = -dofs[shift + i_side];
+					double bc_pressure = darcy_.data.bc_pressure.value(b_ele.centre(), b_ele);
+					dirichlet[shift + i_side] = bc_pressure;
+				}
+			}
+		}
  }
+
+
 /**
  * P1 coonection of different dimensions
  * - demonstrated convergence, but still major open questions:
@@ -825,11 +826,16 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
  * TODO:
  * * full implementation of Dirichlet BC ( also for 2d sides)
  */
-void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
-    LinSys *ls = schur0;
 
-    // CYKLUS PRES INTERSECTIONS
-    for (std::vector<Intersection>::iterator intersec = mesh_->intersections.begin(); intersec != mesh_->intersections.end(); ++intersec) {
+void P1_CouplingAssembler::assembly(LinSys &ls) {
+
+	for (const Intersection &intersec : intersections_) {
+    	const Element * master = intersec.master_iter();
+       	const Element * slave = intersec.slave_iter();
+
+       	add_sides(master, 0, dofs, dirichlet);
+       	add_sides(slave, 2, dofs, dirichlet);
+		double master_sigma=darcy_.data.sigma.value( master->centre(), master->element_accessor());
 
 /*
  * Local coordinates on 1D
@@ -853,15 +859,17 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
  * t0=0.0, t1=0.5        on side 2 nodes (2,0)
  */
 
+
+
         arma::vec point_Y(1);
         point_Y.fill(1.0);
-        arma::vec point_2D_Y(intersec->map_to_slave(point_Y)); //lokalni souradnice Y na slave rozsirene o 1
-        arma::vec point_1D_Y(intersec->map_to_master(point_Y)); //lokalni souradnice Y na masteru rozsirene o 1
+        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); // local coordinates of  Y on slave
+        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //  local coordinates of  Y on master
 
         arma::vec point_X(1);
         point_X.fill(0.0);
-        arma::vec point_2D_X(intersec->map_to_slave(point_X)); //lokalni souradnice X na slave rozsirene o 1
-        arma::vec point_1D_X(intersec->map_to_master(point_X)); //lokalni souradnice X na masteru rozsirene o 1
+        arma::vec point_2D_X(intersec.map_to_slave(point_X)); // local coordinates of  X on slave
+        arma::vec point_1D_X(intersec.map_to_master(point_X)); // local coordinates of  X on master
 
         arma::mat base_2D(3, 3);
         // base fce = a0 + a1*t0 + a2*t1
@@ -899,7 +907,7 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
         arma::mat A(5, 5);
         for (int i = 0; i < 5; ++i) {
             for (int j = 0; j < 5; ++j) {
-                A(i, j) = -mortar_sigma * intersec->intersection_true_size() *
+                A(i, j) = -master_sigma * intersec.intersection_true_size() *
                         ( difference_in_Y[i] * difference_in_Y[j]
                           + difference_in_Y[i] * difference_in_X[j]/2
                           + difference_in_X[i] * difference_in_Y[j]/2
@@ -908,42 +916,11 @@ void DarcyFlowMH_Steady::mh_abstract_assembly_intersection() {
 
             }
         }
-
-        //globalni indexy:
-        int idx[5];
-        vector<int> dirich(5,0);
-        SideIter side1, side2;
-
-        idx[0] = row_4_edge[intersec->slave_iter()->side(0)->edge_idx()];
-        idx[1] = row_4_edge[intersec->slave_iter()->side(1)->edge_idx()];
-        idx[2] = row_4_edge[intersec->slave_iter()->side(2)->edge_idx()];
-        idx[3] = row_4_edge[intersec->master_iter()->side(0)->edge_idx()];
-        idx[4] = row_4_edge[intersec->master_iter()->side(1)->edge_idx()];
-
-        // Dirichlet bounndary conditions
-        side1=intersec->master_iter()->side(0);
-        //if (side1->cond() != NULL && side1->cond()->type == DIRICHLET) dirich[3]=1;
-        side2=intersec->master_iter()->side(1);
-        //if (side2->cond() !=NULL && side2->cond()->type == DIRICHLET) dirich[4]=1;
-        if (dirich[3]) {
-            //DBGMSG("Boundary %d %f\n",idx[3],side1->cond()->scalar);
-            for(int i=0;i<5;i++)  if (! dirich[i]) {
-                //ls->rhs_set_value(idx[i], -side1->cond()->scalar * A(i,3));
-                A(i,3)=0; A(3,i)=0;
-            }
-            A(3,3)=0.0;
-        }
-        if (dirich[4]) {
-            //DBGMSG("Boundary %d %f\n",idx[4],side2->cond()->scalar);
-            for(int i=0;i<5;i++)  if (! dirich[i]) {
-                //ls->rhs_set_value(idx[i], -side2->cond()->scalar * A(i,4));
-                A(i,4)=0; A(4,i)=0;
-            }
-            A(4,4)=0.0;
-        }
-        //for(int i=0;i<5;i++) DBGMSG("idx %d: %d\n",i, idx[i]);
+        //for(int i=0;i<5;i++) DBGMSG("idx %d: %d\n",i, dofs[i]);
         //A.print("A:");
-        ls->mat_set_values(5, idx, 5, idx, A.memptr());
+
+
+		ls.set_values( dofs, dofs, A, rhs, dirichlet, dirichlet);
 
     }
 }
@@ -983,7 +960,7 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         }
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
 #ifdef HAVE_BDDCML
-            LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
+            LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -1003,7 +980,7 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
         	if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds), PETSC_COMM_WORLD );
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
