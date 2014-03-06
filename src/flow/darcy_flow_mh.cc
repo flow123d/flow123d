@@ -979,6 +979,8 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
+        	LinSys_PETSC *schur1, *schur2;
+
         	if (n_schur_compls == 0) {
                 LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
@@ -1224,14 +1226,14 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
-    if (schur2 != NULL) {
-    	delete schur2;
+    //if (schur2 != NULL) {
+    //	delete schur2;
     	//ISDestroy(&IS2);
-    }
-    if (schur1 != NULL) {
-    	delete schur1;
+    //}
+    //if (schur1 != NULL) {
+    //	delete schur1;
     	//ISDestroy(&IS1);
-    }
+    //}
     if (schur0 != NULL) delete schur0;
 
 	delete edge_ds;

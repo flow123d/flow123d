@@ -86,9 +86,20 @@ public:
      */
     SchurComplement(SchurComplement &other);
 
+    /**
+     * Returns pointer to LinSys object representing the schur complement.
+     */
     LinSys *get_system() const {return (Compl);}
+
+    /**
+     * Returns distribution of the original system (solved by class SchurComplement).
+     */
     Distribution *get_distribution() const {return (ds_);}
 
+    /**
+     * Destructor. In particular it also delete complement linear system if it was passed in
+     * through the @p set_complement() method.
+     */
     ~SchurComplement();
 
     /** Compute only right hand side.
@@ -97,14 +108,17 @@ public:
      *  possibly call only form_rhs, then this can be protected
      */
     void form_rhs();
-    /// set complement object
+    /// Set complement LinSys object.
     void set_complement(LinSys_PETSC *ls);
     /// get distribution of complement object if complement is defined
     Distribution *make_complement_distribution();
     /// get precision of solving
     double get_solution_precision();
 
-    int solve();
+    /**
+     * Solve the system.
+     */
+    int solve() override;
 
 protected:
     /// create IA matrix

@@ -275,6 +275,7 @@ void SchurComplement::resolve()
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
+	ASSERT(ls != nullptr, "NULL complement ls.\n");
     Compl = ls;
 }
 
