@@ -328,7 +328,80 @@ protected:
     double mortar_sigma;
         
   EqData data;
+
+  friend class P0_CouplingAssembler;
+  friend class P1_CouplingAssembler;
 };
+
+
+class P0_CouplingAssembler {
+public:
+	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  master_list_(darcy.mesh_->master_elements),
+	  intersections_(darcy.mesh_->intersections),
+	  master_(nullptr),
+	  tensor_average(2)
+	{
+		arma::mat master_map(1,2), slave_map(1,3);
+		master_map.fill(1.0 / 2);
+		slave_map.fill(1.0 / 3);
+
+		tensor_average[0].push_back( trans( master_map ) * master_map );
+		tensor_average[0].push_back( trans( master_map ) * slave_map );
+		tensor_average[1].push_back( trans( slave_map ) * master_map );
+		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+	}
+
+	void assembly(LinSys &ls);
+	void pressure_diff(int i_ele,
+			vector<int> &dofs,
+			unsigned int &ele_type,
+			double &delta,
+			arma::vec &dirichlet);
+private:
+	typedef vector<unsigned int> IsecList;
+
+	const DarcyFlowMH_Steady &darcy_;
+
+	const vector<IsecList> &master_list_;
+	const vector<Intersection> &intersections_;
+
+	vector<IsecList>::const_iterator ml_it_;
+	const Element *master_;
+
+	/// Row matrices to compute element pressure as average of boundary pressures
+	vector< vector< arma::mat > > tensor_average;
+	/// measure of master element, should be sum of intersection measures
+	double delta_0;
+};
+
+
+
+class P1_CouplingAssembler {
+public:
+	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  intersections_(darcy.mesh_->intersections),
+	  rhs(5),
+	  dofs(5),
+	  dirichlet(5)
+	{
+		rhs.zeros();
+	}
+
+	void assembly(LinSys &ls);
+	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+private:
+
+	const DarcyFlowMH_Steady &darcy_;
+	const vector<Intersection> &intersections_;
+
+	arma::vec rhs;
+	vector<int> dofs;
+	vector<double> dirichlet;
+};
+
 
 
 //void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);

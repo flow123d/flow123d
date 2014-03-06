@@ -45,8 +45,7 @@ class LinSys_PETSC : public LinSys
 public:
     static Input::Type::Record input_type;
 
-    LinSys_PETSC( Distribution * rows_ds,
-                  const MPI_Comm comm = PETSC_COMM_WORLD ); 
+    LinSys_PETSC(const  Distribution * rows_ds);
 
     /**
      * Returns whole Distribution class for distribution of the solution.

@@ -44,9 +44,9 @@ TEST(test_case_name, test_name) {
 fixture test (have prepared environment for each test)
 ============
 
-class ClassTest {
-  SetUp() {...}
-  TearDown() {...}
+class ClassTest : public testing::Test {
+  ClassTest() {...}     // setup in default constructor of SetUp() method
+  ~ClassTest() {...}    // ending in destructor or TearDown() method
 }
 
 TEST_F(ClassTest, test_name) {

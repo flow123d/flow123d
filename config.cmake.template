@@ -101,7 +101,7 @@
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags: "-g -DFlow123d_DEBUG"
-# "release" set flags: "-O3 -DDEBUG_PROFILER"
+# "release" set flags: "-O3 -DDEBUG_PROFILER -DARMA_NO_DEBUG "
 #
 
 set(FLOW_BUILD_TYPE debug)

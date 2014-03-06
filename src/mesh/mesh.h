@@ -153,9 +153,8 @@ public:
      */
     inline MPI_Comm get_comm() const { return comm_; }
 
-    void read_intersections();
+
     void make_intersec_elements();
-    // void make_edge_list_from_neigh();
 
     unsigned int n_sides();
 

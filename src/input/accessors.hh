@@ -247,12 +247,6 @@ inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
 	return stream << address.make_full_address();
 }
 
-/**
- *  Declaration of error info class for passing Input::Address through exceptions.
- *  Is returned by input accessors : Input::Record, Input::Array, etc.
- */
-TYPEDEF_ERR_INFO( EI_Address, const Address);
-
 
 /**
  * @brief Accessor to the data with type \p Type::Record.

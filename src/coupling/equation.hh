@@ -220,7 +220,7 @@ public:
 	TYPEDEF_ERR_INFO( EI_Domain, string);
 	DECLARE_INPUT_EXCEPTION(ExcUnknownDomain,
 			<< "Unknown field domain: " << EI_Domain::val << "\n");
-
+	//		<< Input::EI_Address::val << endl);
     /**
      * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
      */

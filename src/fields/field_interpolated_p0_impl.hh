@@ -212,10 +212,12 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		if (elm.dim() == 0) {
 			//Point point;
 			//for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
+			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
 		} else {
 			BoundingBox bb;
 			elm.element()->get_bounding_box(bb);
+			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_bounding_box(bb, searched_elements_);
 		}
 
@@ -264,6 +266,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			            break;
 			        }
 			    }
+
+
 
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {

@@ -28,13 +28,7 @@ TTriangle::TTriangle(const TTriangle& T) {
     X2 = T.X2;
     X3 = T.X3;
 
-    A1 = new TAbscissa(*T.A1);
-    A2 = new TAbscissa(*T.A2);
-    A3 = new TAbscissa(*T.A3);
-
-    pl = new TPlain(*T.pl);
-
-    area = T.area;
+    update();
 }
 
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -44,11 +38,26 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     X2 = P2;
     X3 = P3;
 
-    A1 = new TAbscissa(P1, P2);
-    A2 = new TAbscissa(P2, P3);
-    A3 = new TAbscissa(P3, P1);
+    update();
+}
 
-    pl = new TPlain(P1, P2, P3);
+
+TTriangle::TTriangle(const Element& ele) {
+    id = generateId();
+
+    X1=TPoint(ele.node[0]->point()(0), ele.node[0]->point()(1), ele.node[0]->point()(2));
+	X2=TPoint(ele.node[1]->point()(0), ele.node[1]->point()(1), ele.node[1]->point()(2));
+	X3=TPoint(ele.node[2]->point()(0), ele.node[2]->point()(1), ele.node[2]->point()(2));
+
+	update();
+}
+
+void TTriangle::update() {
+	A1 = new TAbscissa(X1, X2);
+    A2 = new TAbscissa(X2, X3);
+    A3 = new TAbscissa(X3, X1);
+
+    pl = new TPlain(X1, X2, X3);
 
     ComputeArea();
 }
@@ -141,7 +150,7 @@ BoundingBox &TTriangle::get_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox.set_bounds(minCoor, maxCoor);
+	boundingBox=BoundingBox(minCoor, maxCoor);
 	return boundingBox;
 }
 
