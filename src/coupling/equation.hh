@@ -326,7 +326,7 @@ protected:
  * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
  * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
  */
-#define ADD_FIELD(name, ...)                   add_field(&name, string(#name), __VA_ARGS__)
+#define ADD_FIELD(name, ...)                   this->add_field(&name, string(#name), __VA_ARGS__)
 
 
 

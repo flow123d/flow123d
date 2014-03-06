@@ -91,17 +91,14 @@ Transport of substances is considered also on interfaces of physical domains wit
 Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the comunication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
 \begin{equation}
   \label{e:inter_dim_flux}
-  q^c_{d+1,d} = \delta_{d+1}\sigma^c_{d+1,d} \th_d ( c_{d+1} - c_d) + \begin{cases}q^w_{d+1,d} c_{d+1} & \mbox{ if }q^w_{d+1,d}\ge 0,\\q^w_{d+1,d} \frac{\th_d}{\th_{d+1}} c_d & \mbox{ if }q^w_{d+1,d}<0,\end{cases}
+  q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + \begin{cases}q^w_{d+1,d} c_{d+1} & \mbox{ if }q^w_{d+1,d}\ge 0,\\q^w_{d+1,d} \frac{\th_d}{\th_{d+1}} c_d & \mbox{ if }q^w_{d+1,d}<0,\end{cases}
 \end{equation}
 where
 \begin{itemize}
 \item $q^c_{d+1,d}$ \units{1}{-d}{-1} is the density of concentration flux from $\Omega_{d+1}$ to $\Omega_d$,
-\item $\sigma^c_{d+1,d}$ \units{}{1}{-1} is a \hyperA{TransportDG-BulkData::sigma-c}{transition parameter}.
-Its nonzero value causes mass exchange between dimensions whenever the concentrations differ.
-It is recommended to set either $\sigma^c=0$ (exchange due to water flux only) or, similarly as in \eqref{e:sigma_law},
-\[
-  \sigma^c_{d+1,d} \approx\frac{\delta_{d+1}}{\delta_d}\D_d:\n\otimes\n.
-\]
+\item $\sigma^c_{d+1,d}$ \units{}{}{} is a \hyperA{TransportDG-BulkData::sigma-c}{transition parameter}.
+Its value determines the mass exchange between dimensions whenever the concentrations differ.
+In general, it is recommended to leave the default value $\sigma^c=1$ or to set $\sigma^c=0$ (when exchange is due to water flux only).
 \item $q^w_{d+1,d}$ \units{}{3-d}{-1} is the water flux from $\Omega_{d+1}$ to $\Omega_d$, i.e. $q^w_{d+1,d} = \vc q_{d+1}\cdot\n_{d+1}$.
 \end{itemize}
 The communication between dimensions is incorporated as the total flux boundary condition for the problem on $\Omega_{d+1}$:
@@ -149,7 +146,7 @@ for any instant $t$ in the computational time interval and any substance $i$.
 Here
 $$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}\delta_d\th c^i(t,\vc x)\,d\vc x, $$
 $$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S^i(t,\vc x)\,d\vc x, $$
-$$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\th\delta_d c^i(t,\vc x)\vc q(t,\vc x)\tn I - \th\delta_d\D^i\nabla c^i(t,\vc x)\right)\cdot\vc n \,d\vc x $$
+$$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\th\delta_d c^i(t,\vc x)\vc q(t,\vc x) - \th\delta_d\D^i\nabla c^i(t,\vc x)\right)\cdot\vc n \,d\vc x $$
 is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \units{1}{}{-1} of $i$-th substance at time $t$, respectively.
 The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
 

@@ -117,6 +117,7 @@ void Mesh::reinit(Input::Record in_record)
     n_triangles = 0;
     n_tetrahedras = 0;
 
+    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 
     // Initialize numbering of nodes on sides.
     // This is temporary solution, until class Element is templated
@@ -433,6 +434,8 @@ void Mesh::make_neighbours_and_edges()
                 edg = &( edges.back() );
                 edg->n_sides = 0;
                 edg->side_ = new struct SideIter[ intersection_list.size() ];
+                if (intersection_list.size() > max_edge_sides_[e->dim()-1])
+                	max_edge_sides_[e->dim()-1] = intersection_list.size();
 
                 if (intersection_list.size() == 1) { // outer edge, create boundary object as well
                     edg->n_sides=1;

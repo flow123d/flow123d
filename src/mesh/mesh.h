@@ -161,6 +161,13 @@ public:
     inline unsigned int n_vb_neighbours() const {
         return vb_neighbours_.size();
     }
+
+    /**
+     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
+     * @param dim Dimension of elements sharing the edge.
+     */
+    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
+
     /**
      *
      */
@@ -307,6 +314,9 @@ protected:
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
+
+    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
+    unsigned int max_edge_sides_[3];
 
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
