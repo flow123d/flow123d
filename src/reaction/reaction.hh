@@ -12,6 +12,8 @@
 
 #include "input/accessors.hh"
 #include "coupling/equation.hh"
+#include "mesh/elements.h"
+
 class Mesh;
 class Distribution;
 
@@ -89,6 +91,8 @@ class Reaction: public EquationBase
 		void set_names(const std::vector<string> &names);
 		/// Initialize from input interface.
 		virtual void init_from_input(Input::Record in_rec);
+
+		Element * get_element_for_dof_index(unsigned int idx);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

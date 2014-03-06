@@ -167,3 +167,8 @@ void Reaction::set_concentration_vector(Vec &vec)
 {
 	cout << "Reaction.set_concentration_vector(Vec &vec) is not implemented." << endl;
 }
+
+Element * Reaction::get_element_for_dof_index(unsigned int idx)
+{
+	return &( mesh_->element[idx] );
+}
