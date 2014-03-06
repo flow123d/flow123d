@@ -128,8 +128,8 @@ public:
 
 class LinSysPetscTest : public LinSys_PETSC {
 public:
-	LinSysPetscTest(Distribution *ds, const MPI_Comm comm = PETSC_COMM_WORLD )
-	: LinSys_PETSC(ds, comm)
+	LinSysPetscTest(Distribution *ds)
+	: LinSys_PETSC(ds)
 	{ r_tol_ = 1e-12; a_tol_ = 1e-12; }
 };
 
