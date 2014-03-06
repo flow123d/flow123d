@@ -47,7 +47,9 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 
 LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
                             const MPI_Comm comm ) 
-        : LinSys( rows_ds, comm )
+        : LinSys( rows_ds, comm ),
+          matrix_(0),
+          init_guess_nonzero(false)
 {
     // set type
     //type = LinSys::PETSC;
@@ -189,6 +191,10 @@ void LinSys_PETSC::preallocate_matrix()
     VecDestroy(&off_vec_);
 
     // create PETSC matrix with preallocation
+    if (matrix_ != NULL)
+    {
+    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
@@ -264,6 +270,12 @@ void LinSys_PETSC::apply_constrains( double scalar )
 }
 
 
+void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
+{
+	init_guess_nonzero = set_nonzero;
+}
+
+
 int LinSys_PETSC::solve()
 {
     PetscErrorCode     ierr;
@@ -313,7 +325,17 @@ int LinSys_PETSC::solve()
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
     DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
-    ierr = KSPSetFromOptions(system); 
+    ierr = KSPSetFromOptions(system);
+    // We set the KSP flag set_initial_guess_nonzero
+    // unless KSP type is preonly.
+    // In such case PETSc fails (version 3.4.1)
+    if (init_guess_nonzero)
+    {
+    	KSPType type;
+    	KSPGetType(system, &type);
+    	if (strcmp(type, KSPPREONLY) != 0)
+    		ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    }
 
     ierr = KSPSolve(system, rhs_, solution_ ); 
     ierr = KSPGetConvergedReason(system,&reason); 
