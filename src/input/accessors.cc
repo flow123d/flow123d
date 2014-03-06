@@ -13,6 +13,54 @@
 
 namespace Input {
 
+
+/*************************************************************************************************************************************
+ * Implementation of InputException
+ */
+
+
+const char * Exception::what() const throw () {
+    // have preallocated some space for error message we want to return
+    // Is there any difference, if we move this into ExceptionBase ??
+    static std::string message(1024,' ');
+
+
+    // Be sure that this function do not throw.
+    try {
+        std::ostringstream converter;
+
+        converter << std::endl << std::endl;
+        converter << "--------------------------------------------------------" << std::endl;
+        converter << "User Error: ";
+        print_info(converter);
+#ifdef DEBUG_MESSAGES
+        converter << "\n** Diagnosting info **\n" ;
+        converter << boost::diagnostic_information_what( *this );
+        print_stacktrace(converter);
+#endif
+        converter << "--------------------------------------------------------" << std::endl;
+
+        message = converter.str();
+        return message.c_str();
+
+    } catch (std::exception &exc) {
+        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
+                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
+
+        std::abort();
+    } catch (...) {
+        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
+                << std::endl;
+
+        std::abort();
+    }
+    return 0;
+}
+
+
+
+
+
 /*****************************************************************************
  * Implementation of the class Input::Address
  */
@@ -134,15 +182,15 @@ Record::Record(const Address &address, const Type::Record type)
 }
 
 
-const Input::Address & Record::get_address() const
+Input::EI_Address Record::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
 
-void Record::set_address(const Address &address)
+string Record::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 
@@ -184,15 +232,14 @@ Input::Type::Record AbstractRecord::type() const
 }
 
 
-const Input::Address & AbstractRecord::get_address() const
+Input::EI_Address AbstractRecord::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
-
-void AbstractRecord::set_address(const Address &address)
+string AbstractRecord::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 
@@ -219,15 +266,16 @@ Array::Array(const Address &address, const Type::Array type)
 }
 
 
-const Input::Address & Array::get_address() const
+Input::EI_Address Array::ei_address() const
 {
-	return address_;
+	return EI_Address(address_);
 }
 
 
-void Array::set_address(const Address &address)
+
+string Array::address_string() const
 {
-	address_ = address;
+	return address_.make_full_address();
 }
 
 

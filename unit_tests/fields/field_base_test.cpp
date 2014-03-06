@@ -139,7 +139,7 @@ TEST(Field, init_from_default) {
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
     mesh.read_gmsh_from_stream(in);
 
-    Point<3> p("1 2 3");
+    Space<3>::Point p("1 2 3");
 
     {
         Field<3, FieldValue<3>::Scalar > scalar_field;
@@ -160,7 +160,7 @@ TEST(Field, init_from_default) {
 
         // test death of set_time without default value
         scalar_field.set_mesh(&mesh);
-        EXPECT_DEATH( {scalar_field.set_time(0.0);} , "Missing value of the field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(0.0);} , ExcXprintfMsg, "Missing value of the field");
     }
     //
     {

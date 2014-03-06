@@ -42,7 +42,7 @@ update-build-tree:
 
 
 build-flow123d: update-build-tree cmake
-	@make -C $(BUILD_DIR) bin/flow123d
+	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
 
 
 # This target only configure the build process.
@@ -119,6 +119,11 @@ ref-doc: cmake update-build-tree
 # this replace file is applied to input_reference.tex produced by flow123d
 #
 
+# call flow123d and make file flow_version.tex
+$(DOC_DIR)/flow_version.tex: update-build-tree build-flow123d
+	$(BUILD_DIR)/bin/flow123d --version | head -n1 | cut -d" " -f4- | sed 's/_/\\_/g' \
+	  > $(DOC_DIR)/flow_version.tex
+
 # call flow123d and make raw input_reference file
 $(DOC_DIR)/input_reference_raw.tex: update-build-tree build-flow123d	 	
 	$(BUILD_DIR)/bin/flow123d --latex_doc | grep -v "DBG" | \
@@ -136,7 +141,7 @@ update_add_doc: $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/add_to_ref_doc.txt
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/add_to_ref_doc.list	
 	
 # make final input_reference.tex, applying replace rules
-inputref: $(DOC_DIR)/input_reference_raw.tex update_add_doc
+inputref: $(DOC_DIR)/flow_version.tex $(DOC_DIR)/input_reference_raw.tex update_add_doc
 	$(DOC_DIR)/add_doc_replace.sh $(DOC_DIR)/add_to_ref_doc.txt $(DOC_DIR)/input_reference_raw.tex $(DOC_DIR)/input_reference.tex	
 	
 	
@@ -158,4 +163,3 @@ help:
 #	@echo "... linux-pack"
 .PHONY : help
 
-	

@@ -35,7 +35,6 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/problem.h"
 #include "system/sys_profiler.hh"
 //#include "boost/lexical_cast.hpp"
 //#include "system/tokenizer.hh"
@@ -197,7 +196,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
 
 
 template <int spacedim, class Value>
-typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
 	if (elm.idx() != computed_elm_idx_) {
@@ -207,11 +206,13 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
 
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.element()->measure();
+
 		// gets suspect elements
 		if (elm.dim() == 0) {
-			Point<3> point;
-			for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
-			((BIHTree *)bih_tree_)->find_point(point, searched_elements_);
+			//Point point;
+			//for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
+			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
 		} else {
 			BoundingBox bb;
 			elm.element()->get_bounding_box(bb);
@@ -311,7 +312,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 
 
 template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");

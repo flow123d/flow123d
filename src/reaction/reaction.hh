@@ -12,6 +12,8 @@
 
 #include "input/accessors.hh"
 #include "coupling/equation.hh"
+#include "mesh/elements.h"
+
 class Mesh;
 class Distribution;
 
@@ -42,10 +44,6 @@ class Reaction: public EquationBase
 		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		virtual double **compute_reaction(double **concentrations, int loc_el);
-		/**
-		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-		*/
-		virtual void compute_one_step(void);
 
 		/**
 		 * Returns number of substances involved in reactions. This should be same as number of substances in transport.
@@ -73,11 +71,18 @@ class Reaction: public EquationBase
 		*/
 		virtual void set_time_step(Input::Record in_rec);
 		//
+                
+                /** Sets the time governor. 
+                 * By default the time governor of the reaction is set.
+                 */
+                virtual void set_time_governor(TimeGovernor &tg);
+                
 		virtual void update_solution(void);
 		virtual void choose_next_time(void);
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);
 		virtual void get_solution_vector(double* &vector, unsigned int &size);
+		virtual void set_concentration_vector(Vec &vec);
 		/**
 		* Function for setting dual porosity.
 		*/
@@ -86,6 +91,14 @@ class Reaction: public EquationBase
 		* Function for getting dual porosity.
 		*/
 		bool get_dual_porosity(void);
+		/// Set mesh used by the model.
+		void set_mesh(Mesh &mesh);
+		/// Set names of substances.
+		void set_names(const std::vector<string> &names);
+		/// Initialize from input interface.
+		virtual void init_from_input(Input::Record in_rec);
+
+		Element * get_element_for_dof_index(unsigned int idx);
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.

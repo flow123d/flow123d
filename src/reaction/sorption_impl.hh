@@ -130,7 +130,7 @@ private:
 void Isotherm::reinit(enum SorptionType sorp_type, double rock_density, double rho_aqua, double porosity, double molar_mass, double c_aqua_limit)
 {
     // set class variables
-	sorption_type = sorp_type;
+    sorption_type = sorp_type;
     scale_aqua = porosity * rho_aqua;
     scale_sorbed = (1-porosity) * rock_density * molar_mass;
     inv_scale_aqua = 1/scale_aqua/2;

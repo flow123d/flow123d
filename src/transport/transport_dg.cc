@@ -36,15 +36,15 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-#include "la/solve.h"
+//#include "la/solve.h"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 #include "flow/old_bcd.hh"
+#include "la/linsys_PETSC.hh"
 #include "mesh/partitioning.hh"
-
 
 using namespace Input::Type;
 
@@ -64,7 +64,7 @@ Selection TransportDG::EqData::bc_type_selection =
 Record TransportDG::input_type
 	= Record("AdvectionDiffusion_DG", "DG solver for transport with diffusion.")
 	.derive_from(TransportBase::input_type)
-    .declare_key("solver", Solver::input_type, Default::obligatory(),
+    .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
     .declare_key("bc_data", Array(TransportDG::EqData().boundary_input_type()
     		.declare_key("old_boundary_file", IT::FileName::input(),
@@ -220,10 +220,6 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
     time_->fix_dt_until_mark();
-    
-    // set up solver
-    solver = new Solver;
-    solver_init(solver, in_rec.val<Input::AbstractRecord>("solver"));
 
     // Read names of transported substances.
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
@@ -293,13 +289,17 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
     time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
-    
+
     // allocate matrix and vector structures
-    int lsize = feo->dh()->lsize();
+    
     ls    = new LinSys*[n_subst_];
-    ls_dt = new LinSys_MPIAIJ(lsize);
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	ls[sbi] = new LinSys_MPIAIJ(lsize);
+    ls_dt = new LinSys_PETSC(feo->dh()->distr());
+    ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
+    for (int sbi = 0; sbi < n_subst_; sbi++) {
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
+    	ls[sbi]->set_solution(NULL);
+    }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
 
@@ -312,9 +312,7 @@ TransportDG::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 TransportDG::~TransportDG()
 {
-    //delete transport_output;
     delete time_;
-    delete solver;
     delete ls_dt;
 
     if (feo->dh()->el_ds()->myp() == 0)
@@ -387,7 +385,7 @@ void TransportDG::update_solution()
 	{
 		ls_dt->start_add_assembly();
 		assemble_mass_matrix();
-		ls_dt->finalize();
+		ls_dt->finish_assembly();
 		mass_matrix = ls_dt->get_matrix();
 	}
 
@@ -407,12 +405,12 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		MatZeroEntries(ls[i]->get_matrix());
+    		ls[i]->mat_zero_entries();
     	}
         assemble_stiffness_matrix();
         for (int i=0; i<n_subst_; i++)
         {
-        	ls[i]->finalize();
+        	ls[i]->finish_assembly();
 
         	if (stiffness_matrix[i] == NULL)
         		MatConvert(ls[i]->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
@@ -433,13 +431,13 @@ void TransportDG::update_solution()
     	for (int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
-    		VecSet(ls[i]->get_rhs(), 0);
+    		ls[i]->rhs_zero_entries();
     	}
     	set_sources();
     	set_boundary_conditions();
     	for (int i=0; i<n_subst_; i++)
     	{
-    		ls[i]->finalize();
+    		ls[i]->finish_assembly();
 
     		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
     		VecCopy(ls[i]->get_rhs(), rhs[i]);
@@ -465,35 +463,30 @@ void TransportDG::update_solution()
      *   A^k = A + 1/dt M.
      *
      */
-
+    Mat m;
     START_TIMER("solve");
     for (int i=0; i<n_subst_; i++)
     {
-		MatCopy(stiffness_matrix[i], ls[i]->get_matrix(), DIFFERENT_NONZERO_PATTERN);
-		// ls->get_matrix() = 1/dt*mass_matrix + ls->get_matrix()
-		MatAXPY(ls[i]->get_matrix(), 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
-		Vec y;
+    	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
+		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
+		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
+		Vec y,w;
 		VecDuplicate(rhs[i], &y);
-		// y = mass_matrix*ls->get_solution()
+		VecDuplicate(rhs[i], &w);
 		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		// ls->get_rhs() = 1/dt*y + rhs
-		VecWAXPY(ls[i]->get_rhs(), 1./time_->dt(), y, rhs[i]);
-
-		//MatView( ls->get_matrix(), PETSC_VIEWER_STDOUT_SELF );
+		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		ls[i]->set_rhs(w);
 
 		VecDestroy(&y);
+		VecDestroy(&w);
 
-		//VecView( ls->get_rhs(), PETSC_VIEWER_STDOUT_SELF );
-		// solve
-		solve_system(solver, ls[i]);
+		ls[i]->solve();
     }
     END_TIMER("solve");
 
     if (mass_balance() != NULL)
     	mass_balance()->calculate(time_->t());
 
-    //VecView( ls->get_solution(), PETSC_VIEWER_STDOUT_SELF );
-    
     END_TIMER("DG-ONE STEP");
 }
 
@@ -767,13 +760,13 @@ void TransportDG::assemble_volume_integrals()
         		for (unsigned int i=0; i<ndofs; i++)
         		{
         			arma::vec3 Kt_grad_i = K.t()*fe_values.shape_grad(i,k);
-        			double velocity_dot_grad_i_times_JxW = arma::dot(velocity[k], fe_values.shape_grad(i,k))*fe_values.JxW(k);
+        			double velocity_dot_grad_i = arma::dot(velocity[k], fe_values.shape_grad(i,k));
 
         			for (unsigned int j=0; j<ndofs; j++)
         			{
-						local_matrix[i*ndofs+j] += arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))*por_times_csection_times_JxW
-												   -fe_values.shape_value(j,k)*velocity_dot_grad_i_times_JxW
-												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
+						local_matrix[i*ndofs+j] += (arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))
+												   -fe_values.shape_value(j,k)*velocity_dot_grad_i
+												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k))*fe_values.JxW(k);
 					}
 
 				}
@@ -928,7 +921,7 @@ void TransportDG::assemble_fluxes_element_element()
 					sd[1] = s2;
 
 #define AVERAGE(i,k,side_id)  (fe_values[sd[side_id]]->shape_value(i,k)*0.5)
-#define WAVERAGE(i,k,side_id) (por_m[k][sd[side_id]]*csection[k][sd[side_id]]*arma::dot(side_K[k][sd[side_id]]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
+#define WAVERAGE(i,k,side_id) (arma::dot(side_K[k][sd[side_id]]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values[sd[side_id]]->shape_value(i,k))
 
 					// For selected pair of elements:
@@ -1323,7 +1316,7 @@ void TransportDG::calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3
 	else
 		K.zeros();
 
-	K = (vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3))*arma::eye(3,3);
+	K = (vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3);
 }
 
 
@@ -1491,8 +1484,8 @@ void TransportDG::set_initial_condition()
 
 	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
-		ls[sbi]->finalize();
-		solve_system(solver, ls[sbi]);
+		ls[sbi]->finish_assembly();
+		ls[sbi]->solve();
 	}
 	END_TIMER("set_init_cond");
 }
@@ -1614,13 +1607,13 @@ void TransportDG::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vecto
 				}
 				// the penalty term has to be added otherwise the mass balance will not hold
 				if (mh_dh->side_flux(*side) < -mh_dh->precision())
-					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*fe_values.JxW(k);
+					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*por_m[k]*fe_values.JxW(k);
 
-				mass_flux += water_flux*conc*fe_values.JxW(k);
+				mass_flux += water_flux*conc*por_m[k]*fe_values.JxW(k);
 			}
 
 			bcd_balance[sbi][bc_region_idx] += mass_flux;
-			if (mass_flux > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
+			if (mh_dh->side_flux(*side) >= -mh_dh->precision()) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
 			else bcd_minus_balance[sbi][bc_region_idx] += mass_flux;
 		}
     }

@@ -6,18 +6,18 @@
       mesh_file = "./input/test1_new.msh",
       sets = [
         {
-            name = "fractions",
+            name = "fractures",
             region_labels = [
-                "2d_fraction_1",
-                "2d_fraction_2"
+                "2d_fracture_1",
+                "2d_fracture_2"
             ]
         },
         {
             name = "dirichlet_boundary",
             region_labels = [
                 ".1d_channel",
-                ".2d_fraction_1",
-                ".2d_fraction_2",
+                ".2d_fracture_1",
+                ".2d_fracture_2",
                 ".3d_cube"
             ]
         }
@@ -33,14 +33,14 @@
           anisotropy = 10
         },
         // using region set
-        { r_set = "fractions",  
+        { r_set = "fractures",  
           anisotropy = 1
         },
 	/* 
-        { region = "2d_fraction_1",
+        { region = "2d_fracture_1",
           anisotropy = 1
         },
-        { region = "2d_fraction_2",
+        { region = "2d_fracture_2",
           anisotropy = 1
         },
 	*/
@@ -75,7 +75,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        r_tol = 1.0e-10,
+        a_tol = 1.0e-10 
       } 
     }
   }, 

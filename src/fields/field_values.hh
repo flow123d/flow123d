@@ -239,10 +239,13 @@ public:
                                 ++it;
                             } else value_.at(row,col) = value_.at(col,row);
                 } else {
-                    THROW( ExcFV_Input() << EI_InputMsg(
-                            boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
-                                % NRows % NCols % rec.size() % NRows % ((NRows+1)*NRows/2))
-                         ));
+                    THROW( ExcFV_Input()
+                    		<< EI_InputMsg(
+                    				boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
+                                	% NRows % NCols % rec.size() % NRows % ((NRows+1)*NRows/2)))
+                    		<< rec.ei_address()
+
+                         );
                 }
             }
         } else {
@@ -251,16 +254,19 @@ public:
 
                 for (unsigned int row = 0; row < NRows; row++, ++it) {
                     if (it->size() != NCols)
-                        THROW( ExcFV_Input());
+                        THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
+                        		             << rec.ei_address());
                     Input::Iterator<ET> col_it = it->begin<ET>();
                     for (unsigned int col = 0; col < NCols; col++, ++col_it)
                         value_.at(row, col) = *col_it;
                 }
             } else {
-                THROW( ExcFV_Input() << EI_InputMsg(
-                        boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
-                            % NRows % NCols % rec.size() % it->size() )
-                     ));
+                THROW( ExcFV_Input()
+                		<< EI_InputMsg(
+                				boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
+                					% NRows % NCols % rec.size() % it->size() ))
+                		<< rec.ei_address()
+                     );
             }
         }
     }
@@ -368,10 +374,12 @@ public:
                 value_.at(i)=ET(*it);
             }
         } else {
-            THROW( ExcFV_Input() << EI_InputMsg(
-                    boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
-                        % n_rows() % rec.size() )
-                 ));
+            THROW( ExcFV_Input()
+            		<< EI_InputMsg(
+            				boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
+                        		% n_rows() % rec.size() ))
+                    << rec.ei_address()
+                 );
         }
     }
 
@@ -422,10 +430,12 @@ public:
             for(unsigned int i=0; i< NRows; i++, ++it)
                 value_.at(i)=*it;
         } else {
-            THROW( ExcFV_Input() << EI_InputMsg(
-                    boost::str(boost::format("Initializing fixed vector of size %d by vector of size %d.")
-                        % n_rows() % rec.size() )
-                 ));
+            THROW( ExcFV_Input()
+            		<< EI_InputMsg(
+            				boost::str(boost::format("Initializing fixed vector of size %d by vector of size %d.")
+                        		% n_rows() % rec.size() ))
+                    << rec.ei_address()
+                 );
         }
     }
 

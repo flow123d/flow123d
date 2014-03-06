@@ -60,6 +60,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
+#define NDEF  -1
 
 namespace IT = Input::Type;
 
@@ -104,8 +105,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 
 void Mesh::reinit(Input::Record in_record)
 {
-
-    //n_materials = NDEF;
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -706,44 +705,39 @@ void Mesh::read_intersections() {
 
     ElementFullIter master(element), slave(element);
 
-    char tmp_line[LINE_SIZE];
+    //char tmp_line[LINE_SIZE];
     string file_name = in_record_.val<FilePath>("neighbouring");
-    FILE *in = xfopen( file_name , "rt" );
-
-    tokenizer<boost::char_separator<char> >::iterator tok;
+    Tokenizer tok( FilePath(in_record_.val<FilePath>("neighbouring")) );
 
     xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
-    skip_to(in, "$Intersections");
-    xfgets(tmp_line, LINE_SIZE - 2, in);
-    int n_intersect = atoi(xstrtok(tmp_line));
+    tok.skip_to("$Intersections");
+    tok.next_line();
+    int n_intersect = lexical_cast<unsigned int>(*tok); ++tok;
     INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
 
     intersections.reserve(n_intersect);
 
     for (int i = 0; i < n_intersect; i++) {
-        xfgets(tmp_line, LINE_SIZE - 2, in);
-        string line = tmp_line;
-        tokenizer<boost::char_separator<char> > line_tokenizer(line, boost::char_separator<char>("\t \n"));
-
-        tok = line_tokenizer.begin();
+    	tok.next_line();
 
         try {
-            ++tok; // skip id token
-            int type = lexical_cast<int> (*tok);
-            ++tok;
-            int master_id = lexical_cast<int> (*tok);
-            ++tok;
-            int slave_id = lexical_cast<int> (*tok);
-            ++tok;
-            double sigma = lexical_cast<double> (*tok);
-            ++tok;
+        	int type = lexical_cast<int> (*tok);
+        	++tok;
+        	int master_id = lexical_cast<int> (*tok);
+        	++tok;
+        	int slave_id = lexical_cast<int> (*tok);
+        	++tok;
+        	double sigma = lexical_cast<double> (*tok);
+        	++tok;
 
-            int n_intersect_points = lexical_cast<int> (*tok);
-            ++tok;
+        	int n_intersect_points = lexical_cast<int> (*tok);
+        	++tok;
             master = element.find_id(master_id);
             slave = element.find_id(slave_id);
 
-            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, tok));
+            tokenizer<boost::char_separator<char> > line_tokenizer(tok.line(), boost::char_separator<char>("\t \n"));
+            tokenizer<boost::char_separator<char> >::iterator isec_tok = line_tokenizer.begin();
+            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, isec_tok));
         } catch (bad_lexical_cast &) {
             xprintf(UsrErr, "Wrong number format at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
         }

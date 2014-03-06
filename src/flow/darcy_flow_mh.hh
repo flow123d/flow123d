@@ -55,6 +55,7 @@
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
+#include "la/linsys_BDDC.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
@@ -183,6 +184,12 @@ public:
     
     //returns reference to equation data
     virtual EqData &get_data() = 0;
+    
+    
+    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
+
+    virtual void set_concentration_vector(Vec &vc){};
+
 
 protected:
     void setup_velocity_vector() {
@@ -257,6 +264,7 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
+    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
     //returns reference to equation data
     virtual DarcyFlowMH::EqData &get_data()
@@ -270,14 +278,15 @@ public:
 protected:
     virtual void modify_system() {};
     void set_R() {};
-    void prepare_parallel();
+    void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
     void preallocate_mh_matrix();
     void assembly_steady_mh_matrix();
     void coupling_P0_mortar_assembly();
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0();
+    void make_schur0( const Input::AbstractRecord in_rec);
+    void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     void make_schur1();
     void make_schur2();
     double solution_precision() const;
@@ -286,7 +295,7 @@ protected:
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	struct Solver *solver;
+	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
 	SchurComplement *schur1;  	//< first schur compl.
@@ -308,24 +317,17 @@ protected:
 	int	*side_row_4_id;		//< side id to matrix row
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
-	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
-
-
 
 	// MATIS related arrays
-    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
-	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
+        std::vector<double>   solution_;                 //< sequantial scattered solution vector
+        std::vector<unsigned> solver_indices_;           //< renumbering of unknowns in the global vector
+        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
 
-        Mat IA1;                                         //< inverse of matrix IA1
-        Mat IA2;                                         //< inverse of matrix IA2
-
-        Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
-        
-        double mortar_sigma;
+    double mortar_sigma;
         
   EqData data;
 };

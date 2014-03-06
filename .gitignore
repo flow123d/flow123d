@@ -21,6 +21,15 @@ build_tree
 *.kate-swp
 *.kdev4
 *.orig
+*.backup
+
+doc/reference_manual/*.aux
+doc/reference_manual/*.bbl
+doc/reference_manual/*.blg
+doc/reference_manual/*.out
+doc/reference_manual/*.synctex.gz
+doc/reference_manual/*.toc
 
 .cproject
 .project
+.settings

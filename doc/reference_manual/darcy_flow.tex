@@ -22,31 +22,30 @@ The conductivity tensor is given by the product \penalty-500
 $\tn K_d = k_d \tn A_d$, where 
 \hyperA{DarcyFlowMH-Steady-BulkData::conductivity}{$k_d>0$} is the hydraulic conductivity \units{}{1}{-1} and 
 \hyperA{DarcyFlowMH-Steady-BulkData::cond-anisothropy}{$\tn A_d$} is 
-$3\times 3$ dimensionless anisotropy tensor which has to be symmetric and positive definite. The piezometric-head $H_d$ has units \units{}{1}{} and is related to the pressure head
+$3\times 3$ dimensionless anisotropy tensor which has to be symmetric and positive definite. The piezometric-head $H_d$ is related to the pressure head
 $h_d$ by $H_d = h_d + z$ assuming that the gravity force acts in negative direction of the $z$-axes. 
-Combining these relations we get Darcy low in the form:
+Combining these relations we get the Darcy law in the form:
 \begin{equation}
     \label{eq:darcy_flux}
     \vc q = -\delta k\tn A \grad (h+z)  \qquad\text{on }\Omega_d,\ \text{for $d=1,2,3$}.
 \end{equation}
 
-Next, we employ continuity equation for saturated porous medium:
+Next, we employ continuity equation for saturated porous medium and the dimensional reduction from the preceding section (with $w=u:=H$, $\vc j:=\vc w$, $\tn A:=\tn K$ and $\vc b:=\vc 0$), which yields:
 \begin{equation}
     \label{eq:continuity}
-    \prtl_t (S\, h) + \div \vc q = F \qquad \text{on }\Omega_d,\ \text{for $d=1,2,3$},
+    \prtl_t (\delta S\, h) + \div \vc q = F \qquad \text{on }\Omega_d,\ \text{for $d=1,2,3$},
 \end{equation}
-where $S_d$ is the storativity and $F_d$ is a source term. In our setting the principal unknowns of the system 
+where \hyperA{DarcyFlowMH-Steady-BulkData::storativity}{$S_d$} \units{}{-1}{} is the storativity and $F_d$ \units{}{3-d}{-1} is a source term. In our setting the principal unknowns of the system 
 (\ref{eq:darcy_flux}, \ref{eq:continuity}) are the pressure head $h_d$ and the flux $\vc q_d$.
 
 
-The storativity 
-\hyperA{DarcyFlowMH-Steady-BulkData::storativity}{$S_d>0$} or the volumetric specific storage \units{}{-1}{} can be expressed as
+The storativity $S_d>0$ or the volumetric specific storage can be expressed as
 \begin{equation}
   S_d = \gamma_w(\beta_r + \nu \beta_w),
 \end{equation}
 where $\gamma_w$ \units{1}{-2}{-2} is the specific weight of water, $\nu$ is the porosity $[-]$, $\beta_r$ is compressibility of the bulk material of the pores (rock)
 and $\beta_w$ is compressibility of the water both with units \units{-1}{1}{-2}. For steady problems we set $S_d=0$ for all dimensions $d=1,2,3$.
-The source term $F_d$ \units{}{3-d}{-1} on the right hand side of \eqref{eq:continuity} consists of the volume density of prescribed sources 
+The source term $F_d$ on the right hand side of \eqref{eq:continuity} consists of the volume density of prescribed sources 
 \hyperA{DarcyFlowMH-Steady-BulkData::water-source-density}{$f_d$} \units{}{}{-1} and flux from higher dimension. 
 Exact formula is slightly different for every dimension and will be discussed presently.
 
@@ -79,7 +78,7 @@ where $\sigma_2^{i}=\delta_2^{i}\sigma_{21}$ \units{}{1}{-1} is the transition c
 the width of the fracture $i$. Sum of the fluxes forms part of $F_1$ \units{}{2}{-1}
 \begin{equation}
    \label{source_1D}
-   F_1 = \delta_1 f_1 + \sum_{i} q_{21}^{i}. 
+   F_1 = \delta_1 f_1 + \frac{\delta_1}{\delta_2}(q_{32}^+ + q_{32}^-) + \sum_{i=1}^n q_{21}^{i}. 
 \end{equation}
 The transition coefficients 
 \hyperA{DarcyFlowMH-Steady-BulkData::sigma}{$\sigma_{32}$} \units{}{}{-1} and
@@ -88,7 +87,7 @@ they should be related to the conductivity. According to
 \cite{martin_modeling_2005} one can use
 \[
 \label{e:sigma_law}
-  \sigma_{31} = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_{21} = \frac{2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
+  \sigma_{32} = \frac{2\tn K_2 :\vc n_2\otimes\vc n_2 }{\delta_2}, \sigma_{21} = \frac{2\delta_2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}
 \]
 where $\vc n_2$ is normal to the fracture (sign doesn't matter) and $\vc n_1^i$ is normal to the channel that is tangential to the fracture $i$.
 
@@ -106,11 +105,11 @@ into Dirichlet, Neumann, and Robin parts. We prescribe
 \end{align}
 where 
 \hyperA{DarcyFlowMH-Steady-BoundaryData::bc-pressure}{$h_d^D$, $h_d^R$} 
-is the prescribed pressure head \units{}{1}{}, which alternatively can be prescribed through the piezometric head 
+is the given pressure head \units{}{1}{}, which alternatively can be prescribed through the piezometric head 
 \hyperA{DarcyFlowMH-Steady-BoundaryData::bc-piezo-head}{$H_d^D$, $H_d^R$} 
 respectively. 
 \hyperA{DarcyFlowMH-Steady-BoundaryData::bc-flux}{$q_d^N$} 
-is the prescribed surface density of the boundary outflow \units{}{4-d}{-1}, and  
+is the given surface density of the boundary outflow \units{}{4-d}{-1}, and  
 \hyperA{DarcyFlowMH-Steady-BoundaryData::bc-robin-sigma}{$\sigma_d^R$} 
 is the transition coefficient \units{}{3-d}{-1}.
 The problem is well posed only if there is Dirichlet or Robin boundary condition on every component of the set $\Omega_1 \cup \Omega_2 \cup \Omega_3$ and $\sigma_d >0$ for 

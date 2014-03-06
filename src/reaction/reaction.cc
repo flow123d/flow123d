@@ -44,18 +44,17 @@ Reaction::~Reaction()
 
 }
 
+void Reaction::set_time_governor(TimeGovernor& tg)
+{
+  time_ = &tg;
+}
+
+
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     cout << "double **Reaction::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;
 	return concentrations;
 }
-
-void Reaction::compute_one_step(void)
-{
-	cout << "Reaction::compute_one_step() needs to be re-implemented in ancestors." << endl;
-	 return;
-}
-
 
 void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
@@ -153,4 +152,29 @@ unsigned int Reaction::find_subst_name(const string &name)
 		if (name == names_[k]) return k;
 
 	return k;
+}
+
+void Reaction::set_mesh(Mesh &mesh)
+{
+	mesh_ = &mesh;
+}
+
+void Reaction::set_names(const std::vector<string> &names)
+{
+	names_ = names;
+}
+
+void Reaction::init_from_input(Input::Record in_rec)
+{
+	cout << "Reaction::init_from_input() needs to be re-implemented in ancestors." << endl;
+}
+
+void Reaction::set_concentration_vector(Vec &vec)
+{
+	cout << "Reaction.set_concentration_vector(Vec &vec) is not implemented." << endl;
+}
+
+Element * Reaction::get_element_for_dof_index(unsigned int idx)
+{
+	return &( mesh_->element[idx] );
 }

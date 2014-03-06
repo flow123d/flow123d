@@ -69,6 +69,7 @@ namespace Input {
  */
 class EquationBase {
 public:
+
     /**
      * Default constructor. Necessary to make tests fixtures for equations.
      * TODO:
@@ -130,9 +131,16 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
+
+    /**
+     * Set time governor.
+     *
+     * Used to set pointer to common time governor of Transport Operator Splitting.
+     */
+    virtual void set_time(TimeGovernor &time);
 
     /**
      * Most actual planned time for solution.
@@ -169,6 +177,11 @@ public:
      * Child class have to implement getter for parallel solution vector.
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
+
+    /**
+     * Child class have to implement setter for local part concentration vector.
+     */
+    virtual void set_concentration_vector(Vec &vector) =0;
 
 protected:
     Mesh * mesh_;
@@ -216,6 +229,9 @@ protected:
  */
 class EqDataBase {
 public:
+	TYPEDEF_ERR_INFO( EI_Domain, string);
+	DECLARE_INPUT_EXCEPTION(ExcUnknownDomain,
+			<< "Unknown field domain: " << EI_Domain::val << "\n");
 
     /**
      * The only constructor. The name of the equation has to be provided by parameter @p eq_name.

@@ -112,13 +112,8 @@ SorptionBase::~SorptionBase(void)
 {
 }
 
-void SorptionBase::init_from_input(Input::Array bulk_list)
-{
-	//Not sure what to write here.
-	return;
-}
 
-void SorptionBase::prepare_inputs(Input::Record in_rec, int porosity_type)
+void SorptionBase::init_from_input(Input::Record in_rec)
 {
 
     // Common data for all the isotherms loaded bellow
@@ -167,7 +162,8 @@ void SorptionBase::prepare_inputs(Input::Record in_rec, int porosity_type)
 	make_tables();
 }
 
-/*void SorptionBase::make_tables(void)
+/*      DELETE
+void SorptionBase::make_tables(void)
 {
 	ElementAccessor<3> elm;
 
@@ -194,9 +190,10 @@ void SorptionBase::prepare_inputs(Input::Record in_rec, int porosity_type)
 	return;
 }/**/
 
+/*      DELETE
 void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
-	/*START_TIMER("SorptionBase::isotherm_reinit");
+	START_TIMER("SorptionBase::isotherm_reinit");
 
 	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
 	double porosity = this->porosity_->value(elem.centre(),elem);
@@ -237,10 +234,11 @@ void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 
 	}
 
-	END_TIMER("SorptionBase::isotherm_reinit");/**/
+	END_TIMER("SorptionBase::isotherm_reinit");
 
 	return;
 }
+*/
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
@@ -279,10 +277,11 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 	return concentrations;
 }
 
+/*      DELETE
 // Computes adsorption simulation over all the elements.
 void SorptionBase::compute_one_step(void)
 {
-    /*data_.set_time(*time_); // set to the last computed time
+    data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
 	if((data_.rock_density.changed_during_set_time) &&
 		(data_.mult_coefs.changed_during_set_time) &&
@@ -299,11 +298,11 @@ void SorptionBase::compute_one_step(void)
 	 {
 	 	this->compute_reaction(concentration_matrix, loc_el);
 	 }
-    END_TIMER("Computes reaction");/**/
+    END_TIMER("Computes reaction");
 
 	return;
 }
-
+*/
 
 void SorptionBase::print_sorption_parameters(void)
 {
@@ -358,11 +357,7 @@ void SorptionBase::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be
 	return;
 }/**/
 
-void SorptionBase::update_solution(void)
-{
-	//cout << "1) Meaningless inherited method." << endl;
-	return;
-}
+
 void SorptionBase::choose_next_time(void)
 {
 	//cout << "2) Meaningless inherited method." << endl;

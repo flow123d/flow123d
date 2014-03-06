@@ -23,6 +23,7 @@
 const double pi = 3.1415;
 namespace it=Input::Type;
 
+/*
 it::Selection SorptionSimple::EqData::sorption_type_selection = it::Selection("SorptionType")
 	.add_value(Isotherm::none,"none", "No adsorption considered")
 	.add_value(Isotherm::linear, "linear",
@@ -30,9 +31,10 @@ it::Selection SorptionSimple::EqData::sorption_type_selection = it::Selection("S
 	.add_value(Isotherm::langmuir, "langmuir",
 			"Langmuir isotherm described adsorption considered")
 	.add_value(Isotherm::freundlich, "freundlich",
-			"Freundlich isotherm described adsorption considered");/**/
+			"Freundlich isotherm described adsorption considered");
 
 using namespace Input::Type;
+
 
 Record SorptionSimple::input_type
 	= Record("SorptionSimple", "Information about all the limited solubility affected adsorptions.")
@@ -47,7 +49,6 @@ Record SorptionSimple::input_type
 							"Specifies molar masses of all the sorbing species")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
-	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("bulk_data", Array(SorptionSimple::EqData().bulk_input_type()), Default::obligatory(), //
@@ -55,7 +56,8 @@ Record SorptionSimple::input_type
 	.declare_key("time", Double(), Default("1.0"),
 							"Key called time required by TimeGovernor in Sorption constructor.");
 	/*.declare_key("modification", Array(Double(0.0)), Default::optional(),
-							"It is here to make Record different from SorptionBase::input_type");/**/
+							"It is here to make Record different from SorptionBase::input_type");
+							
 
 SorptionSimple::EqData::EqData()
 : EqDataBase("SorptionSimple")
@@ -72,7 +74,8 @@ SorptionSimple::EqData::EqData()
     //ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity).", Input::Type::Default("0"));
 
 	//ADD_FIELD(modification2, "SorptionSimple::EqData differs from SorptionBase.", Input::Type::Default("0.0"));
-}/**/
+}
+//*/
 
 using namespace std;
 
@@ -92,7 +95,6 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<str
     //data_.alphas.set_n_comp(nr_transp_subst);
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-    data_.set_time(tg);
 
 	//Simple vectors holding  common informations.
 	substance_ids.resize(nr_of_substances);
@@ -116,22 +118,16 @@ SorptionSimple::~SorptionSimple(void)
 {
 }
 
-/*void SorptionSimple::init_from_input(Input::Array bulk_list)
-{
-	//Not sure what to write here.
-	return;
-}
 
-void SorptionSimple::prepare_inputs(Input::Record in_rec, int porosity_type)
+void SorptionSimple::init_from_input(Input::Record in_rec)
 {
-
     // Common data for all the isotherms loaded bellow
-	solvent_dens = in_rec.val<double>("solvent_dens");
+    solvent_dens = in_rec.val<double>("solvent_dens");
 
-	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
+    Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
 
-	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
-	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
+    if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
+      else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
 	Input::Iterator<Input::Array> solub_iter = in_rec.find<Input::Array>("solubility");
 	if( solub_iter )
@@ -169,7 +165,7 @@ void SorptionSimple::prepare_inputs(Input::Record in_rec, int porosity_type)
 	}
 
 	make_tables();
-}/**/
+}
 
 void SorptionSimple::make_tables(void)
 {
@@ -221,16 +217,15 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 		//scales are different for the case of sorption in mobile and immobile pores
 		double scale_aqua, scale_sorbed;
-		scale_aqua = por_m;
+
 		scale_sorbed = (1 - por_m) * rock_density * molar_masses[i_subst];
 		if ( scale_sorbed == 0.0)
-			xprintf(UsrErr, "SorptionSimple::prepare_inputs() failed. Parameter scale_sorbed ((1 - por_m) * rock_density * molar_masses[i_subst]) is equal to zero.");
-		bool limited_solubility_on;
+			xprintf(UsrErr, "Sorption::init_from_input() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
+		bool limited_solubility_on = false;
 		double table_limit;
 		if (solubility_vec_[i_subst] <= 0.0) {
 			limited_solubility_on = false;
 			table_limit=table_limit_[i_subst];
-
 		} else {
 			limited_solubility_on = true;
 			table_limit=solubility_vec_[i_subst];
@@ -282,8 +277,9 @@ double **SorptionSimple::compute_reaction(double **concentrations, int loc_el) /
 	return concentrations;
 }/**/
 
+
 // Computes adsorption simulation over all the elements.
-void SorptionSimple::compute_one_step(void)
+void SorptionSimple::update_solution(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
@@ -360,12 +356,10 @@ void SorptionSimple::set_porosity(pScalar porosity)
 	return;
 }
 
-void SorptionSimple::update_solution(void)
-{
-	//cout << "1) Meaningless inherited method." << endl;
-	return;
-}
-void SorptionSimple::choose_next_time(void)
+
+
+
+void Sorption::choose_next_time(void)
 {
 	//cout << "2) Meaningless inherited method." << endl;
 	return;
@@ -399,4 +393,12 @@ void SorptionSimple::set_time_step(Input::Record in_rec)
 {
 	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
 	return;
+<<<<<<< HEAD
 }/**/
+
+
+void SorptionSimple::set_concentration_vector(Vec &vc)
+{
+	//cout << "7) Meaningless inherited method." << endl;
+	return;
+}

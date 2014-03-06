@@ -86,84 +86,13 @@ it::Record Application::input_type
 
 
 Application::Application( int argc,  char ** argv)
-: main_input_dir_("."),
+: ApplicationBase(argc, argv),
+  main_input_dir_("."),
   main_input_filename_(""),
-  log_filename_(""),
   passed_argc_(0),
   passed_argv_(0),
   use_profiler(true)
-{
-    // parse our own command line arguments, leave others for PETSc
-    parse_cmd_line(argc, argv);
-
-    // temporary moving PETSC stuff here from system.hh
-    // should be made better in JB_1.7.input
-    PetscErrorCode ierr;
-    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-
-    system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
-    //use_profiler=true;
-    Profiler::initialize();
-
-    display_version();
-  
-    Input::Record i_rec = read_input();
-
-
-    {
-        using namespace Input;
-        int i;
-
-        // get main input record handle
-  
-        // should flow123d wait for pressing "Enter", when simulation is completed
-        sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");
-        // read record with problem configuration
-        Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
-
-        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
-
-            // try to find "output_streams" record
-            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
-
-            int rank=0;
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // Go through all configuration of "root" output streams and create them.
-                // Other output streams can be created on the fly and added to the array
-                // of output streams
-                if(output_streams) {
-                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-                            output_stream_rec != (*output_streams).end();
-                            i++, ++output_stream_rec)
-                    {
-                        OutputTime::output_stream(*output_stream_rec);
-                    }
-                }
-            }
-
-            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
-  
-            // run simulation
-            problem->run_simulation();
-
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // free all output streams
-                OutputTime::destroy_all();
-            }
-
-            delete problem;
-        } else {
-            xprintf(UsrErr,"Problem type not implemented.");
-        }
-
-    }
-
-    free_and_exit();
-
-}
+{}
 
 
 
@@ -178,7 +107,7 @@ void Application::display_version() {
     
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
-    xprintf(Msg, "This is Flow123d, version %s revison: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
     xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
@@ -189,7 +118,7 @@ Input::Record Application::read_input() {
    if (main_input_filename_ == "") {
         cout << "Usage error: The main input file has to be specified through -s parameter.\n\n";
         cout << program_arguments_desc_ << "\n";
-        free_and_exit();
+        exit( exit_failure );
     }
     
     // read main input file
@@ -215,7 +144,7 @@ Input::Record Application::read_input() {
 
 
 void Application::parse_cmd_line(const int argc, char ** argv) {
-    namespace po = boost::program_options;
+	namespace po = boost::program_options;
 
 
     // Declare the supported options.
@@ -258,7 +187,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "help" option
     if (vm.count("help")) {
         cout << desc << "\n";
-        free_and_exit();
+        exit( exit_output );
     }
 
     // if there is "full_doc" option
@@ -267,13 +196,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputText type_output(&input_type);
         type_output.set_filter(":Field:.*");
         cout << type_output;
-        free_and_exit();
+        exit( exit_output );
     }
 
     if (vm.count("JSON_template")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONTemplate(&input_type);
-        free_and_exit();
+        exit( exit_output );
     }
 
     if (vm.count("latex_doc")) {
@@ -281,13 +210,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputLatex type_output(&input_type);
         type_output.set_filter("");
         cout << type_output;
-        free_and_exit();
+        exit( exit_output );
     }
 
     if (vm.count("JSON_machine")) {
         Input::Type::TypeBase::lazy_finish();
         cout << Input::Type::OutputJSONMachine(&input_type);
-        free_and_exit();
+        exit( exit_output );
     }
 
     // if there is "solve" option
@@ -342,16 +271,86 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
 
-void Application::free_and_exit() {
-    //close the Profiler
-    //DBGMSG("prof: %d\n", use_profiler);
+void Application::run() {
+    //use_profiler=true;
+    Profiler::initialize();
+
+    display_version();
+
+    Input::Record i_rec = read_input();
+
+
+    {
+        using namespace Input;
+        int i;
+
+        // get main input record handle
+
+        // should flow123d wait for pressing "Enter", when simulation is completed
+        sys_info.pause_after_run = i_rec.val<bool>("pause_after_run");
+        // read record with problem configuration
+        Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
+
+        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
+
+            // try to find "output_streams" record
+            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
+
+            int rank=0;
+            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+            if (rank == 0) {
+                // Go through all configuration of "root" output streams and create them.
+                // Other output streams can be created on the fly and added to the array
+                // of output streams
+                if(output_streams) {
+                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
+                            output_stream_rec != (*output_streams).end();
+                            i++, ++output_stream_rec)
+                    {
+                        OutputTime::output_stream(*output_stream_rec);
+                    }
+                }
+            }
+
+            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
+
+            // run simulation
+            problem->run_simulation();
+
+            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+            if (rank == 0) {
+                // free all output streams
+                OutputTime::destroy_all();
+            }
+
+            delete problem;
+        } else {
+            xprintf(UsrErr,"Problem type not implemented.");
+        }
+
+    }
+}
+
+
+
+
+void Application::after_run() {
+	if (sys_info.pause_after_run) {
+        printf("\nPress <ENTER> for closing the window\n");
+        getchar();
+    }
+}
+
+
+
+
+Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
         Profiler::instance()->output(PETSC_COMM_WORLD);
         Profiler::uninitialize();
     }
-
-    xterminate(false);
 }
+
 
 //=============================================================================
 
@@ -364,8 +363,11 @@ int main(int argc, char **argv) {
 
     F_ENTRY;
     Application app(argc, argv);
+
+    app.init(argc, argv);
+
     // Say Goodbye
-    return xterminate(false);
+    return ApplicationBase::exit_success;
 }
 
 

@@ -49,7 +49,7 @@ class Linear_reaction: public Reaction
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		virtual void compute_one_step(void);
+		virtual void update_solution(void);
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
 		*/
@@ -78,7 +78,7 @@ class Linear_reaction: public Reaction
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void prepare_inputs(Input::Record in_rec);
+		virtual void init_from_input(Input::Record in_rec);
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/

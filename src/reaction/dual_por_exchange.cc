@@ -46,7 +46,7 @@ Dual_por_exchange::~Dual_por_exchange(void)
 {
 }
 
-void Dual_por_exchange::compute_one_step(void) {
+void Dual_por_exchange::update_solution(void) {
 
     double conc_avg = 0.0;
     unsigned int loc_el,sbi;
@@ -94,4 +94,9 @@ void Dual_por_exchange::set_porosity(pScalar porosity, pScalar immob_porosity)
 	this->porosity_ = porosity;
 	this->immob_porosity_ = immob_porosity;
 	return;
+}
+
+void Dual_por_exchange::init_from_input(Input::Record in_rec)
+{
+	// Initialize from input interface
 }

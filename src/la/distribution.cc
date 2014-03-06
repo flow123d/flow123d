@@ -163,7 +163,7 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-    ASSERT(NONULL(starts),"Distribution is not initialized.\n");
+    ASSERT( starts,"Distribution is not initialized.\n");
     ASSERT(idx < size(), "Index %d greater then distribution size %d.\n", idx, size());
 
     for(unsigned int i=0; i<np(); i++) {
@@ -193,9 +193,9 @@ const unsigned int * Distribution::get_starts_array() const {
 
 void Distribution::view(std::ostream &stream) const
 {
-    stream << "[" <<myp() << "]" << "Distribution size: " << size() << " lsize: " << lsize() << " mpi_size: " << np() << endl;
+    stream << "[" <<myp() << "]" << "Distribution size: " << size() << " lsize: " << lsize() << " offset: " << begin() << " mpi_size: " << np() << endl;
     for(unsigned int i=0; i<np();++i)
-        stream << "[" <<myp() << "]" << "proc: " << i << " offset: " << begin(i) << " lsize: " << lsize() << endl;
+        stream << "[" <<myp() << "]" << "proc: " << i << " offset: " << begin(i) << " lsize: " << lsize(i) << endl;
 }
 
 /**

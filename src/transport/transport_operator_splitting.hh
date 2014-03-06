@@ -120,6 +120,8 @@ public:
     /// Returns reference to the vector of substnace names.
     inline vector<string> &substance_names() { return subst_names_; }
 
+    virtual void set_concentration_vector(Vec &vec){};
+
 
 protected:
 

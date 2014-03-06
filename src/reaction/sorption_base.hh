@@ -35,7 +35,6 @@
 #include "fields/field_base.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/reaction.hh"
-//#include "transport/transport.h"
 
 class Mesh;
 class Distribution;
@@ -97,11 +96,14 @@ class SorptionBase:  public Reaction
 		/**
 		*
 		*/
-		virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
+		virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		virtual void compute_one_step(void);
+		virtual void update_solution(void) = 0;
+                
+                
+                
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
 		*/
@@ -133,7 +135,7 @@ class SorptionBase:  public Reaction
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		void set_porosity(pScalar por_m){};
+		virtual void set_porosity(pScalar por_m){};
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class
 		*/
@@ -141,7 +143,8 @@ class SorptionBase:  public Reaction
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
-		void prepare_inputs(Input::Record in_rec, int porosity_type);
+		//void prepare_inputs(Input::Record in_rec, int porosity_type);
+		virtual void init_from_input(Input::Record in_rec);
 		/**
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
@@ -149,11 +152,10 @@ class SorptionBase:  public Reaction
 		/**
 		*
 		*/
-		virtual void make_tables(void){};
+		virtual void make_tables(void) = 0;
 		/**
 		* Meaningless inherited methods.
 		*/
-		virtual void update_solution(void);
 		virtual void choose_next_time(void);
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);

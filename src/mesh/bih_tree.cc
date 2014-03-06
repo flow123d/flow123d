@@ -316,7 +316,7 @@ void BIHTree::find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned i
 }
 
 
-void BIHTree::find_point(Point<3> &point, std::vector<unsigned int> &searchedElements) {
+void BIHTree::find_point(Space<3>::Point &point, std::vector<unsigned int> &searchedElements) {
 	unsigned int node_index = 0; // index of actual walking node
 
 	searchedElements.clear();

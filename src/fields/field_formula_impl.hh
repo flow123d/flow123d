@@ -62,7 +62,7 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
     // read formulas form input
     formula_matrix_helper_.init_from_input( rec.val<typename StringValue::AccessType>("value") );
-    value_input_address_ = rec.get_address().make_full_address();
+    value_input_address_ = rec.address_string();
 }
 
 
@@ -128,7 +128,7 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
@@ -142,7 +142,7 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT_EQUAL( point_list.size(), value_list.size() );
