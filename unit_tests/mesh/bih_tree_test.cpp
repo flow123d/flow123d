@@ -9,6 +9,8 @@
 
 #include <flow_gtest.hh>
 #include <cmath>
+#include <algorithm>
+#include <fstream>
 
 #include "system/sys_profiler.hh"
 
@@ -17,6 +19,107 @@
 #include "mesh/bih_tree.hh"
 
 
+class BIH_test : public testing::Test {
+public:
+	void create_tree(const FilePath &mesh_file) {
+
+		GmshMeshReader reader(mesh_file);
+		mesh = new Mesh();
+		reader.read_mesh(mesh);
+
+	    int leaf_size_limit = 10;
+	    bt = new BIHTree(mesh, leaf_size_limit);
+
+	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
+	}
+
+	void test_find_boxes() {
+		/*
+		auto compare = [this](unsigned int a, unsigned int b) -> bool {
+			return this->mesh->element[a].centre()[0] < this->mesh->element[b].centre()[0];
+		};*/
+		auto compare = [this](unsigned int a, unsigned int b) {
+			return this->mesh->element(a).id() < this->mesh->element(b).id();
+		};
+
+
+		auto tbox_min = bt->tree_box().min();
+		auto tbox_max = bt->tree_box().max();
+		std::uniform_real_distribution<> rx( tbox_min[0] , tbox_max[0] );
+		std::uniform_real_distribution<> ry( tbox_min[1] , tbox_max[1] );
+		std::uniform_real_distribution<> rz( tbox_min[2] , tbox_max[2] );
+		auto g = this->r_gen;
+		auto r_point = [&]() {
+			return BoundingBox::Point( {rx(g), ry(g), rz(g)} );
+		};
+
+		for(int i=0; i < n_test_trials; i++) {
+			BoundingBox box( vector<BoundingBox::Point>({r_point(), r_point()}) );
+
+
+			cout << "\n-------------------------" << endl;
+			cout << "box: " << box <<endl;
+
+			vector<unsigned int> bf_result;
+			FOR_ELEMENTS(mesh, ele) {
+				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
+				if (box.intersect(ele->bounding_box()) ) bf_result.push_back(ele.index());
+			}
+			std::sort(bf_result.begin(), bf_result.end(), compare);
+
+			vector<unsigned int> result_vec;
+			bt->find_bounding_box(box, result_vec);
+			std::sort(result_vec.begin(), result_vec.end(), compare);
+
+
+			cout << endl << "full search: " << endl;
+			for(auto i_el : bf_result) cout << " " << this->mesh->element(i_el).id();
+			cout << endl << "bih search: " << endl;
+			for(auto i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
+
+			ASSERT_EQ(bf_result.size(), result_vec.size());
+			for(int j=0; j< bf_result.size(); j++) {
+				EXPECT_EQ(bf_result[j], result_vec[j]);
+			}
+		}
+	}
+
+
+	BIH_test()
+	: mesh(nullptr), bt(nullptr), r_gen(123)
+	{
+        Profiler::initialize();
+	}
+
+	~BIH_test() {
+		if (mesh !=nullptr) delete mesh;
+		if (bt !=nullptr) delete bt;
+		mesh = nullptr;
+		bt = nullptr;
+	}
+
+	std::mt19937	r_gen;
+	Mesh *mesh;
+	BIHTree *bt;
+	const static int n_test_trials=5;
+};
+
+
+TEST_F(BIH_test, find_bounding_box_1) {
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
+	this->create_tree(mesh_file);
+
+	this->test_find_boxes();
+}
+
+TEST_F(BIH_test, find_bounding_box_2) {
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
+	this->create_tree(mesh_file);
+
+	this->test_find_boxes();
+}
+
+/*
 /// Generates random double number in interval <fMin, fMax>
 double f_rand(double fMin, double fMax) {
     double f = (double)rand() / RAND_MAX;
@@ -35,7 +138,7 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
 	return insecElements;
 }
 
-
+*/
 /**
  * Creates tree and performs its tests
  *  - creates tree from mesh file
@@ -43,6 +146,7 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
  *  - tests intersection with bounding box out of mesh
  *  - tests intersection with three bounding boxes in mesh
  */
+/*
 void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
         Profiler::initialize();
 	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
@@ -158,6 +262,8 @@ TEST(BIHTree_Test, mesh_27936_elements_refined) {
 
 
 */
+
+
 TEST(BIH_Tree_Test, 2d_mesh) {
     Profiler::initialize();
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/noncompatible_small.msh", FilePath::input_file);
