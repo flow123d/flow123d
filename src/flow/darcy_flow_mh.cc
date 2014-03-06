@@ -981,8 +981,8 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
             xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
             n_schur_compls = 2;
         }
-
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
+#ifdef HAVE_BDDCML
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds), MPI_COMM_WORLD,
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
@@ -994,7 +994,11 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
             set_mesh_data_for_bddc(ls);
             schur0=ls;
             END_TIMER("BDDC set mesh data");
+#else
+            xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+#endif
         }
+
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {

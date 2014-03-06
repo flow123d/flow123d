@@ -19,20 +19,20 @@ namespace testing {
 //
 // FormatCountableNoun(1, "formula", "formuli") returns "1 formula".
 // FormatCountableNoun(5, "book", "books") returns "5 books".
-static internal::String FormatCountableNoun(int count,
+static std::string FormatCountableNoun(int count,
                                             const char * singular_form,
                                             const char * plural_form) {
-  return internal::String::Format("%d %s", count,
-                                  count == 1 ? singular_form : plural_form);
+	  return internal::StreamableToString(count) + " " +
+	      (count == 1 ? singular_form : plural_form);
 }
 
 // Formats the count of tests.
-static internal::String FormatTestCount(int test_count) {
+static std::string FormatTestCount(int test_count) {
   return FormatCountableNoun(test_count, "test", "tests");
 }
 
 // Formats the count of test cases.
-static internal::String FormatTestCaseCount(int test_case_count) {
+static std::string FormatTestCaseCount(int test_case_count) {
   return FormatCountableNoun(test_case_count, "test case", "test cases");
 }
 
@@ -56,9 +56,8 @@ static const char * TestPartResultTypeToString(TestPartResult::Type type) {
       return "Unknown result type";
   }
 }
-
 // Prints a TestPartResult to a String.
-static internal::String PrintTestPartResultToString(
+static std::string PrintTestPartResultToString(
     const TestPartResult& test_part_result) {
   return (Message()
           << internal::FormatFileLocation(test_part_result.file_name(),
@@ -69,7 +68,7 @@ static internal::String PrintTestPartResultToString(
 
 // Prints a TestPartResult.
 static void PrintTestPartResult(const TestPartResult& test_part_result) {
-  const internal::String& result =
+  const internal::string& result =
       PrintTestPartResultToString(test_part_result);
   printf("%s\n", result.c_str());
   fflush(stdout);
@@ -85,6 +84,7 @@ static void PrintTestPartResult(const TestPartResult& test_part_result) {
   ::OutputDebugStringA("\n");
 #endif
 }
+
 
 namespace internal {
 
@@ -153,12 +153,12 @@ void MPI_PrettyUnitTestResultPrinter::OnEnvironmentsSetUpStart(const UnitTest& /
 
 void MPI_PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case) {
   if (rank==0) {
-      test_case_name_ = test_case.name();
-      const internal::String counts =
+      //test_case_name_ = test_case.name();
+      const std::string counts =
               FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
 
       ColoredPrintf(COLOR_GREEN, "[----------] ");
-      printf("%s from %s", counts.c_str(), test_case_name_.c_str());
+      printf("%s from %s", counts.c_str(), test_case.name());
       if (test_case.type_param() == NULL) {
           printf("\n");
       } else {
@@ -172,7 +172,7 @@ void MPI_PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case)
 void MPI_PrettyUnitTestResultPrinter::OnTestStart(const TestInfo& test_info) {
   if (rank == 0) {
       ColoredPrintf(COLOR_GREEN,  "[ RUN      ] ");
-      PrintTestName(test_case_name_.c_str(), test_info.name());
+      PrintTestName(test_info.test_case_name(), test_info.name());
       printf("\n");
       fflush(stdout);
   }
@@ -204,7 +204,7 @@ void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
       } else {
           ColoredPrintf(COLOR_RED, "[  FAILED  ] ");
       }
-      PrintTestName(test_case_name_.c_str(), test_info.name());
+      PrintTestName(test_info.test_case_name(), test_info.name());
 
       // HERE we should print comments for failed processes
       if (! reduced_success)
@@ -225,14 +225,14 @@ void MPI_PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestCase& test_case) {
   if (!GTEST_FLAG(print_time)) return;
 
   if (rank==0) {
-      test_case_name_ = test_case.name();
-      const internal::String counts =
-              FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
-      ColoredPrintf(COLOR_GREEN, "[----------] ");
-      printf("%s from %s (%s ms total)\n\n",
-         counts.c_str(), test_case_name_.c_str(),
-         internal::StreamableToString(test_case.elapsed_time()).c_str());
-      fflush(stdout);
+	  const std::string counts =
+	      FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
+	  ColoredPrintf(COLOR_GREEN, "[----------] ");
+	  printf("%s from %s (%s ms total)\n\n",
+	         counts.c_str(), test_case.name(),
+	         internal::StreamableToString(test_case.elapsed_time()).c_str());
+	  fflush(stdout);
+
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }

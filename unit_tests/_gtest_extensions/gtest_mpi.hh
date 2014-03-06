@@ -47,7 +47,9 @@
  */
 namespace testing {
 
+
 namespace internal {
+
 
 //#include "gtest/internal/gtest-port.h"
 
@@ -95,7 +97,7 @@ private:
 
 
   static void PrintFailedTests(const UnitTest& unit_test);
-  internal::String test_case_name_;
+  //internal::String test_case_name_;
 };
 
 

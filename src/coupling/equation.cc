@@ -220,14 +220,18 @@ RegionSet EqDataBase::read_list_item(Input::Record rec, bool bc_regions) {
     unsigned int id;
     if (rec.opt_val("r_set", name)) {     
         domain = mesh_->region_db().get_region_set(name);
+        if ( domain.size() == 0 || ! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("r_set = " + name) << rec.ei_address() );
 
     } else if (rec.opt_val("region", name)) {
         domain.push_back( mesh_->region_db().find_label(name) );    // try find region by label
-        if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with label: '%s'\n", name.c_str());
+        if (! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("region = " + name) << rec.ei_address() );
 
     } else if (rec.opt_val("rid", id)) {
         domain.push_back( mesh_->region_db().find_id(id) );         // try find region by ID
-        if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with id: '%d'\n", id);
+        if (! domain[0].is_valid() )
+        	THROW( ExcUnknownDomain() << EI_Domain("rid = " + std::to_string(id) ) << rec.ei_address() );
 
     } else {
         if (bc_regions) {

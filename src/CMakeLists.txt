@@ -50,6 +50,7 @@ set(sources_lib_system
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
+    system/application_base.cc
 )
 
 set(sources_lib_input
@@ -102,7 +103,7 @@ set(sources_mesh_lib
     mesh/ngh/src/plain.cpp
     mesh/ngh/src/point.cpp
     mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/system.cpp
+    #mesh/ngh/src/system.cpp
     mesh/ngh/src/tetrahedron.cpp
     mesh/ngh/src/triangle.cpp
     mesh/ngh/src/vector.cpp

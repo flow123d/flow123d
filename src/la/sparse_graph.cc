@@ -282,7 +282,7 @@ void SparseGraph::DFS(int vtx)
 
 void SparseGraph::view()
 {
-    ASSERT(NONULL(adj),"Can not view non finalized graph.\n");
+    ASSERT( adj,"Can not view non finalized graph.\n");
     int row,col;
     xprintf(Msg,"SparseGraph\n");
     for(row=0; row < (int) vtx_distr.lsize(); row++) {
@@ -296,7 +296,7 @@ void SparseGraph::view()
 
 bool SparseGraph::is_symmetric()
 {
-    ASSERT( NONULL(rows) && NONULL(adj), "Graph is not yet finalized.");
+    ASSERT( rows && adj, "Graph is not yet finalized.");
 
     int loc_row, row, row_pos;
     int col_pos,col,loc_col;
@@ -353,7 +353,7 @@ void SparseGraphPETSC::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphPETSC::partition(int *loc_part)
 {
-    ASSERT(NONULL(adj) && NONULL(rows),"Can not make partition of non finalized graph.\n");
+    ASSERT( adj && rows,"Can not make partition of non finalized graph.\n");
 
     MatCreateMPIAdj(vtx_distr.get_comm(), vtx_distr.lsize(),vtx_distr.size(),
             rows, adj,adj_weights, &petsc_adj_mat);

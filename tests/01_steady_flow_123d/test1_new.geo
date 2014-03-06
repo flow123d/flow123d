@@ -72,11 +72,11 @@ Surface Loop(60) = {37, 47, 45, 23, 27};
 Volume(61) = {60};
 
 Physical Line("1d_channel") = {21};
-Physical Surface("2d_fraction_1") = {23, 25};
-Physical Surface("2d_fraction_2") = {29, 27};
+Physical Surface("2d_fracture_1") = {23, 25};
+Physical Surface("2d_fracture_2") = {29, 27};
 Physical Volume("3d_cube") = {55, 61, 59, 57};
 
 Physical Surface(".3d_cube") = {49, 51, 41, 53, 47, 37, 35, 31, 33, 45, 39, 43};
-Physical Line(".2d_fraction_1") = {5, 2, 12, 9, 15, 19};
-Physical Line(".2d_fraction_2") = {11, 13, 16, 20, 6, 3};
+Physical Line(".2d_fracture_1") = {5, 2, 12, 9, 15, 19};
+Physical Line(".2d_fracture_2") = {11, 13, 16, 20, 6, 3};
 Physical Point(".1d_channel") = {9, 10};

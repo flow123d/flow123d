@@ -1,13 +1,13 @@
 #include <iostream>
 #include <algorithm>
-#include "mesh/ngh/include/intersectionLocal.h"
-#include "mesh/ngh/include/system.h"
-#include "mesh/ngh/include/config.h"
-#include "mesh/ngh/include/problem.h" //epsilon
 #include <stdio.h>
 #include <vector>
 #include <cmath>
-//#include <math.h>
+#include <numeric>
+
+#include "system/exc_common.hh"
+#include "mesh/ngh/include/intersectionLocal.h"
+//#include "mesh/ngh/include/config.h"
 
 int IntersectionLocal::numberInstance = 0;
 
@@ -16,7 +16,7 @@ int IntersectionLocal::generateId() {
 }
 
 bool eps_double_equal(double a, double b) {
-	return fabs(a-b) < epsilon;
+	return fabs(a-b) < numeric_limits<double>::epsilon();
 }
 
 bool IntersectionPoint::operator ==(const IntersectionPoint &IP) {
@@ -32,10 +32,10 @@ bool IntersectionPoint::operator ==(const IntersectionPoint &IP) {
 
 IntersectionPoint *interpolate(IntersectionPoint &A1, IntersectionPoint &A2, double t) {
     if (! (A1.el1_coord().size() == 1 && A2.el1_coord().size() == 1 ) ) {
-        mythrow((char*) "Interpolation of IntersectionPoints with non line first element.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Interpolation of IntersectionPoints with non line first element.") );
     }
     if (! (A1.el2_coord().size() == A2.el2_coord().size()) ) {
-        mythrow((char*) "Interpolation of IntersectionPoints with non matching second element type.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Interpolation of IntersectionPoints with non matching second element type.") );
     }
     std::vector<double> el2_coord(A1.el2_coord().size());
 	for(unsigned int  i = 0; i < el2_coord.size(); ++i) {
@@ -85,7 +85,7 @@ IntersectionLocal::IntersectionLocal(IntersectionType i_type)
 		ele2 = elem2;
 	}
 	else {
-		mythrow((char*) "Invalid size of the vector local coordinates.", __LINE__, __FUNC__);
+		THROW( ExcAssertMsg() << EI_Message( "Invalid size of the vector local coordinates.") );
 	}
 }*/
 
