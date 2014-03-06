@@ -62,8 +62,8 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
     params_ = "";
     matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
-    matrix_changed_ = false;
-    rhs_changed_ = false;
+    matrix_changed_ = true;
+    rhs_changed_ = true;
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )

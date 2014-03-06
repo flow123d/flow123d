@@ -135,6 +135,14 @@ public:
 
     double get_solution_precision();
 
+    void set_matrix_changed() {
+    	matrix_changed_ = true;
+    };
+
+    void set_rhs_changed() {
+    	rhs_changed_ = true;
+    };
+
 
     ~LinSys_PETSC( );
 
