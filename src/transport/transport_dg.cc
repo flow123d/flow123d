@@ -1111,6 +1111,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				 */
 				double sigma = sigma_c[k][sbi]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
+
+				// Since mm_coef_* contains cross section, we have to divide by it.
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
 				double por_lower_over_higher = mm_coef_lower[k]*csection_higher[k]/(mm_coef_higher[k]*csection_lower[k]);
 
