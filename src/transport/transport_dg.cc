@@ -185,7 +185,7 @@ DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
-	ADD_FIELD(sigma_c, "Coefficient of diffusive transfer through fractures (for each substance).", Default("1"));
+	ADD_FIELD(fracture_sigma, "Coefficient of diffusive transfer through fractures (for each substance).", Default("1"));
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
 			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", Default("1.0"));
 
@@ -223,7 +223,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.bc_type.set_n_comp(n_subst_);
     data_.bc_flux.set_n_comp(n_subst_);
     data_.bc_robin_sigma.set_n_comp(n_subst_);
-    data_.sigma_c.set_n_comp(n_subst_);
+    data_.fracture_sigma.set_n_comp(n_subst_);
     data_.dg_penalty.set_n_comp(n_subst_);
     Model::init_data(n_subst_);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
@@ -1048,7 +1048,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
-	vector<arma::vec> sigma_c(qsize);
+	vector<arma::vec> frac_sigma(qsize);
 	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
@@ -1090,7 +1090,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
 		data_.cross_section->value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section->value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
-		data_.sigma_c.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), sigma_c);
+		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)
 		{
@@ -1109,7 +1109,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				 * than b and A in the manual.
 				 * In calculation of sigma there appears one more csection_lower in the denominator.
 				 */
-				double sigma = sigma_c[k][sbi]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
+				double sigma = frac_sigma[k][sbi]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
 				// Since mm_coef_* contains cross section, we have to divide by it.

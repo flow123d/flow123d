@@ -151,7 +151,7 @@ public:
 
 		EqData();
 
-		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
         BCField<3, FieldValue<3>::EnumVector > bc_type;
@@ -248,7 +248,7 @@ private:
 
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
-    			data_.sigma_c.changed() ||
+    			data_.fracture_sigma.changed() ||
 				data_.dg_penalty.changed();
     }
 
