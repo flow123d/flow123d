@@ -408,7 +408,7 @@ SchurComplement :: SchurComplement(LinSys *orig, IS ia)
 
 	    VecGetArray( Sol2, &sol_array );
 	    ds_ = new Distribution(locSizeB, PETSC_COMM_WORLD);
-	    Compl = new LinSys_PETSC( ds_, PETSC_COMM_WORLD );
+	    Compl = new LinSys_PETSC( ds_ );
 	    Compl->set_solution(sol_array);
 	    ( (LinSys_PETSC *)Compl )->set_from_input( Orig->in_rec_ );
 	    VecRestoreArray( Sol2, &sol_array );
@@ -792,6 +792,7 @@ SchurComplement :: ~SchurComplement() {
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
     if ( xA != NULL )             MatDestroy(&xA);
+    if ( IA != NULL )             MatDestroy(&IA);
     if ( IAB != NULL )            MatDestroy(&IAB);
     if ( IsA != NULL )            ISDestroy(&IsA);
     if ( IsB != NULL )            ISDestroy(&IsB);

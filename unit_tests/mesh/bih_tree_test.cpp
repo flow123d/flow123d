@@ -9,6 +9,8 @@
 
 #include <flow_gtest.hh>
 #include <cmath>
+#include <algorithm>
+#include <fstream>
 
 #include "system/sys_profiler.hh"
 
@@ -17,6 +19,107 @@
 #include "mesh/bih_tree.hh"
 
 
+class BIH_test : public testing::Test {
+public:
+	void create_tree(const FilePath &mesh_file) {
+
+		GmshMeshReader reader(mesh_file);
+		mesh = new Mesh();
+		reader.read_mesh(mesh);
+
+	    int leaf_size_limit = 10;
+	    bt = new BIHTree(mesh, leaf_size_limit);
+
+	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
+	}
+
+	void test_find_boxes() {
+		/*
+		auto compare = [this](unsigned int a, unsigned int b) -> bool {
+			return this->mesh->element[a].centre()[0] < this->mesh->element[b].centre()[0];
+		};*/
+		auto compare = [this](unsigned int a, unsigned int b) {
+			return this->mesh->element(a).id() < this->mesh->element(b).id();
+		};
+
+
+		auto tbox_min = bt->tree_box().min();
+		auto tbox_max = bt->tree_box().max();
+		std::uniform_real_distribution<> rx( tbox_min[0] , tbox_max[0] );
+		std::uniform_real_distribution<> ry( tbox_min[1] , tbox_max[1] );
+		std::uniform_real_distribution<> rz( tbox_min[2] , tbox_max[2] );
+		auto g = this->r_gen;
+		auto r_point = [&]() {
+			return BoundingBox::Point( {rx(g), ry(g), rz(g)} );
+		};
+
+		for(int i=0; i < n_test_trials; i++) {
+			BoundingBox box( vector<BoundingBox::Point>({r_point(), r_point()}) );
+
+
+			cout << "\n-------------------------" << endl;
+			cout << "box: " << box <<endl;
+
+			vector<unsigned int> bf_result;
+			FOR_ELEMENTS(mesh, ele) {
+				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
+				if (box.intersect(ele->bounding_box()) ) bf_result.push_back(ele.index());
+			}
+			std::sort(bf_result.begin(), bf_result.end(), compare);
+
+			vector<unsigned int> result_vec;
+			bt->find_bounding_box(box, result_vec);
+			std::sort(result_vec.begin(), result_vec.end(), compare);
+
+
+			cout << endl << "full search: " << endl;
+			for(auto i_el : bf_result) cout << " " << this->mesh->element(i_el).id();
+			cout << endl << "bih search: " << endl;
+			for(auto i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
+
+			ASSERT_EQ(bf_result.size(), result_vec.size());
+			for(int j=0; j< bf_result.size(); j++) {
+				EXPECT_EQ(bf_result[j], result_vec[j]);
+			}
+		}
+	}
+
+
+	BIH_test()
+	: mesh(nullptr), bt(nullptr), r_gen(123)
+	{
+        Profiler::initialize();
+	}
+
+	~BIH_test() {
+		if (mesh !=nullptr) delete mesh;
+		if (bt !=nullptr) delete bt;
+		mesh = nullptr;
+		bt = nullptr;
+	}
+
+	std::mt19937	r_gen;
+	Mesh *mesh;
+	BIHTree *bt;
+	const static int n_test_trials=5;
+};
+
+
+TEST_F(BIH_test, find_bounding_box_1) {
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
+	this->create_tree(mesh_file);
+
+	this->test_find_boxes();
+}
+
+TEST_F(BIH_test, find_bounding_box_2) {
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
+	this->create_tree(mesh_file);
+
+	this->test_find_boxes();
+}
+
+/*
 /// Generates random double number in interval <fMin, fMax>
 double f_rand(double fMin, double fMax) {
     double f = (double)rand() / RAND_MAX;
@@ -29,13 +132,13 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
 	unsigned int insecElements = 0;
 
 	for (unsigned int i=0; i<boundingBoxes.size(); i++) {
-		if (bb.intersection(boundingBoxes[i])) insecElements++;
+		if (bb.intersect(boundingBoxes[i])) insecElements++;
 	}
 
 	return insecElements;
 }
 
-
+*/
 /**
  * Creates tree and performs its tests
  *  - creates tree from mesh file
@@ -43,6 +146,7 @@ unsigned int get_intersection_count(BoundingBox &bb, std::vector<BoundingBox> &b
  *  - tests intersection with bounding box out of mesh
  *  - tests intersection with three bounding boxes in mesh
  */
+/*
 void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
         Profiler::initialize();
 	unsigned int maxDepth, minDepth, sumDepth, leafNodesCount, innerNodesCount, sumElements, insecSize;
@@ -69,7 +173,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 	EXPECT_LT( maxDepth, (log2(elementLimit) - log2(mesh.n_elements())) / log2(0.8) );
 
 	// tests of intersection with bounding box out of mesh
-	bb.set_bounds(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
+	bb=BoundingBox(arma::vec3("0 0 1.01"), arma::vec3("0.1 0.1 1.05"));
 	bt.find_bounding_box(bb, searchedElements);
 	EXPECT_EQ(0, searchedElements.size());
 
@@ -78,7 +182,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(-0.99, -0.97);
 		max(i) = f_rand(-0.96, -0.94);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements()); // get intersections by linear search
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -88,7 +192,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(-0.03, -0.01);
 		max(i) = f_rand(+0.01, +0.03);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -98,7 +202,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 		min(i) = f_rand(0.07 + i * 0.4, 0.09 + i * 0.4);
 		max(i) = f_rand(0.11 + i * 0.4, 0.13 + i * 0.4);
 	}
-	bb.set_bounds(min, max);
+	bb=BoundingBox(min, max);
 	bt.find_bounding_box(bb, searchedElements);
 	insecSize = get_intersection_count(bb, bt.get_elements());
 	EXPECT_EQ(searchedElements.size(), insecSize);
@@ -115,7 +219,7 @@ void create_test_tree(FilePath &meshFile, unsigned int elementLimit = 20) {
 	EXPECT_EQ(searchedElements.size(), insecSize);
 }
 
-
+/*
 TEST(BIHTree_Test, mesh_108_elements_homogeneous) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
@@ -153,5 +257,30 @@ TEST(BIHTree_Test, mesh_27936_elements_refined) {
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
 
     create_test_tree(mesh_file);
+}
+
+
+
+*/
+
+
+TEST(BIH_Tree_Test, 2d_mesh) {
+    Profiler::initialize();
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/noncompatible_small.msh", FilePath::input_file);
+
+    Mesh mesh;
+	GmshMeshReader reader(mesh_file);
+
+	reader.read_mesh(&mesh);
+	unsigned int element_limit=20;
+	BIHTree bt(&mesh, element_limit);
+	std::vector<unsigned int> insec_list;
+
+	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
+	for(auto i_ele : insec_list) {
+		cout << "idx: " << i_ele << "id: " << mesh.element.get_id( &(mesh.element[i_ele]) ) << endl;
+	}
+
+
 }
 

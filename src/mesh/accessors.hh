@@ -74,8 +74,8 @@ public:
         { return dim_; }
 
     inline const Element * element() const {
-        if (boundary_) return &(mesh_->bc_elements[element_idx_]);
-        else return &(mesh_->element[element_idx_]);
+        if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
+        else return  (Element *)(mesh_->element(element_idx_)) ;
     }
 
     inline arma::vec::fixed<spacedim> centre() const {

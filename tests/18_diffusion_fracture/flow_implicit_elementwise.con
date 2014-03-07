@@ -17,11 +17,9 @@
       
       bulk_data = [
         { rid = 20,
-          anisotropy = 10,
-          cross_section = 1e-1
+          cross_section = 1e-2
         },
         { rid = 24,
-          anisotropy = 1,
           cross_section = 1
         }
       ],
@@ -42,7 +40,7 @@
     }, 
  
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
 
       bc_data = [
         { region = "IMPLICIT BOUNDARY",
@@ -58,8 +56,8 @@
             gmsh_file = "./input/test18_init.msh",
             field_name = "concentration"
           },
-          por_m = 0.25,
-          sigma_c = 1e1
+          diff_m = 1e-1,
+          dg_penalty = 100
         }
       ],
 
@@ -70,8 +68,6 @@
         }, 
         save_step = 0.001
       }, 
-
-      dual_porosity = true, 
 
       substances = [
         "A"

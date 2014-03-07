@@ -46,7 +46,7 @@
     }, 
     save_step = 0.8, 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
       dual_porosity = false, 
       
       bc_data = [

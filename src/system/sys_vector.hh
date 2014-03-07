@@ -435,6 +435,13 @@ public:
          return FullIter( *this, begin()+idx );
      }
 
+     /// Gets iterator of the element specified by index.
+     inline const Iter operator()(unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return Iter( &(storage[idx]) );
+     }
+
 
      /// Alternative way to make FullFullIterer form FullIterer. This way you need not write
      /// the full FullFullIterer typename to call the constructor. Then the result can be assigned to
@@ -469,7 +476,7 @@ public:
     /** Returns Id of the element given by pointer i.e. Iter. FullIter i.e. FullIteratorId<T>
      * provides its own method for the same.
      */
-    inline int get_id(Iter it) const
+    inline int get_id(const T * it) const
     {
         return *(id_storage.begin() + this->index(it));
     }

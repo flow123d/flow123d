@@ -92,11 +92,12 @@ void ApplicationBase::init(int argc, char ** argv) {
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
-	try {
+	//try {
 		this->run();
-	} catch (ExcXprintfMsg & e) {
-		exit( exit_failure );
-	}
+	//} catch (std::exception & e) {
+	//	std::cerr << e.what();
+	//	exit( exit_failure );
+	//}
 
 	this->after_run();
 }

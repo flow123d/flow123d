@@ -39,7 +39,7 @@
     }, 
  
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
 
       bulk_data = [
         { rid = 100,
@@ -50,22 +50,22 @@
       bc_data = [
         {
           region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_000",
+          bc_conc = 20,
           time = 1
         },
         {
           region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_001",
+          bc_conc = 0,
           time = 3
         },
         {
           region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_002",
+          bc_conc = 40,
           time = 6
         },
         {
           region = "IMPLICIT BOUNDARY",
-          transport_old_bcd_file = "./input/test14_tbc_003",
+          bc_conc = 0,
           time = 7
         }
       ],

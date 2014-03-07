@@ -62,7 +62,7 @@ public:
     unsigned int n_nodes() const; // Number of nodes
     
     ///Gets ElementAccessor of this element
-    ElementAccessor<3> element_accessor();
+    ElementAccessor<3> element_accessor() const;
     
     double measure() const;
     arma::vec3 centre() const;
@@ -77,10 +77,13 @@ public:
 
     unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
+    inline const SideIter side(const unsigned int loc_index) const;
     Region region() const;
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
+    unsigned int id() const;
+
     int      pid;       // Id # of mesh partition
 
     // Type specific data
@@ -100,9 +103,25 @@ public:
     unsigned int *permutation_idx_;
 
     /**
-     * Computes bounding box of element
+     * Computes bounding box of element (OBSOLETE)
      */
     void get_bounding_box(BoundingBox &bounding_box) const;
+
+    /**
+     * Return bounding box of the element.
+     */
+    inline BoundingBox bounding_box() {
+    	return BoundingBox(this->vertex_list());
+    }
+
+    /**
+     * Return list of element vertices.
+     */
+    inline vector<arma::vec3> vertex_list() {
+    	vector<arma::vec3> vertices(this->n_nodes());
+    	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
+    	return vertices;
+    }
 
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
