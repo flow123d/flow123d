@@ -147,28 +147,31 @@ void SchurComplement::form_schur()
     PetscScalar *rhs_array, *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
-    if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+    if (state==created) {
+    	mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
-    // create complement system
-    // TODO: introduce LS as true object, clarify its internal states
-    // create RHS sub vecs RHS1, RHS2
-    VecGetArray(rhs_, &rhs_array);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+        // create complement system
+        // TODO: introduce LS as true object, clarify its internal states
+        // create RHS sub vecs RHS1, RHS2
+        VecGetArray(rhs_, &rhs_array);
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
 
-    // create Solution sub vecs Sol1, Compl->solution
-    VecGetArray(solution_, &sol_array);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
+        // create Solution sub vecs Sol1, Compl->solution
+        VecGetArray(solution_, &sol_array);
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
 
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
 
-    VecRestoreArray(rhs_, &rhs_array);
-    VecRestoreArray(solution_, &sol_array);
+        VecRestoreArray(rhs_, &rhs_array);
+        VecRestoreArray(solution_, &sol_array);
 
-    VecGetArray( Sol2, &sol_array );
-    Compl->set_solution( sol_array );
-    Compl->set_from_input( in_rec_ );
-    VecRestoreArray( Sol2, &sol_array );
+        VecGetArray( Sol2, &sol_array );
+        Compl->set_solution( sol_array );
+        Compl->set_from_input( in_rec_ );
+        VecRestoreArray( Sol2, &sol_array );
+
+    }
 
     //DBGMSG("Compute Schur complement of\n");
     //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
@@ -291,7 +294,10 @@ void SchurComplement::create_inversion_matrix()
     PetscErrorCode ierr;
     PetscInt ncols, pos_start, pos_start_IA;
 
-    MatGetSubMatrix(matrix_, IsA, IsA, MAT_INITIAL_MATRIX, &IA);
+    MatReuse mat_reuse=MAT_REUSE_MATRIX;
+    if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+
+    MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
     //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
     MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);

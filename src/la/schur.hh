@@ -113,7 +113,7 @@ public:
     /// get distribution of complement object if complement is defined
     Distribution *make_complement_distribution();
     /// get precision of solving
-    double get_solution_precision();
+    double get_solution_precision() override;
 
     /**
      * Solve the system.
