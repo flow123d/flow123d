@@ -43,13 +43,12 @@ Record Pade_approximant::input_type
 
 using namespace std;
 
-//Pade_approximant::Pade_approximant(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-//    : Linear_reaction(marks, init_mesh, material_database, in_rec, names)
-Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+
+Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
       : Linear_reaction(init_mesh, in_rec, names)
 {
 	init_from_input(in_rec);
-	cout << "Pade_approximant constructor is running." << endl;
+	DBGMSG("Pade_approximant constructor is running.\n");
 	allocate_reaction_matrix();
 }
 
@@ -69,7 +68,7 @@ Pade_approximant::~Pade_approximant()
 
 	release_reaction_matrix();*/
 
-	cout << "Pade approximant destructor is running."  << endl;
+	DBGMSG("Pade approximant destructor is running.\n");
 }
 
 double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
@@ -124,7 +123,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	PetscScalar extent;
     for (unsigned int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
         index_par = substance_ids[i_decay][0];
-        rel_step = time_step/ half_lives[i_decay];
+        rel_step = time_->dt() / half_lives[i_decay];
         extent = -log(2)*rel_step; //pow(0.5, rel_step);
         cout<<"parental index" << index_par << ", extent "<< extent << endl;
         MatSetValue(Reaction_matrix, index_par, index_par, extent,INSERT_VALUES);
@@ -152,7 +151,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	//MatAssemblyEnd(Nominator, MAT_FINAL_ASSEMBLY);
 	for(j = nom_pol_deg; j >= 0; j--)
 	{
-		nominator_coef[j] = (PetscScalar) (faktorial(nom_pol_deg + den_pol_deg - j) * faktorial(nom_pol_deg)) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(j) * faktorial(nom_pol_deg - j));
+		nominator_coef[j] = (PetscScalar) (factorial(nom_pol_deg + den_pol_deg - j) * factorial(nom_pol_deg)) / (factorial(nom_pol_deg + den_pol_deg) * factorial(j) * factorial(nom_pol_deg - j));
 	}
 	evaluate_matrix_polynomial(&Nominator, &Reaction_matrix, nominator_coef);
 	//MatView(Nominator,PETSC_VIEWER_STDOUT_WORLD);
@@ -163,7 +162,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	//MatAssemblyEnd(Denominator, MAT_FINAL_ASSEMBLY);
 	for(i = den_pol_deg; i >= 0; i--)
 	{
-		denominator_coef[i] = (PetscScalar) pow(-1.0,i) * faktorial(nom_pol_deg + den_pol_deg - i) * faktorial(den_pol_deg) / (faktorial(nom_pol_deg + den_pol_deg) * faktorial(i) * faktorial(den_pol_deg - i));
+		denominator_coef[i] = (PetscScalar) pow(-1.0,i) * factorial(nom_pol_deg + den_pol_deg - i) * factorial(den_pol_deg) / (factorial(nom_pol_deg + den_pol_deg) * factorial(i) * factorial(den_pol_deg - i));
 	}
 	evaluate_matrix_polynomial(&Denominator, &Reaction_matrix, denominator_coef);
 	//MatView(Denominator, PETSC_VIEWER_STDOUT_WORLD);
@@ -259,15 +258,16 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 	return;
 }
 
-void Pade_approximant::set_time_step(double new_timestep)
+
+void Pade_approximant::do_when_timestep_changed (void)
 {
-	time_step = new_timestep;
 	release_reaction_matrix();
 	allocate_reaction_matrix();
 	modify_reaction_matrix();
 	//static_cast<Pade_approximant *> (this)->modify_reaction_matrix();
 	return;
 }
+
 
 double **Pade_approximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {

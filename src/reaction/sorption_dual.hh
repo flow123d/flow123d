@@ -35,7 +35,6 @@
 #include "fields/field_base.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_base.hh"
-//#include "transport/transport.h"
 
 class Mesh;
 class Distribution;
@@ -105,14 +104,7 @@ class SorptionDual:  public SorptionBase
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		virtual void compute_one_step(void);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
-		*/
-		//void set_time_step(double new_timestep);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		//void set_time_step(Input::Record in_rec);
+
 		/**
 		* Inherited init_from_input method extension.
 		*/
@@ -157,10 +149,7 @@ class SorptionDual:  public SorptionBase
 		* Meaningless inherited methods.
 		*/
 		virtual void update_solution(void);
-		virtual void choose_next_time(void);
-		virtual void set_time_step_constrain(double dt);
-		virtual void get_parallel_solution_vector(Vec &vc);
-		virtual void get_solution_vector(double* &vector, unsigned int &size);/**/
+
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -182,18 +171,6 @@ class SorptionDual:  public SorptionBase
 	    *   Mass transfer coefficients between mobile and immobile pores
 	    */
 	    //std::vector<double> alpha_;
-		/**
-		* 	Number of regions.
-		*/
-		//int nr_of_regions;
-		/**
-		* 	Number of substances.
-		*/
-		//int nr_of_substances;
-		/**
-		* 	Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
-		*/
-		//int nr_of_points;
 		/**
 		*	Identifier of the substance undergoing sorption.
 		*/
@@ -232,10 +209,7 @@ class SorptionDual:  public SorptionBase
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		//double** sorbed_conc_array;
-		/**
-		*
-		*/
-	    //TimeGovernor *time_;
+
 };
 
 #endif

@@ -33,7 +33,6 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-//#include "reaction/isotherm.hh"
 #include "reaction/reaction.hh"
 
 class Isotherm;
@@ -110,18 +109,7 @@ class SorptionBase:  public Reaction
                 */
                 void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
                 
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
-		*/
-		void set_time_step(double new_timestep);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		void set_time_step(Input::Record in_rec);
-		/**
-		* Inherited init_from_input method extension.
-		*/
-		//void init_from_input(Input::Array bulk_list);
+
 		/**
 		*
 		*/
@@ -155,13 +143,7 @@ class SorptionBase:  public Reaction
 		*
 		*/
 		virtual void make_tables(void) = 0;
-		/**
-		* Meaningless inherited methods.
-		*/
-		virtual void choose_next_time(void);
-		virtual void set_time_step_constrain(double dt);
-		virtual void get_parallel_solution_vector(Vec &vc);
-		virtual void get_solution_vector(double* &vector, unsigned int &size);
+		
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
@@ -229,10 +211,6 @@ class SorptionBase:  public Reaction
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		double** sorbed_conc_array;
-		/**
-		*
-		*/
-	    //TimeGovernor *time_;
 };
 
 #endif

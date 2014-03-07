@@ -178,14 +178,6 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 			limited_solubility_on = true;
 			table_limit=solubility_vec_[i_subst];
 		}
-		
-//                 DBGMSG("limited_solubility_on: %d\n",limited_solubility_on);
-//                 DBGMSG("solvent_dens: %f\n",solvent_dens);
-//                 DBGMSG("scale_aqua: %f\n",scale_aqua);
-//                 DBGMSG("scale_sorbed: %f\n",scale_sorbed);
-//                 DBGMSG("table_limit: %f\n",table_limit);
-//                 DBGMSG("mult_coef: %f\n",mult_coef);
-//                 DBGMSG("second_coef: %f\n",second_coef);
 		isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
 					solvent_dens, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
@@ -310,46 +302,7 @@ void SorptionSimple::set_immob_concentration_matrix(double **ConcentrationMatrix
 	phi_ = phi;
 	return;
 }
-
-
-
-
-void Sorption::choose_next_time(void)
-{
-	//cout << "2) Meaningless inherited method." << endl;
-	return;
-}
-
-void SorptionSimple::set_time_step_constrain(double dt)
-{
-	//cout << "3) Meaningless inherited method." << endl;
-	return;
-}
-
-void SorptionSimple::get_parallel_solution_vector(Vec &vc)
-{
-	//cout << "4) Meaningless inherited method." << endl;
-	return;
-}
-
-void SorptionSimple::get_solution_vector(double* &vector, unsigned int &size)
-{
-	//cout << "5) Meaningless inherited method." << endl;
-	return;
-}
-
-void SorptionSimple::set_time_step(double new_timestep)
-{
-	//cout << "6) Meaningless inherited method." << endl;
-	return;
-}
-
-void SorptionSimple::set_time_step(Input::Record in_rec)
-{
-	//cout << "This method is obsolete for equilibrial sorptions and reactions, but it must be implemented." << endl;
-	return;
-<<<<<<< HEAD
-}/**/
+*/
 
 void SorptionSimple::set_concentration_vector(Vec &vc)
 {

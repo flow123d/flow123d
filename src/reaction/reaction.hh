@@ -53,41 +53,36 @@ public:
   inline unsigned int n_substances()
     { return names_.size(); }
     
-        /**
-        *
-        */
-        //void set_mesh_(Mesh *mesh_in);
-		/**
-		* 	It returns current time step used for first order reactions.
-		*/
-		double get_time_step(void);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		virtual void set_time_step(double new_timestep);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		virtual void set_time_step(Input::Record in_rec);
-		//
+  /**
+   * Probably only temporary - implemented in linear reaction and PadeApproximant.
+   */
+  virtual void do_when_timestep_changed (void) {};
+  
+  /**
+   * Sets the whole concentration matrix for both mobile and immobile phase, all substances and on all elements.
+   */
+  void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+  
+  
+  /// Set mesh used by the model.
+  void set_mesh(Mesh &mesh);
+  /// Set names of substances.
+  void set_names(const std::vector<string> &names);
+  
+  /**
+   * Virtual method that is reimplemented in ascendants. Computes new solution of the reaction model.
+   */
+  virtual void update_solution(void) = 0;
                 
-                /**
-                 * Virtual method that is reimplemented in ascendants. Computes new solution of the reaction model.
-                 */
-		virtual void update_solution(void) = 0;
-		virtual void choose_next_time(void);
-		virtual void set_time_step_constrain(double dt);
-		virtual void get_parallel_solution_vector(Vec &vc);
-		virtual void get_solution_vector(double* &vector, unsigned int &size);
+  virtual void choose_next_time(void);
+  virtual void set_time_step_constrain(double dt);
+  virtual void get_parallel_solution_vector(Vec &vc);
+  virtual void get_solution_vector(double* &vector, unsigned int &size);
                 
-                /**
-                 * TODO: implement in ascendants
-                 */
-		virtual void set_concentration_vector(Vec &vec){};
+  /**
+   * TODO: implement in ascendants
+   */
+  virtual void set_concentration_vector(Vec &vec){};
 		/**
 		* Function for setting dual porosity.
 		*/
@@ -96,10 +91,7 @@ public:
 		* Function for getting dual porosity.
 		*/
 		bool get_dual_porosity(void);
-		/// Set mesh used by the model.
-		void set_mesh(Mesh &mesh);
-		/// Set names of substances.
-		void set_names(const std::vector<string> &names);
+		
 		/// Initialize from input interface.
 		virtual void init_from_input(Input::Record in_rec);
 
@@ -117,10 +109,7 @@ public:
 		*	Boolean which enables to compute reactions also in immobile pores.
 		*/
 		bool dual_porosity_on;
-		/**
-		*	Holds the double describing time step for radioactive decay or first order reactions simulations.
-		*/
-		double time_step;
+
 		/**
 		*	Informs how many firts order reactions of the type A -> B are under consideration. It is a number of [FoReaction_i] in ini-file.
 		*/

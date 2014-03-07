@@ -27,7 +27,8 @@ using namespace std;
 
 Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
     : EquationBase(init_mesh, in_rec),
-      dual_porosity_on(false), time_step(1.0), prev_conc(NULL),
+      dual_porosity_on(false), 
+      prev_conc(NULL),
       names_(names)
 {
 	prev_conc = new double[ n_substances() ];
@@ -59,22 +60,6 @@ void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribut
 	return;
 }
 
-void Reaction::set_time_step(double new_timestep){
-	time_step = new_timestep;
-	return;
-}
-
-void Reaction::set_time_step(Input::Record in_rec)
-{
-	time_step = in_rec.val<double>("time_step");
-	return;
-}
-
-/*void Reaction::set_mesh_(Mesh *mesh_in)
-{
-	mesh_ = mesh_in;
-	return;
-}*/
 
 void Reaction::set_dual_porosity(bool dual_porosity_on)
 {
@@ -85,11 +70,6 @@ void Reaction::set_dual_porosity(bool dual_porosity_on)
 bool Reaction::get_dual_porosity(void)
 {
 	return this->dual_porosity_on;
-}
-
-double Reaction::get_time_step(void)
-{
-	return time_step;
 }
 
 

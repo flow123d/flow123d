@@ -35,13 +35,10 @@
 #include "fields/field_base.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_dual.hh"
-//#include "transport/transport.h"
 
 class Mesh;
-class Distribution;
 class Reaction;
 class Isotherm;
-//class Sorption;
 
 typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 

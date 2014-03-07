@@ -33,9 +33,8 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-//#include "reaction/isotherm.hh"
 #include "reaction/sorption_dual.hh"
-//#include "transport/transport.h"
+
 
 class Mesh;
 class Distribution;

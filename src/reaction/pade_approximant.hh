@@ -16,7 +16,6 @@
 #include "petscmat.h"
 #include "petscksp.h"
 
-//#include "reaction/linear_reaction.hh"
 
 class Mesh;
 class Distribution;
@@ -52,14 +51,8 @@ class Pade_approximant: public Linear_reaction
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//void compute_one_step(void);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		//void set_time_step(double new_timestep);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		virtual void set_time_step(double time_step);
+
+		void do_when_timestep_changed(void);
 		/**
 		*	Evaluates Pade approximant from Reaction_matrix.
 		*/

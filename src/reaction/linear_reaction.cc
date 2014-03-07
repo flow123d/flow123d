@@ -9,7 +9,6 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-//#include "transport/transport.h"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
@@ -156,7 +155,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
 
     for (unsigned int i_decay = 0; i_decay < half_lives.size(); i_decay++) {
         index_par = substance_ids[i_decay][0];
-        rel_step = time_step / half_lives[i_decay];
+        rel_step = time_->dt() / half_lives[i_decay];
         reaction_matrix[index_par][index_par] = pow(0.5, rel_step);
 
         for (unsigned int i_product = 1; i_product < substance_ids[i_decay].size(); ++i_product)
@@ -260,35 +259,18 @@ void Linear_reaction::init_from_input(Input::Record in_rec)
 	}
 }
 
-/*void Linear_reaction::set_time_step(double new_timestep, Input::Record in_rec)
+void Linear_reaction::do_when_timestep_changed(void)
 {
-	time_step = new_timestep;
+	//time_step = new_timestep;
 	release_reaction_matrix();
 	allocate_reaction_matrix();
 	modify_reaction_matrix();
-	return;
-}
-
-void Linear_reaction::set_time_step(Input::Record in_rec)
-{
-	time_step = in_rec.val<double>("time_step");
-	release_reaction_matrix();
-	allocate_reaction_matrix();
-	modify_reaction_matrix();
-	return;
-}*/
-
-void Linear_reaction::set_time_step(double new_timestep)
-{
-	time_step = new_timestep;
-	release_reaction_matrix();
-	allocate_reaction_matrix();
-	this->modify_reaction_matrix();
 	return;
 }
 
 void Linear_reaction::update_solution(void)
 {
+  //time_->is_changed_dt();
     //data_.set_time(*time_); // set to the last computed time
 	//if timestep changed then modify_reaction_matrix(), not implemented yet
     //DBGMSG("decay step\n");
@@ -350,7 +332,8 @@ void Linear_reaction::print_reaction_matrix(void)
 
 	DBGMSG("r mat: %p\n", reaction_matrix);
 	if(reaction_matrix != NULL){
-		xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_step);
+                if(time_ != NULL)
+                  xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_->dt());
 		for(rows = 0; rows < n_substances(); rows++){
 			for(cols = 0; cols < n_substances(); cols++){
 					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);

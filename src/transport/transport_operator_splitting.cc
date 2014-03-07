@@ -298,13 +298,11 @@ void TransportOperatorSplitting::update_solution() {
     time_->view("TOS");    //show time governor
     
     convection->set_target_time(time_->t());
-	if (decayRad) decayRad->set_time_step(convection->time().estimate_dt());
-	if (sorptions) sorptions->set_time_step(convection->time().estimate_dt());
-	if (sorptions_immob) sorptions_immob->set_time_step(convection->time().estimate_dt());
-	//if (dual_por_exchange) dual_por_exchange->set_time_step(convection->time().estimate_dt());
-	// TODO: update Semchem time step here!!
-	if (Semchem_reactions) Semchem_reactions->set_timestep(convection->time().estimate_dt());
-
+    convection->time_->estimate_dt();
+    
+    //this is a residual from set_time method in Linear_reaction and Pade_approximant
+    //TODO: remove this, do it inside?
+    if(decayRad) decayRad->do_when_timestep_changed();
         
     xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
              time_->t(), convection->time().t(), convection->time().estimate_dt() );
@@ -320,11 +318,8 @@ void TransportOperatorSplitting::update_solution() {
 	    //if (dual_por_exchange) dual_por_exchange->update_solution();
 	    if(decayRad) decayRad->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
-            DBGMSG("PETSC SEG ERROR\n");
 	    if(sorptions) sorptions->update_solution();//equilibrial sorption at the end of simulated time-step
-            DBGMSG("PETSC SEG ERROR\n");
 	    if(sorptions_immob) sorptions_immob->update_solution();
-            DBGMSG("PETSC SEG ERROR\n");
 	    if (convection->mass_balance() != NULL)
 	    	convection->mass_balance()->calculate(convection->time().t());
 	}
