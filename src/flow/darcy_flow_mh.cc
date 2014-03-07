@@ -110,7 +110,7 @@ it::Record DarcyFlowMH_Steady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Steady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "")
+                .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
                 ), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
                 DarcyFlowMH_Steady::EqData().bulk_input_type() 
@@ -126,7 +126,6 @@ it::Record DarcyFlowMH_Unsteady::input_type
   .declare_key("bc_data", it::Array(
                 DarcyFlowMH_Unsteady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
                 ), it::Default::obligatory(), ""  )
   .declare_key("bulk_data", it::Array(
                 DarcyFlowMH_Unsteady::EqData().bulk_input_type()
@@ -142,8 +141,7 @@ it::Record DarcyFlowLMH_Unsteady::input_type
     .declare_key("bc_data", it::Array(
                 DarcyFlowLMH_Unsteady::EqData().boundary_input_type()
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
-                ), it::Default::obligatory(), ""  )
+    			), it::Default::obligatory(), ""  )
     .declare_key("bulk_data", it::Array(
                 DarcyFlowLMH_Unsteady::EqData().bulk_input_type()
                 .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )

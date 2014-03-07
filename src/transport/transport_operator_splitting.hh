@@ -85,9 +85,7 @@ public:
 
 		Input::Type::Record boundary_input_type() {
 			return EqDataBase::boundary_input_type()
-				.declare_key("old_boundary_file", IT::FileName::input(), "Input file with boundary conditions (obsolete).")
-	    		.declare_key("bc_times", IT::Array(IT::Double()), IT::Default::optional(),
-	    				"Times for changing the boundary conditions (obsolete).");
+				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "Input file with boundary conditions (obsolete).");
 		}
 
 		/// Mobile porosity
