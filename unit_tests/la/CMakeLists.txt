@@ -31,6 +31,7 @@ define_mpi_test(linsys 1)
 
 define_mpi_test(schur_compl 1)
 define_mpi_test(schur_compl 2)
+define_mpi_test(schur_compl 3)
 
 define_mpi_test(local_to_global_map 1)
 define_mpi_test(local_to_global_map 2)

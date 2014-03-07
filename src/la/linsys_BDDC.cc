@@ -369,3 +369,12 @@ void LinSys_BDDC::gatherSolution_( )
 #endif // HAVE_BDDCML
 }
 
+double LinSys_BDDC::get_solution_precision()
+{
+	double bnorm=0.0;
+	VecNorm(locSolVec_, NORM_2, &bnorm);
+
+	return max(a_tol_, r_tol_*bnorm);
+}
+
+

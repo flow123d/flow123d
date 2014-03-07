@@ -56,6 +56,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
+#include "la/linsys_PETSC.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
@@ -283,10 +284,8 @@ protected:
     void coupling_P0_mortar_assembly();
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0( const Input::AbstractRecord in_rec);
+    void make_schurs( const Input::AbstractRecord in_rec);
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-    void make_schur1();
-    void make_schur2();
     double solution_precision() const;
 
 	int size;				// global size of MH matrix
@@ -296,8 +295,8 @@ protected:
 	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
-	SchurComplement *schur1;  	//< first schur compl.
-	SchurComplement *schur2;	//< second ..
+	LinSys_PETSC *schur1;  	//< first schur compl.
+	LinSys_PETSC *schur2;  	//< second ..
 
 
 	// parallel
