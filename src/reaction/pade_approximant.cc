@@ -259,16 +259,6 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 }
 
 
-void Pade_approximant::do_when_timestep_changed (void)
-{
-	release_reaction_matrix();
-	allocate_reaction_matrix();
-	modify_reaction_matrix();
-	//static_cast<Pade_approximant *> (this)->modify_reaction_matrix();
-	return;
-}
-
-
 double **Pade_approximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     unsigned int cols, rows;
@@ -289,13 +279,14 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 	return concentrations;
 }
 
+
 void Pade_approximant::init_from_input(Input::Record in_rec)
 {
 	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
 	den_pol_deg = in_rec.val<int>("den_pol_deg");
 	if((nom_pol_deg + den_pol_deg) < 0){
 		cout << "You did not specify Pade approximant required polynomial degrees." << endl;
-		//This occasion should cause an error.
+		//TODO: This occasion should cause an error.
 		//break;
 	}
 }

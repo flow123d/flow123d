@@ -40,26 +40,26 @@ class Linear_reaction: public Reaction
 		*/
 		~Linear_reaction(void);
 
+                /**
+                *       Fuctions holds together setting of isotopes, bifurcations and substance indices.
+                */
+                virtual void init_from_input(Input::Record in_rec) override;
+                
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
 		//virtual
-		double **compute_reaction(double **concentrations, int loc_el);
+		virtual double **compute_reaction(double **concentrations, int loc_el);
 		/**
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		//virtual
-		virtual void update_solution(void);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		//void set_time_step(double new_timestep, Input::Record in_rec);
-
-                void do_when_timestep_changed (void);
+		void update_solution(void) override;
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
-		double **modify_reaction_matrix(void);
+		virtual double **modify_reaction_matrix(void);
+             
 	protected:
 
         double **allocate_reaction_matrix(void);
@@ -68,10 +68,6 @@ class Linear_reaction: public Reaction
 		*	This method disables to use constructor without parameters.
 		*/
 		Linear_reaction();
-		/**
-		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
-		*/
-		virtual void init_from_input(Input::Record in_rec);
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
@@ -96,6 +92,10 @@ class Linear_reaction: public Reaction
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/
 		double **reaction_matrix;
+                /**
+                *       Pointer to reference previous concentration array used in compute_reaction().
+                */
+                double *prev_conc;
 		/**
 		*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
 		*/
@@ -108,7 +108,6 @@ class Linear_reaction: public Reaction
 		*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
 		*/
 		std::vector<std::vector<double> > bifurcation;
-		
 };
 
 #endif

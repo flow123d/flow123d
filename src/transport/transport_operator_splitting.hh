@@ -252,6 +252,7 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     ConvectionTransport *convection;
+    Reaction *reaction;
     Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
     SorptionBase *sorptions;
     SorptionImmob *sorptions_immob;
