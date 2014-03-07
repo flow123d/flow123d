@@ -57,6 +57,11 @@
 
 #include "flow/darcy_flow_mh_output.hh"
 
+#include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature_lib.hh"
+
 #include <limits>
 #include <set>
 #include <vector>
@@ -536,6 +541,21 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
 
+    // We use FESideValues for calculating normal vectors.
+    // For initialization of FESideValues some auxiliary objects are needed.
+    MappingP1<1,3> map1;
+    MappingP1<2,3> map2;
+    MappingP1<3,3> map3;
+    QGauss<0> q0(1);
+    QGauss<1> q1(1);
+    QGauss<2> q2(1);
+    FE_P_disc<1,1,3> fe1;
+    FE_P_disc<0,2,3> fe2;
+    FE_P_disc<0,3,3> fe3;
+    FESideValues<1,3> fe_side_values1(map1, q0, fe1, update_normal_vectors);
+    FESideValues<2,3> fe_side_values2(map2, q1, fe2, update_normal_vectors);
+    FESideValues<3,3> fe_side_values3(map3, q2, fe3, update_normal_vectors);
+
     class Boundary *bcd;
     class Neighbour *ngh;
 
@@ -655,10 +675,31 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
+            // compute normal vector to side
+            arma::vec3 nv;
+            ElementFullIter ele_higher = mesh_->element.full_iter(ngh->side()->element());
+            switch (ele_higher->dim()) {
+            case 1:
+            	fe_side_values1.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values1.normal_vector(0);
+            	break;
+            case 2:
+            	fe_side_values2.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values2.normal_vector(0);
+            	break;
+            case 3:
+            	fe_side_values3.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values3.normal_vector(0);
+            	break;
+            }
 
-            double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
-//                data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );      // crossection of lower dim (wrong)
-                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
+            double value = data.sigma.value( ele->centre(), ele->element_accessor()) *
+            		2*data.conductivity.value( ele->centre(), ele->element_accessor()) *
+            		arma::dot(data.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    data.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+                    ngh->side()->measure();
 
 
             local_vb[0] = -value;   local_vb[1] = value;

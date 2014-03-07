@@ -30,18 +30,22 @@
 
       bulk_data = [
         { region = "1d_channel",
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         // using region set
         { r_set = "fractures",  
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
 	/* 
         { region = "2d_fracture_1",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { region = "2d_fracture_2",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
 	*/
         { region = "3d_cube",

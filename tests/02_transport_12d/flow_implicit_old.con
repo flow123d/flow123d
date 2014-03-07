@@ -30,7 +30,8 @@
       bulk_data=[
         { rid = 48,
           anisotropy = 10,
-          cross_section = 1
+          cross_section = 1,
+          sigma = 0.05
         },
         { rid = 184,
           anisotropy = 1,

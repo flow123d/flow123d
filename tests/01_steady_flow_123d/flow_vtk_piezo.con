@@ -19,10 +19,12 @@
 
       bulk_data = [
         { region = "1d_channel",
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         { r_set = "all_2d",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { region = "3d_cube",
           anisotropy = 0.1
