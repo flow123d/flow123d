@@ -190,12 +190,13 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
 
     ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "\"inflow\"" );
-    bc_type.input_selection(&bc_type_selection);
+    	bc_type.input_selection(&bc_type_selection);
 
 //    std::vector<FieldEnum> list; list.push_back(neumann);
     ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", "0.0");
+//    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
-    bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+//    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
 }
 
 
@@ -220,17 +221,17 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	mass_balance_ = new MassBalance(this, *it);
 
     // Set up physical parameters.
-    data_.set_mesh(&init_mesh);
-    data_.bc_type.set_n_comp(n_subst_);
-    data_.bc_flux.set_n_comp(n_subst_);
-    data_.bc_robin_sigma.set_n_comp(n_subst_);
-    data_.fracture_sigma.set_n_comp(n_subst_);
-    data_.dg_penalty.set_n_comp(n_subst_);
+    data_.set_mesh(init_mesh);
+    data_.bc_type.n_comp(n_subst_);
+    data_.bc_flux.n_comp(n_subst_);
+    data_.bc_robin_sigma.n_comp(n_subst_);
+    data_.fracture_sigma.n_comp(n_subst_);
+    data_.dg_penalty.n_comp(n_subst_);
     Model::init_data(n_subst_);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
-    data_.set_time(*time_);
 
-    data.set_limit_side(LimitSide::left);
+    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data_.set_limit_side(LimitSide::left);
+    data_.set_time(*time_);
 
     // DG variant
     dg_variant = in_rec.val<DGVariant>("dg_variant");

@@ -47,12 +47,12 @@ using namespace Input::Type;
 
 ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::TransportEqData("TransportDG")
 {
-	ADD_FIELD(bc_conc, "Dirichlet boundary condition (for each substance).", Default("0"));
+	ADD_FIELD(bc_conc, "Dirichlet boundary condition (for each substance).", "0.0");
 
-	ADD_FIELD(init_conc, "Initial concentrations.", Default("0"));
-	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", Default("0"));
-	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", Default("0"));
-	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", Default("0"));
+	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
+	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", "0.0");
+	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
+	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
 }
 
 
@@ -82,14 +82,14 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 
 void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 {
-	data().init_conc.set_n_comp(n_subst_);
-	data().bc_conc.set_n_comp(n_subst_);
-    data().sources_density.set_n_comp(n_subst_);
-    data().sources_sigma.set_n_comp(n_subst_);
-    data().sources_conc.set_n_comp(n_subst_);
-	data().diff_m.set_n_comp(n_subst_);
-	data().disp_l.set_n_comp(n_subst_);
-	data().disp_t.set_n_comp(n_subst_);
+	data().init_conc.n_comp(n_subst_);
+	data().bc_conc.n_comp(n_subst_);
+    data().sources_density.n_comp(n_subst_);
+    data().sources_sigma.n_comp(n_subst_);
+    data().sources_conc.n_comp(n_subst_);
+	data().diff_m.n_comp(n_subst_);
+	data().disp_l.n_comp(n_subst_);
+	data().disp_t.n_comp(n_subst_);
 }
 
 

@@ -540,7 +540,7 @@ public:
      * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) const;
 
     /**
      * Returns std::vector of scalar values in several points at once. The base class implements
@@ -548,7 +548,7 @@ public:
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
+                       std::vector<typename Value::return_type>  &value_list) const;
 
 protected:
 
@@ -736,7 +736,8 @@ private:
  */
 
 template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)  {
+inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
+{
 
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
@@ -749,7 +750,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
+                   std::vector<typename Value::return_type>  &value_list) const
 {
 
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",

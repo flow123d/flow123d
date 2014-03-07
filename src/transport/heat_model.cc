@@ -50,16 +50,17 @@ using namespace Input::Type;
 
 HeatTransferModel::ModelEqData::ModelEqData() : EqDataBase("HeatTransfer")
 {
-	ADD_FIELD(bc_temperature, "Boundary value of temperature.", Default("0"));
-	ADD_FIELD(init_temperature, "Initial temperature.", Default("0"));
-	ADD_FIELD(porosity, "Porosity.", Default("1"));
+	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
+
+	ADD_FIELD(init_temperature, "Initial temperature.", "0.0");
+	ADD_FIELD(porosity, "Porosity.", "1.0" );
 	ADD_FIELD(fluid_density, "Density of fluid.");
 	ADD_FIELD(fluid_heat_capacity, "Heat capacity of fluid.");
 	ADD_FIELD(fluid_heat_conductivity, "Heat conductivity of fluid.");
 	ADD_FIELD(solid_density, "Density of solid (rock).");
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
-	ADD_FIELD(heat_dispersivity, "Heat dispersivity", Default("0"));
+	ADD_FIELD(heat_dispersivity, "Heat dispersivity", "0.0" );
 }
 
 
