@@ -152,7 +152,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	if ( reactions_it ) {
 		if (reactions_it->type() == Linear_reaction::input_type ) {
 	        decayRad =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
-	        decayRad->set_time(*time_);
+	        decayRad->set_time_governor(*time_);
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
@@ -164,7 +164,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		} else
 	    if (reactions_it->type() == Pade_approximant::input_type) {
             decayRad = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
-            decayRad->set_time(*time_);
+            decayRad->set_time_governor(*time_);
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
@@ -193,17 +193,21 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	if (sorptions_it){
             // Part for mobile zone description follows.
 	    sorptions = new SorptionSimple(init_mesh, *sorptions_it, subst_names_);
-	    sorptions->set_time(*time_);
+	    sorptions->set_time_governor(*time_);
+            //sorptions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
 	    convection->get_par_info(el_4_loc, el_distribution);
 	    sorptions->set_dual_porosity(convection->get_dual_porosity());
 	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
-	    //sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
+	    sorptions->set_porosity(&(convection->get_data()->por_m));
+            //sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
 	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
 	    sorptions->init_from_input(*sorptions_it);
 	    //xprintf(Msg,"sorption->init_from_input() finished successfuly.\n");
             
 	    double ***conc_matrix = convection->get_concentration_matrix();
+            sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
+            sorptions->set_sorb_conc_array(el_distribution->lsize());
         }
         /*
 	    if(convection->get_dual_porosity()){
@@ -316,8 +320,11 @@ void TransportOperatorSplitting::update_solution() {
 	    //if (dual_por_exchange) dual_por_exchange->update_solution();
 	    if(decayRad) decayRad->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
+            DBGMSG("PETSC SEG ERROR\n");
 	    if(sorptions) sorptions->update_solution();//equilibrial sorption at the end of simulated time-step
+            DBGMSG("PETSC SEG ERROR\n");
 	    if(sorptions_immob) sorptions_immob->update_solution();
+            DBGMSG("PETSC SEG ERROR\n");
 	    if (convection->mass_balance() != NULL)
 	    	convection->mass_balance()->calculate(convection->time().t());
 	}

@@ -44,11 +44,6 @@ Reaction::~Reaction()
 
 }
 
-void Reaction::set_time_governor(TimeGovernor& tg)
-{
-  time_ = &tg;
-}
-
 
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
@@ -97,24 +92,6 @@ double Reaction::get_time_step(void)
 	return time_step;
 }
 
-int Reaction::faktorial(int k)
-{
-	int faktor = 1;
-
-	if(k < 0)
-	{
-		//an error message should be placed here
-		return 0;
-	}
-
-	while(k > 1)
-	{
-		faktor *= k;
-		k--;
-	}
-	//xprintf(Msg,"\n Koeficient has a value %d.\n",faktor);
-	return faktor;
-}
 
 void Reaction::get_parallel_solution_vector(Vec &vec){
 	cout << "Reaction.get_parallel_solution_vector(Vec &vec) is not implemented." << endl; //convection->compute_one_step();
@@ -167,11 +144,6 @@ void Reaction::set_names(const std::vector<string> &names)
 void Reaction::init_from_input(Input::Record in_rec)
 {
 	cout << "Reaction::init_from_input() needs to be re-implemented in ancestors." << endl;
-}
-
-void Reaction::set_concentration_vector(Vec &vec)
-{
-	cout << "Reaction.set_concentration_vector(Vec &vec) is not implemented." << endl;
 }
 
 Element * Reaction::get_element_for_dof_index(unsigned int idx)

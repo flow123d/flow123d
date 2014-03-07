@@ -299,3 +299,23 @@ void Pade_approximant::init_from_input(Input::Record in_rec)
 		//break;
 	}
 }
+
+
+int Pade_approximant::factorial(int k)
+{
+        int faktor = 1;
+
+        if(k < 0)
+        {
+                //an error message should be placed here
+                return 0;
+        }
+
+        while(k > 1)
+        {
+                faktor *= k;
+                k--;
+        }
+        //xprintf(Msg,"\n Koeficient has a value %d.\n",faktor);
+        return faktor;
+}

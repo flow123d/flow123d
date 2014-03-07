@@ -33,7 +33,7 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-#include "reaction/isotherm.hh"
+//#include "reaction/isotherm.hh"
 #include "reaction/sorption_base.hh"
 //#include "transport/transport.h"
 
@@ -132,12 +132,12 @@ class SorptionSimple:  public SorptionBase
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		void set_porosity(pScalar por);
+		//void set_porosity(pScalar por);
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
 
-		virtual void init_from_input(Input::Record in_rec);
+		//void init_from_input(Input::Record in_rec);
 		/**
 		*	This method enables to change a data source the program is working with, during simulation.
 		*/
@@ -155,7 +155,7 @@ class SorptionSimple:  public SorptionBase
 		//virtual void get_parallel_solution_vector(Vec &vc);
 
 		//virtual void get_solution_vector(double* &vector, unsigned int &size);
-		virtual void set_concentration_vector(Vec &vec);
+		void set_concentration_vector(Vec &vec);
 
 	protected:
 		/**
@@ -215,7 +215,7 @@ class SorptionSimple:  public SorptionBase
 		/**
 		* 	Region characteristic inputs.
 		*/
-		EqData data_;
+		//EqData data_;
 		/**
 		* Array for storage infos about sorbed species concentrations.
 		*/

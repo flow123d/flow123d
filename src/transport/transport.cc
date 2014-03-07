@@ -605,6 +605,9 @@ void ConvectionTransport::compute_one_step() {
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
 
+    DBGMSG("por_m chaned: %d\n",data_.por_m.changed_during_set_time);
+    DBGMSG("transport_matrix_time: %f\n",transport_matrix_time);
+    DBGMSG("mh_dh->time_changed(): %f\n",mh_dh->time_changed());
     if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed_during_set_time) {
         DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed_during_set_time);
         create_transport_matrix_mpi();
@@ -699,6 +702,7 @@ void ConvectionTransport::compute_one_step() {
       }
 	}
     for (sbi = 0; sbi < n_subst_; sbi++) {*/
+    
     START_TIMER("old_sorp_step");
         if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
@@ -714,6 +718,7 @@ void ConvectionTransport::compute_one_step() {
       //END_TIMER("dual porosity/old-sorption");
     }
     END_TIMER("old_sorp_step");
+    
     END_TIMER("convection-one step");
 }
 

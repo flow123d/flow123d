@@ -138,9 +138,9 @@ public:
     /**
      * Set time governor.
      *
-     * Used to set pointer to common time governor of Transport Operator Splitting.
+     * Used to set pointer to common time governor (e.g. in Transport Operator Splitting, Reaction).
      */
-    virtual void set_time(TimeGovernor &time);
+    virtual void set_time_governor(TimeGovernor &time);
 
     /**
      * Most actual planned time for solution.
@@ -178,10 +178,6 @@ public:
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
-    /**
-     * Child class have to implement setter for local part concentration vector.
-     */
-    virtual void set_concentration_vector(Vec &vector) =0;
 
 protected:
     Mesh * mesh_;

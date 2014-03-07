@@ -17,39 +17,42 @@
 class Mesh;
 class Distribution;
 
-enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Lim_Sorp};
 
 class Reaction: public EquationBase
 {
-	public:
-		/**
-		 * Static variable for new input data types input
-		 */
-		static Input::Type::AbstractRecord input_type;
-		/**
-		 * Static variable for new input data types input
-		*/
-		static Input::Type::Record input_type_one_decay;
-        /**
-         *  Constructor with parameter for initialization of a new declared class member
-         *  TODO: parameter description
-         */
-        
-		Reaction(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
-		/**
-		*	Destructor.
-		*/
-		~Reaction(void);
-		/**
-		*	For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
-		*/
-		virtual double **compute_reaction(double **concentrations, int loc_el);
+public:
+  enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Lim_Sorp}; 
+  
+  /**
+   * Static variable for new input data types input
+   */
+  static Input::Type::AbstractRecord input_type;
 
-		/**
-		 * Returns number of substances involved in reactions. This should be same as number of substances in transport.
-		 */
-        inline unsigned int n_substances()
-        { return names_.size(); }
+  /**     //DELETE
+   * Static variable for new input data types input
+   */
+  //static Input::Type::Record input_type_one_decay;
+
+  /**
+   *  Constructor with parameter for initialization of a new declared class member
+   *  TODO: parameter description
+   */
+  Reaction(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
+  /**
+   * Destructor.
+   */
+  ~Reaction(void);
+  /**
+   * For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
+   */
+  virtual double **compute_reaction(double **concentrations, int loc_el);
+
+  /**
+   * Returns number of substances involved in reactions. This should be same as number of substances in transport.
+   */
+  inline unsigned int n_substances()
+    { return names_.size(); }
+    
         /**
         *
         */
@@ -72,17 +75,19 @@ class Reaction: public EquationBase
 		virtual void set_time_step(Input::Record in_rec);
 		//
                 
-                /** Sets the time governor. 
-                 * By default the time governor of the reaction is set.
+                /**
+                 * Virtual method that is reimplemented in ascendants. Computes new solution of the reaction model.
                  */
-                virtual void set_time_governor(TimeGovernor &tg);
-                
-		virtual void update_solution(void);
+		virtual void update_solution(void) = 0;
 		virtual void choose_next_time(void);
 		virtual void set_time_step_constrain(double dt);
 		virtual void get_parallel_solution_vector(Vec &vc);
 		virtual void get_solution_vector(double* &vector, unsigned int &size);
-		virtual void set_concentration_vector(Vec &vec);
+                
+                /**
+                 * TODO: implement in ascendants
+                 */
+		virtual void set_concentration_vector(Vec &vec){};
 		/**
 		* Function for setting dual porosity.
 		*/
@@ -104,10 +109,6 @@ class Reaction: public EquationBase
 		*	This method disables to use constructor without parameters.
 		*/
 		Reaction();
-		/**
-		*	Enables to compute factorial k!.
-		*/
-		int faktorial(int k);
 		/**
 		*	Finds a position of a string in specified array.
 		*/

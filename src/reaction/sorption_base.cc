@@ -20,8 +20,9 @@
 
 #include "coupling/time_governor.hh"
 
-const double pi = 3.1415;
+using namespace std;
 namespace it=Input::Type;
+const double pi = 3.1415;
 
 it::Selection SorptionBase::EqData::sorption_type_selection = it::Selection("SorptionType")
 	.add_value(Isotherm::none,"none", "No adsorption considered")
@@ -70,13 +71,12 @@ SorptionBase::EqData::EqData()
             //" Vector, one value for every substance.", Input::Type::Default("0"));
 }/**/
 
-using namespace std;
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: Reaction(init_mesh, in_rec, names)
 {
-	cout << "Sorption constructor is running." << endl;
-	TimeGovernor tg(0.0, 1.0);
+  cout << "Sorption constructor is running." << endl;
+  TimeGovernor tg(0.0, 1.0);
     nr_of_regions = init_mesh.region_db().bulk_size();
     nr_of_substances = in_rec.val<Input::Array>("species").size();
     nr_of_points = in_rec.val<int>("substeps");
@@ -87,6 +87,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
     int nr_transp_subst = names.size();
     //data_.alphas.set_n_comp(nr_transp_subst);
     data_.set_mesh(&init_mesh);
+    
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
     data_.set_time(tg);
 
@@ -245,6 +246,7 @@ void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
+  //DBGMSG("compute_reaction\n");
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
     double porosity;
     double rock_density;
@@ -255,7 +257,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 	std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
 
     if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
-
+    
     // Constant value of rock density and mobile porosity over the whole region => interpolation_table is precomputed
     if (isotherms_vec[0].is_precomputed()) {
     	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
@@ -311,10 +313,10 @@ void SorptionBase::print_sorption_parameters(void)
 
 void SorptionBase::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
-	concentration_matrix = ConcentrationMatrix;
-	distribution = conc_distr;
-	el_4_loc = el_4_loc_;
-	return;
+        concentration_matrix = ConcentrationMatrix;
+        distribution = conc_distr;
+        el_4_loc = el_4_loc_;
+        return;
 }
 
 void SorptionBase::set_sorb_conc_array(double** sorb_conc_array)

@@ -33,9 +33,10 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-#include "reaction/isotherm.hh"
+//#include "reaction/isotherm.hh"
 #include "reaction/reaction.hh"
 
+class Isotherm;
 class Mesh;
 class Distribution;
 
@@ -70,11 +71,12 @@ class SorptionBase:  public Reaction
 			Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
 			Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 			//Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
+			
+			//Field<3, FieldValue<3>::Scalar > porosity;      ///< Pointer to porosity field from transport
 		};
 	    /**
 	    * 	Pointer to porosity field from transport
 	    */
-	    //pScalar mob_porosity_;
 	    pScalar porosity_;
 	    /**
 	    * 	Pointer to porosity field from transport
@@ -103,6 +105,10 @@ class SorptionBase:  public Reaction
 		virtual void update_solution(void) = 0;
                 
                 
+                /**
+                *       This method enables to change a data source the program is working with, during simulation.
+                */
+                void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
                 
 		/**
 		*	This method enables to change the timestep for computation of simple chemical reactions. It is obsolete bacause of parent class Reaction.
@@ -115,11 +121,7 @@ class SorptionBase:  public Reaction
 		/**
 		* Inherited init_from_input method extension.
 		*/
-		void init_from_input(Input::Array bulk_list);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+		//void init_from_input(Input::Array bulk_list);
 		/**
 		*
 		*/
@@ -135,7 +137,7 @@ class SorptionBase:  public Reaction
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		virtual void set_porosity(pScalar por_m){};
+		virtual inline void set_porosity(pScalar por_m){ porosity_ = por_m; };
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class
 		*/
