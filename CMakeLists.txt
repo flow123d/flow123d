@@ -41,7 +41,7 @@ endif(CCACHE_CXX_COMPILER)
 project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
   cmake_policy(SET CMP0017 NEW)
