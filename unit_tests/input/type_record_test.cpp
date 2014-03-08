@@ -291,6 +291,38 @@ using namespace Input::Type;
     EXPECT_EQ( true, output_record.has_key("digits") );
 }
 
+
+TEST(InputTypeRecord, copy_keys) {
+using namespace Input::Type;
+
+    Record rec1 =
+    		Record("Rec1", "")
+    		.declare_key("a", Integer(), "a from rec1");
+
+    Record rec2 =
+    		Record("Rec2","")
+    		.declare_key("a", Integer(), "a from rec2")
+    		.declare_key("b", Integer(), "b from rec2")
+    		.declare_key("c", Integer(), "c from rec2");
+
+    Record composite =
+    		Record("composite","")
+    		.declare_key("b", Integer(), "b from composite")
+    		.copy_keys(rec1)
+    		.copy_keys(rec2);
+
+    composite.finish();
+
+    EXPECT_TRUE(rec1.is_finished());
+    EXPECT_TRUE(rec2.is_finished());
+
+    EXPECT_EQ(3, composite.size());
+    EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
+    EXPECT_EQ("b from composite", composite.key_iterator("b")->description_);
+    EXPECT_EQ("c from rec2", composite.key_iterator("c")->description_);
+}
+
+
 /**
  * Test Abstract Record.
  */
@@ -360,6 +392,9 @@ using namespace Input::Type;
     EXPECT_THROW_WHAT({ x.no_more_descendants(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
+
+
+
 
 
 /**

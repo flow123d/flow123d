@@ -123,14 +123,7 @@ it::Record DarcyFlowMH_Unsteady::input_type
 	.derive_from(DarcyFlowMH::input_type)
 	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
-  .declare_key("bc_data", it::Array(
-                DarcyFlowMH_Unsteady::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                ), it::Default::obligatory(), ""  )
-  .declare_key("bulk_data", it::Array(
-                DarcyFlowMH_Unsteady::EqData().bulk_input_type()
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
-                ), it::Default::obligatory(), "");
+    .copy_keys(DarcyFlowMH_Steady::input_type);
 
 
 it::Record DarcyFlowLMH_Unsteady::input_type
@@ -138,14 +131,7 @@ it::Record DarcyFlowLMH_Unsteady::input_type
     .derive_from(DarcyFlowMH::input_type)
     .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")
-    .declare_key("bc_data", it::Array(
-                DarcyFlowLMH_Unsteady::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-    			), it::Default::obligatory(), ""  )
-    .declare_key("bulk_data", it::Array(
-                DarcyFlowLMH_Unsteady::EqData().bulk_input_type()
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
-                ), it::Default::obligatory(), "");
+    .copy_keys(DarcyFlowMH_Steady::input_type);
     
 
 
