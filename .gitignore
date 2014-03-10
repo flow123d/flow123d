@@ -5,6 +5,7 @@ unit_tests/*/makefile
 unit_tests/makefile
 unit_tests/output/*.pvd
 unit_tests/output/*.msh
+unit_tests/output/test?/
 bin/tests/makefile
 bin/flow123d
 bin/mpiexec
