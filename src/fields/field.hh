@@ -20,7 +20,7 @@ using namespace std;
 
 #include "fields/field_base.hh"
 
-
+namespace IT=Input::Type;
 
 /**
  *  Left and right time limit, used in the @p set_time() method.
@@ -118,7 +118,7 @@ public:
      */
     virtual void set_mesh(const Mesh &mesh) {};
     /**
-     * Set the data list from which field will read its input. It is list of "filed descriptors".
+     * Set the data list from which field will read its input. It is list of "field descriptors".
      * When reading from the input list we consider only field descriptors containing key of
      * named by the field name. These field descriptors has to have times forming ascending sequence.
      *
@@ -163,9 +163,9 @@ public:
     /**
      * Common part of the field descriptor. To get finished record
      * one has to add keys for individual fields. This is done automatically
-     * using FieldList::get_input_type().
+     * using FieldSet::get_input_type().
      */
-    static IT::Record field_descriptor_record(const string& list_name);
+    static IT::Record field_descriptor_record(const string& record_name);
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
@@ -212,7 +212,24 @@ public:
      * Check that @p other is instance of the same Field<..> class and
      * perform assignment. Polymorphic copy.
      */
-    virtual void make_copy(const FieldCommonBase & other) =0;
+    virtual void copy_from(const FieldCommonBase & other) =0;
+
+    /**
+     * Output the field. STUB, has to be finished after merge with new output classes.
+     */
+    virtual void output() =0;
+
+
+    /**
+     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true
+     * otherwise it returns false.
+     * Then one call ElementAccessor<spacedim>(mesh(), reg ) to construct an ElementAccessor @p elm
+     * pointing to "virtual" element on which Field::value returns constant value.
+     *
+     * Current implementation use virtual functions and can be prohibitively slow if called for every element. If this
+     * becomes necessary it is possible to incorporate such test into set_time method and in this method just return precomputed result.
+     */
+    virtual bool is_constant(Region reg) =0;
 
     /**
      * Returns true if set_time_result_ is not @p TimeStatus::constant.
@@ -451,7 +468,7 @@ public:
      */
     auto disable_where(
     		const Field<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
-    		const vector<FieldEnum> &value_list) -> Field;
+    		const vector<FieldEnum> &value_list) -> Field &;
 
 
 
@@ -469,11 +486,9 @@ public:
     //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
 
     /**
-     * If the field on given region @p reg exists and is of type FieldConstant<...> the method method returns true and sets
-     * given ElementAccessor @p elm to "virtual" element on which Field::value returns constant value.
-     * Otherwise it returns false and invalidate @p elm; method ElementAccessor::is_valid() returns false.
+     * Implementation of @p FieldCommonBase::is_constant().
      */
-    bool get_const_accessor(Region reg, ElementAccessor<spacedim> &elm);
+    bool is_constant(Region reg) override;
 
 
     /**
@@ -512,7 +527,14 @@ public:
     /**
      * Check that other has same type and assign from it.
      */
-    void make_copy(const FieldCommonBase & other) override;
+    void copy_from(const FieldCommonBase & other) override;
+
+    /**
+     * Output the field. STUB, has to be finished after merge with new output classes.
+     */
+    void output() override {
+
+    }
 
 
     /**
@@ -520,14 +542,6 @@ public:
      */
     //bool is_jump_time();
 
-
-    /**
-     * If the field returns a FieldEnum and is constant on the given region, the method return true and
-     * set @p value to the constant value on the given region. Otherwise (non constant field, other return type) it returns false.
-     *
-     * TODO: replace with more general method get_const_value
-     */
-    bool get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const;
 
     /**
      * Special field values spatially constant. Could allow optimization of tensor multiplication and
@@ -562,11 +576,6 @@ protected:
     void update_history(const TimeGovernor &time);
 
 
-    /**
-	 * Initialize field of region @p reg from input accessor @p rec. At first usage it allocates
-	 * table of fields according to the @p bulk_size of the RegionDB. RegionDB is automatically closed.
-	 */
-    //void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -694,7 +703,14 @@ public:
     /**
      * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
      */
-    void make_copy(const FieldCommonBase & other) override;
+    void copy_from(const FieldCommonBase & other) override;
+
+    void output() override {};
+
+    /**
+     * Implementation of @p FieldCommonBase::is_constant().
+     */
+    bool is_constant(Region reg) override;
 
     /**
      * Virtual destructor.

@@ -141,7 +141,7 @@ it::AbstractRecord Field<spacedim,Value>::make_input_tree() {
 template<int spacedim, class Value>
 auto Field<spacedim, Value>::disable_where(
 		const Field<spacedim, typename FieldValue<spacedim>::Enum > &control_field,
-		const vector<FieldEnum> &value_list) -> Field
+		const vector<FieldEnum> &value_list) -> Field &
 {
     no_check_control_field_=std::make_shared<ControlField>(control_field);
     shared_->no_check_values_=value_list;
@@ -179,15 +179,10 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 
 template <int spacedim, class Value>
-bool Field<spacedim, Value>::get_const_accessor(Region reg, ElementAccessor<spacedim> &elm) {
+bool Field<spacedim, Value>::is_constant(Region reg) {
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
-    if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-        elm = ElementAccessor<spacedim>(mesh(), reg );
-        return true;
-    } else {
-        return false;
-    }
+    return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
 }
 
 /*
@@ -315,36 +310,11 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::make_copy(const FieldCommonBase & other) {
+void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);
 	}
-}
-
-// helper functions
-template<int spacedim, class FieldBaseType>
-FieldEnum get_constant_enum_value_dispatch(shared_ptr< FieldBaseType > region_field,  const boost::true_type&) {
-    return region_field->value( typename Space<spacedim>::Point(), ElementAccessor<spacedim>());
-}
-
-template<int spacedim,class FieldBaseType>
-FieldEnum get_constant_enum_value_dispatch(shared_ptr< FieldBaseType > region_field,  const boost::false_type&) {
-    return 0;
-}
-
-
-
-template<int spacedim, class Value>
-bool Field<spacedim,Value>::get_constant_enum_value(RegionIdx r_idx,  FieldEnum &value) const {
-    if (boost::is_same<typename Value::return_type, FieldEnum>::value) {
-    	auto region_field = region_fields_[r_idx.idx()];
-        if (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>)) {
-            value = get_constant_enum_value_dispatch<spacedim>(region_field, boost::is_same<typename Value::return_type, FieldEnum>() );
-            return true;
-        }
-    }
-    return false;
 }
 
 
@@ -420,12 +390,15 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
             RegionHistory &rh = data_->region_history_[reg.idx()];
         	if ( rh.empty() ||	! rh[0].second)   // empty region history
             {
-                if (no_check_control_field_) {      // is the check turned off?
-                    FieldEnum value;
-                    if (no_check_control_field_->get_constant_enum_value(reg, value)
-                        && ( std::find(shared_->no_check_values_.begin(), shared_->no_check_values_.end(), value)
+        		// test if check is turned on and control field is FieldConst
+                if (no_check_control_field_ && no_check_control_field_->is_constant(reg) ) {
+                	// get constant enum value
+                	auto elm = ElementAccessor<spacedim>(mesh(), reg);
+                	FieldEnum value = no_check_control_field_->value(elm.centre(),elm);
+                	// check that the value is in the disable list
+                    if ( std::find(shared_->no_check_values_.begin(), shared_->no_check_values_.end(), value)
                              != shared_->no_check_values_.end() )
-                       ) continue;                  // the field is not needed on this region
+                        continue;                  // the field is not needed on this region
                 }
                 if (shared_->default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
@@ -526,7 +499,7 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::make_copy(const FieldCommonBase & other) {
+void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
 		this->operator=(other_field);
@@ -537,6 +510,14 @@ void MultiField<spacedim, Value>::make_copy(const FieldCommonBase & other) {
 	}
 }
 
+
+
+template<int spacedim, class Value>
+bool MultiField<spacedim, Value>::is_constant(Region reg) {
+	bool const_all=false;
+	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
+	return const_all;
+}
 
 
 

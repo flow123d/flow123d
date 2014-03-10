@@ -173,20 +173,19 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 void Sorption::make_tables(void)
 {
-	ElementAccessor<3> elm;
-
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
 		int reg_idx = reg_iter.bulk_idx();
 
 		// Creates interpolation tables in the case of constant rock matrix parameters
-		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
-				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
-				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
-				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
+		if((data_.rock_density.is_constant(reg_iter)) &&
+				(data_.mult_coefs.is_constant(reg_iter)) &&
+				(data_.second_params.is_constant(reg_iter)) &&
+				(this->porosity_->is_constant(reg_iter)) &&
+				(this->immob_porosity_->is_constant(reg_iter)) &&
+				(this->phi_->is_constant(reg_iter)))/**/
 		{
+			ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
 			isotherm_reinit(isotherms[reg_idx],elm);
 			xprintf(Msg,"parameters are constant\n");
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)

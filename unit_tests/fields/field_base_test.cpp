@@ -622,8 +622,11 @@ TEST(Field, init_from_input) {
 
 	    EXPECT_ASSERT_DEATH( {sorption_type.value(ele.centre(), ele);}  , "Invalid element accessor.");
 	    Region reg = mesh.region_db().find_id(40);
-	    EXPECT_TRUE( sorption_type.get_const_accessor(reg, ele));
-	    EXPECT_TRUE( init_conc.get_const_accessor(reg, ele));
+
+	    EXPECT_TRUE( sorption_type.is_constant(reg) );
+	    EXPECT_TRUE( init_conc.is_constant(reg) );
+
+	    ele = ElementAccessor<3>(&mesh, reg);
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
