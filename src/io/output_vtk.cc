@@ -433,12 +433,10 @@ void OutputVTK::write_vtk_node_data(void)
         /* Write right bracket of <PointData */
         file << ">" << endl;
 
-#if 0
-        /* TODO: Write own data on nodes */
-        if(node_data != NULL) {
-            this->write_vtk_data_ascii(node_data);
+        /* Write data on nodes */
+        if(this->node_data.empty() == false) {
+            this->write_vtk_data_ascii(&this->node_data);
         }
-#endif
 
         /* Write data in corners of elements */
         if(this->corner_data.empty() == false) {
