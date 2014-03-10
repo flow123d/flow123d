@@ -1,11 +1,9 @@
 #include <cmath>
-//#include <math.h>
+#include "system/exc_common.hh"
 
-#include "mesh/ngh/include/config.h"
 #include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/mathfce.h"
-#include "mesh/ngh/include/system.h"
 
 int TTetrahedron::numberInstance = 0;
 
@@ -84,7 +82,7 @@ const TTriangle &TTetrahedron::GetTriangle(int i) const {
             break;
         case 4: return T4;
             break;
-        default: mythrow((char*)"Unknown number of the triangle of the tetrahedron.", __LINE__, __FUNC__);
+        default: THROW( ExcAssertMsg() << EI_Message("Unknown number of the triangle of the tetrahedron.") );
     }
 }
 
@@ -102,7 +100,7 @@ const TAbscissa &TTetrahedron::GetAbscissa(int i) const {
             break;
         case 6: return *A6;
             break;
-        default: mythrow((char*)"Unknown number of the triangle of the tetrahedron.", __LINE__, __FUNC__);
+        default: THROW( ExcAssertMsg() << EI_Message("Unknown number of the triangle of the tetrahedron.") );
     }
 }
 
@@ -116,7 +114,7 @@ const TPoint &TTetrahedron::GetPoint(int i) const {
             break;
         case 4: return X4;
             break;
-        default: mythrow((char*)"Unknown number of the point of the tetrahedron.", __LINE__, __FUNC__);
+        default: THROW( ExcAssertMsg() << EI_Message("Unknown number of the point of the tetrahedron.") );
     }
 }
 

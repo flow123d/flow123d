@@ -56,6 +56,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
+#include "la/linsys_PETSC.hh"
 
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
@@ -283,10 +284,8 @@ protected:
     void coupling_P0_mortar_assembly();
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0( const Input::AbstractRecord in_rec);
+    void make_schurs( const Input::AbstractRecord in_rec);
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-    void make_schur1();
-    void make_schur2();
     double solution_precision() const;
 
 	int size;				// global size of MH matrix
@@ -296,8 +295,8 @@ protected:
 	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
-	SchurComplement *schur1;  	//< first schur compl.
-	SchurComplement *schur2;	//< second ..
+	LinSys_PETSC *schur1;  	//< first schur compl.
+	LinSys_PETSC *schur2;  	//< second ..
 
 
 	// parallel
@@ -328,7 +327,80 @@ protected:
     double mortar_sigma;
         
   EqData data;
+
+  friend class P0_CouplingAssembler;
+  friend class P1_CouplingAssembler;
 };
+
+
+class P0_CouplingAssembler {
+public:
+	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  master_list_(darcy.mesh_->master_elements),
+	  intersections_(darcy.mesh_->intersections),
+	  master_(nullptr),
+	  tensor_average(2)
+	{
+		arma::mat master_map(1,2), slave_map(1,3);
+		master_map.fill(1.0 / 2);
+		slave_map.fill(1.0 / 3);
+
+		tensor_average[0].push_back( trans( master_map ) * master_map );
+		tensor_average[0].push_back( trans( master_map ) * slave_map );
+		tensor_average[1].push_back( trans( slave_map ) * master_map );
+		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+	}
+
+	void assembly(LinSys &ls);
+	void pressure_diff(int i_ele,
+			vector<int> &dofs,
+			unsigned int &ele_type,
+			double &delta,
+			arma::vec &dirichlet);
+private:
+	typedef vector<unsigned int> IsecList;
+
+	const DarcyFlowMH_Steady &darcy_;
+
+	const vector<IsecList> &master_list_;
+	const vector<Intersection> &intersections_;
+
+	vector<IsecList>::const_iterator ml_it_;
+	const Element *master_;
+
+	/// Row matrices to compute element pressure as average of boundary pressures
+	vector< vector< arma::mat > > tensor_average;
+	/// measure of master element, should be sum of intersection measures
+	double delta_0;
+};
+
+
+
+class P1_CouplingAssembler {
+public:
+	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  intersections_(darcy.mesh_->intersections),
+	  rhs(5),
+	  dofs(5),
+	  dirichlet(5)
+	{
+		rhs.zeros();
+	}
+
+	void assembly(LinSys &ls);
+	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+private:
+
+	const DarcyFlowMH_Steady &darcy_;
+	const vector<Intersection> &intersections_;
+
+	arma::vec rhs;
+	vector<int> dofs;
+	vector<double> dirichlet;
+};
+
 
 
 //void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);

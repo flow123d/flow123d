@@ -50,6 +50,7 @@ set(sources_lib_system
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
+    system/application_base.cc
 )
 
 set(sources_lib_input
@@ -90,7 +91,7 @@ set(sources_mesh_lib
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    mesh/bih_node.cc
+    # mesh/bih_node.cc
     mesh/bih_tree.cc
     
     mesh/ngh/src/abscissa.cpp
@@ -102,7 +103,7 @@ set(sources_mesh_lib
     mesh/ngh/src/plain.cpp
     mesh/ngh/src/point.cpp
     mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/system.cpp
+    #mesh/ngh/src/system.cpp
     mesh/ngh/src/tetrahedron.cpp
     mesh/ngh/src/triangle.cpp
     mesh/ngh/src/vector.cpp
@@ -164,6 +165,8 @@ set(sources_lib_non_system
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
+    transport/concentration_model.cc
+    transport/heat_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc

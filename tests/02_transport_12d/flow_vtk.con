@@ -12,6 +12,7 @@
       bulk_data = [
         { rid = 48,
           anisotropy = 10,
+          sigma = 0.05,
           cross_section = 1
         },
         { rid = 184,

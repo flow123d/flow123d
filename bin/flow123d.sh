@@ -134,6 +134,15 @@ function parse_arguments()
                 shift
         done        
         
+        if [ -n "${UNRESOLVED_PARAMS}" ]
+        then
+            echo "-----------------------------------------------------"
+            echo "WARNNING, unresolved parameters: ${UNRESOLVED_PARAMS}"
+            echo "use flow123d.sh --help for documentation"
+            echo "-----------------------------------------------------"
+            echo
+        fi    
+        
         FLOW_PARAMS="$@"
 	
 	# Try to get remaining parameters as flow parameters

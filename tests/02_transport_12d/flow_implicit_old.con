@@ -30,7 +30,8 @@
       bulk_data=[
         { rid = 48,
           anisotropy = 10,
-          cross_section = 1
+          cross_section = 1,
+          sigma = 0.05
         },
         { rid = 184,
           anisotropy = 1,
@@ -40,7 +41,7 @@
     },
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -66,7 +67,7 @@
       bc_data=[
         { 
           region="IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test2.tbc"
+          bc_conc = 1
         }
       ],
       bulk_data=[

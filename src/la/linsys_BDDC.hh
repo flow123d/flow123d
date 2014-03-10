@@ -54,8 +54,7 @@ public:
     static Input::Type::Record input_type;
 
     LinSys_BDDC( const unsigned numDofsSub,
-                 Distribution * rows_ds,
-                 const MPI_Comm comm = MPI_COMM_WORLD,
+                 const Distribution * rows_ds,
                  const int matrixTypeInt = 0,
                  const int  numSubLoc = 1,
                  const bool swap_sign = false );
@@ -88,6 +87,8 @@ public:
     void set_whole_solution( std::vector<double> & globalSolution );
 
     void set_from_input(const Input::Record in_rec);
+
+    double get_solution_precision();
 
     ~LinSys_BDDC( );
 

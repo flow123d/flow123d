@@ -76,6 +76,8 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
 {
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", IT::Default("0"));
+	ADD_FIELD(init_conc, "Initial concentrations.", IT::Default("0"));
     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", IT::Default("0"));
@@ -1298,14 +1300,15 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         if (!el_ds->is_local(index)) continue;
         int loc_index = index-el_ds->begin();
 
+        double por_m = data_.por_m.value(bcd->side()->element()->centre(), bcd->side()->element()->element_accessor() );
         double water_flux = mh_dh->side_flux(*(bcd->side()));
         if (water_flux < 0) {
         	arma::vec bc_conc = data_.bc_conc.value( bcd->element()->centre(), bcd->element_accessor() );
         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        		mass_flux[sbi] = water_flux*bc_conc[sbi];
+        		mass_flux[sbi] = water_flux*bc_conc[sbi]*por_m;
         } else {
         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        		mass_flux[sbi] = water_flux*pconc[sbi][loc_index];
+        		mass_flux[sbi] = water_flux*pconc[sbi][loc_index]*por_m;
         }
 
         Region r = bcd->region();
@@ -1316,7 +1319,7 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         {
             bcd_balance[sbi][bc_region_idx] += mass_flux[sbi];
 
-            if (mass_flux[sbi] > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux[sbi];
+            if (water_flux > 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux[sbi];
             else bcd_minus_balance[sbi][bc_region_idx] += mass_flux[sbi];
         }
     }

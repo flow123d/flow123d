@@ -24,12 +24,17 @@
 set(libs system_lib)
 add_test_directory("${libs}")
 
+    define_test(empty)
+    define_mpi_test(empty_mpi 1)
+    define_mpi_test(empty_mpi 2)
 
     define_mpi_test(profiler 1)
     define_mpi_test(profiler 2)
     
     define_test(exceptions)
     define_test(file_path)
+    define_test(xprintf)
+    define_test(application_base)
     
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  

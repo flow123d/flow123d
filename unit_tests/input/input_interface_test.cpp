@@ -18,6 +18,24 @@
 
 #include "system/file_path.hh"
 
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
+}
+
+
+
+
+
+
+
     enum SelectionToRead {
         value_a = 0,
         value_b = 1,
@@ -240,10 +258,7 @@ TEST_F(InputInterfaceTest, RecordFind) {
     const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( main->begin()->type_.get() );
     Record record_child_rec(addr_child_rec, *child_type_rec );
 
-    Address addr_child_int( *(record_child_rec.get_address().down(1)) );
-
-    EXPECT_EQ("/some_record", record_child_rec.get_address().make_full_address());
-    EXPECT_EQ("/some_record/some_integer", addr_child_int.make_full_address());
+    EXPECT_EQ("/some_record", record_child_rec.address_string() );
 
     // read scalar keys
 
@@ -316,7 +331,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     ++it;
     ++it;
-    EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
+    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
 
 
 

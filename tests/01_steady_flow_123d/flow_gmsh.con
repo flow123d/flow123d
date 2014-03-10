@@ -6,18 +6,18 @@
       mesh_file = "./input/test1_new.msh",
       sets = [
         {
-            name = "fractions",
+            name = "fractures",
             region_labels = [
-                "2d_fraction_1",
-                "2d_fraction_2"
+                "2d_fracture_1",
+                "2d_fracture_2"
             ]
         },
         {
             name = "dirichlet_boundary",
             region_labels = [
                 ".1d_channel",
-                ".2d_fraction_1",
-                ".2d_fraction_2",
+                ".2d_fracture_1",
+                ".2d_fracture_2",
                 ".3d_cube"
             ]
         }
@@ -30,18 +30,22 @@
 
       bulk_data = [
         { region = "1d_channel",
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         // using region set
-        { r_set = "fractions",  
-          anisotropy = 1
+        { r_set = "fractures",  
+          anisotropy = 1,
+          sigma = 0.5
         },
 	/* 
-        { region = "2d_fraction_1",
-          anisotropy = 1
+        { region = "2d_fracture_1",
+          anisotropy = 1,
+          sigma = 0.5
         },
-        { region = "2d_fraction_2",
-          anisotropy = 1
+        { region = "2d_fracture_2",
+          anisotropy = 1,
+          sigma = 0.5
         },
 	*/
         { region = "3d_cube",
