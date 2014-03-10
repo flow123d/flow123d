@@ -165,7 +165,7 @@ set(sources_lib_non_system
     reaction/sorption_dual.cc
     reaction/sorption_dp_mob.cc
     reaction/sorption_immob.cc
-    #reaction/dual_por_exchange.cc
+    reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 

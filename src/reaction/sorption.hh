@@ -40,8 +40,6 @@ class Distribution;
 class Reaction;
 class Isotherm;
 
-typedef Field<3, FieldValue<3>::Scalar > * pScalar;
-
 class SorptionSimple:  public SorptionBase
 {
 	public:

@@ -4,9 +4,6 @@
 #include <math.h>
 #include <boost/foreach.hpp>
 
-#include "reaction/reaction.hh"
-#include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/system.hh"
@@ -16,48 +13,15 @@
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
 #include "mesh/region.hh"
-#include "input/type_selection.hh"
 
 #include "coupling/time_governor.hh"
-
-const double pi = 3.1415;
 
 
 using namespace std;
 
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: SorptionBase(init_mesh, in_rec, names)
+  : SorptionBase(init_mesh, in_rec, names)
 {
-	/*cout << "Sorption constructor is running." << endl;
-	TimeGovernor tg(0.0, 1.0);
-    nr_of_regions = init_mesh.region_db().bulk_size();
-    nr_of_substances = in_rec.val<Input::Array>("species").size();
-    nr_of_points = in_rec.val<int>("substeps");
-
-    data_.sorption_types.set_n_comp(nr_of_substances);
-    data_.mult_coefs.set_n_comp(nr_of_substances);
-    data_.second_params.set_n_comp(nr_of_substances);
-    int nr_transp_subst = names.size();
-    //data_.alphas.set_n_comp(nr_transp_subst);
-    data_.set_mesh(&init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-
-	//Simple vectors holding  common informations.
-	substance_ids.resize(nr_of_substances);
-	molar_masses.resize( nr_of_substances );
-
-	//isotherms array resized bellow
-	isotherms.resize(nr_of_regions);
-	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-	{
-		for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
-		{
-			Isotherm iso_mob;
-			isotherms[i_reg].push_back(iso_mob);
-		}
-	}
-
-    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());/**/
 }
 
 SorptionSimple::~SorptionSimple(void)
@@ -116,30 +80,28 @@ void SorptionSimple::init_from_input(Input::Record in_rec)
 
 void SorptionSimple::make_tables(void)
 {
-  DBGMSG("make_tables\n");
   ElementAccessor<3> elm;
 
   BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
-	{
-		int reg_idx = reg_iter.bulk_idx();
-                
-		// Creates interpolation tables in the case of constant rock matrix parameters
-		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
-				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
-				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
-				(this->porosity_->get_const_accessor(reg_iter, elm))) /* &&
-				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
-		{
-			isotherm_reinit(isotherms[reg_idx],elm);
-			xprintf(MsgDbg,"parameters are constant\n");
-			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
-			{
-				isotherms[reg_idx][i_subst].make_table(nr_of_points);
-			}
-		}
-	}
-}/**/
+  {
+    int reg_idx = reg_iter.bulk_idx();
+
+    // Creates interpolation tables in the case of constant rock matrix parameters
+    if( (data_.rock_density.get_const_accessor(reg_iter, elm)) &&
+      (data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
+      (data_.second_params.get_const_accessor(reg_iter, elm)) &&
+      (data_.porosity->get_const_accessor(reg_iter, elm))
+      ) 
+      {
+        isotherm_reinit(isotherms[reg_idx],elm);
+        xprintf(MsgDbg,"parameters are constant\n");
+        for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+        {
+          isotherms[reg_idx][i_subst].make_table(nr_of_points);
+        }
+      }
+  }
+}
 
 void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
@@ -149,7 +111,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	//double porosity = this->porosity_->value(elem.centre(),elem);
 
 	//double phi = this->phi_->value(elem.centre(),elem);
-	double por_m = this->porosity_->value(elem.centre(),elem);
+	double por_m = data_.porosity->value(elem.centre(),elem);
 	//double por_imm = this->immob_porosity_->value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
@@ -157,7 +119,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	arma::Col<double> mult_coef_vec = data_.mult_coefs.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_.second_params.value(elem.centre(),elem);
 
-	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
 		double mult_coef = mult_coef_vec[i_subst];
 		double second_coef = second_coef_vec[i_subst];
@@ -232,15 +194,12 @@ void SorptionSimple::update_solution(void)
   DBGMSG("update_solution\n");
   data_.set_time(*time_); // set to the last computed time
   
-  DBGMSG("update_solution - data-set_time\n");
-  DBGMSG("rock_density name: %s\n",data_.rock_density.name().c_str());
   //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
   if( (data_.rock_density.changed_during_set_time) &&
       (data_.mult_coefs.changed_during_set_time) &&
       (data_.second_params.changed_during_set_time) &&
-      (this->porosity_->changed_during_set_time)) /* &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))/**/
+      (data_.porosity->changed_during_set_time)
+    ) 
     {
       make_tables();
     }

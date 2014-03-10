@@ -153,7 +153,7 @@ void SorptionDpMob::make_tables(void)
 		{
 			isotherm_reinit(isotherms[reg_idx],elm);
 			xprintf(Msg,"parameters are constant\n");
-			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+			for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 			{
 				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
@@ -177,7 +177,7 @@ void SorptionDpMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 	arma::Col<double> mult_coef_vec = data_.mult_coefs.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_.second_params.value(elem.centre(),elem);
 
-	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
 		double mult_coef = mult_coef_vec[i_subst];
 		double second_coef = second_coef_vec[i_subst];

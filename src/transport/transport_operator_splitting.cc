@@ -179,7 +179,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == Semchem_interface::input_type ) {
                 Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, convection->get_dual_porosity()); //(mesh->n_elements(),convection->get_concentration_matrix(), mesh);
                 Semchem_reactions->set_el_4_loc(el_4_loc);
-                Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+                Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc);
 
             } else {
                 xprintf(UsrErr, "Wrong reaction type.\n");
@@ -222,7 +222,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        //decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Linear_reaction *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc);
 
 	        //Supresses possibility to combine reactions
 	        /*Semchem_reactions = NULL;
@@ -234,7 +234,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	        convection->get_par_info(el_4_loc, el_distribution);
 	        //decayRad->set_dual_porosity(convection->get_dual_porosity());
 	        static_cast<Pade_approximant *> (decayRad) -> modify_reaction_matrix();
-	        decayRad->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+	        decayRad->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc);
 
 	        //Supresses possibility to combine reactions
 	        /*Semchem_reactions = NULL;
@@ -273,7 +273,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             
 	    double ***conc_matrix = convection->get_concentration_matrix();
             sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
-            sorptions->set_sorb_conc_array(el_distribution->lsize());
+            sorptions->set_sorb_conc_array(el_distribution->lsize()); 
         }
         /*
 	    if(convection->get_dual_porosity()){

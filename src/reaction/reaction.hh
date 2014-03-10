@@ -53,19 +53,21 @@ public:
    * Returns number of substances involved in reactions. This should be same as number of substances in transport.
    */
   inline unsigned int n_substances()
-    { return names_.size(); }
+    { return n_substances_; }
   
   ///@name Setters
   //@{
   /**
-   * Sets the whole concentration matrix for both mobile and immobile phase, all substances and on all elements.
+   * Sets the concentration matrix for the mobile zone, all substances and on all elements.
    */
-  void set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+  void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
   
   /// Set mesh used by the model.
   void set_mesh(Mesh &mesh);
   
-  /// Set names of substances.
+  /** Set names of substances.
+   * TODO: this will not work with substance index mapping (initialized from input record)
+   */
   void set_names(const std::vector<string> &names);
   
   /**
@@ -86,10 +88,9 @@ public:
   Element * get_element_for_dof_index(unsigned int idx);
                 
 protected:
-		/**
-		*	This method disables to use constructor without parameters.
-		*/
-		Reaction();
+
+  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
+  
 		/**
 		*	Finds a position of a string in specified array.
 		*/
@@ -98,7 +99,8 @@ protected:
   /**
    * Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
    */
-  double ***concentration_matrix;
+  double **concentration_matrix;
+  
   /**
    * Distribution of elements between processors?
    */
@@ -107,10 +109,16 @@ protected:
    * Pointer to reference to distribution of elements between processors.
    */
   Distribution *distribution;
+  
   /**
    * Names belonging to substances. Should be same as in the transport.
    */
   vector<string> names_;
+  
+  
+  unsigned int n_substances_;   //< number of substances that take part in the reaction model
+  unsigned int n_all_substances_;   //< number of all substances in the transport model
+  std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
 };
 
 #endif

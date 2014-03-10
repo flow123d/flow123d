@@ -4,47 +4,56 @@
 #include <math.h>
 
 #include "reaction/reaction.hh"
-#include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
-#include "semchem/semchem_interface.hh"
-
 #include "system/system.hh"
-//#include "system/par_distribution.hh"
 #include "mesh/mesh.h"
-
 #include "input/accessors.hh"
 
-
 using namespace Input::Type;
+using namespace std;
 
 AbstractRecord Reaction::input_type
-	= AbstractRecord("Reactions", "Equation for reading information about simple chemical reactions.");
-//		rec.declare_key("substances", Array(String()), Default::obligatory(),
-//								"Names of transported chemical species.");
+    = AbstractRecord("Reactions", "Equation for reading information about simple chemical reactions.")
+        .declare_key("species", Array(String()), Default::obligatory(),
+                     "Names of the species that take part in the reaction model.");
 
-
-using namespace std;
 
 Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
     : EquationBase(init_mesh, in_rec),
-//      dual_porosity_on(false), 
-//      prev_conc(NULL),
-      names_(names)
+      names_(names),
+      n_all_substances_ (names.size())
 {
-//	prev_conc = new double[ n_substances() ];
-	//if(timeStep < 1e-12) this->set_time_step(timeStep); else this->set_time_step(0.5); // temporary solution
+  initialize_substance_ids(names, in_rec);
 }
 
 Reaction::~Reaction()
 {
-/*
-	if(prev_conc != NULL){
-		delete[](prev_conc);
-		prev_conc = NULL;
-	}
-*/
 }
 
+void Reaction::initialize_substance_ids(const vector< string >& names, Input::Record in_rec)
+{
+  Input::Array species_array = in_rec.val<Input::Array>("species");
+  unsigned int k, idx, i_spec = 0;
+  
+  for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
+  {
+    //finding name in the global array of names
+    for(k = 0; k < names.size(); k++)
+    {
+      if (*spec_iter == names[k]) 
+      {
+        idx = k;
+        break;
+      }
+    }
+    
+    if ((idx < names.size()) && (idx >= 0)) 
+    {
+      substance_id[i_spec] = idx;       //mapping - if not found, it creates new map
+    }
+      else    xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
+    }
+    n_substances_ = substance_id.size();
+}
 
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
@@ -52,7 +61,7 @@ double **Reaction::compute_reaction(double **concentrations, int loc_el) //multi
 	return concentrations;
 }
 
-void Reaction::set_concentration_matrix(double ***ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
+void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
 {
 	concentration_matrix = ConcentrationMatrix;
 	distribution = conc_distr;
@@ -100,10 +109,12 @@ void Reaction::set_mesh(Mesh &mesh)
 	mesh_ = &mesh;
 }
 
+
 void Reaction::set_names(const std::vector<string> &names)
 {
 	names_ = names;
 }
+
 
 Element * Reaction::get_element_for_dof_index(unsigned int idx)
 {

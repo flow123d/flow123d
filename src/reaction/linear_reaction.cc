@@ -49,7 +49,7 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
       //prev_conc(nullptr),
       reaction_matrix(nullptr)
 {
-  prev_conc = new double[ n_substances() ];
+  prev_conc = new double[ n_all_substances_ ];
 	//Input::Array names_array = in_rec.val<Input::Array>("substances");
 	//nr_of_species = names_array.size();
 	//xprintf(Msg,"nr_of_species is %d\n",nr_of_species);
@@ -83,12 +83,12 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 	unsigned int rows, cols;
 
 	DBGMSG("We are going to allocate reaction matrix\n");
-	if (reaction_matrix == nullptr) reaction_matrix = (double **)xmalloc(n_substances() * sizeof(double*));//allocation section
-	for(rows = 0; rows < n_substances(); rows++){
-		reaction_matrix[rows] = (double *)xmalloc(n_substances() * sizeof(double));
+	if (reaction_matrix == nullptr) reaction_matrix = (double **)xmalloc(n_all_substances_ * sizeof(double*));//allocation section
+	for(rows = 0; rows < n_all_substances_; rows++){
+		reaction_matrix[rows] = (double *)xmalloc(n_all_substances_ * sizeof(double));
 	}
-	for(rows = 0; rows < n_substances();rows++){
-	 for(cols = 0; cols < n_substances(); cols++){
+	for(rows = 0; rows < n_all_substances_;rows++){
+	 for(cols = 0; cols < n_all_substances_; cols++){
 		 if(rows == cols)   reaction_matrix[rows][cols] = 1.0;
 		 else           	reaction_matrix[rows][cols] = 0.0;
 	 }
@@ -174,13 +174,13 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
 
     if (reaction_matrix == nullptr) return concentrations;
 
-	for(cols = 0; cols < n_substances(); cols++){
+	for(cols = 0; cols < n_all_substances_; cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
 		concentrations[cols][loc_el] = 0.0;
 	}
 
-	for(rows = 0; rows < n_substances(); rows++){
-        for(cols = 0; cols < n_substances(); cols++){
+	for(rows = 0; rows < n_all_substances_; rows++){
+        for(cols = 0; cols < n_all_substances_; cols++){
             concentrations[rows][loc_el] += prev_conc[cols] * reaction_matrix[cols][rows];
         }
     }
@@ -241,7 +241,7 @@ void Linear_reaction::init_from_input(Input::Record in_rec)
 
 		// set parent index
 		idx = find_subst_name(parent_name);
-		if (idx < n_substances())	substance_ids[i_decay][0] = idx;
+		if (idx < n_all_substances_)	substance_ids[i_decay][0] = idx;
 		else                		xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
 
 		// set products
@@ -249,7 +249,7 @@ void Linear_reaction::init_from_input(Input::Record in_rec)
 		for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
 		{
 			idx = find_subst_name(*product_it);
-			if (idx < n_substances())   substance_ids[i_decay][i_product] = idx;
+			if (idx < n_all_substances_)   substance_ids[i_decay][i_product] = idx;
 			else                    	xprintf(Msg,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
 		}
 
@@ -277,7 +277,7 @@ void Linear_reaction::update_solution(void)
     START_TIMER("linear reaction step");
 	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 	 {
-	 	this->compute_reaction(concentration_matrix[MOBILE], loc_el);
+	 	this->compute_reaction(concentration_matrix, loc_el);
 // 	    if (dual_porosity_on == true) {
 // 	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
 //	    }
@@ -291,7 +291,7 @@ void Linear_reaction::release_reaction_matrix(void)
 {
 	if(reaction_matrix != nullptr)
 	{
-		for(unsigned int i = 0; i < n_substances(); i++)
+		for(unsigned int i = 0; i < n_all_substances_; i++)
 		{
 			if(reaction_matrix[i] != nullptr)
 			{
@@ -312,8 +312,8 @@ void Linear_reaction::print_reaction_matrix(void)
 	if(reaction_matrix != nullptr){
                 if(time_ != NULL)
                   xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_->dt());
-		for(rows = 0; rows < n_substances(); rows++){
-			for(cols = 0; cols < n_substances(); cols++){
+		for(rows = 0; rows < n_all_substances_; rows++){
+			for(cols = 0; cols < n_all_substances_; cols++){
 					xprintf(Msg,"%f\t",reaction_matrix[rows][cols]);
 			}
 			xprintf(Msg,"\n");

@@ -42,8 +42,6 @@ Record SorptionBase::input_type
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
-	.declare_key("species", Array(String()), Default::obligatory(),
-							"Names of all the adsorbing species")
 	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
@@ -66,47 +64,39 @@ SorptionBase::EqData::EqData()
     ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
 
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
-
-    //ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-            //" Vector, one value for every substance.", Input::Type::Default("0"));
-}/**/
+}
 
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: Reaction(init_mesh, in_rec, names)
 {
   cout << "Sorption constructor is running." << endl;
-  TimeGovernor tg(0.0, 1.0);
-    nr_of_regions = init_mesh.region_db().bulk_size();
-    nr_of_substances = in_rec.val<Input::Array>("species").size();
-    nr_of_points = in_rec.val<int>("substeps");
+  
+  nr_of_regions = init_mesh.region_db().bulk_size();
+  nr_of_points = in_rec.val<int>("substeps");
 
-    data_.sorption_types.set_n_comp(nr_of_substances);
-    data_.mult_coefs.set_n_comp(nr_of_substances);
-    data_.second_params.set_n_comp(nr_of_substances);
-    int nr_transp_subst = names.size();
-    //data_.alphas.set_n_comp(nr_transp_subst);
-    data_.set_mesh(&init_mesh);
+  data_.sorption_types.set_n_comp(n_substances_);
+  data_.mult_coefs.set_n_comp(n_substances_);
+  data_.second_params.set_n_comp(n_substances_);
+   
+  data_.set_mesh(&init_mesh);
     
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
-    data_.set_time(tg);
+  data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
+  
+  time_ = new TimeGovernor();
+  data_.set_time(*time_);
+  
+  //Simple vectors holding  common informations.
+  molar_masses.resize( n_substances_ );
 
-	//Simple vectors holding  common informations.
-	substance_ids.resize(nr_of_substances);
-	molar_masses.resize( nr_of_substances );
-
-	//isotherms array resized bellow
-	isotherms.resize(nr_of_regions);
-	for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-	{
-		for(int i_spec = 0; i_spec < nr_of_substances; i_spec++)
-		{
-			Isotherm iso_mob;
-			isotherms[i_reg].push_back(iso_mob);
-		}
-	}
-
-    time_ = new TimeGovernor(in_rec.val<double>("time"), TimeGovernor::marks().type_fixed_time());
+  //isotherms array resized bellow
+  isotherms.resize(nr_of_regions);
+  for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+    for(int i_spec = 0; i_spec < n_substances_; i_spec++)
+    {
+      Isotherm iso_mob;
+      isotherms[i_reg].push_back(iso_mob);
+    }
 }
 
 SorptionBase::~SorptionBase(void)
@@ -121,7 +111,7 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 	solvent_dens = in_rec.val<double>("solvent_dens");
 
 	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
-
+  
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
 
@@ -129,35 +119,26 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 	if( solub_iter )
 	{
 		solub_iter->copy_to(solubility_vec_);
-		if (solubility_vec_.size() != nr_of_substances)
+		if (solubility_vec_.size() != n_substances_)
 		{
-			xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_vec_.size(), nr_of_substances);
+			xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", solubility_vec_.size(), n_substances_);
 		}
 	}else{
 		// fill solubility_vec_ with zeros or resize it at least
-		solubility_vec_.resize(nr_of_substances);
+		solubility_vec_.resize(n_substances_);
 	}
 
 	Input::Iterator<Input::Array> interp_table_limits = in_rec.find<Input::Array>("table_limits");
 	if( interp_table_limits )
 	{
 		interp_table_limits->copy_to(table_limit_);
-		if (table_limit_.size() != nr_of_substances)
+		if (table_limit_.size() != n_substances_)
 		{
-			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", table_limit_.size(), nr_of_substances);
+			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", table_limit_.size(), n_substances_);
 		}/**/
 	}else{
 		// fill table_limit_ with zeros or resize it at least
-		table_limit_.resize(nr_of_substances);
-	}
-
-	Input::Array species_array = in_rec.val<Input::Array>("species");
-	unsigned int idx, i_spec = 0;
-	for(Input::Iterator<string> spec_iter = species_array.begin<string>(); spec_iter != species_array.end(); ++spec_iter, i_spec++)
-	{
-		idx = find_subst_name(*spec_iter);
-		if ((idx < n_substances()) && (idx >= 0)) substance_ids[i_spec] = idx;
-		else	xprintf(UsrErr,"Wrong name of %d-th adsorbing specie.\n", i_spec);
+		table_limit_.resize(n_substances_);
 	}
 
 	make_tables();
@@ -182,7 +163,7 @@ void SorptionBase::make_tables(void)
 		{
 			isotherm_reinit(isotherms[reg_idx],elm);
 			xprintf(Msg,"parameters are constant\n");
-			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+			for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 			{
 				isotherms[reg_idx][i_subst].make_table(nr_of_points);
 			}
@@ -208,7 +189,7 @@ void SorptionBase::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 	arma::Col<double> mult_coef_vec = data_.mult_coefs.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_.second_params.value(elem.centre(),elem);
 
-	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
 		double mult_coef = mult_coef_vec[i_subst];
 		double second_coef = second_coef_vec[i_subst];
@@ -260,18 +241,18 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
     
     // Constant value of rock density and mobile porosity over the whole region => interpolation_table is precomputed
     if (isotherms_vec[0].is_precomputed()) {
-    	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+    	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
     	{
     		Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-    		int subst_id = substance_ids[i_subst];
+    		int subst_id = substance_id[i_subst];
             isotherm.interpolate((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
     	}
     } else {
 		isotherm_reinit(isotherms_vec, elem->element_accessor());
-    	for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
+    	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
     	{
-    		Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-    		int subst_id = substance_ids[i_subst];
+            Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
+            int subst_id = substance_id[i_subst];
             isotherm.compute((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
     	}
     }
@@ -311,14 +292,6 @@ void SorptionBase::print_sorption_parameters(void)
     xprintf(Msg, "\nSorption parameters are defined as follows:\n");
 }
 
-void SorptionBase::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
-{
-        concentration_matrix = ConcentrationMatrix;
-        distribution = conc_distr;
-        el_4_loc = el_4_loc_;
-        return;
-}
-
 void SorptionBase::set_sorb_conc_array(double** sorb_conc_array)
 {
 	sorbed_conc_array = sorb_conc_array;
@@ -327,8 +300,8 @@ void SorptionBase::set_sorb_conc_array(double** sorb_conc_array)
 
 void SorptionBase::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be transposed to optimize computation speed
 {
-	this->sorbed_conc_array = new double * [nr_of_substances];
-    for (unsigned int sbi = 0; sbi < nr_of_substances; sbi++)
+	this->sorbed_conc_array = new double * [n_substances_];
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
     {
       sorbed_conc_array[sbi] = new double[ nr_of_local_elm ];
       for (unsigned int i = 0; i < nr_of_local_elm; i++)
@@ -337,24 +310,3 @@ void SorptionBase::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be
       }
     }
 }
-
-/*void SorptionBase::set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
-{
-	immob_concentration_matrix = ConcentrationMatrix;
-	distribution = conc_distr;
-	el_4_loc = el_4_loc_;
-	return;
-}/**/
-
-/*void SorptionBase::set_porosity(pScalar porosity, pScalar immob_porosity)
-{
-	this->porosity_ = porosity;
-	this->immob_porosity_ = immob_porosity;
-	return;
-}*/
-
-/*void SorptionBase::set_phi(pScalar phi)
-{
-	phi_ = phi;
-	return;
-}/**/

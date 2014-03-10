@@ -23,45 +23,33 @@ typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
 class Dual_por_exchange:  public Reaction
 {
-	public:
-	/*
-	 * Static variable for new input data types input
-	 */
-	static Input::Type::Record input_type;
+public:
+  /**
+   * Static variable for new input data types input
+   */
+  static Input::Type::Record input_type;
 
-	class EqData : public EqDataBase // should be written in class Sorption
-	{
-	public:
+  class EqData : public EqDataBase // should be written in class Sorption
+  {
+  public:
 
-		/// Collect all fields
-		EqData();
+    /// Collect all fields
+    EqData();
 
-		/**
-		 * Overrides EqDataBase::read_bulk_list_item, implements reading of
-		 * - init_piezo_head key
-		 */
-		Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
-	};
-    	/**
-     	* 	Pointer to porosity field from transport
-    	*/
-    	pScalar porosity_;
-	    /**
-	    * 	Pointer to porosity field from transport
-	    */
-	    pScalar immob_porosity_;
-	    /**
-	    *
-        */
+    Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
+    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity
+    
+    MultiField<3, FieldValue<3>::Scalar> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
+
+    pScalar porosity; ///< Pointer to mobile porosity
+  };
+
 		Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
 		/**
 		*	Destructor.
 		*/
 		~Dual_por_exchange(void);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+                
 		/**
 		*
 		*/
@@ -69,11 +57,11 @@ class Dual_por_exchange:  public Reaction
 		/**
 		*
 		*/
-		//void set_nr_transp(int nr_transp_subst);
+		void set_nr_transp(int nr_transp_subst);
 		/**
 		*
 		*/
-		void set_porosity(pScalar porosity, pScalar immob_porosity);
+		void set_porosity(pScalar porosity);
 		/// Initialize from input interface.
 		virtual void init_from_input(Input::Record in_rec);
 	protected:
@@ -89,19 +77,8 @@ class Dual_por_exchange:  public Reaction
 		*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
 		*/
 		double **immob_concentration_matrix;
-	    /**
-		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
-		* pointer to phi field from transport
-		*/
-	    pScalar phi_;
-	    /**
-	    * mass transfer coefficients between mobile and immobile pores
-	    */
-	    std::vector<double> alpha_;
-		/**
-		* 	Number of regions.
-		*/
-		int nr_of_regions;
+
+
 		/**
 		* 	Number of adsorbing substances.
 		*/
