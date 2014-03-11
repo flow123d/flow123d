@@ -252,6 +252,7 @@ public:
     const std::string desc() const;
     const IT::Default &get_default() const;
     const std::string &units() const;
+    double time() const;
     bool is_bc() const;
     bool is_enum_valued() const;
     unsigned int n_comp() const;

@@ -878,13 +878,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     result.ele_flux = &( ele_flux );
 
-    //output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
-    //output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
-    //output_writer->register_elem_data("div_diff","0",result.div_diff);
-
-    output_writer->register_elem_data(mesh_, "pressure_diff", "0", in_rec_.val<Input::Record>("output_stream") ,result.pressure_diff);
-    output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
-    output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
+    //output_writer->register_elem_data(mesh_, "pressure_diff", "0", in_rec_.val<Input::Record>("output_stream") ,result.pressure_diff);
+    //output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
+    //output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
