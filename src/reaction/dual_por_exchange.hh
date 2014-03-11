@@ -29,18 +29,15 @@ class Dual_por_exchange:  public Reaction
 	 */
 	static Input::Type::Record input_type;
 
-	class EqData : public EqDataBase // should be written in class Sorption
+	class EqData : public FieldSet // should be written in class Sorption
 	{
 	public:
 
 		/// Collect all fields
 		EqData();
 
-		/**
-		 * Overrides EqDataBase::read_bulk_list_item, implements reading of
-		 * - init_piezo_head key
-		 */
-		Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
+		/// Mass transfer coefficients between mobile and immobile pores.
+		Field<3, FieldValue<3>::Vector > alphas;
 	};
     	/**
      	* 	Pointer to porosity field from transport

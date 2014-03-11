@@ -48,7 +48,7 @@ using namespace Input::Type;
 
 
 
-HeatTransferModel::ModelEqData::ModelEqData() : EqDataBase("HeatTransfer")
+HeatTransferModel::ModelEqData::ModelEqData()
 {
 	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
 

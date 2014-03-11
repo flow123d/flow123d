@@ -49,13 +49,12 @@ Record Sorption::input_type
 	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Containes region specific data necessery to construct isotherms.")//;
+    .declare_key("data", Array(Sorption::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
+                   	   	   "Containes region specific data necessary to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
 			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
 Sorption::EqData::EqData()
-: EqDataBase("Sorption")
 {
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
@@ -87,7 +86,7 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     int nr_transp_subst = names.size();
     data_.alphas.n_comp(nr_transp_subst);
     data_.set_mesh(init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
+    data_.set_input_list( in_rec.val<Input::Array>("data"));
 
     data_.set_limit_side(LimitSide::right);
     data_.set_time(tg);

@@ -45,7 +45,7 @@ using namespace Input::Type;
 
 
 
-ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::TransportEqData("TransportDG")
+ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Dirichlet boundary condition (for each substance).", "0.0");
 

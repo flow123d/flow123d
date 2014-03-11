@@ -99,7 +99,7 @@ public:
     /** @brief Data for Darcy flow equation.
      *  
      */
-    class EqData : public EqDataBase {
+    class EqData : public FieldSet {
     public:
 
         /**
@@ -115,20 +115,12 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name="");
+        EqData();
+
 
         /**
-         * Overrides EqDataBase::read_boundary_list_item, implements reading of
-         * - bc_piezo_head key
-         * - flow_old_bcd_file
+         * Hook for processing "bc_piezo_head" key.
          */
-        //RegionSet read_boundary_list_item(Input::Record rec);
-        
-        /**
-         * Overrides EqDataBase::read_bulk_list_item, implements reading of
-         * - init_piezo_head key
-         */
-        //RegionSet read_bulk_list_item(Input::Record rec);
         inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
         	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
         {
@@ -270,7 +262,7 @@ public:
     class EqData : public DarcyFlowMH::EqData {
     public:
       
-      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
+      EqData() : DarcyFlowMH::EqData()
       {}
     };
     

@@ -77,17 +77,17 @@ public:
     /**
      * Class with fields that are common to all transport models.
      */
-	class TransportEqData : public EqDataBase {
+	class TransportEqData : public FieldSet {
 	public:
 
-		TransportEqData(const std::string& eq_name);
+		TransportEqData();
 		inline virtual ~TransportEqData() {};
-
+/*
 		Input::Type::Record boundary_input_type() {
 			return EqDataBase::boundary_input_type()
 				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "Input file with boundary conditions (obsolete).");
 		}
-
+*/
 		/// Mobile porosity
 		Field<3, FieldValue<3>::Scalar> por_m;
 
