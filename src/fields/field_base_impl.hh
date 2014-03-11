@@ -14,12 +14,6 @@
 #include <memory>
 using namespace std;
 
-//#include <boost/type_traits.hpp>
-//#include <boost/format.hpp>
-//#include <boost/make_shared.hpp>
-//#include <boost/foreach.hpp>
-
-
 #include "fields/field_base.hh"
 #include "fields/field_interpolated_p0.hh"
 #include "fields/field_python.hh"
@@ -28,9 +22,6 @@ using namespace std;
 #include "fields/field_elementwise.hh"
 
 #include "fields/field_values.hh"
-
-//#include "input/input_type.hh"
-//#include "input/json_to_storage.hh"
 
 
 namespace it = Input::Type;

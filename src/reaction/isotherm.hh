@@ -63,7 +63,7 @@
 #include <vector>
 #include <input/input_type.hh>
 #include <boost/math/tools/roots.hpp>
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 
 typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 typedef pair<double, double> ConcPair;

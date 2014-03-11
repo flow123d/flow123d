@@ -37,7 +37,6 @@
 #include "input/accessors.hh"
 
 #include <boost/foreach.hpp>
-#include "fields/field.hh"
 
 
 #ifdef CYGWIN

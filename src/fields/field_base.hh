@@ -25,23 +25,13 @@
 #include <memory>
 
 #include <boost/type_traits.hpp>
-//#include <boost/circular_buffer.hpp>
-//#include <queue>
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-//#include "system/exceptions.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
-//#include "coupling/time_governor.hh"
-//#include "coupling/time_marks.hh"
-
 #include "fields/field_values.hh"
-
-//template <int spacedim, class Value>
-//class FieldConstant;
-
 
 
 
