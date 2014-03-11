@@ -38,7 +38,7 @@
 class HeatTransferModel : public AdvectionDiffusionModel {
 public:
 
-	class ModelEqData : public EqDataBase {
+	class ModelEqData : public FieldSet {
 	public:
 
 		/// Dirichlet boundary condition for temperature.
@@ -67,7 +67,7 @@ public:
 
 
 		ModelEqData();
-
+		static string name() {return "HeatTransfer";}
 	};
 
 protected:

@@ -180,8 +180,8 @@ public:
      * @param in_rec            input record
      */
     TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
-
     /**
+
      * @brief Declare input record type for the equation TransportDG.
      */
     static Input::Type::Record input_type;

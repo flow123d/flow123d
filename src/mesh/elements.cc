@@ -213,7 +213,8 @@ double Element::quality_measure_smooth() {
 }
 
 
-void Element::get_bounding_box(BoundingBox &bounding_box) {
+void Element::get_bounding_box(BoundingBox &bounding_box) const
+{
 	bounding_box = BoundingBox( this->node[0]->point() );
 
 	for (unsigned int i=1; i<n_nodes(); i++)

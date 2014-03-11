@@ -196,8 +196,8 @@ void Profiler::initialize()
 
     if (!_instance)
         _instance = new Profiler();
-    else
-        xprintf(Warn, "The profiler already initialized.\n");
+    //else
+    //    xprintf(Warn, "The profiler already initialized.\n");
 
 }
 

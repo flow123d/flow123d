@@ -80,7 +80,7 @@
 #include "system/xio.h"
 #include "mesh/mesh.h"
 
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 #include "input/accessors.hh"
 #include "system/exceptions.hh"
 

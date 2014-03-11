@@ -9,13 +9,10 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test18.fbc"
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 20,
           cross_section = 1e-2
         },
@@ -42,13 +39,10 @@
     secondary_equation = {
       TYPE = "ConcentrationTransport_DG", 
 
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc=0
-        }
-      ],
-      
-      bulk_data = [
+        },
         {
           r_set="ALL",
           init_conc = { 

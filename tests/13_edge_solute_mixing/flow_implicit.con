@@ -10,7 +10,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      data= [
         {   rid = 17,
             anisotropy = 1.0
         },
@@ -19,10 +19,7 @@
         },
         {   rid = 19,
             anisotropy = 1.0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test13.fbc"
@@ -47,7 +44,7 @@
     secondary_equation = {
 	TYPE = "ConcentrationTransport_DG", 
 
-    bulk_data = [
+    data= [
         { rid = 17,
           init_conc = 0
         },
@@ -56,10 +53,7 @@
         },
         { rid = 19,
           init_conc = 0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           bc_conc = 1

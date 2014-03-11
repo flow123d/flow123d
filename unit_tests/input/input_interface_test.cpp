@@ -169,7 +169,7 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        delete storage;
+        //delete storage; // deleted by ~AddressData
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
@@ -328,8 +328,15 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(2, vec_int[1]);
 
     Iterator<int> it = array.begin<int>();
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    --it;
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    ++it;
+    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
     ++it;
     EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
 

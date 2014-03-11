@@ -86,9 +86,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
-    Input::JSONToStorage reader;
-    std::stringstream in(input_str);
-    reader.read_stream( in, Mesh::input_type );
+
+    Input::JSONToStorage reader( input_str, Mesh::input_type );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
@@ -743,7 +742,8 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+{
     if (bulk_elements_id_.size() ==0) {
         std::vector<int>::iterator map_it;
         int last_id;
@@ -751,23 +751,25 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
         bulk_elements_id_.resize(n_elements());
         map_it = bulk_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
-            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*map_it = it.id();
+        for(int idx=0; idx < element.size(); idx++, ++map_it) {
+        	int id = element.get_id(idx);
+            if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+            last_id=*map_it = id;
 //            DBGMSG("bulk map: %d\n", *map_it);
         }
 
         boundary_elements_id_.resize(bc_elements.size());
         map_it = boundary_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+        for(int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
+        	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id_
             // and thus report error for any remaining data lines
-            if (it.id() < 0) last_id=*map_it=-1;
+            if (id < 0) last_id=*map_it=-1;
             else {
-                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-                last_id=*map_it = it.id();
+                if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+                last_id=*map_it = id;
             }
 //            DBGMSG("bc map: %d\n", *map_it);
         }

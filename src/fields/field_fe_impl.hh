@@ -64,7 +64,7 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
 	Point p_rel = p - elm.element()->node[0]->point();
-	DOFHandlerBase::CellIterator cell = dh_->mesh()->element.full_iter(elm.element());
+	DOFHandlerBase::CellIterator cell = dh_->mesh()->element(elm.idx());
 
 	if (elm.dim() == 1) {
 		arma::mat::fixed<3,1> m1 = elm.element()->node[1]->point() - elm.element()->node[0]->point();
@@ -166,7 +166,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 {
     ASSERT_EQUAL( point_list.size(), value_list.size() );
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element.full_iter(elm.element());
+    DOFHandlerBase::CellIterator cell = dh_->mesh()->element( elm.idx() );
 
 	if (elm.dim() == 1) {
 		arma::mat::fixed<3,1> m1 = elm.element()->node[1]->point() - elm.element()->node[0]->point();

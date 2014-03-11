@@ -147,7 +147,6 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 Distribution::Distribution(const Distribution &distr)
 : communicator(distr.communicator)
 {
-    DBGMSG("coping distribution\n");
     num_of_procs=distr.num_of_procs;
     my_proc=distr.my_proc;
     starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));

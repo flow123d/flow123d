@@ -71,9 +71,7 @@ Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("bc_data", Array(TransportDG<Model>::EqData().boundary_input_type()), IT::Default::obligatory(), "")
-    .declare_key("bulk_data", Array(TransportDG<Model>::EqData().bulk_input_type()),
-    		IT::Default::obligatory(), "")
+    .declare_key("data", Array(TransportDG<Model>::EqData().make_field_descriptor_type(EqData::name())), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
@@ -185,16 +183,18 @@ DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
-	ADD_FIELD(fracture_sigma, "Coefficient of diffusive transfer through fractures (for each substance).", Default("1"));
+	ADD_FIELD(fracture_sigma, "Coefficient of diffusive transfer through fractures (for each substance).", "1.0");
 	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
-			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", Default("1.0"));
+			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
 
-    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", Default("inflow") );
-    bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "\"inflow\"" );
+    	bc_type.input_selection(&bc_type_selection);
 
 //    std::vector<FieldEnum> list; list.push_back(neumann);
-    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", Default("0.0"));
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", Default("0.0"));
+    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", "0.0");
+//    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
+//    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
 }
 
 
@@ -219,14 +219,16 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	mass_balance_ = new MassBalance(this, *it);
 
     // Set up physical parameters.
-    data_.set_mesh(&init_mesh);
-    data_.bc_type.set_n_comp(n_subst_);
-    data_.bc_flux.set_n_comp(n_subst_);
-    data_.bc_robin_sigma.set_n_comp(n_subst_);
-    data_.fracture_sigma.set_n_comp(n_subst_);
-    data_.dg_penalty.set_n_comp(n_subst_);
+    data_.set_mesh(init_mesh);
+    data_.bc_type.n_comp(n_subst_);
+    data_.bc_flux.n_comp(n_subst_);
+    data_.bc_robin_sigma.n_comp(n_subst_);
+    data_.fracture_sigma.n_comp(n_subst_);
+    data_.dg_penalty.n_comp(n_subst_);
     Model::init_data(n_subst_);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+
+    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_limit_side(LimitSide::left);
     data_.set_time(*time_);
 
     // DG variant
