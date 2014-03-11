@@ -572,7 +572,7 @@ TEST(Field, init_from_input) {
 
     it::Record main_record =
             it::Record("main", "desc")
-            .declare_key("sorption_type", sorption_type.make_input_tree(), it::Default::obligatory(), "desc")
+            .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
 

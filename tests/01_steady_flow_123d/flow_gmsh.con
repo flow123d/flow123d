@@ -46,11 +46,7 @@
 	*/
         { region = "3d_cube",
           anisotropy = 0.1
-        }
-      ],
-      
-
-      data= [
+        },
          // using region set
          {  r_set = "dirichlet_boundary",
             bc_type = "dirichlet",
