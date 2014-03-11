@@ -11,13 +11,10 @@
       
       n_schurs = 2,
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test16.fbc"
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 7,
           cross_section = 1,
           conductivity = 1
@@ -49,13 +46,10 @@
       TYPE = "ConcentrationTransport_DG", 
       dual_porosity = false, 
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 0
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 7,
           init_conc = 0,
           por_m = 1,

@@ -10,17 +10,14 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "1d",
           conductivity = 1,
           sigma = 50    // compatible case has one flux for every side of fracture
         },
         { region = "2d",
           conductivity = 5
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".1d",
           bc_type = "dirichlet",
           bc_pressure = 5

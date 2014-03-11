@@ -15,13 +15,10 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           bc_pressure = 0
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 20,
           cross_section = 1e-2
         },
@@ -48,13 +45,10 @@
     secondary_equation = {
       TYPE = "ConcentrationTransport_DG", 
 
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc=0
-        }
-      ],
-      
-      bulk_data = [
+        },
         {
           rid = 20,
           init_conc = 0,

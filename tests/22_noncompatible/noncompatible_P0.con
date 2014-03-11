@@ -12,17 +12,14 @@
       mortar_method = "P0",
       
 
-      bulk_data = [
+      data= [
         { region = "1d",
           conductivity = 1,
           sigma = 100
         },
         { region = "2d",
           conductivity = 5
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".1d",
           bc_type = "dirichlet",
           bc_pressure = 5
