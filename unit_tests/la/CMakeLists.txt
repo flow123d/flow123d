@@ -24,7 +24,7 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-set(libs la_lib)
+set(libs la_lib system_lib)
 add_test_directory("${libs}")
 
 define_mpi_test(linsys 1)
