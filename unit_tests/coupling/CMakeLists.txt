@@ -24,7 +24,7 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-set(libs  coupling_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs  coupling_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 add_test_directory("${libs}")
 
 

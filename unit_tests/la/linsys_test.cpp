@@ -21,6 +21,10 @@ public:
 	SetValues() : LinSys( new Distribution(10, MPI_COMM_WORLD) ) {
 	}
 
+	double get_solution_precision() override {
+		return 0.0;
+	}
+
 	~SetValues() {
 		delete rows_ds_;
 	}

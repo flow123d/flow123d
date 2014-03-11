@@ -11,7 +11,8 @@
 
       data= [
         { rid = 17,
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         { rid = 18,
           anisotropy = 1

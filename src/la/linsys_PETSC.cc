@@ -61,6 +61,20 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = "";
+    matrix_ = NULL;
+    solution_precision_ = std::numeric_limits<double>::infinity();
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+}
+
+LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_),
+	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+{
+	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+	VecCopy(other.rhs_, rhs_);
+	VecCopy(other.on_vec_, on_vec_);
+	VecCopy(other.off_vec_, off_vec_);
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -123,6 +137,8 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
             break;
         default: DBGMSG("LS SetValues with non allowed insert mode.\n");
     }
+
+    matrix_changed_ = true;
 }
 
 void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
@@ -138,6 +154,8 @@ void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
             break;
         default: ASSERT(false, "LinSys's status disallow set values.\n");
     }
+
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
@@ -224,6 +242,9 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    matrix_changed_ = true;
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::apply_constrains( double scalar )
@@ -257,10 +278,12 @@ void LinSys_PETSC::apply_constrains( double scalar )
 
     // set matrix rows to zero 
     ierr = MatZeroRows( matrix_, numConstraints, globalDofPtr, diagScalar, PETSC_NULL, PETSC_NULL ); CHKERRV( ierr ); 
+    matrix_changed_ = true;
 
     // set RHS entries to values (crashes if called with NULL pointers)
     if ( numConstraints ) {
         ierr = VecSetValues( rhs_, numConstraints, globalDofPtr, valuePtr, INSERT_VALUES ); CHKERRV( ierr ); 
+        rhs_changed_ = true;
     }
 
     // perform communication in the rhs vector
@@ -345,6 +368,9 @@ int LinSys_PETSC::solve()
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
 
+    // get residual norm
+    ierr = KSPGetResidualNorm(system, &solution_precision_);
+
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
@@ -391,10 +417,10 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
-    delete[] v_rhs_;
+    if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
 void LinSys_PETSC::gatherSolution_( )
@@ -449,5 +475,11 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 		a_tol_  = in_rec.val<double>("a_tol");
 		params_ = in_rec.val<string>("options");
 	}
+}
+
+
+double LinSys_PETSC::get_solution_precision()
+{
+	return solution_precision_;
 }
 

@@ -19,7 +19,8 @@
         },
         {
           r_set = "BULK",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         }
       ],
       n_schurs = 2, 

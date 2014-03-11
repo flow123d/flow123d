@@ -88,6 +88,8 @@ public:
 
     void set_from_input(const Input::Record in_rec);
 
+    double get_solution_precision();
+
     ~LinSys_BDDC( );
 
 private:

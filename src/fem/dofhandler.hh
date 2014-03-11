@@ -54,7 +54,7 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerBase(Mesh &_mesh) : global_dof_offset(0), n_dofs(0), lsize_(0), mesh(&_mesh) {};
+    DOFHandlerBase(Mesh &_mesh) : global_dof_offset(0), n_dofs(0), lsize_(0), mesh_(&_mesh) {};
 
     /**
      * @brief Alias for iterator over cells.
@@ -69,25 +69,27 @@ public:
      * @brief Getter for the number of all mesh dofs required by the given
      * finite element.
      */
-    const unsigned int n_global_dofs() { return n_dofs; }
+    const unsigned int n_global_dofs() const { return n_dofs; }
 
     /**
      * @brief Returns the number of the first global dof handled by this
      * DOFHandler.
      */
-    const unsigned int offset() { return global_dof_offset; }
+    const unsigned int offset() const { return global_dof_offset; }
 
     /**
      * @brief Returns the number of dofs on the current process.
      */
-    const unsigned int lsize() { return lsize_; }
+    const unsigned int lsize() const { return lsize_; }
 
     /**
      * @brief Returns the offset of the local part of dofs.
      */
-    const unsigned int loffset() { return loffset_; }
+    const unsigned int loffset() const { return loffset_; }
 
     Distribution *distr() const { return ds_; }
+
+    Mesh *mesh() const { return mesh_; }
 
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
@@ -95,7 +97,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    virtual void get_dof_indices(const CellIterator &cell, unsigned int indices[]) = 0;
+    virtual void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const = 0;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -105,7 +107,7 @@ public:
      * @param local_values Array of values at local dofs.
      */
     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
-            double local_values[]) = 0;
+            double local_values[]) const = 0;
 
     /// Destructor.
     virtual ~DOFHandlerBase() {};
@@ -139,7 +141,7 @@ protected:
     /**
      * @brief Pointer to the mesh to which the dof handler is associated.
      */
-    Mesh *mesh;
+    Mesh *mesh_;
 
     /**
      * @brief Distribution of dofs associated to local process.
@@ -286,7 +288,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    void get_dof_indices(const CellIterator &cell, unsigned int indices[]);
+    void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -296,52 +298,55 @@ public:
      * @param local_values Array of values at local dofs.
      */
     void get_dof_values(const CellIterator &cell, const Vec &values,
-            double local_values[]);
+            double local_values[]) const override;
 
     /**
      * @brief Returns the distribution of number of element to local processes.
      */
-    inline Distribution *el_ds() { return el_ds_; }
+    inline Distribution *el_ds() const { return el_ds_; }
 
     /**
      * @brief Returns the global index of local element.
      *
      * @param loc_el Local index of element.
      */
-    inline int el_index(int loc_el) { return el_4_loc[loc_el]; }
+    inline int el_index(int loc_el) const { return el_4_loc[loc_el]; }
 
     /**
      * @brief Returns the global index of local edge.
      *
      * @param loc_edg Local index of edge.
      */
-    inline int edge_index(int loc_edg) { return edg_4_loc[loc_edg]; }
+    inline int edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
 	 * @brief Returns the global index of local neighbour.
 	 *
 	 * @param loc_nb Local index of neighbour.
 	 */
-	inline int nb_index(int loc_nb) { return nb_4_loc[loc_nb]; }
+	inline int nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 
 	/**
 	 * @brief Returns number of local edges.
 	 */
-    inline unsigned int n_loc_edges() { return edg_4_loc.size(); }
+    inline unsigned int n_loc_edges() const { return edg_4_loc.size(); }
 
     /**
      * @brief Returns number of local neighbours.
      */
-    inline unsigned int n_loc_nb() { return nb_4_loc.size(); }
+    inline unsigned int n_loc_nb() const { return nb_4_loc.size(); }
 
     /**
      * Returns true if element is on local process.
      * @param index Global element index.
      */
-    bool el_is_local(int index);
+    bool el_is_local(int index) const;
+
+    template<unsigned int dim>
+    FiniteElement<dim,3> *fe() const;
 
     /// Destructor.
-    ~DOFHandlerMultiDim();
+    ~DOFHandlerMultiDim() override;
 
 private:
 
@@ -382,6 +387,8 @@ private:
     vector<int> nb_4_loc;
 
 };
+
+
 
 
 #endif /* DOFHANDLER_HH_ */

@@ -39,6 +39,21 @@
 #include <boost/foreach.hpp>
 #include "fields/field.hh"
 
+
+#ifdef CYGWIN
+#include <sstream>
+
+namespace std {
+	template<typename T>
+	string to_string (T &x) {
+		ostringstream str;
+		str << x;
+		return str.str();
+	}
+}
+#endif // CYGWIN
+
+
 /*****************************************************************************************
  * Implementation of EqBase
  */

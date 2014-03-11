@@ -57,6 +57,11 @@
 
 #include "flow/darcy_flow_mh_output.hh"
 
+#include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature_lib.hh"
+
 #include <limits>
 #include <set>
 #include <vector>
@@ -242,7 +247,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
-    make_schur0(in_rec.val<AbstractRecord>("solver"));
+    make_schurs(in_rec.val<AbstractRecord>("solver"));
 
     START_TIMER("prepare scatter");
     // prepare Scatter form parallel to sequantial in original numbering
@@ -311,26 +316,7 @@ void DarcyFlowMH_Steady::update_solution() {
     time_->view("DARCY"); //time governor information output
     
     modify_system(); // hack for unsteady model
-    int convergedReason;
-
-    switch (n_schur_compls) {
-    case 0: /* none */
-        convergedReason = schur0->solve();
-        break;
-    case 1: /* first schur complement of A block */
-        make_schur1();
-        convergedReason = schur1->get_system()->solve();
-        schur1->resolve();
-        break;
-    case 2: /* second schur complement of the max. dimension elements in B block */
-        make_schur1();
-        make_schur2();
-
-        convergedReason =schur2->get_system()->solve();
-        schur2->resolve();
-        schur1->resolve();
-        break;
-    }
+    int convergedReason = schur0->solve();
 
     xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
     ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
@@ -379,34 +365,7 @@ void DarcyFlowMH_Steady::postprocess()
 
 double DarcyFlowMH_Steady::solution_precision() const
 {
-	double precision = 0.0;
-        double r_tol = 0.0, a_tol = 0.0;
-	double bnorm=0.0;
-
-	switch (n_schur_compls) {
-	case 0: /* none */
-                //if (schur0 != NULL) VecNorm(schur0->get_rhs(), NORM_2, &bnorm);
-		if (schur0 != NULL) precision = schur0->get_residual_norm();
-		break;
-	case 1: /* first schur complement of A block */
-		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-			r_tol = (schur1->get_system())->get_relative_accuracy();
-			a_tol = (schur1->get_system())->get_absolute_accuracy();
-			precision = max(a_tol, r_tol*bnorm);
-		}
-		break;
-	case 2: /* second schur complement of the max. dimension elements in B block */
-		if (schur1 != NULL) {
-			VecNorm(schur1->get_system()->get_rhs(), NORM_2, &bnorm);
-            r_tol = (schur1->get_system())->get_relative_accuracy();
-            a_tol = (schur1->get_system())->get_absolute_accuracy();
-            precision = max(a_tol, r_tol*bnorm);
-		}
-		break;
-	}
-
-	return precision;
+	return schur0->get_solution_precision();
 }
 
 
@@ -473,6 +432,21 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     MHFEValues fe_values;
+
+    // We use FESideValues for calculating normal vectors.
+    // For initialization of FESideValues some auxiliary objects are needed.
+    MappingP1<1,3> map1;
+    MappingP1<2,3> map2;
+    MappingP1<3,3> map3;
+    QGauss<0> q0(1);
+    QGauss<1> q1(1);
+    QGauss<2> q2(1);
+    FE_P_disc<1,1,3> fe1;
+    FE_P_disc<0,2,3> fe2;
+    FE_P_disc<0,3,3> fe3;
+    FESideValues<1,3> fe_side_values1(map1, q0, fe1, update_normal_vectors);
+    FESideValues<2,3> fe_side_values2(map2, q1, fe2, update_normal_vectors);
+    FESideValues<3,3> fe_side_values3(map3, q2, fe3, update_normal_vectors);
 
     class Boundary *bcd;
     class Neighbour *ngh;
@@ -593,10 +567,31 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
 
+            // compute normal vector to side
+            arma::vec3 nv;
+            ElementFullIter ele_higher = mesh_->element.full_iter(ngh->side()->element());
+            switch (ele_higher->dim()) {
+            case 1:
+            	fe_side_values1.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values1.normal_vector(0);
+            	break;
+            case 2:
+            	fe_side_values2.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values2.normal_vector(0);
+            	break;
+            case 3:
+            	fe_side_values3.reinit(ele_higher, ngh->side()->el_idx());
+            	nv = fe_side_values3.normal_vector(0);
+            	break;
+            }
 
-            double value = data.sigma.value( ngh->element()->centre(), ngh->element()->element_accessor()) * ngh->side()->measure() *
-//                data.cross_section.value( ngh->element()->centre(), ngh->element()->element_accessor() );      // crossection of lower dim (wrong)
-                  data.cross_section.value( ngh->side()->centre(), ngh->side()->element()->element_accessor() ); // cross-section of higher dim. (2d)
+            double value = data.sigma.value( ele->centre(), ele->element_accessor()) *
+            		2*data.conductivity.value( ele->centre(), ele->element_accessor()) *
+            		arma::dot(data.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    data.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+                    ngh->side()->measure();
 
 
             local_vb[0] = -value;   local_vb[1] = value;
@@ -915,12 +910,15 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
+void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
     int i_loc, el_row;
     Element *ele;
     Vec aux;
+    PetscErrorCode err;
+
+    F_ENTRY;
 
     //xprintf(Msg,"****************** problem statistics \n");
     //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
@@ -932,6 +930,13 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
+    	if (in_rec.type() == LinSys_BDDC::input_type) {
+    		xprintf(Warn, "For BDDC is using no Schur complements.");
+            n_schur_compls = 0;
+    	} else if (n_schur_compls > 2) {
+            xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+            n_schur_compls = 2;
+        }
         if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
 #ifdef HAVE_BDDCML
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
@@ -944,11 +949,7 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
             schur0=ls;
-            n_schur_compls = 0;
             END_TIMER("BDDC set mesh data");
-
-            // for BDDC no Schur complements for the moment
-            n_schur_compls = 0;
 #else
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
 #endif
@@ -957,18 +958,49 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
         // use PETSC for serial case even when user want BDDC
         if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
-            LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
+        	LinSys_PETSC *schur1, *schur2;
 
-            // temporary solution; we have to set precision also for sequantial case of BDDC
-            // final solution should be probably call of direct solver for oneproc case
-            if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
-            else {
-                ls->LinSys::set_from_input(in_rec); // get only common options
-                n_schur_compls=0; // has to prevent usage of SchurComplement since thay assume PETSC Input::Record
-            }
+        	if (n_schur_compls == 0) {
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
-            ls->set_solution( NULL );
-            schur0=ls;
+                // temporary solution; we have to set precision also for sequantial case of BDDC
+                // final solution should be probably call of direct solver for oneproc case
+                if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
+                else {
+                    ls->LinSys::set_from_input(in_rec); // get only common options
+                }
+
+                ls->set_solution( NULL );
+                schur0=ls;
+        	} else {
+        		IS is;
+        		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+        		ASSERT(err == 0,"Error in ISCreateStride.");
+
+        		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
+        		ls->set_from_input(in_rec);
+        		ls->set_solution( NULL );
+        		ls->set_positive_definite();
+
+        		// make schur1
+            	Distribution *ds = ls->make_complement_distribution();
+            	if (n_schur_compls==1) {
+            		schur1 = new LinSys_PETSC(ds);
+            	} else {
+        			IS is;
+        			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+        			ASSERT(err == 0,"Error in ISCreateStride.");
+        			SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+        			ls1->set_negative_definite();
+
+        			// make schur2
+        			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+        			ls1->set_complement( schur2 );
+        			schur1 = ls1;
+            	}
+            	ls->set_complement( schur1 );
+        		schur0=ls;
+        	}
 
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
@@ -976,11 +1008,6 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
             assembly_steady_mh_matrix(); // preallocation
             VecZeroEntries(schur0->get_solution());
             schur0->start_add_assembly(); // finish allocation and create matrix
-
-            if ((unsigned int) n_schur_compls > 2) {
-                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
-                n_schur_compls = 2;
-            }
 
             END_TIMER("PETSC PREALLOCATION");
 
@@ -1015,7 +1042,6 @@ void DarcyFlowMH_Steady::make_schur0( const Input::AbstractRecord in_rec) {
 
 
     // add time term
-
 }
 
 
@@ -1179,14 +1205,14 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
-    if (schur2 != NULL) {
-    	delete schur2;
+    //if (schur2 != NULL) {
+    //	delete schur2;
     	//ISDestroy(&IS2);
-    }
-    if (schur1 != NULL) {
-    	delete schur1;
+    //}
+    //if (schur1 != NULL) {
+    //	delete schur1;
     	//ISDestroy(&IS1);
-    }
+    //}
     if (schur0 != NULL) delete schur0;
 
 	delete edge_ds;
@@ -1209,64 +1235,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 
 }
 
-/*******************************************************************************
- * COMPUTE THE FIRST (A-block) SCHUR COMPLEMENT
- ******************************************************************************/
-// paralellni verze musi jeste sestrojit index set bloku A, to jde pres:
-// lokalni elementy -> lokalni sides -> jejich id -> jejich radky
-// TODO: reuse IA a Schurova doplnku
-
-
-void DarcyFlowMH_Steady::make_schur1() {
-    
-    START_TIMER("Schur 1");
-  
-    PetscErrorCode err;
-
-    F_ENTRY;
-    START_TIMER("schur1 - create,inverse");
-
-    // create schur1 if does not exists
-	if (schur1 == NULL) {
-		IS is;
-		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-		ASSERT(err == 0,"Error in ISCreateStride.");
-		schur1 = new SchurComplement(schur0, is); // is is deallocated by SchurComplement
-	}
-    
-    END_TIMER("schur1 - create,inverse");
-    
-    
-    START_TIMER("schur1 - form");
-    
-    schur1->form_schur();
-    schur1->set_spd();
-    
-    END_TIMER("schur1 - form");
-}
-
-/*******************************************************************************
- * COMPUTE THE SECOND (B-block) SCHUR COMPLEMENT
- ******************************************************************************/
-void DarcyFlowMH_Steady::make_schur2() {
-    PetscScalar *vDiag;
-    PetscErrorCode ierr;
-    F_ENTRY;
-    START_TIMER("Schur 2");
-
-    // create schur complement of the B block ( of the first complement )
-    if (schur2 == NULL) {
-    	IS is;
-        ierr = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), schur1->get_distribution()->begin(), 1, &is);
-        ASSERT(ierr == 0, "Error in ISCreateStride.");
-        schur2 = new SchurComplement(schur1->get_system(), is); // is is deallocated by SchurComplement
-
-    }
-
-    schur2->form_schur();
-    schur2->scale(-1.0);
-    schur2->set_spd();
-}
 
 // ================================================
 // PARALLLEL PART
@@ -1709,6 +1677,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     VecCopy(schur0->get_rhs(), steady_rhs);
 
     solution_changed_for_scatter=true;
+    schur0->set_matrix_changed();
 }
 
 void DarcyFlowMH_Unsteady::modify_system() {
@@ -1718,11 +1687,13 @@ void DarcyFlowMH_Unsteady::modify_system() {
 
       VecScale(new_diagonal, time_->last_dt()/time_->dt());
       MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+      schur0->set_matrix_changed();
   }
 
     // modify RHS - add previous solution
     VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
     VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    schur0->set_rhs_changed();
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());
@@ -1799,6 +1770,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
      VecDuplicate(schur0->get_rhs(), &time_term);
 
      solution_changed_for_scatter=true;
+     schur0->set_matrix_changed();
 
 }
 
@@ -1808,11 +1780,13 @@ void DarcyFlowLMH_Unsteady::modify_system() {
         MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
         VecScale(new_diagonal, time_->last_dt()/time_->dt());
         MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+        schur0->set_matrix_changed();
     }
 
     // modify RHS - add previous solution
     VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
     VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    schur0->set_rhs_changed();
 
     // swap solutions
     VecSwap(previous_solution, schur0->get_solution());

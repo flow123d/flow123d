@@ -27,7 +27,8 @@
           flow_old_bcd_file = "./input/test2.fbc"
         },
         { rid = 48,
-          conductivity = 10
+          conductivity = 10,
+          sigma = 0.05
         },
         { rid = 184,
           conductivity = 1

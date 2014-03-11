@@ -124,13 +124,28 @@ public:
      */
     LinSys(const  Distribution *rows_ds)
       : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( rows_ds->get_comm() ), solution_(NULL), v_solution_(NULL),
-        positive_definite_( false ), symmetric_( false ), spd_via_symmetric_general_( false ), status_( NONE )
+        positive_definite_( false ), negative_definite_( false ), symmetric_( false ),
+        spd_via_symmetric_general_( false ), status_( NONE )
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
         MPI_Allreduce ( &lsizeInt, &sizeInt, 1, MPI_INT, MPI_SUM, comm_ );
         size_ = static_cast<unsigned>( sizeInt );
 
+    };
+
+    /**
+     * Copy constructor.
+     */
+    LinSys(LinSys &other)
+    : r_tol_(other.r_tol_), a_tol_(other.a_tol_), max_it_(other.max_it_), comm_(other.comm_), status_(other.status_),
+      lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
+      positive_definite_(other.positive_definite_), negative_definite_( other.negative_definite_ ),
+      spd_via_symmetric_general_(other.spd_via_symmetric_general_), globalSolution_(other.globalSolution_),
+      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_)
+    {
+    	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
+    	set_solution(other.v_solution_);
     };
 
     // Particular type of the linear system.
@@ -174,6 +189,13 @@ public:
 
     /**
      * Returns PETSC matrix (only for PETSC solvers)
+     *
+     * If matrix is changed, method set_matrix_changed() must be called.
+     * Example:
+	 * @CODE
+	 *   MatDiagonalSet(schur->get_matrix(), new_diagonal, ADD_VALUES);
+	 *   schur->set_matrix_changed();
+	 * @ENDCODE
      */
     virtual const Mat &get_matrix()
     {
@@ -182,12 +204,35 @@ public:
 
     /**
      * Returns RHS vector  (only for PETSC solvers)
+     *
+     * If vector is changed, method set_rhs_changed() must be called.
+     * Example:
+	 * @CODE
+	 *   VecScale(schur->get_rhs(), -1.0);
+	 *   schur->set_rhs_changed();
+	 * @ENDCODE
      */
     virtual const Vec &get_rhs()
     {
         ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
     
+    /**
+     * Sets matrix changed flag  (only for PETSC solvers)
+     */
+    virtual void set_matrix_changed()
+    {
+        ASSERT( false, "Function set_matrix_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
+    /**
+     * Sets rhs changed flag  (only for PETSC solvers)
+     */
+    virtual void set_rhs_changed()
+    {
+        ASSERT( false, "Function set_rhs_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
+    }
+
     /**
      * Sets PETSC matrix (only for PETSC solvers)
      */
@@ -441,7 +486,10 @@ public:
     inline void set_symmetric(bool flag = true)
     {
         symmetric_ = flag;
-        if (!flag) set_positive_definite(false);
+        if (!flag) {
+        	set_positive_definite(false);
+        	set_negative_definite(false);
+        }
     }
 
     inline bool is_symmetric()
@@ -453,11 +501,29 @@ public:
     inline void set_positive_definite(bool flag = true)
     {
         positive_definite_ = flag;
-        if (flag) set_symmetric();
+        if (flag) {
+        	set_symmetric();
+        	set_negative_definite(false);
+        }
+    }
+
+    /**
+     * Provides user knowledge about negative definiteness.
+     */
+    inline void set_negative_definite(bool flag = true)
+    {
+    	negative_definite_ = flag;
+        if (flag) {
+        	set_symmetric();
+        	set_positive_definite(false);
+        }
     }
 
     inline bool is_positive_definite()
     { return positive_definite_; }
+
+    inline bool is_negative_definite()
+    { return negative_definite_; }
 
     /// TODO: In fact we want to know if the matrix is already preallocated
     /// However to do this we need explicit finalisation of preallocating cycle.
@@ -508,6 +574,11 @@ public:
     	}
     }
 
+    /**
+     * Get precision of solving
+     */
+    virtual double get_solution_precision() = 0;
+
     virtual ~LinSys()
     { 
        PetscErrorCode ierr;
@@ -530,6 +601,7 @@ protected:
 
     bool             symmetric_;
     bool             positive_definite_;
+    bool             negative_definite_;
     bool             spd_via_symmetric_general_;
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
