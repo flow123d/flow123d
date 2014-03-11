@@ -22,13 +22,11 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      bc_data=[
+      data=[
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
-        }
-      ],
-      bulk_data=[
+        },
         { rid = 48,
           anisotropy = 10,
           cross_section = 1
@@ -64,13 +62,11 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      bc_data=[
+      data=[
         { 
           region="IMPLICIT BOUNDARY",
           bc_conc = 1
-        }
-      ],
-      bulk_data=[
+        },
         {
           rid=48,
           init_conc = 0,

@@ -77,11 +77,22 @@ public:
 	 * @endcode
 	 */
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const {
-    	Input::Type::Record rec = FieldCommonBase::field_descriptor_record(equation_name);
+    	Input::Type::Record rec = FieldCommonBase::field_descriptor_record(equation_name + "_Data");
     	for(auto field : field_list) {
     		rec.declare_key(field->name(), field->get_input_type(), field->desc() );
     	}
     	return rec;
+    }
+
+    /**
+     * Make Record with output keys for all fields in the FieldSet.
+     */
+    Input::Type::Record make_output_field_keys() {
+    	namespace IT=Input::Type;
+    	IT::Record rec("field_output_keys","AUXILIARY RECORD. Should not be directly part of the input tree.");
+    	for( auto field : field_list)
+    		rec.declare_key(field->name(), IT::String(), IT::Default::optional(),
+    			"Name of the output stream for the field "+field->name()+"." );
     }
 
 
@@ -150,8 +161,16 @@ public:
     	for(auto field : field_list) field->set_time(time);
     }
 
+    /**
+     * Adds given field into list of fields for group operations on fields.
+     * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
+     * @p d_val with default value. This method is rather called through the macro ADD_FIELD
+     */
+    void add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val="") {
+    	*this += field->name(name).desc(desc).input_default(d_val);
+    }
 
-private:
+protected:
 
 
     /// List of all fields.
@@ -161,7 +180,7 @@ private:
 
 /**
  * (OBSOLETE)
- * Macro to simplify call of EqDataBase::add_field method. Two forms are supported:
+ * Macro to simplify call of FieldSet::add_field method. Two forms are supported:
  *
  *
  *
@@ -169,14 +188,14 @@ private:
  * ADD_FIELD(some_field, description, Default);
  *
  * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
- * value is specified, so the user must initialize the field on all regions (This is checked at the end of the method
- * EqDataBase::init_from_input.
+ * value is specified, so the user must initialize the field on all regions (This is checked in the Field<..>::set_time method)
  *
  * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
  * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
  * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
  */
-#define ADD_FIELD(field_name, desc)                   *this += field_name.name(#field_name).desc(desc))
-#define ADD_FIELD(field_name, desc, dflt)             *this += field_name.name(#field_name).desc(desc)).init_default(dflt)
+
+#define ADD_FIELD(name, ...)                   this->add_field(&name, string(#name), __VA_ARGS__)
+
 
 #endif /* FIELD_SET_HH_ */

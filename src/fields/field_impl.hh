@@ -464,19 +464,6 @@ it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 }
 
 
-
-template<int spacedim, class Value>
-it::AbstractRecord MultiField<spacedim,Value>::make_input_tree() {
-}
-
-
-/*
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
-}
-*/
-
-
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)

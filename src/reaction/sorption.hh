@@ -51,7 +51,7 @@ class Sorption:  public Reaction
 		 */
 		static Input::Type::Record input_type;
 
-		class EqData : public EqDataBase // should be written in class Sorption
+		class EqData : public FieldSet // should be written in class Sorption
 		{
 		public:
 			/**

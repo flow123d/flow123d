@@ -49,7 +49,7 @@ namespace IT=Input::Type;
 // Test input for 'values' test
 const string eq_data_input = R"JSON(
 { 
-  bulk_data=[
+  data=[
       { rid=37,
         init_pressure={
             TYPE="FieldConstant",
@@ -62,9 +62,9 @@ const string eq_data_input = R"JSON(
       },
       { r_set="BULK",
         bulk_set_field=5.7
-      }          
-  ],
-  bc_data=[
+      },
+
+      // boundary          
       { rid=101,
         bc_type={TYPE="FieldConstant", value = "dirichlet"},
         bc_pressure={
@@ -84,13 +84,11 @@ const string eq_data_input = R"JSON(
 // Test input for old_bcd
 const string eq_data_old_bcd = R"JSON(
 { 
-  bc_data=[
+  data=[
       { r_set="BOUNDARY",
         flow_old_bcd_file="coupling/simplest_cube.fbc",
         transport_old_bcd_file="coupling/transport.fbc"  
-      }
-  ],
-  bulk_data=[
+      },
       { r_set="BULK",
         bulk_set_field=0.0
       } 
@@ -101,7 +99,7 @@ const string eq_data_old_bcd = R"JSON(
 
 class SomeEquationBase : public EquationBase {
 protected:
-    class EqData : public EqDataBase {
+    class EqData : public FieldSet {
     public:
         enum BC_type {
             none=0,
@@ -127,7 +125,7 @@ protected:
             	}
         }
 
-        EqData(const string & name="") : EqDataBase(name) {
+        EqData()  {
             ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
@@ -148,23 +146,7 @@ protected:
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
         }
-/*
-        RegionSet read_boundary_list_item(Input::Record rec) {
-            RegionSet domain=EqDataBase::read_boundary_list_item(rec);
-            Input::Iterator<Input::AbstractRecord> field_it = rec.find<Input::AbstractRecord>("bc_piezo_head");
-            if (field_it) {
-                bc_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, * field_it) );
-            }
-            FilePath bcd_file;
-            if (rec.opt_val("flow_old_bcd_file", bcd_file) ) {
-                OldBcdInput::instance()->read_flow(bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
-            }
-            if (rec.opt_val("transport_old_bcd_file", bcd_file) )  {
-                OldBcdInput::instance()->read_transport( bcd_file, bc_conc );
-            }
-            return domain;
-        }
-*/
+
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; // ?? jak pridat moznost zadat piezo_head, coz by melo initializovat pressure
@@ -174,10 +156,6 @@ protected:
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         BCField<3, FieldValue<3>::Vector > bc_conc;
-
-
-
-
     };
 
 };
@@ -198,22 +176,12 @@ public:
     class EqData : public SomeEquationBase::EqData {
     public:
 
-        EqData() : SomeEquationBase::EqData("SomeEquation") {
+        EqData() : SomeEquationBase::EqData() {
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
         }
-/*
-        RegionSet read_bulk_list_item(Input::Record rec) {
-            RegionSet domain=EqDataBase::read_bulk_list_item(rec);
-            Input::AbstractRecord piezo_head_rec;
-            if (rec.opt_val("init_piezo_head", piezo_head_rec) ) {
-                        init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, piezo_head_rec) );
-            }
 
-            return domain;
-        }
-*/
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
@@ -237,10 +205,6 @@ protected:
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
 
-        //data.set_mesh(*mesh);
-        //TimeGovernor tg(0.0, 1.0);
-        //data.set_limit_side(LimitSide::right);
-        //data.set_time(tg);
     }
 
     void read_input(const string &input) {
@@ -267,7 +231,7 @@ protected:
 
         DBGMSG("init\n");
         data.set_mesh(*mesh);
-        data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+        data.set_input_list( in_rec.val<Input::Array>("data"));
         data.set_limit_side(LimitSide::right);
         data.set_time(tg);
     }
@@ -284,14 +248,11 @@ protected:
 
 IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
-        .declare_key("bc_data", IT::Array(
-                SomeEquation::EqData().boundary_input_type()
+        .declare_key("data", IT::Array(
+                SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
                 .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-                ), IT::Default::obligatory(), ""  )
-        .declare_key("bulk_data", IT::Array(
-                SomeEquation::EqData().bulk_input_type()
                 .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 ), IT::Default::obligatory(), ""  );
 

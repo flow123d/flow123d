@@ -169,17 +169,9 @@ public:
 
     /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
-     * class (i.e. with the same template parameters). This is used by EqDataBase::generic_input_type to construct the Input::Type::Record for
-     * the bc_data_list or bulk_data_list.
+     * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
     virtual IT::AbstractRecord &get_input_type() =0;
-    /**
-     * Returns whole input type tree for FieldBase class returning "Enum".  We have to create whole unique Input::Type hierarchy for
-     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
-     * The Input::Type::Selection object has to be set by the  @p set_selection method since @p make_input_tree is called by
-     * @p EqDataBase::generic_input_type, where the information about  the Selection is not available.
-     */
-    virtual IT::AbstractRecord make_input_tree() =0;
 
     /**
      * Abstract method for initialization of the field on one region.
@@ -454,12 +446,6 @@ public:
      */
     IT::AbstractRecord &get_input_type() override;
 
-    /**
-     * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
-     * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
-     * that was set through @p FieldBaseCommon::set_selection() method.
-     */
-    IT::AbstractRecord make_input_tree() override;
 
     /**
      * By this method you can allow that the field need not to be set on regions (and times) where the given @p control_field is
@@ -565,6 +551,12 @@ public:
                        std::vector<typename Value::return_type>  &value_list) const;
 
 protected:
+    /**
+     * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
+     * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
+     * that was set through @p FieldBaseCommon::set_selection() method.
+     */
+    IT::AbstractRecord make_input_tree();
 
 
 
@@ -678,12 +670,6 @@ public:
      */
     IT::AbstractRecord &get_input_type() override;
 
-    IT::AbstractRecord make_input_tree() override;
-
-    /**
-     * Abstract method for initialization of the field on one region.
-     */
-    //void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) override;
 
     /**
      * Abstract method to update field to the new time level.

@@ -28,7 +28,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "1d_channel",
           anisotropy = 10
         },
@@ -50,7 +50,7 @@
       ],
       
 
-      bc_data = [
+      data= [
          // using region set
          {  r_set = "dirichlet_boundary",
             bc_type = "dirichlet",

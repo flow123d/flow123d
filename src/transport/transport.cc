@@ -77,7 +77,7 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
 
 
 
-ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
+ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
@@ -144,7 +144,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.sources_sigma.n_comp(n_subst_);
     data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data_.set_input_list( in_rec.val<Input::Array>("data") );
 
     data_.set_limit_side(LimitSide::right);
     data_.set_time(*time_);

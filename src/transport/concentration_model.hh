@@ -53,7 +53,7 @@ public:
 
 
 		ModelEqData();
-
+		static string name() {return "TransportDG";}
 	};
 
 protected:
