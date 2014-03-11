@@ -122,7 +122,6 @@ Input::Record Application::read_input() {
     }
     
     // read main input file
-    Input::JSONToStorage json_reader;
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
     DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
@@ -130,14 +129,15 @@ Input::Record Application::read_input() {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
     try {
-      json_reader.read_stream(in_stream, input_type );
+    	Input::JSONToStorage json_reader(in_stream, input_type );
+        root_record = json_reader.get_root_interface<Input::Record>();
     } catch (Input::JSONToStorage::ExcInputError &e ) {
       e << Input::JSONToStorage::EI_File(fname); throw;
     } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
       e << Input::JSONToStorage::EI_File(fname); throw;
     }  
     
-    return json_reader.get_root_interface<Input::Record>();
+    return root_record;
 }
 
 

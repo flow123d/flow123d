@@ -10,7 +10,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "plane",
           conductivity = 5,            // K_2d
           cross_section = 10           // delta_2d
@@ -23,10 +23,7 @@
             TYPE = "FieldFormula",
             value = "-1/20*(10*5)"     // f_1d = - 1 / delta_1d (delta_2d * K_2d)
           }
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".plane",
           bc_type = "dirichlet",
           bc_piezo_head = {

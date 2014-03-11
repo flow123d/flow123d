@@ -10,7 +10,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "1d_channel",
           anisotropy = 10,
           sigma = 0.05
@@ -25,10 +25,7 @@
         },
         { region = "3d_cube",
           anisotropy = 0.1
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".1d_channel",
           bc_type = "dirichlet",
           bc_pressure = {

@@ -84,7 +84,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(100,TimeMark::every_type));
     
     //creating mark types of our own
-    xprintf(MsgDbg, "\nPredefined marktypes:\n\ttype_fixed_time_: %d\n\ttype_output_: %d\n\ttype_bc_change_: %d\n", tm.type_fixed_time(), tm.type_output(), tm.type_bc_change());
+    xprintf(MsgDbg, "\nPredefined marktypes:\n\ttype_fixed_time_: %d\n\ttype_output_: %d\n\ttype_input_: %d\n", tm.type_fixed_time(), tm.type_output(), tm.type_input());
     // type_fixed_time_, type_output_ type_bc_change_ has been created -> 
     // new_mark_type = next_mark_type = 0x05<<1 = 0x08
     TimeMark::Type my_mark_type = tm.new_mark_type();	
@@ -109,11 +109,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     in_rec.finish();
     }
     
-    Input::JSONToStorage json_reader;
-    //creating stream out of the json input string 
-    std::stringstream in_stream(flow_json);
     //json reading according to keys defined in in_rec
-    json_reader.read_stream(in_stream, in_rec);
+    Input::JSONToStorage json_reader(flow_json, in_rec);
     
     //getting root record
     Input::Record input = json_reader.get_root_interface<Input::Record>();

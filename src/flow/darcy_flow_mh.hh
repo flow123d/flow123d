@@ -48,6 +48,7 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include <memory>
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -58,8 +59,8 @@
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
-#include "fields/field_base.hh"
-#include "fields/field_values.hh"
+#include "fields/field.hh"
+#include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
 
@@ -99,7 +100,7 @@ public:
     /** @brief Data for Darcy flow equation.
      *  
      */
-    class EqData : public EqDataBase {
+    class EqData : public FieldSet {
     public:
 
         /**
@@ -115,20 +116,23 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name="");
+        EqData();
+
 
         /**
-         * Overrides EqDataBase::read_boundary_list_item, implements reading of
-         * - bc_piezo_head key
-         * - flow_old_bcd_file
+         * Hook for processing "bc_piezo_head" key.
          */
-        RegionSet read_boundary_list_item(Input::Record rec);
-        
-        /**
-         * Overrides EqDataBase::read_bulk_list_item, implements reading of
-         * - init_piezo_head key
-         */
-        RegionSet read_bulk_list_item(Input::Record rec);
+        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        {
+            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
+                Input::AbstractRecord field_a_rec;
+            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
+            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
+            	} else {
+            		return field_ptr;
+            	}
+        }
        
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -146,7 +150,14 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-        arma::vec4 gravity_;
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         *
+         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
+         * introduce some kind of context pointer into @p FieldCommonBase.
+         */
+        static arma::vec4 gravity_;
     };
 
 
@@ -252,7 +263,7 @@ public:
     class EqData : public DarcyFlowMH::EqData {
     public:
       
-      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
+      EqData() : DarcyFlowMH::EqData()
       {}
     };
     

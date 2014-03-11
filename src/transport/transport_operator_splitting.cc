@@ -81,20 +81,20 @@ Record TransportOperatorSplitting::input_type
                 "Initialization of per element reactions.")
     .declare_key("adsorptions", Sorption::input_type, Default::optional(),
     			"Initialization of per element sorptions.")
-    .declare_key("bc_data", Array(ConvectionTransport::EqData().boundary_input_type()), IT::Default::obligatory(), "")
-    .declare_key("bulk_data", Array(ConvectionTransport::EqData().bulk_input_type()),
-    		IT::Default::obligatory(), "");
+    .declare_key("data", Array(
+    		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
+    		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
+    		), IT::Default::obligatory(), "");
 
 
-TransportBase::TransportEqData::TransportEqData(const std::string& eq_name)
-: EqDataBase(eq_name)
+TransportBase::TransportEqData::TransportEqData()
 {
 
-	ADD_FIELD(por_m, "Mobile porosity", Default("1"));
+	ADD_FIELD(por_m, "Mobile porosity", "1");
 
-	ADD_FIELD(sources_density, "Density of concentration sources.", Default("0"));
-	ADD_FIELD(sources_sigma, "Concentration flux.", Default("0"));
-	ADD_FIELD(sources_conc, "Concentration sources threshold.", Default("0"));
+	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
+	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
+	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
 
 }
 

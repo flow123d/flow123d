@@ -319,18 +319,22 @@ void TimeGovernor::next_time()
     if (steady) {
         last_time_step = end_time_;
         time_level = 1;
-	time_step = 0.0;
+        time_step = 0.0;
         time = end_time_;
         dt_changed = false;
         return;
     }
     
+
     if (this->lt(end_of_fixed_dt_interval)) {
         // this is done for fixed step
         // make tiny correction of time step in order to avoid big rounding errors
         // tiny correction means that dt_changed 'is NOT changed'
-        fixed_dt = (end_of_fixed_dt_interval-time) / round( (end_of_fixed_dt_interval-time) / fixed_dt );
-        last_time_step = time_step;
+    	if (end_of_fixed_dt_interval < inf_time) {
+    		fixed_dt = (end_of_fixed_dt_interval-time) / round( (end_of_fixed_dt_interval-time) / fixed_dt );
+    	}
+
+    	last_time_step = time_step;
         time_step = fixed_dt;
         
         //checking whether fixed time step has been changed (by fix_dt_until_mark() method) since last time
@@ -351,7 +355,7 @@ void TimeGovernor::next_time()
         time_step = estimate_dt();
         dt_changed= (last_time_step != time_step);
     }
-    
+
     last_time_ = time;
     time+=time_step;
     time_level++;

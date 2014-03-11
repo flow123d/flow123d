@@ -49,7 +49,7 @@ public:
 
     static Input::Type::Record input_type;
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -69,7 +69,7 @@ public:
      *
      * See also description of the FieldBase<...>::set_mesh.
      */
-    virtual void set_mesh(Mesh *mesh, bool boundary_domain);
+    virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
 
 
     /**
@@ -106,7 +106,7 @@ private:
     unsigned int n_components_;
 
     GmshMeshReader *reader_;
-    Mesh *mesh_;
+    const Mesh *mesh_;
     std::string field_name_;
 };
 

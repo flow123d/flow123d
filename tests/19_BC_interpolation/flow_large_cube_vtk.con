@@ -7,7 +7,7 @@
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      bc_data=[
+      data=[
         {
           region = "IMPLICIT BOUNDARY",
           bc_type = "dirichlet",
@@ -15,9 +15,7 @@
             TYPE = "FieldFormula",
             value = "x-z"
           }
-        }
-      ],
-      bulk_data=[
+        },
         {
           r_set = "BULK",
           anisotropy = 1

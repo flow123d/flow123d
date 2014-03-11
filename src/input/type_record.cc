@@ -90,7 +90,7 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 
 
-void Record::make_derive_from(AbstractRecord &parent) const {
+void Record::make_derive_from(AbstractRecord &parent) {
     if (data_->derived_) return;
 
     parent.finish();
@@ -103,7 +103,7 @@ void Record::make_derive_from(AbstractRecord &parent) const {
 
 
 
-void Record::make_copy_keys(Record &origin) const {
+void Record::make_copy_keys(Record &origin) {
 
 	origin.finish();
 
@@ -120,10 +120,12 @@ void Record::make_copy_keys(Record &origin) const {
 		if (tmp_key.key_=="TYPE")
 			tmp_key.default_=Default( type_name() );
 
-		// check for duplicate keys, save only the key derived by the descendant
+		// check for duplicate keys, override keys of the parent record by the child record
 		RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
 		if (kit != data_->key_to_index.end()) {
-			Key *k = &(data_->keys[kit->second+n_inserted]);
+			// in actual record exists a key with same name as in parent record
+			// use values form the child record
+			Key *k = &(data_->keys[kit->second+n_inserted]); // indices in key_to_index are not yet updated
 
 			//does not work with intel c++ compiler
 			//tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
@@ -134,7 +136,7 @@ void Record::make_copy_keys(Record &origin) const {
 			tmp_key.p_type = k->p_type;
 			tmp_key.default_ = k->default_;
 			tmp_key.derived = false;
-			k->key_ = "";
+			k->key_ = ""; // mark original key for deletion
 		}
 
 		data_->key_to_index[key_h] = tmp_key.key_index;
@@ -155,8 +157,19 @@ void Record::make_copy_keys(Record &origin) const {
 }
 
 
+void Record::make_copy_keys_all() {
+	for(auto &ptr : data_->copy_from_ptr) {
+		ASSERT( ptr && TypeBase::was_constructed( ptr ), "Invalid pointer to source record for copy keys operation.\n");
+		make_copy_keys(*ptr);
+		ptr = NULL;
+	}
+	data_->copy_from_ptr.clear();
+}
+
+
 
 Record &Record::derive_from(AbstractRecord &parent) {
+	ASSERT( ! data_->p_parent_ || ! data_->parent_ptr_ , "Record has been already derived.\n");
     if (TypeBase::was_constructed(&parent)) {
         data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
         data_->p_parent_ = NULL;
@@ -167,6 +180,16 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	return *this;
 }
 
+
+
+Record &Record::copy_keys(Record &other) {
+    if (TypeBase::was_constructed(&other)) {
+    	make_copy_keys(other);
+    } else { //postponed
+        data_->copy_from_ptr.push_back( &other );
+    }
+    return *this;
+}
 
 
 bool Record::is_finished() const {
@@ -199,7 +222,10 @@ bool Record::finish()
 	if (data_->finished) return true;
 
 	close();
-    // Set correctly data_->parent_ptr
+	// postponed key copies
+	make_copy_keys_all();
+
+    // Set correctly data_->parent_ptr; copy keys from parent abstract record after all other copies
     if (data_->p_parent_ != 0 ) {
         if (TypeBase::was_constructed( data_->p_parent_))  data_->parent_ptr_=boost::make_shared<AbstractRecord>( * data_->p_parent_ );
         else return false;

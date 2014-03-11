@@ -14,12 +14,9 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      data= [
         { r_set = "1d_domain", conductivity = 10, sigma = 0.05 },
-        { region = "2d",       conductivity = 1  }
-      ],
-      
-      bc_data = [
+        { region = "2d",       conductivity = 1  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -47,7 +44,7 @@
       sorption_enable = true, 
       substances = [ "age", "U235" ],
       
-      bulk_data = [
+      data = [
         { r_set = "ALL",
           init_conc = 0,
           por_m = 0.25,
@@ -57,10 +54,7 @@
           sorp_type = [ "linear", "freundlich" ],
           sorp_coef0 = [0.02, 0.02],
           sorp_coef1 = [0, 0.5]
-        }
-      ],
-      
-      bc_data = [
+        },
         { r_set = "BOUNDARY",
           bc_conc = 1.0
         }

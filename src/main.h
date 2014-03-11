@@ -101,6 +101,9 @@ private:
 
     /// If true, we do output of profiling information.
     bool use_profiler;
+
+    /// root input record
+    Input::Record root_record;
 };
 
 

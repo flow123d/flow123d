@@ -45,14 +45,14 @@ public:
     /**
      * Regional accessor.
      */
-    ElementAccessor(Mesh *mesh, RegionIdx r_idx)
+    ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
     : mesh_(mesh), dim_(undefined_dim_), r_idx_(r_idx)
     {}
 
     /**
      * Element accessor.
      */
-    ElementAccessor(Mesh *mesh, unsigned int idx, bool boundary)
+    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary)
     : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
@@ -73,7 +73,7 @@ public:
     inline unsigned int dim() const
         { return dim_; }
 
-    inline const ElementIter element() const {
+    inline const Element * element() const {
         if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
         else return  (Element *)(mesh_->element(element_idx_)) ;
     }

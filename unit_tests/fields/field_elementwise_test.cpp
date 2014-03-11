@@ -75,9 +75,7 @@ public:
         rec_type.declare_key("tensor_fixed", TensorField::input_type, Input::Type::Default::obligatory(),"" );
         rec_type.finish();
 
-        std::stringstream ss(input);
-        Input::JSONToStorage reader;
-        reader.read_stream( ss, rec_type );
+        Input::JSONToStorage reader( input, rec_type );
         rec=reader.get_root_interface<Input::Record>();
 
     }

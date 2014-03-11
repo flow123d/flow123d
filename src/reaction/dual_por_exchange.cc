@@ -22,7 +22,6 @@ using namespace Input::Type;
 using namespace std;
 
 Dual_por_exchange::EqData::EqData()
-: EqDataBase("Exchange_dp")
 {
 	ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", Input::Type::Default("0"));
@@ -36,7 +35,7 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
     nr_of_regions = init_mesh.region_db().bulk_size();
 
     data_.set_mesh(&init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
+    data_.init_from_input( in_rec.val<Input::Array>("data"));
     data_.set_time(tg);
 
     nr_of_substances = names.size();

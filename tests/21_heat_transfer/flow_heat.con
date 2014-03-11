@@ -17,7 +17,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
 
-      bulk_data = [
+      data= [
         { region = "rock",
           conductivity = 1e-2,
           cross_section = 1
@@ -26,10 +26,7 @@
         { region = "fracture",
           conductivity = 1,
           cross_section = 1e-2
-        }
-      ],
-      
-      bc_data = [
+        },
         {
           r_set = ".bottom",
           bc_type = "dirichlet",
@@ -58,15 +55,12 @@
       mass_balance = {
         cumulative = true
       }
-      bc_data = [
+      data= [
         {
           r_set = ".bottom",
           bc_type = "dirichlet",
           bc_temperature = 1
-        }
-      ],
-      
-      bulk_data = [
+        },
         { r_set="ALL",
           fluid_density = 1e3,
           fluid_heat_capacity = 5,

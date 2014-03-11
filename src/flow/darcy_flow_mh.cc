@@ -72,6 +72,7 @@
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
+#include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
 
@@ -111,31 +112,19 @@ it::AbstractRecord DarcyFlowMH::input_type=
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
     .derive_from(DarcyFlowMH::input_type)
-    .declare_key("bc_data", it::Array(
-                DarcyFlowMH_Steady::EqData().boundary_input_type()
+    .declare_key("data", it::Array(
+                DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
-                ), it::Default::obligatory(), ""  )
-    .declare_key("bulk_data", it::Array(
-                DarcyFlowMH_Steady::EqData().bulk_input_type() 
                 .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
-                ), it::Default::obligatory(), "");
-
+                .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
+                ), it::Default::obligatory(), ""  );
 
 it::Record DarcyFlowMH_Unsteady::input_type
 	= it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 	.derive_from(DarcyFlowMH::input_type)
 	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
-  .declare_key("bc_data", it::Array(
-                DarcyFlowMH_Unsteady::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
-                ), it::Default::obligatory(), ""  )
-  .declare_key("bulk_data", it::Array(
-                DarcyFlowMH_Unsteady::EqData().bulk_input_type()
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
-                ), it::Default::obligatory(), "");
+    .copy_keys(DarcyFlowMH_Steady::input_type);
 
 
 it::Record DarcyFlowLMH_Unsteady::input_type
@@ -143,100 +132,46 @@ it::Record DarcyFlowLMH_Unsteady::input_type
     .derive_from(DarcyFlowMH::input_type)
     .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")
-    .declare_key("bc_data", it::Array(
-                DarcyFlowLMH_Unsteady::EqData().boundary_input_type()
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for piezometric head." )
-                .declare_key("flow_old_bcd_file", it::FileName::input(), "")
-                ), it::Default::obligatory(), ""  )
-    .declare_key("bulk_data", it::Array(
-                DarcyFlowLMH_Unsteady::EqData().bulk_input_type()
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial piezometric head." )
-                ), it::Default::obligatory(), "");
+    .copy_keys(DarcyFlowMH_Steady::input_type);
     
 
 
 
+// gravity vector + constant shift of values
+arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
 
 
-
-
-DarcyFlowMH::EqData::EqData(const std::string &name)
-: EqDataBase(name)
+DarcyFlowMH::EqData::EqData()
 {
-    gravity_ = arma::vec4("0 0 -1 0"); // gravity vector + constant shift of values
+    gravity_ = arma::vec4("0 0 -1 0");
 
-    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", Input::Type::Default("1.0"));
-    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", Input::Type::Default("1.0") );
-    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", Input::Type::Default("1.0") );
-    ADD_FIELD(sigma, "Transition coefficient between dimensions.", Input::Type::Default("1.0"));
-    ADD_FIELD(water_source_density, "Water source density.", Input::Type::Default("0.0"));
+    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
+    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", "1.0" );
+    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
+    ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
+    ADD_FIELD(water_source_density, "Water source density.", "0.0");
     
-    ADD_FIELD(bc_type,"Boundary condition type, possible values:", it::Default("none") );
-              bc_type.set_selection(&bc_type_selection);
+    ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
+        bc_type.input_selection(&bc_type_selection);
+        bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
-    std::vector<FieldEnum> list; list.push_back(none); list.push_back(neumann);
-    bc_pressure.disable_where(& bc_type, list );
+    	bc_pressure.disable_where(bc_type, {none, neumann} );
+    	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
+
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
-    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(robin);
-    bc_flux.disable_where(& bc_type, list );
+    	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
+    	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
-    list.clear(); list.push_back(none); list.push_back(dirichlet); list.push_back(neumann);
-    bc_robin_sigma.disable_where(& bc_type, list );
-    
+    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
+    	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+
     //these are for unsteady
-    ADD_FIELD(init_pressure, "Initial condition as pressure", it::Default("0.0") );
-    ADD_FIELD(storativity,"Storativity.", it::Default("1.0") );
+    ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
+    ADD_FIELD(storativity,"Storativity.", "1.0" );
 }
-
-
-
-RegionSet DarcyFlowMH::EqData::read_boundary_list_item(Input::Record rec) {
-    RegionSet domain=EqDataBase::read_boundary_list_item(rec);
-    Input::AbstractRecord field_a_rec;
-    if (rec.opt_val("bc_piezo_head", field_a_rec))
-                bc_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
-    FilePath flow_bcd_file;
-    if (rec.opt_val("flow_old_bcd_file", flow_bcd_file) ) {
-        OldBcdInput::instance()->read_flow(flow_bcd_file, bc_type, bc_pressure, bc_flux, bc_robin_sigma);
-    }
-    return domain;
-}
-
-RegionSet DarcyFlowMH::EqData::read_bulk_list_item(Input::Record rec) {
-    RegionSet domain=EqDataBase::read_bulk_list_item(rec);
-    Input::AbstractRecord field_a_rec;
-    if (rec.opt_val("init_piezo_head", field_a_rec)) {
-                init_pressure.set_field(domain, boost::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( this->gravity_, field_a_rec) );
-    }
-    return domain;
-}
-
-/* TODO: this can be applied when Unstedy is no longer descendant from Steady
-DarcyFlowMH_Unsteady::EqData::EqData()
-  : DarcyFlowMH::EqData("DarcyFlowMH_Unsteady") 
-{
-    ADD_FIELD(init_pressure, "Initial condition as pressure");
-    ADD_FIELD(storativity,"Storativity.");
-}
-
-DarcyFlowLMH_Unsteady::EqData::EqData()
-  : DarcyFlowMH::EqData("DarcyFlowLMH_Unsteady") 
- {
-    ADD_FIELD(init_pressure, "Initial condition as pressure");
-    ADD_FIELD(storativity,"Storativity.");
-}
-//*/
-
-
-
-
-
-
-
-
 
 
 
@@ -264,13 +199,15 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     //connecting data fields with mesh
     START_TIMER("data init");
-    data.set_mesh(&mesh_in);
-    data.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data.set_mesh(mesh_in);
+    data.set_input_list( in_rec.val<Input::Array>("data") );
+    data.set_limit_side(LimitSide::right);
         
     // steady time governor
     time_ = new TimeGovernor();
     
     //initializing data fields at the beginning (time = 0)
+    // TODO: for steady case we need right side limit, for unsteady we need left side limit !!!
     data.set_time(*time_);
     END_TIMER("data init");
     
@@ -371,6 +308,7 @@ void DarcyFlowMH_Steady::update_solution() {
     //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
     //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
     //temporarily solved directly in field_elementwise and field_interpolatedP0
+
     data.set_time(*time_);
     END_TIMER("data reinit");
 
@@ -514,7 +452,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
-    DBGMSG("fill_matrix: %d\n", fill_matrix);
+    //DBGMSG("fill_matrix: %d\n", fill_matrix);
     int el_row, side_row, edge_row;
     int tmp_rows[100];
     //int  nsides;
