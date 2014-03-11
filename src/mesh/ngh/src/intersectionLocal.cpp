@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <numeric>
+#include <limits>
 
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/intersectionLocal.h"
