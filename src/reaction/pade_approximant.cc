@@ -50,6 +50,7 @@ Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector
 	init_from_input(in_rec);
 	DBGMSG("Pade_approximant constructor is running.\n");
 	allocate_reaction_matrix();
+        //modify_reaction_matrix();
 }
 
 Pade_approximant::~Pade_approximant()

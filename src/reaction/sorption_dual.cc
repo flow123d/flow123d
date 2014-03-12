@@ -280,7 +280,7 @@ void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 }/**/
 
 // Computes adsorption simulation over all the elements.
-void SorptionDual::compute_one_step(void)
+void SorptionDual::update_solution(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters

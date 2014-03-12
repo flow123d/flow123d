@@ -10,16 +10,16 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-#include "reaction/isotherm.hh"
-#include "./reaction/sorption.hh"
+#include "./reaction/reaction.hh"
+
+/// TODO: incorporate index mapping for substances indices
 
 class Mesh;
 class Distribution;
 class Reaction;
+class SorptionBase;
 
 typedef Field<3, FieldValue<3>::Scalar > * pScalar;
-
-#include "./reaction/reaction.hh"
 
 class Dual_por_exchange:  public Reaction
 {
@@ -39,62 +39,58 @@ public:
     Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
     Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity
     
-    MultiField<3, FieldValue<3>::Scalar> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
+    Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
     pScalar porosity; ///< Pointer to mobile porosity
   };
 
-		Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
-		/**
-		*	Destructor.
-		*/
-		~Dual_por_exchange(void);
+  Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  /**
+   * Destructor.
+   */
+  ~Dual_por_exchange(void);
                 
-		/**
-		*
-		*/
-		void update_solution(void);
-		/**
-		*
-		*/
-		void set_nr_transp(int nr_transp_subst);
-		/**
-		*
-		*/
-		void set_porosity(pScalar porosity);
-		/// Initialize from input interface.
-		virtual void init_from_input(Input::Record in_rec);
-	protected:
-		/**
-		*	This method disables to use constructor without parameters.
-		*/
-		Dual_por_exchange();
-		/**
-		*	Pointer to thwodimensional array[species][elements] containing concentrations either in mobile.
-		*/
-		double **concentration_matrix;
-		/**
-		*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
-		*/
-		double **immob_concentration_matrix;
+  /**
+   * Updates the solution according to the dual porosity model.
+   */
+  void update_solution(void) override;
+  
+  void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_) override;
+  /**
+   *
+   */
+  void set_porosity(pScalar porosity);
+  
+  /// Initialize from input interface.
+  void init_from_input(Input::Record in_rec) override;
+  
+  double **compute_reaction(double **concentrations, int loc_el) override;
+  
+protected:
+  /**
+   * This method disables to use constructor without parameters.
+   */
+  Dual_por_exchange();
 
+  /**
+   * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
+   */
+  double **immob_concentration_matrix;
 
-		/**
-		* 	Number of adsorbing substances.
-		*/
-		int nr_of_substances;
-		/**
-		* 	Number of transported substances.
-		*/
-		//int nr_transp_subst_;
-		/**
-		*
-		*/
-		EqData data_;
-		/**
-		* Array for storage infos about sorbed species concentrations.
-		*/
-		double** sorbed_conc_array;
+  /**
+   *
+   */
+  EqData data_;
+  
+  
+  Reaction *reaction_mob;       //< Reaction running in mobile zone
+  Reaction *reaction_immob;     //< Reaction running in immobile zone
+  
+  /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
+   * Else it is replaced with simple forward difference approximation.
+   */
+  static const double min_dt;
+  
 };
 
-#endif
+#endif  //DUAL_POROSITY

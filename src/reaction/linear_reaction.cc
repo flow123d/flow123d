@@ -15,7 +15,6 @@
 #define MOBILE 0
 #define IMMOBILE 1
 
-//class Padde_approximant;
 
 using namespace Input::Type;
 
@@ -46,7 +45,6 @@ using namespace std;
 
 Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
       : Reaction(init_mesh, in_rec, names),
-      //prev_conc(nullptr),
       reaction_matrix(nullptr)
 {
   prev_conc = new double[ n_all_substances_ ];
@@ -64,9 +62,10 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 	//xprintf(Msg,"\n3. Linear_reaction constructor runs.\n");
 	//set_bifurcation(in_rec); //this probably fails
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
-	init_from_input(in_rec);
-    allocate_reaction_matrix();
-
+  init_from_input(in_rec);
+  allocate_reaction_matrix();
+  //modify_reaction_matrix();
+  
 	//set_time_step(0.5);
 }
 
@@ -322,4 +321,14 @@ void Linear_reaction::print_reaction_matrix(void)
 		xprintf(Msg,"\nReaction matrix needs to be allocated.\n");
 	}
 	return;
+}
+
+unsigned int Linear_reaction::find_subst_name(const string &name)
+{
+
+    unsigned int k=0;
+        for(; k < names_.size(); k++)
+                if (name == names_[k]) return k;
+
+        return k;
 }

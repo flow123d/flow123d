@@ -12,7 +12,6 @@
 
 #include <vector>
 #include <input/input_type.hh>
-#include <input/accessors.hh>
 
 class Mesh;
 class Distribution;
@@ -48,12 +47,10 @@ class Linear_reaction: public Reaction
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		//virtual
-		virtual double **compute_reaction(double **concentrations, int loc_el);
+		virtual double **compute_reaction(double **concentrations, int loc_el) override;
 		/**
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		//virtual
 		void update_solution(void) override;
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
@@ -84,6 +81,11 @@ class Linear_reaction: public Reaction
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/
 		void print_half_lives(int n_subst);
+                
+                /**
+                *       Finds a position of a string in specified array.
+                */
+                unsigned int find_subst_name(const std::string &name);
 		/**
 		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
 		*/

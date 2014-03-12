@@ -249,7 +249,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 }/**/
 
 // Computes adsorption simulation over all the elements.
-void SorptionImmob::compute_one_step(void)
+void SorptionImmob::update_solution(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters

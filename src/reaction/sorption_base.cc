@@ -49,7 +49,7 @@ Record SorptionBase::input_type
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("bulk_data", Array(SorptionBase::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Containes region specific data necessery to construct isotherms.")//;
+                   	   	   "Contains region specific data necessary to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
 			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 

@@ -1056,6 +1056,8 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
         		ci = (pci - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
         		// --------------------------------------------------------------------------
         		//printf("\n%f\t%f\t%f",conc_avg,cm,ci);
+//                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  alpha: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
+//                                 cm, ci, pcm, pci, conc_avg, alpha, por_m, por_imm, time_->dt());
         		//getchar();
 
         		conc[MOBILE][sbi][elm_pos] = cm;

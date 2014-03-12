@@ -71,7 +71,7 @@
       
       reactions = {
         TYPE="LinearReactions",
-        species = [
+        substances = [
 	  "A", 
 	  "B", 
 	  "C", 

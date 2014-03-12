@@ -65,7 +65,7 @@ public:
 	/**
 	*
 	*/
-	void compute_one_step(void);
+	void update_solution(void) override;
 };
 
 #endif

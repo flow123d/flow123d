@@ -76,7 +76,7 @@
       /*
       adsorptions = {
         solvent_dens = 1.0,
-        species = ["A", "As-lin", "Bs-lang", "Cs-freund"],
+        substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
         bulk_data = [

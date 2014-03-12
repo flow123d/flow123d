@@ -10,24 +10,22 @@
 #ifndef REACT
 #define REACT
 
-#include "input/accessors.hh"
 #include "coupling/equation.hh"
-#include "mesh/elements.h"
 
 class Mesh;
+class Element;
 class Distribution;
 
 
 class Reaction: public EquationBase
 {
 public:
-  enum Reaction_type {No_reaction, Linear_react, Linear_react_Pade, General_react_Semch, Lim_Sorp}; 
   
   /**
-   * Static variable for new input data types input
+   * Static variable for definition of common input record in reactions.
    */
   static Input::Type::AbstractRecord input_type;
-
+    
   /**
    *  Constructor with parameter for initialization of a new declared class member
    *  TODO: parameter description
@@ -43,32 +41,29 @@ public:
   /**
    * For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
    */
-  virtual double **compute_reaction(double **concentrations, int loc_el) = 0;
+  virtual double **compute_reaction(double **concentrations, int loc_el);
   /**
    * Virtual method that is reimplemented in ascendants. Computes new solution of the reaction model.
    */
   virtual void update_solution(void) = 0;
-
-  /**
-   * Returns number of substances involved in reactions. This should be same as number of substances in transport.
-   */
-  inline unsigned int n_substances()
-    { return n_substances_; }
   
   ///@name Setters
   //@{
   /**
    * Sets the concentration matrix for the mobile zone, all substances and on all elements.
    */
-  void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+  virtual void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
   
   /// Set mesh used by the model.
-  void set_mesh(Mesh &mesh);
+  inline void set_mesh(Mesh &mesh) 
+    { mesh_ = &mesh; };
   
   /** Set names of substances.
    * TODO: this will not work with substance index mapping (initialized from input record)
+   * Is this not redundant?
    */
-  void set_names(const std::vector<string> &names);
+  inline void set_names(const std::vector<string> &names)
+    { names_ = names; };
   
   /**
    * TODO: implement in ascendants
@@ -80,7 +75,6 @@ public:
   /// @name Inherited and not used.
   //@{
   virtual void choose_next_time(void);
-  virtual void set_time_step_constrain(double dt);
   virtual void get_parallel_solution_vector(Vec &vc);
   virtual void get_solution_vector(double* &vector, unsigned int &size);
   //@}
@@ -90,11 +84,6 @@ public:
 protected:
 
   void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
-  
-		/**
-		*	Finds a position of a string in specified array.
-		*/
-		unsigned int find_subst_name(const std::string &name);
 
   /**
    * Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
@@ -114,7 +103,6 @@ protected:
    * Names belonging to substances. Should be same as in the transport.
    */
   vector<string> names_;
-  
   
   unsigned int n_substances_;   //< number of substances that take part in the reaction model
   unsigned int n_all_substances_;   //< number of all substances in the transport model

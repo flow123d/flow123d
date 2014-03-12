@@ -103,7 +103,7 @@ class SorptionDual:  public SorptionBase
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		virtual void compute_one_step(void);
+		virtual void update_solution(void) override;
 
 		/**
 		* Inherited init_from_input method extension.
@@ -145,10 +145,6 @@ class SorptionDual:  public SorptionBase
 		*
 		*/
 		virtual void make_tables(void);
-		/**
-		* Meaningless inherited methods.
-		*/
-		virtual void update_solution(void);
 
 	protected:
 		/**

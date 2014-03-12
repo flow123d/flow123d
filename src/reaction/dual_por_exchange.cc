@@ -13,23 +13,27 @@
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
 #include "mesh/region.hh"
-#include "input/type_selection.hh"
 
-namespace it=Input::Type;
+#include "reaction/sorption_dual.hh"
+#include "reaction/linear_reaction.hh"
 
 using namespace Input::Type;
 using namespace std;
 
+
+const double Dual_por_exchange::min_dt = 1e-5;
+
 Record Dual_por_exchange::input_type
-        = Record("TransportOperatorSplitting",
-            "Explicit FVM transport (no diffusion)\n"
-            "coupled with reaction and adsorption model (ODE per element)\n"
-            " via operator splitting.")
+        = Record("DualPorosity",
+            "Dual porosity model in transport problems.\n"
+            "Provides computing the concentration of substances in mobile and immobile zone.\n"
+            )
     .derive_from(Reaction::input_type)
-    .declare_key("alpha", Dual_por_exchange::input_type, Default::obligatory(),
-                "Diffusion parameter between mobile and immobile zone.")
-    .declare_key("init_conc_immobile", Dual_por_exchange::input_type, Default::optional(),
-                        "Initial value of the concentration in the immobile zone.");
+    .declare_key("bulk_data", Array(Dual_por_exchange::EqData().bulk_input_type()), Default::obligatory(),
+                 "Contains region specific data necessary to construct isotherms.")
+    
+    .declare_key("mobreactions", Reaction::input_type, Default::optional(), "Reaction model in mobile zone.")
+    .declare_key("immobreactions", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.");
     
 Dual_por_exchange::EqData::EqData()
 : EqDataBase("Exchange_dp")
@@ -44,57 +48,142 @@ Dual_por_exchange::EqData::EqData()
 Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
-    cout << "Dual_por_exchange constructor is running." << endl;
+    DBGMSG("DualPorosity - constructor\n");
 
+    data_.alpha.set_n_comp(n_substances_);
+    data_.init_conc_immobile.set_n_comp(n_all_substances_);
     data_.set_mesh(&init_mesh);
     data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
     
     time_ = new TimeGovernor();
     data_.set_time(*time_);
-
-    nr_of_substances = names.size();
 }
 
 Dual_por_exchange::~Dual_por_exchange(void)
 {
 }
 
-void Dual_por_exchange::update_solution(void) {
 
-    data_.set_time(*time_);
-    double conc_avg = 0.0;
-    unsigned int loc_el,sbi;
-    double cm, pcm, ci, pci, por_m, por_imm, alpha;
+void Dual_por_exchange::set_concentration_matrix(double** ConcentrationMatrix, Distribution* conc_distr, int* el_4_loc_)
+{
+    concentration_matrix = ConcentrationMatrix;
+    distribution = conc_distr;
+    el_4_loc = el_4_loc_;
+            
+    //allocating memory for immobile concentration matrix
+    immob_concentration_matrix = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+    for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
+      immob_concentration_matrix[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+   
+    DBGMSG("DualPorosity - init_conc_immobile.\n");
+    //copied from convection set_initial_condition
+    //setting initial condition for immobile concentration matrix
+    FOR_ELEMENTS(mesh_, elem)
+    {
+      if (!distribution->is_local(el_4_loc[elem.index()])) continue;
+
+      unsigned int index = el_4_loc[elem.index()] - distribution->begin();
+      ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+      arma::vec value = data_.init_conc_immobile.value(elem->centre(), ele_acc);
+        
+      for (int sbi=0; sbi < n_all_substances_; sbi++)
+      {
+        immob_concentration_matrix[sbi][index] = value(sbi);
+      }
+    }
+    DBGMSG("DualPorosity - immob_concentration_matrix allocated.\n");
+}
+
+
+void Dual_por_exchange::init_from_input(Input::Record in_rec)
+{  }
+
+
+void Dual_por_exchange::update_solution(void) 
+{
+  DBGMSG("DualPorosity - update solution\n");
+  data_.set_time(*time_);
+  double conc_avg = 0.0;
+  unsigned int loc_el,sbi, sbi_loc;
+  double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
+   
+  START_TIMER("dual_por_exchange_step");
+  if(time_->dt() >= min_dt)
+  {
     
-    START_TIMER("dual_por_exchange_step");
-    for (sbi = 0; sbi < nr_of_substances; sbi++) {
-    	for (loc_el = 0; loc_el < distribution->lsize(); loc_el++) {
-    		ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
-    		por_m = data_.porosity->value(elem->centre(),elem->element_accessor());
-    		por_imm = data_.porosity->value(elem->centre(),elem->element_accessor());
-    		alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
-    		pcm = this->concentration_matrix[sbi][loc_el];
-    		pci = this->immob_concentration_matrix[sbi][loc_el];
+    for (loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
+    {
+      ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
+      por_m = data_.porosity->value(ele->centre(),ele->element_accessor());
+      por_imm = data_.immob_porosity.value(ele->centre(),ele->element_accessor());
+      arma::Col<double> alpha_vec = data_.alpha.value(ele->centre(), ele->element_accessor());
+      //alpha = data_.alpha.value(ele->centre(), ele->element_accessor())(sbi);
+      
+      //TODO:
+      //for (sbi = 0; sbi < n_substances_; sbi++) //over substances involved in dual porosity model
+      for (sbi = 0; sbi < n_all_substances_; sbi++) //over all substances
+      {
+        //sbi_loc = substance_id[sbi];    //mapping to global substance index
+                //previous values
+    		pcm = concentration_matrix[sbi][loc_el];
+    		pci = immob_concentration_matrix[sbi][loc_el];
 
     		// ---compute average concentration------------------------------------------
     		conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
 
     		if ((conc_avg != 0.0) && (por_imm != 0.0)) {
+                        temp_exp = exp(-alpha_vec[sbi] * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt());
         		// ---compute concentration in mobile area-----------------------------------
-        		cm = (pcm - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
+        		cm = (pcm - conc_avg) * temp_exp + conc_avg;
 
         		// ---compute concentration in immobile area---------------------------------
-        		ci = (pci - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
+        		ci = (pci - conc_avg) * temp_exp + conc_avg;
         		// --------------------------------------------------------------------------
-
-        		this->concentration_matrix[sbi][loc_el] = cm;
-        		this->concentration_matrix[sbi][loc_el] = ci;
+//                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  alpha: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
+//                                 cm, ci, pcm, pci, conc_avg, alpha_vec[sbi], por_m, por_imm, time_->dt());
+        		concentration_matrix[sbi][loc_el] = cm;
+        		immob_concentration_matrix[sbi][loc_el] = ci;
     		}
     	}
     }
+  }
+  else{
+     for (loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
+    {
+      ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
+      por_m = data_.porosity->value(ele->centre(),ele->element_accessor());
+      por_imm = data_.immob_porosity.value(ele->centre(),ele->element_accessor());
+      arma::Col<double> alpha_vec = data_.alpha.value(ele->centre(), ele->element_accessor());
+      //alpha = data_.alpha.value(ele->centre(), ele->element_accessor());
+      
+      for (sbi = 0; sbi < n_all_substances_; sbi++) {
+                //previous values
+                pcm = concentration_matrix[sbi][loc_el];
+                pci = immob_concentration_matrix[sbi][loc_el];
+
+                if (por_imm != 0.0) {
+                        temp_exp = alpha_vec[sbi]*(pci - pcm);
+                        // ---compute concentration in mobile area-----------------------------------
+                        cm = temp_exp / por_m + pcm;
+
+                        // ---compute concentration in immobile area---------------------------------
+                        ci = -temp_exp / por_imm + pci;
+                        // --------------------------------------------------------------------------
+
+                        concentration_matrix[sbi][loc_el] = cm;
+                        immob_concentration_matrix[sbi][loc_el] = ci;
+                }
+        }
+    }
+  }
     START_TIMER("dual_por_exchange_step");
 }
 
+
+double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el) 
+{
+  return immob_concentration_matrix;
+}
 
 void Dual_por_exchange::set_porosity(pScalar porosity)
 {
@@ -102,7 +191,3 @@ void Dual_por_exchange::set_porosity(pScalar porosity)
   return;
 }
 
-void Dual_por_exchange::init_from_input(Input::Record in_rec)
-{
-	// Initialize from input interface
-}

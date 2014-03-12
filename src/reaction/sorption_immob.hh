@@ -71,7 +71,7 @@ public:
 	/**
 	*
 	*/
-	void compute_one_step(void);
+	void update_solution(void) override;
 protected:
 	/**
 	*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
