@@ -318,6 +318,15 @@ void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 }
 
 
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::output(Input::Record output_rec)
+{
+	OutputTime::register_data(output_rec, this->output_type(), *this);
+}
+
+
+
 template<int spacedim, class Value>
 FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm) const {
     auto f = region_fields_[elm.region().idx()];
@@ -496,6 +505,16 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 		sub_fields_[0] = other_field;
 	}
 }
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::output(Input::Record output_rec)
+{
+	OutputTime::register_data(output_rec, this->output_type(), *this);
+}
+
+
 
 
 
