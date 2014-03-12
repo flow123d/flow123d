@@ -273,6 +273,11 @@ public:
     static OutputTime *output_stream_by_name(string name);
 
     /**
+     * \brief Try to find output stream from a key in record.
+     */
+    static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+
+    /**
      * \brief Does OutputStream with same name and filename exist?
      *
      * When this record is already created, then it returns pointer at
@@ -361,12 +366,16 @@ public:
 
     string *base_filename() { return this->_base_filename; };
 
+    template<int spacedim, class Value>
+    static void compute_field_data(const RefType ref_type, Field<spacedim, Value> *field, OutputTime *output_time);
+
+
 private:
     ofstream        *base_file;         ///< Base output stream
     string          *_base_filename;     ///< Name of base output file
     string          *data_filename;     ///< Name of data output file
     ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    Mesh            *mesh;
+    Mesh      *mesh;
 
 protected:
 
@@ -385,9 +394,11 @@ void OutputTime::register_data(const Input::Record &in_rec,
         const RefType type,
         MultiField<spacedim, Value> &multi_field)
 {
-    for (unsigned long index=0; index < multi_field.size(); index++) {
-        OutputTime::register_data(in_rec, type, multi_field[index] );
-    }
+	// TODO: do not try to find empty string and raise exception
+	OutputTime *output_stream = output_stream_by_key_name(in_rec, multi_field.name());
+
+	for (unsigned long index=0; index < multi_field.size(); index++)
+    	OutputTime::compute_field_data(type, &(multi_field[index]), output_stream);
 }
 
 
@@ -396,23 +407,16 @@ void OutputTime::register_data(const Input::Record &in_rec,
         const RefType ref_type,
         Field<spacedim, Value> &field_ref)
 {
-	Field<spacedim,Value> *field = &field_ref;
-    string name_ = field->name();
-    OutputDataBase *output_data;
-    unsigned int item_count = 0, comp_count = 0, node_id;
-
     // TODO: do not try to find empty string and raise exception
+    OutputTime::compute_field_data(ref_type, &field_ref, output_stream_by_key_name(in_rec, field_ref.name()));
+}
 
-    // Try to find record with output stream (the key is name of data)
-    Input::Iterator<string> stream_name_iter = in_rec.find<string>(name_);
 
-    // If record was not found, then throw exception
-    if(!stream_name_iter) {
-        return;
-    }
-
-    // Try to find existing output stream
-    OutputTime *output_time = OutputTime::output_stream_by_name(*stream_name_iter);
+template<int spacedim, class Value>
+void OutputTime::compute_field_data(const RefType ref_type, Field<spacedim, Value> *field, OutputTime *output_time)
+{
+	unsigned int item_count = 0, comp_count = 0, node_id;
+	OutputDataBase *output_data;
 
     /* It's possible now to do output to the file only in the first process */
     if(output_time == NULL || output_time->rank != 0) {

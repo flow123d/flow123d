@@ -161,6 +161,21 @@ OutputTime *OutputTime::output_stream_by_name(string name)
 }
 
 
+OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, const string key_name)
+{
+	// Try to find record with output stream (the key is name of data)
+	Input::Iterator<string> stream_name_iter = in_rec.find<string>(key_name);
+
+	// If record was not found, then throw exception
+	if(!stream_name_iter) {
+		return nullptr;
+	}
+
+	// Try to find existing output stream
+	return output_stream_by_name(*stream_name_iter);
+}
+
+
 OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 {
     OutputTime* output_time;
