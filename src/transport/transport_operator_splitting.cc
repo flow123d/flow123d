@@ -160,21 +160,18 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 reaction =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
                 
                 reaction->set_time_governor(*(convection->time_));
-                static_cast<Linear_reaction *> (reaction) -> modify_reaction_matrix();
                 
             } else
             if (reactions_it->type() == Pade_approximant::input_type) {
                 reaction = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
                 
                 reaction->set_time_governor(*(convection->time_));
-                static_cast<Pade_approximant *> (reaction) -> modify_reaction_matrix();
               
             } else
             if (reactions_it->type() == SorptionBase::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
                 
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(&(convection->get_data()->por_m));
-                static_cast<SorptionSimple *> (reaction) -> set_sorb_conc_array(el_distribution->lsize());
                 
             } else
             if (reactions_it->type() == Dual_por_exchange::input_type ) {
@@ -193,11 +190,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             }
             reaction->set_time_governor(*(convection->time_));
             reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc);
+            reaction->initialize();
         } else {
             reaction = nullptr;
             Semchem_reactions = nullptr;
         }
-
+/*
         Input::Iterator<Input::Record> sorptions_it = in_rec.find<Input::Record>("adsorptions");
         if (sorptions_it){
             // Part for mobile zone description follows.
@@ -216,7 +214,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             
             double ***conc_matrix = convection->get_concentration_matrix();
             sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
-            sorptions->set_sorb_conc_array(el_distribution->lsize());
+            //sorptions->set_sorb_conc_array(el_distribution->lsize());
+            sorptions->initialize();
         }
         else
         {

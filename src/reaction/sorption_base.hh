@@ -92,11 +92,13 @@ public:
 		/**
 		*
 		*/
-		void set_sorb_conc_array(unsigned int nr_of_local_elm);
+		//void set_sorb_conc_array(unsigned int nr_of_local_elm);
 		/**
 		*
 		*/
-		void set_sorb_conc_array(double** sorb_conc_array);
+		//void set_sorb_conc_array(double** sorb_conc_array);
+                
+                void initialize(void) override;
 	    /**
 	    *
 	    */
@@ -104,20 +106,13 @@ public:
 		/**
 		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
 		*/
-		virtual inline void set_porosity(pScalar por_m){ data_.porosity = por_m; };
-		/**
-		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class
-		*/
-		void set_porosity_immobile(pScalar por_m){};
+		inline void set_porosity(pScalar por_m) { data_.porosity = por_m; };
+
 		/**
 		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
 		*/
 		//void prepare_inputs(Input::Record in_rec, int porosity_type);
 		virtual void init_from_input(Input::Record in_rec);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		//void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
 		/**
 		*
 		*/

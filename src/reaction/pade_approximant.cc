@@ -48,9 +48,7 @@ Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector
       : Linear_reaction(init_mesh, in_rec, names)
 {
 	init_from_input(in_rec);
-	DBGMSG("Pade_approximant constructor is running.\n");
-	allocate_reaction_matrix();
-        //modify_reaction_matrix();
+	//DBGMSG("Pade_approximant constructor is running.\n");
 }
 
 Pade_approximant::~Pade_approximant()
@@ -286,9 +284,8 @@ void Pade_approximant::init_from_input(Input::Record in_rec)
 	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
 	den_pol_deg = in_rec.val<int>("den_pol_deg");
 	if((nom_pol_deg + den_pol_deg) < 0){
-		cout << "You did not specify Pade approximant required polynomial degrees." << endl;
+		xprintf(UsrErr, "You did not specify Pade approximant required polynomial degrees.");
 		//TODO: This occasion should cause an error.
-		//break;
 	}
 }
 

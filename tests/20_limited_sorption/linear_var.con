@@ -66,7 +66,8 @@
         end_time = 15.0
       },
       
-      adsorptions = {
+      reactions = {
+        TYPE = "SorptionBase",
         solvent_dens = 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0],
@@ -78,7 +79,7 @@
             sorption_types =  "linear",
             //mult_coefs = 0.6, 
             mult_coefs = { TYPE="FieldFormula", value="0.6" },
-	    second_params = 0.4
+            second_params = 0.4
           }
         ]
       }

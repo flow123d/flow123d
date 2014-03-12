@@ -44,6 +44,8 @@ class Linear_reaction: public Reaction
                 */
                 virtual void init_from_input(Input::Record in_rec) override;
                 
+                void initialize(void) override;
+                
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/

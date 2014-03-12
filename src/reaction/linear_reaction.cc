@@ -63,8 +63,6 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 	//set_bifurcation(in_rec); //this probably fails
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
   init_from_input(in_rec);
-  allocate_reaction_matrix();
-  //modify_reaction_matrix();
   
 	//set_time_step(0.5);
 }
@@ -76,6 +74,16 @@ Linear_reaction::~Linear_reaction()
     delete[](prev_conc);
   }
 }
+
+void Linear_reaction::initialize(void )
+{
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  
+  allocate_reaction_matrix();
+  modify_reaction_matrix();
+}
+
 
 double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {

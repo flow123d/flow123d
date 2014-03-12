@@ -38,6 +38,11 @@ public:
   
   /// Initialize from record in input file.
   virtual void init_from_input(Input::Record in_rec) = 0;
+  
+  /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
+   * This method can be overriden just for that purpose.
+   */
+  virtual void initialize(void) {};
   /**
    * For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
    */

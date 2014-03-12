@@ -43,43 +43,7 @@ class Isotherm;
 class SorptionSimple:  public SorptionBase
 {
 	public:
-		/*
-		*   Static variable for new input data types input
-		*/
-		//static Input::Type::Record input_type;
-/*
-		class EqData : public EqDataBase // should be written in class Sorption
-		{
-		public:
-			/**
-			 * 	Sorption type specifies a kind of equilibrial description of adsorption.
-			 */
-	//		static Input::Type::Selection sorption_type_selection;
 
-			/// Collect all fields
-//		EqData();
-
-		/**
-		 * Overrides EqDataBase::read_bulk_list_item, implements reading of
-		 * - init_piezo_head key
-		 */
-/*
-		Field<3, FieldValue<3>::EnumVector > sorption_types; // Discrete need Selection for initialization.
-		Field<3, FieldValue<3>::Scalar > rock_density; // Rock matrix density.
-		Field<3, FieldValue<3>::Vector > mult_coefs; // Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
-		Field<3, FieldValue<3>::Vector > second_params; // Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-		//Field<3, FieldValue<3>::Vector > alphas; // Mass transfer coefficients between mobile and immobile pores.
-		/**/
-	//	};
-	    /**
-	    * 	Pointer to porosity field from transport
-	    */
-	    //pScalar mob_porosity_;
-	  //  pScalar porosity_;
-	    /**
-	    * 	Pointer to porosity field from transport
-	    */
-	    //pScalar immob_porosity_;
         /**
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
@@ -96,23 +60,7 @@ class SorptionSimple:  public SorptionBase
 		/**
 		*
 		*/
-		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm);
-		/**
-		* Inherited init_from_input method extension.
-		*/
-		//void init_from_input(Input::Array bulk_list);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		//void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
-		*
-		*/
-		//void set_sorb_conc_array(unsigned int nr_of_local_elm);
-		/**
-		*
-		*/
-		//void set_sorb_conc_array(double** sorb_conc_array);
+		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
 	    /**
 	    *
 	    */
@@ -127,43 +75,22 @@ class SorptionSimple:  public SorptionBase
 
 		//void init_from_input(Input::Record in_rec);
 		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		//void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
 		*
 		*/
-		void make_tables(void);
-                void update_solution(void);
+                //void initialize(void) override;
+		void make_tables(void) override;
+                void update_solution(void) override;
                 
 		/**
 		* Meaningless inherited methods.
 		*/
-
-		void set_concentration_vector(Vec &vec);
+		void set_concentration_vector(Vec &vec) override;
 
 	protected:
 		/**
 		*	This method disables to use constructor without parameters.
 		*/
 		SorptionSimple();
-		/**
-		*	For printing parameters of isotherms under consideration, not necessary to store
-		*/
-		//void print_sorption_parameters(void);
-
-		/**
-		*	Identifier of the substance undergoing sorption.
-		*/
-		//std::vector<unsigned int> substance_ids;
-		/**
-		* 	Molar masses of dissolved species (substances)
-		*/
-		//std::vector<double> molar_masses;
-		/**
-		* 	Density of the solvent. Could be done region dependent, easily.
-		*/
-		//double solvent_dens;
 	    /**
 		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
 		* pointer to phi field from transport
@@ -186,10 +113,6 @@ class SorptionSimple:  public SorptionBase
 		* 	Region characteristic inputs.
 		*/
 		//EqData data_;
-		/**
-		* Array for storage infos about sorbed species concentrations.
-		*/
-		//double** sorbed_conc_array;
 };
 
 #endif
