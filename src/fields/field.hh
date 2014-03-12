@@ -19,7 +19,7 @@ using namespace std;
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
-#include "io/output.h"
+#include "io/output_time.hh"
 
 namespace IT=Input::Type;
 

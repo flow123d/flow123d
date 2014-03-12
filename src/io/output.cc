@@ -373,3 +373,34 @@ void OutputTime::clear_data(void)
         output_time->elem_data.clear();
     }
 }
+
+#define INSTANCE_register_field(spacedim, value) \
+	template  void OutputTime::register_data<spacedim, value> \
+		(const Input::Record &in_rec, const RefType ref_type, Field<spacedim, value> &field);
+
+#define INSTANCE_register_multifield(spacedim, value) \
+	template void OutputTime::register_data<spacedim, value> \
+		(const Input::Record &in_rec, const RefType ref_type, MultiField<spacedim, value> &field);
+
+
+#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to)                      \
+		MACRO(dim_from, FieldValue<dim_to>::VectorFixed )                       \
+		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
+
+#define INSTANCE_TO_ALL( MACRO, dim_from) \
+		MACRO(dim_from, FieldValue<0>::Enum ) \
+		MACRO(dim_from, FieldValue<0>::EnumVector)                \
+		MACRO(dim_from, FieldValue<0>::Integer)                \
+		MACRO(dim_from, FieldValue<0>::Scalar)                  \
+		MACRO(dim_from, FieldValue<0>::Vector)                  \
+\
+INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
+INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
+
+#define INSTANCE_ALL(MACRO) \
+INSTANCE_TO_ALL( MACRO, 3) \
+//INSTANCE_TO_ALL( before, after, 2)
+
+
+INSTANCE_ALL( INSTANCE_register_field )
+//INSTANCE_ALL( INSTANCE_register_multifield )

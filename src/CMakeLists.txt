@@ -128,6 +128,12 @@ set(sources_lib_interpolation
 
 
 set (sources_lib_coupling
+   # unfortunatelly field sources depends on output sources
+   # and viceversa
+    io/output.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    
     fields/field_values.cc
     fields/field_base.cc
     fields/field.cc
@@ -138,6 +144,9 @@ set (sources_lib_coupling
    coupling/equation.cc
        flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
+   
+
+   
 )
 
 set(sources_lib_non_system
@@ -148,9 +157,6 @@ set(sources_lib_non_system
     flow/darcy_flow_mh.cc
 
 
-    io/output.cc
-    io/output_vtk.cc
-    io/output_msh.cc
     
     reaction/reaction.cc
     reaction/linear_reaction.cc
