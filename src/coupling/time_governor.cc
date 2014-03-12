@@ -84,6 +84,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, const TimeMark::Type fixe
   fixed_time_mark_mask(fixed_time_mask | time_marks->type_fixed_time()),
   steady(false)
 {
+	last_time_ = -inf_time;
     time = input.val<double>("start_time");
     if (time < 0.0) xprintf(UsrErr, "Start time has to be equal or greater than ZERO.\n");
     
@@ -135,6 +136,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
   fixed_time_mark_mask(time_marks->type_fixed_time()),
   steady(false)
 {
+	last_time_ = -inf_time;
     time = init_time;
     if (time < 0.0) xprintf(UsrErr, "Start time has to be equal or greater than ZERO.\n");
 
@@ -151,6 +153,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
 // steady time governor constructor
 TimeGovernor::TimeGovernor()
 : time_level(0),
+  last_time_(-inf_time),
   time(0.0),
   end_of_fixed_dt_interval(time),
   end_time_(inf_time),
@@ -171,6 +174,7 @@ TimeGovernor::TimeGovernor()
 
 TimeGovernor::TimeGovernor(double init_time)
 : time_level(0),
+  last_time_(-inf_time),
   time(init_time),
   end_of_fixed_dt_interval(time),
   end_time_(inf_time),
@@ -317,6 +321,7 @@ void TimeGovernor::next_time()
     
     //in case the time governor is steady the time is set to end time which is infinity
     if (steady) {
+        last_time_ = time;
         last_time_step = end_time_;
         time_level = 1;
         time_step = 0.0;

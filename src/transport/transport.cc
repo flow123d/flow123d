@@ -616,8 +616,8 @@ void ConvectionTransport::compute_one_step() {
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
 
+    //DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed() );
     if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed() ) {
-        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed() );
         create_transport_matrix_mpi();
 
         // need new fixation of the time step
