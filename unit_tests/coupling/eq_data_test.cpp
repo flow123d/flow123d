@@ -33,7 +33,7 @@
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
 #include "coupling/equation.hh"
 
