@@ -116,28 +116,23 @@ protected:
  * \brief Test of creating of OutputTime
  */
 TEST_F( OutputTest, test_create_output_stream ) {
-    Input::JSONToStorage reader_output_stream;
-
     /* Read input for first output stream */
-    std::stringstream in_output_stream1(output_stream1);
-    reader_output_stream.read_stream(in_output_stream1, OutputTime::input_type);
+    Input::JSONToStorage reader_output_stream1(output_stream1, OutputTime::input_type);
 
     /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream.get_root_interface<Input::Record>());
+    OutputTime::output_stream(reader_output_stream1.get_root_interface<Input::Record>());
 
     /* Read input for first output stream */
-    std::stringstream in_output_stream2(output_stream2);
-    reader_output_stream.read_stream(in_output_stream2, OutputTime::input_type);
+    Input::JSONToStorage reader_output_stream2(output_stream2, OutputTime::input_type);
 
     /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream.get_root_interface<Input::Record>());
+    OutputTime::output_stream(reader_output_stream2.get_root_interface<Input::Record>());
 
     /* Read input for first output stream */
-    std::stringstream in_output_stream3(output_stream3);
-    reader_output_stream.read_stream(in_output_stream3, OutputTime::input_type);
+    Input::JSONToStorage reader_output_stream3(output_stream3, OutputTime::input_type);
 
     /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream.get_root_interface<Input::Record>());
+    OutputTime::output_stream(reader_output_stream3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
     ASSERT_EQ(OutputTime::output_streams.size(), 3);
@@ -178,10 +173,10 @@ TEST_F( OutputTest, find_outputstream_by_name ) {
 
 
 TEST_F( OutputTest, test_register_elem_fields_data ) {
-    Input::JSONToStorage reader_output;
     /* Read input for output */
-    std::stringstream in_output(foo_output);
-    reader_output.read_stream(in_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+
+    TimeGovernor tg(0.0, 1.0);
 
     Profiler::initialize();
 
@@ -194,11 +189,12 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     Field<3, FieldValue<1>::Scalar> scalar_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    scalar_field.set_default( Input::Type::Default("2") );
-    scalar_field.set_name("pressure_p0");
-    scalar_field.set_units("L");
-    scalar_field.set_mesh(&mesh);
-    scalar_field.set_time(0.0);
+    scalar_field.input_default( "2" );
+    scalar_field.name("pressure_p0");
+    scalar_field.units("L");
+    scalar_field.set_mesh(mesh);
+    scalar_field.set_limit_side(LimitSide::right);
+    scalar_field.set_time(tg);
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -207,11 +203,12 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     Field<3, FieldValue<1>::Integer> integer_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    integer_field.set_default( Input::Type::Default("10") );
-    integer_field.set_name("material_id");
-    integer_field.set_units("");
-    integer_field.set_mesh(&mesh);
-    integer_field.set_time(0.0);
+    integer_field.input_default( "10" );
+    integer_field.name("material_id");
+    integer_field.units("");
+    integer_field.set_mesh(mesh);
+    integer_field.set_limit_side(LimitSide::right);
+    integer_field.set_time(tg);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -258,10 +255,9 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
 
 
 TEST_F( OutputTest, test_register_corner_fields_data ) {
-    Input::JSONToStorage reader_output;
     /* Read input for output */
-    std::stringstream in_output(foo_output);
-    reader_output.read_stream(in_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+    TimeGovernor tg(0.0, 1.0);
 
     Profiler::initialize();
 
@@ -274,11 +270,12 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     Field<3, FieldValue<1>::Scalar> scalar_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    scalar_field.set_default( Input::Type::Default("20") );
-    scalar_field.set_name("pressure_p1");
-    scalar_field.set_units("L");
-    scalar_field.set_mesh(&mesh);
-    scalar_field.set_time(0.0);
+    scalar_field.input_default( "20" );
+    scalar_field.name("pressure_p1");
+    scalar_field.units("L");
+    scalar_field.set_mesh(mesh);
+    scalar_field.set_limit_side(LimitSide::right);
+    scalar_field.set_time(tg);
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -287,11 +284,12 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     Field<3, FieldValue<1>::Integer> integer_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    integer_field.set_default( Input::Type::Default("-1") );
-    integer_field.set_name("strangeness");
-    integer_field.set_units("");
-    integer_field.set_mesh(&mesh);
-    integer_field.set_time(0.0);
+    integer_field.input_default( "-1" );
+    integer_field.name("strangeness");
+    integer_field.units("");
+    integer_field.set_mesh(mesh);
+    integer_field.set_limit_side(LimitSide::right);
+    integer_field.set_time(tg);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -354,10 +352,9 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 }
 
 TEST_F( OutputTest, test_register_node_fields_data ) {
-    Input::JSONToStorage reader_output;
     /* Read input for output */
-    std::stringstream in_output(foo_output);
-    reader_output.read_stream(in_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+    TimeGovernor tg(0.0, 1.0);
 
     Profiler::initialize();
 
@@ -370,11 +367,12 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     Field<3, FieldValue<1>::Scalar> scalar_field;
 
     /* Initialization of scalar field  with constant double values (1.0) */
-    scalar_field.set_default( Input::Type::Default("20") );
-    scalar_field.set_name("pressure_p2");
-    scalar_field.set_units("L");
-    scalar_field.set_mesh(&mesh);
-    scalar_field.set_time(0.0);
+    scalar_field.input_default( "20" );
+    scalar_field.name("pressure_p2");
+    scalar_field.units("L");
+    scalar_field.set_mesh(mesh);
+    scalar_field.set_limit_side(LimitSide::right);
+    scalar_field.set_time(tg);
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -383,11 +381,12 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     Field<3, FieldValue<1>::Integer> integer_field;
 
     /* Initialization of scalar field  with constant int values (0) */
-    integer_field.set_default( Input::Type::Default("2") );
-    integer_field.set_name("computenode");
-    integer_field.set_units("");
-    integer_field.set_mesh(&mesh);
-    integer_field.set_time(0.0);
+    integer_field.input_default( "2" );
+    integer_field.name("computenode");
+    integer_field.units("");
+    integer_field.set_mesh(mesh);
+    integer_field.set_limit_side(LimitSide::right);
+    integer_field.set_time(tg);
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),

@@ -419,7 +419,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
         return;
     }
 
-    Mesh *mesh = field->mesh();
+    Mesh *mesh = (Mesh*)field->mesh();
 
     if(output_time->get_mesh() == NULL) {
         output_time->set_mesh(mesh);
