@@ -38,11 +38,6 @@ class Linear_reaction: public Reaction
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
-
-                /**
-                *       Fuctions holds together setting of isotopes, bifurcations and substance indices.
-                */
-                virtual void init_from_input(Input::Record in_rec) override;
                 
                 void initialize(void) override;
                 
@@ -67,6 +62,8 @@ class Linear_reaction: public Reaction
 		*	This method disables to use constructor without parameters.
 		*/
 		Linear_reaction();
+                
+                virtual void init_from_input(Input::Record in_rec) override;
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/

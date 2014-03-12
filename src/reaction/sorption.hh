@@ -61,22 +61,7 @@ class SorptionSimple:  public SorptionBase
 		*
 		*/
 		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
-	    /**
-	    *
-	    */
-	    //void set_phi(pScalar phi);
-		/**
-		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
-		*/
-		//void set_porosity(pScalar por);
-		/**
-		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
-		*/
 
-		//void init_from_input(Input::Record in_rec);
-		/**
-		*
-		*/
                 //void initialize(void) override;
 		void make_tables(void) override;
                 void update_solution(void) override;
@@ -91,28 +76,6 @@ class SorptionSimple:  public SorptionBase
 		*	This method disables to use constructor without parameters.
 		*/
 		SorptionSimple();
-	    /**
-		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
-		* pointer to phi field from transport
-		*/
-	    //pScalar phi_;
-		/**
-		* 	Critical concentrations of species dissolved in water.
-		*/
-		//std::vector<double> solubility_vec_;
-		/**
-		* 	Concentration table limits of species dissolved in water.
-		*/
-		//std::vector<double> table_limit_;
-		/**
-		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
-		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
-		*/
-		//std::vector<std::vector<Isotherm> > isotherms;
-		/**
-		* 	Region characteristic inputs.
-		*/
-		//EqData data_;
 };
 
 #endif

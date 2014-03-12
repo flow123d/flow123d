@@ -67,7 +67,7 @@
       },
       
       reactions = {
-        TYPE = "SorptionBase",
+        TYPE = "Sorption",
         solvent_dens = 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0],

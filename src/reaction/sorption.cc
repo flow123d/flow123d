@@ -136,14 +136,6 @@ void SorptionSimple::update_solution(void)
 }
 */
 
-
-/*void SorptionSimple::set_phi(pScalar phi)
-{
-	phi_ = phi;
-	return;
-}
-*/
-
 void SorptionSimple::set_concentration_vector(Vec &vc)
 {
         //cout << "7) Meaningless inherited method." << endl;

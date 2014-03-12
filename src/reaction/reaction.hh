@@ -36,15 +36,14 @@ public:
    */
   ~Reaction(void);
   
-  /// Initialize from record in input file.
-  virtual void init_from_input(Input::Record in_rec) = 0;
-  
   /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
    * This method can be overriden just for that purpose.
    */
   virtual void initialize(void) {};
+  
   /**
-   * For simulation of chemical raection in just one element either inside of MOBILE or IMMOBILE pores.
+   * For simulation of chemical reaction in one element only. 
+   * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
    */
   virtual double **compute_reaction(double **concentrations, int loc_el);
   /**
@@ -63,13 +62,6 @@ public:
   inline void set_mesh(Mesh &mesh) 
     { mesh_ = &mesh; };
   
-  /** Set names of substances.
-   * TODO: this will not work with substance index mapping (initialized from input record)
-   * Is this not redundant?
-   */
-  inline void set_names(const std::vector<string> &names)
-    { names_ = names; };
-  
   /**
    * TODO: implement in ascendants
    */
@@ -84,19 +76,21 @@ public:
   virtual void get_solution_vector(double* &vector, unsigned int &size);
   //@}
                 
-  Element * get_element_for_dof_index(unsigned int idx);
-                
 protected:
-
+  /** Initialize data from record in input file.
+   * It is intended to use in ascendants.
+   */
+  virtual void init_from_input(Input::Record in_rec) {};
+  
   void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
 
   /**
-   * Pointer to threedimensional array[mobile/immobile][species][elements] containing concentrations.
+   * Pointer to two-dimensional array[species][elements] containing mobile concentrations.
    */
   double **concentration_matrix;
   
   /**
-   * Distribution of elements between processors?
+   * Indices of elements belonging to local dofs.
    */
   int *el_4_loc;
   /**

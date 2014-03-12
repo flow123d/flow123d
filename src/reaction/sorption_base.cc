@@ -35,7 +35,7 @@ it::Selection SorptionBase::EqData::sorption_type_selection = it::Selection("Sor
 using namespace Input::Type;
 
 Record SorptionBase::input_type
-	= Record("SorptionBase", "Information about all the limited solubility affected adsorptions.")
+	= Record("Sorption", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( Reaction::input_type )
 	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")

@@ -159,13 +159,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == Linear_reaction::input_type ) {
                 reaction =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
                 
-                reaction->set_time_governor(*(convection->time_));
-                
             } else
             if (reactions_it->type() == Pade_approximant::input_type) {
                 reaction = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
-                
-                reaction->set_time_governor(*(convection->time_));
               
             } else
             if (reactions_it->type() == SorptionBase::input_type ) {

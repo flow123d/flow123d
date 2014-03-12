@@ -65,12 +65,6 @@ void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distributi
 }
 
 
-Element * Reaction::get_element_for_dof_index(unsigned int idx)
-{
-  return &( mesh_->element[idx] );
-}
-
-
 double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     cout << "double **Reaction::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;

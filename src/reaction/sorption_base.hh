@@ -89,14 +89,6 @@ public:
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
 		virtual void update_solution(void) = 0;
-		/**
-		*
-		*/
-		//void set_sorb_conc_array(unsigned int nr_of_local_elm);
-		/**
-		*
-		*/
-		//void set_sorb_conc_array(double** sorb_conc_array);
                 
                 void initialize(void) override;
 	    /**
@@ -109,11 +101,6 @@ public:
 		inline void set_porosity(pScalar por_m) { data_.porosity = por_m; };
 
 		/**
-		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
-		*/
-		//void prepare_inputs(Input::Record in_rec, int porosity_type);
-		virtual void init_from_input(Input::Record in_rec);
-		/**
 		*
 		*/
 		virtual void make_tables(void) = 0;
@@ -123,6 +110,8 @@ public:
 		*	This method disables to use constructor without parameters.
 		*/
 		SorptionBase();
+                
+                void init_from_input(Input::Record in_rec) override;
 		/**
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
