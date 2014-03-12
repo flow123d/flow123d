@@ -197,7 +197,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	*/
     // write initial condition
     output_vector_gather();
-    OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
+    OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, data_.conc_mobile);
 }
 
 

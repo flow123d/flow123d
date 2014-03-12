@@ -321,7 +321,7 @@ public:
     template<int spacedim, class Value>
     static void register_data(const Input::Record &in_rec,
             const RefType type,
-            MultiField<spacedim, Value> *multi_field);
+            MultiField<spacedim, Value> &multi_field);
 
 
     /**
@@ -332,7 +332,7 @@ public:
     template<int spacedim, class Value>
     static void register_data(const Input::Record &in_rec,
             const RefType ref_type,
-            Field<spacedim, Value> *field);
+            Field<spacedim, Value> &field);
 
     /**
      * \brief Method for clearing all registered data
@@ -383,10 +383,10 @@ protected:
 template<int spacedim, class Value>
 void OutputTime::register_data(const Input::Record &in_rec,
         const RefType type,
-        MultiField<spacedim, Value> *multi_field)
+        MultiField<spacedim, Value> &multi_field)
 {
-    for (unsigned long index=0; index < multi_field->size(); index++) {
-        OutputTime::register_data(in_rec, type, &multi_field[index]);
+    for (unsigned long index=0; index < multi_field.size(); index++) {
+        OutputTime::register_data(in_rec, type, multi_field[index] );
     }
 }
 
@@ -394,8 +394,9 @@ void OutputTime::register_data(const Input::Record &in_rec,
 template<int spacedim, class Value>
 void OutputTime::register_data(const Input::Record &in_rec,
         const RefType ref_type,
-        Field<spacedim, Value> *field)
+        Field<spacedim, Value> &field_ref)
 {
+	Field<spacedim,Value> *field = &field_ref;
     string name_ = field->name();
     OutputDataBase *output_data;
     unsigned int item_count = 0, comp_count = 0, node_id;
@@ -419,7 +420,8 @@ void OutputTime::register_data(const Input::Record &in_rec,
         return;
     }
 
-    Mesh *mesh = field->mesh();
+    // TODO: remove const_cast after resolving problems with const Mesh.
+    Mesh *mesh = const_cast<Mesh *>(field->mesh());
 
     if(output_time->get_mesh() == NULL) {
         output_time->set_mesh(mesh);
