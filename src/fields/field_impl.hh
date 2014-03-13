@@ -247,8 +247,8 @@ auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const Fiel
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 {
-	ASSERT( mesh() , "NULL mesh pointer. set_mesh must be called before.\n");
-	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side before calling set_time.\n");
+	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
+	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
     if (time.t() == last_time_)  return changed();
