@@ -465,6 +465,14 @@ it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_limit_side(LimitSide side)
+{
+	for ( SubFieldType &field : sub_fields_)
+		field.set_limit_side(side);
+}
+
+
+template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)
 {

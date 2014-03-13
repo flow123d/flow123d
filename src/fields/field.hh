@@ -133,8 +133,7 @@ public:
      * @p changed() so it should be called just before @p set_time.
      * Do not change limit side for one field, rather use separate copy.
      */
-    void set_limit_side(LimitSide side)
-    { limit_side_=side; }
+    virtual void set_limit_side(LimitSide side) = 0;
 
     /**
      * Getters.
@@ -506,6 +505,9 @@ public:
      */
     static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommonBase &field);
 
+    void set_limit_side(LimitSide side) override
+    { this->limit_side_=side; }
+
     /**
      * Check that whole field list is set, possibly use default values for unset regions
      * and call set_time for every field in the field list.
@@ -674,6 +676,7 @@ public:
      */
     IT::AbstractRecord &get_input_type() override;
 
+    void set_limit_side(LimitSide side) override;
 
     /**
      * Abstract method to update field to the new time level.
