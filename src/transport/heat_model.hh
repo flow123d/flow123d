@@ -65,6 +65,8 @@ public:
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
 
+		MultiField<3, FieldValue<3>::Scalar> output_field;
+
 
 		ModelEqData();
 		static string name() {return "HeatTransfer";}

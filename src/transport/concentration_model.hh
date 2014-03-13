@@ -51,6 +51,7 @@ public:
 		/// Molecular diffusivity (for each substance).
 		Field<3, FieldValue<3>::Vector> diff_m;
 
+		MultiField<3, FieldValue<3>::Scalar> output_field;
 
 		ModelEqData();
 		static string name() {return "TransportDG";}

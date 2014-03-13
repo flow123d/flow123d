@@ -90,6 +90,9 @@ void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 	data().diff_m.n_comp(n_subst_);
 	data().disp_l.n_comp(n_subst_);
 	data().disp_t.n_comp(n_subst_);
+
+	data().output_field.name("conc_mobile_p0");
+	data().output_field.units("M/L^3");
 }
 
 

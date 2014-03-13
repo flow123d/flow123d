@@ -158,7 +158,6 @@ public:
         BCField<3, FieldValue<3>::EnumVector > bc_type;
         BCField<3, FieldValue<3>::Vector > bc_flux;
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
-
 	};
 
 
@@ -518,6 +517,8 @@ private:
 
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
+	vector<Vec> output_vec;
+	Input::Record output_rec;
 
 
 	// @}

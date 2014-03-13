@@ -80,7 +80,13 @@ HeatTransferModel::HeatTransferModel() :
 
 
 void HeatTransferModel::init_data(unsigned int n_subst_)
-{}
+{
+	const vector<string> names = { "temperature" };
+	data().output_field.name("conc_mobile_p0");
+	data().output_field.units("Theta");
+	data().output_field.init(names);
+
+}
 
 
 void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
