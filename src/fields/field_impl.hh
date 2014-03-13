@@ -250,18 +250,18 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 	ASSERT( mesh() , "NULL mesh pointer. set_mesh must be called before.\n");
 	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side before calling set_time.\n");
 
-	// possibly update our control field
-	if (no_check_control_field_) {
-		no_check_control_field_->set_limit_side(limit_side_);
-		no_check_control_field_->set_time(time);
-	}
-
-	set_time_result_ = TimeStatus::constant;
-
     // We perform set_time only once for every time.
     if (time.t() == last_time_)  return changed();
     last_time_=time.t();
 
+        // possibly update our control field
+        if (no_check_control_field_) {
+                no_check_control_field_->set_limit_side(limit_side_);
+                no_check_control_field_->set_time(time);
+        }
+        
+    set_time_result_ = TimeStatus::constant;
+    
     // read all descriptors satisfying time.ge(input_time)
     update_history(time);
     check_initialized_region_fields_();
