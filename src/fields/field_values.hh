@@ -35,26 +35,28 @@ DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_Input
 class StringTensor {
 public:
     StringTensor( unsigned int n_rows, unsigned int n_cols )
-    : n_rows(n_rows),values_(n_rows) {
-        for(unsigned int row=0; row<values_.size(); row++) values_[row].resize(n_cols);
-    }
+    : n_rows(n_rows),n_cols(n_cols),n_elem(n_rows*n_cols), values_(n_elem) {}
+
     StringTensor(const std::string &value)
-    : n_rows(1), values_(1) {
-        values_[0].resize(1); (values_[0])[0]=value;
-    }
-    std::string & at(unsigned int row) { return (values_[row])[0]; }
-    std::string & at(unsigned int row, unsigned int col) { return (values_[row])[col]; }
+    : n_rows(1), n_cols(1), n_elem(1), values_(1, value) {}
+
+    std::string & at(unsigned int row) { return at(row,0); }
+    std::string & at(unsigned int row, unsigned int col) { return values_[col*n_rows+row]; }
     void zeros() {
-        for(unsigned int row=0; row<values_.size(); row++)
-            for(unsigned int col=0; col<values_[row].size(); col++) (values_[row])[col]="0.0";
+        for( auto &elem: values_) elem = "0.0";
     }
     unsigned int n_rows;
+    unsigned int n_cols;
+    unsigned int n_elem;
     operator std::string() {
-        ASSERT( n_rows==1 && values_[0].size()==1, "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
-        return values_[0][0];
+        ASSERT_EQUAL( n_elem, 1);
+        return values_[0];
+    }
+    const std::string * memptr() {
+    	return &(values_[0]);
     }
 private:
-    std::vector< std::vector<std::string> > values_;
+    std::vector<std::string>  values_;
 
 };
 
@@ -213,6 +215,7 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
 
 
     void init_from_input( AccessType rec ) {
@@ -317,6 +320,7 @@ public:
      * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
      */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
+    const ET * mem_ptr() { return &(internal::scalar_value_conversion(value_)); }
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
@@ -357,6 +361,7 @@ public:
         }
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
@@ -420,6 +425,8 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
+
     void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
