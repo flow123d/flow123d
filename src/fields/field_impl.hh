@@ -478,7 +478,8 @@ bool MultiField<spacedim, Value>::set_time(
 {
 	bool any=false;
 	for( SubFieldType &field : sub_fields_) {
-		any=any || field.set_time(time);
+		if (field.set_time(time))
+			any = true;
 	}
     return any;
 }
