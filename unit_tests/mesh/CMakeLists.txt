@@ -21,16 +21,17 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib  )
+#set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib)
+set(libs mesh_lib system_lib intersection_2_3_lib)
 add_test_directory("${libs}")
     
     define_test(gmsh_reader)
     define_test(intersection)
     define_test(bih_tree)
     #define_test(intersection_1_3)
-    define_test(fast_intersection_1_3)
+    #define_test(fast_intersection_1_3)
+    define_test(intersection_2_3)
     
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)
