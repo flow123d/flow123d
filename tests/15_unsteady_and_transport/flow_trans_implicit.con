@@ -10,7 +10,7 @@
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
-      bulk_data = [
+      data= [
         { rid = 100,
           anisotropy = 1,         // default
           cross_section = 1,            // default
@@ -19,10 +19,7 @@
             value = "-x"
           },
           init_piezo_head = 0
-        }
-      ],
-    
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test15.fbc"
@@ -54,21 +51,18 @@
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
       
-      bulk_data = [
+      data= [
         { rid = 100,
           init_conc = 0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test15_tbc_000",
+          bc_conc = 10,
           time = 0.0
         },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test15_tbc_001",
+          bc_conc = 0,
           time = 0.2
         }
       ],

@@ -14,7 +14,7 @@
 #include <vector>
 #include <input/input_type.hh>
 #include <boost/math/tools/roots.hpp>
-#include "fields/field_base.hh"
+#include "fields/field.hh"
 
 
 
@@ -404,13 +404,6 @@ template<class Func>
 void Isotherm::make_table(const Func &isotherm, int n_steps)
 {
     double mass_limit = scale_aqua_ * table_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_);
-    //double c = (const_cast<Func &>(isotherm))(table_limit_ / this->rho_aqua_);
-    //DBGMSG("func = %f\n",c);
-    //double mass_limit = scale_aqua_ * table_limit_ + scale_sorbed_ * c;
-    //DBGMSG("scale_aqua = %f\n",scale_aqua_);
-    //DBGMSG("table_limit = %f\n",table_limit_);
-    //DBGMSG("scaled_sorbed = %f\n",scale_sorbed_);
-    //DBGMSG("mass_limit = %f\n",mass_limit);
     if(mass_limit < 0.0)
     {
         xprintf(UsrErr,"Isotherm mass_limit has negative value.\n");

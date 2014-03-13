@@ -50,6 +50,8 @@
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 
+#include "mesh/bih_tree.hh"
+
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
 // instances of a Element valued field
@@ -84,9 +86,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
-    Input::JSONToStorage reader;
-    std::stringstream in(input_str);
-    reader.read_stream( in, Mesh::input_type );
+
+    Input::JSONToStorage reader( input_str, Mesh::input_type );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
@@ -115,6 +116,7 @@ void Mesh::reinit(Input::Record in_record)
     n_triangles = 0;
     n_tetrahedras = 0;
 
+    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 
     // Initialize numbering of nodes on sides.
     // This is temporary solution, until class Element is templated
@@ -424,7 +426,6 @@ void Mesh::make_neighbours_and_edges()
 
 			if (is_neighbour) { // edge connects elements of different dimensions
 			    neighbour.element_ = &(element[ngh_element_idx]);
-                neighbour.sigma = 1;
             } else { // edge connects only elements of the same dimension
                 // Allocate the array of sides.
                 last_edge_idx=edges.size();
@@ -432,6 +433,8 @@ void Mesh::make_neighbours_and_edges()
                 edg = &( edges.back() );
                 edg->n_sides = 0;
                 edg->side_ = new struct SideIter[ intersection_list.size() ];
+                if (intersection_list.size() > max_edge_sides_[e->dim()-1])
+                	max_edge_sides_[e->dim()-1] = intersection_list.size();
 
                 if (intersection_list.size() == 1) { // outer edge, create boundary object as well
                     edg->n_sides=1;
@@ -684,83 +687,50 @@ void Mesh::element_to_neigh_vb()
 }
 
 
-/*
-void Mesh::setup_materials( MaterialDatabase &base)
-{
-  
-    xprintf( MsgVerb, "   Element to material... ");//orig verb 5;
-    FOR_ELEMENTS(this, ele ) {
-        ele->material=base.find_id(ele->region().id());
-        INPUT_CHECK( ele->material != base.end(),
-                "Reference to undefined material %d in element %d\n", ele->region().id(), ele.id() );
-    }
-    xprintf( MsgVerb, "O.K.\n");//orig verb 6
-  
-}
-*/
 
-void Mesh::read_intersections() {
 
-    using namespace boost;
-
-    ElementFullIter master(element), slave(element);
-
-    //char tmp_line[LINE_SIZE];
-    string file_name = in_record_.val<FilePath>("neighbouring");
-    Tokenizer tok( FilePath(in_record_.val<FilePath>("neighbouring")) );
-
-    xprintf( Msg, "Reading intersections...")/*orig verb 2*/;
-    tok.skip_to("$Intersections");
-    tok.next_line();
-    int n_intersect = lexical_cast<unsigned int>(*tok); ++tok;
-    INPUT_CHECK( n_intersect >= 0 ,"Negative number of neighbours!\n");
-
-    intersections.reserve(n_intersect);
-
-    for (int i = 0; i < n_intersect; i++) {
-    	tok.next_line();
-
-        try {
-        	int type = lexical_cast<int> (*tok);
-        	++tok;
-        	int master_id = lexical_cast<int> (*tok);
-        	++tok;
-        	int slave_id = lexical_cast<int> (*tok);
-        	++tok;
-        	double sigma = lexical_cast<double> (*tok);
-        	++tok;
-
-        	int n_intersect_points = lexical_cast<int> (*tok);
-        	++tok;
-            master = element.find_id(master_id);
-            slave = element.find_id(slave_id);
-
-            tokenizer<boost::char_separator<char> > line_tokenizer(tok.line(), boost::char_separator<char>("\t \n"));
-            tokenizer<boost::char_separator<char> >::iterator isec_tok = line_tokenizer.begin();
-            intersections.push_back(Intersection(n_intersect_points - 1, master, slave, isec_tok));
-        } catch (bad_lexical_cast &) {
-            xprintf(UsrErr, "Wrong number format at line %d in file %s x%sx\n",i, file_name.c_str(),(*tok).c_str());
-        }
-
-    }
-
-    xprintf( Msg, "O.K.\n")/*orig verb 2*/;
-
-}
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
 
 
 void Mesh::make_intersec_elements() {
+	/* Algorithm:
+	 *
+	 * 1) create BIH tree
+	 * 2) for every 1D, find list of candidates
+	 * 3) compute intersections for 1d, store it to master_elements
+	 *
+	 */
+	BIHTree bih_tree( this );
+	vector<unsigned int> candidate_list(20);
+	master_elements.resize(n_elements());
 
-     // calculate sizes and make allocations
-     vector<int >sizes(n_elements(),0);
-     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
-     sizes[i->master_iter().index()]++;
-     master_elements.resize(n_elements());
-     for(unsigned int i=0;i<n_elements(); ++i ) master_elements[i].reserve(sizes[i]);
+	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
+		Element &ele = this->element[i_ele];
 
-     // fill intersec_elements
-     for( vector<Intersection>::iterator i=intersections.begin(); i != intersections.end(); ++i )
-     master_elements[i->master_iter().index()].push_back( i-intersections.begin() );
+		if (ele.dim() == 1) {
+			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
+			//for(int i_elm: candidate_list) {
+			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+				ElementFullIter elm = this->element( i_elm );
+				if (elm->dim() == 2) {
+					IntersectionLocal *intersection;
+					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
+					//DBGMSG("2d el: %d %p\n", elm->index(), intersection);
+					if (intersection && intersection->get_type() == IntersectionLocal::line) {
+
+						master_elements[i_ele].push_back( intersections.size() );
+						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
+						//DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
+						//		intersections.back().intersection_true_size() );
+				    }
+				}
+
+			}
+		}
+	}
 
 }
 
@@ -772,7 +742,8 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+{
     if (bulk_elements_id_.size() ==0) {
         std::vector<int>::iterator map_it;
         int last_id;
@@ -780,23 +751,25 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
         bulk_elements_id_.resize(n_elements());
         map_it = bulk_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
-            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*map_it = it.id();
+        for(int idx=0; idx < element.size(); idx++, ++map_it) {
+        	int id = element.get_id(idx);
+            if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+            last_id=*map_it = id;
 //            DBGMSG("bulk map: %d\n", *map_it);
         }
 
         boundary_elements_id_.resize(bc_elements.size());
         map_it = boundary_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+        for(int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
+        	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id_
             // and thus report error for any remaining data lines
-            if (it.id() < 0) last_id=*map_it=-1;
+            if (id < 0) last_id=*map_it=-1;
             else {
-                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-                last_id=*map_it = it.id();
+                if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+                last_id=*map_it = id;
             }
 //            DBGMSG("bc map: %d\n", *map_it);
         }
@@ -806,35 +779,5 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
     return bulk_elements_id_;
 }
 
-
-/*
-void Mesh::make_edge_list_from_neigh() {
-    int edi;
-    Mesh *mesh = this;
-    struct Neighbour *ngh;
-
-    xprintf( Msg, "Creating edges from neigbours... ");
-
-    int n_edges = mesh->n_sides;
-    FOR_NEIGHBOURS( ngh )
-        if (ngh->type == BB_E || ngh->type == BB_EL)
-            n_edges-=( ngh->n_elements - 1 );
-
-    mesh->edge.resize(n_edges);
-
-    xprintf( MsgVerb, " O.K. %d edges created.", mesh->n_edges());
-
-    EdgeFullIter edg = mesh->edge.begin();
-    n_edges=0;
-    FOR_NEIGHBOURS( ngh )
-        if (ngh->type == BB_E || ngh->type == BB_EL) {
-            ngh->edge = edg;
-            edg->neigh_bb = ngh;
-            ++edg;
-            n_edges++;
-        }
-    xprintf( MsgVerb, "O.K. %d\n");
-
-}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -33,13 +33,12 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
+#include "fields/field_set.hh"
 #include "reaction/reaction.hh"
 
 class Isotherm;
 class Mesh;
 class Distribution;
-
-typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
 class SorptionBase:  public Reaction
 {
@@ -49,7 +48,7 @@ public:
    */
   static Input::Type::Record input_type;
 
-  class EqData : public EqDataBase // should be written in class Sorption
+  class EqData : public FieldSet // should be written in class Sorption
   {
   public:
     /**
@@ -65,7 +64,7 @@ public:
     Field<3, FieldValue<3>::Vector > mult_coefs; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
     Field<3, FieldValue<3>::Vector > second_params; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 
-    pScalar porosity; ///<Pointer to porosity field from transport
+    Field<3, FieldValue<3>::Scalar > porosity; ///<Pointer to porosity field from transport
   };
 
   /**
@@ -91,14 +90,11 @@ public:
 		virtual void update_solution(void) = 0;
                 
                 void initialize(void) override;
-	    /**
-	    *
-	    */
-	    void set_phi(pScalar phi){};
 		/**
-		* This is the way to get bulk parameters from Transport EqData to those in Sorption_dp class, similar to set_sorption_fields in Semchem_interface
+		* Sets porosity field - makes a field copy from transport.
 		*/
-		inline void set_porosity(pScalar por_m) { data_.porosity = por_m; };
+		inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m) 
+                  { data_.set_field(data_.porosity.name(),por_m); };
 
 		/**
 		*

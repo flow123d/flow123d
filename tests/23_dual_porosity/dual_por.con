@@ -9,13 +9,10 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      bulk_data = [
+      data = [
         { region = "volume", 
           conductivity = 1e-20
-        }
-      ],
-      
-      bc_data = [
+        },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "1"}
@@ -40,10 +37,13 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
  
-      bulk_data = [
+      data = [
         { r_set = "ALL",
           init_conc = 1.0,
           por_m = 0.25 
+        },
+        { r_set = "BOUNDARY",
+          bc_conc = {TYPE="FieldFormula", value = "0"}
         }
       ],
       
@@ -51,12 +51,6 @@
         "A",
         "B"
         ],
-      
-      bc_data = [
-        { r_set = "BOUNDARY",
-          bc_conc = {TYPE="FieldFormula", value = "0"}
-        }
-      ],
       
       output = {
         conc_mobile_p0 = "transport_output_stream", 
@@ -76,7 +70,7 @@
           REF = "/problem/secondary_equation/substances"
         },
         
-        bulk_data = [
+        data = [
           {
             r_set="ALL",
             alpha = [0.01,0.01],

@@ -48,6 +48,7 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include <memory>
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -56,9 +57,10 @@
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
+#include "la/linsys_PETSC.hh"
 
-#include "fields/field_base.hh"
-#include "fields/field_values.hh"
+#include "fields/field.hh"
+#include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
 
@@ -98,7 +100,7 @@ public:
     /** @brief Data for Darcy flow equation.
      *  
      */
-    class EqData : public EqDataBase {
+    class EqData : public FieldSet {
     public:
 
         /**
@@ -114,20 +116,23 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name="");
+        EqData();
+
 
         /**
-         * Overrides EqDataBase::read_boundary_list_item, implements reading of
-         * - bc_piezo_head key
-         * - flow_old_bcd_file
+         * Hook for processing "bc_piezo_head" key.
          */
-        RegionSet read_boundary_list_item(Input::Record rec);
-        
-        /**
-         * Overrides EqDataBase::read_bulk_list_item, implements reading of
-         * - init_piezo_head key
-         */
-        RegionSet read_bulk_list_item(Input::Record rec);
+        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        {
+            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
+                Input::AbstractRecord field_a_rec;
+            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
+            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
+            	} else {
+            		return field_ptr;
+            	}
+        }
        
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -145,7 +150,14 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-        arma::vec4 gravity_;
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         *
+         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
+         * introduce some kind of context pointer into @p FieldCommonBase.
+         */
+        static arma::vec4 gravity_;
     };
 
 
@@ -178,6 +190,14 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
+        // here assume that velocity field is extended as constant
+        // to the previous time, so here we set left bound of the interval where the velocity
+        // has current value; this may not be good for every transport !!
+        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
+        // let every equation set time according to nature of the time scheme
+
+        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
+        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
@@ -253,7 +273,7 @@ public:
     class EqData : public DarcyFlowMH::EqData {
     public:
       
-      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
+      EqData() : DarcyFlowMH::EqData()
       {}
     };
     
@@ -285,10 +305,8 @@ protected:
     void coupling_P0_mortar_assembly();
     void mh_abstract_assembly_intersection();
     //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0( const Input::AbstractRecord in_rec);
+    void make_schurs( const Input::AbstractRecord in_rec);
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-    void make_schur1();
-    void make_schur2();
     double solution_precision() const;
 
 	int size;				// global size of MH matrix
@@ -298,8 +316,8 @@ protected:
 	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
-	SchurComplement *schur1;  	//< first schur compl.
-	SchurComplement *schur2;	//< second ..
+	LinSys_PETSC *schur1;  	//< first schur compl.
+	LinSys_PETSC *schur2;  	//< second ..
 
 
 	// parallel
@@ -330,7 +348,80 @@ protected:
     double mortar_sigma;
         
   EqData data;
+
+  friend class P0_CouplingAssembler;
+  friend class P1_CouplingAssembler;
 };
+
+
+class P0_CouplingAssembler {
+public:
+	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  master_list_(darcy.mesh_->master_elements),
+	  intersections_(darcy.mesh_->intersections),
+	  master_(nullptr),
+	  tensor_average(2)
+	{
+		arma::mat master_map(1,2), slave_map(1,3);
+		master_map.fill(1.0 / 2);
+		slave_map.fill(1.0 / 3);
+
+		tensor_average[0].push_back( trans( master_map ) * master_map );
+		tensor_average[0].push_back( trans( master_map ) * slave_map );
+		tensor_average[1].push_back( trans( slave_map ) * master_map );
+		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+	}
+
+	void assembly(LinSys &ls);
+	void pressure_diff(int i_ele,
+			vector<int> &dofs,
+			unsigned int &ele_type,
+			double &delta,
+			arma::vec &dirichlet);
+private:
+	typedef vector<unsigned int> IsecList;
+
+	const DarcyFlowMH_Steady &darcy_;
+
+	const vector<IsecList> &master_list_;
+	const vector<Intersection> &intersections_;
+
+	vector<IsecList>::const_iterator ml_it_;
+	const Element *master_;
+
+	/// Row matrices to compute element pressure as average of boundary pressures
+	vector< vector< arma::mat > > tensor_average;
+	/// measure of master element, should be sum of intersection measures
+	double delta_0;
+};
+
+
+
+class P1_CouplingAssembler {
+public:
+	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  intersections_(darcy.mesh_->intersections),
+	  rhs(5),
+	  dofs(5),
+	  dirichlet(5)
+	{
+		rhs.zeros();
+	}
+
+	void assembly(LinSys &ls);
+	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+private:
+
+	const DarcyFlowMH_Steady &darcy_;
+	const vector<Intersection> &intersections_;
+
+	arma::vec rhs;
+	vector<int> dofs;
+	vector<double> dirichlet;
+};
+
 
 
 //void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);

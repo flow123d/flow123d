@@ -45,9 +45,10 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
     .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
 
 
-LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
-                            const MPI_Comm comm ) 
-        : LinSys( rows_ds, comm )
+LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
+        : LinSys( rows_ds ),
+          matrix_(0),
+          init_guess_nonzero(false)
 {
     // set type
     //type = LinSys::PETSC;
@@ -60,6 +61,20 @@ LinSys_PETSC::LinSys_PETSC( Distribution * rows_ds,
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = "";
+    matrix_ = NULL;
+    solution_precision_ = std::numeric_limits<double>::infinity();
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+}
+
+LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_),
+	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+{
+	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+	VecCopy(other.rhs_, rhs_);
+	VecCopy(other.on_vec_, on_vec_);
+	VecCopy(other.off_vec_, off_vec_);
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -122,6 +137,8 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
             break;
         default: DBGMSG("LS SetValues with non allowed insert mode.\n");
     }
+
+    matrix_changed_ = true;
 }
 
 void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
@@ -137,6 +154,8 @@ void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
             break;
         default: ASSERT(false, "LinSys's status disallow set values.\n");
     }
+
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
@@ -189,6 +208,10 @@ void LinSys_PETSC::preallocate_matrix()
     VecDestroy(&off_vec_);
 
     // create PETSC matrix with preallocation
+    if (matrix_ != NULL)
+    {
+    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
@@ -219,6 +242,9 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    matrix_changed_ = true;
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::apply_constrains( double scalar )
@@ -252,15 +278,23 @@ void LinSys_PETSC::apply_constrains( double scalar )
 
     // set matrix rows to zero 
     ierr = MatZeroRows( matrix_, numConstraints, globalDofPtr, diagScalar, PETSC_NULL, PETSC_NULL ); CHKERRV( ierr ); 
+    matrix_changed_ = true;
 
     // set RHS entries to values (crashes if called with NULL pointers)
     if ( numConstraints ) {
         ierr = VecSetValues( rhs_, numConstraints, globalDofPtr, valuePtr, INSERT_VALUES ); CHKERRV( ierr ); 
+        rhs_changed_ = true;
     }
 
     // perform communication in the rhs vector
     ierr = VecAssemblyBegin( rhs_ ); CHKERRV( ierr ); 
     ierr = VecAssemblyEnd(   rhs_ ); CHKERRV( ierr ); 
+}
+
+
+void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
+{
+	init_guess_nonzero = set_nonzero;
 }
 
 
@@ -313,7 +347,17 @@ int LinSys_PETSC::solve()
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
     DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
-    ierr = KSPSetFromOptions(system); 
+    ierr = KSPSetFromOptions(system);
+    // We set the KSP flag set_initial_guess_nonzero
+    // unless KSP type is preonly.
+    // In such case PETSc fails (version 3.4.1)
+    if (init_guess_nonzero)
+    {
+    	KSPType type;
+    	KSPGetType(system, &type);
+    	if (strcmp(type, KSPPREONLY) != 0)
+    		ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    }
 
     ierr = KSPSolve(system, rhs_, solution_ ); 
     ierr = KSPGetConvergedReason(system,&reason); 
@@ -323,6 +367,9 @@ int LinSys_PETSC::solve()
     ierr = VecNorm(rhs_, NORM_2, &residual_norm_);
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
+
+    // get residual norm
+    ierr = KSPGetResidualNorm(system, &solution_precision_);
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
@@ -370,10 +417,10 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
-    delete[] v_rhs_;
+    if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
 void LinSys_PETSC::gatherSolution_( )
@@ -428,5 +475,11 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 		a_tol_  = in_rec.val<double>("a_tol");
 		params_ = in_rec.val<string>("options");
 	}
+}
+
+
+double LinSys_PETSC::get_solution_precision()
+{
+	return solution_precision_;
 }
 

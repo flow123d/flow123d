@@ -9,18 +9,16 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      data= [
         { rid = 17,
           anisotropy = 10,
-          cross_section = 1
+          cross_section = 1,
+          sigma = 0.05
         },
         { rid = 18,
           anisotropy = 1,
           cross_section = 1
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test3.fbc"
         }
@@ -42,9 +40,9 @@
     }, 
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
 
-      bulk_data = [
+      data = [
         { rid = 17,
           init_conc = 0,
           por_m = 0.25
@@ -52,12 +50,9 @@
         { rid = 18,
           init_conc = 0,
           por_m = 0.25
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test3.tbc"
+          bc_conc = 1
         }
       ],
 

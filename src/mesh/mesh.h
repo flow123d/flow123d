@@ -117,10 +117,12 @@ public:
 
     /**
      * Constructor with input record given by string. Aimed for testing purpose.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(const std::string &input_str="{mesh_file=\"\"}", MPI_Comm com = MPI_COMM_WORLD);
     /**
      * Constructor from an input record.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
     /**
@@ -153,15 +155,21 @@ public:
      */
     inline MPI_Comm get_comm() const { return comm_; }
 
-    void read_intersections();
+
     void make_intersec_elements();
-    // void make_edge_list_from_neigh();
 
     unsigned int n_sides();
 
     inline unsigned int n_vb_neighbours() const {
         return vb_neighbours_.size();
     }
+
+    /**
+     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
+     * @param dim Dimension of elements sharing the edge.
+     */
+    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
+
     /**
      *
      */
@@ -175,7 +183,7 @@ public:
     /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    vector<int> const & elements_id_maps( bool boundary_domain);
+    vector<int> const & elements_id_maps( bool boundary_domain) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -302,12 +310,15 @@ protected:
     /// in input mesh file and has ID assigned.
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    vector<int> bulk_elements_id_, boundary_elements_id_;
+    mutable vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
+
+    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
+    unsigned int max_edge_sides_[3];
 
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the

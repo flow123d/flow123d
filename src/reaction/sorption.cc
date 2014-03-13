@@ -30,27 +30,21 @@ SorptionSimple::~SorptionSimple(void)
 
 void SorptionSimple::make_tables(void)
 {
-  DBGMSG("make tables called\n");
   ElementAccessor<3> elm;
-
   BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
   {
     int reg_idx = reg_iter.bulk_idx();
 
-    // Creates interpolation tables in the case of constant rock matrix parameters
-    if( (data_.rock_density.get_const_accessor(reg_iter, elm)) &&
-      (data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
-      (data_.second_params.get_const_accessor(reg_iter, elm)) &&
-      (data_.porosity->get_const_accessor(reg_iter, elm))
-      ) 
+    if(data_.is_constant(reg_iter))
+    {
+      ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
+      isotherm_reinit(isotherms[reg_idx],elm);
+      xprintf(MsgDbg,"parameters are constant\n");
+      for(int i_subst = 0; i_subst < n_substances_; i_subst++)
       {
-        isotherm_reinit(isotherms[reg_idx],elm);
-        xprintf(MsgDbg,"parameters are constant\n");
-        for(int i_subst = 0; i_subst < n_substances_; i_subst++)
-        {
-          isotherms[reg_idx][i_subst].make_table(nr_of_points);
-        }
+        isotherms[reg_idx][i_subst].make_table(nr_of_points);
       }
+    }
   }
 }
 
@@ -59,11 +53,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	START_TIMER("SorptionSimple::isotherm_reinit");
 
 	double rock_density = data_.rock_density.value(elem.centre(),elem);
-	//double porosity = this->porosity_->value(elem.centre(),elem);
-
-	//double phi = this->phi_->value(elem.centre(),elem);
-	double por_m = data_.porosity->value(elem.centre(),elem);
-	//double por_imm = this->immob_porosity_->value(elem.centre(),elem);
+	double por_m = data_.porosity.value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
 	arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
@@ -110,14 +100,9 @@ void SorptionSimple::update_solution(void)
   data_.set_time(*time_); // set to the last computed time
   
   //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-  if( (data_.rock_density.changed_during_set_time) &&
-      (data_.mult_coefs.changed_during_set_time) &&
-      (data_.second_params.changed_during_set_time) &&
-      (data_.porosity->changed_during_set_time)
-    ) 
-    {
-      make_tables();
-    }
+  if(data_.changed())
+    make_tables();
+    
 
     START_TIMER("Computes reaction");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)

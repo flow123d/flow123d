@@ -9,16 +9,13 @@
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
-      bulk_data = [
+      data= [
         {
             region = "plane",
             anisotropy = 0.02,
             init_pressure = 0,          // default
             storativity = 1             // default
-        }
-      ],
-
-      bc_data = [
+        },
         { region = ".bc_inflow",
           bc_type = "dirichlet",
           bc_pressure = 100  

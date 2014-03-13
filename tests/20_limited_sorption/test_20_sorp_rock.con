@@ -9,13 +9,10 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      bulk_data = [
+      data= [
         { region = "rectangle", 
           conductivity = 0.125
-        }
-      ],
-      
-      bc_data = [
+        },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x"}
@@ -42,14 +39,11 @@
    
       substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
       
-      bulk_data = [
+      data= [
         { r_set = "ALL",
           init_conc = 0,
           por_m = {TYPE="FieldFormula", value = "0.25"}
-        }
-      ],
-      
-      bc_data = [
+        },
         { r_set = "BOUNDARY",
           bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
         }
@@ -71,7 +65,7 @@
         species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        bulk_data = [
+        data= [
           {
             region = "rectangle",
             rock_density = {TYPE="FieldFormula", value = "1.0"},

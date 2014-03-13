@@ -196,6 +196,16 @@ inline Iterator<T> & Iterator<T>::operator ++() {
     return *this;
 }
 
+
+
+template<class T>
+inline Iterator<T> & Iterator<T>::operator --() {
+    index_--;
+    return *this;
+}
+
+
+
 template<class T>
 inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 

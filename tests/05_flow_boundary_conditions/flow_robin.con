@@ -10,13 +10,10 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "plane",
           anisotropy = 1
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".bc_south",
           bc_type = "robin",
           bc_pressure = {

@@ -18,6 +18,7 @@
 #include "mesh/region.hh"
 #include "input/type_selection.hh"
 
+#include "fields/field_set.hh"
 #include "coupling/time_governor.hh"
 
 using namespace std;
@@ -47,22 +48,21 @@ Record SorptionBase::input_type
 							"Specifies solubility limits of all the sorbing species")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("bulk_data", Array(SorptionBase::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Contains region specific data necessary to construct isotherms.")//;
+    .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
+                    "Containes region specific data necessary to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
 			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
 SorptionBase::EqData::EqData()
-: EqDataBase("SorptionBase")
 {
-    ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
+    ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
-              sorption_types.set_selection(&sorption_type_selection);
+              sorption_types.input_selection(&sorption_type_selection);
 
-    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
+    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
 
-    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
+    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
 }
 
 
@@ -74,16 +74,19 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
 
-  data_.sorption_types.set_n_comp(n_substances_);
-  data_.mult_coefs.set_n_comp(n_substances_);
-  data_.second_params.set_n_comp(n_substances_);
-   
-  data_.set_mesh(&init_mesh);
+  data_.sorption_types.n_comp(n_substances_);
+  data_.mult_coefs.n_comp(n_substances_);
+  data_.second_params.n_comp(n_substances_);
     
-  data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
+  data_.set_mesh(init_mesh);
+  data_.set_input_list( in_rec.val<Input::Array>("data"));
   
-  time_ = new TimeGovernor();
-  data_.set_time(*time_);
+  data_+=(data_.porosity
+          .name("porosity")
+          .units("0")
+         );
+  
+  data_.set_limit_side(LimitSide::right);
   
   //Simple vectors holding  common informations.
   molar_masses.resize( n_substances_ );
@@ -109,7 +112,6 @@ void SorptionBase::initialize(void )
 {
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  ASSERT(data_.porosity != nullptr, "Pointer to porosity field has not been set yet.\n");
   
     //allocating new array for sorbed concentrations
     unsigned int nr_of_local_elm = distribution->lsize();
@@ -123,7 +125,7 @@ void SorptionBase::initialize(void )
       }
     }
     
-  make_tables();
+  //make_tables();
 }
 
 

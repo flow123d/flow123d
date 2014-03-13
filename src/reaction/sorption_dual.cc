@@ -20,7 +20,6 @@
 
 #include "coupling/time_governor.hh"
 
-const double pi = 3.1415;
 /*namespace it=Input::Type;
 
 /*it::Selection SorptionDual::EqData::sorption_type_selection = it::Selection("SorptionType")
@@ -75,6 +74,7 @@ using namespace std;
 SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: SorptionBase(init_mesh, in_rec, names)
 {
+
 	/*cout << "Sorption constructor is running." << endl;
 	TimeGovernor tg(0.0, 1.0);
     nr_of_regions = init_mesh.region_db().bulk_size();
@@ -284,15 +284,8 @@ void SorptionDual::update_solution(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-	if((data_.rock_density.changed_during_set_time) &&
-		(data_.mult_coefs.changed_during_set_time) &&
-		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time) &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))
-	{
-		make_tables();
-	}
+    if(data_.changed())
+      make_tables();
 
     START_TIMER("Computes reaction");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
@@ -304,62 +297,4 @@ void SorptionDual::update_solution(void)
 	return;
 }
 
-/*
-void SorptionDual::print_sorption_parameters(void)
-{
-    xprintf(Msg, "\nSorption parameters are defined as follows:\n");
-}
-
-void SorptionDual::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
-{
-	concentration_matrix = ConcentrationMatrix;
-	distribution = conc_distr;
-	el_4_loc = el_4_loc_;
-	return;
-}
-
-void SorptionDual::set_sorb_conc_array(double** sorb_conc_array)
-{
-	sorbed_conc_array = sorb_conc_array;
-	return;
-}
-
-void SorptionDual::set_sorb_conc_array(unsigned int nr_of_local_elm) // could be transposed to optimize computation speed
-{
-	this->sorbed_conc_array = new double * [nr_of_substances];
-    for (unsigned int sbi = 0; sbi < nr_of_substances; sbi++)
-    {
-      sorbed_conc_array[sbi] = new double[ nr_of_local_elm ];
-      for (unsigned int i = 0; i < nr_of_local_elm; i++)
-      {
-        sorbed_conc_array[sbi][i] = 0.0;
-      }
-    }
-}/**/
-
-/*void SorptionDual::set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
-{
-	immob_concentration_matrix = ConcentrationMatrix;
-	distribution = conc_distr;
-	el_4_loc = el_4_loc_;
-	return;
-}/**/
-
-void SorptionDual::set_porosity(pScalar porosity)
-{
-	porosity_ = porosity;
-	return;
-}/**/
-
-void SorptionDual::set_porosity_immobile(pScalar immob_porosity)
-{
-	immob_porosity_ = immob_porosity;
-	return;
-}/**/
-
-void SorptionDual::set_phi(pScalar phi)
-{
-	phi_ = phi;
-	return;
-}/**/
 

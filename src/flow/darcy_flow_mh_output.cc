@@ -63,7 +63,8 @@ it::Record DarcyFlowMHOutput::input_type
                     "Output file for water balance table.")
     .declare_key("subdomains", it::String(),
                     "Output stream for subdomain indices (partitioning of mesh elements) used by DarcyFlow module.")
-
+    .declare_key("compute_errors", it::Bool(), it::Default("false"),
+    				"SPECIAL PURPOSE. Computing errors pro noncompatible coupling.")
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                     "Output file with raw data form MH module.");
 
@@ -90,7 +91,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     //local iterator it
     Iterator<string> it = in_rec.find<string>("piezo_head_p0");
     output_piezo_head=bool(it);
-    DBGMSG("piezo set: %d \n", output_piezo_head);
+    //DBGMSG("piezo set: %d \n", output_piezo_head);
       
     if (output_piezo_head) ele_piezo_head.resize(mesh_->n_elements());
 
@@ -99,7 +100,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
     marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
           darcy_flow->time().end_time(), output_mark_type );
-    DBGMSG("end create output\n");
+    //DBGMSG("end create output\n");
 
       
     // testing MPI rank so that the files are opened only once
@@ -210,7 +211,7 @@ void DarcyFlowMHOutput::output()
       DBGMSG("water_balance()\n");
       water_balance();
 
-      //compute_l2_difference();
+      if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
       double time  = darcy_flow->solved_time();
 
@@ -229,26 +230,7 @@ void DarcyFlowMHOutput::output()
     
 }
 
-//=============================================================================
-// FILL TH "FLUX" FIELD FOR ALL SIDES IN THE MESH
-//=============================================================================
-/*
-void DarcyFlowMHOutput::make_side_flux() {
-    int li, soi;
-    unsigned int sol_size;
-    double *sol;
-    struct Side *sde;
 
-    soi = 0;
-    darcy_flow->get_solution_vector(sol, sol_size);
-    FOR_ELEMENTS(mesh_, ele)
-        for (li = 0; li < ele->n_sides; li++) {
-            sde = ele->side[ li ];
-            sde->flux = sol[ soi++ ];
-            //if( fabs( sde->flux ) < ZERO )
-            //  sde->flux = 0.0;
-        }
-}*/
 //=============================================================================
 // FILL TH "SCALAR" FIELD FOR ALL ELEMENTS IN THE MESH
 //=============================================================================
@@ -267,27 +249,7 @@ void DarcyFlowMHOutput::make_element_scalar() {
     }
 }
 
-/*
-void DarcyFlowMHOutput::make_element_scalar(double* scalars) {
-    int soi;
-    unsigned int sol_size;
-    double *sol;
-    int ele_index = 0; //!< index of each element
 
-    for (int i = 0; i < mesh_->n_elements(); i++){
-        scalars[i] = 0.0;
-    };
-//    ele_index = mesh->element->ele_index;
-
-    soi = mesh_->n_sides;
-    darcy_flow->get_solution_vector(sol, sol_size);
-    FOR_ELEMENTS(mesh_, ele){
-        ele_index = mesh_->element.index(ele);
-//        xprintf(Msg, "ele_index: %i\n", ele_index);
-        scalars[ele_index] = sol[ soi++ ];
-    }
-}
-*/
 
 /****
  * compute Darcian velocity in centre of elements
@@ -317,89 +279,6 @@ void DarcyFlowMHOutput::make_element_vector() {
     }
 
 }
-
-//=============================================================================
-//
-//=============================================================================
-/*
-void DarcyFlowMHOutput::make_element_vector_line(ElementFullIter ele, arma::vec3 &vec) {
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
-    SideIter s1=ele->side(1);
-    SideIter s0=ele->side(0);
-    double darcy_vel =
-            (dh.side_flux( *s1 ) - dh.side_flux( *s0 )) / 2.0 / ele->material->size;
-
-    // normalize element vector [node 0, node 1]
-    vec = ele->node[1]->point() - ele->node[0]->point();
-    vec *= darcy_vel / arma::norm(vec, 2);
-}*/
-//=============================================================================
-//
-//=============================================================================
-/*
-void DarcyFlowMHOutput::make_element_vector_triangle(ElementFullIter ele, arma::vec3 &vec) {
-
-    const MH_DofHandler & dh = darcy_flow->get_mh_dofhandler();
-    double bas[ 3 ][ 3 ];
-    double X[ 3 ];
-    int i, li;
-
-    // begin -- upravy Ji. -- prepocet vektoru do teziste elementu
-    // 23.2.2007
-
-    // make rotated coordinate system with triangle in plane XY, origin in A and axes X == AB
-    arma::vec3 ex(ele->node[1]->point() - ele->node[0]->point());
-    ex /= norm(ex,2);
-
-    arma::vec3 ac(ele->node[2]->point() - ele->node[0]->point());
-    arma::vec3 ez = cross(ex, ac);
-    ez /= norm(ez,2);
-
-    arma::vec3 ey = cross(ez,ex);
-    ey /= norm(ey, 2);
-
-    // compute barycenter in new coordinate system
-    arma::vec3 u = ele->centre() - ele->node[0]->point();
-
-    // compute flux form base functions
-    ac.zeros();
-    for (i = 0; i < 3; i++) {
-        bas[ i ][ 0 ] = ele->bas_gama[ i ] * (dot(u,ex) - ele->bas_alfa[ i ]);
-        bas[ i ][ 1 ] = ele->bas_gama[ i ] * (dot(u,ey) - ele->bas_beta[ i ]);
-        bas[ i ][ 2 ] = 0;
-        for (li = 0; li < 2; li++)
-            ac[ li ] += dh.side_flux( *(ele->side( i ) ) ) * bas[ i ][ li ] / ele->material->size;
-    }
-
-    vec = ac[0] * ex + ac[1] * ey + ac[2] * ez;
-}*/
-//=============================================================================
-//
-//=============================================================================
-
-
-//=============================================================================
-// FILL TH "SCALAR" FIELD FOR ALL INTERNAL SIDES IN THE MESH
-//=============================================================================
-/*
-void DarcyFlowMHOutput::make_sides_scalar() {
-    double *sol;
-    int soi, si;
-    unsigned int sol_size;
-    struct Side *sde;
-
-    soi = mesh_->n_sides() + mesh_->n_elements();
-    darcy_flow->get_solution_vector(sol, sol_size);
-
-    FOR_EDGES(mesh_, edg) {
-        for (si = 0; si < edg->n_sides; si++) {
-            sde = edg->side[ si ];
-            sde->scalar = sol[ soi ];
-        }
-        soi++;
-    }
-}
-*/
 
 
 //=============================================================================
@@ -822,13 +701,16 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     xfprintf( raw_output_file, "$EndFlowField\n\n" );
 }
 
-/*
+
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
-#include "functions/function_python.hh"
-*/
+//#include "functions/function_python.hh"
+#include "fields/field_python.hh"
+#include "fields/field_values.hh"
+
+typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 
 /*
 * Calculate approximation of L2 norm for:
@@ -836,7 +718,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
  * 2) difference between RT velocities and analytical solution
  * 3) difference of divergence
  * */
-/*
+
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
     vector<double> pressure_diff;
@@ -848,13 +730,18 @@ struct DiffData {
     MHFEValues fe_values;
 
     std::vector< std::vector<double>  > *ele_flux;
+
+    DarcyFlowMH_Steady *darcy;
 };
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const FunctionPython<3> &anal_sol,  DiffData &result) {
+void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSolution &anal_sol,  DiffData &result) {
 
     fe_values.reinit(ele);
-    result.fe_values.update(ele);
+    result.fe_values.update(ele, result.darcy->get_data().anisotropy, result.darcy->get_data().cross_section, result.darcy->get_data().conductivity);
+    double conductivity = result.darcy->get_data().conductivity.value(ele->centre(), ele->element_accessor() );
+    double cross = result.darcy->get_data().cross_section.value(ele->centre(), ele->element_accessor() );
+
 
     // get coefficients on the current element
     vector<double> fluxes(dim+1);
@@ -866,12 +753,11 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
     }
     double pressure_mean = result.dh->element_scalar(ele);
 
-    vector<double> analytical(5); // values tuple (pressure, flux(dim), divergence)
+    arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
     arma::vec3 anal_flux;
 
     double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
-    double resistance = ele->material->hydrodynamic_resistence[0];  // assumes isotropic medium
 
     // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
     // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
@@ -886,7 +772,8 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
         arma::vec3 q_point = fe_values.point(i_point);
 
-        anal_sol.vector_value(q_point, analytical);
+
+        analytical = anal_sol.value(q_point, ele->element_accessor() );
         for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
 
         // compute postprocesed pressure
@@ -902,7 +789,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
                                );
         }
 
-        diff = - resistance * diff / dim / ele->volume() + pressure_mean ;
+        diff = - (1.0 / conductivity) * diff / dim / ele->measure() / cross + pressure_mean ;
         diff = ( diff - analytical[0]);
         pressure_diff += diff * diff * fe_values.JxW(i_point);
 
@@ -912,7 +799,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
                               * result.fe_values.RT0_value( ele, q_point, i_shape )
-                              / ele->material->size;
+                              / cross;
         }
 
         flux_in_q_point -= anal_flux;
@@ -921,7 +808,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
         // divergence diff
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
-        diff = ( diff / ele->volume() - analytical[4]);
+        diff = ( diff / ele->measure() / cross - analytical[4]);
         divergence_diff += diff * diff * fe_values.JxW(i_point);
 
     }
@@ -942,10 +829,10 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, const Funct
 
 
 
-*/
+
 void DarcyFlowMHOutput::compute_l2_difference() {
-}
-/*
+    DBGMSG("l2 norm output\n");
+    ofstream os( FilePath("solution_error", FilePath::output_file) );
 
     const unsigned int order = 4; // order of Gauss quadrature
 
@@ -963,11 +850,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
 
-    FunctionPython<3> anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
-    anal_sol_1d.set_python_function_from_file("analytical_module.py", "all_values_1d");
+    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
+    anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
 
-    FunctionPython<3> anal_sol_2d(5);
-    anal_sol_2d.set_python_function_from_file("analytical_module.py", "all_values_2d");
+    ExactSolution anal_sol_2d(5);
+    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
 
     static DiffData result;
@@ -985,18 +873,25 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     result.ele_flux = &( ele_flux );
 
-    output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
-    output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
-    output_writer->register_elem_data("div_diff","0",result.div_diff);
+    //output_writer->register_elem_data("pressure_diff","0",result.pressure_diff);
+    //output_writer->register_elem_data("velocity_diff","0",result.velocity_diff);
+    //output_writer->register_elem_data("div_diff","0",result.div_diff);
+
+    output_writer->register_elem_data(mesh_, "pressure_diff", "0", in_rec_.val<Input::Record>("output_stream") ,result.pressure_diff);
+    output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
+    output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
     result.dh = &( darcy_flow->get_mh_dofhandler());
+    result.darcy = static_cast<DarcyFlowMH_Steady *>(darcy_flow);
 
     FOR_ELEMENTS( mesh_, ele) {
-        switch (ele->dim()) {
+
+    	switch (ele->dim()) {
         case 1:
+
             l2_diff_local<1>( ele, fe_values_1d, anal_sol_1d, result);
             break;
         case 2:
@@ -1005,16 +900,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
         }
     }
 
-    xprintf(Msg,
-            "\n"
-            "pressure error 1d: %g\n"
-            "pressure error 2d: %g\n"
-            "velocity error 1d: %g\n"
-            "velocity error 2d: %g\n"
-            "div error: %g (1d) %g (2d)\n",
-            sqrt(result.pressure_error[0]), sqrt(result.pressure_error[1]),
-            sqrt(result.velocity_error[0]), sqrt(result.velocity_error[1]),
-            sqrt(result.div_error[0]), sqrt(result.div_error[1])
-            );
+    os 	<< "l2 norm output\n\n"
+    	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
+    	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
+    	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
+    	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
+    	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
+    	<< "div error 2d: " << sqrt(result.div_error[1]);
 }
-*/
+

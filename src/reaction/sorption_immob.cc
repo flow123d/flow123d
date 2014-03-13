@@ -170,9 +170,9 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 	const double &rock_density = data_.rock_density.value(elem.centre(),elem);
 	//double porosity = this->porosity_->value(elem.centre(),elem);
 
-	double phi = this->phi_->value(elem.centre(),elem);
-	double por_m = this->porosity_->value(elem.centre(),elem);
-	double por_imm = this->immob_porosity_->value(elem.centre(),elem);
+	double phi = phi_.value(elem.centre(),elem);
+	double por_m = data_.porosity.value(elem.centre(),elem);
+	double por_imm = immob_porosity_.value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
 	arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
@@ -253,15 +253,13 @@ void SorptionImmob::update_solution(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-	if((data_.rock_density.changed_during_set_time) &&
-		(data_.mult_coefs.changed_during_set_time) &&
-		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time) &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))
-	{
-		make_tables();
-	}
+    if( data_.changed() &&
+        immob_porosity_.changed() &&
+        phi_.changed()
+      )
+    {
+      make_tables();
+    }
 
     START_TIMER("Computes reaction");
 	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)

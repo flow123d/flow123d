@@ -5,8 +5,8 @@
 #include "la/distribution.hh"
 #include <string.h>
 #include <./input/input_type.hh>
-#include "fields/field_base.hh"
-#include "fields/field_values.hh"
+#include "fields/field.hh"
+//#include "fields/field_values.hh"
 
 class Distribution;
 

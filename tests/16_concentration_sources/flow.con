@@ -11,13 +11,10 @@
       
       n_schurs = 2,
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test16.fbc"
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 7,
           cross_section = 1,
           anisotropy = 1
@@ -51,13 +48,10 @@
       dual_porosity = false, 
       initial_file = "./input/test16.tic", 
       
-      bc_data = [
+      data= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 0
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 7,
           init_conc = 0,
           por_m = 1,

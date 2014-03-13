@@ -1,6 +1,9 @@
-/** @brief class Dual_por_exchange is used to enable simulation of sorption described by either linear or Langmuir isotherm in combination with limited solubility under consideration.
+/** @brief Class Dual_por_exchange implements the model of dual porosity.
  *
- * Class in this file makes it possible to handle the dataset describing solid phase as either precipitated or sorbed species.
+ * It can be part of the transport model and it computes the concentrations of substances both in 
+ * mobile and immobile zone. This model can also work above the sorption model - the sorbed concentration
+ * is then computed both from mobile and immobile concentrations. Linear reactions can be define 
+ * also in both zones.
  *
  */
 #ifndef DUAL_POROSITY
@@ -10,16 +13,14 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
+#include "fields/field_set.hh"
 #include "./reaction/reaction.hh"
 
 /// TODO: incorporate index mapping for substances indices
 
 class Mesh;
 class Distribution;
-class Reaction;
 class SorptionBase;
-
-typedef Field<3, FieldValue<3>::Scalar > * pScalar;
 
 class Dual_por_exchange:  public Reaction
 {
@@ -29,7 +30,7 @@ public:
    */
   static Input::Type::Record input_type;
 
-  class EqData : public EqDataBase // should be written in class Sorption
+	class EqData : public FieldSet // should be written in class Sorption
   {
   public:
 
@@ -37,11 +38,11 @@ public:
     EqData();
 
     Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
-    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity
+    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity field.
     
     Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
-    pScalar porosity; ///< Pointer to mobile porosity
+    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
   };
 
   Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
@@ -59,7 +60,8 @@ public:
   /**
    *
    */
-  void set_porosity(pScalar porosity);
+  inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
+    { data_.set_field(data_.porosity.name(),por_m); };
   
   /// Initialize from input interface.
   void init_from_input(Input::Record in_rec) override;

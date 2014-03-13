@@ -40,8 +40,6 @@ class Mesh;
 class Reaction;
 class Isotherm;
 
-typedef Field<3, FieldValue<3>::Scalar > * pScalar;
-
 class SorptionDpMob:  public SorptionDual
 {
 public:
