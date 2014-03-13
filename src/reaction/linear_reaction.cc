@@ -270,6 +270,7 @@ void Linear_reaction::init_from_input(Input::Record in_rec)
 
 void Linear_reaction::update_solution(void)
 {
+  DBGMSG("LinearReactions - update solution\n");
   if(time_->is_changed_dt())
   {
     release_reaction_matrix();

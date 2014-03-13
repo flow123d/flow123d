@@ -56,6 +56,12 @@ public:
    */
   void update_solution(void) override;
   
+  /**
+   * Initialization routines after all necessary members have been set.
+   * It also sets and initializes possible following reaction models.
+   */
+  void initialize(void) override;
+  
   void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_) override;
   /**
    *
