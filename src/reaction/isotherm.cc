@@ -10,7 +10,7 @@
 
 void Isotherm::make_table(int nr_of_points)
 {
-	xprintf(Msg,"adsorption_type %d\n",adsorption_type_);
+	xprintf(MsgDbg,"adsorption_type %d\n",adsorption_type_);
 	if(table_limit_ > 0.0) switch(adsorption_type_)
 	{
 		case 0: // none
@@ -43,7 +43,7 @@ void Isotherm::make_table(int nr_of_points)
 	 	 }
 	 	 break;
 	}
-	xprintf(Msg,"interpolation_table.size() is %d\n", interpolation_table.size());
+	xprintf(MsgDbg,"interpolation_table.size() is %d\n", interpolation_table.size());
 	return;
 }
 

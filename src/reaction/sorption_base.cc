@@ -69,7 +69,7 @@ SorptionBase::EqData::EqData()
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: Reaction(init_mesh, in_rec, names)
 {
-  cout << "Sorption constructor is running." << endl;
+  DBGMSG("SorptionBase constructor.\n");
   
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
@@ -125,7 +125,6 @@ void SorptionBase::initialize(void )
       }
     }
     
-  //make_tables();
 }
 
 
@@ -139,8 +138,6 @@ void SorptionBase::init_from_input(Input::Record in_rec)
   
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
-        for(unsigned int i=0; i < molar_masses.size(); i++)
-          DBGMSG("molar_masses[%d]: %f\n",i, molar_masses[i]);
           
 	Input::Iterator<Input::Array> solub_iter = in_rec.find<Input::Array>("solubility");
 	if( solub_iter )
@@ -170,7 +167,46 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 }
 
 
-//       raise warning if sum of ratios is not one
+void SorptionBase::update_solution(void)
+{
+  DBGMSG("SorptionSimple - update_solution\n");
+  data_.set_time(*time_); // set to the last computed time
+  
+  // if parameters changed during last time step, reinit isotherms and eventualy 
+  // update interpolation tables in the case of constant rock matrix parameters
+  if(data_.changed())
+    make_tables();
+    
+
+  START_TIMER("Sorption");
+  for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+  {
+    this->compute_reaction(concentration_matrix, loc_el);
+  }
+  END_TIMER("Sorption");
+
+  return;
+}
+
+void SorptionBase::make_tables(void)
+{
+  ElementAccessor<3> elm;
+  BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+  {
+    int reg_idx = reg_iter.bulk_idx();
+
+    if(data_.is_constant(reg_iter))
+    {
+      ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
+      isotherm_reinit(isotherms[reg_idx],elm);
+      xprintf(MsgDbg,"parameters are constant\n");
+      for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+      {
+        isotherms[reg_idx][i_subst].make_table(nr_of_points);
+      }
+    }
+  }
+}
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
@@ -184,7 +220,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 
 	std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
 
-    if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
+    //if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
     
     // Constant value of rock density and mobile porosity over the whole region => interpolation_table is precomputed
     if (isotherms_vec[0].is_precomputed()) {

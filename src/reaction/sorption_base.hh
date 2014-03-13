@@ -30,7 +30,6 @@
 #define SORPTION_BASE
 
 #include <vector>
-#include <input/input_type.hh>
 
 #include "fields/field_base.hh"
 #include "fields/field_set.hh"
@@ -84,10 +83,11 @@ public:
 		*
 		*/
 		virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+                
 		/**
 		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		virtual void update_solution(void) = 0;
+		virtual void update_solution(void);
                 
                 void initialize(void) override;
 		/**
@@ -99,7 +99,7 @@ public:
 		/**
 		*
 		*/
-		virtual void make_tables(void) = 0;
+		void make_tables(void);
 		
 	protected:
 		/**

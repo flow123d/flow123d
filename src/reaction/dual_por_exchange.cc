@@ -16,7 +16,7 @@
 
 #include "reaction/sorption_dual.hh"
 #include "reaction/sorption_immob.hh"
-#include "reaction/sorption_dp_mob.hh"
+#include "reaction/sorption_mob.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
@@ -53,7 +53,7 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
 {
     //DBGMSG("DualPorosity - constructor\n");
 
-    data_.alpha.n_comp(n_substances_);
+    data_.alpha.n_comp(n_all_substances_);
     data_.init_conc_immobile.n_comp(n_all_substances_);
     
     
@@ -68,7 +68,7 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
     
     data_.set_limit_side(LimitSide::right);
     
-    init_from_input(in_rec);
+    //init_from_input(in_rec);
 }
 
 Dual_por_exchange::~Dual_por_exchange(void)
@@ -80,7 +80,7 @@ Dual_por_exchange::~Dual_por_exchange(void)
 
 void Dual_por_exchange::init_from_input(Input::Record in_rec)
 {  
-  //DBGMSG("dual_por init_from_input\n");
+  DBGMSG("dual_por init_from_input\n");
   Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions_mob");
   if ( reactions_it ) 
   {
@@ -91,10 +91,11 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_mob = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionDual::input_type ) {
-        reaction_mob =  new SorptionDpMob(*mesh_, *reactions_it, names_);
+    if (reactions_it->type() == SorptionBase::input_type ) {
+        reaction_mob =  new SorptionMob(*mesh_, *reactions_it, names_);
                 
-        static_cast<SorptionDpMob *> (reaction_mob) -> set_porosity(data_.porosity);
+       static_cast<SorptionMob *> (reaction_mob) -> set_porosity(data_.porosity);
+       static_cast<SorptionMob *> (reaction_mob) -> set_porosity_immobile(data_.immob_porosity);
                 
     } else
     if (reactions_it->type() == Dual_por_exchange::input_type ) {
@@ -112,7 +113,7 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
   {
     reaction_mob = nullptr;
   }
- 
+  
   reactions_it = in_rec.find<Input::AbstractRecord>("reactions_immob");
   if ( reactions_it ) 
   {
@@ -123,10 +124,11 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_immob = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionDual::input_type ) {
-        reaction_immob =  new SorptionDpMob(*mesh_, *reactions_it, names_);
-                
-        static_cast<SorptionImmob *> (reaction_immob) -> set_porosity(data_.immob_porosity);
+    if (reactions_it->type() == SorptionBase::input_type ) {
+        reaction_immob =  new SorptionImmob(*mesh_, *reactions_it, names_);
+        
+       static_cast<SorptionImmob *> (reaction_immob) -> set_porosity(data_.porosity);        
+       static_cast<SorptionImmob *> (reaction_immob) -> set_porosity_immobile(data_.immob_porosity);
                 
     } else
     if (reactions_it->type() == Dual_por_exchange::input_type ) {
@@ -147,57 +149,49 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
 }
 
 
-void Dual_por_exchange::set_concentration_matrix(double** ConcentrationMatrix, Distribution* conc_distr, int* el_4_loc_)
-{
-    concentration_matrix = ConcentrationMatrix;
-    distribution = conc_distr;
-    el_4_loc = el_4_loc_;
-            
-    ASSERT(time_ != nullptr, "Time governor must be set before calling set_concentration_matrix().");
-    data_.set_time(*time_);
-    
-    //allocating memory for immobile concentration matrix
-    immob_concentration_matrix = (double**) xmalloc(n_all_substances_ * sizeof(double*));
-    for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
-      immob_concentration_matrix[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
-   
-    //DBGMSG("DualPorosity - init_conc_immobile.\n");
-    
-    //copied from convection set_initial_condition
-    //setting initial condition for immobile concentration matrix
-    FOR_ELEMENTS(mesh_, elem)
-    {
-      if (!distribution->is_local(el_4_loc[elem.index()])) continue;
-
-      unsigned int index = el_4_loc[elem.index()] - distribution->begin();
-      ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
-      arma::vec value = data_.init_conc_immobile.value(elem->centre(), ele_acc);
-        
-      for (int sbi=0; sbi < n_all_substances_; sbi++)
-      {
-        immob_concentration_matrix[sbi][index] = value(sbi);
-      }
-    }
-    
-    if(reaction_mob != nullptr) reaction_mob->set_concentration_matrix(concentration_matrix, distribution, el_4_loc);
-    if(reaction_immob != nullptr) reaction_immob->set_concentration_matrix(immob_concentration_matrix, distribution, el_4_loc);
-}
-
-
 void Dual_por_exchange::initialize(void )
-{
+{ 
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  
+  data_.set_time(*time_);
+    
+  //allocating memory for immobile concentration matrix
+  immob_concentration_matrix = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
+    immob_concentration_matrix[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+   
+  //DBGMSG("DualPorosity - init_conc_immobile.\n");
+    
+  //copied from convection set_initial_condition
+  //setting initial condition for immobile concentration matrix
+  FOR_ELEMENTS(mesh_, elem)
+  {
+    if (!distribution->is_local(el_4_loc[elem.index()])) continue;
+
+    unsigned int index = el_4_loc[elem.index()] - distribution->begin();
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+    arma::vec value = data_.init_conc_immobile.value(elem->centre(), ele_acc);
+        
+    for (int sbi=0; sbi < n_all_substances_; sbi++)
+    {
+      immob_concentration_matrix[sbi][index] = value(sbi);
+    }
+  }
+  
+  init_from_input(input_record_);
   
   if(reaction_mob != nullptr)
   { 
     reaction_mob->set_time_governor(*time_);
+    reaction_mob->set_concentration_matrix(concentration_matrix, distribution, el_4_loc);
     reaction_mob->initialize();
   }
     
   if(reaction_immob != nullptr) 
   {
     reaction_immob->set_time_governor(*time_);
+    reaction_immob->set_concentration_matrix(immob_concentration_matrix, distribution, el_4_loc);
     reaction_immob->initialize();
   }
 }
@@ -207,13 +201,9 @@ void Dual_por_exchange::update_solution(void)
 {
   DBGMSG("DualPorosity - update solution\n");
   data_.set_time(*time_);
-  
-  double conc_avg = 0.0;
-  unsigned int loc_el,sbi, sbi_loc;
-  double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
-   
+ 
   START_TIMER("dual_por_exchange_step");
-  for (loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
   {
     compute_reaction(immob_concentration_matrix, loc_el);
   }

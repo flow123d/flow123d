@@ -36,9 +36,7 @@ Record Linear_reaction::input_type
 	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
 	.derive_from( Reaction::input_type )
     .declare_key("decays", Array( Linear_reaction::input_type_one_decay_substep ), Default::obligatory(),
-                "Description of particular decay chain substeps.")
-	.declare_key("matrix_exp_on", Bool(), Default("false"),
-				"Enables to use Pade approximant of matrix exponential.");
+                "Description of particular decay chain substeps.");
 
 
 using namespace std;

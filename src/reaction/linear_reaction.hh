@@ -86,10 +86,6 @@ class Linear_reaction: public Reaction
                 */
                 unsigned int find_subst_name(const std::string &name);
 		/**
-		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
-		*/
-		//bool matrix_exp_on;
-		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/
 		double **reaction_matrix;

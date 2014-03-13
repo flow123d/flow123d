@@ -6,7 +6,7 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/isotherm.hh"
-#include "reaction/sorption_dual.hh"
+#include "reaction/sorption_mob.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
@@ -15,23 +15,28 @@
 #include "mesh/elements.h"
 #include "mesh/region.hh"
 
-#include "coupling/time_governor.hh"
-
-
 
 using namespace std;
 
-SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: SorptionBase(init_mesh, in_rec, names)
+SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
+	: SorptionDual(init_mesh, in_rec, names)
 {
+	DBGMSG("SorptionMob constructor.\n");
 }
 
-SorptionDual::~SorptionDual(void)
+SorptionMob::~SorptionMob(void)
 {
 }
 
 /*
-void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
+double SorptionMob::compute_sorbing_scale(double por_m, double por_imm)
+{
+  double phi = por_m/(por_m + por_imm);
+  return phi;
+}
+*/
+
+void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
         START_TIMER("SorptionMob::isotherm_reinit");
 
@@ -39,6 +44,7 @@ void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 
         double por_m = data_.porosity.value(elem.centre(),elem);
         double por_imm = immob_porosity_.value(elem.centre(),elem);
+        double phi = por_m/(por_m + por_imm);
 
         // List of types of isotherms in particular regions
         arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
@@ -53,8 +59,8 @@ void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 
                 //scales are different for the case of sorption in mobile and immobile pores
                 double scale_aqua, scale_sorbed;
-                scale_aqua = por_imm;
-                scale_sorbed = compute_sorbing_scale(por_m,por_imm) * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst];
+                scale_aqua = por_m;
+                scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst];
                 if(scale_sorbed == 0.0)
                         xprintf(UsrErr, "Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
                 bool limited_solubility_on;
@@ -73,28 +79,4 @@ void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
         }
 
         END_TIMER("SorptionMob::isotherm_reinit");
-
-        return;
 }
-*/
-/*
-// Computes adsorption simulation over all the elements.
-void SorptionDual::update_solution(void)
-{
-    data_.set_time(*time_); // set to the last computed time
-    immob_porosity_.set_time(*time_);
-    
-    //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-    if(data_.changed()
-      || immob_porosity_.changed()
-    )
-      make_tables();
-
-    START_TIMER("SorptionDual");
-    for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-    {
-      compute_reaction(concentration_matrix, loc_el);
-    }
-    END_TIMER("SorptionDual");
-}
-*/

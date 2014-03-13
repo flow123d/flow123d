@@ -28,26 +28,6 @@ SorptionSimple::~SorptionSimple(void)
 {
 }
 
-void SorptionSimple::make_tables(void)
-{
-  ElementAccessor<3> elm;
-  BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
-  {
-    int reg_idx = reg_iter.bulk_idx();
-
-    if(data_.is_constant(reg_iter))
-    {
-      ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
-      isotherm_reinit(isotherms[reg_idx],elm);
-      xprintf(MsgDbg,"parameters are constant\n");
-      for(int i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        isotherms[reg_idx][i_subst].make_table(nr_of_points);
-      }
-    }
-  }
-}
-
 void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
 	START_TIMER("SorptionSimple::isotherm_reinit");
@@ -92,34 +72,6 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	return;
 }
 
-
-// Computes adsorption simulation over all the elements.
-void SorptionSimple::update_solution(void)
-{
-  DBGMSG("SorptionSimple - update_solution\n");
-  data_.set_time(*time_); // set to the last computed time
-  
-  //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-  if(data_.changed())
-    make_tables();
-    
-
-    START_TIMER("Computes reaction");
-	for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	 {
-	 	this->compute_reaction(concentration_matrix, loc_el);
-	 }
-    END_TIMER("Computes reaction");
-
-	return;
-}
-
-
-/*void SorptionSimple::print_sorption_parameters(void)
-{
-    xprintf(Msg, "\nSorption parameters are defined as follows:\n");
-}
-*/
 
 void SorptionSimple::set_concentration_vector(Vec &vc)
 {

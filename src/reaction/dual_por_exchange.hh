@@ -62,7 +62,6 @@ public:
    */
   void initialize(void) override;
   
-  void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_) override;
   /**
    *
    */

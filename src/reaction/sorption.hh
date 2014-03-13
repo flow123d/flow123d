@@ -37,7 +37,6 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
 class Isotherm;
 
 class SorptionSimple:  public SorptionBase
@@ -53,18 +52,11 @@ class SorptionSimple:  public SorptionBase
 		*	Destructor.
 		*/
 		~SorptionSimple(void);
-		/**
-		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
-		*/
-		//double **compute_reaction(double **concentrations, int loc_el);
+
 		/**
 		*
 		*/
 		void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
-
-                //void initialize(void) override;
-		void make_tables(void) override;
-                void update_solution(void) override;
                 
 		/**
 		* Meaningless inherited methods.
