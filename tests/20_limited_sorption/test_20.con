@@ -1,9 +1,9 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "TestXXX-pork",
+    description = "Adsorption all",
     mesh = {
-      mesh_file = "${INPUT}/test_20.msh"
+      mesh_file = "input/test_20.msh"
     }, 
     
     primary_equation = {
@@ -60,21 +60,23 @@
         end_time = 15.0
       },
       
-      adsorptions = {
+      reactions = {
+        TYPE = "Sorption",
         solvent_dens = 1.0,
-        species = ["A", "As-lin", "Bs-lang", "Cs-freund"],
+        substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
         molar_masses = [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
         data= [
           {
-            region = "rectangle",
+            r_set="ALL",
             rock_density = 1.0,
             sorption_types = [ "none", "linear", "langmuir", "freundlich"],
             mult_coefs = [0, 0.6, 0.4, 0.6],
-	    second_params = [0, 0, 0.6, 0.4]
+            second_params = [0, 0, 0.6, 0.4]
           }
         ]
       }
+          
     } 
   }, 
   

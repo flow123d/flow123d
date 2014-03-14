@@ -70,9 +70,9 @@ namespace IT = Input::Type;
 
 IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selection("TransportSorptionType")
     .add_value(none,"none","No sorption considered")
-    .add_value(linear,"linear","Linear isotherm described sorption considered.")
-    .add_value(freundlich,"freundlich","Freundlich isotherm described sorption considered")
-    .add_value(langmuir,"langmuir","Langmuir isotherm described sorption considered")
+    .add_value(Isotherm::linear,"linear","Linear isotherm described sorption considered.")
+    .add_value(Isotherm::freundlich,"freundlich","Freundlich isotherm described sorption considered")
+    .add_value(Isotherm::langmuir,"langmuir","Langmuir isotherm described sorption considered")
     .close();
 
 
@@ -616,8 +616,9 @@ void ConvectionTransport::compute_one_step() {
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
 
-    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed() ) {
-        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed() );
+
+    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed()) {
+        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed());
         create_transport_matrix_mpi();
 
         // need new fixation of the time step
@@ -678,7 +679,7 @@ void ConvectionTransport::compute_one_step() {
     //time_->view("CONVECTION");
     time_->next_time(); // explicit scheme use values from previous time and then set then new time
 
-    START_TIMER("old_sorp_step");
+
     for (sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
       
@@ -710,7 +711,8 @@ void ConvectionTransport::compute_one_step() {
       }
 	}
     for (sbi = 0; sbi < n_subst_; sbi++) {*/
-           
+    
+    START_TIMER("old_sorp_step");
         if ((dual_porosity == true) || (sorption == true) )
             // cycle over local elements only in any order
             for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -725,6 +727,7 @@ void ConvectionTransport::compute_one_step() {
       //END_TIMER("dual porosity/old-sorption");
     }
     END_TIMER("old_sorp_step");
+    
     END_TIMER("convection-one step");
 }
 
@@ -1062,6 +1065,8 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
         		ci = (pci - conc_avg) * exp(-alpha * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt()) + conc_avg;
         		// --------------------------------------------------------------------------
         		//printf("\n%f\t%f\t%f",conc_avg,cm,ci);
+//                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  alpha: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
+//                                 cm, ci, pcm, pci, conc_avg, alpha, por_m, por_imm, time_->dt());
         		//getchar();
 
         		conc[MOBILE][sbi][elm_pos] = cm;
@@ -1128,11 +1133,11 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
 
     //if(conc_avg > 1e-20)
     switch (sorp_type) {
-    case linear: //linear
+    case Isotherm::linear: //linear
         *concx = conc_avg / (1 + Kx);
         //    *concx_sorb = (conc_avg - *concx) * Nv;   // s = Kd *c  [kg/m^3]
         break;
-    case freundlich: //freundlich
+    case Isotherm::freundlich: //freundlich
         parameter = sorp_coef1;
         cz = pow(ad / (Kx * parameter), 1 / (parameter - 1));
         tcz = ad / parameter;
@@ -1148,7 +1153,7 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
         }
         *concx = NR;
         break;
-    case langmuir: // langmuir
+    case Isotherm::langmuir: // langmuir
         parameter = sorp_coef1;
         NR = 0;
         //Kx = sorp_coef0/N;

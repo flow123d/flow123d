@@ -12,7 +12,6 @@
 
 #include <vector>
 #include <input/input_type.hh>
-#include <input/accessors.hh>
 
 class Mesh;
 class Distribution;
@@ -39,34 +38,22 @@ class Linear_reaction: public Reaction
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
-
+                
+                void initialize(void) override;
+                
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		//virtual
-		double **compute_reaction(double **concentrations, int loc_el);
+		virtual double **compute_reaction(double **concentrations, int loc_el) override;
 		/**
 		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
 		*/
-		//virtual
-		virtual void compute_one_step(void);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		//void set_time_step(double new_timestep, Input::Record in_rec);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		//virtual void set_time_step(Input::Record in_rec);
-		//virtual
-		void set_time_step(double time_step);
+		void update_solution(void) override;
 		/**
 		*	This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
 		*/
-		/**
-		*
-		*/
 		virtual double **modify_reaction_matrix(void);
+             
 	protected:
 
         double **allocate_reaction_matrix(void);
@@ -75,10 +62,8 @@ class Linear_reaction: public Reaction
 		*	This method disables to use constructor without parameters.
 		*/
 		Linear_reaction();
-		/**
-		*	Fuctions holds together setting of isotopes, bifurcations and substance indices.
-		*/
-		void prepare_inputs(Input::Record in_rec);
+                
+                virtual void init_from_input(Input::Record in_rec) override;
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
@@ -95,14 +80,19 @@ class Linear_reaction: public Reaction
 		*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 		*/
 		void print_half_lives(int n_subst);
-		/**
-		* 	Boolean which indicates the use of Pade approximant of the matrix exponential.
-		*/
-		//bool matrix_exp_on;
+                
+                /**
+                *       Finds a position of a string in specified array.
+                */
+                unsigned int find_subst_name(const std::string &name);
 		/**
 		*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 		*/
 		double **reaction_matrix;
+                /**
+                *       Pointer to reference previous concentration array used in compute_reaction().
+                */
+                double *prev_conc;
 		/**
 		*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
 		*/
@@ -115,7 +105,6 @@ class Linear_reaction: public Reaction
 		*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
 		*/
 		std::vector<std::vector<double> > bifurcation;
-		
 };
 
 #endif

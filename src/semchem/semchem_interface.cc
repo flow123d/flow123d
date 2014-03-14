@@ -8,10 +8,13 @@
 
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
-#include "transport/transport.h"
+//#include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+
+#define MOBILE 0
+#define IMMOBILE 1
 
 using namespace std;
 
@@ -122,7 +125,7 @@ void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por
 	return;
 }*/
 
-void Semchem_interface::compute_one_step(void)
+void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
 	{
