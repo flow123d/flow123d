@@ -67,14 +67,20 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
     data_.set_mesh(init_mesh);
     
     data_.set_limit_side(LimitSide::right);
-    
-    //init_from_input(in_rec);
 }
 
 Dual_por_exchange::~Dual_por_exchange(void)
 {
   if(reaction_mob != nullptr) delete reaction_mob;
   if(reaction_immob != nullptr) delete reaction_immob;
+  
+  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
+  {
+      //no mpi vectors
+      xfree(immob_concentration_matrix[sbi]);
+  }
+
+  xfree(immob_concentration_matrix);
 }
 
 
@@ -99,11 +105,11 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
                 
     } else
     if (reactions_it->type() == Dual_por_exchange::input_type ) {
-        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.");
+        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
     } else
     if (reactions_it->type() == Semchem_interface::input_type ) 
     {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.");
+        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
     } else 
     {
         xprintf(UsrErr, "Wrong reaction type in DualPorosity model.\n");
@@ -132,14 +138,14 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
                 
     } else
     if (reactions_it->type() == Dual_por_exchange::input_type ) {
-        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.");
+        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
     } else
     if (reactions_it->type() == Semchem_interface::input_type ) 
     {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.");
+        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
     } else 
     {
-        xprintf(UsrErr, "Wrong reaction type in DualPorosity model.\n");
+        xprintf(UsrErr, "Unknown reactions type in DualPorosity model.\n");
     }
     
   } else
@@ -179,6 +185,7 @@ void Dual_por_exchange::initialize(void )
     }
   }
   
+  // creating reactions from input and setting their parameters
   init_from_input(input_record_);
   
   if(reaction_mob != nullptr)

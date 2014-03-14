@@ -107,7 +107,14 @@ public:
 		*/
 		SorptionBase();
                 
+                /// Initializes private members of sorption from the input record.
                 void init_from_input(Input::Record in_rec) override;
+                
+                /** Initializes possible following reactions from input record.
+                 * It should be called after setting mesh, time_governor, distribution and concentration_matrix
+                 * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
+                 */
+                void init_from_input_reaction(Input::Record in_rec);
 		/**
 		*	For printing parameters of isotherms under consideration, not necessary to store
 		*/
@@ -155,6 +162,10 @@ public:
 		* Array for storage infos about sorbed species concentrations.
 		*/
 		double** sorbed_conc_array;
+                
+                /** Reaction model that follows the sorption.
+                 */
+                Reaction* reaction;
 };
 
 #endif

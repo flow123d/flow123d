@@ -7,6 +7,9 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
+#include "reaction/dual_por_exchange.hh"
+#include "semchem/semchem_interface.hh"
+
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/system.hh"
@@ -51,7 +54,9 @@ Record SorptionBase::input_type
     .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
-			"Key called time required by TimeGovernor in Sorption constructor.");/**/
+			"Key called time required by TimeGovernor in Sorption constructor.")
+        
+        .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.");
 
 SorptionBase::EqData::EqData()
 {
@@ -105,26 +110,16 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
 
 SorptionBase::~SorptionBase(void)
 {
-}
-
-
-void SorptionBase::initialize(void )
-{
-  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  if(reaction != nullptr) delete reaction;
   
-    //allocating new array for sorbed concentrations
-    unsigned int nr_of_local_elm = distribution->lsize();
-    sorbed_conc_array = new double * [n_substances_];
-    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
-    {
-      sorbed_conc_array[sbi] = new double[ nr_of_local_elm ];
-      for (unsigned int i = 0; i < nr_of_local_elm; i++)
-      {
-        sorbed_conc_array[sbi][i] = 0.0;
-      }
-    }
-    
+  
+  for (unsigned int sbi = 0; sbi < n_substances_; sbi++) 
+  {
+      //no mpi vectors
+      delete[] sorbed_conc_array[sbi];
+  }
+
+  delete[] sorbed_conc_array;
 }
 
 
@@ -166,6 +161,67 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 	}
 }
 
+void SorptionBase::initialize(void )
+{
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  
+    //allocating new array for sorbed concentrations
+    unsigned int nr_of_local_elm = distribution->lsize();
+    sorbed_conc_array = new double * [n_substances_];
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    {
+      sorbed_conc_array[sbi] = new double[ nr_of_local_elm ];
+      for (unsigned int i = 0; i < nr_of_local_elm; i++)
+      {
+        sorbed_conc_array[sbi][i] = 0.0;
+      }
+    }
+    
+  // creating reaction from input and setting their parameters
+  init_from_input_reaction(input_record_);
+  
+  if(reaction != nullptr)
+  { 
+    reaction->set_time_governor(*time_);
+    reaction->set_concentration_matrix(concentration_matrix, distribution, el_4_loc);
+    reaction->initialize();
+  }
+}
+
+void SorptionBase::init_from_input_reaction(Input::Record in_rec)
+{
+  DBGMSG("dual_por init_from_input\n");
+  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
+  if ( reactions_it ) 
+  {
+    if (reactions_it->type() == Linear_reaction::input_type ) {
+        reaction =  new Linear_reaction(*mesh_, *reactions_it, names_);
+                
+    } else
+    if (reactions_it->type() == Pade_approximant::input_type) {
+        reaction = new Pade_approximant(*mesh_, *reactions_it, names_ );
+        
+    } else
+    if (reactions_it->type() == SorptionBase::input_type ) {
+        xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
+    } else
+    if (reactions_it->type() == Dual_por_exchange::input_type ) {
+        xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
+    } else
+    if (reactions_it->type() == Semchem_interface::input_type ) 
+    {
+        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+    } else 
+    {
+        xprintf(UsrErr, "Unknown reactions type in Sorption model.\n");
+    }
+  } else
+  {
+    reaction = nullptr;
+  }
+}
+
 
 void SorptionBase::update_solution(void)
 {
@@ -181,11 +237,11 @@ void SorptionBase::update_solution(void)
   START_TIMER("Sorption");
   for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
   {
-    this->compute_reaction(concentration_matrix, loc_el);
+    compute_reaction(concentration_matrix, loc_el);
   }
   END_TIMER("Sorption");
-
-  return;
+  
+  if(reaction != nullptr) reaction->update_solution();
 }
 
 void SorptionBase::make_tables(void)
