@@ -171,6 +171,14 @@ public:
     }
 
     /**
+     * Collective interface to @p FieldCommonBase::output_type().
+     * @param rt   Discrete function space (element, node or corner data).
+     */
+    void output_type(OutputTime::DiscreteSpace rt) {
+    	for (auto field : field_list) field->output_type(rt);
+	}
+
+    /**
      * Collective interface to @p FieldCommonBase::output().
      */
     void output(Input::Record output_rec) {
