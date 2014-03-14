@@ -464,7 +464,8 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] ).units( units() );
+//        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] ).units( units() );
+    	sub_fields_[i_comp].name( sub_names_[i_comp] ).units( units() );
 }
 
 
