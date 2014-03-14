@@ -190,6 +190,14 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
+        // here assume that velocity field is extended as constant
+        // to the previous time, so here we set left bound of the interval where the velocity
+        // has current value; this may not be good for every transport !!
+        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
+        // let every equation set time according to nature of the time scheme
+
+        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
+        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
@@ -199,6 +207,8 @@ public:
     
     
     virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
+
+    virtual void set_concentration_vector(Vec &vc){};
 
 
 protected:

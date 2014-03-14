@@ -21,12 +21,12 @@ class Mesh;
 //class SparseGraph;
 
 class Reaction;
-class Linear_reaction;
-//class Pade_approximant;
-class Sorption;
-//class Dual_por_exchange;
-class Semchem_interface;
 class ConvectionTransport;
+
+class SorptionBase;
+class Semchem_interface;
+
+
 
 
 
@@ -134,6 +134,8 @@ public:
 
     /// Returns reference to the vector of substnace names.
     inline vector<string> &substance_names() { return subst_names_; }
+
+    virtual void set_concentration_vector(Vec &vec){};
 
 
 protected:
@@ -267,10 +269,11 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     ConvectionTransport *convection;
-    Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
-    Sorption *sorptions;
-    Sorption *sorptions_immob;
-    //Dual_por_exchange *dual_por_exchange;
+    Reaction *reaction;
+    
+    Reaction *decayRad;
+    SorptionBase *sorptions;
+
     Semchem_interface *Semchem_reactions;
     //int steps;
 

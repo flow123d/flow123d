@@ -1,0 +1,93 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Simple dual porosity test - steady flow, simple transport",
+    mesh = {
+      mesh_file = "input/dual_por.msh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH",
+      
+      data = [
+        { region = "volume", 
+          conductivity = 1e-20
+        },
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "1"}
+        }
+      ],
+       
+      output = {
+        output_stream = {
+          REF = "/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+
+      solver = { 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting",
+ 
+      data = [
+        { r_set = "ALL",
+          init_conc = 1.0,
+          por_m = 0.25,
+          por_imm = 0.25,
+          alpha = [0.01, 0.01],
+          phi = 0.5
+        },
+        { r_set = "BOUNDARY",
+          bc_conc = {TYPE="FieldFormula", value = "0"}
+        }
+      ],
+      
+      substances = [
+        "A",
+        "B"
+        ],
+      
+      dual_porosity = true,
+            
+      output = {
+        conc_mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+      time = {
+        end_time = 5.0
+      }   
+    } 
+  }, 
+  
+    output_streams = [
+      {
+        file = "dual_por.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "dual_por_transport.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+ 
+
+}
