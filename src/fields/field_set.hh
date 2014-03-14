@@ -93,6 +93,8 @@ public:
     	for( auto field : field_list)
     		rec.declare_key(field->name(), IT::String(), IT::Default::optional(),
     			"Name of the output stream for the field "+field->name()+"." );
+
+    	return rec;
     }
 
 
