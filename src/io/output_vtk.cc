@@ -290,8 +290,8 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
     for( OutputDataBase* data : vec_output_data)
     {
         file 	<< "<DataArray type=\"Float64\" "
-        		<< "Name=\"" << data->output_field_name <<"\""
-        		<< "NumberOfComponents=\"" << data->n_elem_ << "\""
+        		<< "Name=\"" << data->output_field_name <<"\" "
+        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" "
         		<< "format=\"ascii\">"
                 << endl;
 

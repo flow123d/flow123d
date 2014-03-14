@@ -292,9 +292,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
     // get possibly existing data for the same field, check both name and type
     OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
-    OutputData<Value> *output_data=nullptr;
-    if (data && typeid(data) == typeid(output_data))
-    	output_data = dynamic_cast<decltype(output_data)>(data);
+    OutputData<Value> *output_data = dynamic_cast<OutputData<Value> *>(data);
 
     if (!output_data) {
         switch(space_type) {
