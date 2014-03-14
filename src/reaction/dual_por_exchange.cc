@@ -25,7 +25,8 @@ using namespace Input::Type;
 using namespace std;
 
 
-const double Dual_por_exchange::min_dt = 1e-5;
+//it is currently switched of (by "0") until the reference tests are created
+const double Dual_por_exchange::min_dt = 0;
 
 Record Dual_por_exchange::input_type
         = Record("DualPorosity",
