@@ -47,6 +47,7 @@
 #include "fields/field_values.hh"
 
 
+class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;

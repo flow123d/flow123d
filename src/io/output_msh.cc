@@ -92,22 +92,15 @@ void OutputMSH::write_msh_topology(void)
 void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
 {
     ofstream &file = this->get_base_file();
-    long int item_id = 1;
-    unsigned int i, j, offset;
 
     /* Set precision to max */
-    file.precision(std::numeric_limits<float>::digits10);
+    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-    offset = output_data->vector_items_count;
 
-    /* Write ascii data */
-    for(i=0; i < output_data->items_count; i += offset, ++item_id) {
-        file << item_id << " ";
-        for(j=0; j < offset; j++) {
-            output_data->print(file, i*offset + j);
-            file << " ";
-        }
+    for(unsigned int i=0; i < output_data->n_values; i ++) {
+    	file << i+1 << " ";
+        output_data->print(file, i);
         file << std::endl;
     }
 
@@ -118,24 +111,21 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 {
     Mesh *mesh = this->get_mesh();
     ofstream &file = this->get_base_file();
-    long int item_id = 1;
-    unsigned int ele_id, it_id, offset;
 
     /* Set precision to max */
-    file.precision(std::numeric_limits<float>::digits10);
+    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-    offset = output_data->vector_items_count;
-
     /* Write ascii data */
-    ele_id = 0;
+    unsigned int i_node;
+	unsigned int i_corner=0;
     FOR_ELEMENTS(mesh, ele) {
         file << ele.index() + 1 << " " << ele->n_nodes() << " ";
-        for(it_id=0; it_id < offset; it_id++) {
-            output_data->print(file, ele_id*offset + it_id);
-            file << " ";
+
+        FOR_ELEMENT_NODES(ele, i_node) {
+            output_data->print(file, i_corner++);
         }
-        ele_id += ele->n_nodes();
+
         file << std::endl;
     }
 }
@@ -157,15 +147,15 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << "$NodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->vector_items_count << endl;   // number of components
-            file << output_data->items_count << endl;  // number of values
+            file << output_data->n_elem_ << endl;   // number of components
+            file << output_data->n_values << endl;  // number of values
 
             this->write_msh_ascii_cont_data(output_data);
 
@@ -181,14 +171,14 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << "$ElementNodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->vector_items_count << endl;   // number of components
+            file << output_data->n_elem_ << endl;   // number of components
             file << mesh->n_elements() << endl; // number of values
 
             this->write_msh_ascii_discont_data(output_data);
@@ -212,15 +202,15 @@ void OutputMSH::write_msh_elem_data(double time, int step)
             file << "$ElementData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << output_data->field->name() << "_[" << output_data->field->units() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
             file << time << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << output_data->vector_items_count << endl;   // number of components
-            file << output_data->items_count << endl;  // number of values
+            file << output_data->n_elem_ << endl;   // number of components
+            file << output_data->n_values << endl;  // number of values
 
             this->write_msh_ascii_cont_data(output_data);
 

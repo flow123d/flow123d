@@ -176,36 +176,18 @@ private:
     /**
      *
      */
-    void write_vtk_scalar_ascii(OutputDataBase *output_data);
-
-    /**
-     *
-     */
-    void write_vtk_vector_ascii(OutputDataBase *output_data);
-
-    /**
-     *
-     */
     void write_vtk_ascii_data(OutputDataBase *output_data);
 
     /**
      *
      */
-    void write_vtk_data_ascii(vector<OutputDataBase*> *output_data);
+    void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
 
     /**
-     * \brief Write names of scalar values to the VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
+     * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
+     * Output is done into stream @p file.
      */
-    void write_vtk_scalar_data_names(vector<OutputDataBase*> *output_data);
-
-    /**
-     * \brief Write names of vector values to the VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
-     */
-    void write_vtk_vector_data_names(vector<OutputDataBase*> *output_data);
+    void write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &output_data);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)

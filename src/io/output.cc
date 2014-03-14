@@ -94,10 +94,9 @@ static inline void fix_GMSH_file_name(string *fname)
 }
 
 
-OutputDataBase *OutputTime::output_data_by_field(FieldCommonBase *field,
-        RefType ref_type)
+OutputDataBase *OutputTime::output_data_by_field_name
+		(const std::string &field_name, DiscreteSpace ref_type)
 {
-    OutputDataBase *output_data = NULL;
     std::vector<OutputDataBase*> *data_vector;
 
     switch(ref_type) {
@@ -113,17 +112,10 @@ OutputDataBase *OutputTime::output_data_by_field(FieldCommonBase *field,
     }
 
     /* Try to find existing data */
-    for(std::vector<OutputDataBase*>::iterator data_iter = data_vector->begin();
-            data_iter != data_vector->end();
-            ++data_iter) {
-        OutputDataBase *tmp = *data_iter;
-        if(tmp->field->name() == field->name()) {
-            output_data = tmp;
-            break;
-        }
-    }
+    for(auto &data : *data_vector)
+        if (data->field_name == field_name)	return data;
 
-    return output_data;
+    return nullptr;
 }
 
 /* Initialize static member of the class */
@@ -163,6 +155,8 @@ OutputTime *OutputTime::output_stream_by_name(string name)
 
 OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, const string key_name)
 {
+	// TODO: do not try to find empty string and raise exception
+
 	// Try to find record with output stream (the key is name of data)
 	Input::Iterator<string> stream_name_iter = in_rec.find<string>(key_name);
 
@@ -373,3 +367,45 @@ void OutputTime::clear_data(void)
         output_time->elem_data.clear();
     }
 }
+
+#define INSTANCE_register_field(spacedim, value) \
+	template  void OutputTime::register_data<spacedim, value> \
+		(const Input::Record &in_rec, const DiscreteSpace ref_type, Field<spacedim, value> &field);
+
+#define INSTANCE_register_multifield(spacedim, value) \
+	template void OutputTime::register_data<spacedim, value> \
+		(const Input::Record &in_rec, const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
+
+
+#define INSTANCE_OutputData(spacedim, value) \
+	template class OutputData<value>;
+
+
+#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to)                      \
+		MACRO(dim_from, FieldValue<dim_to>::VectorFixed )                       \
+		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
+
+#define INSTANCE_TO_ALL( MACRO, dim_from) \
+		MACRO(dim_from, FieldValue<0>::Enum ) \
+		MACRO(dim_from, FieldValue<0>::EnumVector)                \
+		MACRO(dim_from, FieldValue<0>::Integer)                \
+		MACRO(dim_from, FieldValue<0>::Scalar)                  \
+		MACRO(dim_from, FieldValue<0>::Vector)                  \
+\
+INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
+INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
+
+#define INSTANCE_ALL(MACRO) \
+		INSTANCE_TO_ALL( MACRO, 3) \
+		INSTANCE_TO_ALL( MACRO, 2)
+
+
+INSTANCE_ALL( INSTANCE_register_field )
+INSTANCE_ALL( INSTANCE_register_multifield )
+
+//INSTANCE_TO_ALL( INSTANCE_OutputData, 0)
+
+
+//INSTANCE_register_field(3, FieldValue<0>::Scalar)
+//INSTANCE_register_multifield(3, FieldValue<0>::Scalar)
+//INSTANCE_OutputData(3, FieldValue<0>::Scalar)

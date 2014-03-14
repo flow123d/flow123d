@@ -1,0 +1,24 @@
+Test problem 23
+---------------
+- Dual porosity test
+
+- dual_por.con and dual_por_old.con solves the same simple transport 
+  with dual porosity and compares results with the same reference data.
+  This way the old and new dual porosity model is checked.
+  
+- dual porosity with following reactions is enabled but not tested with any reference data:
+- dual_por_linear: 
+    DualPorosity  -> Linear reaction in mobile zone
+                  -> Linear reaction in immobile zone
+                  
+- dual_por_pade: 
+    DualPorosity  -> Pade approximation reaction in mobile zone
+                  -> Pade approximation reaction in immobile zone
+                  
+- dual_por_sorp: 
+    DualPorosity  -> sorption in mobile zone
+                  -> sorption in immobile zone
+                  
+- dual_por_sorp_linear: 
+    DualPorosity  -> sorption in mobile zone    -> Linear reaction
+                  -> sorption in immobile zone  -> Linear reaction

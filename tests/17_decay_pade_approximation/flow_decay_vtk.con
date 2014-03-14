@@ -70,6 +70,9 @@
         matrix_exp_on = true,
         nom_pol_deg = 3,
         den_pol_deg = 3,
+        substances = {
+            REF = "/problem/secondary_equation/substances/"
+        },
         decays = [
           {
             parent = "A",

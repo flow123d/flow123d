@@ -135,6 +135,13 @@ public:
     }
 
     /**
+     * Set time governor.
+     *
+     * Used to set pointer to common time governor (e.g. in Transport Operator Splitting, Reaction).
+     */
+    virtual void set_time_governor(TimeGovernor &time);
+
+    /**
      * Most actual planned time for solution.
      */
     inline double planned_time()
@@ -169,6 +176,7 @@ public:
      * Child class have to implement getter for parallel solution vector.
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
+
 
 protected:
     Mesh * mesh_;

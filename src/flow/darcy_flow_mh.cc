@@ -305,9 +305,11 @@ void DarcyFlowMH_Steady::update_solution() {
     START_TIMER("data reinit");
     //reinitializing data fields after time step
     //TODO: workaround for the steady problem
-    //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit) transport - the fields are not neccesary (or cannot) to be read again but the time must be set to infinity
-    //the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is read and there is no such data at infinity
-    //temporarily solved directly in field_elementwise and field_interpolatedP0
+    //if (time_->t() != TimeGovernor::inf_time) //this test cannot be here due to (mainly implicit)
+    // transport - the fields are not necessary (or cannot) to be read again but the time must be set to infinity
+    // the problem of time==infinity shows up in field_elementwise and field_interpolatedP0 where a gmsh file is
+    // read and there is no such data at infinity
+    // temporarily solved directly in field_elementwise and field_interpolatedP0
 
     data.set_time(*time_);
     END_TIMER("data reinit");
