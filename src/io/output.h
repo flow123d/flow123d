@@ -72,12 +72,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <typeinfo>
-#include <mpi.h>
-#include <boost/any.hpp>
-#include <assert.h>
 
-#include "system/xio.h"
+#include "system/system.hh"
 #include "mesh/mesh.h"
 
 #include "fields/field.hh"
@@ -88,306 +84,301 @@
 class OutputVTK;
 class OutputMSH;
 
+
+
 /**
- * \brief This method is generic parent class for templated OutputData
+ * \brief Common parent class for templated OutputData.
+ *
+ * Provides virtual method for output of stored data.
+ *
  */
 class OutputDataBase {
 public:
-    OutputDataBase() {
-        this->field = NULL;
-        this->items_count = 0;
-        this->vector_items_count = 0;
-    };
+	/**
+	 * Number of components of element data stored in the database.
+	 */
+	enum ValueType {
+		scalar=1,
+		vector=3,
+		tensor=9
+	};
+
     virtual ~OutputDataBase() {};
-
-    /**
-     *
-     */
-    FieldCommonBase *field;
-    /**
-     *
-     */
-    int items_count;
-
-    /**
-     *
-     */
-    int vector_items_count;
-
-    /**
-     *
-     */
     virtual void print(ostream &out_stream, unsigned int idx) = 0;
-protected:
+
+
+    /**
+     * Data copied from Field.
+     */
+    std::string output_field_name;
+    std::string field_name;
+    std::string field_units;
+    /**
+     * Number of data values.
+     */
+    unsigned int n_values;
+
+
+    /**
+     * Number of data elements per data value.
+     */
+    ValueType n_elem_;
 
 };
 
 /**
  * \brief This class is used for storing data that are copied from field.
+ *
+ *
  */
-template <class T>
+template <class Value>
 class OutputData : public OutputDataBase {
 public:
-    /**
+	typedef typename Value::element_type ElemType;
+
+	/**
      * \brief Constructor of templated OutputData
      */
-    OutputData(FieldCommonBase *field, int items_count, int vector_items_count);
+	OutputData(const FieldCommonBase &field,
+	        unsigned int size)
+	: val_aux(aux)
+	{
+		this->field_name = field.name();
+		this->field_units = field.units();
+		this->output_field_name = this->field_name +"_["+this->field_units+"]";
+
+		this->n_values=size;
+		val_aux.set_n_comp(field.n_comp());
+
+		if (val_aux.n_cols()==1)
+			if (val_aux.n_rows()==1)
+				this->n_elem_ = scalar;
+			else
+				if (val_aux.n_rows()>2) this->n_elem_ = vector;
+				else
+					xprintf(PrgErr, "Can not output field '%s' returning variable size vectors. Try convert to MultiField.\n");
+		else
+			this->n_elem_ = tensor;
+
+	    data_ = new ElemType[n_values * n_elem_];
+	}
+
 
     /**
      * \brief Destructor of OutputData
      */
-    ~OutputData();
+    ~OutputData()
+	{
+	    delete[] this->data_;
+	}
+
 
     /**
-     * Method for writing data to output stream
+     * Output data element on given index @p idx. Method for writing data to output stream
+     *
+     * TODO: should at least output whole output value at once, since storage format should be hidden.
+     * TODO: should output whole array at once, otherwise this could be performance bottleneck.
+     * TODO: indicate if the tensor data are output in column-first or raw-first order
+     *       and possibly implement transposition. Set such property for individual file formats.
+     *       Class OutputData stores always in raw-first order.
      */
-    void print(ostream &out_stream, unsigned int idx) {
-        assert(idx < this->items_count);
-        out_stream << this->_data[idx];
+    void print(ostream &out_stream, unsigned int idx) override
+    {
+        ASSERT_LESS(idx, this->n_values);
+        ElemType *ptr_begin = data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+        	out_stream << *ptr << " ";
     }
 
     /**
-     * Overloaded operator []
+     * Store data element of given data value under given index.
      */
-    T& operator[] (std::size_t idx) {
-        assert(idx < this->items_count);
-        return this->_data[idx];
+    void store_value(unsigned int idx, const Value& value) {
+    	operate(idx, value,  [](ElemType& raw, ElemType val) {raw=val;});
     };
 
-private:
     /**
-     * Array of templated data
+     * Add value to given index
      */
-    T *_data;
+    void add(unsigned int idx, const Value& value) {
+    	operate(idx, value,   [](ElemType& raw, ElemType val) {raw+=val;});
+    };
+
+    void zero(unsigned int idx) {
+    	operate(idx, val_aux, 	[](ElemType& raw, ElemType val) {raw=0;});
+    };
+
+    void normalize(unsigned int idx, unsigned int divisor) {
+    	operate(idx, val_aux, 	[divisor](ElemType& raw, ElemType val) {raw/=divisor;});
+    };
+
+
+private:
+    template <class Func>
+    void operate(unsigned int idx, const Value &val, const Func& func) {
+    	ASSERT_LESS(idx, this->n_values);
+    	ElemType *ptr = data_ + idx*n_elem_;
+        for(unsigned int i_row=0; i_row < val.n_rows(); i_row++)
+        	for(unsigned int i_col=0; i_col < val.n_cols(); i_col++)
+        	{
+        		func(*ptr, val(i_row, i_col));
+        		ptr++;
+        	}
+    };
+
+
+
+
+
+    /**
+     * Computed data values for output stored as continuous buffer of their data elements.
+     * One data value has @p n_elem data elements (of type double, int or unsigned int).
+     */
+    ElemType *data_;
+
+    /// auxiliary value
+    typename Value::return_type aux;
+    // auxiliary field value envelope over @p aux
+    Value val_aux;
+
+
 };
 
-template <class T>
-OutputData<T>::OutputData(FieldCommonBase *field,
-        int items_count,
-        int vector_items_count)
-{
-    this->field = field;
-    this->items_count = items_count;
-    this->_data = new T[vector_items_count * items_count];
-    this->vector_items_count = vector_items_count;
-}
-
-template <class T>
-OutputData<T>::~OutputData()
-{
-    delete[] this->_data;
-}
 
 
+/**************************************************************************************************************
+ * OutputTime implementation
+ */
 
 template<int spacedim, class Value>
 void OutputTime::register_data(const Input::Record &in_rec,
-        const RefType type,
+        const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-	// TODO: do not try to find empty string and raise exception
 	OutputTime *output_stream = output_stream_by_key_name(in_rec, multi_field.name());
-
-	for (unsigned long index=0; index < multi_field.size(); index++)
-    	OutputTime::compute_field_data(type, &(multi_field[index]), output_stream);
+	if (output_stream) {
+		for (unsigned long index=0; index < multi_field.size(); index++)
+			output_stream->compute_field_data(type, multi_field[index] );
+	}
 }
 
 
 template<int spacedim, class Value>
 void OutputTime::register_data(const Input::Record &in_rec,
-        const RefType ref_type,
+        const DiscreteSpace ref_type,
         Field<spacedim, Value> &field_ref)
 {
-    // TODO: do not try to find empty string and raise exception
-    OutputTime::compute_field_data(ref_type, &field_ref, output_stream_by_key_name(in_rec, field_ref.name()));
+	OutputTime *output_stream = output_stream_by_key_name(in_rec, field_ref.name());
+    if (output_stream) {
+    	output_stream->compute_field_data(ref_type, field_ref);
+    }
 }
 
 
 template<int spacedim, class Value>
-void OutputTime::compute_field_data(const RefType ref_type, Field<spacedim, Value> *field, OutputTime *output_time)
+void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
-	unsigned int item_count = 0, comp_count = 0, node_id;
-	OutputDataBase *output_data;
 
     /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank != 0) {
+    if( rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
 
+
     // TODO: remove const_cast after resolving problems with const Mesh.
-    Mesh *mesh = const_cast<Mesh *>(field->mesh());
+    mesh = const_cast<Mesh *>(field.mesh());
+    ASSERT(mesh, "Null mesh pointer.\n");
 
-    if(output_time->get_mesh() == NULL) {
-        output_time->set_mesh(mesh);
-    }
+    // get possibly existing data for the same field, check both name and type
+    OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
+    OutputData<Value> *output_data=nullptr;
+    if (data && typeid(data) == typeid(output_data))
+    	output_data = dynamic_cast<decltype(output_data)>(data);
 
-    ElementFullIter ele = ELEMENT_FULL_ITER(mesh, NULL);
-    Node *node;
-    int corner_index = 0;
-    int node_index = 0;
-    int ele_index = 0;
-
-    output_data = output_time->output_data_by_field((FieldCommonBase*)field,
-            ref_type);
-
-    switch(ref_type) {
-    case NODE_DATA:
-        item_count = mesh->n_nodes();
-        break;
-    case CORNER_DATA:
-        // Compute number of all corners
-        item_count = 0;
-        FOR_ELEMENTS(mesh, ele) {
-            item_count += ele->n_nodes();
-        }
-        break;
-    case ELEM_DATA:
-        item_count = mesh->n_elements();
-        break;
-    }
-
-    if(output_data == NULL) {
-        /* This is problematic part, because of templates :-( */
-        if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-            output_data = (OutputDataBase*)new OutputData<int>(field, item_count, 1);
-        } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-            output_data = (OutputDataBase*)new OutputData<int>(field, item_count, 3);
-        } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-            output_data = (OutputDataBase*)new OutputData<unsigned int>(field, item_count, 1);
-        } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-            output_data = (OutputDataBase*)new OutputData<unsigned int>(field, item_count, 3);
-        } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-            output_data = (OutputDataBase*)new OutputData<double>(field, item_count, 1);
-        } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-            output_data = (OutputDataBase*)new OutputData<double>(field, item_count, 3);
-        } else {
-            /* TODO: this will not be necessary */
-            throw "Try to register unsupported data type.";
-        }
-
-        switch(ref_type) {
+    if (!output_data) {
+        switch(space_type) {
         case NODE_DATA:
-            output_time->node_data.push_back(output_data);
+        	output_data = new OutputData<Value>(field, mesh->n_nodes());
+            node_data.push_back(output_data);
             break;
-        case CORNER_DATA:
-            output_time->corner_data.push_back(output_data);
-            break;
+        case CORNER_DATA: {
+            unsigned int n_corners = 0;
+            FOR_ELEMENTS(mesh, ele)
+                n_corners += ele->n_nodes();
+        	output_data = new OutputData<Value>(field, n_corners );
+            corner_data.push_back(output_data);
+        }
+        break;
         case ELEM_DATA:
-            output_time->elem_data.push_back(output_data);
+        	output_data = new OutputData<Value>(field, mesh->n_elements() );
+            elem_data.push_back(output_data);
             break;
         }
     }
 
-    unsigned int *count = new unsigned int[item_count];
+    unsigned int i_node;
 
     /* Copy data to array */
-    switch(ref_type) {
-    case NODE_DATA:
+    switch(space_type) {
+    case NODE_DATA: {
+    	// set output data to zero
+    	vector<unsigned int> count(output_data->n_values, 0);
+    	for(unsigned int idx=0; idx < output_data->n_values; idx++)
+    		output_data->zero(idx);
 
-        // Initialize arrays
-        for(node_id=0; node_id<item_count; node_id++) {
-            if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-                (*(OutputData<int>*)output_data)[node_id] = 0;
-            } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-                (*(OutputData<int>*)output_data)[node_id] = 0;
-            } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-                (*(OutputData<unsigned int>*)output_data)[node_id] = 0;
-            } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-                (*(OutputData<unsigned int>*)output_data)[node_id] = 0;
-            } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-                (*(OutputData<double>*)output_data)[node_id] = 0;
-            } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-                (*(OutputData<double>*)output_data)[node_id] = 0;
-            }
-            count[node_id] = 0;
-        }
-
-        /* Copy data to temporary array */
+    	// sum values
         FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, node_id) {
-                node = ele->node[node_id];
-                node_index = mesh->node_vector.index(ele->node[node_id]);
-                if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-                    (*(OutputData<int>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-                    (*(OutputData<int>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-                    (*(OutputData<unsigned int>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-                    (*(OutputData<unsigned int>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-                    (*(OutputData<double>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-                    (*(OutputData<double>*)output_data)[node_index] += field->value(node->point(), mesh->element_accessor(ele_index));
-                }
-                count[mesh->node_vector.index(ele->node[node_id])]++;
+            FOR_ELEMENT_NODES(ele, i_node) {
+                Node * node = ele->node[i_node];
+                unsigned int ele_index = ele.index();
+                unsigned int node_index = mesh->node_vector.index(ele->node[i_node]);
+
+				const Value &node_value =
+						Value( const_cast<typename Value::return_type &>(
+								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+				output_data->add(node_index, node_value);
+				count[node_index]++;
+
             }
         }
 
         // Compute mean values at nodes
-        for(node_id=0; node_id<item_count; node_id++) {
-            if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-                (*(OutputData<int>*)output_data)[node_id] /= count[node_id];
-            } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-                (*(OutputData<int>*)output_data)[node_id] /= count[node_id];
-            } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-                (*(OutputData<unsigned int>*)output_data)[node_id] /= count[node_id];
-            } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-                (*(OutputData<unsigned int>*)output_data)[node_id] /= count[node_id];
-            } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-                (*(OutputData<double>*)output_data)[node_id] /= count[node_id];
-            } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-                (*(OutputData<double>*)output_data)[node_id] /= count[node_id];
-            }
-        }
-
-        break;
-    case CORNER_DATA:
+    	for(unsigned int idx=0; idx < output_data->n_values; idx++)
+    		output_data->normalize(idx, count[idx]);
+    }
+    break;
+    case CORNER_DATA: {
+    	unsigned int corner_index=0;
         FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, node_id) {
-                node = ele->node[node_id];
-                if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-                    (*(OutputData<int>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-                    (*(OutputData<int>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-                    (*(OutputData<unsigned int>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-                    (*(OutputData<unsigned int>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-                    (*(OutputData<double>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-                    (*(OutputData<double>*)output_data)[corner_index] = field->value(node->point(), mesh->element_accessor(ele_index));
-                }
+            FOR_ELEMENT_NODES(ele, i_node) {
+                Node * node = ele->node[i_node];
+                unsigned int ele_index = ele.index();
+
+				const Value &node_value =
+						Value( const_cast<typename Value::return_type &>(
+								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+                output_data->store_value(corner_index,  node_value);
                 corner_index++;
             }
-            ele_index++;
         }
-        break;
-    case ELEM_DATA:
+    }
+    break;
+    case ELEM_DATA: {
         FOR_ELEMENTS(mesh, ele) {
-            if(typeid(Value) == typeid(FieldValue<1>::Integer)) {
-                (*(OutputData<int>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            } else if(typeid(Value) == typeid(FieldValue<1>::IntVector)) {
-                (*(OutputData<int>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            } else if(typeid(Value) == typeid(FieldValue<1>::Enum)) {
-                (*(OutputData<unsigned int>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            } else if(typeid(Value) == typeid(FieldValue<1>::EnumVector)) {
-                (*(OutputData<unsigned int>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            } else if(typeid(Value) == typeid(FieldValue<1>::Scalar)) {
-                (*(OutputData<double>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            } else if(typeid(Value) == typeid(FieldValue<1>::Vector)) {
-                (*(OutputData<double>*)output_data)[ele_index] = field->value(ele->centre(), mesh->element_accessor(ele_index));
-            }
-            ele_index++;
+            unsigned int ele_index = ele.index();
+			const Value &ele_value =
+					Value( const_cast<typename Value::return_type &>(
+							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+            output_data->store_value(ele_index,  ele_value);
         }
-        break;
+    }
+    break;
     }
 
     /* Set the last time */
-    if(output_time->time < field->time()) {
-        output_time->time = field->time();
+    if(this->time < field.time()) {
+        this->time = field.time();
     }
 }
 

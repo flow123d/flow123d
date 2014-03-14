@@ -104,13 +104,13 @@ public:
     }
 
     /**
-     * Output data type used in the output() method. Can be different for different field copies.
+     * Output discrete space used in the output() method. Can be different for different field copies.
      * one can choose between:
      * data constant on elements, linear data given in nodes, and discontinuous linear data.
      *
-     * If not set explicitly by this method, the default value is Outputtime::ELEM_DATA
+     * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
-    FieldCommonBase & output_type(OutputTime::RefType rt)
+    FieldCommonBase & output_type(OutputTime::DiscreteSpace rt)
     { type_of_output_data_ = rt; return *this; }
 
     /**
@@ -160,7 +160,7 @@ public:
     const std::string &units() const
     { return shared_->units_;}
 
-    OutputTime::RefType output_type() const
+    OutputTime::DiscreteSpace output_type() const
     { return type_of_output_data_; }
 
     bool is_bc() const
@@ -229,7 +229,7 @@ public:
     virtual void copy_from(const FieldCommonBase & other) =0;
 
     /**
-     * Output the field. Use type of output data given by @p type_of_output_data member.
+     * Output the field. Use output discrete space given by @p type_of_output_data member.
      * The parameter @p output_rec is checked for key named by the field name. If the key exists its
      * string value is used to look for the OutputTime object of the same name, then the output of the field is performed.
      * If the key do not appear in the input, no output is done.
@@ -387,7 +387,7 @@ protected:
     /**
      * Output data type used in the output() method. Can be different for different field copies.
      */
-    OutputTime::RefType type_of_output_data_ = OutputTime::ELEM_DATA;
+    OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
 
     /**
      * Maximum number of FieldBase objects we store per one region.

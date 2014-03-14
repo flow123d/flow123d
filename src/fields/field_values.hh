@@ -281,6 +281,8 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int j)
         { return value_.at(i,j); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i,j); }
     inline operator return_type() const
         { return value_;}
 
@@ -293,6 +295,9 @@ struct AccessTypeDispatch { typedef ET type;};
 template <>
 struct AccessTypeDispatch<unsigned int> { typedef Input::Enum type; };
 
+
+
+/// **********************************************************************
 /// Specialization for scalars
 template <class ET>
 class FieldValue_<1,1,ET> {
@@ -331,6 +336,9 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return internal::scalar_value_conversion(value_); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return internal::scalar_value_conversion(value_); }
+
     inline operator return_type() const
         { return value_;}
 
@@ -340,6 +348,8 @@ private:
 
 
 
+
+/// **********************************************************************
 /// Specialization for variable size vectors
 template <class ET>
 class FieldValue_<0,1,ET> {
@@ -395,6 +405,9 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i); }
+
     inline operator return_type() const
         { return value_;}
 
@@ -402,6 +415,7 @@ private:
     return_type &value_;
 };
 
+/// **********************************************************************
 /// Specialization for fixed size vectors
 template <int NRows, class ET>
 class FieldValue_<NRows,1,ET> {
@@ -453,6 +467,9 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i); }
+
     inline operator return_type() const
         { return value_;}
 

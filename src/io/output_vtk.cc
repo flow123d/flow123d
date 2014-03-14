@@ -281,123 +281,52 @@ void OutputVTK::write_vtk_discont_topology(void)
 }
 
 
-void OutputVTK::write_vtk_ascii_data(OutputDataBase *output_data)
+
+
+void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
 {
     ofstream &file = this->get_data_file();
-    unsigned int i, j, offset;
 
-    /* Set precision to max */
-    file.precision(std::numeric_limits<float>::digits10);
-    file.precision(std::numeric_limits<double>::digits10);
+    for( OutputDataBase* data : vec_output_data)
+    {
+        file 	<< "<DataArray type=\"Float64\" "
+        		<< "Name=\"" << data->output_field_name <<"\""
+        		<< "NumberOfComponents=\"" << data->n_elem_ << "\""
+        		<< "format=\"ascii\">"
+                << endl;
 
-    offset = output_data->vector_items_count;
+        /* Set precision to max */
+        //file.precision(std::numeric_limits<float>::digits10);
+        file.precision(std::numeric_limits<double>::digits10);
 
-    for(i=0; i < output_data->items_count; i += offset) {
-        for(j=0; j < offset; j++) {
-            output_data->print(file, i*offset + j);
+        for(unsigned int i=0; i < data->n_values; i ++) {
+            data->print(file, i);
             file << " ";
         }
-        file << " ";
+
+        file << "</DataArray>" << endl;
     }
 }
 
 
-void OutputVTK::write_vtk_scalar_ascii(OutputDataBase *output_data)
+
+
+void OutputVTK::write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &vec_output_data)
 {
-    ofstream &file = this->get_data_file();
+    file << "Scalars=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::scalar) file << data->output_field_name << ",";
+	file << "\" ";
 
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" Name=\"" <<
-            output_data->field->name() <<
-            "_[" <<
-            output_data->field->units() <<
-            "]\" format=\"ascii\">" <<
-            endl;
+    file << "Vectors=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::vector) file << data->output_field_name << ",";
+	file << "\" ";
 
-    this->write_vtk_ascii_data(output_data);
-
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-}
-
-
-void OutputVTK::write_vtk_vector_ascii(OutputDataBase *output_data)
-{
-    ofstream &file = this->get_data_file();
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" Name=\"" <<
-            output_data->field->name() <<
-            "_[" <<
-            output_data->field->units() <<
-            "]\" NumberOfComponents=\"" <<
-            output_data->vector_items_count <<
-            "\" format=\"ascii\">" <<
-            endl;
-
-    this->write_vtk_ascii_data(output_data);
-
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-}
-
-
-void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> *vec_output_data)
-{
-	OutputDataBase *output_data;
-
-    /* Write data on nodes or elements */
-    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
-            data != vec_output_data->end();
-            ++data)
-    {
-    	output_data = *data;
-
-        if(output_data->vector_items_count == 1) {
-            this->write_vtk_scalar_ascii(output_data);
-        } else if(output_data->vector_items_count == 3) {
-            this->write_vtk_vector_ascii(output_data);
-        } else {
-            /* TODO: not supported */
-        }
-    }
-}
-
-
-void OutputVTK::write_vtk_scalar_data_names(vector<OutputDataBase*> *vec_output_data)
-{
-	OutputDataBase *output_data;
-    ofstream &file = this->get_data_file();
-
-    /* Write names of scalars */
-    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
-                data != vec_output_data->end();
-                ++data)
-    {
-    	output_data = *data;
-        if(output_data->vector_items_count == 1) {
-            file << output_data->field->name() << "_[" << output_data->field->units() << "]";
-            file << ",";
-        }
-    }
-}
-
-
-void OutputVTK::write_vtk_vector_data_names(vector<OutputDataBase*> *vec_output_data)
-{
-	OutputDataBase *output_data;
-    ofstream &file = this->get_data_file();
-
-    /* Write names of vectors */
-    for(vector<OutputDataBase*>::iterator data = vec_output_data->begin();
-                data != vec_output_data->end(); ++data)
-    {
-    	output_data = *data;
-        if(output_data->vector_items_count == 3) {
-            file << output_data->field->name() << "_[" << output_data->field->units() << "]";
-            file << ",";
-        }
-    }
+    file << "Tensors=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
+	file << "\" ";
 }
 
 
@@ -405,42 +334,24 @@ void OutputVTK::write_vtk_node_data(void)
 {
     ofstream &file = this->get_data_file();
 
-    if((this->node_data.empty() != true) ||
-            (this->corner_data.empty() != true)) {
+    // merge node and corner data
+    vector<OutputDataBase*> node_corner_data(this->node_data);
+    node_corner_data.insert(node_corner_data.end(), this->corner_data.begin(), this->corner_data.end());
+
+    if( ! node_corner_data.empty() ) {
         /* Write <PointData begin */
         file << "<PointData ";
-
-        /* Write names of scalars */
-        file << "Scalars=\"";
-        if(this->node_data.empty() != true) {
-            this->write_vtk_scalar_data_names(&this->node_data);
-        }
-        if(this->corner_data.empty() != true) {
-            this->write_vtk_scalar_data_names(&this->corner_data);
-        }
-        file << "\" ";
-
-        /* Write names of vectors */
-        file << "Vectors=\"";
-        if(this->node_data.empty() != true) {
-            this->write_vtk_vector_data_names(&this->node_data);
-        }
-        if(this->corner_data.empty() != true) {
-            this->write_vtk_vector_data_names(&this->corner_data);
-        }
-        file << "\"";
-
-        /* Write right bracket of <PointData */
+        write_vtk_data_names(file, node_corner_data);
         file << ">" << endl;
 
         /* Write data on nodes */
-        if(this->node_data.empty() == false) {
-            this->write_vtk_data_ascii(&this->node_data);
+        if( ! this->node_data.empty() ) {
+            this->write_vtk_data_ascii(this->node_data);
         }
 
         /* Write data in corners of elements */
-        if(this->corner_data.empty() == false) {
-            this->write_vtk_data_ascii(&this->corner_data);
+        if( ! this->corner_data.empty() ) {
+            this->write_vtk_data_ascii(this->corner_data);
         }
 
         /* Write PointData end */
@@ -456,18 +367,11 @@ void OutputVTK::write_vtk_element_data(void)
     if(this->elem_data.empty() != true) {
         /* Write PointData begin */
         file << "<CellData ";
-        /* Write names of scalars */
-        file << "Scalars=\"";
-        this->write_vtk_scalar_data_names(&this->elem_data);
-        file << "\" ";
-
-        file << "Vectors=\"";
-        this->write_vtk_vector_data_names(&this->elem_data);
-        file << "\"";
+        write_vtk_data_names(file, this->elem_data);
         file << ">" << endl;
 
         /* Write own data */
-        this->write_vtk_data_ascii(&this->elem_data);
+        this->write_vtk_data_ascii(this->elem_data);
 
         /* Write PointData end */
         file << "</CellData>" << endl;
