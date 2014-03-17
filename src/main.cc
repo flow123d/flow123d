@@ -79,9 +79,9 @@ it::Record Application::input_type
     .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
-    		"If true, the program will wait for key press before it terminates.")
-    .declare_key("output_streams", it::Array( OutputTime::input_type ),
-    		"Array of formated output streams to open.");
+    		"If true, the program will wait for key press before it terminates.");
+//    .declare_key("output_streams", it::Array( OutputTime::input_type ),
+//    		"Array of formated output streams to open.");
 
 
 
@@ -293,24 +293,24 @@ void Application::run() {
 
         if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
-            // try to find "output_streams" record
-            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
-
+//            // try to find "output_streams" record
+//            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
+//
             int rank=0;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // Go through all configuration of "root" output streams and create them.
-                // Other output streams can be created on the fly and added to the array
-                // of output streams
-                if(output_streams) {
-                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-                            output_stream_rec != (*output_streams).end();
-                            i++, ++output_stream_rec)
-                    {
-                        OutputTime::output_stream(*output_stream_rec);
-                    }
-                }
-            }
+//            if (rank == 0) {
+//                // Go through all configuration of "root" output streams and create them.
+//                // Other output streams can be created on the fly and added to the array
+//                // of output streams
+//                if(output_streams) {
+//                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
+//                            output_stream_rec != (*output_streams).end();
+//                            i++, ++output_stream_rec)
+//                    {
+//                        OutputTime::output_stream(*output_stream_rec);
+//                    }
+//                }
+//            }
 
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 

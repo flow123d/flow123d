@@ -42,27 +42,27 @@ AbstractRecord AdvectionProcessBase::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
-	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.")
-	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
-    		"Parameters of output stream.");
-        
+	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
+//	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
+//    		"Parameters of output stream.");
+
 
 Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
-//	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-//			"Parameters of output stream.")
+	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			"Parameters of output stream.")
 	.declare_key("save_step", Double(0.0), Default::obligatory(),
 			"Interval between outputs.")
 	.declare_key("output_times", Array(Double(0.0)),
-			"Explicit array of output times (can be combined with 'save_step'.")
-	.declare_key("conc_mobile_p0", String(),
-			"Name of output stream for P0 approximation of the concentration in mobile phase.")
-	.declare_key("conc_immobile_p0", String(),
-			"Name of output stream for P0 approximation of the concentration in immobile phase.")
-	.declare_key("conc_mobile_sorbed_p0", String(),
-			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
-	.declare_key("conc_immobile_sorbed_p0", String(),
-			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
+			"Explicit array of output times (can be combined with 'save_step'.");
+//	.declare_key("conc_mobile_p0", String(),
+//			"Name of output stream for P0 approximation of the concentration in mobile phase.")
+//	.declare_key("conc_immobile_p0", String(),
+//			"Name of output stream for P0 approximation of the concentration in immobile phase.")
+//	.declare_key("conc_mobile_sorbed_p0", String(),
+//			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
+//	.declare_key("conc_immobile_sorbed_p0", String(),
+//			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
 
 
 Record TransportOperatorSplitting::input_type
@@ -85,7 +85,10 @@ Record TransportOperatorSplitting::input_type
     .declare_key("data", Array(
     		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
     		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
-    		), IT::Default::obligatory(), "");
+    		), IT::Default::obligatory(), "")
+    .declare_key("output", TransportBase::input_type_output_record.copy_keys(ConvectionTransport::EqData().make_output_field_keys()),
+       		Default::obligatory(),
+       		"Parameters of output stream.");
 
 
 TransportBase::TransportEqData::TransportEqData()

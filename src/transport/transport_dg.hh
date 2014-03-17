@@ -158,6 +158,7 @@ public:
         BCField<3, FieldValue<3>::EnumVector > bc_type;
         BCField<3, FieldValue<3>::Vector > bc_flux;
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+
 	};
 
 
@@ -245,6 +246,8 @@ public:
 private:
 
 	typename Model::ModelEqData &data() { return data_; }
+
+	void output_vector_gather();
 
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
@@ -517,7 +520,11 @@ private:
 
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
+
+	/// Vector of solution data.
 	vector<Vec> output_vec;
+
+	/// Record with output specification.
 	Input::Record output_rec;
 
 

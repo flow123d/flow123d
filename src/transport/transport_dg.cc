@@ -76,7 +76,10 @@ Record TransportDG<Model>::input_type
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).");
+    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+    .declare_key("output", Model::get_output_record_input_type("DG", "DG solver").copy_keys(EqData().output_fields.make_output_field_keys()),
+    		Default::obligatory(),
+       		"Parameters of output stream.");
 
 
 
@@ -196,6 +199,9 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
+
+    // add all input fields to the output list
+    this->output_fields += *this;
 }
 
 
@@ -270,12 +276,13 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	}
     }
 
-    // set up output class
+    // register output fields
     output_rec = in_rec.val<Input::Record>("output");
     if (feo->dh()->el_ds()->myp() == 0)
     {
     	data_.output_field.init(subst_names_);
     	data_.output_field.set_mesh(*mesh_);
+    	data_.output_fields.output_type(OutputTime::CORNER_DATA);
 
     	output_vec.resize(n_subst_);
     	output_solution.resize(n_subst_);
@@ -290,7 +297,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
     		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     	}
-        data_.output_field.set_limit_side(LimitSide::left);
+        data_.output_fields.set_limit_side(LimitSide::left);
+        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     }
 
     // set time marks for writing the output
@@ -315,6 +323,16 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     set_initial_condition();
     for (int sbi = 0; sbi < n_subst_; sbi++)
     	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
+
+
+    // gather the solution from all processors
+    output_vector_gather();
+	// on the main processor fill the output array and save to file
+	if (feo->dh()->el_ds()->myp() == 0)
+	{
+        data_.output_fields.set_time(*time_);
+        data_.output_fields.output(output_rec);
+	}
 
 }
 
@@ -349,6 +367,24 @@ TransportDG<Model>::~TransportDG()
     subst_names_.clear();
 }
 
+
+template<class Model>
+void TransportDG<Model>::output_vector_gather()
+{
+    IS is;
+    VecScatter output_scatter;
+    int idx[] = { 0 };
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// gather solution to output_vec[sbi]
+		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
+		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterDestroy(&(output_scatter));
+		ISDestroy(&(is));
+	}
+}
 
 
 template<class Model>
@@ -526,29 +562,12 @@ void TransportDG<Model>::output_data()
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    IS is;
-    VecScatter output_scatter;
-    int row_ids[feo->dh()->n_global_dofs()];
-
-	for (int i=0; i<feo->dh()->n_global_dofs(); i++)
-		row_ids[i] = i;
-
-	for (int sbi=0; sbi<n_subst_; sbi++)
+    output_vector_gather();
+	// on the main processor fill the output array and save to file
+	if (feo->dh()->el_ds()->myp() == 0)
 	{
-		// gather solution to output_vec[sbi]
-		ISCreateGeneral(PETSC_COMM_SELF, ls[sbi]->size(), row_ids, PETSC_COPY_VALUES, &is);
-		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
-
-		// on the main processor fill the output array and save to file
-		if (feo->dh()->el_ds()->myp() == 0)
-		{
-	        data_.output_field.set_time(*time_);
-	        OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::CORNER_DATA, data_.output_field);
-		}
+		data_.output_fields.set_time(*time_);
+		data_.output_fields.output(output_rec);
 	}
 
 	if (mass_balance() != NULL)

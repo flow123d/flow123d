@@ -172,9 +172,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     Input::Record output_rec = in_rec.val<Input::Record>("output");
+    data_.conc_mobile.name("conc_mobile_p0");
     data_.conc_mobile.init(subst_names_);
     data_.conc_mobile.set_mesh(*mesh_);
-    data_.conc_mobile.name("conc_mobile");
     data_.conc_mobile.units("M/L^3");
     /*
     field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));

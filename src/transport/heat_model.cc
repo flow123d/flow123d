@@ -61,6 +61,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
 	ADD_FIELD(heat_dispersivity, "Heat dispersivity", "0.0" );
+
+	output_fields += output_field.name("temperature").units("Theta");
 }
 
 
@@ -74,19 +76,22 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 }
 
 
+IT::Record &HeatTransferModel::get_output_record_input_type(const string &implementation, const string &description)
+{
+	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation + "_Output", "Output record for " + description + " for heat transfer.")
+			.copy_keys(TransportBase::input_type_output_record);
+
+	return input_type;
+}
+
+
 HeatTransferModel::HeatTransferModel() :
 		flux_changed(true)
 {}
 
 
 void HeatTransferModel::init_data(unsigned int n_subst_)
-{
-	const vector<string> names = { "temperature" };
-	data().output_field.name("conc_mobile_p0");
-	data().output_field.units("Theta");
-	data().output_field.init(names);
-
-}
+{}
 
 
 void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
