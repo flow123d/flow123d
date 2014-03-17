@@ -255,10 +255,19 @@ void OutputTime::register_data(const Input::Record &in_rec,
         const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-	OutputTime *output_stream = output_stream_by_key_name(in_rec, multi_field.name());
-	if (output_stream) {
+	OutputTime *output_stream = output_stream_by_name(in_rec.val<Input::Record>("output_stream").val<string>("name"));
+	// temporary solution: check if key value equals the name of the output stream from the record
+	// in future we should specify an array of field names instead of the list of the form
+	//   field_name = "stream_name".
+	if (output_stream == output_stream_by_key_name(in_rec, multi_field.name())) {
 		for (unsigned long index=0; index < multi_field.size(); index++)
 			output_stream->compute_field_data(type, multi_field[index] );
+	}
+	else
+	{
+		Input::Iterator<string> stream_name_iter = in_rec.find<string>(multi_field.name());
+		if (stream_name_iter)
+			DBGMSG("Ignoring output field %s: Wrong output stream %s.\n", multi_field.name().c_str(), (*stream_name_iter).c_str());
 	}
 }
 
@@ -268,10 +277,19 @@ void OutputTime::register_data(const Input::Record &in_rec,
         const DiscreteSpace ref_type,
         Field<spacedim, Value> &field_ref)
 {
-	OutputTime *output_stream = output_stream_by_key_name(in_rec, field_ref.name());
-    if (output_stream) {
+	OutputTime *output_stream = output_stream_by_name(in_rec.val<Input::Record>("output_stream").val<string>("name"));
+	// temporary solution: check if key value equals the name of the output stream from the record
+	// in future we should specify an array of field names instead of the list of the form
+	//   field_name = "stream_name".
+    if (output_stream == output_stream_by_key_name(in_rec, field_ref.name())) {
     	output_stream->compute_field_data(ref_type, field_ref);
     }
+	else
+	{
+		Input::Iterator<string> stream_name_iter = in_rec.find<string>(field_ref.name());
+		if (stream_name_iter)
+			DBGMSG("Ignoring output field %s: Wrong output stream %s.\n", field_ref.name().c_str(), (*stream_name_iter).c_str());
+	}
 }
 
 
