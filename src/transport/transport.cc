@@ -38,6 +38,10 @@
 
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
+#include "fem/dofhandler.hh"
+#include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
+#include "fields/field_fe.hh"
 #include "transport/transport.h"
 
 #include "io/output.h"
@@ -93,6 +97,9 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
             "Used only in combination with dual porosity model. Vector, one value for every substance.", "1.0");
 
     bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+
+    output_fields += *this;
+    output_fields += conc_mobile.name("mobile_p0").units("M/L^3");
 }
 
 /*
@@ -171,33 +178,33 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     need_time_rescaling=true;
 
     // register output vectors
-    Input::Record output_rec = in_rec.val<Input::Record>("output");
-    data_.conc_mobile.name("conc_mobile_p0");
-    data_.conc_mobile.init(subst_names_);
-    data_.conc_mobile.set_mesh(*mesh_);
-    data_.conc_mobile.units("M/L^3");
-    /*
-    field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-    for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
-         // TODO: What about output also other "phases", IMMOBILE and so on.
+    output_rec = in_rec.val<Input::Record>("output");
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    if (rank == 0)
+    {
+    	data_.conc_mobile.init(subst_names_);
+    	data_.conc_mobile.set_mesh(*mesh_);
+    	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-         // create FieldElementwise for every substance, set it to data->conc_mobile
-         data_.conc_mobile[subst_id].set_field(
-                 mesh_->region_db().get_region_set("ALL"),
-                 std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() ),
-                 time_->t()
-                 );
+    	dh = new DOFHandlerMultiDim(*mesh_);
+    	dh->distribute_dofs(fe1, fe2, fe3);
 
-
-         std::string subst_name = subst_names_[subst_id] + "_mobile";
-         double *data = out_conc[MOBILE][subst_id];
-         OutputTime::register_elem_data<double>(mesh_, subst_name, "M/L^3",
-                 output_rec.val<Input::Record>("output_stream"), data , mesh_->n_elements());
+    	for (int sbi=0; sbi<n_subst_; sbi++)
+    	{
+    		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
+    		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
+    		output_field_ptr->set_fe_data(dh, &map1, &map2, &map3, &vconc_out[sbi]);
+    		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+    	}
+        data_.output_fields.set_limit_side(LimitSide::right);
+        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     }
-	*/
+
     // write initial condition
     output_vector_gather();
-    OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, data_.conc_mobile);
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_rec);
 }
 
 
@@ -1397,6 +1404,8 @@ void ConvectionTransport::output_data() {
         // Register fresh output data
         //Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
         //OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
+        data_.output_fields.set_time(*time_);
+        data_.output_fields.output(output_rec);
 
         mass_balance()->output(time_->t());
 
