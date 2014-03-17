@@ -301,10 +301,9 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
 
         for(unsigned int i=0; i < data->n_values; i ++) {
             data->print(file, i);
-            file << " ";
         }
 
-        file << "</DataArray>" << endl;
+        file << "\n</DataArray>" << endl;
     }
 }
 
