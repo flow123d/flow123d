@@ -38,10 +38,6 @@
 
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
-#include "fem/dofhandler.hh"
-#include "fem/mapping_p1.hh"
-#include "fem/fe_p.hh"
-#include "fields/field_fe.hh"
 #include "transport/transport.h"
 
 #include "io/output.h"
@@ -187,14 +183,10 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     	data_.conc_mobile.set_mesh(*mesh_);
     	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-    	dh = new DOFHandlerMultiDim(*mesh_);
-    	dh->distribute_dofs(fe1, fe2, fe3);
-
     	for (int sbi=0; sbi<n_subst_; sbi++)
     	{
-    		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-    		output_field_ptr->set_fe_data(dh, &map1, &map2, &map3, &vconc_out[sbi]);
+    		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+    		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
     		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     	}
         data_.output_fields.set_limit_side(LimitSide::right);

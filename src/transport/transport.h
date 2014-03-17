@@ -46,16 +46,12 @@
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
 
-#include "fem/mapping_p1.hh"
-#include "fem/fe_p.hh"
-
 
 class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
 class ConvectionTransport;
-class DOFHandlerMultiDim;
 
 //=============================================================================
 // TRANSPORT
@@ -296,14 +292,6 @@ private:
 
 	/// Record with output specification.
 	Input::Record output_rec;
-
-	DOFHandlerMultiDim *dh;
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
-	FE_P_disc<0,1,3> fe1;
-	FE_P_disc<0,2,3> fe2;
-	FE_P_disc<0,3,3> fe3;
 
 
             int *row_4_el;
