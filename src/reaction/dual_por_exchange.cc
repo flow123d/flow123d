@@ -8,11 +8,13 @@
 #include "reaction/dual_por_exchange.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include <petscmat.h>
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
 #include "mesh/region.hh"
+#include "fields/field_elementwise.hh" 
 
 #include "reaction/sorption_dual.hh"
 #include "reaction/sorption_immob.hh"
@@ -38,7 +40,11 @@ Record Dual_por_exchange::input_type
                     "Containes region specific data necessary to construct dual porosity model.")
     
     .declare_key("reactions_mob", Reaction::input_type, Default::optional(), "Reaction model in mobile zone.")
-    .declare_key("reactions_immob", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.");
+    .declare_key("reactions_immob", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.")
+    
+    .declare_key("output", Reaction::input_type_output_record.copy_keys(Dual_por_exchange::EqData().output_fields.make_output_field_keys()),
+                Default::obligatory(),
+                "Parameters of output stream.");
     
 Dual_por_exchange::EqData::EqData()
 {
@@ -47,6 +53,13 @@ Dual_por_exchange::EqData::EqData()
   ADD_FIELD(immob_porosity, "Porosity of the immobile zone.", "0");
   ADD_FIELD(init_conc_immobile, "Initial concentration of substances in the immobile zone."
             " Vector, one value for every substance.", "0");
+  
+  alpha.units("");
+  immob_porosity.units("0");
+  init_conc_immobile.units("M/L^3");
+  
+  output_fields += *this;
+  output_fields += conc_immobile.name("immobile_p0").units("M/L^3");
 }
 
 Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
@@ -165,9 +178,12 @@ void Dual_por_exchange::initialize(void )
     
   //allocating memory for immobile concentration matrix
   immob_concentration_matrix = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+  conc_immobile_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
   for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
+  {
     immob_concentration_matrix[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
-   
+    conc_immobile_out[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+  }
   //DBGMSG("DualPorosity - init_conc_immobile.\n");
     
   //copied from convection set_initial_condition
@@ -186,20 +202,47 @@ void Dual_por_exchange::initialize(void )
     }
   }
   
+  //initialization of output
+  int rank;
+    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    if (rank == 0)
+    {
+        data_.conc_immobile.init(names_);
+        data_.conc_immobile.set_mesh(*mesh_);
+        data_.output_fields.output_type(OutputTime::ELEM_DATA);
+
+        for (int sbi=0; sbi<n_all_substances_; sbi++)
+        {
+                // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+                std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
+                      new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], n_all_substances_, mesh_->n_elements()));
+                data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+        }
+        data_.output_fields.set_limit_side(LimitSide::right);
+        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+    }
+    
+  allocate_output_mpi();
+  
+  // write initial condition
+  output_vector_gather();
+  data_.output_fields.set_time(*time_);
+  data_.output_fields.output(output_rec);
+    
   // creating reactions from input and setting their parameters
   init_from_input(input_record_);
   
   if(reaction_mob != nullptr)
   { 
     reaction_mob->set_time_governor(*time_);
-    reaction_mob->set_concentration_matrix(concentration_matrix, distribution, el_4_loc);
+    reaction_mob->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
     reaction_mob->initialize();
   }
     
   if(reaction_immob != nullptr) 
   {
     reaction_immob->set_time_governor(*time_);
-    reaction_immob->set_concentration_matrix(immob_concentration_matrix, distribution, el_4_loc);
+    reaction_immob->set_concentration_matrix(immob_concentration_matrix, distribution, el_4_loc, row_4_el);
     reaction_immob->initialize();
   }
 }
@@ -291,3 +334,71 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
   
   return immob_concentration_matrix;
 }
+
+
+void Dual_por_exchange::allocate_output_mpi(void )
+{
+    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    n_subst = n_all_substances_;
+
+    MPI_Barrier(PETSC_COMM_WORLD);
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_size(PETSC_COMM_WORLD, &np);
+
+    vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    
+    // if( rank == 0)
+    vconc_immobile_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
+
+
+    for (sbi = 0; sbi < n_subst; sbi++) {
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), immob_concentration_matrix[sbi],
+                &vconc_immobile[sbi]);
+        VecZeroEntries(vconc_immobile[sbi]);
+
+        //  if(rank == 0)
+        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
+        VecZeroEntries(vconc_immobile_out[sbi]);
+    }
+}
+
+
+void Dual_por_exchange::output_vector_gather() 
+{
+    unsigned int sbi/*, rank, np*/;
+    IS is;
+    VecScatter vconc_out_scatter;
+    //PetscViewer inviewer;
+
+    //  MPI_Barrier(PETSC_COMM_WORLD);
+/*    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    MPI_Comm_size(PETSC_COMM_WORLD, &np);*/
+
+    
+    //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
+    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
+    for (sbi = 0; sbi < n_all_substances_; sbi++) {
+        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+    }
+    //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
+    //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
+    VecScatterDestroy(&(vconc_out_scatter));
+    ISDestroy(&(is));
+}
+
+
+void Dual_por_exchange::output_data(void )
+{
+  DBGMSG("DualPorosity output\n");
+  output_vector_gather();
+
+  // Register fresh output data
+  data_.output_fields.set_time(*time_);
+  data_.output_fields.output(output_rec);
+
+  //for synchronization when measuring time by Profiler
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+

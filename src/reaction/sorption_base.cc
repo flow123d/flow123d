@@ -184,7 +184,7 @@ void SorptionBase::initialize(void )
   if(reaction != nullptr)
   { 
     reaction->set_time_governor(*time_);
-    reaction->set_concentration_matrix(concentration_matrix, distribution, el_4_loc);
+    reaction->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
     reaction->initialize();
   }
 }
