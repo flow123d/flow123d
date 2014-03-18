@@ -143,7 +143,7 @@ public:
      * into private storage for postponed output.
      */
     template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
+    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field, std::string multi_field_name = "");
 
 
 private:
@@ -168,7 +168,7 @@ protected:
      * \brief This method returns pointer at existing data, when corresponding
      * output data exists or it creates new one.
      */
-    OutputDataBase *output_data_by_field_name(const string &field_name, DiscreteSpace ref_type);
+    OutputDataBase *output_data_by_field_name(const std::string &multi_field_name,const string &field_name, DiscreteSpace ref_type);
 
 
 

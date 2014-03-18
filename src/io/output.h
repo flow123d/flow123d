@@ -111,6 +111,7 @@ public:
      * Data copied from Field.
      */
     std::string output_field_name;
+    std::string multi_field_name;
     std::string field_name;
     std::string field_units;
     /**
@@ -140,12 +141,19 @@ public:
      * \brief Constructor of templated OutputData
      */
 	OutputData(const FieldCommonBase &field,
-	        unsigned int size)
+	        unsigned int size,
+                std::string multi_field_name
+                  )
 	: val_aux(aux)
 	{
+                this->multi_field_name = multi_field_name;
 		this->field_name = field.name();
 		this->field_units = field.units();
-		this->output_field_name = this->field_name +"_["+this->field_units+"]";
+                
+                if(multi_field_name.empty())
+                  this->output_field_name = this->field_name +"_["+this->field_units+"]";
+                else
+                  this->output_field_name = this->multi_field_name +"_"+ this->field_name +"_["+this->field_units+"]";
 
 		this->n_values=size;
 		val_aux.set_n_comp(field.n_comp());
@@ -261,7 +269,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 	//   field_name = "stream_name".
 	if (output_stream == output_stream_by_key_name(in_rec, multi_field.name())) {
 		for (unsigned long index=0; index < multi_field.size(); index++)
-			output_stream->compute_field_data(type, multi_field[index] );
+			output_stream->compute_field_data(type, multi_field[index], multi_field.name());
 	}
 	else
 	{
@@ -294,7 +302,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 
 
 template<int spacedim, class Value>
-void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
+void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field, std::string multi_field_name)
 {
 
     /* It's possible now to do output to the file only in the first process */
@@ -309,25 +317,25 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     ASSERT(mesh, "Null mesh pointer.\n");
 
     // get possibly existing data for the same field, check both name and type
-    OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
+    OutputDataBase *data = output_data_by_field_name(multi_field_name,field.name(), space_type);
     OutputData<Value> *output_data = dynamic_cast<OutputData<Value> *>(data);
 
     if (!output_data) {
         switch(space_type) {
         case NODE_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_nodes());
+        	output_data = new OutputData<Value>(field, mesh->n_nodes(), multi_field_name);
             node_data.push_back(output_data);
             break;
         case CORNER_DATA: {
             unsigned int n_corners = 0;
             FOR_ELEMENTS(mesh, ele)
                 n_corners += ele->n_nodes();
-        	output_data = new OutputData<Value>(field, n_corners );
+        	output_data = new OutputData<Value>(field, n_corners, multi_field_name );
             corner_data.push_back(output_data);
         }
         break;
         case ELEM_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_elements() );
+        	output_data = new OutputData<Value>(field, mesh->n_elements(), multi_field_name );
             elem_data.push_back(output_data);
             break;
         }

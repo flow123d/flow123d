@@ -95,7 +95,7 @@ static inline void fix_GMSH_file_name(string *fname)
 
 
 OutputDataBase *OutputTime::output_data_by_field_name
-		(const std::string &field_name, DiscreteSpace ref_type)
+		(const std::string &multi_field_name, const std::string &field_name, DiscreteSpace ref_type)
 {
     std::vector<OutputDataBase*> *data_vector;
 
@@ -113,7 +113,7 @@ OutputDataBase *OutputTime::output_data_by_field_name
 
     /* Try to find existing data */
     for(auto &data : *data_vector)
-        if (data->field_name == field_name)	return data;
+        if ((data->field_name == field_name) && (data->multi_field_name == multi_field_name) )     return data;
 
     return nullptr;
 }
