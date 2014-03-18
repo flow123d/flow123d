@@ -71,106 +71,252 @@ const string foo_output = R"JSON(
 )JSON";
 
 
-using namespace Input::Type;
+namespace IT=Input::Type;
 
+// Comment out following test for two reasons:
+// 1) factory function for OutputTime objects may finally not be necessary
+//    and possibly will be removed
+// 2) Test of protected/private members can not be done simply using fixture class
+//    since OutputTime nor its descendants have default constructor.
+//    Possible solution may be: Have standard test, declare class that is descendant of e.g. OutputVTK,
+//    make instance of that class in the test and have particular test function in the class.
 
-/**
- * \brief Useless class used for testing of data output
- */
-class Foo {
-public:
-    Foo() {}
-    ~Foo() {}
-    static Record input_type;
-};
-
-
-Record Foo::input_type
-    = Record("Foo", "Output setting for foo equations.")
-    .declare_key("pressure_p0", String(),
-            "Name of output stream for P0 approximation of pressure.")
-    .declare_key("material_id", String(),
-            "Name of output stream for material ID.")
-    .declare_key("pressure_p1", String(),
-            "Name of output stream for P1 approximation of pressure.")
-    .declare_key("strangeness", String(),
-            "Name of output stream for strangeness.")
-    .declare_key("pressure_p2", String(),
-            "Name of output stream for P2 approximation of pressure.")
-    .declare_key("computenode", String(),
-            "Name of output stream for compute node ID.");
-
+#if 0
 /**
  * \brief Child class used for testing OutputTime
  */
-class OutputTest : public testing::Test {
-protected:
-    virtual void SetUp() {}
-    virtual void TearDown() {}
-    static void SetUpTestCase() { /* SetUp test case here. */ }
-    static void TearDownTestCase() { OutputTime::destroy_all(); };
+class OutputTest : public testing::Test, public OutputTime {
+public:
+    static IT::Record input_type;
+
+    OutputTest()
+    : OutputTime(
+    		Input::JSONToStorage(output_stream1, OutputTime::input_type)
+    		.get_root_interface<Input::Record>()
+    		)
+    {}
+
+    ~OutputTest() {OutputTime::destroy_all();}
 };
+
+IT::Record OutputTest::input_type
+    = IT::Record("Foo", "Output setting for foo equations.")
+    .declare_key("pressure_p0", IT::String(),
+            "Name of output stream for P0 approximation of pressure.")
+    .declare_key("material_id", IT::String(),
+            "Name of output stream for material ID.")
+    .declare_key("pressure_p1", IT::String(),
+            "Name of output stream for P1 approximation of pressure.")
+    .declare_key("strangeness", IT::String(),
+            "Name of output stream for strangeness.")
+    .declare_key("pressure_p2", IT::String(),
+            "Name of output stream for P2 approximation of pressure.")
+    .declare_key("computenode", IT::String(),
+            "Name of output stream for compute node ID.");
 
 
 /**
  * \brief Test of creating of OutputTime
  */
 TEST_F( OutputTest, test_create_output_stream ) {
-    /* Read input for first output stream */
-    Input::JSONToStorage reader_output_stream1(output_stream1, OutputTime::input_type);
+	// First stream is created in constructor, here we create two more.
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::input_type);
+    OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream1.get_root_interface<Input::Record>());
-
-    /* Read input for first output stream */
-    Input::JSONToStorage reader_output_stream2(output_stream2, OutputTime::input_type);
-
-    /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream2.get_root_interface<Input::Record>());
-
-    /* Read input for first output stream */
-    Input::JSONToStorage reader_output_stream3(output_stream3, OutputTime::input_type);
-
-    /* Create output stream as it is read during start of Flow */
-    OutputTime::output_stream(reader_output_stream3.get_root_interface<Input::Record>());
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::input_type);
+    OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
     ASSERT_EQ(OutputTime::output_streams.size(), 3);
 
-    /* Get first OutputTime instance */
-    std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
-    OutputTime *output_time = (*output_iter);
-
-    /* Pointer at OutputTime could not be NULL. Otherwise other assertation
-     * would crash */
-    ASSERT_TRUE(output_time != NULL);
 
     /* The name of instance has to be equal to configuration file:
      * "variable output_stream" */
-    EXPECT_EQ(*(output_time->name), "flow_output_stream1");
+    EXPECT_EQ(this->name, "flow_output_stream1");
 
     /* The type of instance should be OutputVTK */
-    EXPECT_EQ(output_time->file_format, OutputTime::VTK);
+    EXPECT_EQ(this->file_format, OutputTime::VTK);
 
     /* The filename should be "./test1.pvd" */
-    EXPECT_EQ(*(output_time->base_filename()), "./test1.pvd");
+    EXPECT_EQ(*(this->base_filename()), "./test1.pvd");
 }
-
+#endif
 
 /**
  *
  */
-TEST_F( OutputTest, find_outputstream_by_name ) {
-    /* There should be three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+TEST( OutputTest, find_outputstream_by_name ) {
+	Input::JSONToStorage reader_1(output_stream1, OutputTime::input_type);
+    auto os_1 = OutputTime::output_stream(reader_1.get_root_interface<Input::Record>());
 
-    /* Get this OutputTime instance */
-    std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
-    OutputTime *output_time = *output_iter;
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::input_type);
+    auto os_2 = OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    ASSERT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream1"));
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::input_type);
+    auto os_3 = OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
+
+    //ASSERT_EQ(OutputTime::output_streams.size(), 3);
+
+    //std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
+    //OutputTime *output_time = *output_iter;
+
+    EXPECT_EQ(os_1, OutputTime::output_stream_by_name("flow_output_stream1"));
+    EXPECT_EQ(os_3, OutputTime::output_stream_by_name("flow_output_stream3"));
+    EXPECT_EQ(nullptr, OutputTime::output_stream_by_name("flow_output_stream4"));
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// Test compute_field_data for all possible template parameters.
+// this is also test of OutputData<..> internal storage class.
+// We test storage of the data and their retrieval by the print method.
+
+const string test_output_time_input = R"JSON(
+{
+  file = "./test1.pvd", 
+  format = {
+    TYPE = "vtk", 
+    variant = "ascii"
+  }, 
+  name = "test_output_time_stream"
+}
+)JSON";
+
+Input::Type::Selection test_selection =
+		Input::Type::Selection("any")
+		.add_value(0,"black")
+		.add_value(3,"white");
+
+class TestOutputTime : public testing::Test, public OutputTime {
+public:
+	TestOutputTime()
+	: OutputTime(
+	    		Input::JSONToStorage(test_output_time_input, OutputTime::input_type)
+	    		.get_root_interface<Input::Record>()
+	    		)
+	{
+	    Profiler::initialize();
+		// read simple mesh
+	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	    my_mesh = new Mesh();
+	    ifstream in(string(mesh_file).c_str());
+	    my_mesh->read_gmsh_from_stream(in);
+
+
+	}
+	virtual ~TestOutputTime() {
+		delete my_mesh;
+	}
+	int write_data(void) override {return 0;};
+	int write_head(void) override {return 0;};
+	int write_tail(void) override {return 0;};
+
+
+	// test_compute_field_data
+	template <class F>
+	void tcfd(string init, string result) {
+
+		// make field init it form the init string
+		F field("test_field", false); // bulk field
+		field.input_default(init);
+		field.n_comp(3);
+		field.input_selection(&test_selection);
+
+		field.set_mesh(*my_mesh);
+		field.set_limit_side(LimitSide::left);
+		field.set_time(TimeGovernor(0.0, 1.0));
+
+		{
+			this->compute_field_data(ELEM_DATA, field);
+			EXPECT_EQ(1, elem_data.size());
+			OutputDataBase *data =  elem_data[0];
+			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
+			for(unsigned int i=0;  i < data->n_values; i++) {
+				std::stringstream ss;
+				data->print(ss, i);
+				EXPECT_EQ(result, ss.str() );
+			}
+		}
+
+		{
+			this->compute_field_data(NODE_DATA, field);
+			EXPECT_EQ(1, node_data.size());
+			OutputDataBase *data =  node_data[0];
+			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
+			for(unsigned int i=0;  i < data->n_values; i++) {
+				std::stringstream ss;
+				data->print(ss, i);
+				EXPECT_EQ(result, ss.str() );
+			}
+		}
+
+		{
+			this->compute_field_data(CORNER_DATA, field);
+			EXPECT_EQ(1, corner_data.size());
+			OutputDataBase *data =  corner_data[0];
+			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
+			for(unsigned int i=0;  i < data->n_values; i++) {
+				std::stringstream ss;
+				data->print(ss, i);
+				EXPECT_EQ(result, ss.str() );
+			}
+		}
+
+
+		this->clear_data();
+		EXPECT_EQ(0, elem_data.size());
+		EXPECT_EQ(0, node_data.size());
+		EXPECT_EQ(0, corner_data.size());
+
+		/*
+
+		compute_field_data(NODE_DATA, field);
+		EXPECT_EQ(1, node_data.size());
+		check_node_data( node_data[0], result);
+
+		compute_field_data(CORNER_DATA, field);
+		EXPECT_EQ(1, elem_data.size());
+		check_elem_data( elem_data[0], result);
+*/
+		DBGMSG("end\n");
+	}
+
+	Mesh * my_mesh;
+};
+
+#define FV FieldValue
+TEST_F(TestOutputTime, compute_field_data) {
+	tcfd< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
+	EXPECT_THROW( { (tcfd< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
+	tcfd< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
+	EXPECT_THROW( { (tcfd< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
+	tcfd< Field<3,FV<0>::Integer> > ("3", "3 ");
+	tcfd< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
+	tcfd< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
+	tcfd< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
+	tcfd< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+}
+
+
+
+// full list of tested template parameters
+#define f_list(Dim) \
+	Field<Dim,FV<0>::Scalar> , \
+	Field<Dim,FV<0>::Vector>, \
+    Field<Dim,FV<0>::Enum>, \
+    Field<Dim,FV<0>::EnumVector>, \
+    Field<Dim,FV<0>::Integer>, \
+	Field<Dim,FV<0>::Vector>, \
+	Field<Dim,FV<2>::VectorFixed>, \
+	Field<Dim,FV<3>::VectorFixed>, \
+	Field<Dim,FV<2>::TensorFixed>, \
+	Field<Dim,FV<3>::TensorFixed>
+
+// simple list - for first trial
+#define s_list(Dim) Field<Dim,FV<0>::Scalar>
+
+
+
+#if 0
 
 TEST_F( OutputTest, test_register_elem_fields_data ) {
     /* Read input for output */
@@ -252,7 +398,6 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     /* Try to write data to output file */
     OutputTime::write_all_data();
 }
-
 
 TEST_F( OutputTest, test_register_corner_fields_data ) {
     /* Read input for output */
@@ -435,4 +580,9 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     OutputTime::write_all_data();
 
 }
+
+#endif
+
+
+
 
