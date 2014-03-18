@@ -72,6 +72,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <ostream>
 
 #include "system/system.hh"
 #include "mesh/mesh.h"
@@ -81,50 +82,12 @@
 #include "system/exceptions.hh"
 #include "io/output_time.hh"
 
-class OutputVTK;
-class OutputMSH;
+#include "io/output_data_base.hh"
+
+//class OutputVTK;
+//class OutputMSH;
 
 
-
-/**
- * \brief Common parent class for templated OutputData.
- *
- * Provides virtual method for output of stored data.
- *
- */
-class OutputDataBase {
-public:
-	/**
-	 * Number of components of element data stored in the database.
-	 */
-	enum ValueType {
-		scalar=1,
-		vector=3,
-		tensor=9
-	};
-
-    virtual ~OutputDataBase() {};
-    virtual void print(ostream &out_stream, unsigned int idx) = 0;
-
-
-    /**
-     * Data copied from Field.
-     */
-    std::string output_field_name;
-    std::string field_name;
-    std::string field_units;
-    /**
-     * Number of data values.
-     */
-    unsigned int n_values;
-
-
-    /**
-     * Number of data elements per data value.
-     */
-    ValueType n_elem_;
-
-};
 
 /**
  * \brief This class is used for storing data that are copied from field.
@@ -148,17 +111,33 @@ public:
 		this->output_field_name = this->field_name +"_["+this->field_units+"]";
 
 		this->n_values=size;
-		val_aux.set_n_comp(field.n_comp());
+		//val_aux.set_n_comp(10); // just to check that n_elem depends on n_comp
 
-		if (val_aux.n_cols()==1)
-			if (val_aux.n_rows()==1)
+		DBGMSG("Make data: cols: %d rows: %d\n", val_aux.NCols_, val_aux.NRows_);
+		if (val_aux.NCols_==1) {
+			if (val_aux.NRows_==1) {
 				this->n_elem_ = scalar;
-			else
-				if (val_aux.n_rows()>2) this->n_elem_ = vector;
-				else
-					xprintf(PrgErr, "Can not output field '%s' returning variable size vectors. Try convert to MultiField.\n");
-		else
+				this->n_rows = 1;
+				this->n_cols = 1;
+			} else {
+				if (val_aux.NRows_>1) {
+					if (val_aux.NRows_ > 3) {
+						xprintf(PrgErr, "Do not support output of vectors with fixed size >3. Field: %s\n", this->field_name.c_str());
+					} else {
+						this->n_elem_ = vector;
+						this->n_rows = 3;
+						this->n_cols = 1;
+					}
+				} else {
+					THROW(OutputTime::ExcOutputVariableVector() << OutputTime::EI_FieldName(this->field_name));
+				}
+			}
+		} else {
 			this->n_elem_ = tensor;
+			this->n_rows = 3;
+			this->n_cols = 3;
+		}
+
 
 	    data_ = new ElemType[n_values * n_elem_];
 	}
@@ -213,15 +192,21 @@ public:
     };
 
 
+
 private:
+
+
     template <class Func>
     void operate(unsigned int idx, const Value &val, const Func& func) {
     	ASSERT_LESS(idx, this->n_values);
     	ElemType *ptr = data_ + idx*n_elem_;
-        for(unsigned int i_row=0; i_row < val.n_rows(); i_row++)
-        	for(unsigned int i_col=0; i_col < val.n_cols(); i_col++)
+        for(unsigned int i_row=0; i_row < this->n_rows; i_row++)
+        	for(unsigned int i_col=0; i_col < this->n_cols; i_col++)
         	{
-        		func(*ptr, val(i_row, i_col));
+        		if (i_row < val.n_rows() && i_col < val.n_cols())
+        			func(*ptr, val(i_row, i_col));
+        		else
+        			func(*ptr, 0);
         		ptr++;
         	}
     };
@@ -240,6 +225,11 @@ private:
     typename Value::return_type aux;
     // auxiliary field value envelope over @p aux
     Value val_aux;
+
+    // Number of rows and cols in stored data element, valid values are
+    // (1,1) for scalar; (3,1) for vectors; (3,3) for tensors
+    unsigned int n_rows, n_cols;
+
 
 
 };
@@ -370,6 +360,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 			const Value &ele_value =
 					Value( const_cast<typename Value::return_type &>(
 							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+			//std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
             output_data->store_value(ele_index,  ele_value);
         }
     }

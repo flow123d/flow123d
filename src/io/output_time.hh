@@ -37,6 +37,9 @@ class MultiField;
 class OutputTime {
 
 public:
+	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+	DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
+			<< " returning variable size vectors. Try convert to MultiField.\n");
     /**
      * Types of reference data
      */
@@ -62,6 +65,11 @@ public:
      * \brief Try to find output stream from a key in record.
      */
     static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+
+    /**
+     * \brief Try to find output stream with this name
+     */
+    static OutputTime *output_stream_by_name(string name);
 
     /**
      * \brief Does OutputStream with same name and filename exist?
@@ -107,9 +115,9 @@ public:
             Field<spacedim, Value> &field);
 
     /**
-     * \brief Method for clearing all registered data
+     * \brief Clear data for output computed by method @p compute_field_data.
      */
-    static void clear_data(void);
+    void clear_data(void);
 
     /**
      * Declaration of exceptions
@@ -216,10 +224,6 @@ protected:
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
 
-    /**
-     * \brief Try to find output stream with this name
-     */
-    static OutputTime *output_stream_by_name(string name);
 
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
@@ -239,7 +243,7 @@ protected:
 
     OutFileFormat   file_format;
     //OutputFormat    *output_format;
-    string          *name;              ///< Name of output stream
+    string          name;              ///< Name of output stream
 
     vector<OutputDataBase*>    node_data;
     vector<OutputDataBase*>    corner_data;
