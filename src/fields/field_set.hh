@@ -36,9 +36,17 @@ public:
 	 * 			.description("Initial temperature");
 	 *
 	 */
-	FieldCommonBase &operator +=(FieldCommonBase &field) {
+	FieldSet &operator +=(FieldCommonBase &field) {
 		field_list.push_back(&field);
-		return field;
+		return *this;
+	}
+
+	/**
+	 * Add other FieldSet to current one.
+	 */
+	FieldSet &operator +=(const FieldSet &other) {
+		for(auto field_ptr : other.field_list) this->operator +=(*field_ptr);
+		return *this;
 	}
 
 	/**
@@ -93,6 +101,7 @@ public:
     	for( auto field : field_list)
     		rec.declare_key(field->name(), IT::String(), IT::Default::optional(),
     			"Name of the output stream for the field "+field->name()+"." );
+    	return rec;
     }
 
 
@@ -162,12 +171,29 @@ public:
     }
 
     /**
+     * Collective interface to @p FieldCommonBase::output_type().
+     * @param rt   Discrete function space (element, node or corner data).
+     */
+    void output_type(OutputTime::DiscreteSpace rt) {
+    	for (auto field : field_list) field->output_type(rt);
+	}
+
+    /**
+     * Collective interface to @p FieldCommonBase::output().
+     */
+    void output(Input::Record output_rec) {
+    	for(auto field : field_list) field->output(output_rec);
+    }
+
+
+    /**
      * Adds given field into list of fields for group operations on fields.
      * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
      * @p d_val with default value. This method is rather called through the macro ADD_FIELD
      */
-    void add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val="") {
+    FieldCommonBase &add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val="") {
     	*this += field->name(name).desc(desc).input_default(d_val);
+    	return *field;
     }
 
 protected:

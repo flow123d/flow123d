@@ -61,6 +61,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
 	ADD_FIELD(heat_dispersivity, "Heat dispersivity", "0.0" );
+
+	output_fields += output_field.name("temperature").units("Theta");
 }
 
 
@@ -71,6 +73,15 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 
 	return input_type;
 
+}
+
+
+IT::Record &HeatTransferModel::get_output_record_input_type(const string &implementation, const string &description)
+{
+	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation + "_Output", "Output record for " + description + " for heat transfer.")
+			.copy_keys(TransportBase::input_type_output_record);
+
+	return input_type;
 }
 
 

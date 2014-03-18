@@ -47,6 +47,7 @@
 #include "fields/field_values.hh"
 
 
+class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
@@ -107,6 +108,9 @@ public:
         Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+
+        /// Fields indended for output, i.e. all input fields plus those representing solution.
+        FieldSet output_fields;
     };
 
     /**
@@ -235,10 +239,7 @@ private:
      *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
      */
     EqData data_;
-    /**
-     * Class for handling the solution output.
-     */
-    OutputTime *field_output;
+
     /**
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
@@ -288,6 +289,9 @@ private:
 
     Vec *vconc_out; // concentration vector output (gathered)
     double ***out_conc;
+
+	/// Record with output specification.
+	Input::Record output_rec;
 
 
             int *row_4_el;

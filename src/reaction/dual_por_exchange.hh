@@ -1,6 +1,9 @@
-/** @brief class Dual_por_exchange is used to enable simulation of sorption described by either linear or Langmuir isotherm in combination with limited solubility under consideration.
+/** @brief Class Dual_por_exchange implements the model of dual porosity.
  *
- * Class in this file makes it possible to handle the dataset describing solid phase as either precipitated or sorbed species.
+ * It can be part of the transport model and it computes the concentrations of substances both in 
+ * mobile and immobile zone. This model can also work above the sorption model - the sorbed concentration
+ * is then computed both from mobile and immobile concentrations. Linear reactions can be define 
+ * also in both zones.
  *
  */
 #ifndef DUAL_POROSITY
@@ -10,109 +13,108 @@
 #include <input/input_type.hh>
 
 #include "fields/field_base.hh"
-#include "reaction/isotherm.hh"
-#include "./reaction/sorption.hh"
+#include "fields/field_set.hh"
+#include "./reaction/reaction.hh"
+
+/// TODO: incorporate index mapping for substances indices
 
 class Mesh;
 class Distribution;
-class Reaction;
-
-typedef Field<3, FieldValue<3>::Scalar > * pScalar;
-
-#include "./reaction/reaction.hh"
+class SorptionBase;
 
 class Dual_por_exchange:  public Reaction
 {
-	public:
-	/*
-	 * Static variable for new input data types input
-	 */
-	static Input::Type::Record input_type;
+public:
+  /**
+   * Static variable for new input data types input
+   */
+  static Input::Type::Record input_type;
 
 	class EqData : public FieldSet // should be written in class Sorption
-	{
-	public:
+  {
+  public:
 
-		/// Collect all fields
-		EqData();
+    /// Collect all fields
+    EqData();
 
-		/// Mass transfer coefficients between mobile and immobile pores.
-		Field<3, FieldValue<3>::Vector > alphas;
-	};
-    	/**
-     	* 	Pointer to porosity field from transport
-    	*/
-    	pScalar porosity_;
-	    /**
-	    * 	Pointer to porosity field from transport
-	    */
-	    pScalar immob_porosity_;
-	    /**
-	    *
-        */
-		Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
-		/**
-		*	Destructor.
-		*/
-		~Dual_por_exchange(void);
-		/**
-		*	This method enables to change a data source the program is working with, during simulation.
-		*/
-		void set_immob_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
-		/**
-		*
-		*/
-		void compute_one_step(void);
-		/**
-		*
-		*/
-		//void set_nr_transp(int nr_transp_subst);
-		/**
-		*
-		*/
-		void set_porosity(pScalar porosity, pScalar immob_porosity);
-	protected:
-		/**
-		*	This method disables to use constructor without parameters.
-		*/
-		Dual_por_exchange();
-		/**
-		*	Pointer to thwodimensional array[species][elements] containing concentrations either in mobile.
-		*/
-		double **concentration_matrix;
-		/**
-		*	Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
-		*/
-		double **immob_concentration_matrix;
-	    /**
-		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
-		* pointer to phi field from transport
-		*/
-	    pScalar phi_;
-	    /**
-	    * mass transfer coefficients between mobile and immobile pores
-	    */
-	    std::vector<double> alpha_;
-		/**
-		* 	Number of regions.
-		*/
-		int nr_of_regions;
-		/**
-		* 	Number of adsorbing substances.
-		*/
-		int nr_of_substances;
-		/**
-		* 	Number of transported substances.
-		*/
-		//int nr_transp_subst_;
-		/**
-		*
-		*/
-		EqData data_;
-		/**
-		* Array for storage infos about sorbed species concentrations.
-		*/
-		double** sorbed_conc_array;
+    Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
+    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity field.
+    
+    Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
+
+    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
+    
+    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
+
+    /// Fields indended for output, i.e. all input fields plus those representing solution.
+    FieldSet output_fields;
+  };
+
+  Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  /**
+   * Destructor.
+   */
+  ~Dual_por_exchange(void);
+                
+  /**
+   * Updates the solution according to the dual porosity model.
+   */
+  void update_solution(void) override;
+  
+  /**
+   * Initialization routines after all necessary members have been set.
+   * It also sets and initializes possible following reaction models.
+   */
+  void initialize(void) override;
+  
+  void output_data(void) override;
+  void output_vector_gather(void) override;
+  
+  /**
+   *
+   */
+  inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
+    { data_.set_field(data_.porosity.name(),por_m); };
+  
+  /// Initialize from input interface.
+  void init_from_input(Input::Record in_rec) override;
+  
+  double **compute_reaction(double **concentrations, int loc_el) override;
+  
+protected:
+  /**
+   * This method disables to use constructor without parameters.
+   */
+  Dual_por_exchange();
+
+  void allocate_output_mpi(void);
+  
+  /**
+   * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
+   */
+  double **immob_concentration_matrix;
+
+  /**
+   *
+   */
+  EqData data_;
+  
+  
+  Reaction *reaction_mob;       ///< Reaction running in mobile zone
+  Reaction *reaction_immob;     ///< Reaction running in immobile zone
+  
+  /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
+   * Else it is replaced with simple forward difference approximation.
+   */
+  static const double min_dt;
+  
+  ///@name members used in output routines
+  //@{
+  Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
+  Vec *vconc_immobile_out; ///< PETSC concentration vector output for immobile phase (gathered - sequential)
+  double **conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)  
+  //@}
+  
 };
 
-#endif
+#endif  //DUAL_POROSITY

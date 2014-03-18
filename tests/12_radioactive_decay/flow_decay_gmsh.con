@@ -71,6 +71,11 @@
       
       reactions = {
         TYPE="LinearReactions",
+        substances = [
+	  "B",
+	  "D",
+	  "F"
+	  ],
         decays = [
           {
             parent = "D",

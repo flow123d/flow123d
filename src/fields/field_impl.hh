@@ -69,6 +69,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	if (&other == this) return *this;
 
 	shared_ = other.shared_;
+        shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
 	limit_side_ = other.limit_side_;
 
@@ -246,21 +247,21 @@ auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const Fiel
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 {
-	ASSERT( mesh() , "NULL mesh pointer. set_mesh must be called before.\n");
-	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side before calling set_time.\n");
-
-	// possibly update our control field
-	if (no_check_control_field_) {
-		no_check_control_field_->set_limit_side(limit_side_);
-		no_check_control_field_->set_time(time);
-	}
-
-	set_time_result_ = TimeStatus::constant;
+	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
+	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
     if (time.t() == last_time_)  return changed();
     last_time_=time.t();
 
+        // possibly update our control field
+        if (no_check_control_field_) {
+                no_check_control_field_->set_limit_side(limit_side_);
+                no_check_control_field_->set_time(time);
+        }
+        
+    set_time_result_ = TimeStatus::constant;
+    
     // read all descriptors satisfying time.ge(input_time)
     update_history(time);
     check_initialized_region_fields_();
@@ -316,6 +317,15 @@ void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 		this->operator=(other_field);
 	}
 }
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::output(Input::Record output_rec)
+{
+	OutputTime::register_data(output_rec, this->output_type(), *this);
+}
+
 
 
 template<int spacedim, class Value>
@@ -454,7 +464,8 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] );
+//        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] ).units( units() );
+    	sub_fields_[i_comp].name( sub_names_[i_comp] ).units( units() );
 }
 
 
@@ -465,12 +476,21 @@ it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_limit_side(LimitSide side)
+{
+	for ( SubFieldType &field : sub_fields_)
+		field.set_limit_side(side);
+}
+
+
+template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)
 {
 	bool any=false;
 	for( SubFieldType &field : sub_fields_) {
-		any=any || field.set_time(time);
+		if (field.set_time(time))
+			any = true;
 	}
     return any;
 }
@@ -496,6 +516,16 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 		sub_fields_[0] = other_field;
 	}
 }
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::output(Input::Record output_rec)
+{
+	OutputTime::register_data(output_rec, this->output_type(), *this);
+}
+
+
 
 
 

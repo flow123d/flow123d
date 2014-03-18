@@ -66,6 +66,12 @@ public:
 		Field<3, FieldValue<3>::Scalar > *cross_section;
 
 
+		MultiField<3, FieldValue<3>::Scalar> output_field;
+
+        /// Fields indended for output, i.e. all input fields plus those representing solution.
+        FieldSet output_fields;
+
+
 		ModelEqData();
 		static string name() {return "HeatTransfer";}
 	};
@@ -82,6 +88,8 @@ protected:
 	 * @return
 	 */
 	static IT::Record &get_input_type(const string &implementation, const string &description);
+
+	static IT::Record &get_output_record_input_type(const string &implementation, const string &description);
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;

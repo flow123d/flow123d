@@ -53,6 +53,8 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", "0.0");
 	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
 	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
+
+	output_fields += output_field.name("mobile_p0").units("M/L^3");
 }
 
 
@@ -70,6 +72,14 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 					"Model of sorption.")
 			.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
 					"Dual porosity model.");
+
+	return rec;
+}
+
+IT::Record &ConcentrationTransportModel::get_output_record_input_type(const string &implementation, const string &description)
+{
+	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.")
+			.copy_keys(TransportBase::input_type_output_record);
 
 	return rec;
 }

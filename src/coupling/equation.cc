@@ -73,6 +73,12 @@ EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
 {}
 
 
+void EquationBase::set_time_governor(TimeGovernor &time)
+{
+  time_ = &time;
+}
+
+
 
 /*****************************************************************************************
  * Implementation of EquationNothing

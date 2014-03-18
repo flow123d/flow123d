@@ -39,6 +39,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
+#include "fields/field_fe.hh"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
@@ -75,7 +76,10 @@ Record TransportDG<Model>::input_type
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).");
+    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+    .declare_key("output", Model::get_output_record_input_type("DG", "DG solver").copy_keys(EqData().output_fields.make_output_field_keys()),
+    		Default::obligatory(),
+       		"Parameters of output stream.");
 
 
 
@@ -195,6 +199,9 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
+
+    // add all input fields to the output list
+    this->output_fields += *this;
 }
 
 
@@ -269,25 +276,31 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	}
     }
 
-    // set up output class
-    Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-
-    // allocate output arrays
+    // register output fields
+    output_rec = in_rec.val<Input::Record>("output");
+	output_vec.resize(n_subst_);
+	output_solution.resize(n_subst_);
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// for each substance we allocate output array and vector
+		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+	}
     if (feo->dh()->el_ds()->myp() == 0)
     {
-    	int n_corners = 0;
-    	FOR_ELEMENTS(mesh_, elem)
-    		n_corners += elem->dim()+1;
-    	output_solution.resize(n_subst_);
-    	for (int i=0; i<n_subst_; i++)
+    	data_.output_field.init(subst_names_);
+    	data_.output_field.set_mesh(*mesh_);
+    	data_.output_fields.output_type(OutputTime::CORNER_DATA);
+
+    	for (int sbi=0; sbi<n_subst_; sbi++)
     	{
-			output_solution[i] = new double[n_corners];
-			for(int j=0; j<n_corners; j++)
-				output_solution[i][j] = 0.0;
-			OutputTime::register_corner_data<double>(mesh_, subst_names_[i], "M/L^3",
-					output_rec.val<Input::Record>("output_stream"), output_solution[i], n_corners);
-		}
+    		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
+    		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
+    		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+    		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+    	}
+        data_.output_fields.set_limit_side(LimitSide::left);
+        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     }
 
     // set time marks for writing the output
@@ -299,7 +312,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
-//    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
     for (int sbi = 0; sbi < n_subst_; sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
@@ -314,6 +326,16 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     for (int sbi = 0; sbi < n_subst_; sbi++)
     	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
+
+    // gather the solution from all processors
+    output_vector_gather();
+	// on the main processor fill the output array and save to file
+	if (feo->dh()->el_ds()->myp() == 0)
+	{
+        data_.output_fields.set_time(*time_);
+        data_.output_fields.output(output_rec);
+	}
+
 }
 
 template<class Model>
@@ -325,7 +347,10 @@ TransportDG<Model>::~TransportDG()
     if (feo->dh()->el_ds()->myp() == 0)
     {
 		for (int i=0; i<n_subst_; i++)
+		{
+			VecDestroy(&output_vec[i]);
 			delete[] output_solution[i];
+		}
     }
 
     for (int i=0; i<n_subst_; i++)
@@ -344,6 +369,24 @@ TransportDG<Model>::~TransportDG()
     subst_names_.clear();
 }
 
+
+template<class Model>
+void TransportDG<Model>::output_vector_gather()
+{
+    IS is;
+    VecScatter output_scatter;
+    int idx[] = { 0 };
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// gather solution to output_vec[sbi]
+		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
+		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterDestroy(&(output_scatter));
+		ISDestroy(&(is));
+	}
+}
 
 
 template<class Model>
@@ -521,98 +564,14 @@ void TransportDG<Model>::output_data()
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    IS is;
-    VecScatter output_scatter;
-    int row_ids[feo->dh()->n_global_dofs()];
-	Vec solution_vec;
-
-	for (int i=0; i<feo->dh()->n_global_dofs(); i++)
-		row_ids[i] = i;
-
-	for (int sbi=0; sbi<n_subst_; sbi++)
+    output_vector_gather();
+	// on the main processor fill the output array and save to file
+	if (feo->dh()->el_ds()->myp() == 0)
 	{
-		VecCreateSeq(PETSC_COMM_SELF, ls[sbi]->size(), &solution_vec);
-
-		ISCreateGeneral(PETSC_COMM_SELF, ls[sbi]->size(), row_ids, PETSC_COPY_VALUES, &is); //WithArray
-		VecScatterCreate(ls[sbi]->get_solution(), is, solution_vec, PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
-
-		// on the main processor fill the output array and save to file
-		if (feo->dh()->el_ds()->myp() == 0)
-		{
-			int corner_id = 0; //, node_id;
-
-			// The solution is evaluated at vertices of each element.
-			// For this reason we construct quadratures whose quadrature
-			// points are placed at the vertices of the reference element.
-			Quadrature<1> q1(2);
-			Quadrature<2> q2(3);
-			Quadrature<3> q3(4);
-
-			for (int i=0; i<2; i++)
-				q1.set_point(i, RefElement<1>::node_coords(i).subvec(0,0));
-			for (int i=0; i<3; i++)
-				q2.set_point(i, RefElement<2>::node_coords(i).subvec(0,1));
-			for (int i=0; i<4; i++)
-				q3.set_point(i, RefElement<3>::node_coords(i).subvec(0,2));
-
-			FEValues<1,3> fv1(*feo->mapping<1>(), q1, *feo->fe<1>(), update_values);
-			FEValues<2,3> fv2(*feo->mapping<2>(), q2, *feo->fe<2>(), update_values);
-			FEValues<3,3> fv3(*feo->mapping<3>(), q3, *feo->fe<3>(), update_values);
-
-			VecGetArray(solution_vec, &solution);
-			FOR_ELEMENTS(mesh_, elem)
-			{
-				feo->dh()->get_dof_indices(elem, dof_indices);
-				switch (elem->dim())
-				{
-				case 1:
-					fv1.reinit(elem);
-					for (unsigned int k=0; k<q1.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv1.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv1.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 2:
-					fv2.reinit(elem);
-					for (unsigned int k=0; k<q2.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv2.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv2.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 3:
-					fv3.reinit(elem);
-					for (unsigned int k=0; k<q3.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv3.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv3.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				default:
-					break;
-				}
-
-			}
-		}
-
-		VecDestroy(&solution_vec);
+		data_.output_fields.set_time(*time_);
+		data_.output_fields.output(output_rec);
 	}
 
-	if(transport_output) {
-		xprintf(MsgLog, "transport DG: write_data()\n");
-		transport_output->write_data(time_->t());
-	}
 	if (mass_balance() != NULL)
 		mass_balance()->output(time_->t());
 

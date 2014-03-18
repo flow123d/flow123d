@@ -35,6 +35,7 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
+class OutputTime;
 class DOFHandlerBase;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
@@ -245,6 +246,8 @@ public:
 private:
 
 	typename Model::ModelEqData &data() { return data_; }
+
+	void output_vector_gather();
 
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
@@ -518,8 +521,12 @@ private:
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
-	/// Class for handling the solution output.
-	OutputTime *transport_output;
+	/// Vector of solution data.
+	vector<Vec> output_vec;
+
+	/// Record with output specification.
+	Input::Record output_rec;
+
 
 	// @}
 

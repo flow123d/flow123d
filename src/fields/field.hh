@@ -19,6 +19,7 @@ using namespace std;
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
+#include "io/output_time.hh"
 
 namespace IT=Input::Type;
 
@@ -89,6 +90,7 @@ public:
      */
     FieldCommonBase & units(const string & units)
     { shared_->units_ = units; return *this;}
+
     /**
      * For the fields returning "Enum", we have to pass the Input::Type::Selection object to
      * the field implementations.
@@ -101,8 +103,15 @@ public:
       return *this;
     }
 
-
-
+    /**
+     * Output discrete space used in the output() method. Can be different for different field copies.
+     * one can choose between:
+     * data constant on elements, linear data given in nodes, and discontinuous linear data.
+     *
+     * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
+     */
+    FieldCommonBase & output_type(OutputTime::DiscreteSpace rt)
+    { type_of_output_data_ = rt; return *this; }
 
     /**
      * Set number of components for run-time sized vectors. This is used latter when we construct
@@ -112,6 +121,7 @@ public:
      */
     void n_comp( unsigned int n_comp)
     { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
+
 
     /**
      * Set internal mesh pointer.
@@ -130,10 +140,9 @@ public:
      * Set side of limit when calling @p set_time
      * with jump time. This method invalidate result of
      * @p changed() so it should be called just before @p set_time.
-     * Do not change limit side for one field, rather use separate copy.
+     * Can be different for different field copies.
      */
-    void set_limit_side(LimitSide side)
-    { limit_side_=side; }
+    virtual void set_limit_side(LimitSide side) = 0;
 
     /**
      * Getters.
@@ -150,6 +159,9 @@ public:
     const std::string &units() const
     { return shared_->units_;}
 
+    OutputTime::DiscreteSpace output_type() const
+    { return type_of_output_data_; }
+
     bool is_bc() const
     { return shared_->bc_;}
 
@@ -158,6 +170,13 @@ public:
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
+
+    /**
+     * Returns time set by last call of set_time method.
+     * Can be different for different field copies.
+     */
+    double time() const
+    { return last_time_; }
 
 
     /**
@@ -196,7 +215,9 @@ public:
      * The returned value is also stored in @p changed_during_set_time data member.
      *
      * Default values helps when creating steady field. Note that default TimeGovernor constructor
-     * set time to 0.0
+     * set time to 0.0.
+     *
+     * Different field copies can be set to different times.
      */
     virtual  bool set_time(const TimeGovernor &time=TimeGovernor()) =0;
 
@@ -207,9 +228,12 @@ public:
     virtual void copy_from(const FieldCommonBase & other) =0;
 
     /**
-     * Output the field. STUB, has to be finished after merge with new output classes.
+     * Output the field. Use output discrete space given by @p type_of_output_data member.
+     * The parameter @p output_rec is checked for key named by the field name. If the key exists its
+     * string value is used to look for the OutputTime object of the same name, then the output of the field is performed.
+     * If the key do not appear in the input, no output is done.
      */
-    virtual void output() =0;
+    virtual void output(Input::Record output_rec) =0;
 
 
     /**
@@ -355,9 +379,14 @@ protected:
     TimeStatus set_time_result_;
 
     /**
-     * Last set time.
+     * Last set time. Can be different for different field copies.
      */
     double last_time_ = -numeric_limits<double>::infinity();
+
+    /**
+     * Output data type used in the output() method. Can be different for different field copies.
+     */
+    OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
 
     /**
      * Maximum number of FieldBase objects we store per one region.
@@ -502,6 +531,9 @@ public:
      */
     static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommonBase &field);
 
+    void set_limit_side(LimitSide side) override
+    { this->limit_side_=side; }
+
     /**
      * Check that whole field list is set, possibly use default values for unset regions
      * and call set_time for every field in the field list.
@@ -516,11 +548,9 @@ public:
     void copy_from(const FieldCommonBase & other) override;
 
     /**
-     * Output the field. STUB, has to be finished after merge with new output classes.
+     * Implementation of FieldCommonBase::output().
      */
-    void output() override {
-
-    }
+    void output(Input::Record output_rec) override;
 
 
     /**
@@ -670,6 +700,7 @@ public:
      */
     IT::AbstractRecord &get_input_type() override;
 
+    void set_limit_side(LimitSide side) override;
 
     /**
      * Abstract method to update field to the new time level.
@@ -691,7 +722,10 @@ public:
      */
     void copy_from(const FieldCommonBase & other) override;
 
-    void output() override {};
+    /**
+     * Implementation of @p FieldCommonBase::output().
+     */
+    void output(Input::Record output_rec) override;
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().
@@ -741,6 +775,7 @@ template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
 {
 
+    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] ,
@@ -754,7 +789,7 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
-
+    ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
     ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
     ASSERT( region_fields_[elm.region_idx().idx()] ,

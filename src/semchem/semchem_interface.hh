@@ -115,9 +115,9 @@ class Semchem_interface
 		*/
 		void compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc);
 		/**
-		*	The function compute_one_step(..) calls compute_reaction(..) for every single element in the mesh.
+		*	The function update_solution(..) calls compute_reaction(..) for every single element in the mesh.
 		*/
-		void compute_one_step(void);
+		void update_solution(void);
 		/**
 		*	This method reads from ini-file the information if a simulation of chemical raections is switched on.
 		*/
