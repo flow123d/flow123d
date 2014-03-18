@@ -536,7 +536,7 @@ int OutputVTK::write_data(void)
         this->get_base_file().precision(std::numeric_limits<double>::digits10);
 
         /* Strip out relative path and add "base/" string */
-        this->get_base_file() << scientific << "<DataSet timestep=\"" << this->time << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+        this->get_base_file() << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0) << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 
