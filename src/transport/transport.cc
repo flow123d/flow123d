@@ -1399,7 +1399,7 @@ void ConvectionTransport::output_data() {
         data_.output_fields.set_time(*time_);
         data_.output_fields.output(output_rec);
 
-        mass_balance()->output(time_->t());
+        //mass_balance()->output(time_->t());
 
         //for synchronization when measuring time by Profiler
         MPI_Barrier(MPI_COMM_WORLD);

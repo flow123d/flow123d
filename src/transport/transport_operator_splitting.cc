@@ -175,7 +175,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 xprintf(UsrErr, "Wrong reaction type.\n");
             }
             reaction->set_time_governor(*(convection->time_));
-            reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc);
+            reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc, convection->get_row_4_el());
             reaction->initialize();
         } else {
             reaction = nullptr;
@@ -313,6 +313,7 @@ void TransportOperatorSplitting::output_data(){
         DBGMSG("\nTOS: output time: %f\n", time_->t());
 
         convection->output_data();
+        reaction->output_data();
     }
 }
 

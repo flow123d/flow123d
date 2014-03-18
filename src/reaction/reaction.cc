@@ -7,6 +7,7 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
+#include "io/output.h"
 
 using namespace Input::Type;
 using namespace std;
@@ -17,13 +18,24 @@ AbstractRecord Reaction::input_type
         .declare_key("substances", Array(String()), Default::obligatory(),
                      "Names of the substances that take part in the reaction model.");
 
+Record Reaction::input_type_output_record
+    = Record("ReationOutput", "Output setting for transport equations.")
+        .declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+                        "Parameters of output stream.");
+//         .declare_key("save_step", Double(0.0), Default::obligatory(),
+//                         "Interval between outputs.")
+//         .declare_key("output_times", Array(Double(0.0)),
+//                         "Explicit array of output times (can be combined with 'save_step'.");
 
-Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names) //(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
+Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names)
     : EquationBase(init_mesh, in_rec),
       names_(names),
       n_all_substances_ (names.size())
 {
   initialize_substance_ids(names, in_rec);
+  
+  // register output vectors
+  output_rec = in_rec.val<Input::Record>("output");
 }
 
 Reaction::~Reaction()
@@ -56,11 +68,12 @@ void Reaction::initialize_substance_ids(const vector< string >& names, Input::Re
     n_substances_ = substance_id.size();
 }
 
-void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc_)
+void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc, int *row_4_el)
 {
   concentration_matrix = ConcentrationMatrix;
   distribution = conc_distr;
-  el_4_loc = el_4_loc_;
+  this->el_4_loc = el_4_loc;
+  this->row_4_el = row_4_el;
   return;
 }
 

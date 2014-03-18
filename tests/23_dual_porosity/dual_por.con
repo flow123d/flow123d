@@ -53,7 +53,8 @@
         ],
       
       output = {
-        conc_mobile_p0 = "transport_output_stream", 
+        mobile_p0 = "transport_output_stream", 
+        //por_m = "transport_output_stream",
         output_stream = {
           REF = "/output_streams/1"
         }, 
@@ -77,7 +78,15 @@
             immob_porosity = 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
-        ]
+        ],
+        
+        output = {
+          output_stream = {
+            REF = "/output_streams/1"
+          },
+          immobile_p0 = "transport_output_stream",
+          immob_porosity = "transport_output_stream"
+        }
       }
           
     } 

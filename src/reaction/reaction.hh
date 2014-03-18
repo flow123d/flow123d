@@ -25,6 +25,12 @@ public:
    * Static variable for definition of common input record in reactions.
    */
   static Input::Type::AbstractRecord input_type;
+  
+  /**
+   * Specification of the output record. Need not to be used by all reaction models, but they should
+   * allow output of similar fields.
+   */
+  static Input::Type::Record input_type_output_record;
     
   /**
    *  Constructor with parameter for initialization of a new declared class member
@@ -51,12 +57,22 @@ public:
    */
   virtual void update_solution(void) = 0;
   
+  /** Output method.
+   * Some reaction models have their own data to output (sorption, dual porosity) - this is where it must be solved.
+   * On the other hand, some do not have (linear reaction, pade approximant) - that is why it is not pure virtual.
+   */
+  virtual void output_data(void){};
+  /**
+   * Communicate parallel concentration vectors into sequential output vector.
+   */
+  virtual void output_vector_gather(void){};
+  
   ///@name Setters
   //@{
   /**
    * Sets the concentration matrix for the mobile zone, all substances and on all elements.
    */
-  virtual void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc);
+  virtual void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc, int *row_4_el);
   
   /// Set mesh used by the model.
   inline void set_mesh(Mesh &mesh) 
@@ -94,6 +110,11 @@ protected:
    */
   int *el_4_loc;
   /**
+   * Indices of rows belonging to elements.
+   */
+  int *row_4_el;
+  
+  /**
    * Pointer to reference to distribution of elements between processors.
    */
   Distribution *distribution;
@@ -106,6 +127,9 @@ protected:
   unsigned int n_substances_;   //< number of substances that take part in the reaction model
   unsigned int n_all_substances_;   //< number of all substances in the transport model
   std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
+  
+  /// Record with output specification.
+  Input::Record output_rec;
 };
 
 #endif
