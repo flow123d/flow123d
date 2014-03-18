@@ -19,7 +19,7 @@ AbstractRecord Reaction::input_type
                      "Names of the substances that take part in the reaction model.");
 
 Record Reaction::input_type_output_record
-    = Record("ReationOutput", "Output setting for transport equations.")
+    = Record("ReactionOutput", "Output setting for transport equations.")
         .declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
                         "Parameters of output stream.");
 //         .declare_key("save_step", Double(0.0), Default::obligatory(),

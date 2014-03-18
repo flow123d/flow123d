@@ -88,6 +88,9 @@ Dual_por_exchange::~Dual_por_exchange(void)
   if(reaction_mob != nullptr) delete reaction_mob;
   if(reaction_immob != nullptr) delete reaction_immob;
   
+  VecDestroy(vconc_immobile);
+  VecDestroy(vconc_immobile_out);
+  
   for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
   {
       //no mpi vectors
@@ -397,6 +400,9 @@ void Dual_por_exchange::output_data(void )
   // Register fresh output data
   data_.output_fields.set_time(*time_);
   data_.output_fields.output(output_rec);
+  
+  if(reaction_mob != nullptr) reaction_mob->output_data();
+  if(reaction_immob != nullptr) reaction_immob->output_data();
 
   //for synchronization when measuring time by Profiler
   MPI_Barrier(MPI_COMM_WORLD);
