@@ -8,6 +8,7 @@
 
 
 #include <flow_gtest.hh>
+#include <memory>
 
 
 #include "fields/field_constant.hh"
@@ -19,10 +20,11 @@
 
 string input = R"INPUT(
 {   
-   conductivity_3d={
-       TYPE="FieldConstant",
-       value=[1,2, 3]
-   },
+   tensor1=3.14,
+   tensor2=[1,2, 3],
+   tensor3=[1,2, 3,4,5,6],
+   tensor4=[ [1,2, 3], [4,5,6], [7,8,9]],
+
    init_conc={
        TYPE="FieldConstant",
        value=[1.2, 2.3, 3.4]
@@ -31,15 +33,33 @@ string input = R"INPUT(
 )INPUT";
 
 
+typedef FieldBase<3, FieldValue<3>::TensorFixed > TensorField;
+typedef FieldBase<3, FieldValue<3>::Vector > VectorField;
+
+
+void check_tensor_field(std::shared_ptr<TensorField> field,const  std::string& expected, vector<Space<3>::Point> points,ElementAccessor<3> elem) {
+    arma::mat::fixed<3,3> result;
+    arma::mat::fixed<3,3> exp(expected);
+
+    for(auto point : points) {
+    	result = field->value( point, elem);
+    	arma::umat match = (  exp == result );
+    	if (!match.max()) cout << "Expected: " << exp << endl << "Result: "<< result << endl;
+    	EXPECT_TRUE( match.max());
+    }
+}
+
+
 TEST(FieldConst, read_from_input) {
-    typedef FieldBase<3, FieldValue<3>::TensorFixed > TensorField;
-    typedef FieldBase<3, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record  rec_type("FieldConstTest","");
-    rec_type.declare_key("conductivity_3d", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("tensor1", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("tensor2", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("tensor3", TensorField::input_type, Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("tensor4", TensorField::input_type, Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("init_conc", VectorField::input_type, Input::Type::Default::obligatory(), "" );
     rec_type.finish();
 
@@ -67,16 +87,16 @@ TEST(FieldConst, read_from_input) {
         EXPECT_DOUBLE_EQ( 3.4, result[2]);
     }
 
-    auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"));
-    {
-        arma::mat::fixed<3,3> result;
+    auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"));
+    check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);
 
-        result = cond->value( point_2, elm);
-        arma::umat match = ( arma::mat::fixed<3,3>("1 0 0; 0 2 0; 0 0 3") == result );
-        EXPECT_TRUE( match.max());
+    auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"));
+    check_tensor_field(tensor2, "1 0 0; 0 2 0; 0 0 3", {point_1, point_2}, elm);
 
-        match = ( arma::mat::fixed<3,3>("1 0 0; 0 2 0; 0 0 3") == cond->value( point_1, elm) );
-        EXPECT_TRUE( match.max());
+    auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"));
+    check_tensor_field(tensor3, "1 2 3; 2 4 5; 3 5 6", {point_1, point_2}, elm);
 
-    }
+    auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"));
+    check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
+

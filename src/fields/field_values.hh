@@ -13,9 +13,11 @@
 #include <armadillo>
 //#include <boost/type_traits.hpp>
 #include <boost/format.hpp>
-
+#include <system/exceptions.hh>
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include <ostream>
+
 namespace IT=Input::Type;
 
 /**
@@ -220,13 +222,13 @@ public:
 
     void init_from_input( AccessType rec ) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
-        if (NRows == NCols) {
+        if (it->size() == 1 && NRows == NCols) {
             // square tensor
-            // input = 3  expands  to [ [ 3 ] ]; init to  3 times identity matrix
+            // input = 3  expands  to [ [ 3 ] ]; init to  3 * (identity matrix)
             // input = [1, 2, 3] expands to [[1], [2], [3]]; init to diag. matrix
             // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1 ,2 ,3], [2, 4, 5], [ 3, 5, 6] ]
 
-            if (it->size() == 1) {
+
                 if (rec.size() == 1)  {// scalar times identity
                     value_.zeros();
                     ET scalar=*(it->begin<ET>());
@@ -250,7 +252,7 @@ public:
 
                          );
                 }
-            }
+
         } else {
             // accept only full tensor
             if (rec.size() == NRows && it->size() == NCols) {

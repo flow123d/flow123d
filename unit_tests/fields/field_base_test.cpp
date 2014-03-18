@@ -148,6 +148,7 @@ public:
 
 
 #define FV FieldValue
+// full list
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
 	Field<Dim,FV<0>::Vector>, \
@@ -160,6 +161,7 @@ public:
 	Field<Dim,FV<2>::TensorFixed>, \
 	Field<Dim,FV<3>::TensorFixed>
 
+// simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
 
 /**
