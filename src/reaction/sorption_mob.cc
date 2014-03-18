@@ -21,7 +21,8 @@ using namespace std;
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: SorptionDual(init_mesh, in_rec, names)
 {
-	DBGMSG("SorptionMob constructor.\n");
+  //DBGMSG("SorptionMob constructor.\n");
+  data_.output_fields += data_.conc_sorbed.name("mobile_sorbed_p0").units("M/L^3");
 }
 
 SorptionMob::~SorptionMob(void)

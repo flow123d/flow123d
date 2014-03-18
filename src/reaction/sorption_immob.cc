@@ -22,7 +22,8 @@ using namespace std;
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: SorptionDual(init_mesh, in_rec, names)
 {
-	DBGMSG("SorptionImmob constructor.\n");
+  //DBGMSG("SorptionImmob constructor.\n");
+  data_.output_fields += data_.conc_sorbed.name("immobile_sorbed_p0").units("M/L^3");
 }
 
 SorptionImmob::~SorptionImmob(void)

@@ -50,7 +50,7 @@
       ],
       
       output = {
-        conc_mobile_p0 = "transport_output_stream", 
+        mobile_p0 = "transport_output_stream", 
         output_stream = {
           REF = "/output_streams/1"
         }, 
@@ -75,7 +75,14 @@
             //mult_coefs = { TYPE="FieldFormula", value="0.6" },
             second_params = 0.4
           }
-        ]
+        ],
+        
+        output = {
+          output_stream = {
+            REF = "/output_streams/1"
+          },
+          mobile_sorbed_p0 = "transport_output_stream"
+        }
       }
           
     } 

@@ -63,7 +63,12 @@ public:
     Field<3, FieldValue<3>::Vector > mult_coefs; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
     Field<3, FieldValue<3>::Vector > second_params; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
 
-    Field<3, FieldValue<3>::Scalar > porosity; ///<Pointer to porosity field from transport
+    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field copied from transport
+    
+    MultiField<3, FieldValue<3>::Scalar>  conc_sorbed;    ///< Calculated sorbed concentrations, for output only.
+
+    /// Fields indended for output, i.e. all input fields plus those representing solution.
+    FieldSet output_fields;
   };
 
   /**
@@ -75,97 +80,107 @@ public:
    * Destructor.
    */
   virtual ~SorptionBase(void);
-		/**
-		*	For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
-		*/
-		double **compute_reaction(double **concentrations, int loc_el);
-		/**
-		*
-		*/
-		virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
-                
-		/**
-		*	Prepared to compute sorption inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-		*/
-		virtual void update_solution(void);
-                
-                void initialize(void) override;
-		/**
-		* Sets porosity field - makes a field copy from transport.
-		*/
-		inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m) 
-                  { data_.set_field(data_.porosity.name(),por_m); };
-
-		/**
-		*
-		*/
-		void make_tables(void);
-		
-	protected:
-		/**
-		*	This method disables to use constructor without parameters.
-		*/
-		SorptionBase();
-                
-                /// Initializes private members of sorption from the input record.
-                void init_from_input(Input::Record in_rec) override;
-                
-                /** Initializes possible following reactions from input record.
-                 * It should be called after setting mesh, time_governor, distribution and concentration_matrix
-                 * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
-                 */
-                void init_from_input_reaction(Input::Record in_rec);
-		/**
-		*	For printing parameters of isotherms under consideration, not necessary to store
-		*/
-		void print_sorption_parameters(void);
-		/**
-		* 	Number of regions.
-		*/
-		int nr_of_regions;
-		/**
-		* 	Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
-		*/
-		int nr_of_points;
-		/**
-		* 	Molar masses of dissolved species (substances)
-		*/
-		std::vector<double> molar_masses;
-		/**
-		* 	Density of the solvent. 
-                *  TODO: Could be done region dependent, easily.
-		*/
-		double solvent_dens;
-	    /**
-		* fraction of the mobile porosity and the whole porosity, it was meant to be fraction of the total sorption surface exposed to the mobile zone, in interval (0,1).
-		* pointer to phi field from transport
-		*/
-	    //pScalar phi_;
-		/**
-		* 	Critical concentrations of species dissolved in water.
-		*/
-		std::vector<double> solubility_vec_;
-		/**
-		* 	Concentration table limits of species dissolved in water.
-		*/
-		std::vector<double> table_limit_;
-		/**
-		*	Three dimensional array contains intersections between isotherms and mass balance lines. It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
-		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
-		*/
-		std::vector<std::vector<Isotherm> > isotherms;
-		/**
-		* 	Region characteristic inputs.
-		*/
-		EqData data_;
-		/**
-		* Array for storage infos about sorbed species concentrations.
-		*/
-		double** sorbed_conc_array;
-                
-                /** Reaction model that follows the sorption.
-                 */
-                Reaction* reaction;
+  /**
+   * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
+   */
+  double **compute_reaction(double **concentrations, int loc_el);
+  /**
+   *
+   */
+  virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+  
+  /**
+   * Prepared to compute sorption inside all of considered elements. 
+   * It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
+   */
+  virtual void update_solution(void);
+  
+  void initialize(void) override;
+  /**
+   * Sets porosity field - makes a field copy from transport.
+   */
+  inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m) 
+    { data_.set_field(data_.porosity.name(),por_m); };
+  
+  /**
+   *
+   */
+  void make_tables(void);
+  
+  void output_data(void) override;
+  void output_vector_gather(void) override;
+    
+protected:
+  /**
+   * This method disables to use constructor without parameters.
+   */
+  SorptionBase();
+  
+  /// Initializes private members of sorption from the input record.
+  void init_from_input(Input::Record in_rec) override;
+  
+  /** Initializes possible following reactions from input record.
+   * It should be called after setting mesh, time_governor, distribution and concentration_matrix
+   * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
+   */
+  void init_from_input_reaction(Input::Record in_rec);
+  /**
+   * or printing parameters of isotherms under consideration, not necessary to store
+   */
+  void print_sorption_parameters(void);
+  
+  void allocate_output_mpi(void);
+  /**
+   * Number of regions.
+   */
+  int nr_of_regions;
+  /**
+   * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
+   */
+  int nr_of_points;
+  /**
+   * Molar masses of dissolved species (substances)
+   */
+  std::vector<double> molar_masses;
+  /**
+   * Density of the solvent. 
+   *  TODO: Could be done region dependent, easily.
+   */
+  double solvent_dens;
+  /**
+   * Critical concentrations of species dissolved in water.
+   */
+  std::vector<double> solubility_vec_;
+  /**
+   * Concentration table limits of species dissolved in water.
+   */
+  std::vector<double> table_limit_;
+  /**
+   * Three dimensional array contains intersections between isotherms and mass balance lines. 
+   * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
+   * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step 
+   * lenght in cocidered system of coordinates, just function values are stored.
+   */
+  std::vector<std::vector<Isotherm> > isotherms;
+  /**
+   * Region characteristic inputs.
+   */
+  EqData data_;
+  /**
+   * Array for storage infos about sorbed species concentrations.
+   */
+  double** sorbed_conc_array;
+  
+  /** Reaction model that follows the sorption.
+   */
+  Reaction* reaction;
+                  
+  ///@name members used in output routines
+  //@{
+  Vec *vconc_sorbed; ///< PETSC sorbed concentration vector (parallel).
+  Vec *vconc_sorbed_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
+  double **conc_sorbed_out; ///< sorbed concentration array output (gathered - sequential)  
+  //@}
 };
 
 #endif

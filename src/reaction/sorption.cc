@@ -22,6 +22,8 @@ using namespace std;
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
   : SorptionBase(init_mesh, in_rec, names)
 {
+  DBGMSG("SorptionSimple constructor.\n");
+  //data_.output_fields += data_.conc_sorbed.name("mobile_sorbed_p0").units("M/L^3");
 }
 
 SorptionSimple::~SorptionSimple(void)
