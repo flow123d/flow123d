@@ -290,9 +290,13 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
     for( OutputDataBase* data : vec_output_data)
     {
         file 	<< "<DataArray type=\"Float64\" "
-        		<< "Name=\"" << data->output_field_name <<"\" "
-        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" "
-        		<< "format=\"ascii\">"
+        		<< "Name=\"" << data->output_field_name <<"\" ";
+        if (data->n_elem_ > 1)
+        {
+        	file
+        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" ";
+        }
+        file	<< "format=\"ascii\">"
                 << endl;
 
         /* Set precision to max */
@@ -320,12 +324,14 @@ void OutputVTK::write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &ve
     file << "Vectors=\"";
 	for( auto &data : vec_output_data)
 		if (data->n_elem_ == OutputDataBase::vector) file << data->output_field_name << ",";
-	file << "\" ";
+	file << "\"";
 
-    file << "Tensors=\"";
-	for( auto &data : vec_output_data)
-		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
-	file << "\" ";
+//	//TODO: Tensors are ignored for compatibility of VTK files for tests. Uncomment in next release.
+//
+//    file << "Tensors=\"";
+//	for( auto &data : vec_output_data)
+//		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
+//	file << "\" ";
 }
 
 
