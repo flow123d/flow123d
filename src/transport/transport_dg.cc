@@ -278,20 +278,22 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // register output fields
     output_rec = in_rec.val<Input::Record>("output");
+	output_vec.resize(n_subst_);
+	output_solution.resize(n_subst_);
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// for each substance we allocate output array and vector
+		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+	}
     if (feo->dh()->el_ds()->myp() == 0)
     {
     	data_.output_field.init(subst_names_);
     	data_.output_field.set_mesh(*mesh_);
     	data_.output_fields.output_type(OutputTime::CORNER_DATA);
 
-    	output_vec.resize(n_subst_);
-    	output_solution.resize(n_subst_);
     	for (int sbi=0; sbi<n_subst_; sbi++)
     	{
-    		// for each substance we allocate output array and vector
-    		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-    		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
-
     		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
     		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
     		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
