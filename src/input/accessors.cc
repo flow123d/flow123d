@@ -184,7 +184,7 @@ Record::Record(const Address &address, const Type::Record type)
 
 Input::EI_Address Record::ei_address() const
 {
-	return EI_Address(address_);
+	return EI_Address(address_string());
 }
 
 
@@ -234,7 +234,7 @@ Input::Type::Record AbstractRecord::type() const
 
 Input::EI_Address AbstractRecord::ei_address() const
 {
-	return EI_Address(address_);
+	return EI_Address(address_string());
 }
 
 string AbstractRecord::address_string() const
@@ -268,7 +268,7 @@ Array::Array(const Address &address, const Type::Array type)
 
 Input::EI_Address Array::ei_address() const
 {
-	return EI_Address(address_);
+	return EI_Address(address_string());
 }
 
 
