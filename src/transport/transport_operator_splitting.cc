@@ -160,10 +160,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->por_m);
                 
             } else
-            if (reactions_it->type() == Dual_por_exchange::input_type ) {
-                reaction =  new Dual_por_exchange(init_mesh, *reactions_it, subst_names_);
+            if (reactions_it->type() == DualPorosity::input_type ) {
+                reaction =  new DualPorosity(init_mesh, *reactions_it, subst_names_);
                 
-                static_cast<Dual_por_exchange *> (reaction) -> set_porosity(convection->get_data()->por_m);
+                static_cast<DualPorosity *> (reaction) -> set_porosity(convection->get_data()->por_m);
                 
             } else
             if (reactions_it->type() == Semchem_interface::input_type ) {

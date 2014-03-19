@@ -28,25 +28,25 @@ using namespace std;
 
 
 //it is currently switched of (by "0") until the reference tests are created
-const double Dual_por_exchange::min_dt = 0;
+const double DualPorosity::min_dt = 0;
 
-Record Dual_por_exchange::input_type
+Record DualPorosity::input_type
         = Record("DualPorosity",
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
     .derive_from(Reaction::input_type)
-    .declare_key("data", Array(Dual_por_exchange::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
+    .declare_key("data", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
     
     .declare_key("reactions_mob", Reaction::input_type, Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reactions_immob", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.")
     
-    .declare_key("output", Reaction::input_type_output_record.copy_keys(Dual_por_exchange::EqData().output_fields.make_output_field_keys()),
+    .declare_key("output", Reaction::input_type_output_record.copy_keys(DualPorosity::EqData().output_fields.make_output_field_keys()),
                 Default::obligatory(),
                 "Parameters of output stream.");
     
-Dual_por_exchange::EqData::EqData()
+DualPorosity::EqData::EqData()
 {
   ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
             " Vector, one value for every substance.", "0");
@@ -62,7 +62,7 @@ Dual_por_exchange::EqData::EqData()
   output_fields += conc_immobile.name("immobile_p0").units("M/L^3");
 }
 
-Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
+DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: Reaction(init_mesh, in_rec, names)
 {
     //DBGMSG("DualPorosity - constructor\n");
@@ -83,7 +83,7 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
     data_.set_limit_side(LimitSide::right);
 }
 
-Dual_por_exchange::~Dual_por_exchange(void)
+DualPorosity::~DualPorosity(void)
 {
   if(reaction_mob != nullptr) delete reaction_mob;
   if(reaction_immob != nullptr) delete reaction_immob;
@@ -101,7 +101,7 @@ Dual_por_exchange::~Dual_por_exchange(void)
 }
 
 
-void Dual_por_exchange::init_from_input(Input::Record in_rec)
+void DualPorosity::init_from_input(Input::Record in_rec)
 {  
   DBGMSG("dual_por init_from_input\n");
   Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions_mob");
@@ -121,7 +121,7 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
        static_cast<SorptionMob *> (reaction_mob) -> set_porosity_immobile(data_.immob_porosity);
                 
     } else
-    if (reactions_it->type() == Dual_por_exchange::input_type ) {
+    if (reactions_it->type() == DualPorosity::input_type ) {
         xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
     } else
     if (reactions_it->type() == Semchem_interface::input_type ) 
@@ -154,7 +154,7 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
        static_cast<SorptionImmob *> (reaction_immob) -> set_porosity_immobile(data_.immob_porosity);
                 
     } else
-    if (reactions_it->type() == Dual_por_exchange::input_type ) {
+    if (reactions_it->type() == DualPorosity::input_type ) {
         xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
     } else
     if (reactions_it->type() == Semchem_interface::input_type ) 
@@ -172,7 +172,7 @@ void Dual_por_exchange::init_from_input(Input::Record in_rec)
 }
 
 
-void Dual_por_exchange::initialize(void )
+void DualPorosity::initialize(void )
 { 
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
@@ -251,7 +251,7 @@ void Dual_por_exchange::initialize(void )
 }
 
 
-void Dual_por_exchange::update_solution(void) 
+void DualPorosity::update_solution(void) 
 {
   DBGMSG("DualPorosity - update solution\n");
   data_.set_time(*time_);
@@ -268,19 +268,19 @@ void Dual_por_exchange::update_solution(void)
 }
 
 
-double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el) 
+double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
 {
   double conc_avg = 0.0;
   unsigned int sbi, sbi_loc;
   double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
    
+  ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
+  por_m = data_.porosity.value(ele->centre(),ele->element_accessor());
+  por_imm = data_.immob_porosity.value(ele->centre(),ele->element_accessor());
+  arma::Col<double> alpha_vec = data_.alpha.value(ele->centre(), ele->element_accessor());
+  
   if(time_->dt() >= min_dt)
   {
-      ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
-      por_m = data_.porosity.value(ele->centre(),ele->element_accessor());
-      por_imm = data_.immob_porosity.value(ele->centre(),ele->element_accessor());
-      arma::Col<double> alpha_vec = data_.alpha.value(ele->centre(), ele->element_accessor());
-      
       //TODO:
       //for (sbi = 0; sbi < n_substances_; sbi++) //over substances involved in dual porosity model
       for (sbi = 0; sbi < n_all_substances_; sbi++) //over all substances
@@ -307,13 +307,8 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
                         conc_immob[sbi][loc_el] = ci;
                 }
         }
-
   }
   else{
-      ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
-      por_m = data_.porosity.value(ele->centre(),ele->element_accessor());
-      por_imm = data_.immob_porosity.value(ele->centre(),ele->element_accessor());
-      arma::Col<double> alpha_vec = data_.alpha.value(ele->centre(), ele->element_accessor());
       
       for (sbi = 0; sbi < n_all_substances_; sbi++) {
                 //previous values
@@ -334,12 +329,11 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
                 }
         }
   }
-  
   return conc_immob;
 }
 
 
-void Dual_por_exchange::allocate_output_mpi(void )
+void DualPorosity::allocate_output_mpi(void )
 {
     int sbi, n_subst, ierr, rank, np; //, i, j, ph;
     n_subst = n_all_substances_;
@@ -366,16 +360,16 @@ void Dual_por_exchange::allocate_output_mpi(void )
 }
 
 
-void Dual_por_exchange::output_vector_gather() 
+void DualPorosity::output_vector_gather() 
 {
     unsigned int sbi/*, rank, np*/;
     IS is;
     VecScatter vconc_out_scatter;
     //PetscViewer inviewer;
 
-    //  MPI_Barrier(PETSC_COMM_WORLD);
-/*    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    MPI_Comm_size(PETSC_COMM_WORLD, &np);*/
+//     MPI_Barrier(PETSC_COMM_WORLD);
+//     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+//     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
     
     //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
@@ -392,7 +386,7 @@ void Dual_por_exchange::output_vector_gather()
 }
 
 
-void Dual_por_exchange::output_data(void )
+void DualPorosity::output_data(void )
 {
   DBGMSG("DualPorosity output\n");
   output_vector_gather();

@@ -22,7 +22,7 @@ class Mesh;
 class Distribution;
 class SorptionBase;
 
-class Dual_por_exchange:  public Reaction
+class DualPorosity:  public Reaction
 {
 public:
   /**
@@ -50,11 +50,11 @@ public:
     FieldSet output_fields;
   };
 
-  Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
   /**
    * Destructor.
    */
-  ~Dual_por_exchange(void);
+  ~DualPorosity(void);
                 
   /**
    * Updates the solution according to the dual porosity model.
@@ -85,7 +85,7 @@ protected:
   /**
    * This method disables to use constructor without parameters.
    */
-  Dual_por_exchange();
+  DualPorosity();
 
   void allocate_output_mpi(void);
   

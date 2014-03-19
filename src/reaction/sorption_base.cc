@@ -248,7 +248,7 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
     } else
-    if (reactions_it->type() == Dual_por_exchange::input_type ) {
+    if (reactions_it->type() == DualPorosity::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
     } else
     if (reactions_it->type() == Semchem_interface::input_type ) 
