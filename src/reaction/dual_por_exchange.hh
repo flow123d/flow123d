@@ -92,7 +92,7 @@ protected:
   /**
    * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
    */
-  double **immob_concentration_matrix;
+  double **conc_immob;
 
   /**
    *

@@ -94,10 +94,10 @@ Dual_por_exchange::~Dual_por_exchange(void)
   for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
   {
       //no mpi vectors
-      xfree(immob_concentration_matrix[sbi]);
+      xfree(conc_immob[sbi]);
   }
 
-  xfree(immob_concentration_matrix);
+  xfree(conc_immob);
 }
 
 
@@ -180,11 +180,11 @@ void Dual_por_exchange::initialize(void )
   data_.set_time(*time_);
     
   //allocating memory for immobile concentration matrix
-  immob_concentration_matrix = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+  conc_immob = (double**) xmalloc(n_all_substances_ * sizeof(double*));
   conc_immobile_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
   for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
   {
-    immob_concentration_matrix[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+    conc_immob[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
     conc_immobile_out[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
   }
   //DBGMSG("DualPorosity - init_conc_immobile.\n");
@@ -201,7 +201,7 @@ void Dual_por_exchange::initialize(void )
         
     for (int sbi=0; sbi < n_all_substances_; sbi++)
     {
-      immob_concentration_matrix[sbi][index] = value(sbi);
+      conc_immob[sbi][index] = value(sbi);
     }
   }
   
@@ -245,7 +245,7 @@ void Dual_por_exchange::initialize(void )
   if(reaction_immob != nullptr) 
   {
     reaction_immob->set_time_governor(*time_);
-    reaction_immob->set_concentration_matrix(immob_concentration_matrix, distribution, el_4_loc, row_4_el);
+    reaction_immob->set_concentration_matrix(conc_immob, distribution, el_4_loc, row_4_el);
     reaction_immob->initialize();
   }
 }
@@ -259,7 +259,7 @@ void Dual_por_exchange::update_solution(void)
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
   {
-    compute_reaction(immob_concentration_matrix, loc_el);
+    compute_reaction(conc_immob, loc_el);
   }
   END_TIMER("dual_por_exchange_step");
   
@@ -288,7 +288,7 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
         //sbi_loc = substance_id[sbi];    //mapping to global substance index
                 //previous values
                 pcm = concentration_matrix[sbi][loc_el];
-                pci = immob_concentration_matrix[sbi][loc_el];
+                pci = conc_immob[sbi][loc_el];
 
                 // ---compute average concentration------------------------------------------
                 conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
@@ -304,7 +304,7 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
 //                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  alpha: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
 //                                 cm, ci, pcm, pci, conc_avg, alpha_vec[sbi], por_m, por_imm, time_->dt());
                         concentration_matrix[sbi][loc_el] = cm;
-                        immob_concentration_matrix[sbi][loc_el] = ci;
+                        conc_immob[sbi][loc_el] = ci;
                 }
         }
 
@@ -318,7 +318,7 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
       for (sbi = 0; sbi < n_all_substances_; sbi++) {
                 //previous values
                 pcm = concentration_matrix[sbi][loc_el];
-                pci = immob_concentration_matrix[sbi][loc_el];
+                pci = conc_immob[sbi][loc_el];
 
                 if (por_imm != 0.0) {
                         temp_exp = alpha_vec[sbi]*(pci - pcm);
@@ -330,12 +330,12 @@ double **Dual_por_exchange::compute_reaction(double **concentrations, int loc_el
                         // --------------------------------------------------------------------------
 
                         concentration_matrix[sbi][loc_el] = cm;
-                        immob_concentration_matrix[sbi][loc_el] = ci;
+                        conc_immob[sbi][loc_el] = ci;
                 }
         }
   }
   
-  return immob_concentration_matrix;
+  return conc_immob;
 }
 
 
@@ -355,7 +355,7 @@ void Dual_por_exchange::allocate_output_mpi(void )
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), immob_concentration_matrix[sbi],
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), conc_immob[sbi],
                 &vconc_immobile[sbi]);
         VecZeroEntries(vconc_immobile[sbi]);
 
