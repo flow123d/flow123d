@@ -13,7 +13,7 @@
       data= [
         { region = "1d",
           conductivity = 1,
-          sigma = 50    // compatible case has one flux for every side of fracture
+          sigma = 25    // compatible case has one flux for every side of fracture
         },
         { region = "2d",
           conductivity = 5
@@ -37,7 +37,10 @@
         piezo_head_p0 = "flow_output_stream", 
         pressure_p0 = "flow_output_stream", 
         pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        velocity_p0 = "flow_output_stream",
+        velocity_diff = "flow_output_stream",
+        pressure_diff = "flow_output_stream",
+        div_diff = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 

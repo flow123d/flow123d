@@ -83,6 +83,10 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += field_node_pressure.name("pressure_p1").units("L");
 	*this += field_ele_piezo_head.name("piezo_head_p0").units("L");
 	*this += field_ele_flux.name("velocity_p0").units("L/T");
+
+	*this += pressure_diff.name("pressure_diff").units("0");
+	*this += velocity_diff.name("velocity_diff").units("0");
+	*this += div_diff.name("div_diff").units("0");
 }
 
 
@@ -954,6 +958,14 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     //output_writer->register_elem_data(mesh_, "pressure_diff", "0", in_rec_.val<Input::Record>("output_stream") ,result.pressure_diff);
     //output_writer->register_elem_data(mesh_, "velocity_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
     //output_writer->register_elem_data(mesh_, "div_diff", "0", in_rec_.val<Input::Record>("output_stream"),result.pressure_diff);
+
+    auto vel_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.velocity_diff[0]), 1, mesh_->n_elements());
+    output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
+    auto pressure_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.pressure_diff[0]), 1, mesh_->n_elements());
+    output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
+    auto div_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.div_diff[0]), 1, mesh_->n_elements());
+    output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
