@@ -558,6 +558,13 @@ public:
    void copy_to(Container &out) const;
 
    /**
+    * Returns true if the accessor is empty (after default constructor).
+    * TODO: have something similar for other accessors.
+    */
+   inline bool is_empty() const
+   { return (address_.storage_head() == Address().storage_head()); }
+
+   /**
     * Returns address error info.
     */
    EI_Address ei_address() const ;

@@ -87,8 +87,9 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// If the data vector is provided at construction, we disallow initialization form input.
-    bool allow_init_from_input;
+    /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
+    /// and do not delete data pointer in destructor.
+    bool internal_raw_data;
     /**
      * Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
      * TODO: temporary solution until we have separate mesh for the boundary part
