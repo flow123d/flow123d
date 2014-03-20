@@ -15,8 +15,8 @@ namespace computeintersection {
 // Metody pro konvezi objektů
 
 Plucker getPluckerFromSimplex(const Simplex<1> &abs);
-Simplex<1> getAbsicca(const Simplex<2> &abs, int i);
-Simplex<1> getAbsicca(const Simplex<3> &abs, int i);
+//Simplex<1> getAbsicca(const Simplex<2> &abs, int i);
+//Simplex<1> getAbsicca(const Simplex<3> &abs, int i);
 
 // Výpočetní třídy
 
@@ -35,7 +35,13 @@ public:
 	ComputeIntersection(const Simplex<1> &abs, const Simplex<2> &triang);
 	inline ~ComputeIntersection() {}
 
+	void clear_all();
 	void compute();
+
+	Plucker* getPC_abscissa();
+	Plucker* getPC_triangle(unsigned int index);
+	void setPC_abscissa(Plucker* p_abscissa_coordinate);
+	void setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index);
 
 	void setPluckerProduct(double &number, int i);
 	double &getPluckerProduct(int i);
@@ -49,6 +55,9 @@ public:
 private:
 	Simplex<1> abscissa;
 	Simplex<2> triangle;
+
+	Plucker *p_coordinates_abscissa[1];
+	Plucker *p_coordinates_triangle[3];
 
 	// Pro tento typ průniku existují právě 3 plückerovy součiny
 	double* plucker_products[3];
@@ -67,13 +76,16 @@ template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 public:
 
 	ComputeIntersection();
-	ComputeIntersection(const Simplex<1> &abscissa, const Simplex<3> &tetrahedron);
+	ComputeIntersection(const Simplex<1> &abscissa,const Simplex<3> &tetrahedron);
 
+	void clear_all();
 	void init();
 	void compute();
 
-	void setPC_abscissa(const Plucker &p_abscissa_coordinate);
-	void setPC_tetrahedron(const Plucker &p_tetrahedron_coordinate, unsigned int index);
+	Plucker* getPC_abscissa();
+	Plucker* getPC_tetrahedron(unsigned int index);
+	void setPC_abscissa(Plucker* p_abscissa_coordinate);
+	void setPC_tetrahedron(Plucker* p_tetrahedron_coordinate, unsigned int index);
 
 	inline ~ComputeIntersection() {}
 
@@ -96,13 +108,14 @@ template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
 	ComputeIntersection();
 
-	ComputeIntersection(const Simplex<2> &triangle,
-						const Simplex<3> &tetrahedron);
+	ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron);
 
 	void clear_all();
 	void init();
 	void compute();
 
+	Plucker* getPC_triangle(unsigned int index);
+	Plucker* getPC_tetrahedron(unsigned int index);
 	void setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index);
 	void setPC_tetrahedron(Plucker* p_tetrahedron_coordinate, unsigned int index);
 

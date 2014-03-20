@@ -11,19 +11,6 @@ Plucker getPluckerFromSimplex(const Simplex<1> &abs){
 	return pl;
 };
 
-Simplex<1> getAbsicca(const Simplex<2> &abs, int i){
-	return abs[i];
-};
-
-Simplex<1> getAbsicca(const Simplex<3> &abs, int i){
-	if(i < 3){
-		return abs[0][i];
-	}else if(i < 5){
-		return abs[1][i - 2];
-	}else{
-		return abs[2][2];
-	}
-};
 
 
 /**********************************************
@@ -157,16 +144,106 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute(){
  ****************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){};
 
+ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(const Simplex<1> &abs,const Simplex<2> &triang){
+	this->abscissa = abs;
+	this->triangle = triang;
+
+	this->clear_all();
+
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
+	for(unsigned int i = 0; i < 3;i++){
+		this->p_coordinates_triangle[i] = NULL;
+	}
+	this->p_coordinates_abscissa[0] = NULL;
+
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<2>>::compute(){
+
+};
+
+Plucker* ComputeIntersection<Simplex<1>, Simplex<2>>::getPC_abscissa(){
+	return p_coordinates_abscissa[0];
+};
+
+Plucker* ComputeIntersection<Simplex<1>, Simplex<2>>::getPC_triangle(unsigned int index){
+	return p_coordinates_triangle[index];
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<2>>::setPC_abscissa(Plucker* p_abscissa_coordinate){
+	p_coordinates_abscissa[0] = p_abscissa_coordinate;
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<2>>::setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index){
+	p_coordinates_triangle[index] = p_triangle_coordinate;
+};
+
+
 
 /****************************************************************
  * METODY PRO SIMPLEX 1 A SIMPLEX 3
  ****************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(){};
 
-ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(const Simplex<1> &abscissa, const Simplex<3> &tetrahedron){
+ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(const Simplex<1> &abscissa,const Simplex<3> &tetrahedron){
+	this->abscissa = abscissa;
+	this->tetrahedron = tetrahedron;
+
+	this->clear_all();
+
+	for(unsigned int i = 0; i < 4;i++){
+	CI12[i] = ComputeIntersection<Simplex<1>, Simplex<2>>(abscissa ,tetrahedron[i]);
+	}
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<3>>::clear_all(){
+	for(unsigned int i = 0; i < 6;i++){
+		this->p_coordinates_tetrahedron[i] = NULL;
+	}
+	this->p_coordinates_abscissa[0] = NULL;
 
 };
 
+void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
+	for(unsigned int i = 0; i < 4;i++){
+			CI12[i].setPC_abscissa(this->p_coordinates_abscissa[i]);
+	 }
+	CI12[0].setPC_triangle(this->p_coordinates_tetrahedron[0], 0);
+	CI12[0].setPC_triangle(this->p_coordinates_tetrahedron[1], 1);
+	CI12[0].setPC_triangle(this->p_coordinates_tetrahedron[2], 2);
+	CI12[1].setPC_triangle(this->p_coordinates_tetrahedron[0], 0);
+	CI12[1].setPC_triangle(this->p_coordinates_tetrahedron[3], 1);
+	CI12[1].setPC_triangle(this->p_coordinates_tetrahedron[4], 2);
+	CI12[2].setPC_triangle(this->p_coordinates_tetrahedron[1], 0);
+	CI12[2].setPC_triangle(this->p_coordinates_tetrahedron[3], 1);
+	CI12[2].setPC_triangle(this->p_coordinates_tetrahedron[5], 2);
+	CI12[3].setPC_triangle(this->p_coordinates_tetrahedron[2], 0);
+	CI12[3].setPC_triangle(this->p_coordinates_tetrahedron[4], 1);
+	CI12[3].setPC_triangle(this->p_coordinates_tetrahedron[5], 2);
+
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<3>>::compute(){
+
+};
+
+Plucker* ComputeIntersection<Simplex<1>, Simplex<3>>::getPC_abscissa(){
+	return p_coordinates_abscissa[0];
+};
+
+Plucker* ComputeIntersection<Simplex<1>, Simplex<3>>::getPC_tetrahedron(unsigned int index){
+	return p_coordinates_tetrahedron[index];
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<3>>::setPC_abscissa(Plucker* p_abscissa_coordinate){
+	p_coordinates_abscissa[0] = p_abscissa_coordinate;
+};
+
+void ComputeIntersection<Simplex<1>, Simplex<3>>::setPC_tetrahedron(Plucker* p_tetrahedron_coordinate, unsigned int index){
+	p_coordinates_tetrahedron[index] = p_tetrahedron_coordinate;
+};
 
 /****************************************************************
  * METODY PRO SIMPLEX 2 A SIMPLEX 3
@@ -174,19 +251,17 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(const Simplex<1
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(){};
 
 
-ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(const Simplex<2> &triangle, const Simplex<3> &tetrahedron){
+ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron){
 	this->triange = triangle;
 	this->tetrahedron = tetrahedron;
 
 	this->clear_all();
 
 	for(unsigned int i = 0; i < 6;i++){
-		//this->CI12[i] = ComputeIntersection<Simplex<1>, Simplex<2>>(tetrahedron.getAbscissa(i) ,triangle);
+		CI12[i] = ComputeIntersection<Simplex<1>, Simplex<2>>(tetrahedron.getAbscissa(i) ,triangle);
 	}
 	for(unsigned int i = 0; i < 3;i++){
-		this->CI13[i] = ComputeIntersection<Simplex<1>, Simplex<3>>(triangle[i] ,tetrahedron);
-		// nebo když bude CI13 pointer
-		// this->CI13[i] = new ComputeIntersection<Simplex<1>, Simplex<3>>(triangle[i] ,tetrahedron);
+		CI13[i] = ComputeIntersection<Simplex<1>, Simplex<3>>(triangle.getAbscissa(i) ,tetrahedron);
 	}
 
 };
@@ -194,20 +269,41 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(const Simplex<2
 void ComputeIntersection<Simplex<2>, Simplex<3>>::clear_all(){
 	for(unsigned int i = 0; i < 6;i++){
 		this->p_coordinates_tetrahedron[i] = NULL;
-		//this->CI12[i] = NULL;
 	}
 	for(unsigned int i = 0; i < 3;i++){
 		this->p_coordinates_triange[i] = NULL;
-		//this->CI13[i] = NULL;
 	}
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::init(){
-
+	for(unsigned int i = 0; i < 6;i++){
+		CI12[i].setPC_abscissa(this->p_coordinates_tetrahedron[i]);
+		CI12[i].setPC_triangle(this->p_coordinates_triange[0], 0);
+		CI12[i].setPC_triangle(this->p_coordinates_triange[1], 1);
+		CI12[i].setPC_triangle(this->p_coordinates_triange[2], 2);
+	}
+	for(unsigned int i = 0; i < 3;i++){
+		CI13[i].setPC_abscissa(this->p_coordinates_triange[i]);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[0],0);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[1],1);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[2],2);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[3],3);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[4],4);
+		CI13[i].setPC_tetrahedron(this->p_coordinates_tetrahedron[5],5);
+		CI13[i].init();
+	}
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(){
 
+};
+
+Plucker* ComputeIntersection<Simplex<2>, Simplex<3>>::getPC_triangle(unsigned int index){
+	return p_coordinates_triange[index];
+};
+
+Plucker* ComputeIntersection<Simplex<2>, Simplex<3>>::getPC_tetrahedron(unsigned int index){
+	return p_coordinates_tetrahedron[index];
 };
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index){

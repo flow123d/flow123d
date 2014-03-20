@@ -4,6 +4,8 @@
 using namespace std;
 namespace computeintersection{
 
+template<int N> class Simplex;
+
 class Plucker{
 private:
 	arma::vec6 coordinates;
@@ -17,6 +19,5 @@ public:
 	double operator*(Plucker b);
 	void operator*(double number);
 	void toString();
-
 };
 } // END namespace_close
