@@ -53,7 +53,7 @@
         ],
       
       output = {
-        conc_mobile_p0 = "transport_output_stream", 
+        mobile_p0 = "transport_output_stream", 
         output_stream = {
           REF = "/output_streams/1"
         }, 
