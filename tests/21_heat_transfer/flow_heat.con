@@ -81,7 +81,7 @@
       ],
       
       output = {
-        mobile_p0 = "transport_output_stream", 
+        temperature = "transport_output_stream", 
         output_stream = {
           REF = "/system/output_streams/1"
         }, 
