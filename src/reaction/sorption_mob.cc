@@ -1,32 +1,32 @@
-#include <iostream>
-#include <cstring>
-#include <stdlib.h>
-#include <math.h>
 #include <boost/foreach.hpp>
 
 #include "reaction/reaction.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_mob.hh"
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "la/distribution.hh"
 #include "mesh/mesh.h"
-#include "mesh/elements.h"
-#include "mesh/region.hh"
-
 
 using namespace std;
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: SorptionDual(init_mesh, in_rec, names)
 {
-  //DBGMSG("SorptionMob constructor.\n");
-  data_.output_fields += data_.conc_sorbed.name("mobile_sorbed_p0").units("M/L^3");
+  DBGMSG("SorptionMob constructor.\n");
 }
 
 SorptionMob::~SorptionMob(void)
 {
+}
+
+void SorptionMob::set_output_names(void )
+{
+  for(unsigned int i=0; i < n_all_substances_; i++)
+  {
+    output_names_[i] = names_[i] + "_mobile";
+  }
 }
 
 /*

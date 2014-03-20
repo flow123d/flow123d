@@ -1,7 +1,3 @@
-#include <iostream>
-#include <cstring>
-#include <stdlib.h>
-#include <math.h>
 #include <boost/foreach.hpp>
 
 #include "reaction/reaction.hh"
@@ -9,26 +5,25 @@
 #include "reaction/pade_approximant.hh"
 #include "reaction/dual_por_exchange.hh"
 #include "semchem/semchem_interface.hh"
-
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
-#include "mesh/region.hh"
 #include "input/type_selection.hh"
 
 #include "fields/field_set.hh"
 #include "fields/field_elementwise.hh" 
-#include "coupling/time_governor.hh"
+
 
 using namespace std;
-namespace it=Input::Type;
+using namespace Input::Type;
 
-it::Selection SorptionBase::EqData::sorption_type_selection = it::Selection("SorptionType")
+Selection SorptionBase::EqData::sorption_type_selection = Selection("SorptionType")
 	.add_value(Isotherm::none,"none", "No adsorption considered")
 	.add_value(Isotherm::linear, "linear",
 			"Linear isotherm described adsorption considered.")
@@ -37,7 +32,6 @@ it::Selection SorptionBase::EqData::sorption_type_selection = it::Selection("Sor
 	.add_value(Isotherm::freundlich, "freundlich",
 			"Freundlich isotherm described adsorption considered");
 
-using namespace Input::Type;
 
 Record SorptionBase::input_type
 	= Record("Sorption", "Information about all the limited solubility affected adsorptions.")
@@ -54,14 +48,11 @@ Record SorptionBase::input_type
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
-// 	.declare_key("time", Double(), Default("1.0"),
-// 			"Key called time required by TimeGovernor in Sorption constructor.")
         
-        .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
-        
-        .declare_key("output", Reaction::input_type_output_record.copy_keys(SorptionBase::EqData().output_fields.make_output_field_keys()),
-                Default::obligatory(),
-                "Parameters of output stream.");
+    .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
+    
+    .declare_key("output", Reaction::input_type_output_record.copy_keys(SorptionBase::EqData().output_fields.make_output_field_keys()),
+                     Default::obligatory(), "Parameters of output stream.");
 
 SorptionBase::EqData::EqData()
 {
@@ -75,9 +66,9 @@ SorptionBase::EqData::EqData()
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
     
     rock_density.units("");
-  
+    
     output_fields += *this;
-    output_fields += conc_sorbed.name("mobile_sorbed_p0").units("0");
+    output_fields += conc_sorbed.name("sorbed").units("M/L^3");
 }
 
 
@@ -88,13 +79,13 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
-
+  
   data_.sorption_types.n_comp(n_substances_);
   data_.mult_coefs.n_comp(n_substances_);
   data_.second_params.n_comp(n_substances_);
     
   data_.set_mesh(init_mesh);
-  data_.set_input_list( in_rec.val<Input::Array>("data"));
+  data_.set_input_list(in_rec.val<Input::Array>("data"));
   
   data_+=(data_.porosity
           .name("porosity")
@@ -117,6 +108,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
     
   init_from_input(in_rec);
 }
+
 
 SorptionBase::~SorptionBase(void)
 {
@@ -194,10 +186,11 @@ void SorptionBase::initialize(void )
     
   //initialization of output
   int rank;
-    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
-    if (rank == 0)
+  MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+  if (rank == 0)
     {
-        data_.conc_sorbed.init(names_);
+        set_output_names();
+        data_.conc_sorbed.init(output_names_);
         data_.conc_sorbed.set_mesh(*mesh_);
         data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
@@ -263,7 +256,6 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
     reaction = nullptr;
   }
 }
-
 
 void SorptionBase::update_solution(void)
 {
@@ -341,10 +333,27 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 	return concentrations;
 }
 
+void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
+{
+  data_.set_field(data_.porosity.name(),por_m); 
+}
+
+void SorptionBase::set_output_names(void )
+{
+  //output names of substances are the same
+  output_names_ = names_;
+}
+
 
 void SorptionBase::print_sorption_parameters(void)
 {
-    xprintf(Msg, "\nSorption parameters are defined as follows:\n");
+  DBGMSG("Not implemented.\n");
+  xprintf(Msg, "\nSorption parameters are defined as follows:\n");
+}
+
+void SorptionBase::set_concentration_vector(Vec &vc)
+{
+  DBGMSG("Not implemented.\n");      
 }
 
 

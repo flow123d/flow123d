@@ -1,21 +1,11 @@
-#include <iostream>
-#include <cstring>
-#include <stdlib.h>
-#include <math.h>
 #include <boost/foreach.hpp>
 
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
-#include "system/system.hh"
+//#include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "la/distribution.hh"
 #include "mesh/mesh.h"
-#include "mesh/elements.h"
-#include "mesh/region.hh"
-
-#include "coupling/time_governor.hh"
-
 
 using namespace std;
 
@@ -23,7 +13,6 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<str
   : SorptionBase(init_mesh, in_rec, names)
 {
   DBGMSG("SorptionSimple constructor.\n");
-  //data_.output_fields += data_.conc_sorbed.name("mobile_sorbed_p0").units("M/L^3");
 }
 
 SorptionSimple::~SorptionSimple(void)
@@ -70,13 +59,4 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	}
 
 	END_TIMER("SorptionSimple::isotherm_reinit");
-
-	return;
-}
-
-
-void SorptionSimple::set_concentration_vector(Vec &vc)
-{
-        //cout << "7) Meaningless inherited method." << endl;
-        return;
 }

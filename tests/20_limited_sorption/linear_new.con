@@ -80,8 +80,8 @@
         output = {
           output_stream = {
             REF = "/output_streams/1"
-          },
-          mobile_sorbed_p0 = "transport_output_stream"
+          }//,
+          //sorbed = "transport_output_stream"
         }
       }
           

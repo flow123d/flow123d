@@ -1,35 +1,33 @@
-#include <iostream>
-#include <cstring>
-#include <stdlib.h>
-#include <math.h>
 #include <boost/foreach.hpp>
 
 #include "reaction/reaction.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_immob.hh"
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "la/distribution.hh"
 #include "mesh/mesh.h"
-#include "mesh/elements.h"
-#include "mesh/region.hh"
-#include "input/type_selection.hh"
-
 
 using namespace std;
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: SorptionDual(init_mesh, in_rec, names)
 {
-  //DBGMSG("SorptionImmob constructor.\n");
-  data_.output_fields += data_.conc_sorbed.name("immobile_sorbed_p0").units("M/L^3");
+  DBGMSG("SorptionImmob constructor.\n");
 }
 
 SorptionImmob::~SorptionImmob(void)
 {
 }
 
+void SorptionImmob::set_output_names(void )
+{
+  for(unsigned int i=0; i < n_all_substances_; i++)
+  {
+    output_names_[i] = names_[i] + "_immobile";
+  }
+}
 /*
 double SorptionImmob::compute_sorbing_scale(double por_m, double por_imm)
 {

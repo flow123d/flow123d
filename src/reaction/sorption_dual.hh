@@ -8,23 +8,17 @@
 #ifndef SORPTION_DUAL
 #define SORPTION_DUAL
 
-#include <vector>
-#include <input/input_type.hh>
-
 #include "fields/field_base.hh"
-#include "reaction/isotherm.hh"
 #include "reaction/sorption_base.hh"
 
 class Mesh;
-class Distribution;
-class Reaction;
+class SorptionBase;
 class Isotherm;
 
 
 class SorptionDual:  public SorptionBase
 {
 public:
-
     /**
      *  Constructor with parameter for initialization of a new declared class member
      *  TODO: parameter description
@@ -35,18 +29,12 @@ public:
      */
     ~SorptionDual(void);
     
-    /**
-     * This method will be implemented in descendants - it is different in each zone.
-     */
-    virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
-
-    
     /** Sets the immobile porosity field.
      */
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
       { 
         immob_porosity_.copy_from(por_imm); 
-        data_.operator+=(immob_porosity_);
+        data_+=(immob_porosity_);
       }
 
 protected:
@@ -54,6 +42,11 @@ protected:
      * This method disables to use constructor without parameters.
      */
     SorptionDual();
+    
+    /**
+     * This method will be implemented in descendants - it is different in each zone.
+     */
+    virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
     
