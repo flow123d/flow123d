@@ -313,7 +313,7 @@ void TransportOperatorSplitting::output_data(){
         DBGMSG("\nTOS: output time: %f\n", time_->t());
 
         convection->output_data();
-        reaction->output_data();
+        if(reaction) reaction->output_data();
     }
 }
 

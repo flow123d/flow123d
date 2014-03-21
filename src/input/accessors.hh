@@ -248,8 +248,11 @@ protected:
 /**
  *  Declaration of error info class for passing Input::Address through exceptions.
  *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ *
+ *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
+ *  see also ei_address methods.
  */
-TYPEDEF_ERR_INFO( EI_Address, const Address);
+TYPEDEF_ERR_INFO( EI_Address, const std::string);
 
 /**
  * Address output operator.

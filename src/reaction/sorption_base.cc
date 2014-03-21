@@ -52,7 +52,7 @@ Record SorptionBase::input_type
     .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
     
     .declare_key("output", Reaction::input_type_output_record.copy_keys(SorptionBase::EqData().output_fields.make_output_field_keys()),
-                     Default::obligatory(), "Parameters of output stream.");
+                     Default::optional(), "Parameters of output stream.");
 
 SorptionBase::EqData::EqData()
 {
@@ -94,6 +94,10 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   
   data_.set_limit_side(LimitSide::right);
   
+  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
+  //output_rec = in_rec.find<Input::Record>("output");
+  if(out_rec) output_rec = *out_rec;
+  
   //Simple vectors holding  common informations.
   molar_masses.resize( n_substances_ );
 
@@ -114,8 +118,11 @@ SorptionBase::~SorptionBase(void)
 {
   if(reaction != nullptr) delete reaction;
   
-  VecDestroy(vconc_sorbed);
-  VecDestroy(vconc_sorbed_out);
+  if(!output_rec.is_empty())
+  {
+    VecDestroy(vconc_sorbed);
+    VecDestroy(vconc_sorbed_out);
+  }
 
   for (unsigned int sbi = 0; sbi < n_substances_; sbi++) 
   {
@@ -127,8 +134,7 @@ SorptionBase::~SorptionBase(void)
 
 
 void SorptionBase::init_from_input(Input::Record in_rec)
-{
-
+{ 
     // Common data for all the isotherms loaded bellow
 	solvent_dens = in_rec.val<double>("solvent_dens");
 
@@ -183,11 +189,13 @@ void SorptionBase::initialize(void )
         //conc_sorbed_out[sbi][i] = 0.0;
       }
     }
-    
+  
   //initialization of output
-  int rank;
-  MPI_Comm_rank(PETSC_COMM_SELF, &rank);
-  if (rank == 0)
+  if (!output_rec.is_empty())
+  {
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    if (rank == 0)
     {
         set_output_names();
         data_.conc_sorbed.init(output_names_);
@@ -203,15 +211,16 @@ void SorptionBase::initialize(void )
         }
         data_.output_fields.set_limit_side(LimitSide::right);
         OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-    }
-    
-  allocate_output_mpi();
+      }
+    allocate_output_mpi();
   
-  DBGMSG("Going to write initial condition.\n");
-  // write initial condition
-  output_vector_gather();
-  data_.output_fields.set_time(*time_);
-  data_.output_fields.output(output_rec);
+  
+    DBGMSG("Going to write initial condition.\n");
+    // write initial condition
+    output_vector_gather();
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_rec);
+  }
   
   // creating reaction from input and setting their parameters
   init_from_input_reaction(input_record_);
@@ -341,7 +350,11 @@ void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
 void SorptionBase::set_output_names(void )
 {
   //output names of substances are the same
-  output_names_ = names_;
+  //output_names_ = names_;
+  for(unsigned int i=0; i < n_all_substances_; i++)
+  {
+    output_names_[i] = names_[i] + "_mobile";
+  }
 }
 
 
@@ -414,13 +427,16 @@ void SorptionBase::output_vector_gather()
 
 void SorptionBase::output_data(void )
 {
-  DBGMSG("Sorption output\n");
-  output_vector_gather();
+  if (!output_rec.is_empty())
+  {
+    DBGMSG("Sorption output\n");
+    output_vector_gather();
 
-  // Register fresh output data
-  data_.output_fields.set_time(*time_);
-  data_.output_fields.output(output_rec);
+    // Register fresh output data
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_rec);
 
-  //for synchronization when measuring time by Profiler
-  MPI_Barrier(MPI_COMM_WORLD);
+    //for synchronization when measuring time by Profiler
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
 }

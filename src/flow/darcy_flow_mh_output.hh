@@ -40,9 +40,13 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
+#include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
+
 
 class DarcyFlowMH;
 class OutputTime;
+class DOFHandlerMultiDim;
 
 
 /**
@@ -62,6 +66,19 @@ class OutputTime;
  */
 class DarcyFlowMHOutput {
 public:
+
+	class OutputFields : public FieldSet {
+	public:
+
+		OutputFields();
+
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
+
+	};
+
     DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
@@ -87,8 +104,9 @@ private:
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(std::vector<double> &scalars);
+    void make_node_scalar_param(double scalars[]);
     void make_node_scalar();
+    void make_corner_scalar(double *node_scalar, double *corner_scalar);
     void make_neighbour_flux();
     //void make_previous_scalar();
     void output_internal_flow_data();
@@ -136,19 +154,35 @@ private:
     bool output_piezo_head;
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
-    std::vector<double> node_pressure;
+    double *node_pressure;
+    /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
+    double *corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    std::vector<double> ele_pressure;
+    double *ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    std::vector<double> ele_piezo_head;
+    double *ele_piezo_head;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    std::vector< std::vector<double>  > ele_flux;
+    double *ele_flux;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
+
+    Vec vec_corner_pressure;
+    DOFHandlerMultiDim *dh;
+    MappingP1<1,3> map1;
+    MappingP1<2,3> map2;
+    MappingP1<3,3> map3;
+    FE_P_disc<1,1,3> fe1;
+    FE_P_disc<1,2,3> fe2;
+    FE_P_disc<1,3,3> fe3;
+
+    OutputFields output_fields;
+
+
+    Input::Record output_rec;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;

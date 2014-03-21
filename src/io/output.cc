@@ -95,7 +95,7 @@ static inline void fix_GMSH_file_name(string *fname)
 
 
 OutputDataBase *OutputTime::output_data_by_field_name
-		(const std::string &multi_field_name, const std::string &field_name, DiscreteSpace ref_type)
+		(const std::string &field_name, DiscreteSpace ref_type)
 {
     std::vector<OutputDataBase*> *data_vector;
 
@@ -113,7 +113,7 @@ OutputDataBase *OutputTime::output_data_by_field_name
 
     /* Try to find existing data */
     for(auto &data : *data_vector)
-        if ((data->field_name == field_name) && (data->multi_field_name == multi_field_name) )     return data;
+        if (data->field_name == field_name)     return data;
 
     return nullptr;
 }
@@ -144,7 +144,7 @@ OutputTime *OutputTime::output_stream_by_name(string name)
             ++output_iter)
     {
         output_time = (*output_iter);
-        if( *(output_time->name) == name) {
+        if( output_time->name == name) {
             return output_time;
         }
     }
@@ -277,7 +277,7 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     base_filename = new string(fname);
 
-    this->name = new string(stream_name);
+    this->name = stream_name;
     this->current_step = 0;
 
     set_base_file(base_file);
@@ -334,39 +334,32 @@ void OutputTime::write_all_data(void)
         output_time = (*stream_iter);
         if(output_time->write_time < output_time->time) {
             DBGMSG("Write output to output stream: %s for time: %f\n",
-                    (*stream_iter)->name->c_str(),
-                    (*stream_iter)->time);
+            		output_time->name.c_str(),
+            		output_time->time);
             output_time->write_data();
             // Remember the last time of writing to output stream
             output_time->write_time = output_time->time;
             output_time->current_step++;
         } else {
             DBGMSG("Skipping output stream: %s in time: %f\n",
-                    (*stream_iter)->name->c_str(),
-                    (*stream_iter)->time);
+            		output_time->name.c_str(),
+            		output_time->time);
         }
     }
 
     /* Free all registered data */
-    OutputTime::clear_data();
+    for(auto *stream : OutputTime::output_streams) stream->clear_data();
 }
 
 
 void OutputTime::clear_data(void)
 {
-	OutputTime *output_time = NULL;
-
-    // Go through all OutputTime objects
-    for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
-            stream_iter != OutputTime::output_streams.end();
-            ++stream_iter)
-    {
-        output_time = (*stream_iter);
-        output_time->node_data.clear();
-        output_time->corner_data.clear();
-        output_time->elem_data.clear();
-    }
+	node_data.clear();
+    corner_data.clear();
+    elem_data.clear();
 }
+
+
 
 #define INSTANCE_register_field(spacedim, value) \
 	template  void OutputTime::register_data<spacedim, value> \

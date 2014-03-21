@@ -137,6 +137,8 @@ void OutputMSH::write_msh_node_data(double time, int step)
     Mesh *mesh = this->get_mesh();
     OutputDataBase *output_data;
 
+    double time_fixed = isfinite(time)?time:0;
+
     if(this->node_data.empty() == false) {
         for(vector<OutputDataBase*>::iterator data = this->node_data.begin();
                     data != this->node_data.end();
@@ -150,7 +152,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
@@ -174,7 +176,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
@@ -193,6 +195,8 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 	OutputDataBase* output_data;
     ofstream &file = this->get_base_file();
 
+    double time_fixed = isfinite(time)?time:0;
+
     if(this->elem_data.empty() == false) {
         for(vector<OutputDataBase*>::iterator data = this->elem_data.begin();
                     data != this->elem_data.end();
@@ -205,7 +209,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
             file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)

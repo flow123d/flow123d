@@ -83,9 +83,8 @@
         output = {
           output_stream = {
             REF = "/output_streams/1"
-          },
-          immobile_p0 = "transport_output_stream",
-          immob_porosity = "transport_output_stream"
+          }//,
+          //immobile = "transport_output_stream"
         }
       }
           

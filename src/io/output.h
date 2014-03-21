@@ -72,6 +72,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <ostream>
 
 #include "system/system.hh"
 #include "mesh/mesh.h"
@@ -81,51 +82,12 @@
 #include "system/exceptions.hh"
 #include "io/output_time.hh"
 
-class OutputVTK;
-class OutputMSH;
+#include "io/output_data_base.hh"
+
+//class OutputVTK;
+//class OutputMSH;
 
 
-
-/**
- * \brief Common parent class for templated OutputData.
- *
- * Provides virtual method for output of stored data.
- *
- */
-class OutputDataBase {
-public:
-	/**
-	 * Number of components of element data stored in the database.
-	 */
-	enum ValueType {
-		scalar=1,
-		vector=3,
-		tensor=9
-	};
-
-    virtual ~OutputDataBase() {};
-    virtual void print(ostream &out_stream, unsigned int idx) = 0;
-
-
-    /**
-     * Data copied from Field.
-     */
-    std::string output_field_name;
-    std::string multi_field_name;
-    std::string field_name;
-    std::string field_units;
-    /**
-     * Number of data values.
-     */
-    unsigned int n_values;
-
-
-    /**
-     * Number of data elements per data value.
-     */
-    ValueType n_elem_;
-
-};
 
 /**
  * \brief This class is used for storing data that are copied from field.
@@ -141,32 +103,42 @@ public:
      * \brief Constructor of templated OutputData
      */
 	OutputData(const FieldCommonBase &field,
-	        unsigned int size,
-                std::string multi_field_name
-                  )
+	        unsigned int size)
 	: val_aux(aux)
 	{
-                this->multi_field_name = multi_field_name;
-		this->field_name = field.name();
+//		this->field_name = field.name();
+		this->field_name = boost::replace_all_copy(boost::replace_all_copy(field.name(), "_p0", "_elements"), "_p1", "_nodes");
 		this->field_units = field.units();
-                
-                if(multi_field_name.empty())
-                  this->output_field_name = this->field_name +"_["+this->field_units+"]";
-                else
-                  this->output_field_name = this->multi_field_name +"_"+ this->field_name +"_["+this->field_units+"]";
+		this->output_field_name = this->field_name +"_["+this->field_units+"]";
 
 		this->n_values=size;
-		val_aux.set_n_comp(field.n_comp());
+		//val_aux.set_n_comp(10); // just to check that n_elem depends on n_comp
 
-		if (val_aux.n_cols()==1)
-			if (val_aux.n_rows()==1)
+		DBGMSG("Make data: cols: %d rows: %d\n", val_aux.NCols_, val_aux.NRows_);
+		if (val_aux.NCols_==1) {
+			if (val_aux.NRows_==1) {
 				this->n_elem_ = scalar;
-			else
-				if (val_aux.n_rows()>2) this->n_elem_ = vector;
-				else
-					xprintf(PrgErr, "Can not output field '%s' returning variable size vectors. Try convert to MultiField.\n");
-		else
+				this->n_rows = 1;
+				this->n_cols = 1;
+			} else {
+				if (val_aux.NRows_>1) {
+					if (val_aux.NRows_ > 3) {
+						xprintf(PrgErr, "Do not support output of vectors with fixed size >3. Field: %s\n", this->field_name.c_str());
+					} else {
+						this->n_elem_ = vector;
+						this->n_rows = 3;
+						this->n_cols = 1;
+					}
+				} else {
+					THROW(OutputTime::ExcOutputVariableVector() << OutputTime::EI_FieldName(this->field_name));
+				}
+			}
+		} else {
 			this->n_elem_ = tensor;
+			this->n_rows = 3;
+			this->n_cols = 3;
+		}
+
 
 	    data_ = new ElemType[n_values * n_elem_];
 	}
@@ -221,15 +193,21 @@ public:
     };
 
 
+
 private:
+
+
     template <class Func>
     void operate(unsigned int idx, const Value &val, const Func& func) {
     	ASSERT_LESS(idx, this->n_values);
     	ElemType *ptr = data_ + idx*n_elem_;
-        for(unsigned int i_row=0; i_row < val.n_rows(); i_row++)
-        	for(unsigned int i_col=0; i_col < val.n_cols(); i_col++)
+        for(unsigned int i_row=0; i_row < this->n_rows; i_row++)
+        	for(unsigned int i_col=0; i_col < this->n_cols; i_col++)
         	{
-        		func(*ptr, val(i_row, i_col));
+        		if (i_row < val.n_rows() && i_col < val.n_cols())
+        			func(*ptr, val(i_row, i_col));
+        		else
+        			func(*ptr, 0);
         		ptr++;
         	}
     };
@@ -248,6 +226,11 @@ private:
     typename Value::return_type aux;
     // auxiliary field value envelope over @p aux
     Value val_aux;
+
+    // Number of rows and cols in stored data element, valid values are
+    // (1,1) for scalar; (3,1) for vectors; (3,3) for tensors
+    unsigned int n_rows, n_cols;
+
 
 
 };
@@ -269,7 +252,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 	//   field_name = "stream_name".
 	if (output_stream == output_stream_by_key_name(in_rec, multi_field.name())) {
 		for (unsigned long index=0; index < multi_field.size(); index++)
-			output_stream->compute_field_data(type, multi_field[index], multi_field.name());
+			output_stream->compute_field_data(type, multi_field[index] );
 	}
 	else
 	{
@@ -302,7 +285,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
 
 
 template<int spacedim, class Value>
-void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field, std::string multi_field_name)
+void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
 
     /* It's possible now to do output to the file only in the first process */
@@ -317,25 +300,25 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     ASSERT(mesh, "Null mesh pointer.\n");
 
     // get possibly existing data for the same field, check both name and type
-    OutputDataBase *data = output_data_by_field_name(multi_field_name,field.name(), space_type);
+    OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
     OutputData<Value> *output_data = dynamic_cast<OutputData<Value> *>(data);
 
     if (!output_data) {
         switch(space_type) {
         case NODE_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_nodes(), multi_field_name);
+        	output_data = new OutputData<Value>(field, mesh->n_nodes());
             node_data.push_back(output_data);
             break;
         case CORNER_DATA: {
             unsigned int n_corners = 0;
             FOR_ELEMENTS(mesh, ele)
                 n_corners += ele->n_nodes();
-        	output_data = new OutputData<Value>(field, n_corners, multi_field_name );
+        	output_data = new OutputData<Value>(field, n_corners );
             corner_data.push_back(output_data);
         }
         break;
         case ELEM_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_elements(), multi_field_name );
+        	output_data = new OutputData<Value>(field, mesh->n_elements() );
             elem_data.push_back(output_data);
             break;
         }
@@ -394,6 +377,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 			const Value &ele_value =
 					Value( const_cast<typename Value::return_type &>(
 							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+			//std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
             output_data->store_value(ele_index,  ele_value);
         }
     }

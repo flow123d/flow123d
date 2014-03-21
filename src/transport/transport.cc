@@ -175,11 +175,15 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output");
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    int ierr, rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     if (rank == 0)
     {
-    	data_.conc_mobile.init(subst_names_);
+    	vector<string> output_names(subst_names_);
+    	for (vector<string>::iterator it=output_names.begin(); it!=output_names.end(); it++)
+    		*it += "_mobile";
+    	data_.conc_mobile.init(output_names);
     	data_.conc_mobile.set_mesh(*mesh_);
     	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
@@ -195,8 +199,11 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // write initial condition
     output_vector_gather();
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_rec);
+    if (rank == 0)
+    {
+    	data_.output_fields.set_time(*time_);
+    	data_.output_fields.output(output_rec);
+    }
 }
 
 
@@ -1393,13 +1400,19 @@ void ConvectionTransport::output_data() {
         DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
 
-        // Register fresh output data
-        //Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
-        //OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
-        data_.output_fields.set_time(*time_);
-        data_.output_fields.output(output_rec);
+        int rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+        if (rank == 0)
+        {
+        	// Register fresh output data
+			//Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
+			//OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
+			data_.output_fields.set_time(*time_);
+			data_.output_fields.output(output_rec);
+        }
 
-        //mass_balance()->output(time_->t());
+        if (mass_balance_)
+        	mass_balance_->output(time_->t());
 
         //for synchronization when measuring time by Profiler
         MPI_Barrier(MPI_COMM_WORLD);

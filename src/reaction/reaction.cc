@@ -34,9 +34,6 @@ Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> 
 {
   DBGMSG("Reaction constructor.\n");
   initialize_substance_ids(names, in_rec);
-  
-  // register output vectors
-  output_rec = in_rec.val<Input::Record>("output");
 }
 
 Reaction::~Reaction()
