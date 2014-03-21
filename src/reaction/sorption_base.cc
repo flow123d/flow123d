@@ -98,6 +98,8 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   //output_rec = in_rec.find<Input::Record>("output");
   if(out_rec) output_rec = *out_rec;
   
+  output_names_.resize(names_.size());
+  
   //Simple vectors holding  common informations.
   molar_masses.resize( n_substances_ );
 
