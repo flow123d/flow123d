@@ -76,10 +76,16 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
+	    Field<3, FieldValue<3>::Integer> subdomain;
 
 	    Field<3, FieldValue<3>::Scalar> velocity_diff;
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;
 	    Field<3, FieldValue<3>::Scalar> div_diff;
+
+	    // List fields, we have initialized for output
+	    // In case of error fields, we have to add them to the main field set
+	    // but perform output only if user set compute_errors flag.
+	    FieldSet fields_for_output;
 	};
 
     DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
@@ -107,9 +113,9 @@ private:
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(double scalars[]);
+    void make_node_scalar_param();
     void make_node_scalar();
-    void make_corner_scalar(double *node_scalar, double *corner_scalar);
+    void make_corner_scalar(vector<double> &node_scalar);
     void make_neighbour_flux();
     //void make_previous_scalar();
     void output_internal_flow_data();
@@ -154,21 +160,24 @@ private:
     /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
      *  more general scheme, where you can switch every output field on or off.
      */
-    bool output_piezo_head;
+    //bool output_piezo_head;
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
-    double *node_pressure;
+    //vector<double> node_pressure;
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
-    double *corner_pressure;
+    vector<double> corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    double *ele_pressure;
+    vector<double> ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    double *ele_piezo_head;
+    vector<double> ele_piezo_head;
+    /// have to copy vector<int> provided by Mesh, in order to use FieldElementwise
+    /// TEMPORARY SOLUTION
+    vector<double> subdomains;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    double *ele_flux;
+    vector<double> ele_flux;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
@@ -183,9 +192,6 @@ private:
     FE_P_disc<1,3,3> fe3;
 
     OutputFields output_fields;
-
-
-    Input::Record output_rec;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;
