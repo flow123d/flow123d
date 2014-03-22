@@ -330,7 +330,9 @@ void TransportOperatorSplitting::update_solution() {
 	}
 
     time_->next_time();
+#ifdef DEBUG_MESSAGES
     time_->view("TOS");    //show time governor
+#endif
     
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
