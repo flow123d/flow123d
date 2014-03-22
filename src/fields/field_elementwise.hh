@@ -47,6 +47,13 @@ public:
      */
     FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
 
+    /**
+     * Alternative to previous constructor.
+     */
+    FieldElementwise(vector<double> &data, unsigned int n_components)
+    : FieldElementwise(&(data[0]), n_components, data.size() )
+    {}
+
     static Input::Type::Record input_type;
 
     static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
