@@ -123,7 +123,9 @@
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
-        THROW( ExcAssertMsg() << EI_Message(std::string(msg)) );\
+        int rank;\
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);\
+        THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
