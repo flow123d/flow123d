@@ -201,6 +201,10 @@ void Field<spacedim, Value>::set_field(
 		FieldBasePtr field,
 		double time)
 {
+	ASSERT(field, "Null field pointer.\n");
+
+    //DBGMSG("test value: %g\n", pressure);
+
     ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 

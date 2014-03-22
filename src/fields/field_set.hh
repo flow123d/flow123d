@@ -37,10 +37,15 @@ public:
 	 *
 	 */
 	FieldSet &operator +=(FieldCommonBase &field) {
-		field_list.push_back(&field);
-		if (mesh_) field.set_mesh(*mesh_);
-		if (!input_list_.is_empty()) field.set_input_list(input_list_);
-		if (side_ != LimitSide::unknown) field.set_limit_side(side_);
+		FieldCommonBase *found_field = field_by_name(field.name());
+		if (found_field) {
+			ASSERT(&field==found_field, "Another field of the same name exists when adding field: %s\n", field.name().c_str());
+		} else {
+			field_list.push_back(&field);
+			if (mesh_) field.set_mesh(*mesh_);
+			if (!input_list_.is_empty()) field.set_input_list(input_list_);
+			if (side_ != LimitSide::unknown) field.set_limit_side(side_);
+		}
 		return *this;
 	}
 
@@ -124,8 +129,9 @@ public:
      * Returns pointer to the field given by name @p field_name. Throws if the field with given name is not found.
      */
     FieldCommonBase &get_field(const std::string &field_name) const {
-		for(auto field : field_list)
-			if (field->name() ==field_name) return *field;
+    	FieldCommonBase *found_field=field_by_name(field_name);
+    	if (found_field) return *found_field;
+
 		THROW(ExcUnknownField() << FieldCommonBase::EI_Field(field_name));
 		return *field_list[0]; // formal to prevent compiler warning
     }
@@ -206,6 +212,14 @@ public:
     }
 
 protected:
+    /**
+     * Return pointer to the field of given name. REturn nullptr if not found.
+     */
+    FieldCommonBase *field_by_name(const std::string &field_name) const {
+		for(auto field : field_list)
+			if (field->name() ==field_name) return field;
+		return nullptr;
+    }
 
 
     /// List of all fields.
