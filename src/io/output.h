@@ -114,7 +114,6 @@ public:
 		this->n_values=size;
 		//val_aux.set_n_comp(10); // just to check that n_elem depends on n_comp
 
-		DBGMSG("Make data: cols: %d rows: %d\n", val_aux.NCols_, val_aux.NRows_);
 		if (val_aux.NCols_==1) {
 			if (val_aux.NRows_==1) {
 				this->n_elem_ = scalar;
@@ -268,7 +267,9 @@ void OutputTime::register_data(const Input::Record &in_rec,
         const DiscreteSpace ref_type,
         Field<spacedim, Value> &field_ref)
 {
-	OutputTime *output_stream = output_stream_by_name(in_rec.val<Input::Record>("output_stream").val<string>("name"));
+	const string &stream_name = in_rec.val<Input::Record>("output_stream").val<string>("name");
+	OutputTime *output_stream = output_stream_by_name(stream_name);
+	ASSERT(output_stream != NULL, "output stream %s not found field: %sn", stream_name.c_str(), field_ref.name().c_str() );
 	// temporary solution: check if key value equals the name of the output stream from the record
 	// in future we should specify an array of field names instead of the list of the form
 	//   field_name = "stream_name".
@@ -289,7 +290,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 {
 
     /* It's possible now to do output to the file only in the first process */
-    if( rank != 0) {
+    if( this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }

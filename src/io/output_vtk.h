@@ -176,11 +176,6 @@ private:
     /**
      *
      */
-    void write_vtk_ascii_data(OutputDataBase *output_data);
-
-    /**
-     *
-     */
     void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
 
     /**

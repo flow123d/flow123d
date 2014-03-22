@@ -201,11 +201,11 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        xprintf(MsgLog, "NOT MASTER PROC\n");
-        /* TODO: do something, when support for Parallel VTK is added */
-        return NULL;
-    }
+    //if(rank != 0) {
+    //    xprintf(MsgLog, "NOT MASTER PROC\n");
+    //    /* TODO: do something, when support for Parallel VTK is added */
+    //    return NULL;
+    //}
 
     OutputTime *output_time;
     string name = in_rec.val<string>("name");
@@ -225,6 +225,7 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 
     xprintf(MsgLog, "DONE\n");
 
+    ASSERT(output_time == OutputTime::output_stream_by_name(name),"Wrong stream push back.\n");
     return output_time;
 }
 
@@ -236,10 +237,10 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
+    //if(rank!=0) {
+    //    /* TODO: do something, when support for Parallel VTK is added */
+    //    return;
+    //}
 
     Mesh *mesh = NULL;  // This is set, when first register_* method is called
 
@@ -271,9 +272,11 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     base_file = new ofstream;
 
-    base_file->open(fname.c_str());
-    INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
+    if (rank==0) {
+    	base_file->open(fname.c_str());
+    	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
+    	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
+    }
 
     base_filename = new string(fname);
 
@@ -292,10 +295,10 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 OutputTime::~OutputTime(void)
 {
     /* It's possible now to do output to the file only in the first process */
-     if(rank != 0) {
-         /* TODO: do something, when support for Parallel VTK is added */
-         return;
-     }
+     //if(rank != 0) {
+     //    /* TODO: do something, when support for Parallel VTK is added */
+     //    return;
+    // }
 
      if(this->_base_filename != NULL) {
          delete this->_base_filename;
@@ -319,32 +322,33 @@ void OutputTime::write_all_data(void)
     OutputTime *output_time = NULL;
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    // Go through all OutputTime objects
-    for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
-            stream_iter != OutputTime::output_streams.end();
-            ++stream_iter)
-    {
-        // Write data to output stream, when data registered to this output
-        // streams were changed
-        output_time = (*stream_iter);
-        if(output_time->write_time < output_time->time) {
-            DBGMSG("Write output to output stream: %s for time: %f\n",
-            		output_time->name.c_str(),
-            		output_time->time);
-            output_time->write_data();
-            // Remember the last time of writing to output stream
-            output_time->write_time = output_time->time;
-            output_time->current_step++;
-        } else {
-            DBGMSG("Skipping output stream: %s in time: %f\n",
-            		output_time->name.c_str(),
-            		output_time->time);
-        }
+//if(rank != 0) {
+//        /* TODO: do something, when support for Parallel VTK is added */
+//        return;
+//    }
+    if (rank == 0) {
+		// Go through all OutputTime objects
+		for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
+				stream_iter != OutputTime::output_streams.end();
+				++stream_iter)
+		{
+			// Write data to output stream, when data registered to this output
+			// streams were changed
+			output_time = (*stream_iter);
+			if(output_time->write_time < output_time->time) {
+				DBGMSG("Write output to output stream: %s for time: %f\n",
+						output_time->name.c_str(),
+						output_time->time);
+				output_time->write_data();
+				// Remember the last time of writing to output stream
+				output_time->write_time = output_time->time;
+				output_time->current_step++;
+			} else {
+				DBGMSG("Skipping output stream: %s in time: %f\n",
+						output_time->name.c_str(),
+						output_time->time);
+			}
+		}
     }
 
     /* Free all registered data */
