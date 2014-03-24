@@ -20,6 +20,37 @@
 #include "mesh/bih_tree.hh"
 
 
+class BIHTree_test : public BIHTree {
+public:
+	BIHTree_test(Mesh* mesh, unsigned int soft_leaf_size_limit)
+	: BIHTree(mesh, soft_leaf_size_limit) {}
+
+	void test_tree_params() {
+		unsigned int sum_depth = 0;
+		unsigned int max_depth = 0;
+		unsigned int min_depth = 32767;
+		unsigned int leaf_nodes = 0;
+
+		for (unsigned int i=0; i<nodes_.size(); i++) {
+			if (nodes_[i].is_leaf()) {
+				if (nodes_[i].depth() > max_depth) max_depth = nodes_[i].depth();
+				if (nodes_[i].depth() < min_depth) min_depth = nodes_[i].depth();
+				sum_depth += nodes_[i].depth();
+				++leaf_nodes;
+			}
+		}
+
+		double avgDepth = (double) sum_depth / (double) leaf_nodes;
+
+		cout << endl << "BIH Tree parameters:" << endl;
+		cout << "  maximal depth: " << max_depth;
+		cout << ", minimal depth: " << min_depth;
+		cout << ", average depth: " << avgDepth << endl;
+	}
+
+};
+
+
 class BIH_test : public testing::Test {
 public:
 	void create_tree(const FilePath &mesh_file) {
@@ -32,7 +63,7 @@ public:
 
 	    int leaf_size_limit = 10;
 	    START_TIMER("create bih tree");
-	    bt = new BIHTree(mesh, leaf_size_limit);
+	    bt = new BIHTree_test(mesh, leaf_size_limit);
 	    END_TIMER("create bih tree");
 
 	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
@@ -58,6 +89,8 @@ public:
 		test_insec_points();
 
 		Profiler::instance()->output(MPI_COMM_WORLD, cout);
+
+		bt->test_tree_params();
 	}
 
 
@@ -135,11 +168,13 @@ public:
 		if (bt !=nullptr) delete bt;
 		mesh = nullptr;
 		bt = nullptr;
+
+		Profiler::uninitialize();
 	}
 
 	std::mt19937	r_gen;
 	Mesh *mesh;
-	BIHTree *bt;
+	BIHTree_test *bt;
 	std::uniform_real_distribution<> rx_, ry_, rz_;
 	const static int n_test_trials=5;
 };

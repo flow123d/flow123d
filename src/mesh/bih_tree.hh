@@ -103,8 +103,8 @@ public:
      * @param innerNodesCount Gets count of all inner nodes of tree
      * @param elementLeafCount Gets sum of elements contained in all leaf nodes
      */
-    void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, double &avgDepth, unsigned int &leafNodesCount,
-    		unsigned int &innerNodesCount, unsigned int &sumElements);
+    //void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, double &avgDepth, unsigned int &leafNodesCount,
+    //		unsigned int &innerNodesCount, unsigned int &sumElements);
 
     /**
      * Get vector of mesh elements bounding boxes
@@ -113,7 +113,7 @@ public:
      */
     std::vector<BoundingBox> &get_elements() { return elements_; }
 
-private:
+protected:
     /// required reduction in size of box to allow further splitting
     static const double size_reduce_factor;
     /// value indicates ratio of the number of element in node and number of elements of its children
