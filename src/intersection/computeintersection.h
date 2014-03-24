@@ -38,13 +38,14 @@ public:
 	void clear_all();
 	void compute();
 
-	Plucker* getPC_abscissa();
-	Plucker* getPC_triangle(unsigned int index);
-	void setPC_abscissa(Plucker* p_abscissa_coordinate);
-	void setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index);
+	Plucker** getPC_abscissa();
+	Plucker** getPC_triangle(unsigned int index);
+	void setPC_abscissa(Plucker** p_abscissa_coordinate);
+	void setPC_triangle(Plucker** p_triangle_coordinate, unsigned int index);
+	void toStringPluckerCoordinates();
 
-	void setPluckerProduct(double &number, int i);
-	double &getPluckerProduct(int i);
+	void setPluckerProduct(double* number, unsigned int i);
+	double* getPluckerProduct(unsigned int i);
 
 	//void setPluckerDirection(int &number, unsigned int i);
 	//int &getPluckerDirection(unsigned int i);
@@ -56,11 +57,10 @@ private:
 	Simplex<1> abscissa;
 	Simplex<2> triangle;
 
-	Plucker *p_coordinates_abscissa[1];
-	Plucker *p_coordinates_triangle[3];
+	Plucker **p_coordinates_abscissa[1];
+	Plucker **p_coordinates_triangle[3];
 
-	// Pro tento typ průniku existují právě 3 plückerovy součiny
-	double* plucker_products[3];
+	double *plucker_products[3];
 
 	//int plucker_directions[3];
 	//bool intersectionexists;
@@ -82,10 +82,14 @@ public:
 	void init();
 	void compute();
 
-	Plucker* getPC_abscissa();
-	Plucker* getPC_tetrahedron(unsigned int index);
-	void setPC_abscissa(Plucker* p_abscissa_coordinate);
-	void setPC_tetrahedron(Plucker* p_tetrahedron_coordinate, unsigned int index);
+	Plucker** getPC_abscissa();
+	Plucker** getPC_tetrahedron(unsigned int index);
+	void setPC_abscissa(Plucker** p_abscissa_coordinate);
+	void setPC_tetrahedron(Plucker** p_tetrahedron_coordinate, unsigned int index);
+	void toStringPluckerCoordinates();
+	void toStringPluckerCoordinatesTree();
+
+	void setPluckerProduct(double* number, unsigned int index_CI, unsigned index_edge);
 
 	inline ~ComputeIntersection() {}
 
@@ -93,8 +97,8 @@ private:
 	Simplex<1> abscissa;
 	Simplex<3> tetrahedron;
 
-	Plucker *p_coordinates_abscissa[1];
-	Plucker *p_coordinates_tetrahedron[6];
+	Plucker **p_coordinates_abscissa[1];
+	Plucker **p_coordinates_tetrahedron[6];
 
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
 
@@ -114,10 +118,12 @@ public:
 	void init();
 	void compute();
 
-	Plucker* getPC_triangle(unsigned int index);
-	Plucker* getPC_tetrahedron(unsigned int index);
-	void setPC_triangle(Plucker* p_triangle_coordinate, unsigned int index);
-	void setPC_tetrahedron(Plucker* p_tetrahedron_coordinate, unsigned int index);
+	Plucker** getPC_triangle(unsigned int index);
+	Plucker** getPC_tetrahedron(unsigned int index);
+	void setPC_triangle(Plucker** p_triangle_coordinate, unsigned int index);
+	void setPC_tetrahedron(Plucker** p_tetrahedron_coordinate, unsigned int index);
+	void toStringPluckerCoordinates();
+	void toStringPluckerCoordinatesTree();
 
 	inline ~ComputeIntersection() {}
 
@@ -130,8 +136,8 @@ public:
 	// Plucker coordinates for each abscissa of simplices
 	/* pozn. Myslet na to, že bude jakýsi globalní Plucker, který si bude načítat už vytvořená data
 	 * a vracet vždy stejný objekt, jen s jinými daty*/
-	Plucker *p_coordinates_triange[3];
-	Plucker *p_coordinates_tetrahedron[6];
+	Plucker **p_coordinates_triange[3];
+	Plucker **p_coordinates_tetrahedron[6];
 
 	// Computing objects
 	ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];

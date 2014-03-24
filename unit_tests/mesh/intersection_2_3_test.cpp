@@ -21,9 +21,9 @@ TEST(intersections, all) {
 	cout << "========== Includované objekty: =============" << endl;
 	arma::vec3 vectorA, vectorB, vectorC, vectorD;
 	vectorA[0] = 1;vectorA[1] = 2;vectorA[2] = 3;
-	vectorB[0] = 4;vectorB[1] = 15;vectorB[2] = 6;
-	vectorC[0] = 27;vectorC[1] = 18;vectorC[2] = 39;
-	vectorD[0] = 105;vectorD[1] = 111;vectorD[2] = 512;
+	vectorB[0] = -4;vectorB[1] = 2;vectorB[2] = -4;
+	vectorC[0] = 18;vectorC[1] = 4;vectorC[2] = -5;
+	vectorD[0] = 4;vectorD[1] = 3;vectorD[2] = 20;
 	cout << "=== Vector(" << vectorA[0] << "," << vectorA[1] << "," << vectorA[2] << ") ===" << endl;
 	arma::vec3 pole_vec[] = {vectorA,vectorB,vectorC,vectorD};
 
@@ -55,44 +55,52 @@ TEST(intersections, all) {
 
 
 	arma::vec3 vector;
-	vector[0] = 1;
-	vector[1] = 2;
-	vector[2] = 3;
+	vector[0] = 0;
+	vector[1] = 0;
+	vector[2] = 0;
 	arma::vec3 vector2;
-	vector2[0] = 4;
-	vector2[1] = 5;
-	vector2[2] = 6;
+	vector2[0] = 10;
+	vector2[1] = 0;
+	vector2[2] = 0;
 	arma::vec3 vector3;
-	vector3[0] = 7;
-	vector3[1] = 8;
-	vector3[2] = 9;
+	vector3[0] = 5;
+	vector3[1] = 0;
+	vector3[2] = 8;
 	arma::vec3 vector4;
-	vector4[0] = 10;
-	vector4[1] = 11;
-	vector4[2] = 12;
+	vector4[0] = 6;
+	vector4[1] = 8;
+	vector4[2] = 4;
 	arma::vec3 pole_vectoru[] = {vector,vector2,vector3,vector4};
 	arma::vec3 pole_vectoru2[] = {vectorB,vectorC,vectorD};
-
 
 	Simplex<2> sim2(pole_vectoru2);
 	Simplex<3> sim3(pole_vectoru);
 
 	ComputeIntersection<Simplex<2>, Simplex<3> > novyCI(sim2, sim3);
 
-	Plucker *muj_plucker = new Plucker(vector, vector2);
-	Plucker ha(vector, vector3);
-	Plucker da(vector, vector4);
+		novyCI.init();
+		novyCI.compute();
+		//novyCI.toStringPluckerCoordinatesTree();
 
-	cout << "Testovaci Plucker[2]: ";
-	ha.toString();
+		arma::vec3 vecAA; vecAA[0] = 0; vecAA[1]= 2;vecAA[2] = 0;
+		arma::vec3 vecBB; vecBB[0] = 2; vecBB[1]= 3;vecBB[2] = 4;
+		arma::vec3 vecCC; vecCC[0] = 5; vecCC[1]= 1;vecCC[2] = -1;
+		arma::vec3 vecDD; vecDD[0] = 6; vecDD[1]= 6;vecDD[2] = 1;
 
-	novyCI.setPC_tetrahedron(&ha, 2);
+		Plucker AB(vecAA, vecBB);
+		Plucker CD(vecCC, vecDD);
+		Plucker DC(vecDD, vecCC);
 
-	cout << "Zkouska1 Plucker[2]: "; (*novyCI.getPC_tetrahedron(2)).toString();
+		double soucinABCD = AB*CD;
+		double soucinABDC = AB*DC;
 
-	novyCI.init();
+		AB.toString();
+		CD.toString();
+		DC.toString();
+		cout << soucinABCD << " - " << soucinABDC << endl;
+		cout << CD*AB << "-" << AB*CD << endl;
+		cout << DC*AB << "-" << AB*DC << endl;
 
-	xprintf(Msg, "hoho");
 	cout << "==================================================================" << endl;
 }
 
