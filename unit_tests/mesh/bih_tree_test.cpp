@@ -215,6 +215,20 @@ TEST_F(BIH_test, find_bounding_box_5) {
 	this->test_find_boxes();
 }
 
+/**
+ * Unit test of BIH tree on large mesh (111 000 elements).
+ *
+ * Only geo file is committed to repository. Mesh file is stored
+ * on 'http://bacula.nti.tul.cz/~jan.brezina/BIH_refined.tar.gz'
+ * in directory '1024_111324_el'
+ */
+/*TEST_F(BIH_test, find_bounding_box_6) {
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_111324_elem.msh", FilePath::input_file);
+	this->create_tree(mesh_file);
+
+	this->test_find_boxes();
+}*/
+
 /*
 /// Generates random double number in interval <fMin, fMax>
 double f_rand(double fMin, double fMax) {
