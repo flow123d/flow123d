@@ -82,15 +82,18 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   data_.sorption_types.n_comp(n_substances_);
   data_.mult_coefs.n_comp(n_substances_);
   data_.second_params.n_comp(n_substances_);
-    
-  data_.set_mesh(init_mesh);
-  data_.set_input_list( in_rec.val<Input::Array>("data"));
   
+  //setting fields that are set from input file
+  input_data_set_+=data_;
+  input_data_set_.set_input_list(in_rec.val<Input::Array>("data"));
+    
+  //creating field for porosity that is set later from the governing equation (transport)
   data_+=(data_.porosity
           .name("porosity")
           .units("0")
          );
   
+  data_.set_mesh(init_mesh);
   data_.set_limit_side(LimitSide::right);
   
   //Simple vectors holding  common informations.

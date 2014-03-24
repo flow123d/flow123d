@@ -154,10 +154,14 @@ public:
 		*	 Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step lenght in cocidered system of coordinates, just function values are stored.
 		*/
 		std::vector<std::vector<Isotherm> > isotherms;
-		/**
-		* 	Region characteristic inputs.
-		*/
-		EqData data_;
+  /**
+   * Equation data - all data field are in this set.
+   */
+  EqData data_;
+  /**
+   * Input data set - fields in this set are read from the input file.
+   */
+  FieldSet input_data_set_;
 		/**
 		* Array for storage infos about sorbed species concentrations.
 		*/

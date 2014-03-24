@@ -53,13 +53,15 @@ Dual_por_exchange::Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vect
 	: Reaction(init_mesh, in_rec, names)
 {
     //DBGMSG("DualPorosity - constructor\n");
-
+    
     data_.alpha.n_comp(n_all_substances_);
     data_.init_conc_immobile.n_comp(n_all_substances_);
     
+    //setting fields that are set from input file
+    input_data_set_+=data_;
+    input_data_set_.set_input_list(in_rec.val<Input::Array>("data"));
     
-    data_.set_input_list(in_rec.val<Input::Array>("data"));
-    
+    //creating field for porosity that is set later from the governing equation (transport)
     data_+=(data_.porosity
           .name("porosity")
           .units("0")

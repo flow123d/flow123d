@@ -85,10 +85,13 @@ protected:
   double **immob_concentration_matrix;
 
   /**
-   *
+   * Equation data - all data field are in this set.
    */
   EqData data_;
-  
+  /**
+   * Input data set - fields in this set are read from the input file.
+   */
+  FieldSet input_data_set_;
   
   Reaction *reaction_mob;       //< Reaction running in mobile zone
   Reaction *reaction_immob;     //< Reaction running in immobile zone
