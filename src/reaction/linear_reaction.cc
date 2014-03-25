@@ -62,6 +62,7 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
   init_from_input(in_rec);
   
+  if(!output_rec.is_empty()) xprintf(Warn, "The outpur record in LinearReactions will be ignored.\n");
 	//set_time_step(0.5);
 }
 

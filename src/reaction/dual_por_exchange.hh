@@ -22,7 +22,7 @@ class Mesh;
 class Distribution;
 class SorptionBase;
 
-class Dual_por_exchange:  public Reaction
+class DualPorosity:  public Reaction
 {
 public:
   /**
@@ -43,13 +43,18 @@ public:
     Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
+    
+    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
+
+    /// Fields indended for output, i.e. all input fields plus those representing solution.
+    FieldSet output_fields;
   };
 
-  Dual_por_exchange(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
   /**
    * Destructor.
    */
-  ~Dual_por_exchange(void);
+  ~DualPorosity(void);
                 
   /**
    * Updates the solution according to the dual porosity model.
@@ -61,6 +66,9 @@ public:
    * It also sets and initializes possible following reaction models.
    */
   void initialize(void) override;
+  
+  void output_data(void) override;
+  void output_vector_gather(void) override;
   
   /**
    *
@@ -77,12 +85,14 @@ protected:
   /**
    * This method disables to use constructor without parameters.
    */
-  Dual_por_exchange();
+  DualPorosity();
 
+  void allocate_output_mpi(void);
+  
   /**
    * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
    */
-  double **immob_concentration_matrix;
+  double **conc_immob;
 
   /**
    * Equation data - all data field are in this set.
@@ -93,13 +103,20 @@ protected:
    */
   FieldSet input_data_set_;
   
-  Reaction *reaction_mob;       //< Reaction running in mobile zone
-  Reaction *reaction_immob;     //< Reaction running in immobile zone
+  Reaction *reaction_mob;       ///< Reaction running in mobile zone
+  Reaction *reaction_immob;     ///< Reaction running in immobile zone
   
   /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
    * Else it is replaced with simple forward difference approximation.
    */
   static const double min_dt;
+  
+  ///@name members used in output routines
+  //@{
+  Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
+  Vec *vconc_immobile_out; ///< PETSC concentration vector output for immobile phase (gathered - sequential)
+  double **conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)  
+  //@}
   
 };
 

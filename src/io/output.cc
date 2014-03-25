@@ -113,7 +113,7 @@ OutputDataBase *OutputTime::output_data_by_field_name
 
     /* Try to find existing data */
     for(auto &data : *data_vector)
-        if (data->field_name == field_name)	return data;
+        if (data->field_name == field_name)     return data;
 
     return nullptr;
 }
