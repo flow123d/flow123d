@@ -108,6 +108,10 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
         if (time == TimeGovernor::inf_time) return;
         else add(TimeMark(time, type));
     }
+    else if (dt == 0) {
+    	// prevent infinite loop - add only initial time
+    	add(TimeMark(time, type));
+    }
     else {
         for (double t = time; t <= end_time*1.001; t += dt) {
             add(TimeMark(t, type));
