@@ -34,6 +34,12 @@ Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> 
 {
   DBGMSG("Reaction constructor.\n");
   initialize_substance_ids(names, in_rec);
+  
+//   for(unsigned int s=0; s<n_all_substances_; s++)
+//     cout << s  << "  " << names_[s] << endl;
+//   
+//   for(unsigned int s=0; s<n_substances_; s++)
+//     cout << s << "  " << substance_id[s] << "  " << names_[substance_id[s]] << endl;
 }
 
 Reaction::~Reaction()
