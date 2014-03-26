@@ -34,13 +34,7 @@
         output_stream = {
           REF = "/system/output_stream"
         }, 
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream",
-        velocity_diff = "flow_output_stream",
-        pressure_diff = "flow_output_stream",
-        div_diff = "flow_output_stream"
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0", "velocity_diff", "pressure_diff", "div_diff" ]
       }, 
       solver = {
         TYPE = "Petsc", 

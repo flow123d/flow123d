@@ -58,7 +58,13 @@ public:
         FieldSet output_fields;
 
 		ModelEqData();
+
 		static string name() {return "TransportDG";}
+
+		static string default_output_fields() { return "mobile_p0"; }
+
+		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
+
 	};
 
 protected:
@@ -73,8 +79,6 @@ protected:
 	 * @return
 	 */
 	static IT::Record &get_input_type(const string &implementation, const string &description);
-
-	static IT::Record &get_output_record_input_type(const string &implementation, const string &description);
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;

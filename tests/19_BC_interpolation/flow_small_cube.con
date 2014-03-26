@@ -29,11 +29,8 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
         //raw_flow_output = "./raw_output_small.txt", 
-        velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 

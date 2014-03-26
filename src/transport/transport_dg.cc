@@ -68,6 +68,12 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
                .add_value(robin, "robin");
 
 template<class Model>
+Selection TransportDG<Model>::EqData::output_selection =
+		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
+template<class Model>
 Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
@@ -77,9 +83,9 @@ Record TransportDG<Model>::input_type
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
     		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-    .declare_key("output", Model::get_output_record_input_type("DG", "DG solver").copy_keys(EqData().output_fields.make_output_field_keys()),
-    		Default::obligatory(),
-       		"Parameters of output stream.");
+    .declare_key("output_fields", Array(EqData::output_selection),
+    		Default(Model::ModelEqData::default_output_fields()),
+       		"List of fields to write to output file.");
 
 
 
@@ -205,6 +211,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 }
 
 
+
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         : TransportBase(init_mesh, in_rec),
@@ -277,7 +284,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     }
 
     // register output fields
-    output_rec = in_rec.val<Input::Record>("output");
+    output_rec = in_rec.val<Input::Record>("output_stream");
 	output_vec.resize(n_subst_);
 	output_solution.resize(n_subst_);
 	for (int sbi=0; sbi<n_subst_; sbi++)
@@ -300,12 +307,13 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     	}
         data_.output_fields.set_limit_side(LimitSide::left);
-        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+        output_stream = OutputTime::output_stream(output_rec);
+        output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
     }
 
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
-    time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
+    time_->marks().add_time_marks(0.0, output_rec.val<double>("time_step"), time_->end_time(), output_mark_type);
 
     // allocate matrix and vector structures
     
@@ -333,7 +341,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	if (feo->dh()->el_ds()->myp() == 0)
 	{
         data_.output_fields.set_time(*time_);
-        data_.output_fields.output(output_rec);
+        data_.output_fields.output(output_stream);
 	}
 
 }
@@ -571,7 +579,7 @@ void TransportDG<Model>::output_data()
 	if (feo->dh()->el_ds()->myp() == 0)
 	{
 		data_.output_fields.set_time(*time_);
-		data_.output_fields.output(output_rec);
+		data_.output_fields.output(output_stream);
 	}
 
 	if (mass_balance() != NULL)

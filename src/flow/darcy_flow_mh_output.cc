@@ -57,11 +57,12 @@ namespace it = Input::Type;
 
 it::Record DarcyFlowMHOutput::input_type
 	= it::Record("DarcyMHOutput", "Parameters of MH output.")
-	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
-                    "Regular step between MH outputs.")
+//	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
+//                    "Regular step between MH outputs.")
     .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
                     "Parameters of output stream.")
-    .copy_keys(OutputFields().make_output_field_keys())
+    .declare_key("output_fields", it::Array(OutputFields().make_output_field_selection()),
+    		it::Default::obligatory(), "List of fields to write to output file.")
 //    .declare_key("velocity_p0", it::String(), it::Default::optional(),
 //                    "Output stream for P0 approximation of the velocity field.")
 //    .declare_key("pressure_p0", it::String(), it::Default::optional(),
@@ -119,7 +120,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // set output time marks
     TimeMarks &marks = darcy_flow->time().marks();
     output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
-    marks.add_time_marks(0.0, in_rec.val<double>("save_step"),
+    marks.add_time_marks(0.0, in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
           darcy_flow->time().end_time(), output_mark_type );
     //DBGMSG("end create output\n");
 
@@ -182,8 +183,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     			make_shared< FieldElementwise<3, FieldValue<3>::Integer> >(subdomains, 1));
 
     	output_fields.set_limit_side(LimitSide::right);
-    	OutputTime * stream_ptr = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
-    	DBGMSG("output stream: %p\n", stream_ptr);
+    	output_stream = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
+    	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), output_fields.make_output_field_selection());
+    	DBGMSG("output stream: %p\n", output_stream);
 
 #if 0
         OutputTime *output_time = NULL;
@@ -322,7 +324,7 @@ void DarcyFlowMHOutput::output()
       //{
 		  //if(output_writer) output_writer->write_data(time);
 		  output_fields.fields_for_output.set_time(darcy_flow->time());
-		  output_fields.fields_for_output.output(in_rec_);
+		  output_fields.fields_for_output.output(output_stream);
       //}
       
       output_internal_flow_data();

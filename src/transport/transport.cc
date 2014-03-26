@@ -76,6 +76,11 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
     .close();
 
 
+IT::Selection ConvectionTransport::EqData::output_selection =
+		IT::Selection("ConvectionTransport_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
@@ -123,7 +128,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
     time_->marks().add_time_marks(0.0,
-        in_rec.val<Input::Record>("output").val<double>("save_step"),
+        in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
         time_->end_time(), output_mark_type );
     cfl_max_step = time_->end_time();
     // TODO: this has to be set after construction of transport matrix ??!!
@@ -174,7 +179,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     need_time_rescaling=true;
 
     // register output vectors
-    output_rec = in_rec.val<Input::Record>("output");
+    output_rec = in_rec.val<Input::Record>("output_stream");
     int ierr, rank;
     ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
@@ -194,7 +199,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     	}
         data_.output_fields.set_limit_side(LimitSide::right);
-        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+        output_stream = OutputTime::output_stream(output_rec);
+        output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
     }
 
     // write initial condition
@@ -202,7 +208,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     if (rank == 0)
     {
     	data_.output_fields.set_time(*time_);
-    	data_.output_fields.output(output_rec);
+    	data_.output_fields.output(output_stream);
     }
 }
 
@@ -1408,7 +1414,7 @@ void ConvectionTransport::output_data() {
 			//Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
 			//OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
 			data_.output_fields.set_time(*time_);
-			data_.output_fields.output(output_rec);
+			data_.output_fields.output(output_stream);
         }
 
         if (mass_balance_)

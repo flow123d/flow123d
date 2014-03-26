@@ -15,6 +15,7 @@
 class Mesh;
 class Element;
 class Distribution;
+class OutputTime;
 
 
 class Reaction: public EquationBase
@@ -130,6 +131,9 @@ protected:
   
   /// Record with output specification.
   Input::Record output_rec;
+
+  OutputTime *output_stream;
+
 };
 
 #endif

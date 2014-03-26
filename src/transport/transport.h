@@ -86,6 +86,8 @@ public:
     public:
         static Input::Type::Selection sorption_type_selection;
 
+        static Input::Type::Selection output_selection;
+
         EqData();
         virtual ~EqData() {};
 
@@ -292,6 +294,8 @@ private:
 
 	/// Record with output specification.
 	Input::Record output_rec;
+
+	OutputTime *output_stream;
 
 
             int *row_4_el;

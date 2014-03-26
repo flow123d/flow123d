@@ -215,7 +215,7 @@ void SorptionBase::initialize(void )
                 data_.conc_sorbed[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
         data_.output_fields.set_limit_side(LimitSide::right);
-        OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+        output_stream = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
       }
     allocate_output_mpi();
   
@@ -224,7 +224,7 @@ void SorptionBase::initialize(void )
     // write initial condition
     output_vector_gather();
     data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_rec);
+    data_.output_fields.output(output_stream);
   }
   
   // creating reaction from input and setting their parameters
@@ -439,7 +439,7 @@ void SorptionBase::output_data(void )
 
     // Register fresh output data
     data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_rec);
+    data_.output_fields.output(output_stream);
 
     //for synchronization when measuring time by Profiler
     MPI_Barrier(MPI_COMM_WORLD);

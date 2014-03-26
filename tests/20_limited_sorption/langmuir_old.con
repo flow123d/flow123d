@@ -23,9 +23,7 @@
         output_stream = {
           REF = "/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
       solver = { 
@@ -57,12 +55,8 @@
         }
       ],
       
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/output_streams/1"
       }, 
       time = {
         end_time = 15.0
@@ -102,6 +96,7 @@
           TYPE = "vtk", 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

@@ -241,46 +241,38 @@ private:
  */
 
 template<int spacedim, class Value>
-void OutputTime::register_data(const Input::Record &in_rec,
-        const DiscreteSpace type,
+void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-	OutputTime *output_stream = output_stream_by_name(in_rec.val<Input::Record>("output_stream").val<string>("name"));
-	// temporary solution: check if key value equals the name of the output stream from the record
-	// in future we should specify an array of field names instead of the list of the form
-	//   field_name = "stream_name".
-	if (output_stream == output_stream_by_key_name(in_rec, multi_field.name())) {
-		for (unsigned long index=0; index < multi_field.size(); index++)
-			output_stream->compute_field_data(type, multi_field[index] );
+	if (output_names.find(multi_field.name()) != output_names.end()) {
+		if (output_names[multi_field.name()] == true)
+			for (unsigned long index=0; index < multi_field.size(); index++)
+				this->compute_field_data(type, multi_field[index] );
+
+		return;
 	}
 	else
 	{
-		Input::Iterator<string> stream_name_iter = in_rec.find<string>(multi_field.name());
-		if (stream_name_iter)
-			DBGMSG("Ignoring output field %s: Wrong output stream %s.\n", multi_field.name().c_str(), (*stream_name_iter).c_str());
+		// We are trying to output field that is not recognized by the stream.
+		DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
 	}
 }
 
 
 template<int spacedim, class Value>
-void OutputTime::register_data(const Input::Record &in_rec,
-        const DiscreteSpace ref_type,
+void OutputTime::register_data(const DiscreteSpace ref_type,
         Field<spacedim, Value> &field_ref)
 {
-	const string &stream_name = in_rec.val<Input::Record>("output_stream").val<string>("name");
-	OutputTime *output_stream = output_stream_by_name(stream_name);
-	ASSERT(output_stream != NULL, "output stream %s not found field: %sn", stream_name.c_str(), field_ref.name().c_str() );
-	// temporary solution: check if key value equals the name of the output stream from the record
-	// in future we should specify an array of field names instead of the list of the form
-	//   field_name = "stream_name".
-    if (output_stream == output_stream_by_key_name(in_rec, field_ref.name())) {
-    	output_stream->compute_field_data(ref_type, field_ref);
-    }
+	if (output_names.find(field_ref.name()) != output_names.end()) {
+		if (output_names[field_ref.name()] == true)
+			this->compute_field_data(ref_type, field_ref);
+
+		return;
+	}
 	else
 	{
-		Input::Iterator<string> stream_name_iter = in_rec.find<string>(field_ref.name());
-		if (stream_name_iter)
-			DBGMSG("Ignoring output field %s: Wrong output stream %s.\n", field_ref.name().c_str(), (*stream_name_iter).c_str());
+		// We are trying to output field that is not recognized by the stream.
+		DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
 	}
 }
 

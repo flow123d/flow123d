@@ -325,9 +325,9 @@ void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::output(Input::Record output_rec)
+void Field<spacedim, Value>::output(OutputTime *stream)
 {
-	OutputTime::register_data(output_rec, this->output_type(), *this);
+	stream->register_data(this->output_type(), *this);
 }
 
 
@@ -524,9 +524,9 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::output(Input::Record output_rec)
+void MultiField<spacedim, Value>::output(OutputTime *stream)
 {
-	OutputTime::register_data(output_rec, this->output_type(), *this);
+	stream->register_data(this->output_type(), *this);
 }
 
 

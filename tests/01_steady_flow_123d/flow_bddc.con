@@ -64,10 +64,7 @@
         output_stream = {
           REF = "/system/output_stream"
         }, 
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
         //,subdomains = "flow_output_stream"
       }, 
       solver = {

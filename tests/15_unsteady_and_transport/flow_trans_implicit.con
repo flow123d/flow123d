@@ -31,12 +31,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream",          
-        velocity_p0 = "flow_output_stream",
-	save_step = {
-          REF = "/problem/save_step"
-        }
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -67,14 +62,8 @@
         }
       ],
       
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
 
       substances = [
@@ -88,8 +77,6 @@
         accuracy = 1e-07 
       } 
     }, 
-
-    save_step = 0.1, 
 
     time = {
       end_time = 2.0, 
@@ -105,6 +92,7 @@
           TYPE = "vtk", 
           variant = "ascii"
         }, 
+        time_step = 0.1,
         name = "flow_output_stream"
       }, 
       {
@@ -115,6 +103,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.1,
         name = "transport_output_stream"
       }
     ]

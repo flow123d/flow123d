@@ -42,19 +42,15 @@ AbstractRecord AdvectionProcessBase::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
+	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			"Parameters of output stream.")
 	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
-//	.declare_key("output", TransportBase::input_type_output_record, Default::obligatory(),
-//    		"Parameters of output stream.");
 
 
 Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.")
-	.declare_key("save_step", Double(0.0), Default::obligatory(),
-			"Interval between outputs.")
-	.declare_key("output_times", Array(Double(0.0)),
-			"Explicit array of output times (can be combined with 'save_step'.");
+			"Parameters of output stream.");
 //	.declare_key("conc_mobile_p0", String(),
 //			"Name of output stream for P0 approximation of the concentration in mobile phase.")
 //	.declare_key("conc_immobile_p0", String(),
@@ -86,9 +82,9 @@ Record TransportOperatorSplitting::input_type
     		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
     		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
     		), IT::Default::obligatory(), "")
-    .declare_key("output", TransportBase::input_type_output_record.copy_keys(ConvectionTransport::EqData().output_fields.make_output_field_keys()),
-       		Default::obligatory(),
-       		"Parameters of output stream.");
+    .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
+    		Default("mobile_p0"),
+       		"List of fields to write to output file.");
 
 
 TransportBase::TransportEqData::TransportEqData()

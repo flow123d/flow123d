@@ -53,7 +53,11 @@ Record OutputTime::input_type
             "File path to the connected output file.")
             // The format
 	.declare_key("format", OutputTime::input_format_type, Default::optional(),
-			"Format of output stream and possible parameters.");
+			"Format of output stream and possible parameters.")
+	.declare_key("time_step", Double(0.0), Default("0.0"),
+			"Interval between outputs.")
+	.declare_key("time_list", Array(Double(0.0)),
+			"Explicit array of output times (can be combined with 'time_step'.");
 #if 0
     // The format
     .declare_key("format", OutputFormat::input_type, Default::optional(),
@@ -230,6 +234,22 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 }
 
 
+void OutputTime::add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel)
+{
+	vector<Input::Enum> field_ids;
+	in_array.copy_to(field_ids);
+
+	// first copy all possible field names from selection
+	for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
+		output_names.emplace(it->key_, false);
+
+	// then mark those fields that will be saved
+	for (auto it: field_ids)
+		if (in_sel.has_value(it))
+			output_names[in_sel.int_to_name(it)] = true;
+}
+
+
 OutputTime::OutputTime(const Input::Record &in_rec)
 {
     int ierr;
@@ -367,11 +387,11 @@ void OutputTime::clear_data(void)
 
 #define INSTANCE_register_field(spacedim, value) \
 	template  void OutputTime::register_data<spacedim, value> \
-		(const Input::Record &in_rec, const DiscreteSpace ref_type, Field<spacedim, value> &field);
+		(const DiscreteSpace ref_type, Field<spacedim, value> &field);
 
 #define INSTANCE_register_multifield(spacedim, value) \
 	template void OutputTime::register_data<spacedim, value> \
-		(const Input::Record &in_rec, const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
+		(const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
 
 
 #define INSTANCE_OutputData(spacedim, value) \

@@ -112,6 +112,23 @@ public:
     	return rec;
     }
 
+    /**
+     * Make Selection with strings for all field names in the FieldSet.
+     */
+    Input::Type::Selection make_output_field_selection() {
+    	namespace IT=Input::Type;
+    	IT::Selection sel("field_output_keys","AUXILIARY SELECTION. Should not be directly part of the input tree.");
+    	int i=0;
+    	for( auto field : field_list)
+    	{
+    		sel.add_value(i, field->name(), "Name of the output stream for the field "+field->name()+"." );
+    		i++;
+    	}
+    	sel.close();
+
+    	return sel;
+    }
+
 
     /**
      * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter @p dest_field_name.
@@ -196,8 +213,8 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::output().
      */
-    void output(Input::Record output_rec) {
-    	for(auto field : field_list) field->output(output_rec);
+    void output(OutputTime *stream) {
+    	for(auto field : field_list) field->output(stream);
     }
 
 

@@ -228,12 +228,11 @@ public:
     virtual void copy_from(const FieldCommonBase & other) =0;
 
     /**
-     * Output the field. Use output discrete space given by @p type_of_output_data member.
-     * The parameter @p output_rec is checked for key named by the field name. If the key exists its
-     * string value is used to look for the OutputTime object of the same name, then the output of the field is performed.
-     * If the key do not appear in the input, no output is done.
+     * Output the field.
+     * The parameter @p output_fields is checked for value named by the field name. If the key exists,
+     * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void output(Input::Record output_rec) =0;
+    virtual void output(OutputTime *stream) =0;
 
 
     /**
@@ -550,7 +549,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(Input::Record output_rec) override;
+    void output(OutputTime *stream) override;
 
 
     /**
@@ -725,7 +724,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void output(Input::Record output_rec) override;
+    void output(OutputTime *stream) override;
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().

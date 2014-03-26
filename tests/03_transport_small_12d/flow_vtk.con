@@ -25,9 +25,7 @@
 
       output = {
         output_stream = { REF = "/system/output_streams/0" }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       
       solver = {
@@ -60,11 +58,7 @@
         }
       ],
 
-      output = {
-        output_stream = { REF = "/system/output_streams/1" },
-        save_step = 0.01,
-        mobile_p0 = "transport_output_stream"
-      }, 
+      output_stream = { REF = "/system/output_streams/1" },
 
       time = {
         end_time = 1.0
@@ -86,6 +80,7 @@
       {
         file = "test3-transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
+        time_step = 0.01,
         name = "transport_output_stream"
       }
     ]

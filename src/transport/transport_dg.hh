@@ -150,6 +150,8 @@ public:
         };
         static Input::Type::Selection bc_type_selection;
 
+        static Input::Type::Selection output_selection;
+
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
@@ -526,6 +528,8 @@ private:
 
 	/// Record with output specification.
 	Input::Record output_rec;
+
+	OutputTime *output_stream;
 
 
 	// @}

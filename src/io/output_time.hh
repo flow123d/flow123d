@@ -97,22 +97,31 @@ public:
 
     /**
      * \brief Generic method for registering output data stored in MultiField
+     *
+     * @param ref_type    Type of output (element, node, corner data).
+     * @param multi_field The actual field for output.
      */
     template<int spacedim, class Value>
-    static void register_data(const Input::Record &in_rec,
-            const DiscreteSpace type,
+    void register_data(const DiscreteSpace type,
             MultiField<spacedim, Value> &multi_field);
 
 
     /**
      * \brief Generic method for registering of output data stored in Field
      *
-     * This
+     * @param ref_type  Type of output (element, node, corner data).
+     * @param field     The actual field for output.
      */
     template<int spacedim, class Value>
-    static void register_data(const Input::Record &in_rec,
-            const DiscreteSpace ref_type,
+    void register_data(const DiscreteSpace ref_type,
             Field<spacedim, Value> &field);
+
+    /**
+     * \brief Registers names of output fields that can be written using this stream.
+     * @param in_array Array of admissible fields (array of selections).
+     * @param in_sel   Temporary - selection with field names.
+     */
+    void add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel);
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
@@ -255,6 +264,8 @@ protected:
     double          time;               ///< The newest time of registered data
 
     double          write_time;         ///< The last time, when data was wrote to this stream
+
+    map<string,bool> output_names; ///< Map of names of output fields. True means that field will be saved.
 
 };
 

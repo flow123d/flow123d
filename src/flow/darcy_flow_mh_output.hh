@@ -193,6 +193,8 @@ private:
 
     OutputFields output_fields;
 
+    OutputTime *output_stream;
+
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;
     /// Raw data output file.

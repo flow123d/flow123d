@@ -76,10 +76,9 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 }
 
 
-IT::Record &HeatTransferModel::get_output_record_input_type(const string &implementation, const string &description)
+IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation + "_Output", "Output record for " + description + " for heat transfer.")
-			.copy_keys(TransportBase::input_type_output_record);
+	static IT::Selection input_type = IT::Selection("HeatTransfer_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
 
 	return input_type;
 }

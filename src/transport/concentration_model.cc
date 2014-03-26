@@ -76,12 +76,11 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 	return rec;
 }
 
-IT::Record &ConcentrationTransportModel::get_output_record_input_type(const string &implementation, const string &description)
+IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.")
-			.copy_keys(TransportBase::input_type_output_record);
+	static IT::Selection sel = IT::Selection("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
 
-	return rec;
+	return sel;
 }
 
 
