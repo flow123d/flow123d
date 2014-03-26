@@ -120,8 +120,12 @@ set(sources_fast_intersection
 	bp_fris/hyperplane.cpp
 	bp_fris/simplex.cpp
 	bp_fris/intersections.cpp
-	
-	
+)
+
+set(sources_intersection_2_3
+	intersection/plucker.cpp
+	intersection/simplex.cpp
+	intersection/computeintersection.cpp
 )
 
 set(sources_fem_lib
@@ -239,7 +243,11 @@ target_link_libraries(mesh_lib
 add_library(fast_intersection_lib ${sources_fast_intersection})
 target_link_libraries(fast_intersection_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
-    
+
+# intersection_2_3_lib
+add_library(intersection_2_3_lib ${sources_intersection_2_3})
+target_link_libraries(intersection_2_3_lib
+    mesh_lib system_lib armadillo ${Boost_LIBRARIES})
     
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})
