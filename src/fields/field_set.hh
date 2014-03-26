@@ -190,8 +190,8 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     bool is_constant(Region reg) const {
-    	bool const_all=false;
-    	for(auto field : field_list) const_all = const_all || field->is_constant(reg);
+    	bool const_all=true;
+    	for(auto field : field_list) const_all = const_all && field->is_constant(reg);
     	return const_all;
     }
 

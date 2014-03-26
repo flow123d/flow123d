@@ -12,7 +12,7 @@ using namespace std;
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
   : SorptionBase(init_mesh, in_rec, names)
 {
-  DBGMSG("SorptionSimple constructor.\n");
+  //DBGMSG("SorptionSimple constructor.\n");
 }
 
 SorptionSimple::~SorptionSimple(void)
@@ -41,7 +41,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 		double scale_aqua = por_m, 
                        scale_sorbed = (1 - por_m) * rock_density * molar_masses[i_subst];
 
-                DBGMSG("molar_masses[%d %d]: %f\n",i_subst, substance_id[i_subst], molar_masses[i_subst]);
+                //DBGMSG("molar_masses[%d %d]: %f\n",i_subst, substance_id[i_subst], molar_masses[i_subst]);
 		if ( scale_sorbed == 0.0)
 			xprintf(UsrErr, "Sorption::init_from_input() failed. Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
 		bool limited_solubility_on = false;
