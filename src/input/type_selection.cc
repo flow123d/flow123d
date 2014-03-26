@@ -93,6 +93,25 @@ int Selection::name_to_int(const string &key) const {
 }
 
 
+string Selection::int_to_name(const int &val) const {
+	finished_check();
+	auto it = data_->value_to_index_.find(val);
+	if (it != data_->value_to_index_.end())
+		return data_->keys_[it->second].key_;
+	else
+		throw ExcSelectionValueNotFound() << EI_Value(val) << EI_Selection(*this);
+}
+
+
+Selection &Selection::copy_values(const Selection &sel)
+{
+	for (auto it = sel.begin(); it != sel.end(); ++it)
+		add_value(it->value, it->key_, it->description_);
+
+	return *this;
+}
+
+
 
 int Selection::from_default(const string &str) const {
     try {
