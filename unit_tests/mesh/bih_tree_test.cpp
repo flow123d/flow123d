@@ -25,29 +25,79 @@ public:
 	BIHTree_test(Mesh* mesh, unsigned int soft_leaf_size_limit)
 	: BIHTree(mesh, soft_leaf_size_limit) {}
 
+	/// Tests basic tree parameters (depths, counts of elements)
 	void test_tree_params() {
 		unsigned int sum_depth = 0;
 		unsigned int max_depth = 0;
 		unsigned int min_depth = 32767;
 		unsigned int leaf_nodes = 0;
+		vector<unsigned int> elements; // counts of elements in leaf nodes
 
 		for (unsigned int i=0; i<nodes_.size(); i++) {
 			if (nodes_[i].is_leaf()) {
 				if (nodes_[i].depth() > max_depth) max_depth = nodes_[i].depth();
 				if (nodes_[i].depth() < min_depth) min_depth = nodes_[i].depth();
 				sum_depth += nodes_[i].depth();
+				elements.push_back(nodes_[i].leaf_size());
 				++leaf_nodes;
 			}
 		}
 
-		double avgDepth = (double) sum_depth / (double) leaf_nodes;
+		EXPECT_EQ(elements.size(), leaf_nodes);
+		std::sort(elements.begin(), elements.end());
 
-		cout << endl << "BIH Tree parameters:" << endl;
-		cout << "  maximal depth: " << max_depth;
+		double avg_depth = (double) sum_depth / (double) leaf_nodes;
+		double median_elements = (double)(elements[ leaf_nodes/2 ] + elements[ (leaf_nodes-1)/2 ]) / 2.0;
+
+		cout << endl << "-------------------------";
+		cout << endl << "BIH tree parameters:" << endl;
+		cout << "- maximal depth: " << max_depth;
 		cout << ", minimal depth: " << min_depth;
-		cout << ", average depth: " << avgDepth << endl;
+		cout << ", average depth: " << avg_depth << endl;
+		cout << "- median of elements in leaf nodes: " << median_elements << endl;
+		cout << "- minimal elements in leaf nodes: " << elements[ 0 ] << endl;
+		cout << "- maximal elements in leaf nodes: " << elements[ elements.size()-1 ] << endl;
 	}
 
+	/// Printout structure of BIH tree
+	void BIH_output() {
+		cout << endl << "-------------------------";
+		cout << endl << "BIH tree output:";
+		BIH_output_node(0);
+		cout << endl;
+	}
+
+protected:
+	/**
+	 * Returns count of elements of get node
+	 *  - count of elements in leaf node
+	 *  - sum of elements of all leaf descendants for inner node
+	 */
+	unsigned int BIH_elements_in_node(unsigned int node_index) {
+		const BIHNode &node = nodes_[node_index];
+		if (node.is_leaf()) {
+			return node.leaf_size();
+		} else {
+			return BIH_elements_in_node( node.child(0) ) + BIH_elements_in_node( node.child(1) );
+		}
+	}
+
+	/// Printout node of BIH tree
+	void BIH_output_node(unsigned int node_index, unsigned int depth = 0) {
+		const BIHNode &node = nodes_[node_index];
+
+		cout << endl;
+		if (depth>1) for (int i=0; i<depth-1; i++) cout << "| ";
+		if (node.is_leaf()) {
+			cout << "- leaf node: idx = " << node_index << ", " << node.leaf_size() << " elements, depth " << (unsigned int)node.depth();
+		} else {
+			if (depth>0) cout << "| ";
+			cout << "inner node: idx = " << node_index << ", " << BIH_elements_in_node(node_index) << " elements, children idx (";
+			cout << node.child(0) << "," << node.child(1) << ")";
+			BIH_output_node( node.child(0), depth+1 );
+			BIH_output_node( node.child(1), depth+1 );
+		}
+	}
 };
 
 
@@ -91,6 +141,8 @@ public:
 		Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 		bt->test_tree_params();
+		//bt->BIH_output();
+		cout << endl;
 	}
 
 
