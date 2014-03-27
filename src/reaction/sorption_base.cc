@@ -42,6 +42,8 @@ Selection SorptionBase::EqData::output_selection
 Record SorptionBase::input_type
 	= Record("Sorption", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( Reaction::input_type )
+        .declare_key("substances", Array(String()), Default::obligatory(),
+                     "Names of the substances that take part in the sorption model.")
 	.declare_key("solvent_dens", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
@@ -85,6 +87,13 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
 	: Reaction(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionBase constructor.\n");
+  initialize_substance_ids(names, in_rec);
+  
+//   for(unsigned int s=0; s<n_all_substances_; s++)
+//     cout << s  << "  " << names_[s] << endl;
+//   
+//   for(unsigned int s=0; s<n_substances_; s++)
+//     cout << s << "  " << substance_id[s] << "  " << names_[substance_id[s]] << endl;
   
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
@@ -148,6 +157,31 @@ SorptionBase::~SorptionBase(void)
   xfree(sorbed_conc_array);
 }
 
+void SorptionBase::initialize_substance_ids(const vector< string >& names, Input::Record in_rec)
+{
+  Input::Array substances_array = in_rec.val<Input::Array>("substances");
+  unsigned int k, idx, i_spec = 0;
+  
+  for(Input::Iterator<string> spec_iter = substances_array.begin<string>(); spec_iter != substances_array.end(); ++spec_iter, i_spec++)
+  {
+    //finding name in the global array of names
+    for(k = 0; k < names.size(); k++)
+    {
+      if (*spec_iter == names[k]) 
+      {
+        idx = k;
+        break;
+      }
+    }
+    
+    if ((idx < names.size()) && (idx >= 0)) 
+    {
+      substance_id[i_spec] = idx;       //mapping - if not found, it creates new map
+    }
+      else    xprintf(UsrErr,"Wrong name of %d-th reaction specie - not found in global set of transported substances.\n", i_spec);
+    }
+    n_substances_ = substance_id.size();
+}
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 { 

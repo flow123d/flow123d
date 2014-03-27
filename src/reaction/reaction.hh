@@ -98,8 +98,6 @@ protected:
    * It is intended to use in ascendants.
    */
   virtual void init_from_input(Input::Record in_rec) {};
-  
-  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
 
   /**
    * Pointer to two-dimensional array[species][elements] containing mobile concentrations.
@@ -125,7 +123,6 @@ protected:
    */
   vector<string> names_;
   
-  unsigned int n_substances_;   //< number of substances that take part in the reaction model
   unsigned int n_all_substances_;   //< number of all substances in the transport model
   std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
   

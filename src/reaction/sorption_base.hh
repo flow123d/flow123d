@@ -129,6 +129,8 @@ protected:
    */
   SorptionBase();
   
+  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
+  
   /// Initializes private members of sorption from the input record.
   void init_from_input(Input::Record in_rec) override;
   /** Initializes possible following reactions from input record.
@@ -185,6 +187,8 @@ protected:
    * lenght in cocidered system of coordinates, just function values are stored.
    */
   std::vector<std::vector<Isotherm> > isotherms;
+  
+  unsigned int n_substances_;   //< number of substances that take part in the sorption model
   
   /// Output names of substances and fields respectively.
   std::vector<std::string> output_names_;
