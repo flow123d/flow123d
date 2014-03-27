@@ -30,15 +30,15 @@ public:
    */
   static Input::Type::Record input_type;
 
-	class EqData : public FieldSet // should be written in class Sorption
+  class EqData : public FieldSet // should be written in class Sorption
   {
   public:
 
     /// Collect all fields
     EqData();
 
-    Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
-    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity field.
+    Field<3, FieldValue<3>::Vector > diffusion_rate_immobile;   ///< Mass transfer coefficients between mobile and immobile pores.
+    Field<3, FieldValue<3>::Scalar > porosity_immobile;    ///< Immobile porosity field.
     
     Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
@@ -73,7 +73,7 @@ public:
   void output_vector_gather(void) override;
   
   /**
-   *
+   * Set the porosity field which is passed from transport.
    */
   inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
     { data_.set_field(data_.porosity.name(),por_m); };
@@ -94,7 +94,7 @@ protected:
   /**
    * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
    */
-  double **conc_immob;
+  double **conc_immobile;
 
   /**
    * Equation data - all data field are in this set.
@@ -108,8 +108,8 @@ protected:
    */
   FieldSet input_data_set_;
   
-  Reaction *reaction_mob;       ///< Reaction running in mobile zone
-  Reaction *reaction_immob;     ///< Reaction running in immobile zone
+  Reaction *reaction_mobile;       ///< Reaction running in mobile zone
+  Reaction *reaction_immobile;     ///< Reaction running in immobile zone
   
   /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
    * Else it is replaced with simple forward difference approximation.

@@ -40,7 +40,7 @@
           init_conc = 1.0,
           por_m = 0.25,
           por_imm = 0.25,
-          alpha = [0.01, 0.01],
+          alpha= [0.01, 0.01],
           phi = 0.5
         },
         { r_set = "BOUNDARY",
