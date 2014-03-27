@@ -306,7 +306,6 @@ void TransportOperatorSplitting::output_data(){
     if (time_->is_current(output_mark_type)) {
         
         START_TIMER("TOS-output data");
-        DBGMSG("\nTOS: output time: %f\n", time_->t());
 
         convection->output_data();
         if(reaction) reaction->output_data();
@@ -327,9 +326,7 @@ void TransportOperatorSplitting::update_solution() {
 	}
 
     time_->next_time();
-#ifdef DEBUG_MESSAGES
     time_->view("TOS");    //show time governor
-#endif
     
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
@@ -353,7 +350,7 @@ void TransportOperatorSplitting::update_solution() {
 	}
     END_TIMER("TOS-one step");
     
-    xprintf( Msg, "CONVECTION: steps: %d\n",steps);
+    xprintf( Msg, "    CONVECTION: steps: %d\n",steps);
 }
 
 
