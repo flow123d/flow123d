@@ -172,7 +172,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             }
             reaction->set_time_governor(*(convection->time_));
             reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc, convection->get_row_4_el());
-            reaction->initialize();
+            reaction->initialize(convection->output_stream());
         } else {
             reaction = nullptr;
             Semchem_reactions = nullptr;

@@ -68,7 +68,8 @@
             mult_coefs = [0, 0.6, 0.4, 0.6],
             second_params = [0, 0, 0.6, 0.4]
           }
-        ]
+        ],
+        output_fields = []
       }
           
     } 
