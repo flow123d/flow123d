@@ -38,7 +38,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 1.0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = 0

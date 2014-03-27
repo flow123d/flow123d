@@ -65,12 +65,12 @@
         {
           rid=48,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         },
         {
           rid=184,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         }
       ],
       mass_balance = {

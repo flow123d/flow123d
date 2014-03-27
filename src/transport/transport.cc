@@ -493,7 +493,7 @@ void ConvectionTransport::set_boundary_conditions()
         if (elm->boundary_idx_ != NULL) {
             unsigned int new_i = row_4_el[elm.index()];
             double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
-            double por_m = data_.por_m.value(elm->centre(), elm->element_accessor());
+            double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
@@ -629,8 +629,8 @@ void ConvectionTransport::compute_one_step() {
     // update matrix and sources if neccessary
 
 
-    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed()) {
-        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed());
+    if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed()) {
+        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.porosity.changed());
         create_transport_matrix_mpi();
 
         // need new fixation of the time step
@@ -797,7 +797,7 @@ void ConvectionTransport::preallocate_transport_matrix() {
                         // volume drain - in-flow to higher dimension
                         aij = (-flux) / (el2->measure() *
                                         data_.cross_section->value(el2->centre(), el2->element_accessor()) *
-                                        data_.por_m.value(el2->centre(), el2->element_accessor()));
+                                        data_.porosity.value(el2->centre(), el2->element_accessor()));
                         new_j = row_4_el[el2.index()];
                         MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
 
@@ -872,7 +872,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[elm.index()];
 
         double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
-        double por_m = data_.por_m.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
 
         FOR_ELEMENT_SIDES(elm,si) {
             // same dim
@@ -930,7 +930,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         aii -= (-flux) / (elm->measure() * csection * por_m);                           // diagonal drain
                         aij = (-flux) / (el2->measure() *
                                         data_.cross_section->value(el2->centre(), el2->element_accessor()) *
-                                        data_.por_m.value(el2->centre(), el2->element_accessor()));
+                                        data_.porosity.value(el2->centre(), el2->element_accessor()));
                 } else aij=0;
                 MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
             }
@@ -1061,7 +1061,7 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
     //double ***pconc = transport->pconc;
     double cm, pcm, ci, pci, por_m, por_imm, alpha;
 
-    		por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
+    		por_m = data_.porosity.value(elem->centre(), elem->element_accessor());
     		por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
     		alpha = data_.alpha.value(elem->centre(), elem->element_accessor())(sbi);
     		pcm = conc[MOBILE][sbi][elm_pos];
@@ -1096,7 +1096,7 @@ void ConvectionTransport::transport_sorption( int elm_pos, ElementFullIter elem,
     double n, Nm, Nimm;
     //int id;
     double phi = data_.phi.value(elem->centre(), elem->element_accessor());
-    double por_m = data_.por_m.value(elem->centre(), elem->element_accessor());
+    double por_m = data_.porosity.value(elem->centre(), elem->element_accessor());
     double por_imm = data_.por_imm.value(elem->centre(), elem->element_accessor());
     arma::Col<unsigned int> sorp_type = data_.sorp_type.value(elem->centre(), elem->element_accessor());
     arma::vec sorp_coef0 = data_.sorp_coef0.value(elem->centre(), elem->element_accessor());
@@ -1342,7 +1342,7 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
         if (!el_ds->is_local(index)) continue;
         int loc_index = index-el_ds->begin();
 
-        double por_m = data_.por_m.value(bcd->side()->element()->centre(), bcd->side()->element()->element_accessor() );
+        double por_m = data_.porosity.value(bcd->side()->element()->centre(), bcd->side()->element()->element_accessor() );
         double water_flux = mh_dh->side_flux(*(bcd->side()));
         if (water_flux < 0) {
         	arma::vec bc_conc = data_.bc_conc.value( bcd->element()->centre(), bcd->element_accessor() );
@@ -1380,7 +1380,7 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
         	int index = row_4_el[elem.index()];
         	if (!el_ds->is_local(index)) continue;
         	ElementAccessor<3> ele_acc = elem->element_accessor();
-        	double por_m = data_.por_m.value(elem->centre(), ele_acc);
+        	double por_m = data_.porosity.value(elem->centre(), ele_acc);
         	double csection = data_.cross_section->value(elem->centre(), ele_acc);
         	int loc_index = index - el_ds->begin();
 			double sum_sol_phases = 0;

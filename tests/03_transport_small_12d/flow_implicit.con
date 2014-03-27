@@ -43,11 +43,11 @@
       data = [
         { rid = 17,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         },
         { rid = 18,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         },
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 1

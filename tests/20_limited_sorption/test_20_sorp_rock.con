@@ -42,7 +42,7 @@
       data= [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = {TYPE="FieldFormula", value = "0.25"}
+          porosity= {TYPE="FieldFormula", value = "0.25"}
         },
         { r_set = "BOUNDARY",
           bc_conc = {TYPE="FieldFormula", value = "0.05*t"}

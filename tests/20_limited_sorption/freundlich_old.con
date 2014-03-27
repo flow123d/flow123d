@@ -41,7 +41,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25,
+          porosity= 0.25,
 
           //diffusion_rate_immobile= 0.01,
           phi = 1.0,

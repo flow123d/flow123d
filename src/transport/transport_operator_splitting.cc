@@ -90,7 +90,7 @@ Record TransportOperatorSplitting::input_type
 TransportBase::TransportEqData::TransportEqData()
 {
 
-	ADD_FIELD(por_m, "Mobile porosity", "1");
+	ADD_FIELD(porosity, "Mobile porosity", "1");
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
@@ -153,13 +153,13 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == SorptionBase::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
                 
-                static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->por_m);
+                static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else
             if (reactions_it->type() == DualPorosity::input_type ) {
                 reaction =  new DualPorosity(init_mesh, *reactions_it, subst_names_);
                 
-                static_cast<DualPorosity *> (reaction) -> set_porosity(convection->get_data()->por_m);
+                static_cast<DualPorosity *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else
             if (reactions_it->type() == Semchem_interface::input_type ) {
@@ -229,8 +229,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    convection->get_par_info(el_4_loc, el_distribution);
 	    //sorptions->set_dual_porosity(convection->get_dual_porosity());
 	    //xprintf(Msg,"sorption->set_dual_porosity() finished successfuly.\n");
-	    sorptions->set_porosity(&(convection->get_data()->por_m));
-            //sorptions->set_porosity(&(convection->get_data()->por_m), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
+	    sorptions->set_porosity(&(convection->get_data()->porosity));
+            //sorptions->set_porosity(&(convection->get_data()->porosity), &(convection->get_data()->por_imm)); //, &(convection->get_data()->por_imm));
 	    sorptions->set_phi(&(convection->get_data()->phi));
 	    //xprintf(Msg,"sorption->set_phi() finished successfuly.\n");
 	    sorptions->init_from_input(*sorptions_it);
@@ -246,7 +246,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	    	sorptions_immob->set_time(*time_);
 	    	//dual_por_exchange = new Dual_por_exchange(init_mesh, *sorptions_it, subst_names_);
 		    sorptions_immob->set_dual_porosity(convection->get_dual_porosity());
-	    	sorptions_immob->set_porosity(&(convection->get_data()->por_m));
+	    	sorptions_immob->set_porosity(&(convection->get_data()->porosity));
 		    sorptions->set_porosity_immobile(&(convection->get_data()->por_imm));
 	    	sorptions_immob->set_phi(&(convection->get_data()->phi));
 		    sorptions_immob->init_from_input(*sorptions_it);
@@ -259,7 +259,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		    sorptions = &sm;
 	        convection->get_par_info(el_4_loc, el_distribution);
 		    sorptions->set_dual_porosity(convection->get_dual_porosity());
-		    sorptions->set_porosity(&(convection->get_data()->por_m));
+		    sorptions->set_porosity(&(convection->get_data()->porosity));
 		    sorptions->set_porosity_immobile(&(convection->get_data()->por_imm));
 		    (*sorptions).set_phi(&(convection->get_data()->phi));
 		    sorptions->init_from_input(*sorptions_it);
@@ -272,7 +272,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		    sorptions = &s;
 	        convection->get_par_info(el_4_loc, el_distribution);
 		    sorptions->set_dual_porosity(convection->get_dual_porosity());
-		    sorptions->set_porosity(&(convection->get_data()->por_m));
+		    sorptions->set_porosity(&(convection->get_data()->porosity));
 		    sorptions->init_from_input(*sorptions_it);
 		    sorptions->set_concentration_matrix(conc_matrix[MOBILE], el_distribution, el_4_loc);
 		    sorptions->set_sorb_conc_array(el_distribution->lsize());
@@ -386,11 +386,11 @@ void TransportOperatorSplitting::set_cross_section_field(Field< 3, FieldValue<3>
 
     /*if (Semchem_reactions != NULL) {
         Semchem_reactions->set_cross_section(cross_section);
-        Semchem_reactions->set_sorption_fields(&convection->get_data()->por_m, &convection->get_data()->por_imm, &convection->get_data()->phi);
+        Semchem_reactions->set_sorption_fields(&convection->get_data()->porosity, &convection->get_data()->por_imm, &convection->get_data()->phi);
     }
   if (sorptions != NULL)
   {
-	  sorptions->set_porosity(&(convection->get_data()->por_m),&(convection->get_data()->por_imm));
+	  sorptions->set_porosity(&(convection->get_data()->porosity),&(convection->get_data()->por_imm));
   }*/
 }
 

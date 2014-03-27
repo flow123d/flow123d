@@ -89,7 +89,7 @@ public:
 		}
 */
 		/// Mobile porosity
-		Field<3, FieldValue<3>::Scalar> por_m;
+		Field<3, FieldValue<3>::Scalar> porosity;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;

@@ -41,7 +41,8 @@ function convert_file {
   #perl -i.orig -0pe  's/second_params[ \n]*=/isotherm_other=/g' $TMP
   #perl -i.orig -0pe  's/sorption_types[ \n]*=/adsorption_type=/g' $TMP
   
-  perl -i.orig -0pe  's/reaction[ \n]*=/reaction_term=/g' $TMP
+  #porosity
+  #perl -i.orig -0pe  's/por_m[ \n]*=/porosity=/g' $TMP
   
   mv tmp $FILE
 }  

@@ -48,7 +48,7 @@
         },
         { rid = 7,
           init_conc = 0,
-          por_m = 1,
+          porosity= 1,
           sources_density = {
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",

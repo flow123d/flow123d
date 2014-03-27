@@ -45,7 +45,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25,
+          porosity= 0.25,
           por_imm = 0.25,
           alpha = [0.01, 0.01],
           phi = 0.5,
