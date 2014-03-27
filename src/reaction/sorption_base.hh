@@ -39,7 +39,7 @@ class Isotherm;
 class Mesh;
 class Distribution;
 
-class SorptionBase:  public Reaction
+class SorptionBase:  public ReactionTerm
 {
 public:
   /**
@@ -208,7 +208,7 @@ protected:
 
   /** Reaction model that follows the sorption.
    */
-  Reaction* reaction;
+  ReactionTerm* reaction;
                   
   ///@name members used in output routines
   //@{

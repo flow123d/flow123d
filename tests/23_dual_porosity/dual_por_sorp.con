@@ -57,7 +57,7 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
         
         substances = {
@@ -73,8 +73,8 @@
           }
         ],
         
-        reactions_mob = {
-          TYPE = "Sorption",
+        reaction_mobile = {
+          TYPE = "Adsorption",
           solvent_density= 1.0,
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
@@ -89,7 +89,7 @@
             }
           ]
         },
-        reactions_immob = {
+        reaction_immobile = {
           REF = "/problem/secondary_equation/reactions/reactions_mob"
         }
       }

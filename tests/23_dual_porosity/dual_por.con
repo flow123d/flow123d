@@ -57,7 +57,7 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
         
         substances = {

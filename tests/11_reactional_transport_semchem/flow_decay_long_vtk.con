@@ -64,7 +64,7 @@
         end_time = 10.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE="LinearReactions",
         substances = [
 	  "A", 

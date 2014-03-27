@@ -19,7 +19,6 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
 class Linear_reaction;
 
 class Pade_approximant: public Linear_reaction

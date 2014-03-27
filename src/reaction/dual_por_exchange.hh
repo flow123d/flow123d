@@ -16,13 +16,11 @@
 #include "fields/field_set.hh"
 #include "./reaction/reaction.hh"
 
-/// TODO: incorporate index mapping for substances indices
-
 class Mesh;
 class Distribution;
 class SorptionBase;
 
-class DualPorosity:  public Reaction
+class DualPorosity:  public ReactionTerm
 {
 public:
   /**
@@ -108,8 +106,8 @@ protected:
    */
   FieldSet input_data_set_;
   
-  Reaction *reaction_mobile;       ///< Reaction running in mobile zone
-  Reaction *reaction_immobile;     ///< Reaction running in immobile zone
+  ReactionTerm *reaction_mobile;       ///< Reaction running in mobile zone
+  ReactionTerm *reaction_immobile;     ///< Reaction running in immobile zone
   
   /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
    * Else it is replaced with simple forward difference approximation.

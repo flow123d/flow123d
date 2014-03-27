@@ -32,7 +32,7 @@ Record Pade_approximant::input_type_one_decay_substep
 
 Record Pade_approximant::input_type
 	= Record("PadeApproximant", "Abstract record with an information about pade approximant parameters.")
-	.derive_from( Reaction::input_type )
+	.derive_from( ReactionTerm::input_type )
     .declare_key("decays", Array( Pade_approximant::input_type_one_decay_substep ), Default::obligatory(),
                 "Description of particular decay chain substeps.")
 	.declare_key("nom_pol_deg", Integer(), Default("2"),

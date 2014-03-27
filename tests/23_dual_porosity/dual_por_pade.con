@@ -57,7 +57,7 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
         
         substances = {
@@ -73,7 +73,7 @@
           }
         ],
         
-        reactions_mob = {
+        reaction_mobile = {
           TYPE="PadeApproximant",
           matrix_exp_on = true,
           nom_pol_deg = 3,
@@ -92,7 +92,7 @@
           ]
         },
         
-        reactions_immob = {
+        reaction_immobile = {
           REF = "/problem/secondary_equation/reactions/reactions_mob"
         }
       }

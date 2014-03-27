@@ -18,7 +18,7 @@ class Distribution;
 class OutputTime;
 
 
-class Reaction: public EquationBase
+class ReactionTerm: public EquationBase
 {
 public:
   
@@ -37,11 +37,11 @@ public:
    *  Constructor with parameter for initialization of a new declared class member
    *  TODO: parameter description
    */
-  Reaction(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
+  ReactionTerm(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
   /**
    * Destructor.
    */
-  ~Reaction(void);
+  ~ReactionTerm(void);
   
   /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
    * This method can be overriden just for that purpose.

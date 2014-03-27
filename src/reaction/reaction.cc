@@ -13,27 +13,27 @@ using namespace Input::Type;
 using namespace std;
 
         
-AbstractRecord Reaction::input_type
-    = AbstractRecord("Reactions", "Equation for reading information about simple chemical reactions.");
+AbstractRecord ReactionTerm::input_type
+    = AbstractRecord("ReactionTerm", "Equation for reading information about simple chemical reactions.");
 
-Record Reaction::input_type_output_record
-    = Record("ReactionOutput", "Output setting for transport equations.")
+Record ReactionTerm::input_type_output_record
+    = Record("ReactionTermOutput", "Output setting for transport equations.")
         .declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
                         "Parameters of output stream.");
 
-Reaction::Reaction(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names)
+ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec, const  vector<string> &names)
     : EquationBase(init_mesh, in_rec),
       names_(names),
       n_all_substances_ (names.size())
 {
-  DBGMSG("Reaction constructor.\n");
+  DBGMSG("ReactionTerm constructor.\n");
 }
 
-Reaction::~Reaction()
+ReactionTerm::~ReactionTerm()
 {
 }
 
-void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc, int *row_4_el)
+void ReactionTerm::set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc, int *row_4_el)
 {
   concentration_matrix = ConcentrationMatrix;
   distribution = conc_distr;
@@ -43,26 +43,26 @@ void Reaction::set_concentration_matrix(double **ConcentrationMatrix, Distributi
 }
 
 
-double **Reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+double **ReactionTerm::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
-    cout << "double **Reaction::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;
+    cout << "double **ReactionTerm::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;
         return concentrations;
 }
 
-void Reaction::get_parallel_solution_vector(Vec &vec){
-	cout << "Reaction.get_parallel_solution_vector(Vec &vec) is not implemented." << endl; //convection->compute_one_step();
+void ReactionTerm::get_parallel_solution_vector(Vec &vec){
+	cout << "ReactionTerm.get_parallel_solution_vector(Vec &vec) is not implemented." << endl; //convection->compute_one_step();
 }
 
-void Reaction::get_solution_vector(double * &x, unsigned int &a){
-	cout << "Reaction.get_solution_vector(double * &x, unsigned int &a) is not implemented." << endl; //convection->compute_one_step();
+void ReactionTerm::get_solution_vector(double * &x, unsigned int &a){
+	cout << "ReactionTerm.get_solution_vector(double * &x, unsigned int &a) is not implemented." << endl; //convection->compute_one_step();
 }
 
-void Reaction::update_solution(void)
+void ReactionTerm::update_solution(void)
 {
-	cout << "Reaction::update_solution() is not implemented." << endl;
+	cout << "ReactionTerm::update_solution() is not implemented." << endl;
 }
 
-void Reaction::choose_next_time(void)
+void ReactionTerm::choose_next_time(void)
 {
-	cout << "Reaction::choose_next_time() is not implemented." << endl;
+	cout << "ReactionTerm::choose_next_time() is not implemented." << endl;
 }

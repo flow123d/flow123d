@@ -40,12 +40,12 @@ Record DualPorosity::input_type
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
-    .derive_from(Reaction::input_type)
+    .derive_from(ReactionTerm::input_type)
     .declare_key("data", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
     
-    .declare_key("reactions_mob", Reaction::input_type, Default::optional(), "Reaction model in mobile zone.")
-    .declare_key("reactions_immob", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.")
+    .declare_key("reactions_mob", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
+    .declare_key("reactions_immob", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
     
     .declare_key("output_fields", Array(EqData::output_selection),
                 Default("immobile"), "List of fields to write to output stream.");
@@ -67,7 +67,7 @@ DualPorosity::EqData::EqData()
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
-	: Reaction(init_mesh, in_rec, names)
+	: ReactionTerm(init_mesh, in_rec, names)
 {
     //DBGMSG("DualPorosity - constructor\n");
     

@@ -20,7 +20,7 @@ class Mesh;
 //class Distribution;
 //class SparseGraph;
 
-class Reaction;
+class ReactionTerm;
 class ConvectionTransport;
 
 class SorptionBase;
@@ -269,9 +269,9 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     ConvectionTransport *convection;
-    Reaction *reaction;
+    ReactionTerm *reaction;
     
-    Reaction *decayRad;
+    ReactionTerm *decayRad;
     SorptionBase *sorptions;
 
     Semchem_interface *Semchem_reactions;

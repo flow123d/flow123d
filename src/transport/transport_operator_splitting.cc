@@ -74,7 +74,7 @@ Record TransportOperatorSplitting::input_type
     		"Model of sorption.")
     .declare_key("dual_porosity", Bool(), Default("false"),
     		"Dual porosity model.")
-    .declare_key("reactions", Reaction::input_type, Default::optional(),
+    .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
                 "Reaction model involved in transport.")
     .declare_key("adsorptions", SorptionBase::input_type, Default::optional(),
     			"Initialization of per element sorptions.")
@@ -140,7 +140,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 
     convection->get_par_info(el_4_loc, el_distribution);
-    Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
+    Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
         if ( reactions_it ) {
             if (reactions_it->type() == Linear_reaction::input_type ) {
                 reaction =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);

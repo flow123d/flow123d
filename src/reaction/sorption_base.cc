@@ -41,7 +41,7 @@ Selection SorptionBase::EqData::output_selection
 
 Record SorptionBase::input_type
 	= Record("Adsorption", "Information about all the limited solubility affected adsorptions.")
-	.derive_from( Reaction::input_type )
+	.derive_from( ReactionTerm::input_type )
         .declare_key("substances", Array(String()), Default::obligatory(),
                      "Names of the substances that take part in the sorption model.")
 	.declare_key("solvent_density", Double(), Default("1.0"),
@@ -57,7 +57,7 @@ Record SorptionBase::input_type
     .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
         
-    .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
+    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.")
     
 	.declare_key("output_fields", Array(EqData::output_selection),
             Default("solid"), "List of fields to write to output stream.");
@@ -84,7 +84,7 @@ SorptionBase::EqData::EqData()
 
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: Reaction(init_mesh, in_rec, names)
+	: ReactionTerm(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionBase constructor.\n");
   initialize_substance_ids(names, in_rec);
@@ -304,7 +304,7 @@ void SorptionBase::initialize(OutputTime *stream)
 void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 {
   //DBGMSG("SorptionBase init_from_input\n");
-  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
+  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction");
   if ( reactions_it ) 
   {
     if (reactions_it->type() == Linear_reaction::input_type ) {

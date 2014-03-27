@@ -54,7 +54,7 @@
         end_time = 15.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "Adsorption",
         solvent_density= 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
