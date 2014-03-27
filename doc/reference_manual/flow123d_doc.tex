@@ -211,7 +211,8 @@ with sources on the GitHub:
 \section{Basic usage}
 
 \subsection{How to run the simulation.}
-On the Linux system the program can be started either directly or through a script \verb'flow123d.sh'. When started directly, e.g. by the command
+On the Linux system the program can be started either directly or through a script \verb'flow123d.sh', both placed in the \verb'bin' directory of the installation 
+package or of the source tree. When started directly, e.g. by the command
 \begin{verbatim}
   > flow123d -s example.con
 \end{verbatim}
@@ -261,29 +262,42 @@ use parameter \verb'-help' together with some valid input. Options for various P
 
 
 Alternatively, you can use script \verb'flow123d.sh' to start parallel jobs or limit resources used by the program. 
-This script accepts the same parameters as the program itself
-and further following additional parameters:
+The syntax is as follows:
+
+\begin{verbatim}
+  flow123d.sh [OPTIONS] -- [FLOW_PARAMS]
+\end{verbatim}
+where everything after double dash is passed as parameters to the flow123d binary. The script accepts following options:
 
 \begin{description}
-  \item[-h] \hfill\\
+  \item[{\tt -h, --help}] \hfill\\
   	Usage overview.
-  \item[-t {\bf\it timeout}] \hfill\\
+  \item[{\tt --host}] \verb'<hostname>' \hfill\\
+        Default value is the host name obtained by system \verb'hostname' command, this argument can be used to override it. 
+        Resulting value is used to select a backend script \verb'config/<hostname>.sh', which describes particular method how to start 
+        parallel jobs, usually through some sort of PBS job queue system. If the script is not found, we try to start parallel processes 
+        directly on the actual host."
+  \item[{\tt -t, --walltime}] \verb'<timeout>' \hfill\\
   	Upper estimate for real running time of the calculation. Kill calculation after {\it timeout} seconds. 
   	Can also be used by PBS to choose appropriate job queue. 
-  \item[-np {\bf\it number of processes}] \hfill\\
-  	Specify number of parallel processes for calculation.
-  \item[-m {\bf\it memory limit}] \hfill\\
-  	Limits total available memory to {\it memory limit} bytes.
-  \item[-n {\bf\it priority}] \hfill\\
-  	Change (lower) priority for the calculation. See {\tt nice} command.
-  \item[-r {\bf\it out file}] \hfill\\
-  	Stdout and stderr will be redirected to {\it out file}.
+  \item[{\tt -np}] \verb'<number of processes>' \hfill\\
+  	Specify number of MPI parallel processes for calculation.
+  \item[{\tt -m, --mem}] \verb'<memory limit>' \hfill\\
+  	Limits total available memory to \verb'<memory limit>' bytes per process.
+  \item[{\tt -n, --nice}] \verb'<niceness>' \hfill\\
+  	Change priority of the calculation, higher values means lower priority. See the {\tt nice} command.
+  \item[{\tt -ppn}] \verb'<processes per node>' \hfill\\
+       Set number of processes started on one node for multicore systems. 
+       Number of processes set by \verb'-np' parameter should be divisible by \verb'<processes per node>'.
+  \item[{\tt -q, --queue}] \verb'<queue>' \hfill\\
+       Select particular job queue on PBS systems. If running without PBS, 
+       it redirects stdout and stderr to the file \verb'<queue>.<date>', which appended date and time of the start of the job.
 \end{description}
 
-On the Windows system we use Cygwin libraries in order to emulate Linux API.
-Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
+On the windows operating systems, we use Cygwin libraries in order to emulate Linux API.
+Therefore you have to keep the Cygwin libraries within the same directory as the program executable.
 The Windows package that can be downloaded from project web page contains both the Cygwin libraries
-and the mpiexec command for starting parallel jobs on the Windows workstations.
+and the mpiexec command for starting parallel jobs on the windows based workstations.
 
 Then you can start the sequential run by the command:
 \begin{verbatim}
@@ -293,7 +307,7 @@ or the parallel run by the command:
 \begin{verbatim}
   > mpiexec.exe -np 2 flow123d.exe -s example.con
 \end{verbatim}
-The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the Windows system.
+The program accepts the same parameters as the Linux version, but there is no script similar to \verb'flow123d.sh' for the windows operating systems.
 
 
 \subsection{Tutorial problem}
