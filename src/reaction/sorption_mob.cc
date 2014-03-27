@@ -25,7 +25,7 @@ void SorptionMob::set_output_names(void )
 {
   for(unsigned int i=0; i < n_all_substances_; i++)
   {
-    output_names_[i] = names_[i] + "_mobile";
+    output_names_[i] = names_[i] + "_sorbed_mobile";
   }
 }
 

@@ -48,6 +48,8 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
+
+    static Input::Type::Selection output_selection;
   };
 
   DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
@@ -65,7 +67,7 @@ public:
    * Initialization routines after all necessary members have been set.
    * It also sets and initializes possible following reaction models.
    */
-  void initialize(void) override;
+  void initialize(OutputTime *stream) override;
   
   void output_data(void) override;
   void output_vector_gather(void) override;
@@ -98,6 +100,9 @@ protected:
    * Equation data - all data field are in this set.
    */
   EqData data_;
+
+  Input::Array output_array;
+
   /**
    * Input data set - fields in this set are read from the input file.
    */

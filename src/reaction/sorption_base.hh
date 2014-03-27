@@ -55,6 +55,8 @@ public:
      */
     static Input::Type::Selection sorption_type_selection;
 
+    static Input::Type::Selection output_selection;
+
     /// Collect all fields
     EqData();
 
@@ -70,6 +72,7 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
+
   };
 
   /**
@@ -111,7 +114,7 @@ public:
    */
   void make_tables(void);
   
-  void initialize(void) override;
+  void initialize(OutputTime *stream) override;
   void output_data(void) override;
   void output_vector_gather(void) override;
   
@@ -197,6 +200,8 @@ protected:
   /// Equation field data;
   EqData data_;
   
+  Input::Array output_array;
+
   /** Reaction model that follows the sorption.
    */
   Reaction* reaction;

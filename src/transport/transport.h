@@ -178,6 +178,8 @@ public:
 	 */
 	inline EqData *get_data() { return &data_; }
 
+	inline OutputTime *output_stream() { return output_stream_; }
+
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	bool get_dual_porosity();
@@ -295,7 +297,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream;
+	OutputTime *output_stream_;
 
 
             int *row_4_el;

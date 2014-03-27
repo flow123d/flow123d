@@ -46,7 +46,7 @@ public:
   /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
    * This method can be overriden just for that purpose.
    */
-  virtual void initialize(void) {};
+  virtual void initialize(OutputTime *stream) {};
   
   /**
    * For simulation of chemical reaction in one element only. 
@@ -130,7 +130,7 @@ protected:
   std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
   
   /// Record with output specification.
-  Input::Record output_rec;
+//  Input::Record output_rec;
 
   OutputTime *output_stream;
 

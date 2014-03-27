@@ -30,6 +30,11 @@ using namespace std;
 //it is currently switched of (by "0") until the reference tests are created
 const double DualPorosity::min_dt = 0;
 
+Selection DualPorosity::EqData::output_selection
+		= Selection("DualPorosity_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
 Record DualPorosity::input_type
         = Record("DualPorosity",
             "Dual porosity model in transport problems.\n"
@@ -42,9 +47,8 @@ Record DualPorosity::input_type
     .declare_key("reactions_mob", Reaction::input_type, Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reactions_immob", Reaction::input_type, Default::optional(), "Reaction model in immobile zone.")
     
-    .declare_key("output", Reaction::input_type_output_record.copy_keys(DualPorosity::EqData().output_fields.make_output_field_keys()),
-                Default::optional(),
-                "Parameters of output stream.");
+    .declare_key("output_fields", Array(EqData::output_selection),
+                Default("immobile"), "List of fields to write to output stream.");
     
 DualPorosity::EqData::EqData()
 {
@@ -84,9 +88,10 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     
     data_.set_limit_side(LimitSide::right);
     
-  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
+//  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
   //output_rec = in_rec.find<Input::Record>("output");
-  if(out_rec) output_rec = *out_rec;
+//  if(out_rec) output_rec = *out_rec;
+    output_array = in_rec.val<Input::Array>("output_fields");
 }
 
 DualPorosity::~DualPorosity(void)
@@ -94,7 +99,7 @@ DualPorosity::~DualPorosity(void)
   if(reaction_mob != nullptr) delete reaction_mob;
   if(reaction_immob != nullptr) delete reaction_immob;
   
-  if(!output_rec.is_empty())
+//  if(!output_rec.is_empty())
   {
     VecDestroy(vconc_immobile);
     VecDestroy(vconc_immobile_out);
@@ -182,7 +187,7 @@ void DualPorosity::init_from_input(Input::Record in_rec)
 }
 
 
-void DualPorosity::initialize(void )
+void DualPorosity::initialize(OutputTime *stream)
 { 
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
@@ -215,14 +220,17 @@ void DualPorosity::initialize(void )
     }
   }
   
-  if (!output_rec.is_empty())
-  {
     //initialization of output
+    output_stream = stream;
     int rank;
     MPI_Comm_rank(PETSC_COMM_SELF, &rank);
     if (rank == 0)
     {
-        data_.conc_immobile.init(names_);
+    	vector<string> output_names_;
+    	for(unsigned int i=0; i < n_all_substances_; i++)
+    	    output_names_.push_back(names_[i] + "_immobile");
+
+        data_.conc_immobile.init(output_names_);
         data_.conc_immobile.set_mesh(*mesh_);
         data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
@@ -234,7 +242,7 @@ void DualPorosity::initialize(void )
                 data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
         data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+        output_stream->add_admissible_field_names(output_array, EqData::output_selection);
     }
     
     allocate_output_mpi();
@@ -243,7 +251,6 @@ void DualPorosity::initialize(void )
     output_vector_gather();
     data_.output_fields.set_time(*time_);
     data_.output_fields.output(output_stream);
-  }
   
   // creating reactions from input and setting their parameters
   init_from_input(input_record_);
@@ -252,14 +259,14 @@ void DualPorosity::initialize(void )
   { 
     reaction_mob->set_time_governor(*time_);
     reaction_mob->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
-    reaction_mob->initialize();
+    reaction_mob->initialize(output_stream);
   }
     
   if(reaction_immob != nullptr) 
   {
     reaction_immob->set_time_governor(*time_);
     reaction_immob->set_concentration_matrix(conc_immob, distribution, el_4_loc, row_4_el);
-    reaction_immob->initialize();
+    reaction_immob->initialize(output_stream);
   }
 }
 
@@ -401,8 +408,6 @@ void DualPorosity::output_vector_gather()
 
 void DualPorosity::output_data(void )
 {
-  if (!output_rec.is_empty())
-  {
     DBGMSG("DualPorosity output\n");
     output_vector_gather();
 
@@ -411,7 +416,6 @@ void DualPorosity::output_data(void )
     data_.output_fields.output(output_stream);
     //for synchronization when measuring time by Profiler
     MPI_Barrier(MPI_COMM_WORLD);
-  }
   
   if(reaction_mob != nullptr) reaction_mob->output_data();
   if(reaction_immob != nullptr) reaction_immob->output_data();

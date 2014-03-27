@@ -55,13 +55,18 @@
 
 namespace it = Input::Type;
 
+it::Selection DarcyFlowMHOutput::OutputFields::output_selection
+	= it::Selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
+	.copy_values(OutputFields().make_output_field_selection())
+	.close();
+
 it::Record DarcyFlowMHOutput::input_type
 	= it::Record("DarcyMHOutput", "Parameters of MH output.")
 //	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
 //                    "Regular step between MH outputs.")
     .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
                     "Parameters of output stream.")
-    .declare_key("output_fields", it::Array(OutputFields().make_output_field_selection()),
+    .declare_key("output_fields", it::Array(OutputFields::output_selection),
     		it::Default::obligatory(), "List of fields to write to output file.")
 //    .declare_key("velocity_p0", it::String(), it::Default::optional(),
 //                    "Output stream for P0 approximation of the velocity field.")

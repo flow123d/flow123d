@@ -69,7 +69,8 @@
             mult_coefs = { TYPE="FieldFormula", value="0.6"},
             second_params = 0.4
           }
-        ]
+        ],
+        output_fields = []
       }
           
     } 

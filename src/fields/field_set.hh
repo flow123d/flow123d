@@ -121,7 +121,7 @@ public:
     	int i=0;
     	for( auto field : field_list)
     	{
-    		sel.add_value(i, field->name(), "Name of the output stream for the field "+field->name()+" [" + field->units() + "]." );
+    		sel.add_value(i, field->name(), "Output key for the field "+field->name()+" [" + field->units() + "]." );
     		i++;
     	}
     	sel.close();
