@@ -43,7 +43,7 @@
           init_conc = 0,
           por_m = 0.25,
 
-          //alpha = 0.01,
+          //diffusion_rate_immobile= 0.01,
           phi = 1.0,
           sorp_type = "linear",
           sorp_coef0 = 0.6,
@@ -62,18 +62,18 @@
         end_time = 15.0
       }//,
       /*
-      adsorptions = {
-        solvent_dens = 1.0,
+      sorptions = {
+        solvent_density= 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
-        molar_masses = [1.0, 1.0, 1.0, 1.0],
+        molar_mass= [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
         data = [
           {
             r_set="ALL",
             rock_density = 1.0,
-            sorption_types = [ "none", "linear", "langmuir", "freundlich"],
-            mult_coefs = [0, 0.6, 0.4, 0.6],
-	    second_params = [0, 0, 0.6, 0.4]
+            adsorption_type= [ "none", "linear", "langmuir", "freundlich"],
+            isotherm_mult= [0, 0.6, 0.4, 0.6],
+	    isotherm_other= [0, 0, 0.6, 0.4]
           }
         ]
       }*/

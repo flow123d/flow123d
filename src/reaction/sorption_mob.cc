@@ -48,9 +48,9 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         double phi = por_m/(por_m + por_imm);
 
         // List of types of isotherms in particular regions
-        arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
-        arma::Col<double> mult_coef_vec = data_.mult_coefs.value(elem.centre(),elem);
-        arma::Col<double> second_coef_vec = data_.second_params.value(elem.centre(),elem);
+        arma::uvec adsorption_type = data_.adsorption_type.value(elem.centre(),elem);
+        arma::Col<double> mult_coef_vec = data_.isotherm_mult.value(elem.centre(),elem);
+        arma::Col<double> second_coef_vec = data_.isotherm_other.value(elem.centre(),elem);
 
         for(int i_subst = 0; i_subst < n_substances_; i_subst++)
         {
@@ -75,7 +75,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
                         table_limit=solubility_vec_[i_subst];
                 }
                 isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
-                                        solvent_dens, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
+                                        solvent_density, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
         }
 

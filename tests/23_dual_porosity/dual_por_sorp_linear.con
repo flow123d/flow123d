@@ -75,17 +75,17 @@
         
         reactions_mob = {
           TYPE = "Sorption",
-          solvent_dens = 1.0,
+          solvent_density= 1.0,
           substances = ["A", "B"],
-          molar_masses = [1.0, 1.0],
+          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           data = [
             {
               r_set="ALL",
               rock_density = 1.0,
-              sorption_types =  "linear",
-              mult_coefs = 0.6, 
-              second_params = 0.4
+              adsorption_type=  "linear",
+              isotherm_mult= 0.6, 
+              isotherm_other= 0.4
             }
           ],
           

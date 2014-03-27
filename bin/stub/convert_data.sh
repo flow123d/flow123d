@@ -30,8 +30,16 @@ function convert_file {
   #perl -i.orig -0pe  's/bc_data[ \n]*=/data=/g' $TMP
   #perl -i.orig -0pe  's/bulk_data[ \n]*=/data=/g' $TMP
 
+  # dual porosity
   #perl -i.orig -0pe  's/alpha[ \n]*=/diffusion_rate_immobile=/g' $TMP
-  perl -i.orig -0pe  's/immob_porosity[ \n]*=/porosity_immobile=/g' $TMP
+  #perl -i.orig -0pe  's/immob_porosity[ \n]*=/porosity_immobile=/g' $TMP
+  
+  #sorption
+  perl -i.orig -0pe  's/solvent_dens[ \n]*=/solvent_density=/g' $TMP
+  perl -i.orig -0pe  's/molar_masses[ \n]*=/molar_mass=/g' $TMP
+  perl -i.orig -0pe  's/mult_coefs[ \n]*=/isotherm_mult=/g' $TMP
+  perl -i.orig -0pe  's/second_params[ \n]*=/isotherm_other=/g' $TMP
+  perl -i.orig -0pe  's/sorption_types[ \n]*=/adsorption_type=/g' $TMP
   
   mv tmp $FILE
 }  
