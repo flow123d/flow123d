@@ -197,8 +197,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     	}
         data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream = OutputTime::output_stream(output_rec);
-        output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+        output_stream_ = OutputTime::output_stream(output_rec);
+        output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
     }
 
     // write initial condition
@@ -206,7 +206,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     if (rank == 0)
     {
     	data_.output_fields.set_time(*time_);
-    	data_.output_fields.output(output_stream);
+    	data_.output_fields.output(output_stream_);
     }
 }
 
@@ -1412,7 +1412,7 @@ void ConvectionTransport::output_data() {
 			//Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
 			//OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
 			data_.output_fields.set_time(*time_);
-			data_.output_fields.output(output_stream);
+			data_.output_fields.output(output_stream_);
         }
 
         if (mass_balance_)

@@ -33,6 +33,12 @@ Selection SorptionBase::EqData::sorption_type_selection = Selection("SorptionTyp
 			"Freundlich isotherm described adsorption considered");
 
 
+Selection SorptionBase::EqData::output_selection
+		= Selection("Sorption_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
+
 Record SorptionBase::input_type
 	= Record("Sorption", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( Reaction::input_type )
@@ -51,8 +57,8 @@ Record SorptionBase::input_type
         
     .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
     
-    .declare_key("output", Reaction::input_type_output_record.copy_keys(SorptionBase::EqData().output_fields.make_output_field_keys()),
-                     Default::optional(), "Parameters of output stream.");
+	.declare_key("output_fields", Array(EqData::output_selection),
+            Default("sorbed"), "List of fields to write to output stream.");
 
 SorptionBase::EqData::EqData()
 {
@@ -101,9 +107,10 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   data_.set_mesh(init_mesh);
   data_.set_limit_side(LimitSide::right);
   
-  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
+//  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
   //output_rec = in_rec.find<Input::Record>("output");
-  if(out_rec) output_rec = *out_rec;
+//  if(out_rec) output_rec = *out_rec;
+  output_array = in_rec.val<Input::Array>("output_fields");
   
   output_names_.resize(names_.size());
   
@@ -127,7 +134,7 @@ SorptionBase::~SorptionBase(void)
 {
   if(reaction != nullptr) delete reaction;
   
-  if(!output_rec.is_empty())
+//  if(!output_rec.is_empty())
   {
     VecDestroy(vconc_sorbed);
     VecDestroy(vconc_sorbed_out);
@@ -179,7 +186,7 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 	}
 }
 
-void SorptionBase::initialize(void )
+void SorptionBase::initialize(OutputTime *stream)
 {
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
@@ -219,9 +226,8 @@ void SorptionBase::initialize(void )
     }
   }
   
-  //initialization of output
-  if (!output_rec.is_empty())
-  {
+    //initialization of output
+    output_stream = stream;
     int rank;
     MPI_Comm_rank(PETSC_COMM_SELF, &rank);
     if (rank == 0)
@@ -239,8 +245,8 @@ void SorptionBase::initialize(void )
                 data_.conc_sorbed[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
         data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
-      }
+        output_stream->add_admissible_field_names(output_array, EqData::output_selection);
+    }
     allocate_output_mpi();
   
   
@@ -249,7 +255,6 @@ void SorptionBase::initialize(void )
     output_vector_gather();
     data_.output_fields.set_time(*time_);
     data_.output_fields.output(output_stream);
-  }
   
   // creating reaction from input and setting their parameters
   init_from_input_reaction(input_record_);
@@ -258,7 +263,7 @@ void SorptionBase::initialize(void )
   { 
     reaction->set_time_governor(*time_);
     reaction->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
-    reaction->initialize();
+    reaction->initialize(output_stream);
   }
 }
 
@@ -389,7 +394,7 @@ void SorptionBase::set_output_names(void )
   //output_names_ = names_;
   for(unsigned int i=0; i < n_all_substances_; i++)
   {
-    output_names_[i] = names_[i] + "_mobile";
+    output_names_[i] = names_[i] + "_sorbed_mobile";
   }
 }
 
@@ -463,8 +468,6 @@ void SorptionBase::output_vector_gather()
 
 void SorptionBase::output_data(void )
 {
-  if (!output_rec.is_empty())
-  {
     //DBGMSG("Sorption output\n");
     output_vector_gather();
 
@@ -477,5 +480,4 @@ void SorptionBase::output_data(void )
     
     //for synchronization when measuring time by Profiler
     MPI_Barrier(MPI_COMM_WORLD);
-  }
 }

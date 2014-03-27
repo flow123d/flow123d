@@ -39,7 +39,7 @@ class Linear_reaction: public Reaction
 		*/
 		~Linear_reaction(void);
                 
-                void initialize(void) override;
+        void initialize(OutputTime *stream) override;
                 
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.

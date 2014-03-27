@@ -70,13 +70,7 @@
             second_params = 0.4
           }
         ],
-        
-        output = {
-          output_stream = {
-            REF = "/output_streams/1"
-          }//,
-          //sorbed = "transport_output_stream"
-        }
+        output_fields = []
       }
           
     } 

@@ -71,8 +71,8 @@
             immob_porosity = 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
-        ]
-        
+        ],
+        output_fields = []
       }
     } 
   }, 
