@@ -241,7 +241,8 @@ void OutputTime::add_admissible_field_names(const Input::Array &in_array, const 
 
 	// first copy all possible field names from selection
 	for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
-		output_names.emplace(it->key_, false);
+		//output_names.emplace(it->key_, false);        //introduced in gcc4.8 (C++11) - does not work with gcc4.7
+                output_names.insert(std::pair<std::string, bool>(it->key_,false));
 
 	// then mark those fields that will be saved
 	for (auto it: field_ids)

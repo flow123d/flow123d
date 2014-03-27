@@ -112,7 +112,7 @@ DualPorosity::~DualPorosity(void)
 
 void DualPorosity::init_from_input(Input::Record in_rec)
 { 
-  DBGMSG("dual_por init_from_input\n");
+  //DBGMSG("dual_por init_from_input\n");
   
   Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions_mob");
   if ( reactions_it ) 
