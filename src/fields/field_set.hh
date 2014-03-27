@@ -178,6 +178,12 @@ public:
     	for(auto field : field_list) field->set_limit_side(side);
     }
     /**
+     * Collective interface to @p FieldCommonBase::mar_input_times().
+     */
+    void mark_input_times(TimeMark::Type mark_type) {
+    	for(auto field : field_list) field->mark_input_times(mark_type);
+    }
+    /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     bool changed() const {

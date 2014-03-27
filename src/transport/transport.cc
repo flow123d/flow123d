@@ -121,8 +121,6 @@ RegionSet ConvectionTransport::EqData::read_descriptor_hook(Input::Record rec) {
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
-    F_ENTRY;
-
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
@@ -130,9 +128,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     time_->marks().add_time_marks(0.0,
         in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
         time_->end_time(), output_mark_type );
-    cfl_max_step = time_->end_time();
-    // TODO: this has to be set after construction of transport matrix ??!!
 
+    cfl_max_step = time_->end_time();
 
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
@@ -153,6 +150,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.mark_input_times(target_mark_type);
 
     data_.set_limit_side(LimitSide::right);
     data_.set_time(*time_);

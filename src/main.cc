@@ -152,9 +152,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("solve,s", po::value< string >(), "Main input file to solve.")
-        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
-        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
-        ("log,l", po::value< string >(), "Set base name for log files.")
+        ("input_dir,i", po::value< string >()->default_value("input"), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >()->default_value("output"), "Directory for all produced output files.")
+        ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
@@ -252,14 +252,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
+    if (vm.count("log_filename")) {
+        log_filename_ = vm["log"].as<string>();
+    }
+
     if (vm.count("no_log")) {
-        log_filename_="\n";     // do not open log files
-    } else {
-        if (vm.count("log_filename")) {
-            log_filename_ = vm["log"].as<string>();
-        } else {
-            log_filename_ = ""; // use default
-        }
+        log_filename_="//";     // override; do not open log files
     }
 
     ostringstream tmp_stream(program_arguments_desc_);

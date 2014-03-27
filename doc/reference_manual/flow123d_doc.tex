@@ -182,28 +182,31 @@ The program is able to describe explicitly processes in 3D medium, 2D fractures,
 domains of different dimensions. The computational mesh is therefore collection of 3D tetrahedrons, 2D triangles and 1D line segments.
 
 The water flow model assumes a saturated medium described by Darcy law. For discretization, we use lumped mixed-hybrid finite element method.
-We support both steady and unsteady water flow.
+We support both steady and unsteady water flow. The water flow model can be sequentially coupled with two different models for a solute transport or with a heat transfer model.
 
-The solute transport model can deal with several dissolved substances. It contains non-equilibrium dual porosity model, 
-i.e. exchange between mobile and immobile 
-pores. There are also models for several types of adsorption in both the mobile and immobile zone. The implemented adsorption models are
-linear adsorption, Freundlich isotherm and Langmuir isotherm. The solute transport model uses finite volume discretization 
-with up-winding in space and explicit Euler discretization in time. The dual porosity and the adsorption are introduced into transport by operator splitting.
-The dual porosity model use analytic solution and the non-linear adsorption can be either solved numerically by the $toms748\_solve(...)$ 
-command (which is a part of boost package) or it can be approximated through interpolation which uses precomputed functional values lying on selected type of isotherm.
+The first solute transport model can deal only with pure advection of several substances without any diffusion-dispersion term. It uses 
+explicit Euler method for time discretization and finite volume method for space discretization and operator splitting method to 
+couple with various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity, adsorptions, decays and linear reactions.
+Alternatively, one can use interface to the experimental SEMCHEM package for more complex geochemistry.
 
-Reaction between transported substances can be modeled either by a SEMCHEM module, which is slow, but can describe all sorts of reactions. On the other hand,
-for reactions of the first order, i.e. linear reactions or decays, we provide our own solver which is much faster. Reactions are coupled with transport 
-by the operator splitting method.
+The second solute transport model describes general advection with hydrodynamic dispersion for several substances. It uses implicit Euler method for time discretization and discontinuous Galerkin method of
+the first or second order for the discretization in space. Currently there is no support for reaction term, the operator splitting approach (although it is not suited for implicit time schemes) 
+is planed for the next version.
 
-The program provides output of the pressure, the velocity and the concentration fields in two file formats. You can use file format of GMSH mesh generator and post-processor 
-or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of VTK data.
+The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses same numerical scheme as the second transport model.
 
-The program is implemented in C/C++ using essentially PETSC library for linear algebra. The water flow as well as the transport simulation and reactions can be computed 
-in parallel using MPI environment. 
+The program support output of all input and many output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
+or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
+
+The program is implemented in C/C++ using essentially PETSC library for linear algebra. All models can run in parallel using MPI environment, however, 
+the scalability of the whole program is limited due to serial mesh and serial outputs.
+
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
 \url{http://dev.nti.tul.cz/trac/flow123d}
+
+with sources on the GitHub:
+\url{https://github.com/flow123d/flow123d}.
 
 \section{Basic usage}
 
@@ -232,18 +235,16 @@ the program requires one argument after switch \verb'-s' which is the name of th
 \begin{description}
  \item[{\tt --help}] \hfill\\
         Parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
- \item[{\tt -s, --solve} {\it file}] \hfill\\
+ \item[ {\tt -s, --solve} ] \verb'<file>' \hfill\\
  	 Set principal CON input file. All relative paths in the CON file are relative against current directory.
- %\item[-S {\bf\it file}] \hfill\\
- %	Set principal INI input file. All relative paths in the INI file are relative against directory of the INI file. This is equivalent
- %to change directory to the directory of the INI file at the start of the program.
- \item[{\tt -i, --input\_dir} {\it directory}] \hfill\\
+ \item[{\tt -i, --input\_dir}] \verb'<directory>' \hfill\\
  	The place holder \verb"${INPUT}" %$
-  	used in the path of an input file will be replaced by given {\it directory}.
- \item[{\tt -o, --output\_dir} {\it directory}] \hfill\\
- 	All paths for output files will be relative to this {\it directory}. 
- \item[{\tt -l, --log} {\it file\_name}] \hfill\\
- 	Set base name of log files.
+  	used in the path of an input file will be replaced by given Default value is \verb'input'.. Default value is \verb'input'.
+ \item[{\tt -o, --output\_dir}] \verb'<directory>' \hfill\\
+ 	All paths for output files will be relative to this Default value is \verb'input'.. Default value is \verb'output'.
+ \item[{\tt -l, --log}] \verb'<file_name>' \hfill\\
+ 	Set base name of log files. Default value is \verb'flow123d'. The log files are individual for every MPI process, placed in the output directory. 
+ 	The MPI rank of the process and the \verb'log' suffix are appended to the base name.
  \item[{\tt --no\_log}] \hfill\\
         Turn off logging.
  \item[{\tt --no\_profiler}] \hfill\\
@@ -255,7 +256,7 @@ the program requires one argument after switch \verb'-s' which is the name of th
  \item[{\tt --latex\_doc}] \hfill\\ 
         Prints a description of the main input file in LaTeX format using particular macros.
 \end{description}
-All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solver. In order to get list of supported options 
+All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options 
 use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
 
@@ -279,7 +280,7 @@ and further following additional parameters:
   	Stdout and stderr will be redirected to {\it out file}.
 \end{description}
 
-On the Windows system we use Cygwin libraries in other to emulate Linux API.
+On the Windows system we use Cygwin libraries in order to emulate Linux API.
 Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
 The Windows package that can be downloaded from project web page contains both the Cygwin libraries
 and the mpiexec command for starting parallel jobs on the Windows workstations.
