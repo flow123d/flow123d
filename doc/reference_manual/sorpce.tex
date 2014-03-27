@@ -21,17 +21,81 @@
 \def\where{\,|\,}
 %***************************************************************************
 
-\section{Equilibrial Adsorption}\label{sec:sorp_math}
+\section{Reaction term in transport}
+\label{sec:reaction_term}
+
+We have not mentioned yet details about the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
+There are several models which can be considered in this reaction term, both of chemical or physical nature. 
+The figure \ref{fig:reaction_term} shows all possible reactional models we support in the trasport process. The Operator Splitting method enables 
+us to deal with the convection part and reaction term side by side. The convected quantities do not influence each other in the convectional
+process and are balanced over the elements. On the other hand the reaction term relates the convected quantities and can be computed 
+separately on each element.
+
+We move now to the description of the reaction term models which can be seen again in the figure \ref{fig:reaction_term}. 
+The convected quantity is considered to be concentration of substances. 
+We can consider \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and \emph{reaction} (we mean chemical 
+reactions) in the reaction term. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{\fig/reaction_term.pdf}
+  \caption{The scheme of the reaction term objects. The lines represents connections between different models. 
+  The tables under model name include the possible models which can be connected to the model above.}
+  \label{fig:reaction_term}
+\end{figure}
+
+The \emph{reaction} model computes chemical reactions on the substances involved.
+
+The \emph{adsorption} model describes the exchange of concentration of the substances between the liquid and the mass. It can be
+followed by a chemical \emph{reaction} that can run in the liquid or the mass.
+See the subsection \ref{sec:sorp_math}.
+
+
+The \emph{dual porosity} model, described in the subsection \ref{sec:dual_porosity}, introduces so called open and blind pores in the matrix. 
+The convection process operates only on the concentration of the substances in the open pores (mobile zone) and the exchange of 
+concentrations from/to blind pores is governed by molecular diffusion. This process can be followed by \emph{adsorption} model and 
+chemical \emph{reaction} both in open and blind pores.
+
+
+\subsection{Dual porosity.}
+\label{sec:dual_porosity}
+
+Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into two zones -- the mobile zone and the immobile zone. 
+Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the blind pores, where the liquid is trapped and cannot pass through.
+The rest of the pore volume is occupied by the mobile zone (open pores). Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
+We consider simple nonequilibrium linear model:
+\begin{align}
+    \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
+    \theta_i \partial_t c_i &= \alpha ( c_m - c_i), 
+\end{align}
+where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion parameter, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
+\[
+  \theta_m +\theta_i =\theta.
+\]
+
+The solution of this system is:
+\begin{align}
+     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0), \\
+     c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0),
+\end{align}
+where $c_a$ is weighted average:
+\[
+  c_a = \frac{\theta_m c_m + \theta_i c_i}{\theta_m + \theta_i}.
+\]
+
+\subsection{Equilibrial Adsorption}
+\label{sec:sorp_math}
+
 The simulation of monolayer, equilibrial adsorption is based on solution of the couple of equations representing mass balance law and empirical description of adsorption represented by common types of isotherm. The following types of isotherm are considered:
 \begin{itemize}
  \item Without adsorption, \hyperA{Sorption-BulkData::sorption-types}{$sorption\_type$} is ``$none$''.
  \item Linear isotherm $c_s = f(c_a) = k_l\cdot c_a$, $sorption\_type$ is ``$linear$''.
- \item Freundlichs' isotherm $c_s = f(c_a) = k_F\cdot c_a^{\alpha}$, $sorption\_type$ is ``$freundlich$''.
- \item Langmuirs' isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$, $sorption\_type$ is ``$langmuir$''. Langmuirs isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
+ \item Freundlich isotherm $c_s = f(c_a) = k_F\cdot c_a^{\alpha}$, $sorption\_type$ is ``$freundlich$''.
+ \item Langmuir isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$, $sorption\_type$ is ``$langmuir$''. Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
 \end{itemize}
 Notification:
 \begin{itemize}
- \item Sorbed concentration $[c_s] = \frac{[n]}{[m_H]} = \frac{N}{M} = \frac{Mol}{kg}$, where $m_H$ is the mass of bulk and $n$ denotes amount of substance in an element.
+ \item Sorbed concentration $[c_s] = \frac{[n]}{[m_H]} = \frac{N}{M} = \frac{Mol}{kg}$, where $m_H$ is the mass of bulk and $n$ denotes molar amount of substance in an element.
  \item Aqueous concentration $[c_a] = \frac{[m]}{[m_w]} = \frac{M}{M} = \frac{kg}{kg} = 1$, where $m_w$ is the mass of water/solvent in an element. Just water ($\rho_w = 1~kg\cdot l^{-1}$) is supposed to be solvent in version 1.7.0. 
  \item Multiplication parameters, $k_i, ~i\in\{ l,F,L\}$, \hyperA{Sorption-BulkData::mult-coefs}{$mult\_coefs$} can have various physical dimensions.
  \item Additional parameters, $[\alpha] = 1$, \hyperA{Sorption-BulkData::second-params}{$second\_params$}.
@@ -46,7 +110,7 @@ where $\rho_w$ denotes solvent density \hyperA{Sorptions::solvent-dens}{$solvent
 The equation \ref{eq:mass_balance_base} depends on volume of an element $V_{elm}$. We devide both sides by $V_{elm}$ to suppress this dependency and we get resulting mass balance equation \ref{eq:mass_balance_base2}.
 \begin{equation}
  \begin{array}{l}
-  konst._T = k_a\cdot c_a + k_s\cdot c_s\\
+  const._T = k_a\cdot c_a + k_s\cdot c_s\\
   k_a = \rho_w\cdot n\\
   k_s = M_s \cdot\rho_H\cdot(1-n)
  \end{array}
@@ -137,16 +201,17 @@ while in the immobile zone it becames
 Remind the mass balance equation (\ref{eq:mass_balance_base2}), divided by $\rho_w$ in the actual implemenation
 \begin{eqnarray}
  \begin{array}{l}
-  konst._T = k_a\cdot c_a + k_s\cdot c_s,\\
+  const._T = k_a\cdot c_a + k_s\cdot c_s,\\
   k_a = \theta, \\
   k_s = M_s \cdot\rho_H\cdot(1-\theta),
  \end{array}
  \label{eq:scale_params}
 \end{eqnarray}
 where $\theta = \theta_m + \theta_i$ is the porosity.
-The scaling parameters are changed in the dual porosity model such that in the mobile zone these became equal
+The scaling parameters are changed in the dual porosity model such that in the mobile zone
 \begin{eqnarray}
  \begin{array}{l}
+  const._T = k_a\cdot c_{ma} + k_s\cdot c_{ms},\\
   k_a = \theta_m, \\
   k_s = M_s \cdot\rho_H\cdot(1-\theta_m - \theta_i)\varphi,
  \end{array}
@@ -155,6 +220,7 @@ The scaling parameters are changed in the dual porosity model such that in the m
 and in the immobile zone
 \begin{eqnarray}
  \begin{array}{l}
+  const._T = k_a\cdot c_{ia} + k_s\cdot c_{is},\\
   k_a = \theta_i, \\
   k_s = M_s \cdot\rho_H\cdot(1-\theta_m - \theta_i)(1 - \varphi).
  \end{array}
