@@ -119,16 +119,28 @@
 
 #ifdef DEBUG_ASSERTS
 
+/**
+ * Just quick hack to fix some unit tests.
+ * TODO:
+ * We should make better implementation, rather minimizing
+ * usage of macros. And make robust "system" part, that
+ * is MPI aware, but not MPI dependent.
+ */
+#ifdef DEBUG_ASSERTS_WITHOUT_MPI
+#define MPI_Comm_rank(A, B)
+#endif // DEBUG_ASSERTS_WITHOUT_MPI
+
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
         char msg[1024];\
         sprintf( msg, __VA_ARGS__);\
-        int rank;\
+        int rank=-1;\
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);\
         THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
     }} while (0)
 
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+
 
 #else
 
