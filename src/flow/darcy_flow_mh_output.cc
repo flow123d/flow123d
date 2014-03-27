@@ -57,6 +57,7 @@ namespace it = Input::Type;
 
 it::Selection DarcyFlowMHOutput::OutputFields::output_selection
 	= it::Selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
+	.copy_values(DarcyFlowMH::EqData().make_output_field_selection())
 	.copy_values(OutputFields().make_output_field_selection())
 	.close();
 
@@ -143,6 +144,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // Output only for the first process
     //if(rank == 0)
    // {
+
+        // we need to add data from the flow equation at this point, not in constructor of OutputFields
+        output_fields.fields_for_output += darcy_flow->get_data();
     	output_fields.set_mesh(*mesh_);
 
         //VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), corner_pressure, &vec_corner_pressure);
@@ -189,7 +193,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
     	output_fields.set_limit_side(LimitSide::right);
     	output_stream = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
-    	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), output_fields.make_output_field_selection());
+    	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), OutputFields::output_selection);
     	DBGMSG("output stream: %p\n", output_stream);
 
 #if 0
