@@ -316,9 +316,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
     //xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
 
-#ifdef DEBUG_MESSAGES
     time_->view("DARCY"); //time governor information output
-#endif
     
     modify_system(); // hack for unsteady model
     int convergedReason = schur0->solve();
@@ -338,7 +336,6 @@ void DarcyFlowMH_Steady::update_solution() {
     //    PetscViewerDestroy(solViewer);
     //}
     solution_changed_for_scatter=true;
-    DBGMSG("solution updated\n");
 }
 
 void DarcyFlowMH_Steady::postprocess() 

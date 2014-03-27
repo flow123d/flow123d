@@ -593,7 +593,6 @@ void ConvectionTransport::compute_one_step() {
 
 
     if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed()) {
-        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.porosity.changed());
         create_transport_matrix_mpi();
 
         // need new fixation of the time step
@@ -622,7 +621,6 @@ void ConvectionTransport::compute_one_step() {
             MatShift(tm, -1.0);
             MatScale(tm, time_->estimate_dt()/time_->dt() );
             MatShift(tm, 1.0);
-            DBGMSG("rescaling matrix\n");
 
             for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt()/time_->dt());
 
@@ -783,7 +781,6 @@ void ConvectionTransport::preallocate_transport_matrix() {
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
-    DBGMSG("TM assembly\n");
     START_TIMER("convection_matrix_assembly");
 
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
@@ -917,14 +914,12 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     cfl_max_step = 1 / glob_max_sum;
     //time_step = 0.9 / glob_max_sum;
     
-    DBGMSG("start assembly\n");
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
 //    MatAssemblyBegin(bcm, MAT_FINAL_ASSEMBLY);
     
 
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
 //    MatAssemblyEnd(bcm, MAT_FINAL_ASSEMBLY);
-    DBGMSG("end assembly\n");
 
 
     // MPI_Barrier(PETSC_COMM_WORLD);
@@ -1374,7 +1369,6 @@ void ConvectionTransport::output_data() {
 
     if (time_->is_current(output_mark_type)) {
 
-        DBGMSG("\nTOS: output time: %f\n", time_->t());
         output_vector_gather();
 
         int rank;

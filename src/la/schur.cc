@@ -71,8 +71,6 @@
 SchurComplement::SchurComplement(IS ia, Distribution *ds)
 : LinSys_PETSC(ds), IsA(ia), state(created)
 {
-        xprintf(Msg, "Constructor SchurComplement\n");
-
         // check index set
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 

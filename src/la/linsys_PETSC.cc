@@ -345,7 +345,6 @@ int LinSys_PETSC::solve()
     //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
     //if (r_tol < 0) r_tol=solver_accuracy;
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
