@@ -14,7 +14,7 @@ using namespace std;
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: SorptionDual(init_mesh, in_rec, names)
 {
-  DBGMSG("SorptionMob constructor.\n");
+  //DBGMSG("SorptionMob constructor.\n");
 }
 
 SorptionMob::~SorptionMob(void)

@@ -62,6 +62,7 @@ public:
     Field<3, FieldValue<3>::Scalar > rock_density; ///< Rock matrix density.
     Field<3, FieldValue<3>::Vector > mult_coefs; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
     Field<3, FieldValue<3>::Vector > second_params; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+    Field<3, FieldValue<3>::Vector> init_conc_sorbed; ///< Initial sorbed concentrations. 
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field copied from transport
     

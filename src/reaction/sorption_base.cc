@@ -64,8 +64,11 @@ SorptionBase::EqData::EqData()
     ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
 
     ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
+    ADD_FIELD(init_conc_sorbed, "Initial sorbed concentration of substances."
+            " Vector, one value for every substance.", "0");
     
     rock_density.units("");
+    init_conc_sorbed.units("M/L^3");
     
     output_fields += *this;
     output_fields += conc_sorbed.name("sorbed").units("M/L^3");
@@ -75,7 +78,7 @@ SorptionBase::EqData::EqData()
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: Reaction(init_mesh, in_rec, names)
 {
-  DBGMSG("SorptionBase constructor.\n");
+  //DBGMSG("SorptionBase constructor.\n");
   
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
@@ -83,6 +86,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   data_.sorption_types.n_comp(n_substances_);
   data_.mult_coefs.n_comp(n_substances_);
   data_.second_params.n_comp(n_substances_);
+  data_.init_conc_sorbed.n_comp(n_substances_);
   
   //setting fields that are set from input file
   input_data_set_+=data_;
@@ -129,7 +133,7 @@ SorptionBase::~SorptionBase(void)
     VecDestroy(vconc_sorbed_out);
   }
 
-  for (unsigned int sbi = 0; sbi < n_substances_; sbi++) 
+  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
   {
     //no mpi vectors
     xfree(sorbed_conc_array[sbi]);
@@ -180,20 +184,40 @@ void SorptionBase::initialize(void )
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   
+  data_.set_time(*time_);
+  make_tables();
+  
     //allocating new array for sorbed concentrations
     unsigned int nr_of_local_elm = distribution->lsize();
     sorbed_conc_array = (double**) xmalloc(n_all_substances_ * sizeof(double*));//new double * [n_substances_];
     conc_sorbed_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
-    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
     {
-      sorbed_conc_array[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
-      conc_sorbed_out[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
-      for (unsigned int i = 0; i < nr_of_local_elm; i++)
-      {
-        sorbed_conc_array[sbi][i] = 0.0;
-        //conc_sorbed_out[sbi][i] = 0.0;
-      }
+      sorbed_conc_array[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));//new double[ nr_of_local_elm ];
+      conc_sorbed_out[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));
+      //zero initialization of sorbed concentration for all substances
+      for(unsigned int i=0; i < nr_of_local_elm; i++)
+        sorbed_conc_array[sbi][i] = 0;
     }
+  
+  
+  //copied from convection set_initial_condition
+  //setting initial condition for sorbed concentrations
+  FOR_ELEMENTS(mesh_, elem)
+  {
+    if (!distribution->is_local(el_4_loc[elem.index()])) continue;
+
+    unsigned int index = el_4_loc[elem.index()] - distribution->begin();
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+    arma::vec value = data_.init_conc_sorbed.value(elem->centre(), ele_acc);
+        
+    //setting initial sorbed concentration for substances involved in adsorption
+    for (int sbi=0; sbi < n_substances_; sbi++)
+    {
+      int subst_id = substance_id[sbi];
+      sorbed_conc_array[subst_id][index] = value(sbi);
+    }
+  }
   
   //initialization of output
   if (!output_rec.is_empty())
@@ -220,7 +244,7 @@ void SorptionBase::initialize(void )
     allocate_output_mpi();
   
   
-    DBGMSG("Going to write initial condition.\n");
+    //DBGMSG("Going to write initial condition.\n");
     // write initial condition
     output_vector_gather();
     data_.output_fields.set_time(*time_);
@@ -240,7 +264,7 @@ void SorptionBase::initialize(void )
 
 void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 {
-  DBGMSG("SorptionBase init_from_input\n");
+  //DBGMSG("SorptionBase init_from_input\n");
   Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
   if ( reactions_it ) 
   {
@@ -273,9 +297,9 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 
 void SorptionBase::update_solution(void)
 {
-  DBGMSG("SorptionSimple - update_solution\n");
+  DBGMSG("Sorption - update_solution\n");
   data_.set_time(*time_); // set to the last computed time
-  
+
   // if parameters changed during last time step, reinit isotherms and eventualy 
   // update interpolation tables in the case of constant rock matrix parameters
   if(data_.changed())
@@ -303,7 +327,7 @@ void SorptionBase::make_tables(void)
     {
       ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
       isotherm_reinit(isotherms[reg_idx],elm);
-      xprintf(MsgDbg,"parameters are constant\n");
+      //xprintf(MsgDbg,"parameters are constant\n");
       for(int i_subst = 0; i_subst < n_substances_; i_subst++)
       {
         isotherms[reg_idx][i_subst].make_table(nr_of_points);
@@ -321,30 +345,37 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
     Region region = elem->region();
     int reg_id_nr = region.bulk_idx();
     int variabl_int = 0;
+    int i_subst, subst_id;
 
-	std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
+    std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
 
     //if(reg_id_nr != 0) cout << "region id is " << reg_id_nr << endl;
     
     // Constant value of rock density and mobile porosity over the whole region => interpolation_table is precomputed
-    if (isotherms_vec[0].is_precomputed()) {
-    	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
-    	{
-    		Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-    		int subst_id = substance_id[i_subst];
-            isotherm.interpolate((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
-    	}
-    } else {
-		isotherm_reinit(isotherms_vec, elem->element_accessor());
-    	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
-    	{
-            Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-            int subst_id = substance_id[i_subst];
-            isotherm.compute((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[i_subst][loc_el]);
-    	}
+    if (isotherms_vec[0].is_precomputed()) 
+    {
+      for(i_subst = 0; i_subst < n_substances_; i_subst++)
+      {
+        subst_id = substance_id[i_subst];
+        //DBGMSG("on s_%d precomputed %d\n",subst_id, isotherms_vec[i_subst].is_precomputed());
+      
+        Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
+        isotherm.interpolate((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[subst_id][loc_el]);
+      }
     }
-
-	return concentrations;
+    else 
+    {
+      isotherm_reinit(isotherms_vec, elem->element_accessor());
+      
+      for(i_subst = 0; i_subst < n_substances_; i_subst++)
+      {
+        subst_id = substance_id[i_subst];
+        Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
+        isotherm.compute((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[subst_id][loc_el]);
+      }
+    }
+    
+  return concentrations;
 }
 
 void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
@@ -434,13 +465,16 @@ void SorptionBase::output_data(void )
 {
   if (!output_rec.is_empty())
   {
-    DBGMSG("Sorption output\n");
+    //DBGMSG("Sorption output\n");
     output_vector_gather();
 
     // Register fresh output data
     data_.output_fields.set_time(*time_);
     data_.output_fields.output(output_stream);
 
+    //it can call only linear reaction which has no output at the moment
+    //if(reaction) reaction->output_data();
+    
     //for synchronization when measuring time by Profiler
     MPI_Barrier(MPI_COMM_WORLD);
   }
