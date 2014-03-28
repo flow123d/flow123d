@@ -67,7 +67,7 @@
         
         data = [
           {
-            r_set="ALL",
+            r_set="subset",
             diffusion_rate_immobile= [0.01,0.01],
             porosity_immobile= 0.25,
             init_conc_immobile = [0.0, 0.0]
@@ -85,7 +85,7 @@
           
           data = [
             {
-              r_set="ALL",
+              r_set="subset",
               rock_density = 1.0,
               adsorption_type=  ["linear", "freundlich"],
               isotherm_mult= 0.02, 
