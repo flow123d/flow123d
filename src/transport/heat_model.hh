@@ -63,6 +63,18 @@ public:
 		Field<3, FieldValue<3>::Scalar> disp_l;
 		/// Transversal heat dispersivity.
 		Field<3, FieldValue<3>::Scalar> disp_t;
+		/// Thermal source in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_thermal_source;
+		/// Thermal source in solid.
+		Field<3, FieldValue<3>::Scalar> solid_thermal_source;
+		/// Heat exchange rate in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_heat_exchange_rate;
+		/// Heat exchange rate in solid.
+		Field<3, FieldValue<3>::Scalar> solid_heat_exchange_rate;
+		/// Reference temperature in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_ref_temperature;
+		/// Reference temperature in solid.
+		Field<3, FieldValue<3>::Scalar> solid_ref_temperature;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;

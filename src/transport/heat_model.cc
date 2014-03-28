@@ -60,8 +60,14 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_density, "Density of solid (rock).");
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
-	ADD_FIELD(disp_l, "Longitudal heat dispersivity in fluid", "0.0" );
-	ADD_FIELD(disp_t, "Transversal heat dispersivity in fluid", "0.0" );
+	ADD_FIELD(disp_l, "Longitudal heat dispersivity in fluid.", "0.0" );
+	ADD_FIELD(disp_t, "Transversal heat dispersivity in fluid.", "0.0" );
+	ADD_FIELD(fluid_thermal_source, "Thermal source density in fluid.", "0.0");
+	ADD_FIELD(solid_thermal_source, "Thermal source density in solid.", "0.0");
+	ADD_FIELD(fluid_heat_exchange_rate, "Heat exchange rate in fluid.", "0.0");
+	ADD_FIELD(solid_heat_exchange_rate, "Heat exchange rate in solid.", "0.0");
+	ADD_FIELD(fluid_ref_temperature, "Reference temperature in fluid.", "0.0");
+	ADD_FIELD(solid_ref_temperature, "Reference temperature in solid.", "0.0");
 }
 
 
@@ -125,6 +131,12 @@ bool HeatTransferModel::stiffness_matrix_changed()
 bool HeatTransferModel::rhs_changed()
 {
 	return (flux_changed ||
+			data().fluid_thermal_source.changed() ||
+			data().solid_thermal_source.changed() ||
+			data().fluid_heat_exchange_rate.changed() ||
+			data().solid_heat_exchange_rate.changed() ||
+			data().fluid_ref_temperature.changed() ||
+			data().solid_ref_temperature.changed() ||
 			data().bc_temperature.changed());
 }
 
@@ -215,18 +227,39 @@ void HeatTransferModel::compute_dirichlet_bc(const std::vector<arma::vec3> &poin
 
 void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_conc,
+			std::vector<arma::vec> &sources_value,
 			std::vector<arma::vec> &sources_density,
 			std::vector<arma::vec> &sources_sigma)
 {
-//	data().sources_conc.value_list(point_list, ele_acc, sources_conc);
-//	data().sources_density.value_list(point_list, ele_acc, sources_density);
-//	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+	const unsigned int qsize = point_list.size();
+	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
+			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
+	data().porosity.value_list(point_list, ele_acc, por);
+	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().fluid_density.value_list(point_list, ele_acc, f_rho);
+	data().solid_density.value_list(point_list, ele_acc, s_rho);
+	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
+	data().solid_heat_capacity.value_list(point_list, ele_acc, s_cap);
+	data().fluid_thermal_source.value_list(point_list, ele_acc, f_source);
+	data().solid_thermal_source.value_list(point_list, ele_acc, s_source);
+	data().fluid_heat_exchange_rate.value_list(point_list, ele_acc, f_sigma);
+	data().solid_heat_exchange_rate.value_list(point_list, ele_acc, s_sigma);
+	data().fluid_ref_temperature.value_list(point_list, ele_acc, f_temp);
+	data().solid_ref_temperature.value_list(point_list, ele_acc, s_temp);
+
 	for (int k=0; k<point_list.size(); k++)
 	{
-		sources_conc[k].resize(1);
 		sources_density[k].resize(1);
 		sources_sigma[k].resize(1);
+		sources_value[k].resize(1);
+
+		sources_density[k][0] = csection[k]*(por[k]*f_source[k] + (1.-por[k])*s_source[k]);
+		sources_sigma[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
+		if (fabs(sources_sigma[k][0]) > numeric_limits<double>::epsilon())
+			sources_value[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k]*f_temp[k]
+		                   + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]*s_temp[k])/sources_sigma[k][0];
+		else
+			sources_value[k][0] = 0;
 	}
 }
 
@@ -235,9 +268,22 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 			const ElementAccessor<3> &ele_acc,
 			std::vector<arma::vec> &sources_sigma)
 {
-//	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+	const unsigned int qsize = point_list.size();
+	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
+			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
+	data().porosity.value_list(point_list, ele_acc, por);
+	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().fluid_density.value_list(point_list, ele_acc, f_rho);
+	data().solid_density.value_list(point_list, ele_acc, s_rho);
+	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
+	data().solid_heat_capacity.value_list(point_list, ele_acc, s_cap);
+	data().fluid_heat_exchange_rate.value_list(point_list, ele_acc, f_sigma);
+	data().solid_heat_exchange_rate.value_list(point_list, ele_acc, s_sigma);
 	for (int k=0; k<point_list.size(); k++)
+	{
 		sources_sigma[k].resize(1);
+		sources_sigma[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
+	}
 }
 
 
