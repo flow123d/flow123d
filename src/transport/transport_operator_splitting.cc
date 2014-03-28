@@ -70,14 +70,9 @@ Record TransportOperatorSplitting::input_type
     .declare_key("substances", Array(String()), Default::obligatory(),
     		"Names of transported substances.")
     	    // input data
-//     .declare_key("sorption_enable", Bool(), Default("false"),
-//     		"Model of sorption.")
-//     .declare_key("dual_porosity", Bool(), Default("false"),
-//     		"Dual porosity model.")
     .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
                 "Reaction model involved in transport.")
-//     .declare_key("adsorptions", SorptionBase::input_type, Default::optional(),
-//     			"Initialization of per element sorptions.")
+
     .declare_key("data", Array(
     		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
     		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")

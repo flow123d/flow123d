@@ -102,12 +102,13 @@ public:
 
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
-        Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
-        Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
-        Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
+//DELETE
+//         Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
+//         Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
+//         Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
+//         Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
+//         Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
+//         Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
@@ -249,6 +250,7 @@ private:
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
 
+    //TODO: remove this and make concentration_matrix only two-dimensional
     int sub_problem;    // 0-only transport,1-transport+dual porosity,
                         // 2-transport+sorption
                         // 3-transport+dual porosity+sorption
