@@ -173,6 +173,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             reaction->set_time_governor(*(convection->time_));
             reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc, convection->get_row_4_el());
             reaction->initialize(convection->output_stream());
+            //temporary, until new mass balance considering reaction term is created
+            xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
+                          "Only the mass flux over boundaries is correct."
+            );
         } else {
             reaction = nullptr;
             Semchem_reactions = nullptr;

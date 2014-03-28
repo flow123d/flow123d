@@ -1383,13 +1383,14 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
         	double por_m = data_.porosity.value(elem->centre(), ele_acc);
         	double csection = data_.cross_section->value(elem->centre(), ele_acc);
         	int loc_index = index - el_ds->begin();
-			double sum_sol_phases = 0;
+			//double sum_sol_phases = 0;
 
-			for (int ph=0; ph<MAX_PHASES; ph++)
-			{
-				if ((sub_problem & ph) == ph)
-					sum_sol_phases += conc[ph][sbi][loc_index];
-			}
+                //temporary fix - mass balance works only when no reaction term is present
+			//for (int ph=0; ph<MAX_PHASES; ph++)
+			//{
+			//	if ((sub_problem & ph) == ph)
+			double sum_sol_phases = conc[0][sbi][loc_index];
+			//}
 
 			mass[sbi][ele_acc.region().bulk_idx()] += por_m*csection*sum_sol_phases*elem->measure();
 			src_balance[sbi][ele_acc.region().bulk_idx()] += sources[loc_index]*elem->measure();
