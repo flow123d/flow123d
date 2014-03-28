@@ -59,8 +59,10 @@ public:
 		Field<3, FieldValue<3>::Scalar> solid_heat_capacity;
 		/// Heat conductivity of solid.
 		Field<3, FieldValue<3>::Scalar> solid_heat_conductivity;
-		/// Heat dispersivity.
-		Field<3, FieldValue<3>::Scalar> heat_dispersivity;
+		/// Longitudal heat dispersivity.
+		Field<3, FieldValue<3>::Scalar> disp_l;
+		/// Transversal heat dispersivity.
+		Field<3, FieldValue<3>::Scalar> disp_t;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;

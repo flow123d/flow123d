@@ -67,8 +67,7 @@
           fluid_heat_conductivity = 1,
           solid_density = 3e3,
           solid_heat_capacity = 1,
-          solid_heat_conductivity = 3,
-          heat_dispersivity = 0
+          solid_heat_conductivity = 3
         },
         {
           region = "rock",

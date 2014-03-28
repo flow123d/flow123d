@@ -60,7 +60,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_density, "Density of solid (rock).");
 	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
-	ADD_FIELD(heat_dispersivity, "Heat dispersivity", "0.0" );
+	ADD_FIELD(disp_l, "Longitudal heat dispersivity in fluid", "0.0" );
+	ADD_FIELD(disp_t, "Transversal heat dispersivity in fluid", "0.0" );
 }
 
 
@@ -115,7 +116,8 @@ bool HeatTransferModel::stiffness_matrix_changed()
 			data().porosity.changed() ||
 			data().fluid_heat_conductivity.changed() ||
 			data().solid_heat_conductivity.changed() ||
-			data().heat_dispersivity.changed() ||
+			data().disp_l.changed() ||
+			data().disp_t.changed() ||
 			data().cross_section->changed());
 }
 
@@ -157,19 +159,32 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 {
 	const unsigned int qsize = point_list.size();
 	std::vector<double> f_rho(qsize), f_cap(qsize), f_cond(qsize),
-			s_cond(qsize), por(qsize), csection(qsize), disp(qsize);
+			s_cond(qsize), por(qsize), csection(qsize), disp_l(qsize), disp_t(qsize);
 
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
 	data().fluid_heat_conductivity.value_list(point_list, ele_acc, f_cond);
 	data().solid_heat_conductivity.value_list(point_list, ele_acc, s_cond);
-	data().heat_dispersivity.value_list(point_list, ele_acc, disp);
+	data().disp_l.value_list(point_list, ele_acc, disp_l);
+	data().disp_t.value_list(point_list, ele_acc, disp_t);
 	data().porosity.value_list(point_list, ele_acc, por);
 	data().cross_section->value_list(point_list, ele_acc, csection);
 
-	for (unsigned int i=0; i<qsize; i++) {
-		ad_coef[0][i] = velocity[i]*f_rho[i]*f_cap[i];
-		dif_coef[0][i] = csection[i]*(disp[i] + por[i]*f_cond[i] + (1.-por[i])*s_cond[i])*arma::eye(3,3);
+	for (unsigned int k=0; k<qsize; k++) {
+		ad_coef[0][k] = velocity[k]*f_rho[k]*f_cap[k];
+
+		// dispersive part of thermal diffusion
+		double vnorm = arma::norm(velocity[k], 2);
+		if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+			for (int i=0; i<3; i++)
+				for (int j=0; j<3; j++)
+					dif_coef[0][k](i,j) = (velocity[k][i]*velocity[k][j]/vnorm*(disp_l[k]-disp_t[k]) + disp_t[k]*vnorm*(i==j?1:0))
+											*csection[k]*por[k]*f_rho[k]*f_cond[k];
+		else
+			dif_coef[0][k].zeros();
+
+		// conductive part of thermal diffusion
+		dif_coef[0][k] += csection[k]*(por[k]*f_cond[k] + (1.-por[k])*s_cond[k])*arma::eye(3,3);
 	}
 }
 
