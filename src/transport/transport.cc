@@ -158,16 +158,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.set_time(*time_);
 
 
-    sorption = in_rec.val<bool>("sorption_enable");
-    dual_porosity = in_rec.val<bool>("dual_porosity");
-    // reaction_on = in_rec.val<bool>("transport_reactions");
-
-
     sub_problem = 0;
-    if (dual_porosity == true)
-        sub_problem += 1;
-    if (sorption == true)
-        sub_problem += 2;
 
     make_transport_partitioning();
     alloc_transport_vectors();
@@ -708,21 +699,24 @@ void ConvectionTransport::compute_one_step() {
       MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // conc=tm*pconc + bc
       //VecView(vconc[sbi],PETSC_VIEWER_STDOUT_SELF);
       END_TIMER("mat mult");
-
+    }
      //}
 
+      /*
+    // DELETE
      //START_TIMER("dual porosity/old-sorption");
      
-    /*if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
-    {
-      for(int i_subst = 0; i_subst < n_subst_; i_subst++)
-      {
-        //following conditional print is here for comparison of old and new type of sorption input concentrations
-        if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
-          else cout << conc[MOBILE][i_subst][loc_el] << endl;
-      }
-	}
-    for (sbi = 0; sbi < n_subst_; sbi++) {*/
+//     if(sorption == true) for(int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+//     {
+//       for(int i_subst = 0; i_subst < n_subst_; i_subst++)
+//       {
+//         //following conditional print is here for comparison of old and new type of sorption input concentrations
+//         if(i_subst < (n_subst_ - 1)) cout << conc[MOBILE][i_subst][loc_el] << ", ";
+//           else cout << conc[MOBILE][i_subst][loc_el] << endl;
+//       }
+// 	}
+//     for (sbi = 0; sbi < n_subst_; sbi++) {
+    
     
     START_TIMER("old_sorp_step");
         if ((dual_porosity == true) || (sorption == true) )
@@ -739,6 +733,7 @@ void ConvectionTransport::compute_one_step() {
       //END_TIMER("dual porosity/old-sorption");
     }
     END_TIMER("old_sorp_step");
+    */
     
     END_TIMER("convection-one step");
 }
@@ -1045,6 +1040,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
  xfree( pi );
  }
  */
+
+/*
+//DELETE
 //=============================================================================
 // COMPUTE DUAL POROSITY  ( ANALYTICAL EQUATION )
 //
@@ -1086,6 +1084,8 @@ void ConvectionTransport::transport_dual_porosity( int elm_pos, ElementFullIter 
     		}
 
 }
+
+
 //=============================================================================
 //      TRANSPORT SORPTION
 //=============================================================================
@@ -1184,6 +1184,8 @@ void ConvectionTransport::compute_sorption(double conc_avg, double sorp_coef0, d
 
     *concx_sorb = (conc_avg - *concx) * Nv;
 }
+//*/
+
 //=============================================================================
 //      TIME STEP (RECOMPUTE)
 //=============================================================================
@@ -1306,10 +1308,6 @@ void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_d
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;
 	return;
-}
-
-bool ConvectionTransport::get_dual_porosity(){
-	return dual_porosity;
 }
 
 int *ConvectionTransport::get_el_4_loc(){

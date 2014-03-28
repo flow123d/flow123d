@@ -182,7 +182,6 @@ public:
 
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-	bool get_dual_porosity();
 	int *get_el_4_loc();
 	int *get_row_4_el();
 	virtual void get_parallel_solution_vector(Vec &vc);
@@ -220,10 +219,11 @@ private:
 	 */
 	void transport_matrix_step_mpi(double time_step); //
 
-	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
-	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
-			double *concx, double *concx_sorb, double Nv, double N); //
+        //DELETE
+// 	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
+// 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
+// 	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
+// 			double *concx, double *concx_sorb, double Nv, double N); //
 
 
     void alloc_transport_vectors();
@@ -249,8 +249,6 @@ private:
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
 
-    bool              sorption;     // Include sorption  YES/NO
-    bool              dual_porosity;   // Include dual porosity YES/NO
     int sub_problem;    // 0-only transport,1-transport+dual porosity,
                         // 2-transport+sorption
                         // 3-transport+dual porosity+sorption

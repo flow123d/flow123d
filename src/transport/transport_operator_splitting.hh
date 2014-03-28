@@ -23,7 +23,6 @@ class Mesh;
 class ReactionTerm;
 class ConvectionTransport;
 
-class SorptionBase;
 class Semchem_interface;
 
 
@@ -270,9 +269,6 @@ private:
 
     ConvectionTransport *convection;
     ReactionTerm *reaction;
-    
-    ReactionTerm *decayRad;
-    SorptionBase *sorptions;
 
     Semchem_interface *Semchem_reactions;
     //int steps;
