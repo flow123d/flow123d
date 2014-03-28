@@ -60,10 +60,6 @@
       reaction_term = {
         TYPE = "DualPorosity",
         
-        substances = {
-          REF = "/problem/secondary_equation/substances"
-        },
-        
         data = [
           {
             r_set="ALL",

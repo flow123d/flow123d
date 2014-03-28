@@ -125,9 +125,6 @@ protected:
   
   unsigned int n_all_substances_;   //< number of all substances in the transport model
   std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
-  
-  /// Record with output specification.
-//  Input::Record output_rec;
 
   OutputTime *output_stream;
 

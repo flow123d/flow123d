@@ -229,41 +229,39 @@ void SorptionBase::initialize(OutputTime *stream)
   make_tables();
   
     //allocating new array for sorbed concentrations
-    unsigned int nr_of_local_elm = distribution->lsize();
     conc_solid = (double**) xmalloc(n_all_substances_ * sizeof(double*));//new double * [n_substances_];
     conc_solid_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
     for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
     {
-      conc_solid[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));//new double[ nr_of_local_elm ];
-      conc_solid_out[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));
+      conc_solid[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
+      conc_solid_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
       //zero initialization of solid concentration for all substances
-      for(unsigned int i=0; i < nr_of_local_elm; i++)
+      for(unsigned int i=0; i < distribution->lsize(); i++)
         conc_solid[sbi][i] = 0;
     }
   
+  allocate_output_mpi();
   
-  //copied from convection set_initial_condition
   //setting initial condition for solid concentrations
-  FOR_ELEMENTS(mesh_, elem)
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
   {
-    if (!distribution->is_local(el_4_loc[elem.index()])) continue;
-
-    unsigned int index = el_4_loc[elem.index()] - distribution->begin();
-    ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
-    arma::vec value = data_.init_conc_solid.value(elem->centre(), ele_acc);
+    unsigned int index = el_4_loc[loc_el];
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
+    arma::vec value = data_.init_conc_solid.value(ele_acc.centre(), ele_acc);
         
     //setting initial solid concentration for substances involved in adsorption
     for (int sbi=0; sbi < n_substances_; sbi++)
     {
       int subst_id = substance_id[sbi];
-      conc_solid[subst_id][index] = value(sbi);
+      conc_solid[subst_id][loc_el] = value(sbi);
     }
   }
   
     //initialization of output
     output_stream = stream;
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    int ierr, rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     if (rank == 0)
     {
         set_output_names();
@@ -279,16 +277,17 @@ void SorptionBase::initialize(OutputTime *stream)
                 data_.conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
         data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream->add_admissible_field_names(output_array, EqData::output_selection);
+        output_stream->add_admissible_field_names(output_array, data_.output_selection);
     }
-    allocate_output_mpi();
-  
   
     //DBGMSG("Going to write initial condition.\n");
     // write initial condition
     output_vector_gather();
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream);
+    if (rank == 0)
+    {
+      data_.output_fields.set_time(*time_);
+      data_.output_fields.output(output_stream);
+    }
   
   // creating reaction from input and setting their parameters
   init_from_input_reaction(input_record_);
@@ -336,7 +335,7 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 
 void SorptionBase::update_solution(void)
 {
-  DBGMSG("Sorption - update_solution\n");
+  //DBGMSG("Sorption - update_solution\n");
   data_.set_time(*time_); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
@@ -505,9 +504,14 @@ void SorptionBase::output_data(void )
     //DBGMSG("Sorption output\n");
     output_vector_gather();
 
-    // Register fresh output data
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream);
+    int ierr, rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank == 0)
+    {
+      // Register fresh output data
+      data_.output_fields.set_time(*time_);
+      data_.output_fields.output(output_stream);
+    }
 
     //it can call only linear reaction which has no output at the moment
     //if(reaction) reaction->output_data();

@@ -3,7 +3,16 @@
     TYPE = "SequentialCoupling", 
     description = "Test3 - Transport 1D-2D, (convection, dual porosity, sorption)", 
     mesh = {
-      mesh_file = "./input/test3.msh"
+      mesh_file = "./input/test3.msh",
+      sets = [
+          {
+            name = "subset",
+            region_ids = [
+                17,
+                18
+            ]
+          }
+        ] 
     }, 
 
     primary_equation = {
@@ -39,37 +48,56 @@
       TYPE = "TransportOperatorSplitting", 
       
       data = [
-        { rid = 17,
+        { r_set = "subset",
           init_conc = 0,
-          porosity= 0.25,
-          por_imm = 0.25,
-          alpha = [0.01, 0.01],
-          phi = 0.5,
-          sorp_type = [ "linear", "freundlich" ],
-          sorp_coef0 = [0.02, 0.02],
-          sorp_coef1 = [0, 0.5]
-        },
-        { rid = 18,
-          init_conc = 0,
-          porosity= 0.25,
-          por_imm = 0.25,
-          alpha = [0.01, 0.01],
-          phi = 0.5,
-          sorp_type = [ "linear", "freundlich" ],
-          sorp_coef0 = [0.02, 0.02],
-          sorp_coef1 = [0, 0.5]
+          porosity= 0.25
         },
         { region = "IMPLICIT BOUNDARY",
           transport_old_bcd_file = "./input/test3.tbc"
         }
       ],
       
-      dual_porosity = true, 
-      sorption_enable = true, 
       substances = [
         "age", 
         "U235"
       ], 
+      
+      reaction_term = {
+        TYPE = "DualPorosity",
+        
+        data = [
+          {
+            r_set="subset",
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
+            init_conc_immobile = [0.0, 0.0]
+          }
+        ],
+        
+        output_fields = [],
+        
+        reaction_mobile = {
+          TYPE = "Adsorption",
+          solvent_density= 1.0,
+          substances = ["age", "U235"],
+          molar_mass= [1.0, 1.0],
+          solubility = [1.0, 1.0],
+          
+          data = [
+            {
+              r_set="subset",
+              rock_density = 1.0,
+              adsorption_type=  ["linear", "freundlich"],
+              isotherm_mult= 0.02, 
+              isotherm_other= [0, 0.5]
+            }
+          ],
+          output_fields = []
+        },
+        reaction_immobile = {
+          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
+        }
+      },
       
       output_stream = {
           REF = "/system/output_streams/1"
