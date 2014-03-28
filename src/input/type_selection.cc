@@ -106,7 +106,11 @@ string Selection::int_to_name(const int &val) const {
 Selection &Selection::copy_values(const Selection &sel)
 {
 	for (auto it = sel.begin(); it != sel.end(); ++it)
-		add_value(it->value, it->key_, it->description_);
+	{
+		int value = it->value;
+		while (data_->value_to_index_.find(value) != data_->value_to_index_.end()) value++;
+		add_value(value, it->key_, it->description_);
+	}
 
 	return *this;
 }

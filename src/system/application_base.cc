@@ -33,22 +33,14 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     // determine logfile name or switch it off
     stringstream log_name;
 
-    if ( log_filename == "\n" ) {
-           // -l option without given name -> turn logging off
-           sys_info.log=NULL;
-    } else
-   if (log_filename != "") {
-      // given log name
-           log_name << log_filename <<  "." << sys_info.my_proc << ".log";
-           sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-           sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    } else {
-        // use default name
-        log_name << "flow123."<< sys_info.my_proc << ".log";
-        sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-        sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
+    if ( log_filename == "//" ) {
+    	// -l option without given name -> turn logging off
+    	sys_info.log=NULL;
+    } else	{
+    	// construct full log name
+    	log_name << log_filename <<  "." << sys_info.my_proc << ".log";
+    	sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
+    	sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
     }
 
     sys_info.verbosity=0;
