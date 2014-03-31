@@ -106,9 +106,11 @@ public:
     Input::Type::Record make_output_field_keys() {
     	namespace IT=Input::Type;
     	IT::Record rec("field_output_keys","AUXILIARY RECORD. Should not be directly part of the input tree.");
+    	// declare key for each field excluding boundary fields
     	for( auto field : field_list)
-    		rec.declare_key(field->name(), IT::String(), IT::Default::optional(),
-    			"Name of the output stream for the field "+field->name()+"." );
+    		if (!field->is_bc())
+    			rec.declare_key(field->name(), IT::String(), IT::Default::optional(),
+    					"Name of the output stream for the field "+field->name()+"." );
     	return rec;
     }
 
@@ -119,10 +121,19 @@ public:
     	namespace IT=Input::Type;
     	IT::Selection sel("field_output_keys","AUXILIARY SELECTION. Should not be directly part of the input tree.");
     	int i=0;
+    	// add value for each field excluding boundary fields
     	for( auto field : field_list)
     	{
-    		sel.add_value(i, field->name(), "Output key for the field "+field->name()+" [" + field->units() + "]." );
-    		i++;
+    		if (!field->is_bc())
+    		{
+    			string desc = "Output of field " + field->name()  + " [" + field->units() + "]";
+    			if (field->desc().length() > 0)
+    				desc += " (" + field->desc() + ").";
+    			else
+    				desc += ".";
+    			sel.add_value(i, field->name(), desc);
+    			i++;
+    		}
     	}
     	sel.close();
 
