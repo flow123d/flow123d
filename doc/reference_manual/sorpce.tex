@@ -26,15 +26,15 @@
 
 We have not mentioned yet details about the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
 There are several models which can be considered in this reaction term, both of chemical or physical nature. 
-The figure \ref{fig:reaction_term} shows all possible reactional models we support in the trasport process. The Operator Splitting method enables 
+The figure \ref{fig:reaction_term} shows all possible reactional models that we support in the trasport process. The Operator Splitting method enables 
 us to deal with the convection part and reaction term side by side. The convected quantities do not influence each other in the convectional
 process and are balanced over the elements. On the other hand the reaction term relates the convected quantities and can be computed 
 separately on each element.
 
 We move now to the description of the reaction term models which can be seen again in the figure \ref{fig:reaction_term}. 
-The convected quantity is considered to be concentration of substances. 
-We can consider \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and \emph{reaction} (we mean chemical 
-reactions) in the reaction term. 
+The convected quantity is considered to be the concentration of substances. 
+Up to now we can have \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and \emph{reaction} (we mean chemical 
+reaction) in the reaction term. 
 
 \begin{figure}
   \centering
@@ -44,31 +44,32 @@ reactions) in the reaction term.
   \label{fig:reaction_term}
 \end{figure}
 
-The \emph{reaction} model computes chemical reactions on the substances involved.
+The \emph{reaction} model computes chemical reactions on the substances involved. It does not have any additional output.
 
-The \emph{adsorption} model describes the exchange of concentration of the substances between the liquid and the mass. It can be
-followed by a chemical \emph{reaction} that can run in the liquid or the mass.
-See the subsection \ref{sec:sorp_math}.
+The \emph{adsorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
+followed by a chemical \emph{reaction} that can run in both phases. The concentration in solid is an additional output 
+of this model. See the subsection \ref{sec:sorp_math}.
 
 
-The \emph{dual porosity} model, described in the subsection \ref{sec:dual_porosity}, introduces so called open and blind pores in the matrix. 
-The convection process operates only on the concentration of the substances in the open pores (mobile zone) and the exchange of 
-concentrations from/to blind pores is governed by molecular diffusion. This process can be followed by \emph{adsorption} model and 
-chemical \emph{reaction} both in open and blind pores.
+The \emph{dual porosity} model, described in the subsection \ref{sec:dual_porosity}, introduces so called immobile pores in the matrix
+which are dead-end pores. The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
+and the exchange of concentrations from/to immobile zone is governed by molecular diffusion. This process can be followed by 
+\emph{adsorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is saved
+in addition.
 
 
 \subsection{Dual porosity.}
 \label{sec:dual_porosity}
 
 Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into two zones -- the mobile zone and the immobile zone. 
-Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the blind pores, where the liquid is trapped and cannot pass through.
-The rest of the pore volume is occupied by the mobile zone (open pores). Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
+Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is trapped and cannot pass through.
+The rest of the pore volume is occupied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
 We consider simple nonequilibrium linear model:
 \begin{align}
     \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
     \theta_i \partial_t c_i &= \alpha ( c_m - c_i), 
 \end{align}
-where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion parameter, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
+where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion rate between the zones, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
 \[
   \theta_m +\theta_i =\theta.
 \]
