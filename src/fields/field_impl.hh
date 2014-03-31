@@ -327,7 +327,9 @@ void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 template<int spacedim, class Value>
 void Field<spacedim, Value>::output(OutputTime *stream)
 {
-	stream->register_data(this->output_type(), *this);
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
 }
 
 
@@ -526,7 +528,9 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::output(OutputTime *stream)
 {
-	stream->register_data(this->output_type(), *this);
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
 }
 
 
