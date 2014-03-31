@@ -108,7 +108,7 @@ void Application::display_version() {
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
-    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
+    xprintf(Msg, "Branch: %s\nFetch URL: %s \nBuild: %s \n\nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
 
@@ -123,7 +123,6 @@ Input::Record Application::read_input() {
     
     // read main input file
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());

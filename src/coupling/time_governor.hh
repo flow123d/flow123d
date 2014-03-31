@@ -375,7 +375,7 @@ public:
      */
     void view(const char *name="") const
     {
-        xprintf(Msg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",
+        xprintf(MsgLog, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",
                 name, time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval);
     }
 
