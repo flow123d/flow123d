@@ -38,7 +38,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 1.0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = 0
@@ -57,39 +57,35 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
-        
-        substances = {
-          REF = "/problem/secondary_equation/substances"
-        },
-        
+
         data = [
           {
             r_set="ALL",
-            alpha = [0.01,0.01],
-            immob_porosity = 0.25,
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
         ],
         
-        reactions_mob = {
-          TYPE = "Sorption",
-          solvent_dens = 1.0,
+        reaction_mobile = {
+          TYPE = "Adsorption",
+          solvent_density= 1.0,
           substances = ["A", "B"],
-          molar_masses = [1.0, 1.0],
+          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
           data = [
             {
               r_set="ALL",
               rock_density = 1.0,
-              sorption_types =  "linear",
-              mult_coefs = 0.6, 
-              second_params = 0.4
+              adsorption_type=  "linear",
+              isotherm_mult= 0.6, 
+              isotherm_other= 0.4
             }
           ]
         },
-        reactions_immob = {
+        reaction_immobile = {
           REF = "/problem/secondary_equation/reactions/reactions_mob"
         }
       }

@@ -49,8 +49,6 @@
         REF = "/system/output_streams/1"
       }, 
 
-      dual_porosity = false, 
-      sorption_enable = false, 
       substances = [
         "A", 
         "B", 
@@ -63,12 +61,9 @@
         end_time = 10.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE="LinearReactions",
-        substances = [
-	  "D",
-	  "E"
-	  ],
+
         decays = [
           {
             parent = "D",

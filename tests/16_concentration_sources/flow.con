@@ -39,7 +39,6 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       boundary_file = "./input/test16.tbc", 
-      dual_porosity = false, 
       initial_file = "./input/test16.tic", 
       
       data= [
@@ -48,7 +47,7 @@
         },
         { rid = 7,
           init_conc = 0,
-          por_m = 1,
+          porosity= 1,
           sources_density = {
             TYPE = "FieldElementwise",
             gmsh_file = "input/test16_sources.msh",
@@ -70,7 +69,7 @@
       output_stream = {
         REF = "/system/output_streams/1"
       }, 
-      sorption_enable = false, 
+
       sources_file = "./input/test16.tso", 
       substances = [
         "conc"

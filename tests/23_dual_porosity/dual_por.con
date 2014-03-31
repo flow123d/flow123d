@@ -38,7 +38,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 1.0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = {TYPE="FieldFormula", value = "0"}
@@ -57,18 +57,14 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
-        
-        substances = {
-          REF = "/problem/secondary_equation/substances"
-        },
         
         data = [
           {
             r_set="ALL",
-            alpha = [0.01,0.01],
-            immob_porosity = 0.25,
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
         ],

@@ -46,10 +46,8 @@
         { region = "IMPLICIT BOUNDARY",
           old_boundary_file = "./input/sit_decay_long.tbc"
         }
-      ]
+      ],
 
-      dual_porosity = false,
-      sorption_enable = false, 
       substances = [
         "A", 
         "B", 
@@ -64,18 +62,9 @@
         end_time = 10.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE="LinearReactions",
-        substances = [
-	  "A", 
-	  "B", 
-	  "C", 
-	  "D", 
-	  "E", 
-	  "F", 
-	  "G", 
-	  "H"
-        ],
+
         decays = [
           {
             parent = "E",

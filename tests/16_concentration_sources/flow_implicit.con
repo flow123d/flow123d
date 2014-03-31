@@ -46,7 +46,7 @@
         },
         { rid = 7,
           init_conc = 0,
-          por_m = 1,
+          porosity= 1,
           diff_m = 1e-9,
           disp_l = 1e-2,
           disp_t = 1e-2,

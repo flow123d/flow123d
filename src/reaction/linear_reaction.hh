@@ -15,9 +15,9 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
+class ReactionTerm;
 
-class Linear_reaction: public Reaction
+class Linear_reaction: public ReactionTerm
 {
 	public:
 		/*

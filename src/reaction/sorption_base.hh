@@ -39,7 +39,7 @@ class Isotherm;
 class Mesh;
 class Distribution;
 
-class SorptionBase:  public Reaction
+class SorptionBase:  public ReactionTerm
 {
 public:
   /**
@@ -60,15 +60,15 @@ public:
     /// Collect all fields
     EqData();
 
-    Field<3, FieldValue<3>::EnumVector > sorption_types; ///< Discrete need Selection for initialization.
+    Field<3, FieldValue<3>::EnumVector > adsorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density; ///< Rock matrix density.
-    Field<3, FieldValue<3>::Vector > mult_coefs; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
-    Field<3, FieldValue<3>::Vector > second_params; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-    Field<3, FieldValue<3>::Vector> init_conc_sorbed; ///< Initial sorbed concentrations. 
+    Field<3, FieldValue<3>::Vector > isotherm_mult; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
+    Field<3, FieldValue<3>::Vector > isotherm_other; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+    Field<3, FieldValue<3>::Vector> init_conc_solid; ///< Initial sorbed concentrations. 
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field copied from transport
     
-    MultiField<3, FieldValue<3>::Scalar>  conc_sorbed;    ///< Calculated sorbed concentrations, for output only.
+    MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
@@ -129,6 +129,8 @@ protected:
    */
   SorptionBase();
   
+  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
+  
   /// Initializes private members of sorption from the input record.
   void init_from_input(Input::Record in_rec) override;
   /** Initializes possible following reactions from input record.
@@ -169,7 +171,7 @@ protected:
    * Density of the solvent. 
    *  TODO: Could be done region dependent, easily.
    */
-  double solvent_dens;
+  double solvent_density;
   /**
    * Critical concentrations of species dissolved in water.
    */
@@ -186,6 +188,8 @@ protected:
    */
   std::vector<std::vector<Isotherm> > isotherms;
   
+  unsigned int n_substances_;   //< number of substances that take part in the sorption model
+  
   /// Output names of substances and fields respectively.
   std::vector<std::string> output_names_;
   /**
@@ -195,7 +199,7 @@ protected:
   /**
    * Array for storage infos about sorbed species concentrations.
    */
-  double** sorbed_conc_array;
+  double** conc_solid;
   
   /// Equation field data;
   EqData data_;
@@ -204,13 +208,13 @@ protected:
 
   /** Reaction model that follows the sorption.
    */
-  Reaction* reaction;
+  ReactionTerm* reaction;
                   
   ///@name members used in output routines
   //@{
-  Vec *vconc_sorbed; ///< PETSC sorbed concentration vector (parallel).
-  Vec *vconc_sorbed_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
-  double **conc_sorbed_out; ///< sorbed concentration array output (gathered - sequential)  
+  Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
+  Vec *vconc_solid_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
+  double **conc_solid_out; ///< sorbed concentration array output (gathered - sequential)  
   //@}
 };
 

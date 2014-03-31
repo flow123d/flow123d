@@ -23,7 +23,7 @@
 using namespace std;
 using namespace Input::Type;
 
-Selection SorptionBase::EqData::sorption_type_selection = Selection("SorptionType")
+Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionType")
 	.add_value(Isotherm::none,"none", "No adsorption considered")
 	.add_value(Isotherm::linear, "linear",
 			"Linear isotherm described adsorption considered.")
@@ -40,13 +40,15 @@ Selection SorptionBase::EqData::output_selection
 
 
 Record SorptionBase::input_type
-	= Record("Sorption", "Information about all the limited solubility affected adsorptions.")
-	.derive_from( Reaction::input_type )
-	.declare_key("solvent_dens", Double(), Default("1.0"),
+	= Record("Adsorption", "Information about all the limited solubility affected adsorptions.")
+	.derive_from( ReactionTerm::input_type )
+        .declare_key("substances", Array(String()), Default::obligatory(),
+                     "Names of the substances that take part in the sorption model.")
+	.declare_key("solvent_density", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
-	.declare_key("molar_masses", Array(Double()), Default::obligatory(),
+	.declare_key("molar_mass", Array(Double()), Default::obligatory(),
 							"Specifies molar masses of all the sorbing species")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the sorbing species")
@@ -55,44 +57,51 @@ Record SorptionBase::input_type
     .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
         
-    .declare_key("reactions", Reaction::input_type, Default::optional(), "Reaction model following the sorption.")
+    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.")
     
 	.declare_key("output_fields", Array(EqData::output_selection),
-            Default("sorbed"), "List of fields to write to output stream.");
+            Default("solid"), "List of fields to write to output stream.");
 
 SorptionBase::EqData::EqData()
 {
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
-    ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
-              sorption_types.input_selection(&sorption_type_selection);
+    ADD_FIELD(adsorption_type,"Considered adsorption is described by selected isotherm."); //
+              adsorption_type.input_selection(&sorption_type_selection);
 
-    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
+    ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
 
-    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
-    ADD_FIELD(init_conc_sorbed, "Initial sorbed concentration of substances."
+    ADD_FIELD(isotherm_other,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
+    ADD_FIELD(init_conc_solid, "Initial solid concentration of substances."
             " Vector, one value for every substance.", "0");
     
     rock_density.units("");
-    init_conc_sorbed.units("M/L^3");
+    init_conc_solid.units("M/L^3");
     
     output_fields += *this;
-    output_fields += conc_sorbed.name("sorbed").units("M/L^3");
+    output_fields += conc_solid.name("solid").units("M/L^3");
 }
 
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: Reaction(init_mesh, in_rec, names)
+	: ReactionTerm(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionBase constructor.\n");
+  initialize_substance_ids(names, in_rec);
+  
+//   for(unsigned int s=0; s<n_all_substances_; s++)
+//     cout << s  << "  " << names_[s] << endl;
+//   
+//   for(unsigned int s=0; s<n_substances_; s++)
+//     cout << s << "  " << substance_id[s] << "  " << names_[substance_id[s]] << endl;
   
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
   
-  data_.sorption_types.n_comp(n_substances_);
-  data_.mult_coefs.n_comp(n_substances_);
-  data_.second_params.n_comp(n_substances_);
-  data_.init_conc_sorbed.n_comp(n_substances_);
+  data_.adsorption_type.n_comp(n_substances_);
+  data_.isotherm_mult.n_comp(n_substances_);
+  data_.isotherm_other.n_comp(n_substances_);
+  data_.init_conc_solid.n_comp(n_substances_);
   
   //setting fields that are set from input file
   input_data_set_+=data_;
@@ -136,25 +145,50 @@ SorptionBase::~SorptionBase(void)
   
 //  if(!output_rec.is_empty())
   {
-    VecDestroy(vconc_sorbed);
-    VecDestroy(vconc_sorbed_out);
+    VecDestroy(vconc_solid);
+    VecDestroy(vconc_solid_out);
   }
 
   for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
   {
     //no mpi vectors
-    xfree(sorbed_conc_array[sbi]);
+    xfree(conc_solid[sbi]);
   }
-  xfree(sorbed_conc_array);
+  xfree(conc_solid);
 }
 
+void SorptionBase::initialize_substance_ids(const vector< string >& names, Input::Record in_rec)
+{
+  Input::Array substances_array = in_rec.val<Input::Array>("substances");
+  unsigned int k, idx, i_spec = 0;
+  
+  for(Input::Iterator<string> spec_iter = substances_array.begin<string>(); spec_iter != substances_array.end(); ++spec_iter, i_spec++)
+  {
+    //finding name in the global array of names
+    for(k = 0; k < names.size(); k++)
+    {
+      if (*spec_iter == names[k]) 
+      {
+        idx = k;
+        break;
+      }
+    }
+    
+    if ((idx < names.size()) && (idx >= 0)) 
+    {
+      substance_id[i_spec] = idx;       //mapping - if not found, it creates new map
+    }
+      else    xprintf(UsrErr,"Wrong name of %d-th reaction specie - not found in global set of transported substances.\n", i_spec);
+    }
+    n_substances_ = substance_id.size();
+}
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 { 
     // Common data for all the isotherms loaded bellow
-	solvent_dens = in_rec.val<double>("solvent_dens");
+	solvent_density = in_rec.val<double>("solvent_density");
 
-	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_masses");
+	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_mass");
   
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
 	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", molar_mass_array.size(), molar_masses.size());
@@ -195,66 +229,65 @@ void SorptionBase::initialize(OutputTime *stream)
   make_tables();
   
     //allocating new array for sorbed concentrations
-    unsigned int nr_of_local_elm = distribution->lsize();
-    sorbed_conc_array = (double**) xmalloc(n_all_substances_ * sizeof(double*));//new double * [n_substances_];
-    conc_sorbed_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+    conc_solid = (double**) xmalloc(n_all_substances_ * sizeof(double*));//new double * [n_substances_];
+    conc_solid_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
     for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
     {
-      sorbed_conc_array[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));//new double[ nr_of_local_elm ];
-      conc_sorbed_out[sbi] = (double*) xmalloc(nr_of_local_elm * sizeof(double));
-      //zero initialization of sorbed concentration for all substances
-      for(unsigned int i=0; i < nr_of_local_elm; i++)
-        sorbed_conc_array[sbi][i] = 0;
+      conc_solid[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
+      conc_solid_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
+      //zero initialization of solid concentration for all substances
+      for(unsigned int i=0; i < distribution->lsize(); i++)
+        conc_solid[sbi][i] = 0;
     }
   
+  allocate_output_mpi();
   
-  //copied from convection set_initial_condition
-  //setting initial condition for sorbed concentrations
-  FOR_ELEMENTS(mesh_, elem)
+  //setting initial condition for solid concentrations
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
   {
-    if (!distribution->is_local(el_4_loc[elem.index()])) continue;
-
-    unsigned int index = el_4_loc[elem.index()] - distribution->begin();
-    ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
-    arma::vec value = data_.init_conc_sorbed.value(elem->centre(), ele_acc);
+    unsigned int index = el_4_loc[loc_el];
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
+    arma::vec value = data_.init_conc_solid.value(ele_acc.centre(), ele_acc);
         
-    //setting initial sorbed concentration for substances involved in adsorption
+    //setting initial solid concentration for substances involved in adsorption
     for (int sbi=0; sbi < n_substances_; sbi++)
     {
       int subst_id = substance_id[sbi];
-      sorbed_conc_array[subst_id][index] = value(sbi);
+      conc_solid[subst_id][loc_el] = value(sbi);
     }
   }
   
     //initialization of output
     output_stream = stream;
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_SELF, &rank);
+    int ierr, rank;
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     if (rank == 0)
     {
         set_output_names();
-        data_.conc_sorbed.init(output_names_);
-        data_.conc_sorbed.set_mesh(*mesh_);
+        data_.conc_solid.init(output_names_);
+        data_.conc_solid.set_mesh(*mesh_);
         data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
         for (int sbi=0; sbi<n_all_substances_; sbi++)
         {
                 // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
                 std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-                      new FieldElementwise<3, FieldValue<3>::Scalar>(conc_sorbed_out[sbi], n_all_substances_, mesh_->n_elements()));
-                data_.conc_sorbed[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+                      new FieldElementwise<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], n_all_substances_, mesh_->n_elements()));
+                data_.conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
         data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream->add_admissible_field_names(output_array, EqData::output_selection);
+        output_stream->add_admissible_field_names(output_array, data_.output_selection);
     }
-    allocate_output_mpi();
-  
   
     //DBGMSG("Going to write initial condition.\n");
     // write initial condition
     output_vector_gather();
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream);
+    if (rank == 0)
+    {
+      data_.output_fields.set_time(*time_);
+      data_.output_fields.output(output_stream);
+    }
   
   // creating reaction from input and setting their parameters
   init_from_input_reaction(input_record_);
@@ -270,7 +303,7 @@ void SorptionBase::initialize(OutputTime *stream)
 void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 {
   //DBGMSG("SorptionBase init_from_input\n");
-  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reactions");
+  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction");
   if ( reactions_it ) 
   {
     if (reactions_it->type() == Linear_reaction::input_type ) {
@@ -302,7 +335,7 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 
 void SorptionBase::update_solution(void)
 {
-  DBGMSG("Sorption - update_solution\n");
+  //DBGMSG("Sorption - update_solution\n");
   data_.set_time(*time_); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
@@ -365,7 +398,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
         //DBGMSG("on s_%d precomputed %d\n",subst_id, isotherms_vec[i_subst].is_precomputed());
       
         Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-        isotherm.interpolate((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[subst_id][loc_el]);
+        isotherm.interpolate((concentration_matrix[subst_id][loc_el]), conc_solid[subst_id][loc_el]);
       }
     }
     else 
@@ -376,7 +409,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
       {
         subst_id = substance_id[i_subst];
         Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
-        isotherm.compute((concentration_matrix[subst_id][loc_el]), sorbed_conc_array[subst_id][loc_el]);
+        isotherm.compute((concentration_matrix[subst_id][loc_el]), conc_solid[subst_id][loc_el]);
       }
     }
     
@@ -394,7 +427,7 @@ void SorptionBase::set_output_names(void )
   //output_names_ = names_;
   for(unsigned int i=0; i < n_all_substances_; i++)
   {
-    output_names_[i] = names_[i] + "_sorbed_mobile";
+    output_names_[i] = names_[i] + "_solid_mobile";
   }
 }
 
@@ -422,20 +455,20 @@ void SorptionBase::allocate_output_mpi(void )
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
-    vconc_sorbed = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
+    vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     
     // if( rank == 0)
-    vconc_sorbed_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
+    vconc_solid_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), sorbed_conc_array[sbi],
-                &vconc_sorbed[sbi]);
-        VecZeroEntries(vconc_sorbed[sbi]);
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), conc_solid[sbi],
+                &vconc_solid[sbi]);
+        VecZeroEntries(vconc_solid[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_sorbed_out[sbi], &vconc_sorbed_out[sbi]);
-        VecZeroEntries(vconc_sorbed_out[sbi]);
+        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
+        VecZeroEntries(vconc_solid_out[sbi]);
     }
 }
 
@@ -454,10 +487,10 @@ void SorptionBase::output_vector_gather()
     
     //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_sorbed[0], is, vconc_sorbed_out[0], PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < n_all_substances_; sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_sorbed[sbi], vconc_sorbed_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_sorbed[sbi], vconc_sorbed_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
@@ -471,9 +504,14 @@ void SorptionBase::output_data(void )
     //DBGMSG("Sorption output\n");
     output_vector_gather();
 
-    // Register fresh output data
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream);
+    int ierr, rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    if (rank == 0)
+    {
+      // Register fresh output data
+      data_.output_fields.set_time(*time_);
+      data_.output_fields.output(output_stream);
+    }
 
     //it can call only linear reaction which has no output at the moment
     //if(reaction) reaction->output_data();

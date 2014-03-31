@@ -18,7 +18,7 @@ class Distribution;
 class OutputTime;
 
 
-class Reaction: public EquationBase
+class ReactionTerm: public EquationBase
 {
 public:
   
@@ -37,11 +37,11 @@ public:
    *  Constructor with parameter for initialization of a new declared class member
    *  TODO: parameter description
    */
-  Reaction(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
+  ReactionTerm(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
   /**
    * Destructor.
    */
-  ~Reaction(void);
+  ~ReactionTerm(void);
   
   /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
    * This method can be overriden just for that purpose.
@@ -98,8 +98,6 @@ protected:
    * It is intended to use in ascendants.
    */
   virtual void init_from_input(Input::Record in_rec) {};
-  
-  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
 
   /**
    * Pointer to two-dimensional array[species][elements] containing mobile concentrations.
@@ -125,12 +123,8 @@ protected:
    */
   vector<string> names_;
   
-  unsigned int n_substances_;   //< number of substances that take part in the reaction model
   unsigned int n_all_substances_;   //< number of all substances in the transport model
   std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
-  
-  /// Record with output specification.
-//  Input::Record output_rec;
 
   OutputTime *output_stream;
 

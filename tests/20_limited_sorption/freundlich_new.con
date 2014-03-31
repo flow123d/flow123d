@@ -40,7 +40,7 @@
       data = [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
@@ -54,20 +54,20 @@
         end_time = 15.0
       },
       
-      reactions = {
-        TYPE = "Sorption",
-        solvent_dens = 1.0,
+      reaction_term = {
+        TYPE = "Adsorption",
+        solvent_density= 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
-        molar_masses = [1.0, 1.0, 1.0, 1.0],
+        molar_mass= [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
         data = [
           {
             r_set="ALL",
             rock_density = 1.0,
-            sorption_types = "freundlich",
-            mult_coefs = 0.6, 
-            //mult_coefs = { TYPE="FieldFormula", value="0.6"},
-            second_params = 0.4
+            adsorption_type= "freundlich",
+            isotherm_mult= 0.6, 
+            //isotherm_mult= { TYPE="FieldFormula", value="0.6"},
+            isotherm_other= 0.4
           }
         ],
         output_fields = []

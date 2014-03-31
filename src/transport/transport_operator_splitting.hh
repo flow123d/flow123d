@@ -20,10 +20,9 @@ class Mesh;
 //class Distribution;
 //class SparseGraph;
 
-class Reaction;
+class ReactionTerm;
 class ConvectionTransport;
 
-class SorptionBase;
 class Semchem_interface;
 
 
@@ -89,7 +88,7 @@ public:
 		}
 */
 		/// Mobile porosity
-		Field<3, FieldValue<3>::Scalar> por_m;
+		Field<3, FieldValue<3>::Scalar> porosity;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
@@ -269,10 +268,7 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     ConvectionTransport *convection;
-    Reaction *reaction;
-    
-    Reaction *decayRad;
-    SorptionBase *sorptions;
+    ReactionTerm *reaction;
 
     Semchem_interface *Semchem_reactions;
     //int steps;

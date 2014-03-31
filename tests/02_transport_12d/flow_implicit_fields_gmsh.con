@@ -70,7 +70,7 @@
             TYPE="FieldFormula",
             value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
-          por_m = 0.25,
+          porosity= 0.25,
           dg_penalty=10
         },
         {
@@ -79,7 +79,7 @@
             TYPE="FieldFormula",
             value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
-          por_m = 0.25,
+          porosity= 0.25,
           diff_m = 1e-1,
           dg_penalty=10
         }
