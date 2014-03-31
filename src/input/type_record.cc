@@ -274,10 +274,10 @@ bool Record::finish()
     if (data_->auto_conversion_key_idx != -1 ) {
         data_->auto_conversion_key_idx=key_index(data_->auto_conversion_key);
 
-        // check that all other keys have default values
+        // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
-            if (! it->default_.has_value_at_declaration() && it->key_index != data_->auto_conversion_key_idx)
-                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
+            if (it->default_.is_obligatory() && it->key_index != data_->auto_conversion_key_idx)
+                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other obligatory key: '%s' has no default value.\n",
                         data_->auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
         }
     }

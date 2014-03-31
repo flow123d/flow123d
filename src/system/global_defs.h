@@ -173,6 +173,13 @@
     } while (0)
 
 
+
+
+#if defined(ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
+#undef ASSERT_LE
+#endif
+
+
 #define ASSERT_LE( a, b) do {\
     stringstream ss; ss << (a) << " > " << (b); \
     ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \

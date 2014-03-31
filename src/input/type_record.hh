@@ -334,9 +334,9 @@ protected:
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        if (! is_finished()) {
-            DBGMSG("Record not finished!\n");
-        }
+        //if (! is_finished()) {
+        //    DBGMSG("Record not finished!\n");
+        //}
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
