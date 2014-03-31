@@ -45,6 +45,8 @@ ostream& operator<<(ostream& stream, const TimeMark &mark)
 }
 
 const TimeMark::Type TimeMark::every_type =  ~0x0;
+const TimeMark::Type TimeMark::none_type =  0x0;
+
 
 //This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks //OBSOLETE
 //const TimeMark::Type TimeMark::strict =  0x1;
@@ -144,6 +146,31 @@ TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type
     // cout << "TimeMark::last(): " << *first_ge << endl;
     return TimeMarksIterator(marks_, first_ge, mask);
 }
+
+
+
+TimeMarks::iterator TimeMarks::last(const TimeMark::Type &mask) const
+{
+	auto it = TimeMarksIterator(marks_, --marks_.end(), mask); // +INF time mark
+	--it;
+	return it;
+}
+
+
+
+TimeMarks::iterator TimeMarks::begin() const
+{
+	return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type);
+}
+
+
+
+TimeMarks::iterator TimeMarks::end() const
+{
+	return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type);
+}
+
+
 
 ostream& operator<<(ostream& stream, const TimeMarks &marks)
 {
