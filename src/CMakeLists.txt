@@ -125,6 +125,7 @@ set(sources_fast_intersection
 set(sources_intersection_2_3
 	intersection/plucker.cpp
 	intersection/simplex.cpp
+	intersection/intersectionlocal.cpp
 	intersection/computeintersection.cpp
 )
 

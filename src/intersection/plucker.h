@@ -4,20 +4,28 @@
 using namespace std;
 namespace computeintersection{
 
-template<int N> class Simplex;
-
 class Plucker{
 private:
 	arma::vec6 coordinates;
-	//double coordinates[6];
+	bool computed;
+
 public:
-	inline Plucker(){};
-	//Plucker(arma::vec3 u, arma::vec3 a);
+	Plucker();
 	Plucker(const arma::vec3 u, const arma::vec3 a);
 	inline ~Plucker(){};
+
 	inline double operator[](int index){return coordinates[index];};
+
 	double operator*(Plucker b);
 	void operator*(double number);
+
+	void setComputed(bool computed);
+	void clear();
+	bool isComputed();
+
+
+	void compute(const arma::vec3 u, const arma::vec3 a);
+
 	void toString();
 };
 } // END namespace_close

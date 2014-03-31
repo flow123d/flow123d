@@ -81,7 +81,7 @@ public:
 		return Simplices[a];
 	}
 	;
-	inline Simplex<N - 1> getSimplexChild(int a) const {
+	inline Simplex<N - 1> getSimplexChild(int a){
 		return Simplices[a];
 	}
 	;

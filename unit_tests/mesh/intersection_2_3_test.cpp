@@ -13,6 +13,21 @@
 using namespace std;
 using namespace computeintersection;
 
+
+void neco(Plucker &p_ref){
+	//cout << "adresa vlozeneho parametru: " << p_ref << endl;
+	cout << "adresa vlozeneho parametru: " << &p_ref << endl;
+
+	Plucker *tak = &p_ref;
+	cout << "adresa noveho pointru - na co koukam:" << tak << endl;
+	cout << "adresa pointu: " << &tak << endl;
+	tak = new Plucker();
+	cout << "adresa noveho pointru - na co koukam:" << tak << endl;
+	//Plucker ha = p_ref;
+	//cout << "Adresa noveho objektu: " << &ha << endl;
+
+}
+
 TEST(intersections, all) {
 
 
@@ -21,9 +36,9 @@ TEST(intersections, all) {
 	cout << "========== Includované objekty: =============" << endl;
 	arma::vec3 vectorA, vectorB, vectorC, vectorD;
 	vectorA[0] = 1;vectorA[1] = 2;vectorA[2] = 3;
-	vectorB[0] = -4;vectorB[1] = 2;vectorB[2] = -4;
-	vectorC[0] = 18;vectorC[1] = 4;vectorC[2] = -5;
-	vectorD[0] = 4;vectorD[1] = 3;vectorD[2] = 20;
+	vectorB[0] = -8;vectorB[1] = 1;vectorB[2] = -5;
+	vectorC[0] = 12;vectorC[1] = 1;vectorC[2] = -7;
+	vectorD[0] = 5;vectorD[1] = 1;vectorD[2] = 10;
 	cout << "=== Vector(" << vectorA[0] << "," << vectorA[1] << "," << vectorA[2] << ") ===" << endl;
 	arma::vec3 pole_vec[] = {vectorA,vectorB,vectorC,vectorD};
 
@@ -55,21 +70,21 @@ TEST(intersections, all) {
 
 
 	arma::vec3 vector;
-	vector[0] = 0;
-	vector[1] = 0;
+	vector[0] = 1;
+	vector[1] = -3;
 	vector[2] = 0;
 	arma::vec3 vector2;
-	vector2[0] = 10;
-	vector2[1] = 0;
-	vector2[2] = 0;
+	vector2[0] = 7;
+	vector2[1] = -11;
+	vector2[2] = -2;
 	arma::vec3 vector3;
-	vector3[0] = 5;
-	vector3[1] = 0;
-	vector3[2] = 8;
+	vector3[0] = 3;
+	vector3[1] = -15;
+	vector3[2] = 7;
 	arma::vec3 vector4;
-	vector4[0] = 6;
-	vector4[1] = 8;
-	vector4[2] = 4;
+	vector4[0] = 3;
+	vector4[1] = 5;
+	vector4[2] = 2;
 	arma::vec3 pole_vectoru[] = {vector,vector2,vector3,vector4};
 	arma::vec3 pole_vectoru2[] = {vectorB,vectorC,vectorD};
 
@@ -78,10 +93,13 @@ TEST(intersections, all) {
 
 	ComputeIntersection<Simplex<2>, Simplex<3> > novyCI(sim2, sim3);
 
-		novyCI.init();
-		novyCI.compute();
+	//novyCI.setPC_tetrahedron(test_plucker, 1);
+	//novyCI.setPC_triangle(test_plucker2,0);
+	novyCI.init();
+	novyCI.compute();
+		//novyCI.clear_all();
 		//novyCI.toStringPluckerCoordinatesTree();
-
+		/*
 		arma::vec3 vecAA; vecAA[0] = 0; vecAA[1]= 2;vecAA[2] = 0;
 		arma::vec3 vecBB; vecBB[0] = 2; vecBB[1]= 3;vecBB[2] = 4;
 		arma::vec3 vecCC; vecCC[0] = 5; vecCC[1]= 1;vecCC[2] = -1;
@@ -100,6 +118,18 @@ TEST(intersections, all) {
 		cout << soucinABCD << " - " << soucinABDC << endl;
 		cout << CD*AB << "-" << AB*CD << endl;
 		cout << DC*AB << "-" << AB*DC << endl;
+
+
+		cout << "test referenci: " << endl;
+		AB.toString();
+		cout << "adresa: " << &AB << endl;
+
+		Plucker *kam_koukam = NULL;
+		cout << "adresa kam koukam uvnitr pointru: " << kam_koukam << endl;
+		cout << "primo adresa pointru:" << &kam_koukam << endl;
+		neco(*kam_koukam);
+
+*/
 
 	cout << "==================================================================" << endl;
 }
