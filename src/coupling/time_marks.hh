@@ -251,10 +251,10 @@ public:
     TimeMarks::iterator last(const TimeMark::Type &mask) const;
 
     /// Iterator for the begin mimics container-like  of TimeMarks
-    TimeMarks::iterator begin() const;
+    TimeMarks::iterator begin(TimeMark::Type mask = TimeMark::every_type) const;
 
     /// Iterator for the end mimics container-like  of TimeMarks
-    TimeMarks::iterator end() const;
+    TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
 
     /// Friend output operator.
     friend ostream& operator<<(ostream& stream, const TimeMarks &marks);

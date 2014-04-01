@@ -158,16 +158,16 @@ TimeMarks::iterator TimeMarks::last(const TimeMark::Type &mask) const
 
 
 
-TimeMarks::iterator TimeMarks::begin() const
+TimeMarks::iterator TimeMarks::begin(TimeMark::Type mask) const
 {
-	return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type);
+	return TimeMarksIterator(marks_, marks_.begin(), mask);
 }
 
 
 
-TimeMarks::iterator TimeMarks::end() const
+TimeMarks::iterator TimeMarks::end(TimeMark::Type mask) const
 {
-	return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type);
+	return TimeMarksIterator(marks_, --marks_.end(), mask);
 }
 
 
