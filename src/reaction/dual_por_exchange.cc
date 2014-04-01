@@ -48,7 +48,7 @@ Record DualPorosity::input_type
     .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
     
     .declare_key("output_fields", Array(EqData::output_selection),
-                Default("immobile"), "List of fields to write to output stream.");
+                Default("conc_immobile"), "List of fields to write to output stream.");
     
 DualPorosity::EqData::EqData()
 {
@@ -63,7 +63,7 @@ DualPorosity::EqData::EqData()
   init_conc_immobile.units("M/L^3");
   
   output_fields += *this;
-  output_fields += conc_immobile.name("immobile").units("M/L^3");
+  output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
@@ -126,11 +126,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_mobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionMob::input_type ) {
         reaction_mobile =  new SorptionMob(*mesh_, *reactions_it, names_);
-                
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
+
+        static_cast<SorptionMob *> (reaction_mobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
@@ -159,11 +160,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_immobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionImmob::input_type ) {
         reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it, names_);
         
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);        
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
+        static_cast<SorptionImmob *> (reaction_immobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {

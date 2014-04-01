@@ -89,7 +89,7 @@
         },
         
         reaction_immobile = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
       }
           

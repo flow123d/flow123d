@@ -69,7 +69,7 @@
           }
         ],
         
-        reactions_mob = {
+        reaction_mobile = {
           TYPE="LinearReactions",
           substances = [
             "A",
@@ -84,8 +84,8 @@
           ]
         },
         
-        reactions_immob = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+        reaction_immobile = {
+          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
       }
           

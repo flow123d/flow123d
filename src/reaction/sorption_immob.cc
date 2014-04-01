@@ -11,6 +11,26 @@
 
 using namespace std;
 
+
+IT::Selection SorptionImmob::EqData::output_selection
+		= IT::Selection("AdsorptionImmobile_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
+IT::Record SorptionImmob::input_type
+	= IT::Record("AdsorptionImmobile", "Information about all the limited solubility affected adsorptions.")
+	.derive_from( ReactionTerm::input_type )
+	.copy_keys(SorptionBase::input_type)
+	.declare_key("output_fields", IT::Array(EqData::output_selection),
+            IT::Default("conc_immobile_solid"), "List of fields to write to output stream.");
+
+
+
+SorptionImmob::EqData::EqData()
+{
+    output_fields += conc_solid.name("conc_immobile_solid").units("M/L^3");
+}
+
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: SorptionDual(init_mesh, in_rec, names)
 {

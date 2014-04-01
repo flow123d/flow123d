@@ -33,15 +33,9 @@ Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionT
 			"Freundlich isotherm described adsorption considered");
 
 
-Selection SorptionBase::EqData::output_selection
-		= Selection("Sorption_Output")
-		.copy_values(EqData().output_fields.make_output_field_selection())
-		.close();
-
 
 Record SorptionBase::input_type
-	= Record("Adsorption", "Information about all the limited solubility affected adsorptions.")
-	.derive_from( ReactionTerm::input_type )
+	= Record("Adsorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
         .declare_key("substances", Array(String()), Default::obligatory(),
                      "Names of the substances that take part in the sorption model.")
 	.declare_key("solvent_density", Double(), Default("1.0"),
@@ -54,13 +48,10 @@ Record SorptionBase::input_type
 							"Specifies solubility limits of all the sorbing species")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
+    .declare_key("data", Array(EqData().make_field_descriptor_type("Adsorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
-        
-    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.")
+    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.");
     
-	.declare_key("output_fields", Array(EqData::output_selection),
-            Default("solid"), "List of fields to write to output stream.");
 
 SorptionBase::EqData::EqData()
 {
@@ -77,9 +68,12 @@ SorptionBase::EqData::EqData()
     
     rock_density.units("");
     init_conc_solid.units("M/L^3");
+
+    // porosity field is set from governing equation (transport) later
+    // hence we do not call ADD_FIELD at this point
+    *this += porosity.name("porosity").units("1");
     
     output_fields += *this;
-    output_fields += conc_solid.name("solid").units("M/L^3");
 }
 
 
@@ -98,27 +92,10 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   nr_of_regions = init_mesh.region_db().bulk_size();
   nr_of_points = in_rec.val<int>("substeps");
   
-  data_.adsorption_type.n_comp(n_substances_);
-  data_.isotherm_mult.n_comp(n_substances_);
-  data_.isotherm_other.n_comp(n_substances_);
-  data_.init_conc_solid.n_comp(n_substances_);
-  
-  //setting fields that are set from input file
-  input_data_set_+=data_;
-  input_data_set_.set_input_list(in_rec.val<Input::Array>("data"));
-    
-  //creating field for porosity that is set later from the governing equation (transport)
-  data_+=(data_.porosity
-          .name("porosity")
-          .units("0")
-         );
-  
-  data_.set_mesh(init_mesh);
-  data_.set_limit_side(LimitSide::right);
-  
 //  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
   //output_rec = in_rec.find<Input::Record>("output");
 //  if(out_rec) output_rec = *out_rec;
+  input_data = in_rec.val<Input::Array>("data");
   output_array = in_rec.val<Input::Array>("output_fields");
   
   output_names_.resize(names_.size());
@@ -134,8 +111,6 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
       Isotherm iso_mob;
       isotherms[i_reg].push_back(iso_mob);
     }
-    
-  init_from_input(in_rec);
 }
 
 
@@ -185,6 +160,18 @@ void SorptionBase::initialize_substance_ids(const vector< string >& names, Input
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 { 
+	data().adsorption_type.n_comp(n_substances_);
+	data().isotherm_mult.n_comp(n_substances_);
+	data().isotherm_other.n_comp(n_substances_);
+	data().init_conc_solid.n_comp(n_substances_);
+
+	//setting fields that are set from input file
+	input_data_set_+=data();
+	input_data_set_.set_input_list(input_data);
+
+	data().set_mesh(*mesh_);
+	data().set_limit_side(LimitSide::right);
+
     // Common data for all the isotherms loaded bellow
 	solvent_density = in_rec.val<double>("solvent_density");
 
@@ -218,6 +205,7 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 		// fill table_limit_ with zeros or resize it at least
 		table_limit_.resize(n_substances_);
 	}
+
 }
 
 void SorptionBase::initialize(OutputTime *stream)
@@ -225,7 +213,7 @@ void SorptionBase::initialize(OutputTime *stream)
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   
-  data_.set_time(*time_);
+  data().set_time(*time_);
   make_tables();
   
     //allocating new array for sorbed concentrations
@@ -247,7 +235,7 @@ void SorptionBase::initialize(OutputTime *stream)
   {
     unsigned int index = el_4_loc[loc_el];
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-    arma::vec value = data_.init_conc_solid.value(ele_acc.centre(), ele_acc);
+    arma::vec value = data().init_conc_solid.value(ele_acc.centre(), ele_acc);
         
     //setting initial solid concentration for substances involved in adsorption
     for (int sbi=0; sbi < n_substances_; sbi++)
@@ -265,19 +253,19 @@ void SorptionBase::initialize(OutputTime *stream)
     if (rank == 0)
     {
         set_output_names();
-        data_.conc_solid.init(output_names_);
-        data_.conc_solid.set_mesh(*mesh_);
-        data_.output_fields.output_type(OutputTime::ELEM_DATA);
+        data().conc_solid.init(output_names_);
+        data().conc_solid.set_mesh(*mesh_);
+        data().output_fields.output_type(OutputTime::ELEM_DATA);
 
         for (int sbi=0; sbi<n_all_substances_; sbi++)
         {
                 // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
                 std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
                       new FieldElementwise<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], n_all_substances_, mesh_->n_elements()));
-                data_.conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+                data().conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
         }
-        data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream->add_admissible_field_names(output_array, data_.output_selection);
+        data().output_fields.set_limit_side(LimitSide::right);
+        output_stream->add_admissible_field_names(output_array, get_output_selection());
     }
   
     //DBGMSG("Going to write initial condition.\n");
@@ -285,8 +273,8 @@ void SorptionBase::initialize(OutputTime *stream)
     output_vector_gather();
     if (rank == 0)
     {
-      data_.output_fields.set_time(*time_);
-      data_.output_fields.output(output_stream);
+      data().output_fields.set_time(*time_);
+      data().output_fields.output(output_stream);
     }
   
   // creating reaction from input and setting their parameters
@@ -336,11 +324,11 @@ void SorptionBase::init_from_input_reaction(Input::Record in_rec)
 void SorptionBase::update_solution(void)
 {
   //DBGMSG("Sorption - update_solution\n");
-  data_.set_time(*time_); // set to the last computed time
+  data().set_time(*time_); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
   // update interpolation tables in the case of constant rock matrix parameters
-  if(data_.changed())
+  if(data().changed())
     make_tables();
     
 
@@ -361,7 +349,7 @@ void SorptionBase::make_tables(void)
   {
     int reg_idx = reg_iter.bulk_idx();
 
-    if(data_.is_constant(reg_iter))
+    if(data().is_constant(reg_iter))
     {
       ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
       isotherm_reinit(isotherms[reg_idx],elm);
@@ -418,7 +406,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 
 void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
 {
-  data_.set_field(data_.porosity.name(),por_m); 
+  data().set_field(data().porosity.name(),por_m);
 }
 
 void SorptionBase::set_output_names(void )
@@ -509,8 +497,8 @@ void SorptionBase::output_data(void )
     if (rank == 0)
     {
       // Register fresh output data
-      data_.output_fields.set_time(*time_);
-      data_.output_fields.output(output_stream);
+      data().output_fields.set_time(*time_);
+      data().output_fields.output(output_stream);
     }
 
     //it can call only linear reaction which has no output at the moment

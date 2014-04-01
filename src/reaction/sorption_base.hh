@@ -55,8 +55,6 @@ public:
      */
     static Input::Type::Selection sorption_type_selection;
 
-    static Input::Type::Selection output_selection;
-
     /// Collect all fields
     EqData();
 
@@ -99,6 +97,8 @@ public:
    */
   virtual void set_output_names(void);
   
+  virtual Input::Type::Selection get_output_selection() = 0;
+
   /**
    * Initialization routines that are done in constructors of descendants.
    * Method data() which access EqData is pure virtual and cannot be called from the base constructor.
@@ -114,6 +114,9 @@ public:
    */
   void make_tables(void);
   
+  /// Initializes private members of sorption from the input record.
+  void init_from_input(Input::Record in_rec) override;
+
   void initialize(OutputTime *stream) override;
   void output_data(void) override;
   void output_vector_gather(void) override;
@@ -131,8 +134,6 @@ protected:
   
   void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
   
-  /// Initializes private members of sorption from the input record.
-  void init_from_input(Input::Record in_rec) override;
   /** Initializes possible following reactions from input record.
    * It should be called after setting mesh, time_governor, distribution and concentration_matrix
    * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
@@ -155,6 +156,9 @@ protected:
   
   void allocate_output_mpi(void);
   
+  /// Equation field data.
+  virtual EqData &data() = 0;
+
   /**
    * Number of regions.
    */
@@ -201,9 +205,8 @@ protected:
    */
   double** conc_solid;
   
-  /// Equation field data;
-  EqData data_;
-  
+  Input::Array input_data;
+
   Input::Array output_array;
 
   /** Reaction model that follows the sorption.

@@ -70,7 +70,7 @@
         ],
         
         reaction_mobile = {
-          TYPE = "Adsorption",
+          TYPE = "AdsorptionMobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
@@ -86,7 +86,12 @@
           ]
         },
         reaction_immobile = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+          TYPE = "AdsorptionImmobile",
+          solvent_density= { REF="/problem/secondary_equation/reaction_term/reaction_mobile/solvent_density" },
+          substances = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/substances" },
+          molar_mass = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/molar_mass" },
+          solubility = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
+          data = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/data" }
         }
       }
           

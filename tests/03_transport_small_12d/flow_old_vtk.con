@@ -77,7 +77,7 @@
         output_fields = [],
         
         reaction_mobile = {
-          TYPE = "Adsorption",
+          TYPE = "AdsorptionMobile",
           solvent_density= 1.0,
           substances = ["age", "U235"],
           molar_mass= [1.0, 1.0],
@@ -95,7 +95,22 @@
           output_fields = []
         },
         reaction_immobile = {
-          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
+          TYPE = "AdsorptionImmobile",
+          solvent_density= 1.0,
+          substances = ["age", "U235"],
+          molar_mass= [1.0, 1.0],
+          solubility = [1.0, 1.0],
+          
+          data = [
+            {
+              r_set="subset",
+              rock_density = 1.0,
+              adsorption_type=  ["linear", "freundlich"],
+              isotherm_mult= 0.02, 
+              isotherm_other= [0, 0.5]
+            }
+          ],
+          output_fields = []
         }
       },
 
