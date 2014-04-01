@@ -9,6 +9,25 @@
 
 using namespace std;
 
+
+IT::Selection SorptionSimple::EqData::output_selection
+		= IT::Selection("AdsorptionSimple_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
+IT::Record SorptionSimple::input_type
+	= IT::Record("AdsorptionSimple", "Information about all the limited solubility affected adsorptions.")
+	.derive_from( ReactionTerm::input_type )
+	.copy_keys(SorptionBase::input_type)
+	.declare_key("output_fields", IT::Array(EqData::output_selection),
+            IT::Default("conc_solid"), "List of fields to write to output stream.");
+
+
+SorptionSimple::EqData::EqData()
+{
+    output_fields += conc_solid.name("conc_solid").units("M/L^3");
+}
+
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
   : SorptionBase(init_mesh, in_rec, names)
 {

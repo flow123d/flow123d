@@ -171,36 +171,27 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
-    int ierr, rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-    if (rank == 0)
-    {
-    	vector<string> output_names(subst_names_);
-    	for (vector<string>::iterator it=output_names.begin(); it!=output_names.end(); it++)
-    		*it += "_mobile";
-    	data_.conc_mobile.init(output_names);
-    	data_.conc_mobile.set_mesh(*mesh_);
-    	data_.output_fields.output_type(OutputTime::ELEM_DATA);
+	vector<string> output_names(subst_names_);
+	for (vector<string>::iterator it=output_names.begin(); it!=output_names.end(); it++)
+		*it += "_mobile";
+	data_.conc_mobile.init(output_names);
+	data_.conc_mobile.set_mesh(*mesh_);
+	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-    	for (int sbi=0; sbi<n_subst_; sbi++)
-    	{
-    		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-    		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
-    		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-    	}
-        data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream_ = OutputTime::output_stream(output_rec);
-        output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
-    }
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	}
+	data_.output_fields.set_limit_side(LimitSide::right);
+	output_stream_ = OutputTime::output_stream(output_rec);
+	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
     // write initial condition
     output_vector_gather();
-    if (rank == 0)
-    {
-    	data_.output_fields.set_time(*time_);
-    	data_.output_fields.output(output_stream_);
-    }
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_stream_);
 }
 
 

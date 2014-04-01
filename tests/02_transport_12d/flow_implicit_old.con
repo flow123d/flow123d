@@ -43,11 +43,7 @@
           REF = "/system/output_streams/1"
       }, 
 
-      dual_porosity = true, 
-      sorption_enable = true, 
-      substances = [
-        "A"
-      ], 
+      substances = [ "A" ], 
       time = {
         end_time = 5.0,
 	init_dt = 0.5

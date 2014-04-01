@@ -293,23 +293,20 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-    if (feo->dh()->el_ds()->myp() == 0)
-    {
-    	data_.output_field.init(subst_names_);
-    	data_.output_field.set_mesh(*mesh_);
-    	data_.output_fields.output_type(OutputTime::CORNER_DATA);
+	data_.output_field.init(subst_names_);
+	data_.output_field.set_mesh(*mesh_);
+	data_.output_fields.output_type(OutputTime::CORNER_DATA);
 
-    	for (int sbi=0; sbi<n_subst_; sbi++)
-    	{
-    		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-    		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
-    		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-    	}
-        data_.output_fields.set_limit_side(LimitSide::left);
-        output_stream = OutputTime::output_stream(output_rec);
-        output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
-    }
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
+		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
+		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	}
+	data_.output_fields.set_limit_side(LimitSide::left);
+	output_stream = OutputTime::output_stream(output_rec);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
     // set time marks for writing the output
     output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
@@ -338,11 +335,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // gather the solution from all processors
     output_vector_gather();
 	// on the main processor fill the output array and save to file
-	if (feo->dh()->el_ds()->myp() == 0)
-	{
-        data_.output_fields.set_time(*time_);
-        data_.output_fields.output(output_stream);
-	}
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_stream);
 
 }
 

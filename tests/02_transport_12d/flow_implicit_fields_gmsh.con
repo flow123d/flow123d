@@ -40,8 +40,6 @@
         REF = "/system/output_streams/1"
       },
 
-      dual_porosity = true, 
-      sorption_enable = true, 
       substances = [
         "A", 
         "B"

@@ -143,9 +143,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 reaction = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
               
             } else
-            if (reactions_it->type() == SorptionBase::input_type ) {
+            if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
                 
+                static_cast<SorptionSimple *> (reaction) -> init_from_input(*reactions_it);
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else

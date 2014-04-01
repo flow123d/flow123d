@@ -48,7 +48,7 @@ Record DualPorosity::input_type
     .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
     
     .declare_key("output_fields", Array(EqData::output_selection),
-                Default("immobile"), "List of fields to write to output stream.");
+                Default("conc_immobile"), "List of fields to write to output stream.");
     
 DualPorosity::EqData::EqData()
 {
@@ -63,7 +63,7 @@ DualPorosity::EqData::EqData()
   init_conc_immobile.units("M/L^3");
   
   output_fields += *this;
-  output_fields += conc_immobile.name("immobile").units("M/L^3");
+  output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
@@ -126,11 +126,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_mobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionMob::input_type ) {
         reaction_mobile =  new SorptionMob(*mesh_, *reactions_it, names_);
-                
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
+
+        static_cast<SorptionMob *> (reaction_mobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
@@ -159,11 +160,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_immobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionImmob::input_type ) {
         reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it, names_);
         
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);        
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
+        static_cast<SorptionImmob *> (reaction_immobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
@@ -186,88 +188,77 @@ void DualPorosity::init_from_input(Input::Record in_rec)
 
 void DualPorosity::initialize(OutputTime *stream)
 { 
-  //DBGMSG("DualPorosity - initialize.\n");
-  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
-  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+	//DBGMSG("DualPorosity - initialize.\n");
+	ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+	ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   
-  data_.set_time(*time_);
+	data_.set_time(*time_);
     
-  //allocating memory for immobile concentration matrix
-  conc_immobile = (double**) xmalloc(n_all_substances_ * sizeof(double*));
-  conc_immobile_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
-  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
-  {
-    conc_immobile[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
-    conc_immobile_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
-  }
+	//allocating memory for immobile concentration matrix
+	conc_immobile = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+	conc_immobile_out = (double**) xmalloc(n_all_substances_ * sizeof(double*));
+	for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
+	{
+		conc_immobile[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+		conc_immobile_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
+	}
   
-  //DBGMSG("DualPorosity - init_conc_immobile.\n");  
-  //setting initial condition for immobile concentration matrix
-  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++) 
-  {
-    unsigned int index = el_4_loc[loc_el];
-    ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-    arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
+	//DBGMSG("DualPorosity - init_conc_immobile.\n");
+	//setting initial condition for immobile concentration matrix
+	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	{
+		unsigned int index = el_4_loc[loc_el];
+		ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
+		arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
-    for (int sbi=0; sbi < n_all_substances_; sbi++)
-    {
-      conc_immobile[sbi][loc_el] = value(sbi);
-    }
-  }
+		for (int sbi=0; sbi < n_all_substances_; sbi++)
+		{
+			conc_immobile[sbi][loc_el] = value(sbi);
+		}
+	}
   
     //initialization of output
     allocate_output_mpi();
     output_stream = stream;
-    
-    int ierr,rank;
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-    if (rank == 0)
-    {
-      //DBGMSG("DualPorosity - output init_cond1, rank= %d.\n", rank);
-    	vector<string> output_names_;
-    	for(unsigned int i=0; i < n_all_substances_; i++)
-    	    output_names_.push_back(names_[i] + "_immobile");
+	vector<string> output_names_;
+	for(unsigned int i=0; i < n_all_substances_; i++)
+		output_names_.push_back(names_[i] + "_immobile");
 
-        data_.conc_immobile.init(output_names_);
-        data_.conc_immobile.set_mesh(*mesh_);
-        data_.output_fields.output_type(OutputTime::ELEM_DATA);
+	data_.conc_immobile.init(output_names_);
+	data_.conc_immobile.set_mesh(*mesh_);
+	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-        for (int sbi=0; sbi<n_all_substances_; sbi++)
-        {
-                // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-                std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-                      new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], n_all_substances_, mesh_->n_elements()));
-                data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-        }
-        data_.output_fields.set_limit_side(LimitSide::right);
-        output_stream->add_admissible_field_names(output_array, data_.output_selection);
-    }
+	for (int sbi=0; sbi<n_all_substances_; sbi++)
+	{
+		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
+				new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], n_all_substances_, mesh_->n_elements()));
+		data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	}
+	data_.output_fields.set_limit_side(LimitSide::right);
+	output_stream->add_admissible_field_names(output_array, data_.output_selection);
     
     // write initial condition
     output_vector_gather();
-    if (rank == 0)
-    {
-      data_.output_fields.set_time(*time_);
-      data_.output_fields.output(output_stream);
-    }
+    data_.output_fields.set_time(*time_);
+    data_.output_fields.output(output_stream);
   
-  // creating reactions from input and setting their parameters
-  init_from_input(input_record_);
-  
-  if(reaction_mobile != nullptr)
-  { 
-    reaction_mobile->set_time_governor(*time_);
-    reaction_mobile->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
-    reaction_mobile->initialize(output_stream);
-  }
-    
-  if(reaction_immobile != nullptr) 
-  {
-    reaction_immobile->set_time_governor(*time_);
-    reaction_immobile->set_concentration_matrix(conc_immobile, distribution, el_4_loc, row_4_el);
-    reaction_immobile->initialize(output_stream);
-  }
+	// creating reactions from input and setting their parameters
+	init_from_input(input_record_);
+
+	if(reaction_mobile != nullptr)
+	{
+		reaction_mobile->set_time_governor(*time_);
+		reaction_mobile->set_concentration_matrix(concentration_matrix, distribution, el_4_loc, row_4_el);
+		reaction_mobile->initialize(output_stream);
+	}
+
+	if(reaction_immobile != nullptr)
+	{
+		reaction_immobile->set_time_governor(*time_);
+		reaction_immobile->set_concentration_matrix(conc_immobile, distribution, el_4_loc, row_4_el);
+		reaction_immobile->initialize(output_stream);
+	}
 }
 
 
