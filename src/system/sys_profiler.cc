@@ -280,10 +280,10 @@ void Profiler::stop_timer(const CodePoint &cp) {
             ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
 #endif
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
-        DBGMSG("close '%s' actual '%s'\n", cp.tag_, timers_[actual_node].tag());
+        //DBGMSG("close '%s' actual '%s'\n", cp.tag_, timers_[actual_node].tag());
         // timer to close is not actual - we search for it above actual
         for(unsigned int node=actual_node; node != 0; node=timers_[node].parent_timer) {
-            DBGMSG("cmp close '%s' idx '%s'\n", cp.tag_, timers_[node].tag());
+            //DBGMSG("cmp close '%s' idx '%s'\n", cp.tag_, timers_[node].tag());
             if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
