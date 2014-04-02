@@ -1630,7 +1630,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 {
     delete time_; // delete steady TG
  
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     
     time_->fix_dt_until_mark();
     setup_time_term();
@@ -1712,7 +1712,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 {
     delete time_; // delete steady TG
  
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 
     time_->fix_dt_until_mark();
     setup_time_term();

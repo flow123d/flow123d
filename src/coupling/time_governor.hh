@@ -118,7 +118,16 @@ namespace Input {
 class TimeGovernor
 {
 public:
+
+    static Input::Type::Record input_type;
+
+    /**
+     * Getter for time marks.
+     */
+    static inline TimeMarks &marks()
+            {return *time_marks;}
     
+
     /**
      * @brief Constructor for unsteady solvers.
      *
@@ -128,16 +137,8 @@ public:
      *
      */
    TimeGovernor(const Input::Record &input,
-                const TimeMark::Type fixed_time_mask = 0x0);
+                TimeMark::Type fixed_time_mask = TimeMark::none_type);
 
-   /**
-    * @brief Constructor - steady time governor.
-    *
-    * Optionally you can set initial time for "one step" steady problems.
-    * @see default constructor.
-    * 
-    */
-   explicit TimeGovernor(double init_time);
 
    /**
     * @brief Deafult constructor - steady time governor.
@@ -153,7 +154,8 @@ public:
     * 
     * Has a private pointer to static TimeMarks and can access them by marks().
     */
-   TimeGovernor();
+   explicit TimeGovernor(double init_time=0.0,
+		   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
 
    /**
     * The aim of this constuctor is simple way to make a time governor without Input interface.
@@ -162,7 +164,8 @@ public:
     */
    TimeGovernor(double init_time, double dt);
 
-   static Input::Type::Record input_type;
+
+
 
    /**
     * @brief Sets permanent constraints for time step.
@@ -207,7 +210,7 @@ public:
         end_of_fixed_dt_interval=-inf_time; // release previous fixed interval
         fixed_dt = estimate_dt();
         dt_fixed_now = true;    //flag means fixed step has been set since now
-        return end_of_fixed_dt_interval = time_marks->next(*this, fixed_time_mark_mask)->time();
+        return end_of_fixed_dt_interval = time_marks->next(*this, equation_fixed_mark_type())->time();
     }
 
     /**
@@ -215,17 +218,32 @@ public:
      */
     void next_time();
 
+
     /**
-     * Getter for time marks.
+     *	Specific time mark of the equation owning the time governor.
      */
-    static inline TimeMarks &marks()
-            {return *time_marks;}
+    inline TimeMark::Type equation_mark_type() const
+    { return eq_mark_type_;}
+
+    /**
+     *	Specific time mark of the fixed times of the equation owning the time governor.
+     */
+    inline TimeMark::Type equation_fixed_mark_type() const
+    { return eq_mark_type_ | marks().type_fixed_time(); }
+
+    /**
+     *
+     */
+    void add_time_marks_grid(double step, TimeMark::Type mark_type) const
+    { 	if (end_time() == inf_time) xprintf(UsrErr,"Missing end time for make output grid.\n");
+    	marks().add_time_marks(init_time_, step, end_time(), mark_type);
+    }
 
     /**
      * Simpler interface to TimeMarks::is_current().
      */
     inline bool is_current(const TimeMark::Type &mask) const
-        {return time_marks->is_current(*this, mask); }
+        {return time_marks->is_current(*this, equation_mark_type() | mask); }
 
     /**
      * Simpler interface to TimeMarks::next().
@@ -375,14 +393,76 @@ public:
      */
     void view(const char *name="") const
     {
-        xprintf(Msg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f\n",
-                name, time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval);
+        xprintf(Msg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f type: %x\n",
+                name, time_level, end_time_, time, time_step, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval, eq_mark_type_);
     }
 
     /// Infinity time used for steady case.
     static const double inf_time;
 
 private:
+
+    /**
+     * Set main parameters to given values.
+     * Check they are correct.
+     * Distinguish fixed time step and variable time step case.
+     * Set soft and permanent constrains to the same, the least restricting values.
+     * Set time marks for the start time and end time (if finite).
+     */
+    void init_common(double dt, double init_time, double end_time, TimeMark::Type type)
+    {
+    	time_level=0;
+
+        if (init_time < 0.0)
+        	xprintf(UsrErr, "Start time has to be equal or greater than ZERO.\n");
+    	init_time_  = time = init_time;
+    	last_time_ = -inf_time;
+    	last_time_step = inf_time;
+
+
+    	if (end_time < init_time)
+    		xprintf(UsrErr, "End time must be greater than start time.\n");
+        end_time_ = end_time;
+
+        if (dt == 0.0) {
+        	// variable time step
+        	fixed_dt=0.0;
+        	dt_fixed_now=false;
+        	dt_changed=true;
+        	end_of_fixed_dt_interval = time;
+
+        	min_time_step=lower_constraint_=time_step_lower_bound;
+        	if (end_time_ == inf_time) {
+            	max_time_step=upper_constraint_=inf_time;
+        	} else {
+        		max_time_step=upper_constraint_= end_time - time;
+        	}
+        	// choose maximum possible time step
+        	time_step=max_time_step;
+        } else {
+        	// fixed time step
+        	if (dt < time_step_lower_bound)
+        		xprintf(UsrErr, "Fixed time step small then machine precision. \n");
+
+        	fixed_dt=dt;
+        	dt_fixed_now=true;
+        	dt_changed=true;
+        	end_of_fixed_dt_interval = inf_time;
+
+        	upper_constraint_=max_time_step=dt;
+        	lower_constraint_=min_time_step=dt;
+        	time_step=dt;
+
+        }
+
+    	eq_mark_type_=type;
+    	steady=false;
+
+        time_marks->add( TimeMark(time, equation_fixed_mark_type()) );
+        if (end_time_ != inf_time)
+        	time_marks->add( TimeMark(end_time_, equation_fixed_mark_type()) );
+    }
+
     inline double comparison_fracture() const
     {
         if (time_level!=0 && time_step <=numeric_limits<double>::max() ) return comparison_precision * time_step;
@@ -399,6 +479,9 @@ private:
 
     /// Number of time_next calls, i.e. total number of performed time steps.
     int time_level;
+
+    /// Initial time.
+    double init_time_;
     /// End of actual time interval; i.e. where the solution is computed.
     double time;
     /// Beginning of the actual time interval; i.e. the time of last computed solution.
@@ -440,11 +523,11 @@ private:
      */
     static TimeMarks * const time_marks;
     
-    /// TimeMark type that masks the fixed time mark. It is set by constructor (unsteady case).
-    const TimeMark::Type fixed_time_mark_mask;
+    /// TimeMark type of the equation.
+    TimeMark::Type eq_mark_type_;
     
     /// True if the time governor is used for steady problem.
-    const bool steady;
+    bool steady;
 
 };
 

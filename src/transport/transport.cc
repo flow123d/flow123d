@@ -122,9 +122,10 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 : TransportBase(init_mesh, in_rec)
 {
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     target_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time();
     output_mark_type = this->mark_type() | TimeGovernor::marks().type_fixed_time() | time_->marks().type_output();
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), target_mark_type);
+
     time_->marks().add_time_marks(0.0,
         in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
         time_->end_time(), output_mark_type );

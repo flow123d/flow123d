@@ -221,7 +221,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.

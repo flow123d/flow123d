@@ -165,7 +165,9 @@ public:
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
-        {return equation_mark_type_;}
+    {
+    	return time().equation_mark_type();
+    }
 
     /**
      * Child class have to implement getter for sequential solution vector.
@@ -181,7 +183,7 @@ public:
 protected:
     Mesh * mesh_;
     TimeGovernor *time_;
-    TimeMark::Type equation_mark_type_;
+    //TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
 };
 
