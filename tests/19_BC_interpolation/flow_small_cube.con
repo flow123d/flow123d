@@ -7,7 +7,7 @@
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      data=[
+      input_fields=[
         {
           region = "IMPLICIT BOUNDARY",
           bc_type = "dirichlet",

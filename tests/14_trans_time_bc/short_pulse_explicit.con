@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { region = "bulk",
           conductivity = 1
         },
@@ -44,7 +44,7 @@
         end_time = 1.0
       },
     
-      data= [
+      input_fields= [
         { region = "bulk",
           init_conc = 0
         },

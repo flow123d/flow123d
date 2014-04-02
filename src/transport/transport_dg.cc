@@ -78,7 +78,7 @@ Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("data", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
+    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
@@ -241,7 +241,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.dg_penalty.n_comp(n_subst_);
     Model::init_data(n_subst_);
 
-    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
     data_.set_time(*time_);
 

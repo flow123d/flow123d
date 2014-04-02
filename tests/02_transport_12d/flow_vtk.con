@@ -18,7 +18,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { rid = 48,
           anisotropy = 10,
           sigma = 0.05,
@@ -49,7 +49,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      data=[
+      input_fields=[
         { 
           region="IMPLICIT BOUNDARY",
           transport_old_bcd_file = "./input/test2.tbc"
@@ -79,7 +79,7 @@
       reaction_term = {
         TYPE = "DualPorosity",
         
-        data = [
+        input_fields= [
           {
             r_set="subset",
             diffusion_rate_immobile= [0.01,0.01],
@@ -95,7 +95,7 @@
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
-          data = [
+          input_fields= [
             {
               r_set="subset",
               rock_density = 1.0,
@@ -112,7 +112,7 @@
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
-          data = [
+          input_fields= [
             {
               r_set="subset",
               rock_density = 1.0,

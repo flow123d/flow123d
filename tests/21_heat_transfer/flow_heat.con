@@ -17,7 +17,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
 
-      data= [
+      input_fields= [
         { region = "rock",
           conductivity = 1e-2,
           cross_section = 1
@@ -53,7 +53,7 @@
       mass_balance = {
         cumulative = true
       }
-      data= [
+      input_fields= [
         {
           r_set = ".bottom",
           bc_type = "dirichlet",

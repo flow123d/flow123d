@@ -20,7 +20,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      data=[
+      input_fields=[
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
@@ -53,7 +53,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      data=[
+      input_fields=[
         { 
           region="IMPLICIT BOUNDARY",
           bc_conc = 1

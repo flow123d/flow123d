@@ -10,7 +10,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      data= [
+      input_fields= [
         { rid = 62,     // 1D channel
           anisotropy = 10,
           sigma = 0.05

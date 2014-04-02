@@ -48,7 +48,7 @@ Record SorptionBase::input_type
 							"Specifies solubility limits of all the sorbing species")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("data", Array(EqData().make_field_descriptor_type("Adsorption")), Default::obligatory(), //
+    .declare_key("input_fields", Array(EqData().make_field_descriptor_type("Adsorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
     .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.");
     
@@ -95,7 +95,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
 //  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
   //output_rec = in_rec.find<Input::Record>("output");
 //  if(out_rec) output_rec = *out_rec;
-  input_data = in_rec.val<Input::Array>("data");
+  input_data = in_rec.val<Input::Array>("input_fields");
   output_array = in_rec.val<Input::Array>("output_fields");
   
   //Simple vectors holding  common informations.

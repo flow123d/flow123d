@@ -41,7 +41,7 @@ Record DualPorosity::input_type
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
     .derive_from(ReactionTerm::input_type)
-    .declare_key("data", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
+    .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
     
     .declare_key("reaction_mobile", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
@@ -76,7 +76,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     
     //setting fields that are set from input file
     input_data_set_+=data_;
-    input_data_set_.set_input_list(in_rec.val<Input::Array>("data"));
+    input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
     
     //creating field for porosity that is set later from the governing equation (transport)
     data_+=(data_.porosity
