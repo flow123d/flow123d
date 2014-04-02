@@ -105,10 +105,9 @@ void Application::display_version() {
     string url(_GIT_URL_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
-    int mpi_size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
+
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
-    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
+    xprintf(Msg, "Branch: %s   %s\nBuild: %s \n", branch.c_str(), url.c_str(), build.c_str() );
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
 
@@ -188,6 +187,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("help")) {
         cout << desc << "\n";
         exit( exit_output );
+    }
+
+    if (vm.count("version")) {
+    	display_version();
+    	exit( exit_output );
     }
 
     // if there is "full_doc" option
@@ -271,7 +275,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::run() {
     //use_profiler=true;
-    Profiler::initialize();
+
 
     display_version();
 

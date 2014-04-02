@@ -6,6 +6,7 @@
 #include <petsc.h>
 
 #include "system/application_base.hh"
+#include "system/sys_profiler.hh"
 
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
@@ -53,6 +54,10 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef HAVE_PETSC
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+
+    int mpi_size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
+    xprintf(Msg, "MPI size: %d\n", mpi_size);
 #endif
 }
 
@@ -77,6 +82,7 @@ int ApplicationBase::petcs_finalize() {
 
 
 void ApplicationBase::init(int argc, char ** argv) {
+    Profiler::initialize();
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
 
