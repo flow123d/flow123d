@@ -56,7 +56,8 @@ Record OutputTime::input_type
 			"Format of output stream and possible parameters.")
 	.declare_key("time_step", Double(0.0),
 			"Time interval between outputs.\n"
-			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.")
+			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
+			"The start time and the end time are always added. ")
 	.declare_key("time_list", Array(Double(0.0)),
 			"Explicit array of output time points (can be combined with 'time_step'.")
 	.declare_key("add_input_times", Bool(), Default("false"),
@@ -345,7 +346,6 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 	double time_step;
 	if (input_record_.opt_val("time_step", time_step)) {
-		DBGMSG("set output times step: %g, mark type: %x\n", time_step, output_mark_type);
 		tg.add_time_marks_grid(time_step, output_mark_type);
 	}
 

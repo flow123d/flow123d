@@ -37,6 +37,7 @@
 #include "system/global_defs.h"
 #include "system/system.hh"
 #include "time_marks.hh"
+#include "input/accessors.hh"
 
 namespace Input {
     class Record;
@@ -118,6 +119,8 @@ namespace Input {
 class TimeGovernor
 {
 public:
+
+	DECLARE_INPUT_EXCEPTION(ExcTimeGovernorMessage, << EI_Message::val);
 
     static Input::Type::Record input_type;
 
@@ -232,12 +235,10 @@ public:
     { return eq_mark_type_ | marks().type_fixed_time(); }
 
     /**
-     *
+     * Add sequence of time marks starting from the initial time up to the end time with given @p step.
+     * Time marks type combines given mark_type (none by default) and native mark type of the time governor.
      */
-    void add_time_marks_grid(double step, TimeMark::Type mark_type) const
-    { 	if (end_time() == inf_time) xprintf(UsrErr,"Missing end time for make output grid.\n");
-    	marks().add_time_marks(init_time_, step, end_time(), mark_type);
-    }
+    void add_time_marks_grid(double step, TimeMark::Type mark_type= TimeMark::none_type) const;
 
     /**
      * Simpler interface to TimeMarks::is_current().
@@ -393,7 +394,7 @@ public:
      */
     void view(const char *name="") const
     {
-        xprintf(Msg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f type: %x\n",
+        xprintf(MsgLog, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f type: %x\n",
                 name, time_level_, end_time_, time_, time_step_, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval_, eq_mark_type_);
     }
 
@@ -402,6 +403,9 @@ public:
 
 private:
 
+    /// Common part of the constructors. Set most important parameters, check they are valid and set default values to other.
+    void init_common(double dt, double init_time, double end_time, TimeMark::Type type);
+
     /**
      * Set main parameters to given values.
      * Check they are correct.
@@ -409,59 +413,6 @@ private:
      * Set soft and permanent constrains to the same, the least restricting values.
      * Set time marks for the start time and end time (if finite).
      */
-    void init_common(double dt, double init_time, double end_time, TimeMark::Type type)
-    {
-    	time_level_=0;
-
-        if (init_time < 0.0)
-        	xprintf(UsrErr, "Start time has to be equal or greater than ZERO.\n");
-    	init_time_  = time_ = init_time;
-    	last_time_ = -inf_time;
-    	last_time_step_ = inf_time;
-
-
-    	if (end_time < init_time)
-    		xprintf(UsrErr, "End time must be greater than start time.\n");
-        end_time_ = end_time;
-
-        if (dt == 0.0) {
-        	// variable time step
-        	fixed_time_step_=0.0;
-        	is_time_step_fixed_=false;
-        	time_step_changed_=true;
-        	end_of_fixed_dt_interval_ = time_;
-
-        	min_time_step_=lower_constraint_=time_step_lower_bound;
-        	if (end_time_ == inf_time) {
-            	max_time_step_=upper_constraint_=inf_time;
-        	} else {
-        		max_time_step_=upper_constraint_= end_time - time_;
-        	}
-        	// choose maximum possible time step
-        	time_step_=max_time_step_;
-        } else {
-        	// fixed time step
-        	if (dt < time_step_lower_bound)
-        		xprintf(UsrErr, "Fixed time step small then machine precision. \n");
-
-        	fixed_time_step_=dt;
-        	is_time_step_fixed_=true;
-        	time_step_changed_=true;
-        	end_of_fixed_dt_interval_ = inf_time;
-
-        	upper_constraint_=max_time_step_=dt;
-        	lower_constraint_=min_time_step_=dt;
-        	time_step_=dt;
-
-        }
-
-    	eq_mark_type_=type;
-    	steady_=false;
-
-        time_marks_->add( TimeMark(time_, equation_fixed_mark_type()) );
-        if (end_time_ != inf_time)
-        	time_marks_->add( TimeMark(end_time_, equation_fixed_mark_type()) );
-    }
 
     inline double comparison_fracture() const
     {

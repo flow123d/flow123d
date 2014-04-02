@@ -84,18 +84,22 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
+    try {
+    	init_common(input.val<double>("init_dt"),
+    				input.val<double>("start_time"),
+    				end_time_,
+    				eq_mark_type);
 
-    init_common(input.val<double>("init_dt"),
-    		    input.val<double>("start_time"),
-    		    end_time_,
-    		    eq_mark_type);
+    	// possibly overwrite limits
+    	set_permanent_constraint(
+    		input.val<double>("min_dt", min_time_step_),
+    		input.val<double>("max_dt", max_time_step_)
+    		);
+    } catch(ExcTimeGovernorMessage &exc) {
+    	exc << input.ei_address();
+    	throw;
+    }
 
-    // possibly overwrite limits
-    max_time_step_ = input.val<double>("max_dt", max_time_step_);
-    min_time_step_ = input.val<double>("min_dt", min_time_step_);
-
-    if (min_time_step_ <= 0.0) xprintf(UsrErr, "Minimal time step has to be greater than ZERO.\n");
-    if (max_time_step_ < min_time_step_) xprintf(UsrErr, "Maximal time step has to be greater or equal to the minimal.\n");
 }
 
 
@@ -117,18 +121,84 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 
 
 
+// common part of constructors
+void TimeGovernor::init_common(double dt, double init_time, double end_time, TimeMark::Type type)
+{
+	time_level_=0;
+
+    if (init_time < 0.0) {
+		THROW(ExcTimeGovernorMessage()
+				<< EI_Message("Start time has to be greater or equal to 0.0\n")
+
+				);
+    }
+
+	init_time_  = time_ = init_time;
+	last_time_ = -inf_time;
+	last_time_step_ = inf_time;
+
+
+	if (end_time < init_time) {
+		THROW(ExcTimeGovernorMessage()	<< EI_Message("End time must be greater than start time.\n") );
+    }
+
+    end_time_ = end_time;
+
+    if (dt == 0.0) {
+    	// variable time step
+    	fixed_time_step_=0.0;
+    	is_time_step_fixed_=false;
+    	time_step_changed_=true;
+    	end_of_fixed_dt_interval_ = time_;
+
+    	min_time_step_=lower_constraint_=time_step_lower_bound;
+    	if (end_time_ == inf_time) {
+        	max_time_step_=upper_constraint_=inf_time;
+    	} else {
+    		max_time_step_=upper_constraint_= end_time - time_;
+    	}
+    	// choose maximum possible time step
+    	time_step_=max_time_step_;
+    } else {
+    	// fixed time step
+    	if (dt < time_step_lower_bound)
+    		xprintf(UsrErr, "Fixed time step small then machine precision. \n");
+
+    	fixed_time_step_=dt;
+    	is_time_step_fixed_=true;
+    	time_step_changed_=true;
+    	end_of_fixed_dt_interval_ = inf_time;
+
+    	upper_constraint_=max_time_step_=dt;
+    	lower_constraint_=min_time_step_=dt;
+    	time_step_=dt;
+
+    }
+
+	eq_mark_type_=type;
+	steady_=false;
+
+    time_marks_->add( TimeMark(time_, equation_fixed_mark_type()) );
+    if (end_time_ != inf_time)
+    	time_marks_->add( TimeMark(end_time_, equation_fixed_mark_type()) );
+}
+
+
+
 
 
 
 void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 {
-    if (min_dt < 0.0) xprintf(UsrErr, "Minimal time step has to be greater than ZERO.\n");
-    if (max_dt < min_dt) xprintf(UsrErr, "Maximal time step has to be greater or equal to the minimal.\n");
+    if (min_dt < time_step_lower_bound) {
+		THROW(ExcTimeGovernorMessage()	<< EI_Message("'min_dt' smaller then machine precision.\n") );
+    }
+    if (max_dt < min_dt) {
+		THROW(ExcTimeGovernorMessage()	<< EI_Message("'max_dt' smaller then 'min_dt'.\n") );
+    }
 
-    min_time_step_ = max(min_dt, time_step_lower_bound);
-    max_time_step_ = min(max_dt, end_time_-time_);
-    upper_constraint_ = max_time_step_;
-    lower_constraint_ = min_time_step_;
+    lower_constraint_ = min_time_step_ = max(min_dt, time_step_lower_bound);
+    upper_constraint_ = max_time_step_ = min(max_dt, end_time_-time_);
 }
 
 
@@ -185,6 +255,23 @@ int TimeGovernor::set_lower_constraint (double lower)
 
     return 0;
 }
+
+
+
+void TimeGovernor::add_time_marks_grid(double step, TimeMark::Type mark_type) const
+{
+	if (end_time() == inf_time) {
+		THROW(ExcTimeGovernorMessage()
+				<< EI_Message("Missing end time for make output grid required by key 'time_step' of the output stream.\n")
+			);
+	}
+
+	marks().add_time_marks(init_time_, step, end_time(), mark_type | eq_mark_type_);
+	// always add start time and end time
+	marks().add(TimeMark(init_time_, mark_type | eq_mark_type_));
+	marks().add(TimeMark(end_time(), mark_type | eq_mark_type_));
+}
+
 
 
 double TimeGovernor::estimate_dt() const {

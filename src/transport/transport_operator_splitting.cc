@@ -325,7 +325,7 @@ void TransportOperatorSplitting::update_solution() {
 
     time_->next_time();
 //#ifdef DEBUG_MESSAGES
-    time_->view("Convection");    //show time governor
+    time_->view("TOS");    //show time governor
 //#endif
     
     convection->set_target_time(time_->t());
