@@ -69,7 +69,7 @@
             isotherm_other= [0, 0, 0.6, 0.4]
           }
         ],
-        output_fields = [ "conc_solid" ]
+        output_fields = []
       }
           
     } 
