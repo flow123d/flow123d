@@ -41,14 +41,14 @@ Record DualPorosity::input_type
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
     .derive_from(ReactionTerm::input_type)
-    .declare_key("data", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
+    .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
     
     .declare_key("reaction_mobile", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
     
     .declare_key("output_fields", Array(EqData::output_selection),
-                Default("immobile"), "List of fields to write to output stream.");
+                Default("conc_immobile"), "List of fields to write to output stream.");
     
 DualPorosity::EqData::EqData()
 {
@@ -63,7 +63,7 @@ DualPorosity::EqData::EqData()
   init_conc_immobile.units("M/L^3");
   
   output_fields += *this;
-  output_fields += conc_immobile.name("immobile").units("M/L^3");
+  output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
@@ -76,7 +76,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     
     //setting fields that are set from input file
     input_data_set_+=data_;
-    input_data_set_.set_input_list(in_rec.val<Input::Array>("data"));
+    input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
     
     //creating field for porosity that is set later from the governing equation (transport)
     data_+=(data_.porosity
@@ -126,11 +126,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_mobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionMob::input_type ) {
         reaction_mobile =  new SorptionMob(*mesh_, *reactions_it, names_);
-                
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
-       static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
+
+        static_cast<SorptionMob *> (reaction_mobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
@@ -159,11 +160,12 @@ void DualPorosity::init_from_input(Input::Record in_rec)
     if (reactions_it->type() == Pade_approximant::input_type) {
         reaction_immobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
     } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
+    if (reactions_it->type() == SorptionImmob::input_type ) {
         reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it, names_);
         
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);        
-       static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
+        static_cast<SorptionImmob *> (reaction_immobile) -> init_from_input(*reactions_it);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
+        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
                 
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
@@ -225,11 +227,7 @@ void DualPorosity::initialize(OutputTime *stream)
     if (rank == 0)
     {
       //DBGMSG("DualPorosity - output init_cond1, rank= %d.\n", rank);
-    	vector<string> output_names_;
-    	for(unsigned int i=0; i < n_all_substances_; i++)
-    	    output_names_.push_back(names_[i] + "_immobile");
-
-        data_.conc_immobile.init(output_names_);
+        data_.conc_immobile.init(names_);
         data_.conc_immobile.set_mesh(*mesh_);
         data_.output_fields.output_type(OutputTime::ELEM_DATA);
 

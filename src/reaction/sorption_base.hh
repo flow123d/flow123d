@@ -55,8 +55,6 @@ public:
      */
     static Input::Type::Selection sorption_type_selection;
 
-    static Input::Type::Selection output_selection;
-
     /// Collect all fields
     EqData();
 
@@ -89,16 +87,8 @@ public:
    */
   virtual void update_solution(void);
   
-  /**
-   * Sets the output names of substances. 
-   * This way we do not overwrite the output of substances in transport
-   * e.g.:
-   * A -> A             (multifield)-> A_sorbed                (sorption in transport)
-   * A -> A_mobile      (multifield)-> A_mobile_sorbed         (sorption in dual porosity - mobile)
-   * A -> A_immobile    (multifield)-> A_immobile_sorbed       (sorption in dual porosity - immobile)
-   */
-  virtual void set_output_names(void);
-  
+  virtual Input::Type::Selection get_output_selection() = 0;
+
   /**
    * Initialization routines that are done in constructors of descendants.
    * Method data() which access EqData is pure virtual and cannot be called from the base constructor.
@@ -114,6 +104,9 @@ public:
    */
   void make_tables(void);
   
+  /// Initializes private members of sorption from the input record.
+  void init_from_input(Input::Record in_rec) override;
+
   void initialize(OutputTime *stream) override;
   void output_data(void) override;
   void output_vector_gather(void) override;
@@ -131,8 +124,6 @@ protected:
   
   void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
   
-  /// Initializes private members of sorption from the input record.
-  void init_from_input(Input::Record in_rec) override;
   /** Initializes possible following reactions from input record.
    * It should be called after setting mesh, time_governor, distribution and concentration_matrix
    * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
@@ -155,6 +146,9 @@ protected:
   
   void allocate_output_mpi(void);
   
+  /// Equation field data.
+  virtual EqData &data() = 0;
+
   /**
    * Number of regions.
    */
@@ -190,8 +184,6 @@ protected:
   
   unsigned int n_substances_;   //< number of substances that take part in the sorption model
   
-  /// Output names of substances and fields respectively.
-  std::vector<std::string> output_names_;
   /**
    * Input data set - fields in this set are read from the input file.
    */
@@ -201,9 +193,8 @@ protected:
    */
   double** conc_solid;
   
-  /// Equation field data;
-  EqData data_;
-  
+  Input::Array input_data;
+
   Input::Array output_array;
 
   /** Reaction model that follows the sorption.

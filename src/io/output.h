@@ -106,10 +106,9 @@ public:
 	        unsigned int size)
 	: val_aux(aux)
 	{
-//		this->field_name = field.name();
-		this->field_name = boost::replace_all_copy(boost::replace_all_copy(field.name(), "_p0", "_elements"), "_p1", "_nodes");
+		this->field_name = field.name();
 		this->field_units = field.units();
-		this->output_field_name = this->field_name +"_["+this->field_units+"]";
+		this->output_field_name = this->field_name;
 
 		this->n_values=size;
 		//val_aux.set_n_comp(10); // just to check that n_elem depends on n_comp

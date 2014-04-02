@@ -51,14 +51,6 @@ Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.");
-//	.declare_key("conc_mobile_p0", String(),
-//			"Name of output stream for P0 approximation of the concentration in mobile phase.")
-//	.declare_key("conc_immobile_p0", String(),
-//			"Name of output stream for P0 approximation of the concentration in immobile phase.")
-//	.declare_key("conc_mobile_sorbed_p0", String(),
-//			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
-//	.declare_key("conc_immobile_sorbed_p0", String(),
-//			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
 
 
 Record TransportOperatorSplitting::input_type
@@ -73,12 +65,12 @@ Record TransportOperatorSplitting::input_type
     .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
                 "Reaction model involved in transport.")
 
-    .declare_key("data", Array(
+    .declare_key("input_fields", Array(
     		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
     		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
     		), IT::Default::obligatory(), "")
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
-    		Default("mobile_p0"),
+    		Default("conc"),
        		"List of fields to write to output file.");
 
 
@@ -143,9 +135,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 reaction = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
               
             } else
-            if (reactions_it->type() == SorptionBase::input_type ) {
+            if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
                 
+                static_cast<SorptionSimple *> (reaction) -> init_from_input(*reactions_it);
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else

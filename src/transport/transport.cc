@@ -86,22 +86,11 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
-//DELETE
-//     ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", "0.0");
-//     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-//             " Vector, one value for every substance.", "0.0");
-//     ADD_FIELD(sorp_type, "Type of sorption isotherm.", "\"none\"");
-//     sorp_type.input_selection(&sorption_type_selection);
-//     ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", "0.0");
-//     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
-//             "Vector, one value for every substance.", "1.0");
-//     ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
-//             "Used only in combination with dual porosity model. Vector, one value for every substance.", "1.0");
 
     bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 
     output_fields += *this;
-    output_fields += conc_mobile.name("mobile_p0").units("M/L^3");
+    output_fields += conc_mobile.name("conc").units("M/L^3");
 }
 
 /*
@@ -142,16 +131,11 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     data_.init_conc.n_comp(n_subst_);
     data_.bc_conc.n_comp(n_subst_);
-//DELETE
-//     data_.alpha.n_comp(n_subst_);
-//     data_.sorp_type.n_comp(n_subst_);
-//     data_.sorp_coef0.n_comp(n_subst_);
-//     data_.sorp_coef1.n_comp(n_subst_);
     data_.sources_density.n_comp(n_subst_);
     data_.sources_sigma.n_comp(n_subst_);
     data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
-    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.mark_input_times(target_mark_type);
 
     data_.set_limit_side(LimitSide::right);
@@ -176,10 +160,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     if (rank == 0)
     {
-    	vector<string> output_names(subst_names_);
-    	for (vector<string>::iterator it=output_names.begin(); it!=output_names.end(); it++)
-    		*it += "_mobile";
-    	data_.conc_mobile.init(output_names);
+    	data_.conc_mobile.init(subst_names_);
     	data_.conc_mobile.set_mesh(*mesh_);
     	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 

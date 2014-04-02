@@ -11,7 +11,7 @@
       
       n_schurs = 2,
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test16.fbc"
         },
@@ -41,7 +41,7 @@
       boundary_file = "./input/test16.tbc", 
       initial_file = "./input/test16.tic", 
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 0
         },

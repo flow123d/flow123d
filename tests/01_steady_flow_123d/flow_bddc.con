@@ -13,7 +13,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      data= [
+      input_fields= [
         { region = "1d_channel",
           anisotropy = 10,
           sigma = 0.05

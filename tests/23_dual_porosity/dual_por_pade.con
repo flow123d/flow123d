@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      data = [
+      input_fields= [
         { region = "volume", 
           conductivity = 1e-20
         },
@@ -35,7 +35,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
  
-      data = [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 1.0,
           porosity= 0.25 
@@ -60,7 +60,7 @@
       reaction_term = {
         TYPE = "DualPorosity",
         
-        data = [
+        input_fields= [
           {
             r_set="ALL",
             diffusion_rate_immobile= [0.01,0.01],
@@ -89,7 +89,7 @@
         },
         
         reaction_immobile = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
       }
           

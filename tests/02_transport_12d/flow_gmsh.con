@@ -18,7 +18,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { rid = 48,
           anisotropy = 10,
           cross_section = 1,
@@ -57,7 +57,7 @@
         "A", 
         "B"
       ], 
-      data= [
+      input_fields = [
         {
           region = "IMPLICIT BOUNDARY",
           transport_old_bcd_file = "./input/test2.tbc"
@@ -78,7 +78,7 @@
       reaction_term = {
         TYPE = "DualPorosity",
         
-        data = [
+        input_fields = [
           {
             r_set="subset",
             diffusion_rate_immobile= [0.01,0.01],
@@ -89,12 +89,12 @@
         output_fields = [],
         
         reaction_mobile = {
-          TYPE = "Adsorption",
+          TYPE = "AdsorptionMobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
-          data = [
+          input_fields = [
             {
               r_set="subset",
               rock_density = 1.0,
@@ -106,7 +106,13 @@
           output_fields = []
         },
         reaction_immobile = {
-          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
+          TYPE = "AdsorptionImmobile",
+          solvent_density= 1.0,
+          substances = ["A", "B"],
+          molar_mass= [1.0, 1.0],
+          solubility = [1.0, 1.0],
+          input_fields= { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" },
+          output_fields = []
         }
       }
     }

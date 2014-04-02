@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { region = "plane",
           anisotropy = 1,
           water_source_density = {

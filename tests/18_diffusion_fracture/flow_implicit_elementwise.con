@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test18.fbc"
         },
@@ -37,7 +37,7 @@
     secondary_equation = {
       TYPE = "ConcentrationTransport_DG", 
 
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc=0
         },

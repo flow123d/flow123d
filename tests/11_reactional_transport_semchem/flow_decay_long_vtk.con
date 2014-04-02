@@ -9,9 +9,9 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      data= [
+      input_fields= [
       ],
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/sit_decay.fbc"
         }
@@ -31,7 +31,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       
-      data= [
+      input_fields= [
         { rid = 1,
           init_conc =
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.060000000, 0.07000000, 0.080000000]

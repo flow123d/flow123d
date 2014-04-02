@@ -11,6 +11,27 @@
 
 using namespace std;
 
+namespace IT = Input::Type;
+
+
+IT::Selection SorptionMob::EqData::output_selection
+		= IT::Selection("AdsorptionMobile_Output")
+		.copy_values(EqData().output_fields.make_output_field_selection())
+		.close();
+
+IT::Record SorptionMob::input_type
+	= IT::Record("AdsorptionMobile", "Information about all the limited solubility affected adsorptions.")
+	.derive_from( ReactionTerm::input_type )
+	.copy_keys(SorptionBase::input_type)
+	.declare_key("output_fields", IT::Array(EqData::output_selection),
+            IT::Default("conc_solid"), "List of fields to write to output stream.");
+
+
+SorptionMob::EqData::EqData()
+{
+    output_fields += conc_solid.name("conc_solid").units("M/L^3");
+}
+
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
 	: SorptionDual(init_mesh, in_rec, names)
 {
@@ -19,14 +40,6 @@ SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &
 
 SorptionMob::~SorptionMob(void)
 {
-}
-
-void SorptionMob::set_output_names(void )
-{
-  for(unsigned int i=0; i < n_all_substances_; i++)
-  {
-    output_names_[i] = names_[i] + "_sorbed_mobile";
-  }
 }
 
 /*

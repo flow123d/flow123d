@@ -18,11 +18,11 @@
 10 10 10 
 </DataArray>
 </Cells>
-<CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3]," Vectors="">
-<DataArray type="Float64" Name="A_mobile_[M/L^3]" format="ascii">
+<CellData Scalars="A_conc,B_conc," Vectors="">
+<DataArray type="Float64" Name="A_conc" format="ascii">
 2.716322397718351e-04 9.052295930816155e-05 1.005006736811271e-20 
 </DataArray>
-<DataArray type="Float64" Name="B_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="B_conc" format="ascii">
 2.716322397718351e-04 9.052295930816155e-05 1.005006736811271e-20 
 </DataArray>
 </CellData>

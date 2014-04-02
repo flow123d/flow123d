@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="6" NumberOfCells="3">
+<Points>
+<DataArray type="Float64" NumberOfComponents="3" format="ascii">
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int32" Name="connectivity" format="ascii">
+0 1 2 4 0 2 3 4 2 3 4 5 
+</DataArray>
+<DataArray type="Int32" Name="offsets" format="ascii">
+4 8 12 
+</DataArray>
+<DataArray type="UInt8" Name="types" format="ascii">
+10 10 10 
+</DataArray>
+</Cells>
+<CellData Scalars="A_conc,B_conc,A_conc_immobile,B_conc_immobile," Vectors="">
+<DataArray type="Float64" Name="A_conc" format="ascii">
+2.184790796283160e-04 7.282393257350777e-05 8.085080668685871e-21 
+</DataArray>
+<DataArray type="Float64" Name="B_conc" format="ascii">
+3.580906681875730e-04 1.193595776751631e-04 1.325157513445009e-20 
+</DataArray>
+<DataArray type="Float64" Name="A_conc_immobile" format="ascii">
+1.456672843445292e-02 7.282636002174396e-03 8.085350169578123e-19 
+</DataArray>
+<DataArray type="Float64" Name="B_conc_immobile" format="ascii">
+2.387509837222930e-02 1.193635563012280e-02 1.325201685067647e-18 
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>

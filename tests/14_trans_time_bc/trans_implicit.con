@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { rid = 100,
           conductivity = 0.1
         },
@@ -36,7 +36,7 @@
     secondary_equation = {
       TYPE = "ConcentrationTransport_DG", 
 
-      data= [
+      input_fields= [
         { rid = 100,
           init_conc = 0
         },

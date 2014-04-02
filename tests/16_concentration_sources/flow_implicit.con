@@ -11,7 +11,7 @@
       
       n_schurs = 2,
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test16.fbc"
         },
@@ -40,7 +40,7 @@
       TYPE = "ConcentrationTransport_DG", 
       dual_porosity = false, 
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc = 0
         },
