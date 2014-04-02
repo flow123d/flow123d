@@ -145,7 +145,7 @@
           }, 
           variant = "ascii"
         }, 
-        time_step = 0.01,
+        time_step = 0.1,
         name = "transport_output_stream"
       }
     ]
