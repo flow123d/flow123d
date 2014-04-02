@@ -54,7 +54,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
 	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
 
-	output_fields += output_field.name("mobile_p0").units("M/L^3");
+	output_fields += output_field.name("conc").units("M/L^3");
 }
 
 

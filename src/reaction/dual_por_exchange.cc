@@ -220,11 +220,7 @@ void DualPorosity::initialize(OutputTime *stream)
     //initialization of output
     allocate_output_mpi();
     output_stream = stream;
-	vector<string> output_names_;
-	for(unsigned int i=0; i < n_all_substances_; i++)
-		output_names_.push_back(names_[i] + "_immobile");
-
-	data_.conc_immobile.init(output_names_);
+	data_.conc_immobile.init(names_);
 	data_.conc_immobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 

@@ -59,9 +59,9 @@ public:
 
 		ModelEqData();
 
-		static string name() {return "TransportDG";}
+		static const string name() { return "ConcentrationTransport"; }
 
-		static string default_output_fields() { return "mobile_p0"; }
+		static const string default_output_field() { return "conc"; }
 
 		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
 

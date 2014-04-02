@@ -41,9 +41,6 @@ protected:
    */
   void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
   
-  ///Renaming output names of substances.
-  void set_output_names(void) override;
-  
   Input::Type::Selection get_output_selection() override
   { return data_.output_selection; }
 

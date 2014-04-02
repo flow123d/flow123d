@@ -87,16 +87,6 @@ public:
    */
   virtual void update_solution(void);
   
-  /**
-   * Sets the output names of substances. 
-   * This way we do not overwrite the output of substances in transport
-   * e.g.:
-   * A -> A             (multifield)-> A_sorbed                (sorption in transport)
-   * A -> A_mobile      (multifield)-> A_mobile_sorbed         (sorption in dual porosity - mobile)
-   * A -> A_immobile    (multifield)-> A_immobile_sorbed       (sorption in dual porosity - immobile)
-   */
-  virtual void set_output_names(void);
-  
   virtual Input::Type::Selection get_output_selection() = 0;
 
   /**
@@ -194,8 +184,6 @@ protected:
   
   unsigned int n_substances_;   //< number of substances that take part in the sorption model
   
-  /// Output names of substances and fields respectively.
-  std::vector<std::string> output_names_;
   /**
    * Input data set - fields in this set are read from the input file.
    */
