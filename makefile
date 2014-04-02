@@ -121,7 +121,7 @@ ref-doc: cmake update-build-tree
 
 # call flow123d and make file flow_version.tex
 $(DOC_DIR)/flow_version.tex: update-build-tree build-flow123d
-	$(BUILD_DIR)/bin/flow123d --version | head -n1 | cut -d" " -f4- | sed 's/_/\\_/g' \
+	$(BUILD_DIR)/bin/flow123d --version | grep "This is Flow123d" | head -n1 | cut -d" " -f4- | sed 's/_/\\_/g' \
 	  > $(DOC_DIR)/flow_version.tex
 
 # call flow123d and make raw input_reference file
