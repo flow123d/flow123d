@@ -98,8 +98,6 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
   input_data = in_rec.val<Input::Array>("data");
   output_array = in_rec.val<Input::Array>("output_fields");
   
-  output_names_.resize(names_.size());
-  
   //Simple vectors holding  common informations.
   molar_masses.resize( n_substances_ );
 
@@ -252,8 +250,7 @@ void SorptionBase::initialize(OutputTime *stream)
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     if (rank == 0)
     {
-        set_output_names();
-        data().conc_solid.init(output_names_);
+        data().conc_solid.init(names_);
         data().conc_solid.set_mesh(*mesh_);
         data().output_fields.output_type(OutputTime::ELEM_DATA);
 
@@ -407,16 +404,6 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
 {
   data().set_field(data().porosity.name(),por_m);
-}
-
-void SorptionBase::set_output_names(void )
-{
-  //output names of substances are the same
-  //output_names_ = names_;
-  for(unsigned int i=0; i < n_all_substances_; i++)
-  {
-    output_names_[i] = names_[i] + "_solid_mobile";
-  }
 }
 
 

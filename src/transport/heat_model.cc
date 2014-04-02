@@ -47,7 +47,6 @@ using namespace Input::Type;
 
 
 
-
 HeatTransferModel::ModelEqData::ModelEqData()
 {
 	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
@@ -102,7 +101,7 @@ void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar 
 void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	names.clear();
-	names.push_back("temperature");
+	names.push_back("");
 }
 
 

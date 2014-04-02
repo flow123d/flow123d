@@ -51,14 +51,6 @@ Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.");
-//	.declare_key("conc_mobile_p0", String(),
-//			"Name of output stream for P0 approximation of the concentration in mobile phase.")
-//	.declare_key("conc_immobile_p0", String(),
-//			"Name of output stream for P0 approximation of the concentration in immobile phase.")
-//	.declare_key("conc_mobile_sorbed_p0", String(),
-//			"Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.")
-//	.declare_key("conc_immobile_sorbed_p0", String(),
-//			"Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.");
 
 
 Record TransportOperatorSplitting::input_type
@@ -78,7 +70,7 @@ Record TransportOperatorSplitting::input_type
     		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
     		), IT::Default::obligatory(), "")
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
-    		Default("mobile_p0"),
+    		Default("conc"),
        		"List of fields to write to output file.");
 
 
