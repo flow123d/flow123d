@@ -66,7 +66,7 @@
         output_fields = [],
         
         reaction_mobile = {
-          TYPE = "AdsorptionMobile",
+          TYPE = "SorptionMobile",
           solvent_density= 1.0,
           substances = ["age", "U235"],
           molar_mass= [1.0, 1.0],
@@ -84,7 +84,7 @@
           output_fields = []
         },
         reaction_immobile = {
-          TYPE = "AdsorptionImmobile",
+          TYPE = "SorptionImmobile",
           solvent_density= 1.0,
           substances = ["age", "U235"],
           molar_mass= [1.0, 1.0],
@@ -125,7 +125,7 @@
       {
         file = "test3-transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.01,
+        time_step = 0.1,
         name = "transport_output_stream"
       }
     ]

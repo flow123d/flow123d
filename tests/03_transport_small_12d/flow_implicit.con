@@ -38,7 +38,7 @@
     }, 
 
     secondary_equation = {
-      TYPE = "ConcentrationTransport_DG", 
+      TYPE = "SoluteTransport_DG", 
 
       input_fields= [
         { rid = 17,

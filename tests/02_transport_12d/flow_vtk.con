@@ -90,7 +90,7 @@
         output_fields = [],
         
         reaction_mobile = {
-          TYPE = "AdsorptionMobile",
+          TYPE = "SorptionMobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
@@ -107,7 +107,7 @@
           output_fields = []
         },
         reaction_immobile = {
-          TYPE = "AdsorptionImmobile",
+          TYPE = "SorptionImmobile",
           solvent_density= 1.0,
           substances = ["A", "B"],
           molar_mass= [1.0, 1.0],
