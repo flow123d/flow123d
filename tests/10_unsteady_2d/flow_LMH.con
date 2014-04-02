@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
-      data= [
+      input_fields= [
         {
             region = "plane",
             anisotropy = 0.02,

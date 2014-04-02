@@ -135,7 +135,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.sources_sigma.n_comp(n_subst_);
     data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
-    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.mark_input_times(target_mark_type);
 
     data_.set_limit_side(LimitSide::right);

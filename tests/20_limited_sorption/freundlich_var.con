@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      data = [
+      input_fields= [
         { region = "rectangle", 
           conductivity = 0.125
         },
@@ -37,7 +37,7 @@
    
       substances = ["A", "As-lin",  "Bs-lang", "Cs-freund"],
       
-      data = [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 0,
           porosity= 0.25 
@@ -60,7 +60,7 @@
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
         molar_mass= [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
-        data = [
+        input_fields= [
           {
             r_set="ALL",
             rock_density = 1.0,
