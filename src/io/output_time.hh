@@ -129,6 +129,13 @@ public:
     void clear_data(void);
 
     /**
+     *  Add time marks matching given @p tgoutput_mark_type as well as general output type
+     *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
+     *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
+     */
+    void mark_output_times(const TimeGovernor &tg);
+
+    /**
      * Declaration of exceptions
      */
     //TYPEDEF_ERR_INFO(EI_StreamName, const string);
@@ -267,6 +274,7 @@ protected:
 
     map<string,bool> output_names; ///< Map of names of output fields. True means that field will be saved.
 
+    Input::Record input_record_;
 };
 
 

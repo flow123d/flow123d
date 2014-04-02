@@ -160,7 +160,7 @@ protected:
      * Mark type mask that is true for time marks of output points of the transport model.
      * E.g. for TransportOperatorSplitting this is same as the output points of its transport sub-model.
      */
-    TimeMark::Type output_mark_type;
+    //TimeMark::Type output_mark_type;
 
     /// object for calculation and writing the mass balance to file.
     MassBalance *mass_balance_;

@@ -135,8 +135,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     n_subst_ = subst_names_.size();
 	convection = new ConvectionTransport(*mesh_, in_rec);
 
-	output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), output_mark_type );
+	//output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type() );
 
 
     convection->get_par_info(el_4_loc, el_distribution);
@@ -303,14 +303,11 @@ TransportOperatorSplitting::~TransportOperatorSplitting()
 
 void TransportOperatorSplitting::output_data(){
 
-    if (time_->is_current(output_mark_type)) {
         
         START_TIMER("TOS-output data");
-        DBGMSG("\nTOS: output time: %f\n", time_->t());
 
         convection->output_data();
         if(reaction) reaction->output_data();
-    }
 }
 
 
@@ -327,16 +324,17 @@ void TransportOperatorSplitting::update_solution() {
 	}
 
     time_->next_time();
-#ifdef DEBUG_MESSAGES
-    time_->view("TOS");    //show time governor
-#endif
+//#ifdef DEBUG_MESSAGES
+    time_->view("Convection");    //show time governor
+//#endif
     
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
         
-    xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n", 
-             time_->t(), convection->time().t(), convection->time().estimate_dt() );
+    //xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n",
+    //         time_->t(), convection->time().t(), convection->time().estimate_dt() );
     
+
     START_TIMER("TOS-one step");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
@@ -350,8 +348,11 @@ void TransportOperatorSplitting::update_solution() {
 	    if(sorptions) sorptions->update_solution();//equilibrial sorption at the end of simulated time-step
 	    if (convection->mass_balance() != NULL)
 	    	convection->mass_balance()->calculate(convection->time().t());
+
 	}
     END_TIMER("TOS-one step");
+
+
     
     xprintf( Msg, "CONVECTION: steps: %d\n",steps);
 }

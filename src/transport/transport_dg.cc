@@ -293,8 +293,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-    if (feo->dh()->el_ds()->myp() == 0)
-    {
+    //if (feo->dh()->el_ds()->myp() == 0)
+    //{
     	data_.output_field.init(subst_names_);
     	data_.output_field.set_mesh(*mesh_);
     	data_.output_fields.output_type(OutputTime::CORNER_DATA);
@@ -309,11 +309,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         data_.output_fields.set_limit_side(LimitSide::left);
         output_stream = OutputTime::output_stream(output_rec);
         output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
-    }
+    //}
 
     // set time marks for writing the output
-    output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
-    time_->marks().add_time_marks(0.0, output_rec.val<double>("time_step"), time_->end_time(), output_mark_type);
+    output_stream->mark_output_times(*time_);
+    //output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
+    //time_->marks().add_time_marks(0.0, output_rec.val<double>("time_step"), time_->end_time(), output_mark_type);
 
     // allocate matrix and vector structures
     
@@ -569,18 +570,18 @@ void TransportDG<Model>::output_data()
     double *solution;
     unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
 
-    if (!time_->is_current(output_mark_type)) return;
+    if (!time_->is_current( time_->marks().type_output() )) return;
 
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
     output_vector_gather();
 	// on the main processor fill the output array and save to file
-	if (feo->dh()->el_ds()->myp() == 0)
-	{
+	//if (feo->dh()->el_ds()->myp() == 0)
+	//{
 		data_.output_fields.set_time(*time_);
 		data_.output_fields.output(output_stream);
-	}
+	//}
 
 	if (mass_balance() != NULL)
 		mass_balance()->output(time_->t());

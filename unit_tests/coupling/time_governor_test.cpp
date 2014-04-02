@@ -89,7 +89,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(5.0, your_mark_type | tm.type_fixed_time() ));
     
     //inserting TimeMark
-    tm.add(TimeMark(1.0,my_mark_type | tm.type_input()));
+    tm.add(TimeMark(1.0,my_mark_type | tm.type_input()  ));
     //adding mark type at previously defined time
     tm.add(TimeMark(3.0, your_mark_type));
     
@@ -109,7 +109,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     Input::Record input = json_reader.get_root_interface<Input::Record>();
     
     //constructing time governor with time record read from input
-    TimeGovernor *tm_tg = new TimeGovernor(  input.val<Input::Record>("time"), tm.type_fixed_time() );
+    TimeGovernor *tm_tg = new TimeGovernor(  input.val<Input::Record>("time"), my_mark_type  );
     
     cout << tm;
     
@@ -205,7 +205,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->tlevel(), 2 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
-    EXPECT_TRUE(tm_tg->is_current(my_mark_type)); // time 1.0 (of tg) is lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
+    EXPECT_TRUE(tm_tg->is_current(my_mark_type) ); // time 1.0 (of tg) is lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
     // time mark 0x8 in time 1.0 is the last in interval (0.5;1.0]
     // time mark 0x8 in time 0.8 in interval (0.5;1.0] is skipped
     
@@ -216,7 +216,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->tlevel(), 3 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
-    EXPECT_FALSE(tm_tg->is_current(my_mark_type)); // time 1.5 (of tg) is NOT lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
+    EXPECT_FALSE(tm_tg->is_current(tm.type_fixed_time())); // time 1.5 (of tg) is NOT lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
     //no time mark is in interval (1.0;1.5]
     
     tm_tg->next_time();
@@ -238,12 +238,12 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 3.5 );
+    EXPECT_EQ( tm_tg->t(), 4.0 );
     EXPECT_EQ( tm_tg->tlevel(), 5 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//is changed from 0.5 to 1.5
     EXPECT_FALSE(tm_tg->is_current(TimeMark::every_type)); // time 3.5 (of tg) is NOT lt time 1.5 (of last timemark + dt =0.0+1.5 = 1.5)
-    EXPECT_TRUE(tm_tg->is_current(my_mark_type)); 
+    EXPECT_TRUE(tm_tg->is_current(my_mark_type));
     EXPECT_TRUE(tm_tg->is_current(your_mark_type)); // time 3.5 (of tg) is lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     // time mark 0x18 (0x08 included) in time 3.0 is the last in interval (2.0;3.5]
     // time mark 0x18 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
@@ -251,13 +251,13 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 5.0 );
+    EXPECT_EQ( tm_tg->t(), 6.0 );
     EXPECT_EQ( tm_tg->tlevel(), 6 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 1.5
-    EXPECT_FALSE(tm_tg->is_current(my_mark_type)); // time 5.0 (of tg) is NOT lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
+    EXPECT_FALSE(tm_tg->is_current(tm.type_fixed_time())); // time 5.0 (of tg) is NOT lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     //no time mark 0x08 is in interval (3.5;5.0]
-    EXPECT_TRUE(tm_tg->is_current(your_mark_type)); // time 5.0 (of tg) is lt time 6.5 (of last timemark + dt =5.0+1.5 = 6.5)
+    EXPECT_FALSE(tm_tg->is_current(your_mark_type)); // time 5.0 (of tg) is lt time 6.5 (of last timemark + dt =5.0+1.5 = 6.5)
     // time mark 0x11 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
      
     //-----------------

@@ -54,10 +54,14 @@ Record OutputTime::input_type
             // The format
 	.declare_key("format", OutputTime::input_format_type, Default::optional(),
 			"Format of output stream and possible parameters.")
-	.declare_key("time_step", Double(0.0), Default("0.0"),
-			"Interval between outputs.")
+	.declare_key("time_step", Double(0.0),
+			"Time interval between outputs.\n"
+			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.")
 	.declare_key("time_list", Array(Double(0.0)),
-			"Explicit array of output times (can be combined with 'time_step'.");
+			"Explicit array of output time points (can be combined with 'time_step'.")
+	.declare_key("add_input_times", Bool(), Default("false"),
+			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
+
 #if 0
     // The format
     .declare_key("format", OutputFormat::input_type, Default::optional(),
@@ -252,6 +256,7 @@ void OutputTime::add_admissible_field_names(const Input::Array &in_array, const 
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
+: input_record_(in_rec)
 {
     int ierr;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -331,6 +336,34 @@ OutputTime::~OutputTime(void)
      }
 
      xprintf(MsgLog, "O.K.\n");
+}
+
+
+void OutputTime::mark_output_times(const TimeGovernor &tg)
+{
+	TimeMark::Type output_mark_type = tg.equation_fixed_mark_type() | tg.marks().type_output();
+
+	double time_step;
+	if (input_record_.opt_val("time_step", time_step)) {
+		DBGMSG("set output times step: %g, mark type: %x\n", time_step, output_mark_type);
+		tg.add_time_marks_grid(time_step, output_mark_type);
+	}
+
+	Input::Array time_list;
+	if (input_record_.opt_val("time_list", time_list)) {
+		vector<double> list;
+		time_list.copy_to(list);
+		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
+	}
+
+	bool add_flag;
+	if (input_record_.opt_val("add_input_times", add_flag) && add_flag) {
+		TimeMark::Type input_mark_type = tg.equation_mark_type() | tg.marks().type_input();
+		for(auto it = tg.marks().begin(input_mark_type); it != tg.marks().end(input_mark_type); ++it) {
+			tg.marks().add( TimeMark(it->time(), it->mark_type() | output_mark_type) );
+		}
+	}
+
 }
 
 

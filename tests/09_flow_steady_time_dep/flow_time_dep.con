@@ -52,7 +52,6 @@
           TYPE = "vtk", 
           variant = "ascii"
         }, 
-        time_step = 0.1,
         name = "flow_output_stream"
     }
   }

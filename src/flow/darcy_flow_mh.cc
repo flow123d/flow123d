@@ -205,6 +205,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         
     // steady time governor
     time_ = new TimeGovernor();
+    data.mark_input_times(this->mark_type());
     
     //initializing data fields at the beginning (time = 0)
     // TODO: for steady case we need right side limit, for unsteady we need left side limit !!!

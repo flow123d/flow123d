@@ -151,7 +151,7 @@ private:
     DarcyFlowMH *darcy_flow;
     Mesh *mesh_;
 
-    TimeMark::Type output_mark_type;
+    //TimeMark::Type output_mark_type;
 
     /// Accessor to the input record for the DarcyFlow output.
     Input::Record   in_rec_;

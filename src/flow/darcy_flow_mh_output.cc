@@ -118,10 +118,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
 
     // set output time marks
-    TimeMarks &marks = darcy_flow->time().marks();
-    output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
-    marks.add_time_marks(0.0, in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
-          darcy_flow->time().end_time(), output_mark_type );
+
+    //TimeMarks &marks = darcy_flow->time().marks();
+    //output_mark_type = darcy_flow->mark_type() | marks.type_fixed_time() | marks.type_output();
+    //marks.add_time_marks(0.0, in_rec.val<Input::Record>("output_stream").val<double>("time_step"),
+    //      darcy_flow->time().end_time(), output_mark_type );
     //DBGMSG("end create output\n");
 
       
@@ -183,9 +184,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     			make_shared< FieldElementwise<3, FieldValue<3>::Integer> >(subdomains, 1));
 
     	output_fields.set_limit_side(LimitSide::right);
+
+
     	output_stream = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
     	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), output_fields.make_output_field_selection());
-    	DBGMSG("output stream: %p\n", output_stream);
+    	output_stream->mark_output_times(darcy_flow->time());
+    	//DBGMSG("output stream: %p\n", output_stream);
 
 #if 0
         OutputTime *output_time = NULL;
@@ -291,7 +295,7 @@ void DarcyFlowMHOutput::output()
     // skip initial output for steady solver
     if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
-    if (darcy_flow->time().is_current(output_mark_type)) {
+    if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
       make_element_scalar();
       make_element_vector();
