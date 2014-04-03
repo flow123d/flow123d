@@ -24,40 +24,40 @@ using namespace std;
 using namespace Input::Type;
 
 Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionType")
-	.add_value(Isotherm::none,"none", "No adsorption considered")
+	.add_value(Isotherm::none,"none", "No adsorption considered.")
 	.add_value(Isotherm::linear, "linear",
-			"Linear isotherm described adsorption considered.")
+			"Linear isotherm runs the concentration exchange between liquid and solid.")
 	.add_value(Isotherm::langmuir, "langmuir",
-			"Langmuir isotherm described adsorption considered")
+			"Langmuir isotherm runs the concentration exchange between liquid and solid.")
 	.add_value(Isotherm::freundlich, "freundlich",
-			"Freundlich isotherm described adsorption considered");
+			"Freundlich isotherm runs the concentration exchange between liquid and solid.");
 
 
 Selection SorptionBase::EqData::output_selection
-		= Selection("Sorption_Output")
+		= Selection("Adsorption_Output")
 		.copy_values(EqData().output_fields.make_output_field_selection())
 		.close();
 
 
 Record SorptionBase::input_type
-	= Record("Adsorption", "Information about all the limited solubility affected adsorptions.")
+	= Record("Adsorption", "Adsorption model describing exchange of concentration between liquid and solid.")
 	.derive_from( ReactionTerm::input_type )
         .declare_key("substances", Array(String()), Default::obligatory(),
-                     "Names of the substances that take part in the sorption model.")
+                     "Names of the substances that take part in the adsorption model.")
 	.declare_key("solvent_density", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("molar_mass", Array(Double()), Default::obligatory(),
-							"Specifies molar masses of all the sorbing species")
+							"Specifies molar masses of all the adsorbing species.")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
-							"Specifies solubility limits of all the sorbing species")
+							"Specifies solubility limits of all the adsorbing species.")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
+    .declare_key("data", Array(SorptionBase::EqData().make_field_descriptor_type("Adsorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
         
-    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.")
+    .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the adsorption.")
     
 	.declare_key("output_fields", Array(EqData::output_selection),
             Default("solid"), "List of fields to write to output stream.");

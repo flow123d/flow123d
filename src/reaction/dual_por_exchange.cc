@@ -52,7 +52,7 @@ Record DualPorosity::input_type
     
 DualPorosity::EqData::EqData()
 {
-  ADD_FIELD(diffusion_rate_immobile, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
+  ADD_FIELD(diffusion_rate_immobile, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone."
             " Vector, one value for every substance.", "0");
   ADD_FIELD(porosity_immobile, "Porosity of the immobile zone.", "0");
   ADD_FIELD(init_conc_immobile, "Initial concentration of substances in the immobile zone."
@@ -336,7 +336,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
                 pci = conc_immobile[sbi][loc_el];
 
                 if (por_imm != 0.0) {
-                        temp_exp = diff_vec[sbi]*(pci - pcm);
+                        temp_exp = diff_vec[sbi]*(pci - pcm) * time_->dt();
                         // ---compute concentration in mobile area-----------------------------------
                         cm = temp_exp / por_m + pcm;
 
