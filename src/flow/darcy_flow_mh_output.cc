@@ -194,7 +194,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     	output_fields.set_limit_side(LimitSide::right);
     	output_stream = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
     	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), OutputFields::output_selection);
-    	DBGMSG("output stream: %p\n", output_stream);
 
 #if 0
         OutputTime *output_time = NULL;

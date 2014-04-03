@@ -409,9 +409,7 @@ void TransportDG<Model>::update_solution()
 	}
 
     time_->next_time();
-#ifdef DEBUG_MESSAGES
     time_->view("TDG");
-#endif
     
     START_TIMER("data reinit");
     data_.set_time(*time_);
