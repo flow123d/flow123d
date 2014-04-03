@@ -63,7 +63,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+	static IT::Record rec = IT::Record(ModelEqData::name() + "_" + implementation, description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
 					"Names of transported substances.")
@@ -78,7 +78,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 
 IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection sel = IT::Selection("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
+	static IT::Selection sel = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
 
 	return sel;
 }

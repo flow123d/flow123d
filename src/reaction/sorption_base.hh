@@ -198,8 +198,6 @@ protected:
    */
   double** conc_solid;
   
-  Input::Array input_data;
-
   Input::Array output_array;
 
   Input::Type::Selection output_selection;

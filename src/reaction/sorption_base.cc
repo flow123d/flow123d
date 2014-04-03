@@ -97,7 +97,6 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string>
 //  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
   //output_rec = in_rec.find<Input::Record>("output");
 //  if(out_rec) output_rec = *out_rec;
-  input_data = in_rec.val<Input::Array>("input_fields");
   output_array = in_rec.val<Input::Array>("output_fields");
   
   //Simple vectors holding  common informations.
@@ -170,7 +169,7 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 
 	//setting fields that are set from input file
 	input_data_set_+=*data_;
-	input_data_set_.set_input_list(input_data);
+	input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
 
 	data_->set_mesh(*mesh_);
 	data_->set_limit_side(LimitSide::right);
