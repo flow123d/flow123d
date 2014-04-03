@@ -98,19 +98,28 @@ where $\Delta t = t^+ - t$ is the time step. Note that the difference scheme is 
 \subsection{Equilibrial Adsorption}
 \label{sec:sorp_math}
 
-The simulation of monolayer, equilibrial adsorption is based on solution of the couple of equations representing mass balance law and empirical description of adsorption represented by common types of isotherm. The following types of isotherm are considered:
+The simulation of monolayer, equilibrial adsorption is based on solution of the couple of equations 
+representing mass balance law and empirical description of adsorption represented by common types of isotherm. 
+The type of adsorption (\hyperA{Adsorption-Data::adsorption-type}{$adsorption\_type$}) is given by isotherm which is on of these:
 \begin{itemize}
- \item Without adsorption, \hyperA{Sorption-BulkData::sorption-types}{$sorption\_type$} is ``$none$''.
- \item Linear isotherm $c_s = f(c_a) = k_l\cdot c_a$, $sorption\_type$ is ``$linear$''.
- \item Freundlich isotherm $c_s = f(c_a) = k_F\cdot c_a^{\alpha}$, $sorption\_type$ is ``$freundlich$''.
- \item Langmuir isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$, $sorption\_type$ is ``$langmuir$''. Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
+ \item ``$none$''. The adsorption model returns zero concentration in solid.
+ \item ``$linear$''. Linear isotherm $c_s = f(c_a) = k_l\cdot c_a$, $sorption\_type$ is used.
+ \item ``$freundlich$''. Freundlich isotherm $c_s = f(c_a) = k_F\cdot c_a^{\alpha}$, $sorption\_type$ is used.
+ \item ``$langmuir$''. Langmuir isotherm $c_s = f(c_a) = k_L\cdot \frac{\alpha\cdot c_a}{1 + \alpha\cdot c_a}$,  
+       is used. Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount 
+       of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is 
+       a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
 \end{itemize}
 Notification:
 \begin{itemize}
- \item Sorbed concentration $[c_s] = \frac{[n]}{[m_H]} = \frac{N}{M} = \frac{Mol}{kg}$, where $m_H$ is the mass of bulk and $n$ denotes molar amount of substance in an element.
- \item Aqueous concentration $[c_a] = \frac{[m]}{[m_w]} = \frac{M}{M} = \frac{kg}{kg} = 1$, where $m_w$ is the mass of water/solvent in an element. Just water ($\rho_w = 1~kg\cdot l^{-1}$) is supposed to be solvent in version 1.7.0. 
- \item Multiplication parameters, $k_i, ~i\in\{ l,F,L\}$, \hyperA{Sorption-BulkData::mult-coefs}{$mult\_coefs$} can have various physical dimensions.
- \item Additional parameters, $[\alpha] = 1$, \hyperA{Sorption-BulkData::second-params}{$second\_params$}.
+ \item Concentration in solid $[c_s] = \frac{[n]}{[m_R]} = \frac{N}{M} = \frac{Mol}{kg}$, where $m_R$ is the 
+       mass of bulk (rock) and $n$ denotes molar amount of substance in an element.
+ \item Concentration in liquid $[c_l] = \frac{[m]}{[m_w]} = \frac{M}{M} = \frac{kg}{kg} = 1$, where $m_w$ is 
+       the mass of water/solvent in an element. Just water ($\rho_w = 1~kg\cdot l^{-1}$) is supposed to be 
+       solvent in version 1.7.0. 
+ \item Multiplication parameters, $k_i, i\in\{ l,F,L\}$, given by 
+       \hyperA{Adsorption-Data::isotherm-mult}{$isotherm\_mult$} can have various physical dimensions.
+ \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Adsorption-Data::isotherm-other}{$isotherm\_other$}.
 \end{itemize}
 The mass balance equation can be derived from \ref{eq:mass_balance_base},
 \begin{equation}
