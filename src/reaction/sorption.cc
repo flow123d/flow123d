@@ -10,28 +10,21 @@
 using namespace std;
 
 
-IT::Selection SorptionSimple::EqData::output_selection
-		= IT::Selection("AdsorptionSimple_Output")
-		.copy_values(EqData().output_fields.make_output_field_selection())
-		.close();
-
 IT::Record SorptionSimple::input_type
-	= IT::Record("AdsorptionSimple", "Information about all the limited solubility affected adsorptions.")
+	= IT::Record("Sorption", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( ReactionTerm::input_type )
 	.copy_keys(SorptionBase::input_type)
-	.declare_key("output_fields", IT::Array(EqData::output_selection),
+	.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
             IT::Default("conc_solid"), "List of fields to write to output stream.");
 
 
-SorptionSimple::EqData::EqData()
-{
-    output_fields += conc_solid.name("conc_solid").units("M/L^3");
-}
 
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
   : SorptionBase(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionSimple constructor.\n");
+	data_ = new EqData("conc_solid");
+	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
 }
 
 SorptionSimple::~SorptionSimple(void)
@@ -42,13 +35,13 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 {
 	START_TIMER("SorptionSimple::isotherm_reinit");
 
-	double rock_density = data_.rock_density.value(elem.centre(),elem);
-	double por_m = data_.porosity.value(elem.centre(),elem);
+	double rock_density = data_->rock_density.value(elem.centre(),elem);
+	double por_m = data_->porosity.value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
-	arma::uvec adsorption_type = data_.adsorption_type.value(elem.centre(),elem);
-	arma::Col<double> mult_coef_vec = data_.isotherm_mult.value(elem.centre(),elem);
-	arma::Col<double> second_coef_vec = data_.isotherm_other.value(elem.centre(),elem);
+	arma::uvec adsorption_type = data_->adsorption_type.value(elem.centre(),elem);
+	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
 	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{

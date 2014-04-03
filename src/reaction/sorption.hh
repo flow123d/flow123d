@@ -17,14 +17,6 @@ class SorptionSimple:  public SorptionBase
 {
 public:
 
-	class EqData : public SorptionBase::EqData
-	{
-	public:
-		EqData();
-
-		static Input::Type::Selection output_selection;
-	};
-
 	static Input::Type::Record input_type;
 
   /**
@@ -42,18 +34,11 @@ protected:
    */
   SorptionSimple();
   
-  Input::Type::Selection get_output_selection() override
-  { return data_.output_selection; }
-
   /**
    *
    */
   void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
 
-  SorptionBase::EqData &data() override
-  { return data_; }
-
-  EqData data_;
 
 };
 

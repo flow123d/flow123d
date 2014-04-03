@@ -12,29 +12,21 @@
 using namespace std;
 
 
-IT::Selection SorptionImmob::EqData::output_selection
-		= IT::Selection("AdsorptionImmobile_Output")
-		.copy_values(EqData().output_fields.make_output_field_selection())
-		.close();
-
 IT::Record SorptionImmob::input_type
-	= IT::Record("AdsorptionImmobile", "Information about all the limited solubility affected adsorptions.")
+	= IT::Record("SorptionImmobile", "Information about all the limited solubility affected adsorptions.")
 	.derive_from( ReactionTerm::input_type )
 	.copy_keys(SorptionBase::input_type)
-	.declare_key("output_fields", IT::Array(EqData::output_selection),
+	.declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
             IT::Default("conc_immobile_solid"), "List of fields to write to output stream.");
 
 
-
-SorptionImmob::EqData::EqData()
-{
-    output_fields += conc_solid.name("conc_immobile_solid").units("M/L^3");
-}
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
 	: SorptionDual(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionImmob constructor.\n");
+	data_ = new EqData("conc_immobile_solid");
+	output_selection = make_output_selection("conc_immobile_solid", "SorptionImmobile_Output");
 }
 
 SorptionImmob::~SorptionImmob(void)
@@ -53,17 +45,17 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 {
 	START_TIMER("SorptionImmob::isotherm_reinit");
 
-	double rock_density = data_.rock_density.value(elem.centre(),elem);
+	double rock_density = data_->rock_density.value(elem.centre(),elem);
 	
-	double por_m = data_.porosity.value(elem.centre(),elem);
+	double por_m = data_->porosity.value(elem.centre(),elem);
 	double por_imm = immob_porosity_.value(elem.centre(),elem);
         //double phi = por_imm / (por_m + por_imm);     // = 1-phi
         double phi = por_m/(por_m + por_imm);
         
 	// List of types of isotherms in particular regions
-	arma::uvec adsorption_type = data_.adsorption_type.value(elem.centre(),elem);
-	arma::Col<double> mult_coef_vec = data_.isotherm_mult.value(elem.centre(),elem);
-	arma::Col<double> second_coef_vec = data_.isotherm_other.value(elem.centre(),elem);
+	arma::uvec adsorption_type = data_->adsorption_type.value(elem.centre(),elem);
+	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
 	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{

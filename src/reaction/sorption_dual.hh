@@ -34,7 +34,7 @@ public:
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
       { 
         immob_porosity_.copy_from(por_imm); 
-        data()+=(immob_porosity_);
+        *data_+=(immob_porosity_);
       }
 
 protected:

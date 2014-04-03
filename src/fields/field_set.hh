@@ -104,9 +104,9 @@ public:
     /**
      * Make Selection with strings for all field names in the FieldSet.
      */
-    Input::Type::Selection make_output_field_selection() {
+    Input::Type::Selection make_output_field_selection(const string &name, const string &desc = "") {
     	namespace IT=Input::Type;
-    	IT::Selection sel("field_output_keys","AUXILIARY SELECTION. Should not be directly part of the input tree.");
+    	IT::Selection sel(name, desc);
     	int i=0;
     	// add value for each field excluding boundary fields
     	for( auto field : field_list)
@@ -122,7 +122,7 @@ public:
     			i++;
     		}
     	}
-    	sel.close();
+//    	sel.close();
 
     	return sel;
     }

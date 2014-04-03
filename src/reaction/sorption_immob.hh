@@ -16,14 +16,6 @@ class SorptionImmob:  public SorptionDual
 {
 public:
 
-	class EqData : public SorptionBase::EqData
-	{
-	public:
-		EqData();
-
-		static Input::Type::Selection output_selection;
-	};
-
 	static Input::Type::Record input_type;
 
   /**
@@ -41,15 +33,7 @@ protected:
    */
   void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
   
-  Input::Type::Selection get_output_selection() override
-  { return data_.output_selection; }
-
-  SorptionBase::EqData &data() override
-  { return data_; }
-
   //double compute_sorbing_scale(double por_m, double por_imm) override;
-
-  EqData data_;
 };
 
 #endif

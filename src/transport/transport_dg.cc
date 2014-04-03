@@ -70,7 +70,7 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
 template<class Model>
 Selection TransportDG<Model>::EqData::output_selection =
 		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
-		.copy_values(EqData().output_fields.make_output_field_selection())
+		.copy_values(EqData().output_fields.make_output_field_selection("").close())
 		.close();
 
 template<class Model>

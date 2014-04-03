@@ -56,7 +56,7 @@ public:
     static Input::Type::Selection sorption_type_selection;
 
     /// Collect all fields
-    EqData();
+    EqData(const string &output_field_name);
 
     Field<3, FieldValue<3>::EnumVector > adsorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density; ///< Rock matrix density.
@@ -87,7 +87,11 @@ public:
    */
   virtual void update_solution(void);
   
-  virtual Input::Type::Selection get_output_selection() = 0;
+  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
+  {
+	  return EqData(output_field_name).output_fields.make_output_field_selection(selection_name)
+		.close();
+  }
 
   /**
    * Initialization routines that are done in constructors of descendants.
@@ -146,8 +150,9 @@ protected:
   
   void allocate_output_mpi(void);
   
-  /// Equation field data.
-  virtual EqData &data() = 0;
+
+
+  EqData *data_;
 
   /**
    * Number of regions.
@@ -196,6 +201,8 @@ protected:
   Input::Array input_data;
 
   Input::Array output_array;
+
+  Input::Type::Selection output_selection;
 
   /** Reaction model that follows the sorption.
    */

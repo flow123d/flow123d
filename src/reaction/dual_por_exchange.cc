@@ -31,8 +31,7 @@ using namespace std;
 const double DualPorosity::min_dt = 0;
 
 Selection DualPorosity::EqData::output_selection
-		= Selection("DualPorosity_Output")
-		.copy_values(EqData().output_fields.make_output_field_selection())
+		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
 		.close();
 
 Record DualPorosity::input_type
