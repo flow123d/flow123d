@@ -60,7 +60,7 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file <<  mesh->node_vector.size() << endl;
     FOR_NODES(mesh, nod) {
-        file << NODE_FULL_ITER(mesh, nod).index() + 1 << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
+        file << NODE_FULL_ITER(mesh, nod).id() << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
     }
     file << "$EndNodes" << endl;
 }
@@ -77,12 +77,12 @@ void OutputMSH::write_msh_topology(void)
     file << mesh->n_elements() << endl;
     FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
-        file << ELEM_FULL_ITER(mesh, elm).index() + 1
+        file << ELEM_FULL_ITER(mesh, elm).id()
              << " " << gmsh_simplex_types_[ elm->dim() ]
              << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
-            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;
+            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).id();
         file << endl;
     }
     file << "$EndElements" << endl;
@@ -120,7 +120,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
     unsigned int i_node;
 	unsigned int i_corner=0;
     FOR_ELEMENTS(mesh, ele) {
-        file << ele.index() + 1 << " " << ele->n_nodes() << " ";
+        file << ele.id() << " " << ele->n_nodes() << " ";
 
         FOR_ELEMENT_NODES(ele, i_node) {
             output_data->print(file, i_corner++);
