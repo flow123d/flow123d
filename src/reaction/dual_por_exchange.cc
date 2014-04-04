@@ -177,15 +177,18 @@ void DualPorosity::set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
 	data_.set_field(data_.porosity.name(),por_m);
 
 	// assign porosities to reactions
-	if (static_cast<SorptionMob *>(reaction_mobile) != nullptr)
+	SorptionMob   *sorption_mob   = dynamic_cast<SorptionMob   *>(reaction_mobile);
+	SorptionImmob *sorption_immob = dynamic_cast<SorptionImmob *>(reaction_immobile);
+
+	if (sorption_mob != nullptr)
 	{
-        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
-        static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
+		sorption_mob->set_porosity(data_.porosity);
+		sorption_mob->set_porosity_immobile(data_.porosity_immobile);
 	}
-	if (static_cast<SorptionImmob *>(reaction_immobile) != nullptr)
+	if (sorption_immob != nullptr)
 	{
-		static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
-		static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
+		sorption_immob->set_porosity(data_.porosity);
+		sorption_immob->set_porosity_immobile(data_.porosity_immobile);
 	}
 }
 
