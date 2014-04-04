@@ -24,28 +24,28 @@ using namespace std;
 using namespace Input::Type;
 
 Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionType")
-	.add_value(Isotherm::none,"none", "No adsorption considered")
+	.add_value(Isotherm::none,"none", "No adsorption considered.")
 	.add_value(Isotherm::linear, "linear",
-			"Linear isotherm described adsorption considered.")
+			"Linear isotherm runs the concentration exchange between liquid and solid.")
 	.add_value(Isotherm::langmuir, "langmuir",
-			"Langmuir isotherm described adsorption considered")
+			"Langmuir isotherm runs the concentration exchange between liquid and solid.")
 	.add_value(Isotherm::freundlich, "freundlich",
-			"Freundlich isotherm described adsorption considered");
+			"Freundlich isotherm runs the concentration exchange between liquid and solid.");
 
 
 
 Record SorptionBase::input_type
 	= Record("Adsorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
-        .declare_key("substances", Array(String()), Default::obligatory(),
-                     "Names of the substances that take part in the sorption model.")
+    .declare_key("substances", Array(String()), Default::obligatory(),
+                 "Names of the substances that take part in the adsorption model.")
 	.declare_key("solvent_density", Double(), Default("1.0"),
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("molar_mass", Array(Double()), Default::obligatory(),
-							"Specifies molar masses of all the sorbing species")
+							"Specifies molar masses of all the adsorbing species.")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
-							"Specifies solubility limits of all the sorbing species")
+							"Specifies solubility limits of all the adsorbing species.")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
