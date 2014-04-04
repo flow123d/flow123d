@@ -359,9 +359,13 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 	bool add_flag;
 	if (input_record_.opt_val("add_input_times", add_flag) && add_flag) {
 		TimeMark::Type input_mark_type = tg.equation_mark_type() | tg.marks().type_input();
-		for(auto it = tg.marks().begin(input_mark_type); it != tg.marks().end(input_mark_type); ++it) {
-			tg.marks().add( TimeMark(it->time(), it->mark_type() | output_mark_type) );
-		}
+		vector<double> mark_times;
+		// can not add marks while iterating through time marks
+		for(auto it = tg.marks().begin(input_mark_type); it != tg.marks().end(input_mark_type); ++it)
+			mark_times.push_back(it->time());
+		for(double time : mark_times)
+			tg.marks().add( TimeMark(time, output_mark_type) );
+
 	}
 
 }

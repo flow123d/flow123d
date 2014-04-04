@@ -176,7 +176,6 @@ DarcyFlowMH::EqData::EqData()
 
 
 
-
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -189,55 +188,38 @@ DarcyFlowMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec, bool make_tg )
 : DarcyFlowMH(mesh_in, in_rec)
 
 {
     using namespace Input;
-    F_ENTRY;
+
     START_TIMER("Darcy constructor");
 
     //connecting data fields with mesh
     START_TIMER("data init");
     data.set_mesh(mesh_in);
     data.set_input_list( in_rec.val<Input::Array>("data") );
-    data.set_limit_side(LimitSide::right);
-        
-    // steady time governor
-    time_ = new TimeGovernor();
-    data.mark_input_times(this->mark_type());
-    
-    //initializing data fields at the beginning (time = 0)
-    // TODO: for steady case we need right side limit, for unsteady we need left side limit !!!
-    data.set_time(*time_);
-    END_TIMER("data init");
-    
-    int ierr;
 
+
+
+    
+    END_TIMER("data init");
+
+    
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
     
-
     solution = NULL;
     schur0   = NULL;
     schur1   = NULL;
     schur2   = NULL;
 
     
-    
-    // init paralel structures
-    ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &(myp));
-    ierr += MPI_Comm_size(PETSC_COMM_WORLD, &(np));
-    if (ierr)
-        xprintf(Err, "Some error in MPI.\n");
-
-
-    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->make_intersec_elements();
     }
-
 
     mh_dh.reinit(mesh_);
 
@@ -248,45 +230,23 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
-    make_schurs(in_rec.val<AbstractRecord>("solver"));
 
-    START_TIMER("prepare scatter");
-    // prepare Scatter form parallel to sequantial in original numbering
-    {
-            IS is_loc;
-            int i, *loc_idx; //, si;
 
-            // create local solution vector
-            solution = (double *) xmalloc(size * sizeof(double));
-            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
-                    &(sol_vec));
 
-            // create seq. IS to scatter par solutin to seq. vec. in original order
-            // use essentialy row_4_id arrays
-            loc_idx = (int *) xmalloc(size * sizeof(int));
-            i = 0;
-            FOR_ELEMENTS(mesh_, ele) {
-                FOR_ELEMENT_SIDES(ele,si) {
-                    loc_idx[i++] = side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
-                }
-            }
-            FOR_ELEMENTS(mesh_, ele) {
-                loc_idx[i++] = row_4_el[ele.index()];
-            }
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
-                loc_idx[i++] = row_4_edge[i_edg];
-            }
-            ASSERT( i==size,"Size of array does not match number of fills.\n");
-            //DBGPRINT_INT("loc_idx",size,loc_idx);
-            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            xfree(loc_idx);
-            VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
-                    PETSC_NULL, &par_to_all);
-            ISDestroy(&(is_loc));
-        }
-    solution_changed_for_scatter=true;
-    
-    END_TIMER("prepare scatter");
+    if (make_tg) {
+    	// steady time governor
+    	time_ = new TimeGovernor();
+    	data.mark_input_times(this->mark_type());
+    	data.set_limit_side(LimitSide::right);
+    	data.set_time(*time_);
+
+    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+
+        make_schurs(in_rec.val<AbstractRecord>("solver"));
+        make_serial_scatter();
+    }
+
+
 }
 
 
@@ -368,6 +328,10 @@ void DarcyFlowMH_Steady::postprocess()
     */
 }
 
+
+void DarcyFlowMH_Steady::output_data() {
+	this->output_object->output();
+}
 
 double DarcyFlowMH_Steady::solution_precision() const
 {
@@ -1416,6 +1380,47 @@ void DarcyFlowMH_Steady::make_row_numberings() {
     rows_ds = boost::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }
 
+void DarcyFlowMH_Steady::make_serial_scatter() {
+    START_TIMER("prepare scatter");
+    // prepare Scatter form parallel to sequantial in original numbering
+    {
+            IS is_loc;
+            int i, *loc_idx; //, si;
+
+            // create local solution vector
+            solution = (double *) xmalloc(size * sizeof(double));
+            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
+                    &(sol_vec));
+
+            // create seq. IS to scatter par solutin to seq. vec. in original order
+            // use essentialy row_4_id arrays
+            loc_idx = (int *) xmalloc(size * sizeof(int));
+            i = 0;
+            FOR_ELEMENTS(mesh_, ele) {
+                FOR_ELEMENT_SIDES(ele,si) {
+                    loc_idx[i++] = side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
+                }
+            }
+            FOR_ELEMENTS(mesh_, ele) {
+                loc_idx[i++] = row_4_el[ele.index()];
+            }
+            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
+                loc_idx[i++] = row_4_edge[i_edg];
+            }
+            ASSERT( i==size,"Size of array does not match number of fills.\n");
+            //DBGPRINT_INT("loc_idx",size,loc_idx);
+            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
+            xfree(loc_idx);
+            VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
+                    PETSC_NULL, &par_to_all);
+            ISDestroy(&(is_loc));
+        }
+    solution_changed_for_scatter=true;
+
+    END_TIMER("prepare scatter");
+
+}
+
 // ====================================================================================
 // - compute optimal edge partitioning
 // - compute appropriate partitioning of elements and sides
@@ -1517,7 +1522,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     //DBGPRINT_INT("el_row_4_id",mesh_->max_elm_id+1,el_row_4_id);
     //DBGPRINT_INT("side_row_4_id",mesh_->max_side_id+1,side_row_4_id);
 
-    lsize = side_ds->lsize() + el_ds->lsize() + edge_ds->lsize();
+    //lsize = side_ds->lsize() + el_ds->lsize() + edge_ds->lsize();
 
 
     // prepare global_row_4_sub_row
@@ -1627,13 +1632,19 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // unsteady
 
 DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
+    : DarcyFlowMH_Steady(mesh_in, in_rec, false)
 {
-    delete time_; // delete steady TG
- 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	data.mark_input_times(this->mark_type());
+	data.set_limit_side(LimitSide::right);
+	data.set_time(*time_);
+
+	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+
+	time_->fix_dt_until_mark();
+	make_schurs(in_rec.val<Input::AbstractRecord>("solver"));
+	make_serial_scatter();
     
-    time_->fix_dt_until_mark();
     setup_time_term();
 }
 
@@ -1709,13 +1720,20 @@ void DarcyFlowMH_Unsteady::modify_system() {
 // unsteady
 
 DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec)
+    : DarcyFlowMH_Steady(mesh_in, in_rec,false)
 {
-    delete time_; // delete steady TG
- 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+    data.mark_input_times(this->mark_type());
 
-    time_->fix_dt_until_mark();
+
+    data.set_limit_side(LimitSide::right);
+	data.set_time(*time_);
+
+	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+
+	time_->fix_dt_until_mark();
+	make_schurs(in_rec.val<Input::AbstractRecord>("solver"));
+	make_serial_scatter();
     setup_time_term();
 }
 

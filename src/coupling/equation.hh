@@ -179,6 +179,10 @@ public:
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
+    /**
+     * @brief Write computed fields.
+     */
+    virtual void output_data() =0;
 
 protected:
     Mesh * mesh_;

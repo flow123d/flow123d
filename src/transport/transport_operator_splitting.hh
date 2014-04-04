@@ -45,10 +45,7 @@ public:
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
-    /**
-     * @brief Write computed fields.
-     */
-    virtual void output_data() =0;
+
 
     virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
 

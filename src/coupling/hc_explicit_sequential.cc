@@ -111,8 +111,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             xprintf(UsrErr,"Equation type not implemented.");
     }
 
-    // object for water postprocessing and output
-    water_output = new DarcyFlowMHOutput(water, Record(prim_eq).val<Record>("output") );
+
 
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
@@ -185,9 +184,7 @@ void HC_ExplicitSequential::run_simulation()
     // Currently we simply use t_dt == w_dt.
 
     // output initial condition
-    water_output->postprocess();
-    water_output->output();
-
+    water->output_data();
 
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
 
@@ -207,13 +204,12 @@ void HC_ExplicitSequential::run_simulation()
         if (water->solved_time() < velocity_interpolation_time) {
             // solve water over the nearest transport interval
             water->update_solution();
-            water_output->postprocess();
+
             // here possibly save solution from water for interpolation in time
 
             //water->time().view("WATER");     //show water time governor
             
-            water_output->output();
-
+            water->output_data();
             water->choose_next_time();
 
             velocity_changed = true;

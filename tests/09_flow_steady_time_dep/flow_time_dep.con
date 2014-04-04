@@ -34,8 +34,15 @@
       n_schurs = 2, 
       output = {
         output_stream = {
-          REF = "/system/output_streams"
-        }, 
+          add_input_times=true,
+          
+          file = "./test10.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
@@ -43,16 +50,6 @@
         a_tol = 1e-07
       }
     } 
-  }, 
+  } 
 
-  system = {
-    output_streams = {
-        file = "./test10.pvd", 
-        format = {
-          TYPE = "vtk", 
-          variant = "ascii"
-        }, 
-        name = "flow_output_stream"
-    }
-  }
 }

@@ -52,8 +52,8 @@ using namespace Input::Type;
 
 
 Record TimeGovernor::input_type = Record("TimeGovernor",
-            "Setting of the simulation time. (can be specific to one eqaution)")
-    //.allow_auto_conversion("init_dt")
+            "Setting of the simulation time. (can be specific to one equation)")
+	.allow_auto_conversion("init_dt")
     .declare_key("start_time", Double(), Default("0.0"),
                 "Start time of the simulation.")
     .declare_key("end_time", Double(), Default::optional(),
@@ -101,7 +101,6 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     }
 
 }
-
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
 {
@@ -177,7 +176,6 @@ void TimeGovernor::init_common(double dt, double init_time, double end_time, Tim
 
 	eq_mark_type_=type;
 	steady_=false;
-
     time_marks_->add( TimeMark(time_, equation_fixed_mark_type()) );
     if (end_time_ != inf_time)
     	time_marks_->add( TimeMark(end_time_, equation_fixed_mark_type()) );
@@ -202,7 +200,7 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
 }
 
 
-// int set_constain - dle nastaveni constraint
+// int set_constrain - dle nastaveni constraint
 // interval - constraint - jako v cmp u Qsortu
 // -1 vetsi nez interval (min_dt,max_dt)
 // +1 mensi
@@ -331,6 +329,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
+    ASSERT_LE(0.0, time_);
     if (time_ == inf_time || is_end()) return;
     
     //in case the time governor is steady the time is set to end time which is infinity

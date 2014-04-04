@@ -235,6 +235,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     }
 
 
+	darcy_flow->time().view("Darcy output");
 }
 
 
@@ -263,25 +264,6 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
 // CONVERT SOLUTION, CALCULATE BALANCES, ETC...
 //=============================================================================
 
-void DarcyFlowMHOutput::postprocess() {
-    //make_side_flux();
-
-    /*  writes scalar values to mesh - cannot be moved to output!
-     *  all other methods are moved to output
-     */
-
-//    make_element_scalar(ele_scalars);
-
-//    make_element_vector();
-//    make_sides_scalar();
-
-    /* new version of make_node_scalar */
-//    make_node_scalar_param(node_scalars);
-
-
-//    make_neighbour_flux();
-//    water_balance();
-}
 
 void DarcyFlowMHOutput::output()
 {
@@ -293,8 +275,11 @@ void DarcyFlowMHOutput::output()
     //cout << "DMHO_output: rank: " << rank << "\t output_writer: " << output_writer << endl;
     
     // skip initial output for steady solver
+    //darcy_flow->time().view("Darcy output output");
+
     if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
+    //DBGVAR( darcy_flow->time().is_current( TimeGovernor::marks().type_output() ) );
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {
 
       make_element_scalar();
@@ -314,7 +299,8 @@ void DarcyFlowMHOutput::output()
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
       double time  = darcy_flow->solved_time();
-
+      //DBGMSG("solved time: %g\n",time);
+      //DBGMSG("field set time: %g\n", darcy_flow->time().t());
       // Workaround for infinity time returned by steady solvers. Should be designed better. Maybe
       // consider begining of the interval of actual result as the output time. Or use
       // particular TimeMark. This can allow also interpolation and perform output even inside of time step interval.

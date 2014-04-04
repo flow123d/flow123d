@@ -93,7 +93,6 @@ public:
 
     static Input::Type::Record input_type;
 
-    void postprocess();
 
     /** \brief Calculate values for output.  **/
     void output();

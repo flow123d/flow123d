@@ -73,7 +73,7 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
-
+class DarcyFlowMHOutput;
 
 
 /**
@@ -169,9 +169,6 @@ public:
      *   we want to make this class see values in
      *
      */
-    //class
-
-
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
@@ -221,22 +218,19 @@ protected:
 
     }
 
-    virtual void postprocess() =0;
+    //virtual void postprocess() =0;
 
     virtual double solution_precision() const = 0;
 
     //virtual void balance();
     //virtual void integrate_sources();
 
-protected:  
     
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
-    // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
-    double mortar_sigma_;
 };
 
 
@@ -277,7 +271,7 @@ public:
       {}
     };
     
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
 
     static Input::Type::Record input_type;
 
@@ -292,10 +286,13 @@ public:
 
     /// postprocess velocity field (add sources)
     virtual void postprocess();
+    virtual void output_data() override;
+
     ~DarcyFlowMH_Steady();
 
 
 protected:
+    void make_serial_scatter();
     virtual void modify_system() {};
     void set_R() {};
     void prepare_parallel( const Input::AbstractRecord in_rec);
@@ -309,11 +306,13 @@ protected:
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     double solution_precision() const;
 
+
+    DarcyFlowMHOutput *output_object;
+
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
 	LinSys_PETSC *schur1;  	//< first schur compl.
@@ -321,9 +320,6 @@ protected:
 
 
 	// parallel
-	int np;                         //< number of procs
-	int myp;                        //< my proc number
-	int	 lsize;	                //< local size of whole MH matrix
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
@@ -344,8 +340,6 @@ protected:
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-
-    double mortar_sigma;
         
   EqData data;
 

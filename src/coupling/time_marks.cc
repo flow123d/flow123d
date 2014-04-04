@@ -128,7 +128,7 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
-    if (tg.end_time() == TimeGovernor::inf_time) return (tg.t() == TimeGovernor::inf_time);
+    if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
