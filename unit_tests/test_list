@@ -1,12 +1,10 @@
 01_steady_flow_123d
 02_transport_12d
 03_transport_small_12d
-04_density_driven_12d
 05_flow_boundary_conditions
 06_flow_coupling
-07_unsteady_flow_123d
 08_steady_flow_sources
-09_steady_flow_matis
+09_flow_steady_time_dep
 10_unsteady_2d
 11_reactional_transport_semchem
 12_radioactive_decay
@@ -18,3 +16,6 @@
 18_diffusion_fracture
 19_BC_interpolation
 20_limited_sorption
+21_heat_transfer
+22_noncompatible
+23_dual_porosity
