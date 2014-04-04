@@ -20,7 +20,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      data=[
+      input_fields=[
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
@@ -38,16 +38,12 @@
     },
 
     secondary_equation = {
-      TYPE = "ConcentrationTransport_DG", 
+      TYPE = "SoluteTransport_DG", 
       output_stream = {
           REF = "/system/output_streams/1"
       }, 
 
-      dual_porosity = true, 
-      sorption_enable = true, 
-      substances = [
-        "A"
-      ], 
+      substances = [ "A" ], 
       time = {
         end_time = 5.0,
 	init_dt = 0.5
@@ -57,7 +53,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      data=[
+      input_fields=[
         { 
           region="IMPLICIT BOUNDARY",
           bc_conc = 1
@@ -65,12 +61,12 @@
         {
           rid=48,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         },
         {
           rid=184,
           init_conc = 0,
-          por_m = 0.25
+          porosity= 0.25
         }
       ],
       mass_balance = {

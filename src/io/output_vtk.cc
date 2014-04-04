@@ -324,14 +324,12 @@ void OutputVTK::write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &ve
     file << "Vectors=\"";
 	for( auto &data : vec_output_data)
 		if (data->n_elem_ == OutputDataBase::vector) file << data->output_field_name << ",";
-	file << "\"";
+	file << "\" ";
 
-//	//TODO: Tensors are ignored for compatibility of VTK files for tests. Uncomment in next release.
-//
-//    file << "Tensors=\"";
-//	for( auto &data : vec_output_data)
-//		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
-//	file << "\" ";
+    file << "Tensors=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
+	file << "\"";
 }
 
 

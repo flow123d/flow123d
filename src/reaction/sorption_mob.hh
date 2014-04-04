@@ -15,6 +15,9 @@ class Isotherm;
 class SorptionMob:  public SorptionDual
 {
 public:
+
+	static Input::Type::Record input_type;
+
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
@@ -30,10 +33,8 @@ protected:
    */
   void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
   
-  ///Renaming output names of substances.
-  void set_output_names(void) override;
-  
   //double compute_sorbing_scale(double por_m, double por_imm) override;
+
 };
 
 #endif

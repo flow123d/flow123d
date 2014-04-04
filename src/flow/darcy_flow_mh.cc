@@ -112,7 +112,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
     .derive_from(DarcyFlowMH::input_type)
-    .declare_key("data", it::Array(
+    .declare_key("input_fields", it::Array(
                 DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
                 .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
                 .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
@@ -199,7 +199,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //connecting data fields with mesh
     START_TIMER("data init");
     data.set_mesh(mesh_in);
-    data.set_input_list( in_rec.val<Input::Array>("data") );
+    data.set_input_list( in_rec.val<Input::Array>("input_fields") );
 
 
 
@@ -277,9 +277,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
     //xprintf(Msg, "DARCY:  t: %f  dt: %f\n",time_->t(), time_->dt());
 
-#ifdef DEBUG_MESSAGES
     time_->view("DARCY"); //time governor information output
-#endif
     
     modify_system(); // hack for unsteady model
     int convergedReason = schur0->solve();
@@ -299,7 +297,6 @@ void DarcyFlowMH_Steady::update_solution() {
     //    PetscViewerDestroy(solViewer);
     //}
     solution_changed_for_scatter=true;
-    DBGMSG("solution updated\n");
 }
 
 void DarcyFlowMH_Steady::postprocess() 

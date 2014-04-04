@@ -9,10 +9,24 @@
 
 using namespace std;
 
+
+IT::Record SorptionSimple::input_type
+	= IT::Record("Sorption", "Information about all the limited solubility affected adsorptions.")
+	.derive_from( ReactionTerm::input_type )
+	.copy_keys(SorptionBase::input_type)
+	.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
+            IT::Default("conc_solid"), "List of fields to write to output stream.");
+
+
+
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
   : SorptionBase(init_mesh, in_rec, names)
 {
   //DBGMSG("SorptionSimple constructor.\n");
+	data_ = new EqData("conc_solid");
+	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
+
+	init_from_input(in_rec);
 }
 
 SorptionSimple::~SorptionSimple(void)
@@ -23,13 +37,13 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 {
 	START_TIMER("SorptionSimple::isotherm_reinit");
 
-	double rock_density = data_.rock_density.value(elem.centre(),elem);
-	double por_m = data_.porosity.value(elem.centre(),elem);
+	double rock_density = data_->rock_density.value(elem.centre(),elem);
+	double por_m = data_->porosity.value(elem.centre(),elem);
 
 	// List of types of isotherms in particular regions
-	arma::uvec adsorption_type = data_.sorption_types.value(elem.centre(),elem);
-	arma::Col<double> mult_coef_vec = data_.mult_coefs.value(elem.centre(),elem);
-	arma::Col<double> second_coef_vec = data_.second_params.value(elem.centre(),elem);
+	arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
+	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
 	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
@@ -54,7 +68,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 			table_limit=solubility_vec_[i_subst];
 		}
 		isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
-					solvent_dens, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
+					solvent_density, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
 	}
 

@@ -16,6 +16,9 @@ class Isotherm;
 class SorptionSimple:  public SorptionBase
 {
 public:
+
+	static Input::Type::Record input_type;
+
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
@@ -35,6 +38,8 @@ protected:
    *
    */
   void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+
+
 };
 
 #endif

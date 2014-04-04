@@ -107,7 +107,11 @@ void Application::display_version() {
     
 
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
-    xprintf(Msg, "Branch: %s   %s\nBuild: %s \n", branch.c_str(), url.c_str(), build.c_str() );
+    xprintf(Msg,
+    	 "Branch: %s\n"
+		 "Build: %s\n"
+		 "Fetch URL: %s\n",
+		 branch.c_str(), build.c_str() , url.c_str() );
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
 
@@ -122,7 +126,6 @@ Input::Record Application::read_input() {
     
     // read main input file
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());

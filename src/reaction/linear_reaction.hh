@@ -15,9 +15,9 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
+class ReactionTerm;
 
-class Linear_reaction: public Reaction
+class Linear_reaction: public ReactionTerm
 {
 	public:
 		/*
@@ -39,7 +39,7 @@ class Linear_reaction: public Reaction
 		*/
 		~Linear_reaction(void);
                 
-                void initialize(void) override;
+        void initialize(OutputTime *stream) override;
                 
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.

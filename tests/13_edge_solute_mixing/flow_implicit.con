@@ -10,7 +10,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         {   rid = 17,
             anisotropy = 1.0
         },
@@ -40,9 +40,9 @@
     }, 
 
     secondary_equation = {
-	TYPE = "ConcentrationTransport_DG", 
+	TYPE = "SoluteTransport_DG", 
 
-    data= [
+    input_fields= [
         { rid = 17,
           init_conc = 0
         },

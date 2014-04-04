@@ -42,7 +42,7 @@ it::Record Specie::input_type = it::Record("Isotope", "Definition of information
 
 
 it::Record General_reaction::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
-	.derive_from(Reaction::input_type)
+	.derive_from(ReactionTerm::input_type)
         //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
         //        "Description of general chemical reactions.");
 	.declare_key("identifier", it::Integer(), it::Default::obligatory(),

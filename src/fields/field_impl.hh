@@ -327,7 +327,9 @@ void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 template<int spacedim, class Value>
 void Field<spacedim, Value>::output(OutputTime *stream)
 {
-	stream->register_data(this->output_type(), *this);
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
 }
 
 
@@ -468,8 +470,14 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-//        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] ).units( units() );
-    	sub_fields_[i_comp].name( sub_names_[i_comp] ).units( units() );
+    {
+    	sub_fields_[i_comp].units( units() );
+
+    	if (sub_names_[i_comp].length() == 0)
+    		sub_fields_[i_comp].name( name() );
+    	else
+    		sub_fields_[i_comp].name( sub_names_[i_comp] + "_" + name());
+    }
 }
 
 
@@ -526,7 +534,9 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::output(OutputTime *stream)
 {
-	stream->register_data(this->output_type(), *this);
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
 }
 
 

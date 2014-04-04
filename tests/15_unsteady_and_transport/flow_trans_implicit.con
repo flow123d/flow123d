@@ -10,7 +10,7 @@
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
-      data= [
+      input_fields= [
         { rid = 100,
           anisotropy = 1,         // default
           cross_section = 1,            // default
@@ -46,7 +46,7 @@
     secondary_equation = {
       TYPE = "AdvectionDiffusion_DG", 
       
-      data= [
+      input_fields= [
         { rid = 100,
           init_conc = 0
         },

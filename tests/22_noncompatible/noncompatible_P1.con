@@ -11,7 +11,7 @@
       n_schurs = 2, 
       mortar_method = "P1",
 
-      data= [
+      input_fields= [
         { region = "1d",
           conductivity = 1,
           sigma = 100

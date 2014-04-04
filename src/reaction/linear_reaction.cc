@@ -34,7 +34,7 @@ Record Linear_reaction::input_type_one_decay_substep
 
 Record Linear_reaction::input_type
 	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
-	.derive_from( Reaction::input_type )
+	.derive_from( ReactionTerm::input_type )
     .declare_key("decays", Array( Linear_reaction::input_type_one_decay_substep ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
 
@@ -42,7 +42,7 @@ Record Linear_reaction::input_type
 using namespace std;
 
 Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity, Input::Record in_rec) //(double timestep, int nrOfElements, double ***ConvectionMatrix)
-      : Reaction(init_mesh, in_rec, names),
+      : ReactionTerm(init_mesh, in_rec, names),
       reaction_matrix(nullptr)
 {
   prev_conc = new double[ n_all_substances_ ];
@@ -62,7 +62,7 @@ Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<s
 	//xprintf(Msg,"\n4. Linear_reaction constructor runs.\n");
   init_from_input(in_rec);
   
-  if(!output_rec.is_empty()) xprintf(Warn, "The outpur record in LinearReactions will be ignored.\n");
+//  if(!output_rec.is_empty()) xprintf(Warn, "The outpur record in LinearReactions will be ignored.\n");
 	//set_time_step(0.5);
 }
 
@@ -74,7 +74,7 @@ Linear_reaction::~Linear_reaction()
   }
 }
 
-void Linear_reaction::initialize(void )
+void Linear_reaction::initialize(OutputTime *stream)
 {
   ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");

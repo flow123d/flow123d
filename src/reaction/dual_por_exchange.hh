@@ -16,13 +16,11 @@
 #include "fields/field_set.hh"
 #include "./reaction/reaction.hh"
 
-/// TODO: incorporate index mapping for substances indices
-
 class Mesh;
 class Distribution;
 class SorptionBase;
 
-class DualPorosity:  public Reaction
+class DualPorosity:  public ReactionTerm
 {
 public:
   /**
@@ -30,15 +28,15 @@ public:
    */
   static Input::Type::Record input_type;
 
-	class EqData : public FieldSet // should be written in class Sorption
+  class EqData : public FieldSet // should be written in class Sorption
   {
   public:
 
     /// Collect all fields
     EqData();
 
-    Field<3, FieldValue<3>::Vector > alpha;            ///< Mass transfer coefficients between mobile and immobile pores.
-    Field<3, FieldValue<3>::Scalar > immob_porosity;    ///< Immobile porosity field.
+    Field<3, FieldValue<3>::Vector > diffusion_rate_immobile;   ///< Mass transfer coefficients between mobile and immobile pores.
+    Field<3, FieldValue<3>::Scalar > porosity_immobile;    ///< Immobile porosity field.
     
     Field<3, FieldValue<3>::Vector> init_conc_immobile; ///< Initial concentrations in the immobile zone. 
 
@@ -48,6 +46,8 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
+
+    static Input::Type::Selection output_selection;
   };
 
   DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
@@ -65,19 +65,15 @@ public:
    * Initialization routines after all necessary members have been set.
    * It also sets and initializes possible following reaction models.
    */
-  void initialize(void) override;
+  void initialize(OutputTime *stream) override;
   
   void output_data(void) override;
   void output_vector_gather(void) override;
   
   /**
-   *
+   * Set the porosity field which is passed from transport.
    */
-  inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
-    { data_.set_field(data_.porosity.name(),por_m); };
-  
-  /// Initialize from input interface.
-  void init_from_input(Input::Record in_rec) override;
+  void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m);
   
   double **compute_reaction(double **concentrations, int loc_el) override;
   
@@ -92,19 +88,22 @@ protected:
   /**
    * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
    */
-  double **conc_immob;
+  double **conc_immobile;
 
   /**
    * Equation data - all data field are in this set.
    */
   EqData data_;
+
+  Input::Array output_array;
+
   /**
    * Input data set - fields in this set are read from the input file.
    */
   FieldSet input_data_set_;
   
-  Reaction *reaction_mob;       ///< Reaction running in mobile zone
-  Reaction *reaction_immob;     ///< Reaction running in immobile zone
+  ReactionTerm *reaction_mobile;       ///< Reaction running in mobile zone
+  ReactionTerm *reaction_immobile;     ///< Reaction running in immobile zone
   
   /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
    * Else it is replaced with simple forward difference approximation.

@@ -47,7 +47,6 @@ using namespace Input::Type;
 
 
 
-
 HeatTransferModel::ModelEqData::ModelEqData()
 {
 	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
@@ -68,7 +67,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
 IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation, description + " for heat transfer.")
+	static IT::Record input_type = IT::Record(ModelEqData::name() + "_" + implementation, description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::input_type);
 
 	return input_type;
@@ -78,7 +77,7 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 
 IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection("HeatTransfer_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
+	static IT::Selection input_type = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
 
 	return input_type;
 }
@@ -102,7 +101,7 @@ void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar 
 void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	names.clear();
-	names.push_back("temperature");
+	names.push_back("");
 }
 
 

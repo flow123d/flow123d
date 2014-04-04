@@ -55,13 +55,18 @@
 
 namespace it = Input::Type;
 
+it::Selection DarcyFlowMHOutput::OutputFields::output_selection
+	= DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
+	.copy_values(OutputFields().make_output_field_selection("").close())
+	.close();
+
 it::Record DarcyFlowMHOutput::input_type
 	= it::Record("DarcyMHOutput", "Parameters of MH output.")
 //	.declare_key("save_step", it::Double(0.0), it::Default("1.0"),
 //                    "Regular step between MH outputs.")
     .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
                     "Parameters of output stream.")
-    .declare_key("output_fields", it::Array(OutputFields().make_output_field_selection()),
+    .declare_key("output_fields", it::Array(OutputFields::output_selection),
     		it::Default::obligatory(), "List of fields to write to output file.")
 //    .declare_key("velocity_p0", it::String(), it::Default::optional(),
 //                    "Output stream for P0 approximation of the velocity field.")
@@ -139,6 +144,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
     // Output only for the first process
     //if(rank == 0)
    // {
+
+        // we need to add data from the flow equation at this point, not in constructor of OutputFields
+        output_fields.fields_for_output += darcy_flow->get_data();
     	output_fields.set_mesh(*mesh_);
 
         //VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), corner_pressure, &vec_corner_pressure);
@@ -187,7 +195,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec)
 
 
     	output_stream = OutputTime::output_stream(in_rec.val<Input::Record>("output_stream"));
-    	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), output_fields.make_output_field_selection());
+    	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), OutputFields::output_selection);
     	output_stream->mark_output_times(darcy_flow->time());
     	//DBGMSG("output stream: %p\n", output_stream);
 

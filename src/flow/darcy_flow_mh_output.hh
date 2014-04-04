@@ -86,6 +86,8 @@ public:
 	    // In case of error fields, we have to add them to the main field set
 	    // but perform output only if user set compute_errors flag.
 	    FieldSet fields_for_output;
+
+	    static Input::Type::Selection output_selection;
 	};
 
     DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;

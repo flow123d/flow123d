@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      data = [
+      input_fields= [
         { region = "volume", 
           conductivity = 1e-20
         },
@@ -35,10 +35,10 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
  
-      data = [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 1.0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = 0
@@ -57,39 +57,35 @@
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
         
-        substances = {
-          REF = "/problem/secondary_equation/substances"
-        },
-        
-        data = [
+        input_fields= [
           {
             r_set="ALL",
-            alpha = [0.01,0.01],
-            immob_porosity = 0.25,
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
         ],
         
-        reactions_mob = {
-          TYPE = "Sorption",
-          solvent_dens = 1.0,
+        reaction_mobile = {
+          TYPE = "SorptionMobile",
+          solvent_density= 1.0,
           substances = ["A", "B"],
-          molar_masses = [1.0, 1.0],
+          molar_mass= [1.0, 1.0],
           solubility = [1.0, 1.0],
-          data = [
+          input_fields= [
             {
               r_set="ALL",
               rock_density = 1.0,
-              sorption_types =  "linear",
-              mult_coefs = 0.6, 
-              second_params = 0.4
+              sorption_type=  "linear",
+              isotherm_mult= 0.6, 
+              isotherm_other= 0.4
             }
           ],
           
-          reactions = {
+          reaction = {
             TYPE="LinearReactions",
             substances = [
               "A",
@@ -105,8 +101,14 @@
           }
         },
         
-        reactions_immob = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+        reaction_immobile = {
+          TYPE = "SorptionImmobile",
+          solvent_density = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/solvent_density" },
+          substances = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/substances" },
+          molar_mass = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/molar_mass" },
+          solubility = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
+          input_fields= { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" },
+          reaction = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/reaction" }
         }
       }
           

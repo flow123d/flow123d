@@ -18,20 +18,20 @@
 10 10 10 
 </DataArray>
 </Cells>
-<CellData Scalars="A_mobile_[M/L^3],B_mobile_[M/L^3],C_mobile_[M/L^3],D_mobile_[M/L^3],E_mobile_[M/L^3]," Vectors="">
-<DataArray type="Float64" Name="A_mobile_[M/L^3]" format="ascii">
-3.678809366587782e-03 3.678809366587780e-03 3.678809366587780e-03 
+<CellData Scalars="A_conc,B_conc,C_conc,D_conc,E_conc," Vectors="" Tensors="">
+<DataArray type="Float64" Name="A_conc" format="ascii">
+3.678809366587780e-03 3.678809366587780e-03 3.678809366587780e-03 
 </DataArray>
-<DataArray type="Float64" Name="B_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="B_conc" format="ascii">
 1.549956047914613e-02 1.549956047914613e-02 1.549956047914613e-02 
 </DataArray>
-<DataArray type="Float64" Name="C_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="C_conc" format="ascii">
 1.919506874193860e-02 1.919506874193860e-02 1.919506874193860e-02 
 </DataArray>
-<DataArray type="Float64" Name="D_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="D_conc" format="ascii">
 2.410141400092752e-02 2.410141400092752e-02 2.410141400092752e-02 
 </DataArray>
-<DataArray type="Float64" Name="E_mobile_[M/L^3]" format="ascii">
+<DataArray type="Float64" Name="E_conc" format="ascii">
 8.752514741139999e-02 8.752514741139999e-02 8.752514741139999e-02 
 </DataArray>
 </CellData>

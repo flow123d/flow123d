@@ -394,7 +394,7 @@ void OutputTime::write_all_data(void)
 			// streams were changed
 			output_time = (*stream_iter);
 			if(output_time->write_time < output_time->time) {
-				DBGMSG("Write output to output stream: %s for time: %f\n",
+				xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
 						output_time->name.c_str(),
 						output_time->time);
 				output_time->write_data();
@@ -402,7 +402,7 @@ void OutputTime::write_all_data(void)
 				output_time->write_time = output_time->time;
 				output_time->current_step++;
 			} else {
-				DBGMSG("Skipping output stream: %s in time: %f\n",
+				xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
 						output_time->name.c_str(),
 						output_time->time);
 			}

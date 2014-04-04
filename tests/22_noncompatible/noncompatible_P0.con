@@ -12,7 +12,7 @@
       mortar_method = "P0",
       
 
-      data= [
+      input_fields= [
         { region = "1d",
           conductivity = 1,
           sigma = 100

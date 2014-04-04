@@ -15,7 +15,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_pressure = 0
         },
@@ -41,9 +41,9 @@
     }, 
  
     secondary_equation = {
-      TYPE = "ConcentrationTransport_DG", 
+      TYPE = "SoluteTransport_DG", 
 
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc=0
         },

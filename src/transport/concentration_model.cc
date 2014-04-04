@@ -54,7 +54,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
 	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
 
-	output_fields += output_field.name("mobile_p0").units("M/L^3");
+	output_fields += output_field.name("conc").units("M/L^3");
 }
 
 
@@ -63,7 +63,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+	static IT::Record rec = IT::Record(ModelEqData::name() + "_" + implementation, description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
 					"Names of transported substances.")
@@ -78,7 +78,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 
 IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection sel = IT::Selection("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
+	static IT::Selection sel = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
 
 	return sel;
 }
@@ -116,7 +116,7 @@ void ConcentrationTransportModel::set_component_names(std::vector<string> &names
 
 bool ConcentrationTransportModel::mass_matrix_changed()
 {
-	return (data().cross_section->changed() || data().por_m.changed());
+	return (data().cross_section->changed() || data().porosity.changed());
 }
 
 
@@ -126,7 +126,7 @@ bool ConcentrationTransportModel::stiffness_matrix_changed()
 			data().disp_l.changed() ||
 			data().disp_t.changed() ||
 			data().diff_m.changed() ||
-			data().por_m.changed() ||
+			data().porosity.changed() ||
 			data().cross_section->changed());
 }
 
@@ -147,7 +147,7 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 	vector<double> elem_csec(point_list.size()), por_m(point_list.size());
 
 	data().cross_section->value_list(point_list, ele_acc, elem_csec);
-	data().por_m.value_list(point_list, ele_acc, por_m);
+	data().porosity.value_list(point_list, ele_acc, por_m);
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*por_m[i];
@@ -184,7 +184,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	data().diff_m.value_list(point_list, ele_acc, Dm);
 	data().disp_l.value_list(point_list, ele_acc, alphaL);
 	data().disp_t.value_list(point_list, ele_acc, alphaT);
-	data().por_m.value_list(point_list, ele_acc, por_m);
+	data().porosity.value_list(point_list, ele_acc, por_m);
 	data().cross_section->value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
