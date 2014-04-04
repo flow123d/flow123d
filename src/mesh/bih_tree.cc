@@ -195,6 +195,16 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	}
 	// in any case left==right is now the first element of the right group
 
+	if ( elements_[ *left ].projection_center(axis) < median) {
+		left_bound = std::max( left_bound, elements_[ *left ].max(axis) );
+		//DBGMSG("left_bound: %g\n", left_bound);
+		++left;
+		++right;
+	} else {
+		right_bound = std::min( right_bound, elements_[ *right ].min(axis) );
+		//DBGMSG("right_bound: %g\n", right_bound);
+	}
+
 	unsigned int left_begin = node.leaf_begin();
 	unsigned int left_end = left - in_leaves_.begin();
 	unsigned int right_end = node.leaf_end();
@@ -470,7 +480,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 		if (node.is_leaf()) {
 
-			//DBGMSG( "leaf: %d size %d\n", queue_.front(), node.leaf_size() );
+			//DBGMSG( "leaf-size %d\n", node.leaf_size() );
 			//START_TIMER("leaf");
 			for (unsigned int i=node.leaf_begin(); i<node.leaf_end(); i++) {
 				//DBGMSG("check i: %d i_ele: %d id: %d\n", i, in_leaves_[i], mesh_->element( in_leaves_[i] ).id());
