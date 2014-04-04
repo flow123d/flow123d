@@ -80,7 +80,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     //creating field for porosity that is set later from the governing equation (transport)
     data_+=(data_.porosity
           .name("porosity")
-          .units("0")
+          .units("1")
          );
 
     data_.set_mesh(init_mesh);
@@ -88,20 +88,81 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     data_.set_limit_side(LimitSide::right);
 
     output_array = in_rec.val<Input::Array>("output_fields");
+
+
+    //DBGMSG("dual_por init_from_input\n");
+
+    Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_mobile");
+    if ( reactions_it )
+    {
+      if (reactions_it->type() == Linear_reaction::input_type ) {
+          reaction_mobile =  new Linear_reaction(*mesh_, *reactions_it, names_);
+
+      } else
+      if (reactions_it->type() == Pade_approximant::input_type) {
+          reaction_mobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
+      } else
+      if (reactions_it->type() == SorptionMob::input_type ) {
+          reaction_mobile =  new SorptionMob(*mesh_, *reactions_it, names_);
+      } else
+      if (reactions_it->type() == DualPorosity::input_type ) {
+          xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
+      } else
+      if (reactions_it->type() == Semchem_interface::input_type )
+      {
+          xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+      } else
+      {
+          xprintf(UsrErr, "Wrong reaction type in DualPorosity model.\n");
+      }
+
+    } else
+    {
+      reaction_mobile = nullptr;
+    }
+
+    reactions_it = in_rec.find<Input::AbstractRecord>("reaction_immobile");
+    if ( reactions_it )
+    {
+      if (reactions_it->type() == Linear_reaction::input_type ) {
+          reaction_immobile =  new Linear_reaction(*mesh_, *reactions_it, names_);
+
+      } else
+      if (reactions_it->type() == Pade_approximant::input_type) {
+          reaction_immobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
+      } else
+      if (reactions_it->type() == SorptionImmob::input_type ) {
+          reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it, names_);
+      } else
+      if (reactions_it->type() == DualPorosity::input_type ) {
+          xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
+      } else
+      if (reactions_it->type() == Semchem_interface::input_type )
+      {
+          xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+      } else
+      {
+          xprintf(UsrErr, "Unknown reactions type in DualPorosity model.\n");
+      }
+
+    } else
+    {
+      reaction_immobile = nullptr;
+    }
 }
 
 DualPorosity::~DualPorosity(void)
 {
   if(reaction_mobile != nullptr) delete reaction_mobile;
   if(reaction_immobile != nullptr) delete reaction_immobile;
-  
+
 //  if(!output_rec.is_empty())
   {
     VecDestroy(vconc_immobile);
     VecDestroy(vconc_immobile_out);
   }
-  
-  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++) 
+
+  for (unsigned int sbi = 0; sbi < n_all_substances_; sbi++)
   {
       //no mpi vectors
       xfree(conc_immobile[sbi]);
@@ -111,82 +172,26 @@ DualPorosity::~DualPorosity(void)
 }
 
 
-void DualPorosity::init_from_input(Input::Record in_rec)
-{ 
-  //DBGMSG("dual_por init_from_input\n");
-  
-  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_mobile");
-  if ( reactions_it ) 
-  {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction_mobile =  new Linear_reaction(*mesh_, *reactions_it, names_);
-                
-    } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction_mobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
-    } else
-    if (reactions_it->type() == SorptionMob::input_type ) {
-        reaction_mobile =  new SorptionMob(*mesh_, *reactions_it, names_);
+void DualPorosity::set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
+{
+	data_.set_field(data_.porosity.name(),por_m);
 
-        static_cast<SorptionMob *> (reaction_mobile) -> init_from_input(*reactions_it);
+	// assign porosities to reactions
+	if (static_cast<SorptionMob *>(reaction_mobile) != nullptr)
+	{
         static_cast<SorptionMob *> (reaction_mobile) -> set_porosity(data_.porosity);
         static_cast<SorptionMob *> (reaction_mobile) -> set_porosity_immobile(data_.porosity_immobile);
-                
-    } else
-    if (reactions_it->type() == DualPorosity::input_type ) {
-        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
-    } else
-    if (reactions_it->type() == Semchem_interface::input_type ) 
-    {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
-    } else 
-    {
-        xprintf(UsrErr, "Wrong reaction type in DualPorosity model.\n");
-    }
-    
-  } else
-  {
-    reaction_mobile = nullptr;
-  }
-  
-  reactions_it = in_rec.find<Input::AbstractRecord>("reaction_immobile");
-  if ( reactions_it ) 
-  {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction_immobile =  new Linear_reaction(*mesh_, *reactions_it, names_);
-                
-    } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction_immobile = new Pade_approximant(*mesh_, *reactions_it, names_ );
-    } else
-    if (reactions_it->type() == SorptionImmob::input_type ) {
-        reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it, names_);
-        
-        static_cast<SorptionImmob *> (reaction_immobile) -> init_from_input(*reactions_it);
-        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
-        static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
-                
-    } else
-    if (reactions_it->type() == DualPorosity::input_type ) {
-        xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
-    } else
-    if (reactions_it->type() == Semchem_interface::input_type ) 
-    {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
-    } else 
-    {
-        xprintf(UsrErr, "Unknown reactions type in DualPorosity model.\n");
-    }
-    
-  } else
-  {
-    reaction_immobile = nullptr;
-  }
+	}
+	if (static_cast<SorptionImmob *>(reaction_immobile) != nullptr)
+	{
+		static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity(data_.porosity);
+		static_cast<SorptionImmob *> (reaction_immobile) -> set_porosity_immobile(data_.porosity_immobile);
+	}
 }
 
 
 void DualPorosity::initialize(OutputTime *stream)
-{ 
+{
 	//DBGMSG("DualPorosity - initialize.\n");
 	ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
 	ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");

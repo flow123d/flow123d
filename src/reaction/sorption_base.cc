@@ -48,7 +48,7 @@ Record SorptionBase::input_type
 							"Specifies solubility limits of all the sorbing species")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("input_fields", Array(EqData("").make_field_descriptor_type("Adsorption")), Default::obligatory(), //
+    .declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
     .declare_key("reaction", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption.");
     
@@ -57,8 +57,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 {
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
-    ADD_FIELD(adsorption_type,"Considered adsorption is described by selected isotherm."); //
-              adsorption_type.input_selection(&sorption_type_selection);
+    ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm."); //
+              sorption_type.input_selection(&sorption_type_selection);
 
     ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
 
@@ -69,8 +69,10 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     rock_density.units("");
     init_conc_solid.units("M/L^3");
 
+    input_data_set_ += *this;
+
     // porosity field is set from governing equation (transport) later
-    // hence we do not call ADD_FIELD at this point
+    // hence we do not add it to the input_data_set_
     *this += porosity.name("porosity").units("1");
     
     output_fields += *this;
@@ -162,14 +164,13 @@ void SorptionBase::initialize_substance_ids(const vector< string >& names, Input
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 {
-	data_->adsorption_type.n_comp(n_substances_);
+	data_->sorption_type.n_comp(n_substances_);
 	data_->isotherm_mult.n_comp(n_substances_);
 	data_->isotherm_other.n_comp(n_substances_);
 	data_->init_conc_solid.n_comp(n_substances_);
 
-	//setting fields that are set from input file
-	input_data_set_+=*data_;
-	input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
+	// read fields from input file
+	data_->input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
 
 	data_->set_mesh(*mesh_);
 	data_->set_limit_side(LimitSide::right);

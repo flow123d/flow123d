@@ -64,7 +64,7 @@
           {
             r_set="ALL",
             rock_density = 1.0,
-            adsorption_type= [ "none", "linear", "langmuir", "freundlich"],
+            sorption_type= [ "none", "linear", "langmuir", "freundlich"],
             isotherm_mult= [0, 0.6, 0.4, 0.6],
             isotherm_other= [0, 0, 0.6, 0.4]
           }

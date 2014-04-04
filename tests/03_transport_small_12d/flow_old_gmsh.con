@@ -87,7 +87,7 @@
             {
               r_set="subset",
               rock_density = 1.0,
-              adsorption_type=  ["linear", "freundlich"],
+              sorption_type=  ["linear", "freundlich"],
               isotherm_mult= 0.02, 
               isotherm_other= [0, 0.5]
             }
@@ -105,7 +105,7 @@
             {
               r_set="subset",
               rock_density = 1.0,
-              adsorption_type=  ["linear", "freundlich"],
+              sorption_type=  ["linear", "freundlich"],
               isotherm_mult= 0.02, 
               isotherm_other= [0, 0.5]
             }

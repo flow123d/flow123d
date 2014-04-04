@@ -58,7 +58,7 @@ public:
     /// Collect all fields
     EqData(const string &output_field_name);
 
-    Field<3, FieldValue<3>::EnumVector > adsorption_type; ///< Discrete need Selection for initialization.
+    Field<3, FieldValue<3>::EnumVector > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density; ///< Rock matrix density.
     Field<3, FieldValue<3>::Vector > isotherm_mult; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
     Field<3, FieldValue<3>::Vector > isotherm_other; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
@@ -67,6 +67,10 @@ public:
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field copied from transport
     
     MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
+
+
+    /// Input data set - fields in this set are read from the input file.
+    FieldSet input_data_set_;
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
@@ -108,9 +112,6 @@ public:
    */
   void make_tables(void);
   
-  /// Initializes private members of sorption from the input record.
-  void init_from_input(Input::Record in_rec) override;
-
   void initialize(OutputTime *stream) override;
   void output_data(void) override;
   void output_vector_gather(void) override;
@@ -128,6 +129,9 @@ protected:
   
   void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
   
+  /// Initializes private members of sorption from the input record.
+  void init_from_input(Input::Record in_rec) override;
+
   /** Initializes possible following reactions from input record.
    * It should be called after setting mesh, time_governor, distribution and concentration_matrix
    * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
@@ -189,10 +193,6 @@ protected:
   
   unsigned int n_substances_;   //< number of substances that take part in the sorption model
   
-  /**
-   * Input data set - fields in this set are read from the input file.
-   */
-  FieldSet input_data_set_;
   /**
    * Array for storage infos about sorbed species concentrations.
    */

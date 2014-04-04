@@ -64,7 +64,7 @@
           {
             r_set="ALL",
             rock_density = 1.0,
-            adsorption_type= "freundlich",
+            sorption_type= "freundlich",
             isotherm_mult= 0.6, 
             //isotherm_mult= { TYPE="FieldFormula", value="0.6"},
             isotherm_other= 0.4

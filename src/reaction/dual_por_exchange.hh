@@ -73,11 +73,7 @@ public:
   /**
    * Set the porosity field which is passed from transport.
    */
-  inline void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
-    { data_.set_field(data_.porosity.name(),por_m); };
-  
-  /// Initialize from input interface.
-  void init_from_input(Input::Record in_rec) override;
+  void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m);
   
   double **compute_reaction(double **concentrations, int loc_el) override;
   

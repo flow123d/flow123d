@@ -27,6 +27,8 @@ SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<strin
   //DBGMSG("SorptionImmob constructor.\n");
 	data_ = new EqData("conc_immobile_solid");
 	output_selection = make_output_selection("conc_immobile_solid", "SorptionImmobile_Output");
+
+	init_from_input(in_rec);
 }
 
 SorptionImmob::~SorptionImmob(void)
@@ -53,7 +55,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         double phi = por_m/(por_m + por_imm);
         
 	// List of types of isotherms in particular regions
-	arma::uvec adsorption_type = data_->adsorption_type.value(elem.centre(),elem);
+	arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
 	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 

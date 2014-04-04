@@ -64,7 +64,7 @@
           {
             r_set="ALL",
             rock_density = 1.0,
-            adsorption_type= "langmuir",
+            sorption_type= "langmuir",
             isotherm_mult= 0.4, 
             //isotherm_mult= { TYPE="FieldFormula", value="0.4"},
             isotherm_other= 0.6

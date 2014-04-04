@@ -138,7 +138,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
                 
-                static_cast<SorptionSimple *> (reaction) -> init_from_input(*reactions_it);
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else
