@@ -23,12 +23,13 @@
 
 
 \section{Transport of substances}
+\label{sc:transport_model}
 
 The motion of substances dissolved in water is governed by the \emph{advection}, and the \emph{hydrodynamic dispersion}.
 In $\Omega_d$, $d\in\{1,2,3\}$, we consider the following system of mass balance equations:
 \begin{equation}
     \label{e:ADE}
-   \partial_t ( \delta \th c^i) + \div ( \vc q c^i ) - \div (\th \delta \D^i \grad c^i ) = F_S^i + F_C(c^i) + F_R(c^1,\dots, c^s).
+   \partial_t ( \delta \th c^i) + \div ( \vc q c^i ) - \div (\th \delta \D^i \grad c^i ) = F_S^i + F^c_C(c^i) + F_R(c^1,\dots, c^s).
 \end{equation}
 For $d\in\{1,2\}$ this form can be derived as in Section \ref{sc:ad_on_fractures} using $w:=\delta\th c^i$, $u:=c^i$, $\tn A:=\delta\th\tn D^i$, $\vc b:=\vc v=\frac{\vc q}{\th\delta}$.
 The principal unknown is the concentration $c^i$ \units{1}{-3}{} of a substance $i\in\{1,\dots, s\}$, which means weight of the substance in unit volume of the water.
@@ -42,7 +43,8 @@ Other quantities are:
   \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
 \end{equation}
 which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
-Here $D_m^i$ \units{}{2}{-1} is the \hyperA{TransportDG-BulkData::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{TransportDG-BulkData::disp-l}{longitudal dispersivity} and the \hyperA{TransportDG-BulkData::disp-t}{transversal dispersivity}, respectively.
+Here $D_m^i$ \units{}{2}{-1} is the \hyperA{TransportDG-BulkData::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{TransportDG-BulkData::disp-l}{longitudal dispersivity} and the \hyperA{TransportDG-BulkData::disp-t}{transverse dispersivity}, respectively.
+Note that although we allow dispersivities to have different values for different substances, it is often assumed that they are intrinsic parameters of the porous medium.
 Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
 The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
 For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
@@ -50,11 +52,11 @@ For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cit
 \item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources.
 Its form is:
 \begin{equation}
- F_S^i = \varrho^i_S + (c_S^i-c^i)\sigma_S. \label{eqn:transport_sources}
+ F_S^i = \delta f^i_S + \delta(c_S^i-c^i)\sigma_S. \label{eqn:transport_sources}
 \end{equation}
-Here $\varrho_S^i$ \units{1}{-d}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
+Here $f_S^i$ \units{1}{-3}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ \units{1}{-3}{} is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ \units{}{}{-1} is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
 
-\item $F_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
+\item $F^c_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
 
 \item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is thoroughly described in the next section \ref{sec:reaction_term}.
 \end{itemize}
@@ -108,9 +110,9 @@ The communication between dimensions is incorporated as the total flux boundary 
 \end{equation}
 and a source term in $\Omega_d$:
 \begin{equation}
-F_C^3 = 0,\quad
-F_C^2 = q^c_{32},\quad
-F_C^1 = \frac{\delta_2}{\delta_1}q^c_{32} + q^c_{21}.
+F^c_{C3} = 0,\quad
+F^c_{C2} = q^c_{32},\quad
+F^c_{C1} = q^c_{21}.
 \end{equation}
 
 
@@ -120,9 +122,9 @@ The advection-dispersion equation satisfies the balance of mass in the following
 $$ m^i(0) + \int_0^t s^i(\tau) \,d\tau - \int_0^t f^i(\tau) \,d\tau = m^i(t) $$
 for any instant $t$ in the computational time interval and any substance $i$.
 Here
-$$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}\delta_d\th c^i(t,\vc x)\,d\vc x, $$
+$$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}(\delta\th c^i)(t,\vc x)\,d\vc x, $$
 $$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S^i(t,\vc x)\,d\vc x, $$
-$$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\th\delta_d c^i(t,\vc x)\vc q(t,\vc x) - \th\delta_d\D^i\nabla c^i(t,\vc x)\right)\cdot\vc n \,d\vc x $$
+$$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\vc q c^i - \th\delta\D^i\nabla c^i\right)(t,\vc x)\cdot\vc n \,d\vc x $$
 is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \units{1}{}{-1} of $i$-th substance at time $t$, respectively.
 The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
 

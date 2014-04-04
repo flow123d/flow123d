@@ -17,6 +17,7 @@ cmake_minimum_required(VERSION 2.8)
        decay.tex
   #    flow_ini.tex
        flow_version.tex
+       heat.tex
        input_files.tex
        input_reference.tex
        JSON_input.tex

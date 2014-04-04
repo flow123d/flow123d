@@ -490,7 +490,7 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
 
   //temporary variables
   unsigned int loc_el;
-  double conc_diff;
+  double conc_diff, csection;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
     
@@ -499,7 +499,8 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
   //checking if the data were changed
     if( (data_.sources_density.changed() )
           || (data_.sources_conc.changed() )
-          || (data_.sources_sigma.changed() ) )
+          || (data_.sources_sigma.changed() )
+          || (data_.cross_section->changed()))
       {
         START_TIMER("sources_reinit");
         for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
@@ -507,14 +508,16 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
           ele_acc = mesh_->element_accessor(el_4_loc[loc_el]);
           p = ele_acc.centre();
           
+          csection = data_.cross_section->value(p, ele_acc);
+
           //if(data_.sources_density.changed_during_set_time) 
-          sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi);
+          sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
       
           //if(data_.sources_conc.changed_during_set_time)
           sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
         
           //if(data_.sources_sigma.changed_during_set_time)
-          sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi);
+          sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi)*csection;
         }
       }
     
@@ -535,7 +538,7 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 
 	//temporary variables
 	unsigned int loc_el;
-	double conc_diff;
+	double conc_diff, csection;
 	ElementAccessor<3> ele_acc;
 	arma::vec3 p;
 
@@ -547,7 +550,8 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 	//checking if the data were changed
 	if( (data_.sources_density.changed() )
 		  || (data_.sources_conc.changed() )
-		  || (data_.sources_sigma.changed() ) )
+		  || (data_.sources_sigma.changed() )
+		  || (data_.cross_section->changed()))
 	{
 		START_TIMER("sources_reinit");
 		for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
@@ -555,14 +559,16 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 			ele_acc = mesh_->element_accessor(el_4_loc[loc_el]);
 			p = ele_acc.centre();
 
+			csection = data_.cross_section->value(p, ele_acc);
+
 			//if(data_.sources_density.changed_during_set_time)
-			sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi);
+			sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
 
 			//if(data_.sources_conc.changed_during_set_time)
 			sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
 
 			//if(data_.sources_sigma.changed_during_set_time)
-			sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi);
+			sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi)*csection;
 		}
 	}
 
