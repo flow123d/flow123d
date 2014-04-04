@@ -597,9 +597,9 @@ TEST(Field, init_from_input) {
     init_conc.set_limit_side(LimitSide::right);
     conductivity.set_limit_side(LimitSide::right);
 
-    sorption_type.set_time();
-    init_conc.set_time();
-    conductivity.set_time();
+    sorption_type.set_time(TimeGovernor());
+    init_conc.set_time(TimeGovernor());
+    conductivity.set_time(TimeGovernor());
 
     {	
 
@@ -665,7 +665,7 @@ TEST(Field, init_from_default) {
         scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        scalar_field.set_time();
+        scalar_field.set_time(TimeGovernor());
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
@@ -679,7 +679,7 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time();} , ExcXprintfMsg, "Missing value of the field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the field");
     }
     //
     {
@@ -693,7 +693,7 @@ TEST(Field, init_from_default) {
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
         enum_field.set_limit_side(LimitSide::right);
-        enum_field.set_time();
+        enum_field.set_time(TimeGovernor());
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
@@ -769,10 +769,10 @@ TEST(Field, disable_where) {
     bc_value.set_limit_side(LimitSide::right);
     bc_sigma.set_limit_side(LimitSide::right);
 
-    bc_type.set_time();
-    bc_flux.set_time();
-    bc_value.set_time();
-    bc_sigma.set_time();
+    bc_type.set_time(TimeGovernor());
+    bc_flux.set_time(TimeGovernor());
+    bc_value.set_time(TimeGovernor());
+    bc_sigma.set_time(TimeGovernor());
 }
 
 
