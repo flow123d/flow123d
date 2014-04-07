@@ -36,9 +36,9 @@ TEST(intersections, all) {
 	cout << "========== Includované objekty: =============" << endl;
 	arma::vec3 vectorA, vectorB, vectorC, vectorD;
 	vectorA[0] = 1;vectorA[1] = 2;vectorA[2] = 3;
-	vectorB[0] = -8;vectorB[1] = 1;vectorB[2] = -5;
-	vectorC[0] = 12;vectorC[1] = 1;vectorC[2] = -7;
-	vectorD[0] = 5;vectorD[1] = 1;vectorD[2] = 10;
+	vectorB[0] = 0;vectorB[1] = 0;vectorB[2] = 0;
+	vectorC[0] = 10;vectorC[1] = 0;vectorC[2] = 0;
+	vectorD[0] = 5;vectorD[1] = 10;vectorD[2] = 0;
 	cout << "=== Vector(" << vectorA[0] << "," << vectorA[1] << "," << vectorA[2] << ") ===" << endl;
 	arma::vec3 pole_vec[] = {vectorA,vectorB,vectorC,vectorD};
 
@@ -71,20 +71,20 @@ TEST(intersections, all) {
 
 	arma::vec3 vector;
 	vector[0] = 1;
-	vector[1] = -3;
-	vector[2] = 0;
+	vector[1] = 1;
+	vector[2] = 1;
 	arma::vec3 vector2;
-	vector2[0] = 7;
-	vector2[1] = -11;
-	vector2[2] = -2;
+	vector2[0] = 9;
+	vector2[1] = 1;
+	vector2[2] = 2;
 	arma::vec3 vector3;
-	vector3[0] = 3;
-	vector3[1] = -15;
-	vector3[2] = 7;
+	vector3[0] = 5;
+	vector3[1] = 9;
+	vector3[2] = 3;
 	arma::vec3 vector4;
-	vector4[0] = 3;
+	vector4[0] = 6;
 	vector4[1] = 5;
-	vector4[2] = 2;
+	vector4[2] = -2;
 	arma::vec3 pole_vectoru[] = {vector,vector2,vector3,vector4};
 	arma::vec3 pole_vectoru2[] = {vectorB,vectorC,vectorD};
 
@@ -97,7 +97,23 @@ TEST(intersections, all) {
 	//novyCI.setPC_triangle(test_plucker2,0);
 	novyCI.init();
 	novyCI.compute();
-		//novyCI.clear_all();
+
+	arma::vec3 bodA; bodA[0] = 3; bodA[1] = 3; bodA[2] =4;
+	arma::vec3 bodB; bodB[0] = 3; bodB[1] = 3; bodB[2] =-4;
+	arma::vec3 Alfa; Alfa[0] = 1; Alfa[1] = 2; Alfa[2] =4;
+	arma::vec3 Beta; Beta[0] = 5; Beta[1] = 2; Beta[2] =4;
+	arma::vec3 Gama; Gama[0] = 1; Gama[1] = 6; Gama[2] =4;
+
+
+	arma::vec3 vec_1[] = {bodA, bodB};
+	arma::vec3 vec_2[] = {Alfa, Beta, Gama};
+	Simplex<1> sim_1(vec_1);
+	Simplex<2> sim_2(vec_2);
+	//ComputeIntersection<Simplex<1>, Simplex<2>> CI12(sim_1, sim_2);
+	//CI12.compute();
+	//CI12.toStringPluckerCoordinates();
+
+	//novyCI.clear_all();
 		//novyCI.toStringPluckerCoordinatesTree();
 		/*
 		arma::vec3 vecAA; vecAA[0] = 0; vecAA[1]= 2;vecAA[2] = 0;

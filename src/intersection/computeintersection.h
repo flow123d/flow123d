@@ -34,11 +34,11 @@ public:
 
 	ComputeIntersection();
 	ComputeIntersection(Simplex<1> abs, Simplex<2> triang);
-	ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang);
+	//ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang);
 	inline ~ComputeIntersection() {}
 
 	void clear_all();
-	void compute();
+	bool compute(double &theta, arma::vec3 &local_triangle);
 
 	std::vector<Plucker *> &getPC_abscissa();
 	std::vector<Plucker *> &getPC_triangle();

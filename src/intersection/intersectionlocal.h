@@ -4,7 +4,8 @@
  *  Created on: 27.3.2013
  *      Author: viktor
  */
-
+#include <armadillo>
+#include <iostream>
 #include "system/system.hh"
 
 using namespace std;
@@ -14,8 +15,10 @@ namespace computeintersection{
 
 class IntersectionPoint{
 
-	std::vector<double> local_coord1; // vektor lokálních souřadnic 3D elementu
-	std::vector<double> local_coord2; // vektor lokální souřadnice 2D elementu
+	arma::vec3 local_coords1;
+	arma::vec3 local_coords2;
+	//std::vector<double> local_coord1; // vektor lokálních souřadnic 3D elementu
+	//std::vector<double> local_coord2; // vektor lokální souřadnice 2D elementu
 
 	/*	type - 2D-3D
 	 *  0 = typ neurčen.
@@ -26,11 +29,15 @@ class IntersectionPoint{
 	int type;
 
 public:
-	IntersectionPoint(const std::vector<double> &c1, const double &c2, int typ = 0)
-			: local_coord1(c1), local_coord2(c2), type(typ) {}
+	//IntersectionPoint(const std::vector<double> &c1, const double &c2, int typ = 0)
+	//		: local_coord1(c1), local_coord2(c2), type(typ) {}
+	IntersectionPoint(const arma::vec3 &lc1,const arma::vec3 &lc2, unsigned int typ = 0) : local_coords1(lc1), local_coords2(lc2), type(typ){};
+	inline arma::vec3 &el1_coord(){return local_coords1;}
+	inline arma::vec3 &el2_coord(){return local_coords2;}
 
-	inline std::vector<double> &el1_coord(){return local_coord1;}
-	inline std::vector<double> &el2_coord(){return local_coord2;}
+
+	//inline std::vector<double> &el1_coord(){return local_coord1;}
+	//inline std::vector<double> &el2_coord(){return local_coord2;}
 	//bool operator ==(const IntersectionPoint&);
 };
 
@@ -81,8 +88,8 @@ public:
     inline unsigned int idx_1D(){return element_2D_idx;}
     inline unsigned int idx_3D(){return element_3D_idx;}
     inline void print(){
-    	xprintf(Msg, "ID 2D: %d ID 3D %d \n", element_2D_idx, element_3D_idx);
-    	xprintf(Msg, "Local Coords: 1D: ", &i_points[0]->el2_coord());
+    	//xprintf(Msg, "ID 2D: %d ID 3D %d \n", element_2D_idx, element_3D_idx);
+    	//xprintf(Msg, "Local Coords: 1D: ", &i_points[0]->el2_coord());
 
     }
     //inline std::vector<int> getSide(const int number){
