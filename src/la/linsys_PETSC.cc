@@ -68,8 +68,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_),
-	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
