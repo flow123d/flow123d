@@ -158,6 +158,10 @@ public:
          * introduce some kind of context pointer into @p FieldCommonBase.
          */
         static arma::vec4 gravity_;
+
+        FieldSet	time_term_fields;
+        FieldSet	main_matrix_fields;
+        FieldSet	rhs_fields;
     };
 
 
@@ -293,16 +297,45 @@ public:
 
 protected:
     void make_serial_scatter();
-    virtual void modify_system() {};
-    void set_R() {};
+    virtual void modify_system()
+    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
+    virtual void setup_time_term()
+    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+
+
+    //void set_R() {};
     void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
-    void preallocate_mh_matrix();
+
+    /**
+     * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
+     */
+    void create_linear_system();
+
+    /**
+     * Read initial condition into solution vector.
+     * Must be called after create_linear_system.
+     *
+     */
+    virtual void read_init_condition() {};
+
+    /**
+     * Abstract assembly method used for both assembly and preallocation.
+     * Assembly only steady part of the equation.
+     * TODO:
+     * - use general preallocation methods in DofHandler
+     * - include alos time term
+     * - add support for Robin type sources
+     * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
+     *
+     */
     void assembly_steady_mh_matrix();
-    void coupling_P0_mortar_assembly();
-    void mh_abstract_assembly_intersection();
-    //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schurs( const Input::AbstractRecord in_rec);
+
+    /**
+     * Assembly or update whole linear system.
+     */
+    void assembly_linear_system();
+
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     double solution_precision() const;
 
@@ -315,8 +348,8 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
-	LinSys_PETSC *schur1;  	//< first schur compl.
-	LinSys_PETSC *schur2;  	//< second ..
+	//LinSys_PETSC *schur1;  	//< first schur compl.
+	//LinSys_PETSC *schur2;  	//< second ..
 
 
 	// parallel
@@ -456,7 +489,8 @@ public:
     
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     
 private:
@@ -504,7 +538,8 @@ public:
     
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     virtual void postprocess();
 private:
@@ -512,9 +547,10 @@ private:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
-    Vec time_term;
+    //Vec time_term;
 };
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------
 // vim: set cindent:
+

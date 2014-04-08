@@ -285,7 +285,7 @@ void DarcyFlowMHOutput::output()
     // skip initial output for steady solver
     //darcy_flow->time().view("Darcy output output");
 
-    if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
+    //if (darcy_flow->time().is_steady() && darcy_flow->time().tlevel() ==0) return;
 
     //DBGVAR( darcy_flow->time().is_current( TimeGovernor::marks().type_output() ) );
     if (darcy_flow->time().is_current( TimeGovernor::marks().type_output() )) {

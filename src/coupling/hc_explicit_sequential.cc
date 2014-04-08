@@ -183,9 +183,6 @@ void HC_ExplicitSequential::run_simulation()
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
 
-    // output initial condition
-    water->output_data();
-
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
 
         transport_reaction->set_time_upper_constraint(water->time().dt());
@@ -209,7 +206,7 @@ void HC_ExplicitSequential::run_simulation()
 
             //water->time().view("WATER");     //show water time governor
             
-            water->output_data();
+            //water->output_data();
             water->choose_next_time();
 
             velocity_changed = true;
