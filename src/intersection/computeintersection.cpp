@@ -124,14 +124,22 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> abs,
 	triangle = triang;
 
 	plucker_coordinates_triangle.assign(3, new Plucker());
-	plucker_coordinates_abscissa.assign(1, new Plucker());
+	plucker_coordinates_abscissa.assign(1, new Plucker);
+
+	//plucker_coordinates_triangle.reserve(3);
+	//plucker_coordinates_abscissa.reserve(1);
+
+	for(unsigned int i = 0; i < 3; i++){
+		//plucker_coordinates_triangle[i] = new Plucker();
+	}
+	//plucker_coordinates_abscissa[0] = new Plucker();
 
 
 	//this->clear_all();
 
 };
 
-ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang){
+/*ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang){
 	abscissa = abs;
 	triangle = triang;
 
@@ -141,7 +149,7 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs
 
 	//this->clear_all();
 
-};
+};*/
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 	for(unsigned int i = 0; i < 3;i++){
@@ -155,7 +163,7 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 
 };
 
-void ComputeIntersection<Simplex<1>, Simplex<2>>::compute(){
+bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(double &theta, arma::vec3 &local_triangle){
 	// Spočtení pluckerovych souradnic
 
 	if(!plucker_coordinates_abscissa[0]->isComputed()){
@@ -186,14 +194,15 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute(){
 
 	if(((*plucker_products[0] > 0) && (*plucker_products[1] < 0) && (*plucker_products[2] > 0)) ||
 	   ((*plucker_products[0] < 0) && (*plucker_products[1] > 0) && (*plucker_products[2] < 0))){
-		double c = *plucker_products[0];
-		double d = (-1)*(*plucker_products[1]);
-		double e = *plucker_products[2];
+		double c = *plucker_products[0]; //c = -c;
+		double d = *plucker_products[1]; d = -d;
+		double e = *plucker_products[2]; //e = -e;
+
 		// c = w0; d = w1; e = w2
 		// lokální alfa = w2/soucet; lokální beta = w1/soucet; => lokální souřadnice na stěně
 		double alfa = e/(c+d+e);
-		double beta = c/(c+d+e);
-		double gama = d/(c+d+e);
+		double beta = d/(c+d+e);
+		double gama = c/(c+d+e);
 
 		// lokální souřadnice na přímce T
 		// T = localAbscissa= (- A(i) + ( 1 - alfa - beta ) * V0(i) + alfa * V1(i) + beta * V2 (i)) / U(i)
@@ -205,33 +214,42 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::compute(){
 		if(fabs(vec[1]) > fabs(max)){ max = vec[1]; i = 1;}
 		if(fabs(vec[2]) > fabs(max)){ max = vec[2]; i = 2;}
 
-		arma::vec3 local_triangle =
-		gama*triangle[0][0].getPointCoordinates() +
-		alfa*triangle[0][1].getPointCoordinates() +
-		beta*triangle[1][1].getPointCoordinates();
-		double local_abscissa = ((-1)*abscissa[0].getPointCoordinates()[i] + local_triangle[i])/max;
-		//arma::vec3 local = ((-1)*abscissa[0].getPointCoordinates() + local_triangle)/vec;
-		arma::vec3 global_abscissa = local_abscissa * abscissa[1].getPointCoordinates() + (1 - local_abscissa) * abscissa[0].getPointCoordinates();
+		/*cout << "Body trojuhelniku: " << endl;
+		triangle[0][0].toString();
+		triangle[0][1].toString();
+		triangle[1][1].toString();*/
 
-		cout << "Průnik - local_abs: " << local_abscissa << endl;
-		xprintf(Msg, "lokalni sour (%f, %f, %f)\n", alfa, beta, gama);
-		xprintf(Msg, "vypocitany   (%f, %f, %f)\n", local_triangle[0], local_triangle[1], local_triangle[2]);
+		arma::vec3 local_triangle2 =
+		alfa*triangle[0][0].getPointCoordinates() +
+		beta*triangle[0][1].getPointCoordinates() +
+		gama*triangle[1][1].getPointCoordinates();
+		theta = ((-1)*abscissa[0].getPointCoordinates()[i] + local_triangle2[i])/max;
+		//arma::vec3 local = ((-1)*abscissa[0].getPointCoordinates() + local_triangle)/vec;
+		//arma::vec3 global_abscissa = local_abscissa * abscissa[1].getPointCoordinates() + (1 - local_abscissa) * abscissa[0].getPointCoordinates();
+		local_triangle[0] = alfa;
+		local_triangle[1] = beta;
+		local_triangle[2] = gama;
+		//cout << "Průnik - local_abs: " << local_abscissa << endl;
+		//xprintf(Msg, "lokalni sour (%f, %f, %f)\n", alfa, beta, gama);
+		xprintf(Msg, "vypocitany 3D (%f, %f, %f)\n", local_triangle2[0], local_triangle2[1], local_triangle2[2]);
 		//xprintf(Msg, "glob - 2D    (%f, %f, %f)\n", globalni[0],globalni[1],globalni[2]);
-		xprintf(Msg, "glob - 1D    (%f, %f, %f)\n", global_abscissa[0],global_abscissa[1],global_abscissa[2]);
+		//xprintf(Msg, "glob - 1D    (%f, %f, %f)\n", global_abscissa[0],global_abscissa[1],global_abscissa[2]);
 		//xprintf(Msg, "glob - pokus2(%f, %f, %f)\n", glob2[0],glob2[1],glob2[2]);
 		//xprintf(Msg, "local- stejne(%f, %f, %f)\n", local[0], local[1], local[2]);
 		//xprintf(Msg, "glob - pokus3(%f, %f, %f)\n", glob3[0],glob3[1],glob3[2]);
-		xprintf(Msg, "pluckerovy souciny(%f,%f,%f)\n",c,d,e);
-		(*plucker_coordinates_abscissa[0]).toString();
-		(*plucker_coordinates_triangle[0]).toString();
-		(*plucker_coordinates_triangle[1]).toString();
-		(*plucker_coordinates_triangle[2]).toString();
+		//xprintf(Msg, "pluckerovy souciny(%f,%f,%f)\n",c,d,e);
+		//(*plucker_coordinates_abscissa[0]).toString();
+		//(*plucker_coordinates_triangle[0]).toString();
+		//(*plucker_coordinates_triangle[1]).toString();
+		//(*plucker_coordinates_triangle[2]).toString();
 
-		triangle.toString();
-		abscissa.toString();
-				// ukládání Intersection local
+		//triangle.toString();
+		//abscissa.toString();
+		//std::vector<double> barycentric_triangle;
+		//barycentric_triangle.reserve(3);
+		return true;
 	}else{
-		// Vracet NULL obejkt
+		return false;
 	}
 };
 
@@ -349,19 +367,94 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::compute(){
 
-	CI12[0].compute();
+	//std::vector<double> docasna;docasna.assign(3,0);
+	arma::vec3 docasna;
+	arma::vec3 docasna2;
+	double c = 0;
+	unsigned int pocet_pruniku = 0;
+
+	if(CI12[0].compute(c, docasna)){
+		docasna2[0] = c;
+		docasna2[1] = 1 - c;
+		docasna2[2] = 0;
+		IntersectionPoint IP(docasna2, docasna,0);
+		// Interpolace lokálních souřadnic
+		// Získané lokální souřadnice: alfa, beta, 1 - a - b
+		// Převedené l. souřadnice: alfa, beta, gama => delta = 1 - a - b - g
+		// uložení intersectionpoint ->
+		// předání do intersectionlocal
+		arma::vec3 bod = docasna[0]*(tetrahedron->getAbscissa(0))[0].getPointCoordinates() +
+				docasna[1]*(tetrahedron->getAbscissa(0))[1].getPointCoordinates() +
+				docasna[2]*(tetrahedron->getAbscissa(1))[1].getPointCoordinates() +
+				(1 - docasna[0] - docasna[1] - docasna[2])*(tetrahedron->getAbscissa(3))[1].getPointCoordinates();
+		xprintf(Msg, "Globální průnik: (%f,%f,%f) \n", bod[0], bod[1], bod[2]);
+		pocet_pruniku++;
+	}
 
 	CI12[1].setPluckerProduct(CI12[0].getPluckerProduct(0),0);
-	CI12[1].compute();
+	if(CI12[1].compute(c, docasna)){
+		docasna2[0] = c;
+		docasna2[1] = 1 - c;
+		docasna2[2] = 0;
+
+		docasna[2] = 0;
+		IntersectionPoint IP(docasna2, docasna,0);
+
+		arma::vec3 bod = docasna[0]*(tetrahedron->getAbscissa(0))[0].getPointCoordinates() +
+				docasna[1]*(tetrahedron->getAbscissa(0))[1].getPointCoordinates() +
+				docasna[2]*(tetrahedron->getAbscissa(1))[1].getPointCoordinates() +
+				(1 - docasna[0] - docasna[1] - docasna[2])*(tetrahedron->getAbscissa(3))[1].getPointCoordinates();
+		xprintf(Msg, "Globální průnik: (%f,%f,%f) \n", bod[0], bod[1], bod[2]);
+		pocet_pruniku++;
+	}
+
+	if(pocet_pruniku >= 2){
+		return;
+	}
 
 	CI12[2].setPluckerProduct(CI12[0].getPluckerProduct(1),0);
 	CI12[2].setPluckerProduct(CI12[1].getPluckerProduct(1),1);
-	CI12[2].compute();
+	if(CI12[2].compute(c, docasna)){
+
+		docasna2[0] = c;
+		docasna2[1] = 1 - c;
+		docasna2[2] = 0;
+
+		docasna[2] = docasna[1];
+		docasna[1] = 0;
+		IntersectionPoint IP(docasna2, docasna,0);
+
+		arma::vec3 bod = docasna[0]*(tetrahedron->getAbscissa(0))[0].getPointCoordinates() +
+				docasna[1]*(tetrahedron->getAbscissa(0))[1].getPointCoordinates() +
+				docasna[2]*(tetrahedron->getAbscissa(1))[1].getPointCoordinates() +
+				(1 - docasna[0] - docasna[1] - docasna[2])*(tetrahedron->getAbscissa(3))[1].getPointCoordinates();
+		xprintf(Msg, "Globální průnik: (%f,%f,%f) \n", bod[0], bod[1], bod[2]);
+		pocet_pruniku++;
+	}
+
+	if(pocet_pruniku >= 2){
+			return;
+	}
 
 	CI12[3].setPluckerProduct(CI12[0].getPluckerProduct(2),0);
 	CI12[3].setPluckerProduct(CI12[1].getPluckerProduct(2),1);
 	CI12[3].setPluckerProduct(CI12[2].getPluckerProduct(2),2);
-	CI12[3].compute();
+	if(CI12[3].compute(c, docasna)){
+		docasna2[0] = c;
+		docasna2[1] = 1 - c;
+		docasna2[2] = 0;
+
+		docasna[2] = docasna[1];
+		docasna[1] = docasna[0];
+		docasna[0] = 0;
+		IntersectionPoint IP(docasna2, docasna,0);
+
+		arma::vec3 bod = docasna[0]*(tetrahedron->getAbscissa(0))[0].getPointCoordinates() +
+				docasna[1]*(tetrahedron->getAbscissa(0))[1].getPointCoordinates() +
+				docasna[2]*(tetrahedron->getAbscissa(1))[1].getPointCoordinates() +
+				(1 - docasna[0] - docasna[1] - docasna[2])*(tetrahedron->getAbscissa(3))[1].getPointCoordinates();
+		xprintf(Msg, "Globální průnik: (%f,%f,%f) \n", bod[0], bod[1], bod[2]);
+	}
 
 	/*for(unsigned int i = 0; i < 4;i++){
 			CI12[i].compute();
@@ -490,9 +583,17 @@ for(unsigned int i = 0; i < 6;i++){
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(){
 
 	// čekat dokud se nenalezne první průsečík -> pak pokračovat jiným algoritmem
+	// == tady bude optimalizovaný algoritmus
+
+
+
+
+	// hrubý algoritmus
+	arma::vec3 docasna;
+	double c = 0;
 
 	for(unsigned int i = 0; i < 6;i++){
-		CI12[i].compute();
+		CI12[i].compute(c, docasna);
 	}
 
 	// Optimalizace: znovu použití již vypočítaných součinů

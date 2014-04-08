@@ -22,7 +22,7 @@ void IntersectionLocal::add_local_coord(const std::vector<double> &coordin1, con
 	}
 	std::printf("Souřadnice - 1D: %f \n", coordin2);
 	 */
-	i_points.push_back(new IntersectionPoint(coordin1, coordin2));
+	//i_points.push_back(new IntersectionPoint(coordin1, coordin2));
 };
 
 
