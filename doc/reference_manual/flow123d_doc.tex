@@ -34,6 +34,7 @@
 \usepackage{colortbl}   %colorful tables
 \usepackage{tabularx}
 \usepackage{graphicx} %[dvips]
+\usepackage{cooltooltips}
 
 %these two can be found in caption package
 \usepackage{caption}
@@ -176,12 +177,12 @@ the project no. TA01021331.
 
 \chapter{Quick start}
 
-Flow123D is a software for simulation of water flow and reactionary solute transport in a heterogeneous 
+Flow123D is a software for simulation of water flow, reactionary solute transport and heat transfer in a heterogeneous 
 porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock massive.
 The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
-domains of different dimensions. The computational mesh is therefore collection of 3D tetrahedrons, 2D triangles and 1D line segments.
+domains of different dimensions. The computational mesh is therefore a collection of tetrahedra, triangles and line segments.
 
-The water flow model assumes a saturated medium described by Darcy law. For discretization, we use lumped mixed-hybrid finite element method.
+The water flow model assumes a saturated medium described by the Darcy law. For discretization, we use lumped mixed-hybrid finite element method.
 We support both steady and unsteady water flow. The water flow model can be sequentially coupled with two different models for a solute transport or with a heat transfer model.
 
 The first solute transport model can deal only with pure advection of several substances without any diffusion-dispersion term. It uses 
@@ -190,10 +191,10 @@ couple with various processes described by the reaction term. The reaction term 
 Alternatively, one can use interface to the experimental SEMCHEM package for more complex geochemistry.
 
 The second solute transport model describes general advection with hydrodynamic dispersion for several substances. It uses implicit Euler method for time discretization and discontinuous Galerkin method of
-the first or second order for the discretization in space. Currently there is no support for reaction term, the operator splitting approach (although it is not suited for implicit time schemes) 
-is planed for the next version.
+the first, second or third order for the discretization in space. Currently there is no support for reaction term, the operator splitting approach (although it is not suited for implicit time schemes) 
+is planned for the next version.
 
-The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses same numerical scheme as the second transport model.
+The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model.
 
 The program support output of all input and many output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
 or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
@@ -203,7 +204,7 @@ the scalability of the whole program is limited due to serial mesh and serial ou
 
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
-\url{http://dev.nti.tul.cz/trac/flow123d}
+\url{http://flow123d.github.io}
 
 with sources on the GitHub:
 \url{https://github.com/flow123d/flow123d}.
@@ -238,10 +239,10 @@ the program requires one argument after switch \verb'-s' which is the name of th
  \item[ {\tt -s, --solve} ] \verb'<file>' \hfill\\
  	 Set principal CON input file. All relative paths in the CON file are relative against current directory.
  \item[{\tt -i, --input\_dir}] \verb'<directory>' \hfill\\
- 	The place holder \verb"${INPUT}" %$
-  	used in the path of an input file will be replaced by given Default value is \verb'input'.. Default value is \verb'input'.
+ 	The placeholder \verb"${INPUT}" %$
+  	used in the path of an input file will be replaced by the \verb'<directory>'. Default value is \verb'input'.
  \item[{\tt -o, --output\_dir}] \verb'<directory>' \hfill\\
- 	All paths for output files will be relative to this Default value is \verb'input'.. Default value is \verb'output'.
+ 	All paths for output files will be relative to this \verb'<directory>'. Default value is \verb'output'.
  \item[{\tt -l, --log}] \verb'<file_name>' \hfill\\
  	Set base name of log files. Default value is \verb'flow123d'. The log files are individual for every MPI process, placed in the output directory. 
  	The MPI rank of the process and the \verb'log' suffix are appended to the base name.
@@ -265,25 +266,25 @@ This script accepts the same parameters as the program itself
 and further following additional parameters:
 
 \begin{description}
-  \item[-h] \hfill\\
+  \item[{\tt -h}] \hfill\\
   	Usage overview.
-  \item[-t {\bf\it timeout}] \hfill\\
-  	Upper estimate for real running time of the calculation. Kill calculation after {\it timeout} seconds. 
+  \item[{\tt -t}] \verb'<timeout>' \hfill\\
+  	Upper estimate for real running time of the calculation. Kill calculation after \verb'<timeout>' seconds. 
   	Can also be used by PBS to choose appropriate job queue. 
-  \item[-np {\bf\it number of processes}] \hfill\\
+  \item[{\tt -np}] \verb'<number of processes>' \hfill\\
   	Specify number of parallel processes for calculation.
-  \item[-m {\bf\it memory limit}] \hfill\\
-  	Limits total available memory to {\it memory limit} bytes.
-  \item[-n {\bf\it priority}] \hfill\\
+  \item[{\tt -m}] \verb'<memory limit>' \hfill\\
+  	Limits total available memory to \verb'<memory limit>' bytes.
+  \item[{\tt -n}] \verb'<priority>' \hfill\\
   	Change (lower) priority for the calculation. See {\tt nice} command.
-  \item[-r {\bf\it out file}] \hfill\\
-  	Stdout and stderr will be redirected to {\it out file}.
+  \item[{\tt -r}] \verb'<out file>' \hfill\\
+  	Stdout and stderr will be redirected to \verb'<out file>'.
 \end{description}
 
 On the Windows system we use Cygwin libraries in order to emulate Linux API.
-Therefore you have to keep the Cygwin libraries within the same direcotry as the program executable.
+Therefore you have to keep the Cygwin libraries within the same directory as the program executable.
 The Windows package that can be downloaded from project web page contains both the Cygwin libraries
-and the mpiexec command for starting parallel jobs on the Windows workstations.
+and the {\tt mpiexec} command for starting parallel jobs on the Windows workstations.
 
 Then you can start the sequential run by the command:
 \begin{verbatim}
@@ -400,21 +401,17 @@ defining boundary regions, and set operations with region sets, see Section \ref
 \subsubsection{Flow setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
-The conductivity will be $1$ on the 2D domain and $10$ on the 1D domain.
-The fracture width will be $\delta_1=1$ (quite unnatural) as well as the transition parameter 
-$\sigma_2 = 1$ which describes a ``conductivity'' between dimensions. 
-These are currently the default values.
+The conductivity will be $k_2=1$ on the 2D domain and $k_1=10$ on the 1D domain.
+The fracture width will be $\delta_1=1$ (default value) and the crosswind conductivity between dimensions will have value $1$, which can be achieved by setting the dimensionless parameter $\sigma_2 = \frac{1}{2k_1}=0.05$. 
+% These are currently the default values.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
-        { r_set = "1d_domain", conductivity = 10 },
-        { region = "2d",       conductivity = 1  }
-      ],
-      
-      bc_data = [
+      input_fields = [
+        { r_set = "1d_domain", conductivity = 10, sigma = 0.05 },
+        { region = "2d",       conductivity = 1  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -423,24 +420,25 @@ These are currently the default values.
 
       output = {
         output_stream = { REF = "/system/output_streams/0" }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       
-      solver = { TYPE = "Petsc", accuracy = 1e-07 }
+      solver = {
+        TYPE = "Petsc",
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      }
     }, // primary equation
 \end{Verbatim}
-On line 11, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
-solver for unsteady problems. On lines 16 -- 19, we set mathematical fields that live on the computational domain 
-(i.e. the bulk domain), we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{bulk fields} have appropriate default values.
-On lines 21 -- 26, we set fields for boundary conditions (\hyperlink{IT::DarcyFlowMH-Steady-BulkData}{{\tt bc\_data}}). 
-We use implicitely defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
-pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE=FieldFormula}.
+On line 14, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
+solver for unsteady problems. On lines 16 -- 23, we set mathematical fields that live on the computational domain as well as those for boundary conditions, we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Data}{\tt input\_fields} have appropriate default values.
+We use implicitly defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE="FieldFormula"}.
 See Section \ref{sec:Fields} for other field types. 
-On lines 28 -- 33, we specify which output fields should be written into which output stream (that means particular output file, with given format).
+On lines 25 -- 28 we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
-Notice the reference used on line 29 pointing to the definition of the output streams at the end of the file. Finally, we specify type of the linear solver and its tolerance.
+See Section \ref{section_output} for the list of available \hyperlink{DarcyMHOutput::output-fields::B}{\tt output\_fields}.
+Notice the reference used on line 26 pointing to the definition of the output streams at the end of the file. Finally, we specify type of the linear solver and its tolerances.
 
 
 
@@ -450,68 +448,86 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
 %see Section \ref{} for the description. 
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
-     secondary_equation = {
+    secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      dual_porosity = true, 
-      substances = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
+      substances = [ "age", "U235" ],
       
-      bulk_data = [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25,
-          por_imm = 0.25
-        }
-      ],
-      
-      bc_data = [
+          porosity= 0.25
+        },
         { r_set = "BOUNDARY",
           bc_conc = 1.0
         }
       ],
-
-      output = {
-        output_stream = { REF = "/system/output_streams/1" },
-        save_step = 0.01,
-        mobile_p0 = "transport_output_stream"
-      }, 
-
-      time = { end_time = 1.0 }      
-
-      reactions = {
-        TYPE="Sorptions",
-        solvent_dens = 1.0,
-        species = [ "age", "U235", "U235s-lin", "U235s-lang", "U235s-freund"],
-        molar_masses = [1.0, 1.0, 1.0, 1.0, 1.0],
-        solubility = [1.0, 1.0, 1.0, 1.0, 1.0],
-        substeps = 50,
-        bulk_data = [
+      
+      reaction_term = {
+        TYPE = "DualPorosity",
+        
+        input_fields= [
           {
-            region = "2d",
-            rock_density = {TYPE="FieldFormula", value = "1.0*x/x"},
-            sorption_types = [ "none",  "none", "linear", "langmuir", "freundlich"],
-            mult_coefs = [0, 0, 0.6, 0.4, 0.6],
-	    second_params = [0, 0, 0, 0.6, 0.4]
+            r_set="ALL",
+            diffusion_rate_immobile = [0.01,0.01],
+            porosity_immobile = 0.25,
+            init_conc_immobile = [0.0, 0.0]
           }
-        ]
-      }
+        ],
+        
+        output_fields = [],
+        
+        reaction_mobile = {
+          TYPE = "SorptionMobile",
+          solvent_density = 1.0,
+          substances = ["age", "U235"],
+          molar_mass = [1.0, 1.0],
+          solubility = [1.0, 1.0],
+          
+          input_fields= [
+            {
+              r_set="ALL",
+              rock_density = 1.0,
+              sorption_type =  ["linear", "freundlich"],
+              isotherm_mult = 0.02, 
+              isotherm_other = [0, 0.5]
+            }
+          ],
+          output_fields = []
+        },
+        reaction_immobile = {
+          TYPE = "SorptionImmobile",
+          solvent_density = 1.0,
+          substances = ["age", "U235"],
+          molar_mass = [1.0, 1.0],
+          solubility = [1.0, 1.0],
+          input_fields = { REF="../../reaction_mobile/input_fields" },
+          output_fields = []
+        }
+      },
+      
+      output_stream = { REF = "/system/output_streams/1" },
+
+      time = { end_time = 1.0 },
+      mass_balance = { cumulative = true }
     } // secondary_equation
   }, // problem
 \end{Verbatim}
-For the transport problem we use implementation called ``TransportOperatorSplitting'' which is explicit finite volume solver of the convection equation (without diffusion), 
-the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation. Dual porosity is switched on as we can see on lines 40. On the next line, 
-we set names of transported substances, here it is the age of the water and the uranium 235. On lines 44 -- 55, we set the bulk fields in particular the porosity 'por\_m' and the initial concentrations 
-( one for every substance ). However, on line 46, we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
-On line 53, we can see vector that set different adsorption coefficients for the two substances. Then, on lines 57 -- 61, we set the boundary fields namely the concentration on the inflow part of the boundary.
-We need not to specify type of the condition since currently this is the only one available. In the output record we have to specify the save step (line 65) for the output fields. And finally,
-we have to set the time setting, here only the end time of the simulation since the step size is determined from the CFL condition, however you can set smaller time step if you want.
+For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
+the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation.
+On line 39, we set names of transported substances, here it is the age of the water and the uranium 235. On lines 41 -- 49, we set the input fields, in particular the \hyperA{TransportOperatorSplitting::porosity}{\tt porosity} and the initial concentrations 
+(one for every substance). However, on line 43 we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
+On lines 46 -- 48, we set the boundary fields, namely the concentration on the inflow part of the boundary.
+We need not to specify the type of the condition since currently there is only one type for this transport model.
+On lines 51 -- 92, we specify the dual porosity and adsorption mechanisms (see comments below).
+We also have to prescribe the time setting, here only the end time of the simulation since the step size is determined from the CFL condition; however a smaller time step can be enforced if necessary.
 
 \subsubsection{Sorption settings}\label{subsubsec:sorptions}
-The input information for equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reactions}{$reactions =\{\ldots\}$}. The type of simulated, chemical interactions is determinated by the label $TYPE="Sorptions",$. It is possible to set the value of the solvent (obviously water) density \hyperA{Sorptions::solvent-dens}{$solvent\_dens = 1.0,$}. The solvent density is supposed to be constant all over the simulated area. The vector \hyperA{Sorptions::species}{$species$} containes the list of soluted substances whose concentrations is concidered to be affected by sorptions. Material characteristics of all the sorbing species can be defined by vectors \hyperA{Sorptions::molar-masses}{$molar\_masses$} and \hyperA{Sorptions::solubility}{$solubility$}. Elements of the vector $sollubility$ defines the upper bound of an aqueous concentrations which can appear, because some substances have limmited solubility and if the solubility exceeds this limit they start to precipitate. $solubility$ is 
-a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorptions::substeps}{$substeps$} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Default value is set to be $100$.
+The input information for dual porosity and equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}. The type of process is determined by {\tt TYPE="DualPorosity"}. The \hyperA{Sorption::solvent-density}{\tt solvent\_density} is supposed to be constant all over the simulated area. The vector \hyperA{Sorption::substances}{\tt substances} contains the list of soluted substances whose concentrations are concidered to be affected by sorptions. Material characteristics of all the sorbing substances can be defined by vectors \hyperA{Sorption::molar-mass}{\tt molar\_mass} and \hyperA{Sorption::solubility}{\tt solubility}. Elements of the vector {\tt solubility} define the upper bound of an aqueous concentration which can appear, because some substances have limited solubility and if the solubility exceeds this limit they start to precipitate. {\tt solubility} is 
+a crucial parameter for solving further described set of nonlinear equations. The parameter \hyperA{Sorption::substeps}{\tt substeps} is important when interpolation is used to search approximative solution of the adsorption problem. It is the number of precomputed points lying on the isotherm. Its default value is $1000$.
 
-The record \hyperA{Sorptions::bulk-data}{$bulk\_data$} colects information about regions specific, several isotherms desribed adsorption. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-BulkData::rock-density}{$rock\_density$} can be either constant or specified by $FieldFormula$. The implemented \hyperA{Sorption-BulkData::sorption-types}{$sorption\_types$} can have one of four possible values $\{ "none", "linear", "freundlich", "langmuir"\}$ and except of first one are those types empiricaly described by appropriate type of isotherm. Linear isotherm described adsorption needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see the section \ref{sec:sorp_math}. Isothermaly described sorption simulation can be used in 
-the case of low concenttrated solutions without competition between multiple disoved species.
+The record \hyperA{Sorption::input-fields}{\tt input\_fields} colects information about region specific parameters. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-Data::rock-density}{\tt rock\_density} can be either constant or specified by {\tt FieldFormula}. The \hyperA{Sorption-Data::sorption-type}{\tt sorption\_type} reperesents the empirically determined isotherm and can have one of four possible values: {\tt \{ "none", "linear", "freundlich", "langmuir" \}}. Linear isotherm needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see Section \ref{sec:sorp_math}. Isothermally described sorption simulation can be used in 
+the case of low concentrated solutions without competition between multiple dissolved species.
 
 \subsubsection{Output streams and results}
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -525,16 +541,19 @@ the case of low concenttrated solutions without competition between multiple dis
       {
         file = "test3-transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
+        time_step = 0.1,
         name = "transport_output_stream"
       }
     ]
   }
-} 
+}
 \end{Verbatim}
-The end of the input file contains declaration of two output streams, one for the flow problem and one for the transport problem. Currently, we support output into VTK format and GMSH data format.
-On Figure \ref{fig:tutorial} you can see the results, the pressure and the velocity field on the left and the concentration of U235 at time $t=0.9$ on the right. Even if the pressure gradient is
-the same on the 2D domain as on the fracture, the velocity field is ten times faster on the fracture. Since porosity is same, the substance is transported faster by the fracture and
+The end of the input file contains declaration of two output streams, one for the flow problem and one for the transport problem. Currently, we support output into VTK and GMSH data format.
+In the output record for time-dependent process we have to specify the {\tt time\_step} (line 110) which determines the frequency of saving.
+In Figure \ref{fig:tutorial} one can see the results: the pressure and the velocity field on the left and the concentration of U235 at time $t=0.9$ on the right. Even if the pressure gradient is
+the same in the 2D domain and in the fracture, due to higher conductivity the velocity field is ten times faster in the fracture. Since porosity is the same, the substance is transported faster by the fracture and
 then appears in the bottom left 2D domain before the main wave propagating solely through the 2D domain.
+
 
 
 \begin{figure}
@@ -560,10 +579,11 @@ then appears in the bottom left 2D domain before the main wave propagating solel
 
 
 
-The output files can be either \verb'*.msh' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
+% The output files can be either \verb'*.msh' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
 
-In the following chapter, we briefly describe structure of individual input files in particular the main INI file. In the last chapter, we describe
-mathematical models and numerical methods used in the Flow123d.
+In the following chapter we describe mathematical models used in Flow123d.
+Then in chapter \ref{chapter:file-formats} we briefly describe structure of individual input files, in particular the main CON file.
+The complete description of the CON format is given in chapter \ref{chapter:input-tree-reference}.
 
 
 \chapter{Mathematical models \\of physical reality}
@@ -744,7 +764,8 @@ the surrounding continuum which we shall later apply to individual processes.
 
 \input{heat}
 
-\input{numerical}
+% TODO: Update numerical topics
+% \input{numerical}
 
 
 
@@ -753,6 +774,7 @@ the surrounding continuum which we shall later apply to individual processes.
 
 
 \chapter{File formats}
+\label{chapter:file-formats}
 %\section{Input format}
 \input{JSON_input}
 
@@ -762,14 +784,14 @@ the surrounding continuum which we shall later apply to individual processes.
 %\input{tso_10} 
 %\input{pos_12}   
 
-
-\chapter{Test and tutorial problems (WORK IN PROGRESS)}
- \label{chapter:tests}
- \input{tests}
+% TODO: Update description of tests
+% \chapter{Test and tutorial problems (WORK IN PROGRESS)}
+%  \label{chapter:tests}
+%  \input{tests}
 % 
- \chapter{Comparision of versions (WORK IN PROGRESS)}
- \label{chapter:version_comparision}
- \input{version_comparision}
+%  \chapter{Comparision of versions (WORK IN PROGRESS)}
+%  \label{chapter:version_comparision}
+%  \input{version_comparision}
 
 \chapter{Main input file reference}
 \label{chapter:input-tree-reference}

@@ -24,17 +24,16 @@
 \section{Reaction term in transport}
 \label{sec:reaction_term}
 
-We have not mentioned yet details about the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
-There are several models which can be considered in this reaction term, both of chemical or physical nature. 
-The figure \ref{fig:reaction_term} shows all possible reactional models that we support in the trasport process. The Operator Splitting method enables 
+The {\tt TransportOperatorSplitting} method supports the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
+It can represent several models of chemical or physical nature. 
+Figure \ref{fig:reaction_term} shows all possible reactional models that we support in combination with the transport process. The Operator Splitting method enables 
 us to deal with the convection part and reaction term side by side. The convected quantities do not influence each other in the convectional
 process and are balanced over the elements. On the other hand the reaction term relates the convected quantities and can be computed 
 separately on each element.
 
-We move now to the description of the reaction term models which can be seen again in the figure \ref{fig:reaction_term}. 
+We move now to the description of the reaction models which can be seen again in Figure \ref{fig:reaction_term}. 
 The convected quantity is considered to be the concentration of substances. 
-Up to now we can have \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and \emph{reaction} (we mean chemical 
-reaction) models in the reaction term. 
+Up to now we can have \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and (chemical) \emph{reaction} models in the reaction term. 
 
 \begin{figure}
   \centering
@@ -44,21 +43,20 @@ reaction) models in the reaction term.
   \label{fig:reaction_term}
 \end{figure}
 
-The \emph{reaction} model computes chemical reactions on the substances involved. It does not have any additional output.
+The \emph{reaction} model acts only on the specified substances. It does not have its own output.
 
 The \emph{adsorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
-followed by a chemical \emph{reaction} that can run in both phases. The concentration in solid is an additional output 
-of this model. See the subsection \ref{sec:sorp_math}.
+followed by another \emph{reaction} that can run in both phases. The concentration in solid is an additional output 
+of this model. See Subsection \ref{sec:sorp_math}.
 
 
-The \emph{dual porosity} model, described in the subsection \ref{sec:dual_porosity}, introduces so called immobile pores in the matrix
-which are dead-end pores. The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
+The \emph{dual porosity} model, described in Subsection \ref{sec:dual_porosity}, introduces the so called immobile (or dead-end) pores in the matrix. The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
 and the exchange of concentrations from/to immobile zone is governed by molecular diffusion. This process can be followed by 
-\emph{adsorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is saved
-in addition.
+\emph{adsorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is an
+additional output.
 
 
-\subsection{Dual porosity.}
+\subsection{Dual porosity}
 \label{sec:dual_porosity}
 
 Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into 
@@ -71,94 +69,83 @@ to molecular diffusion. We consider simple nonequilibrium linear model:
     \vartheta_i \partial_t c_i &= D_{dp} ( c_m - c_i), \label{eqn:dual_porosity_ode2}
 \end{align}
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
-$D_{dp}$ is a diffusion rate (\hyperA{DualPorosity-Data::diffusion-rate-immobile}{$diffusion\_rate\_immobile$}) between the zones.
-$\vartheta_i$~denotes porosity of the immobile zone (\hyperA{DualPorosity-Data::porosity-immobile}{$porosity-immobile$}) and 
-we set the mobile porosity equal $\vartheta_m = \vartheta$ from transport equation \eqref{e:ADE} which is given by
-\hyperA{TransportOperatorSplitting-Data::porosity}{$porosity$}.
+\hyperA{DualPorosity-Data::diffusion-rate-immobile}{$D_{dp}$} is a diffusion rate between the zones.
+\hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
+$\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from transport equation \eqref{e:ADE}.
 
 The analytical solution of the system of differential equations at time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
 \begin{align}
      c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0), \\
      c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0),
 \end{align}
-where $c_a$ is weighted average
+where $c_a$ is the weighted average
 \[
   c_a = \frac{\vartheta_m c_m + \vartheta_i c_i}{\vartheta_m + \vartheta_i}.
 \]
 
 If the time step is large we use the analytical solution to compute new values of concentrations. 
 Otherwise we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
-with first order forward differences and we get classic Euler scheme
+by first order forward differences and we get the classical Euler scheme
 \begin{align}
   c_m(t^+) = \frac{D_{dp} \Delta t}{\vartheta_m}(c_i(t) - c_m(t)) + c_m(t), \\
   c_i(t^+) = \frac{D_{dp} \Delta t}{\vartheta_i}(c_m(t) - c_i(t)) + c_i(t), \\
 \end{align}
 where $\Delta t = t^+ - t$ is the time step. Note that the difference scheme is switched off in version 1.8.0.
 
-\subsection{Equilibrial Adsorption}
+\subsection{Equilibrial adsorption}
 \label{sec:sorp_math}
 
-The simulation of monolayer, equilibrial adsorption is based on solution of the couple of equations 
-representing mass balance law and empirical description of adsorption represented by common types of isotherm. 
-The type of adsorption (\hyperA{Adsorption-Data::adsorption-type}{$adsorption\_type$}) is given by isotherm which is on of these:
+The simulation of monolayer, equilibrial adsorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
+\begin{equation}
+\label{eq:mass_balance_sorption}
+\th \varrho_l c_l + (1-\th) \varrho_s M_s c_s = c_T = const.
+\end{equation}
+and an empirical adsorption law
+\begin{equation}
+\label{eq:relation_cs_cl}
+c_s = f(c_l),
+\end{equation}
+given in terms of the so-called isotherm $f$.
+Its form is determined by the parameter \hyperA{Adsorption-Data::sorption-type}{\tt sorption\_type}:
 \begin{itemize}
- \item ``$none$''. The adsorption model returns zero concentration in solid.
- \item ``$linear$''. Linear isotherm $c_s = f(c_l) = k_l\cdot c_l$, $sorption\_type$ is used.
- \item ``$freundlich$''. Freundlich isotherm $c_s = f(c_l) = k_F\cdot c_l^{\alpha}$, $sorption\_type$ is used.
- \item ``$langmuir$''. Langmuir isotherm $c_s = f(c_l) = k_L\cdot \frac{\alpha\cdot c_l}{1 + \alpha\cdot c_l}$,  
-       is used. Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount 
+ \item ``$none$'': $f(c_l)=0$ (the adsorption model returns zero concentration in solid);
+ \item ``$linear$'': $f(c_l) = k_l c_l$;
+ \item ``$freundlich$'': $f(c_l) = k_F c_l^{\alpha}$;
+ \item ``$langmuir$'': $f(c_l) = k_L \frac{\alpha c_l}{1 + \alpha c_l}$.
+       Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount 
        of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is 
        a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
 \end{itemize}
-Notification:
+
+Notation:
 \begin{itemize}
- \item Concentration in solid $[c_s] = \frac{[n]}{[m_R]} = \frac{N}{M} = \frac{Mol}{kg}$, where $m_R$ is the 
-       mass of bulk (rock) and $n$ denotes molar amount of substance in an element.
- \item Concentration in liquid $[c_l] = \frac{[m]}{[m_w]} = \frac{M}{M} = \frac{kg}{kg} = 1$, where $m_w$ is 
-       the mass of water/solvent in an element. The relation between $c_l$ and the concentration $c$ from 
-       transport equation \eqref{e:ADE} is $c = c_l \cdot q_w$.
- \item Multiplication parameters, $k_i, i\in\{ l,F,L\}$, given by 
-       \hyperA{Adsorption-Data::isotherm-mult}{$isotherm\_mult$}, can have various physical dimensions.
- \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Adsorption-Data::isotherm-other}{$isotherm\_other$}.
+ \item Concentration in solid $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$], where $m_s$, $n$ is the 
+       mass of solid and the molar amount of the substance in unit volume, respectively;
+ \item Concentration in liquid $c_l = \frac{m}{m_l}$ \units{}{}{}, where $m_l$ is 
+       the mass of liquid in unit volume. The relation between $c_l$ and the concentration $c$ from 
+       transport equation \eqref{e:ADE} is $c = c_l \varrho_l$;
+ \item \hyperA{Adsorption::solvent-density}{$\varrho_l$}, \hyperA{Adsorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively;
+ \item \hyperA{Adsorption::molar-mass}{$M_s$} denotes the molar mass of a substance;
+ \item Multiplication parameters $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$] are given by 
+       \hyperA{Adsorption-Data::isotherm-mult}{\tt isotherm\_mult};
+ \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Adsorption-Data::isotherm-other}{\tt isotherm\_other}.
 \end{itemize}
 
-The mass balance equation \eqref{eq:mass_balance_base} conserve a sum of the mass of liquid $m_l$ and the mass 
-of solid $m_s$.
+Denoting
+\[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
+and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
 \begin{equation}
-  m_T = m_l + m_s = c_l\cdot V_{elm}\cdot\rho_w\cdot \vartheta 
-    + c_s\cdot M_s \cdot V_{elm}\cdot\rho_R\cdot(1-\vartheta)
-  \label{eq:mass_balance_base}
-\end{equation}
-where $\rho_w$ denotes \hyperA{Adsorption::solvent-density}{$solvent\_density$}, $\rho_R$ is the symbol for 
-\hyperA{Adsorption-Data::rock-density}{$rock\_density$}, $V_{elm}$ denotes element volume, $\vartheta$ is 
-the porosity as used above and $M_s$ denotes \hyperA{Adsorption::molar-mass}{$molar\_mass$} of a substance.
-
-The equation \eqref{eq:mass_balance_base} depends on volume of an element $V_{elm}$. We devide both sides 
-by $V_{elm}$ to suppress this dependency and we get the final mass balance equation \eqref{eq:mass_balance_base2} 
-with $c_T = \frac{m_T}{V_{elm}}$ being constant.
-\begin{equation}
- \begin{array}{l}
-  c_T = \mu_l\cdot c_l + \mu_s\cdot c_s, \\
-  \mu_l = \rho_w\cdot \vartheta, \\
-  \mu_s = M_s \cdot\rho_R\cdot(1-\vartheta),
- \end{array}
- \label{eq:mass_balance_base2}
-\end{equation}
-
-After the substitution $|c_s = f(c_l)|$ we obtain the equation, which can be either solved iteratively 
-or approximated through interpolation. This equation has the form
-\begin{equation}
- c_T = \mu_l\cdot c_l + \mu_s\cdot f(c_l)
+ c_T = \mu_l c_l + \mu_s f(c_l),
  \label{eq:nonlin_sorption}
 \end{equation}
-To solve the equation \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
-to look for solution (unknown $c_l$). The lower bound is $0$. Concentration can not reach negative values. 
+which can be either solved iteratively or using interpolation.
+To solve \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
+to look for the solution (unknown $c_l$), see Figure \ref{fig:sorpce}. The lower bound is $0$ (concentration can not reach negative values). 
 The upper bound is derived using a simple mapping. Let us suppose limmited 
 \hyperA{Adsorption::solubility}{$solubility$} of the selected transported substance and let us denote the 
 limmit $\bar{c}_l$. We keep the maximal "total mass" 
 $\bar{c}_T= \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, but we dissolve all the mass to get 
-maximal $c_l^{max} > \bar{c}_l$. That means $c_s = 0$ at this moment. To understand this step look at 
-the figure \ref{fig:sorpce}. We can slightly enlarge the interval by setting the upper bound equal to 
+maximal $c_l^{max} > \bar{c}_l$. That means $c_s = 0$ at this moment. We can slightly enlarge the interval by setting the upper bound equal to 
 $c_l^{max} + const_{small}$.
 
 \begin{figure}[ht!]
@@ -181,8 +168,8 @@ coordination system at first. The approach for construction of interpolation tab
        for $c_l^j$ as unknowns. The solution is the set of ordered couples (points) 
        $[c_l^j,f(c_l^j)],~j\in\{0,\ldots,n\_steps\}$.
 \end{enumerate}
-After computation of $\{[c_l^j,f(c_l^j)]\}$ we transform these coordinates to the system where total mass is 
-independent variable. This is done by multiplication of precomputed points using transformation matrix ${\bf A}$.
+After computation of $\{[c_l^j,f(c_l^j)]\}$ we transform these coordinates to the system where the total mass is 
+an independent variable. This is done by multiplication of precomputed points using the transformation matrix ${\bf A}$:
 \begin{equation}
  \begin{array}{l}
   \vec{c}\,^R = {\bf A}\cdot\vec{c}\\
@@ -201,13 +188,13 @@ The values $c_l^{R,j}$ are equidistantly distributed and there is no reason to s
 $c_s^{R,j}$ are stored in onedimensional interpolation table.
 
 Once we have the interpolation table, we can use it for projection of ${[c_l,c_s]}$ transport results on the 
-isotherm under concideration. The approach look as folows.
+isotherm under consideration. The approach looks as folows.
 \begin{enumerate}
- \item Achieved concentrations are transformed to the coordination system through multiplication with the 
+ \item Achieved concentrations are transformed to the coordinate system through multiplication with the 
        matrix ${\bf A}$, see \eqref{eq:transf_mat}.
  \item Transformed values are interpolated.
  \item The result of interpolation is transformed back. The backward transformation consist of multiplication 
-       with ${\bf A}^T$ which is followed by rescaling the result. Rescaling the result is neccessery because  
+       with ${\bf A}^T$ which is followed by rescaling the result. Rescaling the result is necessary because  
        ${\bf A}$ is not orthonormal as it is shown bellow.
  \[
  \begin{array}{l}
@@ -221,7 +208,7 @@ isotherm under concideration. The approach look as folows.
 \end{enumerate}
 
 
-\subsection{Limmited Solubility}\label{subsec:lim_solub}
+\subsection{Limited solubility}\label{subsec:lim_solub}
 When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ neither iterative 
 solver nor interpolation table is used. The aqueous concentration is set to be $\bar{c}_l}$ and sorbed 
 concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdot \bar{c}_l)/\mu_s$.
@@ -242,34 +229,26 @@ The sorbing surface in the mobile zone is given by
   \varphi = \frac{\vartheta_m}{\vartheta_m + \vartheta_i}, 
 \end{equation}
 
-while in the immobile zone it becames
+while in the immobile zone it becomes
 \[ 1 - \varphi = 1-\frac{\vartheta_m}{\vartheta_m + \vartheta_i} = \frac{\vartheta_i}{\vartheta_m + \vartheta_i}. \]
 
-Remind the mass balance equation \eqref{eq:mass_balance_base2}:
-\begin{eqnarray}
- \begin{array}{l}
-  c_T = \mu_l\cdot c_l + \mu_s\cdot c_s,\\
-  \mu_l = \rho_w \cdot \vartheta, \\
-  \mu_s = M_s \cdot\rho_R\cdot(1-\vartheta),
- \end{array}
- \label{eq:scale_params}
-\end{eqnarray}
-where $\vartheta = \vartheta_m + \vartheta_i$ is the porosity.
-The scaling parameters are changed in the dual porosity model such that in the mobile zone
+Remind the mass balance equation \eqref{eq:nonlin_sorption}.
+In the dual porosity model, the scaling parameters $\mu_l$, $\mu_s$ are slightly different.
+In particular, the mass balance in the mobile zone reads:
 \begin{eqnarray}
  \begin{array}{l}
   c_T = \mu_l\cdot c_{ml} + \mu_s\cdot c_{ms},\\
-  \mu_l = \rho_w \cdot \vartheta_m, \\
-  \mu_s = M_s \cdot\rho_R\cdot(1-\vartheta_m - \vartheta_i)\varphi,
+  \mu_l = \varrho_l \cdot \vartheta_m, \\
+  \mu_s = M_s \cdot\varrho_s\cdot(1-\vartheta_m - \vartheta_i)\varphi,
  \end{array}
  \label{eq:scale_params_m}
 \end{eqnarray}
-and in the immobile zone
+while in the immobile zone it has the form:
 \begin{eqnarray}
  \begin{array}{l}
   c_T = \mu_l\cdot c_{il} + \mu_s\cdot c_{is},\\
-  \mu_l = \rho_w \cdot \vartheta_i, \\
-  \mu_s = M_s \cdot\rho_R\cdot(1-\vartheta_m - \vartheta_i)(1 - \varphi).
+  \mu_l = \varrho_l \cdot \vartheta_i, \\
+  \mu_s = M_s \cdot\varrho_s\cdot(1-\vartheta_m - \vartheta_i)(1 - \varphi).
  \end{array}
  \label{eq:scale_params_i}
 \end{eqnarray}
