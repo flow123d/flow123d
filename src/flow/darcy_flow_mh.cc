@@ -887,7 +887,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::input_type) {
-    		xprintf(Warn, "For BDDC is using no Schur complements.");
+    		xprintf(Warn, "BDDC is using no Schur complements.");
             n_schur_compls = 0;
     	} else if (n_schur_compls > 2) {
             xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
@@ -989,13 +989,13 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    START_TIMER("full assembly");
 	    schur0->mat_zero_entries();
 	    schur0->rhs_zero_entries();
-	    schur0->start_add_assembly(); // finish allocation and create matrix
+	    //schur0->start_add_assembly(); // finish allocation and create matrix
 	    assembly_steady_mh_matrix(); // fill matrix
 	    schur0->finish_assembly();
 	    schur0->set_matrix_changed();
 
 	    if (!time_->is_steady()) {
-	    	DBGMSG("    setutp time term\n");
+	    	DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
 	    	setup_time_term();
 	    	modify_system();
