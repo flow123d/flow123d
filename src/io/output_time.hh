@@ -95,6 +95,31 @@ public:
     static void write_all_data(void);
 
 
+
+    /**
+     *
+     */
+    static OutputTime* create_output_stream(const Input::Record &in_rec);
+
+    /**
+     * Declaration of exceptions
+     */
+    //TYPEDEF_ERR_INFO(EI_StreamName, const string);
+    //DECLARE_INPUT_EXCEPTION( ExcStreamName, << "Not valid stream name " << EI_StreamName::qval << "\n");
+
+    /**
+     * \brief Constructor of OutputTime object. It opens base file for writing.
+     *
+     * \param[in] in_rec The reference on the input record
+     */
+    OutputTime(const Input::Record &in_rec);
+
+    /**
+     * \brief Destructor of OutputTime. It doesn't do anything, because all
+     * necessary destructors will be called in destructor of Output
+     */
+    virtual ~OutputTime();
+
     /**
      * \brief Generic method for registering output data stored in MultiField
      *
@@ -116,6 +141,7 @@ public:
     void register_data(const DiscreteSpace ref_type,
             Field<spacedim, Value> &field);
 
+
     /**
      * \brief Registers names of output fields that can be written using this stream.
      * @param in_array Array of admissible fields (array of selections).
@@ -135,40 +161,6 @@ public:
      */
     void mark_output_times(const TimeGovernor &tg);
 
-    /**
-     * Declaration of exceptions
-     */
-    //TYPEDEF_ERR_INFO(EI_StreamName, const string);
-    //DECLARE_INPUT_EXCEPTION( ExcStreamName, << "Not valid stream name " << EI_StreamName::qval << "\n");
-
-    /**
-     * \brief Constructor of OutputTime object. It opens base file for writing.
-     *
-     * \param[in] in_rec The reference on the input record
-     */
-    OutputTime(const Input::Record &in_rec);
-
-    /**
-     * \brief Destructor of OutputTime. It doesn't do anything, because all
-     * necessary destructors will be called in destructor of Output
-     */
-    virtual ~OutputTime();
-
-
-
-    /**
-     *
-     */
-    static OutputTime* create_output_stream(const Input::Record &in_rec);
-
-
-    /**
-     * Interpolate given @p field into output discrete @p space and store the values
-     * into private storage for postponed output.
-     */
-    template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
-
 
 private:
     ofstream        *base_file;         ///< Base output stream
@@ -178,6 +170,8 @@ private:
     Mesh      *mesh;
 
 protected:
+
+
     /**
      * Enumeration of file formats supported by Flow123d
      */
@@ -187,14 +181,19 @@ protected:
         VTK     = 2,
     } OutFileFormat;
 
+    /**
+     * Interpolate given @p field into output discrete @p space and store the values
+     * into private storage for postponed output.
+     */
+    template<int spacedim, class Value>
+    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
+
 
     /**
      * \brief This method returns pointer at existing data, when corresponding
      * output data exists or it creates new one.
      */
     OutputDataBase *output_data_by_field_name(const string &field_name, DiscreteSpace ref_type);
-
-
 
     /**
      * \brief This method set current time for registered data array/vector
