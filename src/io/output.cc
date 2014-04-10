@@ -371,6 +371,31 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 }
 
 
+void OutputTime::write_time_frame()
+{
+    int ierr, rank;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+
+    OutputTime *output_time = NULL;
+
+    /* TODO: do something, when support for Parallel VTK is added */
+    if (rank == 0) {
+    	// Write data to output stream, when data registered to this output
+		// streams were changed
+		if(write_time < time) {
+			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n", name.c_str(), time);
+			write_data();
+			// Remember the last time of writing to output stream
+			write_time = time;
+			current_step++;
+		} else {
+			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n", name.c_str(), time);
+		}
+    }
+    clear_data();
+}
+/*
 void OutputTime::write_all_data(void)
 {
     int ierr, rank;
@@ -379,9 +404,9 @@ void OutputTime::write_all_data(void)
 
     OutputTime *output_time = NULL;
 
-    /* It's possible now to do output to the file only in the first process */
+    // It's possible now to do output to the file only in the first process
 //if(rank != 0) {
-//        /* TODO: do something, when support for Parallel VTK is added */
+//        // TODO: do something, when support for Parallel VTK is added
 //        return;
 //    }
     if (rank == 0) {
@@ -409,10 +434,10 @@ void OutputTime::write_all_data(void)
 		}
     }
 
-    /* Free all registered data */
+    // Free all registered data
     for(auto *stream : OutputTime::output_streams) stream->clear_data();
 }
-
+*/
 
 void OutputTime::clear_data(void)
 {

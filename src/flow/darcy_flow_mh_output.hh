@@ -44,7 +44,7 @@
 #include "fem/fe_p.hh"
 
 
-class DarcyFlowMH;
+class DarcyFlowMH_Steady;
 class OutputTime;
 class DOFHandlerMultiDim;
 
@@ -90,7 +90,7 @@ public:
 	    static Input::Type::Selection output_selection;
 	};
 
-    DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
     static Input::Type::Record input_type;
@@ -149,7 +149,7 @@ private:
     void water_balance();
     double calc_water_balance();
 
-    DarcyFlowMH *darcy_flow;
+    DarcyFlowMH_Steady *darcy_flow;
     Mesh *mesh_;
 
     //TimeMark::Type output_mark_type;

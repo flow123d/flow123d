@@ -81,6 +81,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string>
     data_+=(data_.porosity
           .name("porosity")
           .units("1")
+          .just_copy()
          );
 
     data_.set_mesh(init_mesh);

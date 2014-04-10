@@ -61,6 +61,11 @@ public:
     FieldCommonBase &name(const string & name)
     { shared_->name_ = name; return *this;}
     /**
+     * Mark field to be used only as a copy of other field (do not produce key in record, do not set input list).
+     */
+    FieldCommonBase &just_copy()
+    {is_copy_=true; return *this;}
+    /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
     FieldCommonBase & desc(const string & desc)
@@ -171,6 +176,9 @@ public:
     const Mesh * mesh() const
     { return shared_->mesh_;}
 
+    bool is_just_copy() const
+    { return is_copy_;}
+
     /**
      * Returns time set by last call of set_time method.
      * Can be different for different field copies.
@@ -274,6 +282,8 @@ protected:
      * Field<...>
      */
     FieldCommonBase(const FieldCommonBase & other);
+
+    //FieldCommonBase &FieldCommonBase::operator=(const FieldCommonBase &other) delete;
 
     /**
      * Invalidate last time in order to force set_time method
@@ -392,6 +402,8 @@ protected:
      */
     static const unsigned int history_length_limit_=3;
 
+    /// Flag field that has to be set as a copy of other field using copy_from method.
+    bool is_copy_=false;
 
 };
 

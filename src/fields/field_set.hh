@@ -95,7 +95,13 @@ public:
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const {
     	Input::Type::Record rec = FieldCommonBase::field_descriptor_record(equation_name + "_Data");
     	for(auto field : field_list) {
-    		rec.declare_key(field->name(), field->get_input_type(), field->desc() );
+    		if (!field->is_just_copy()) {
+    			string units = field->units();
+    			string description =  field->desc();
+    			if (units != "") description+= " [" +field->units() + "]";
+    			rec.declare_key(field->name(), field->get_input_type(), description);
+    		}
+
     	}
     	return rec;
     }

@@ -298,35 +298,10 @@ void Application::run() {
 
         if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
-//            // try to find "output_streams" record
-//            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
-//
-            int rank=0;
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-//            if (rank == 0) {
-//                // Go through all configuration of "root" output streams and create them.
-//                // Other output streams can be created on the fly and added to the array
-//                // of output streams
-//                if(output_streams) {
-//                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-//                            output_stream_rec != (*output_streams).end();
-//                            i++, ++output_stream_rec)
-//                    {
-//                        OutputTime::output_stream(*output_stream_rec);
-//                    }
-//                }
-//            }
-
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
             // run simulation
             problem->run_simulation();
-
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // free all output streams
-                OutputTime::destroy_all();
-            }
 
             delete problem;
         } else {

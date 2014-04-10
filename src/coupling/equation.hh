@@ -41,6 +41,7 @@
 
 class Mesh;
 class Region;
+class FieldSet;
 typedef std::vector<Region> RegionSet;
 
 
@@ -88,7 +89,17 @@ public:
     virtual ~EquationBase() {};
 
     /**
-     *  Child class have to implement computation of solution in actual time.
+     *  Initialization of the solution in the zero time.
+     *  There is lot of things that can not be done in the constructor
+     *  since we have not fully initialized fields yet. Fields coming from coupling
+     *  has to be set after the constructor and before zero_time_step.
+     */
+    virtual void zero_time_step() {
+        // solve equation here ...
+    }
+
+    /**
+     *  Calculation of the next time step and its output.
      */
     virtual void update_solution() {
         // solve equation here ...
@@ -170,12 +181,24 @@ public:
     }
 
     /**
+     * Return reference to the equation data object containing all fields
+     * that the equation needs or produce.
+     */
+    FieldSet &data()
+    {
+    	ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
+    	return *eq_data_;
+    }
+
+    /**
      * Child class have to implement getter for sequential solution vector.
+     * OBSOLETE
      */
     virtual void get_solution_vector(double * &vector, unsigned int &size) =0;
 
     /**
      * Child class have to implement getter for parallel solution vector.
+     * OBSOLETE
      */
     virtual void get_parallel_solution_vector(Vec &vector) =0;
 
@@ -189,6 +212,13 @@ protected:
     TimeGovernor *time_;
     //TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
+
+    /**
+     * Pointer to the equation data object. Every particular equation is responsible
+     * to set the pointer in its constructor. This is used by the general method
+     * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
+     */
+    FieldSet *eq_data_;
 };
 
 
@@ -204,14 +234,18 @@ class EquationNothing : public EquationBase {
 public:
     EquationNothing(Mesh &mesh);
 
-    virtual void get_solution_vector(double * &vector, unsigned int &size) {
+    void get_solution_vector(double * &vector, unsigned int &size) override
+    {
         vector = NULL;
         size = 0;
     }
 
-    virtual void get_parallel_solution_vector(Vec &vector) {};
+    void get_parallel_solution_vector(Vec &vector) override
+    {}
+
 
     virtual ~EquationNothing() {};
+
 };
 
 

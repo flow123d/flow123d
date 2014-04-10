@@ -21,7 +21,8 @@
 FieldCommonBase::FieldCommonBase()
 : shared_( std::make_shared<SharedData>() ),
   limit_side_(LimitSide::unknown),
-  set_time_result_(TimeStatus::unknown)
+  set_time_result_(TimeStatus::unknown),
+  is_copy_(false)
 {
 	shared_->bc_=false;
 	shared_->default_="";
@@ -35,7 +36,8 @@ FieldCommonBase::FieldCommonBase()
 FieldCommonBase::FieldCommonBase(const FieldCommonBase & other)
 : shared_(other.shared_),
   set_time_result_(TimeStatus::unknown),
-  limit_side_(LimitSide::unknown)
+  limit_side_(LimitSide::unknown),
+  is_copy_(true)
 {}
 
 
@@ -61,6 +63,7 @@ IT::Record FieldCommonBase::field_descriptor_record(const string& record_name) {
 
 void FieldCommonBase::set_input_list(const Input::Array &list)
 {
+	if (is_copy_) return;
 	shared_->input_list_ = list;
 
 	// check that times forms ascending sequence

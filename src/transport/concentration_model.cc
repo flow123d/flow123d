@@ -101,12 +101,12 @@ void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 	data().disp_t.n_comp(n_subst_);
 }
 
-
-void ConcentrationTransportModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
+/*
+void ConcentrationTransportModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar >& cross_section)
 {
-  data().cross_section = cross_section;
+  data().cross_section.copy_from(cross_section);
 }
-
+*/
 
 void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
@@ -116,7 +116,7 @@ void ConcentrationTransportModel::set_component_names(std::vector<string> &names
 
 bool ConcentrationTransportModel::mass_matrix_changed()
 {
-	return (data().cross_section->changed() || data().porosity.changed());
+	return (data().cross_section.changed() || data().porosity.changed());
 }
 
 
@@ -127,7 +127,7 @@ bool ConcentrationTransportModel::stiffness_matrix_changed()
 			data().disp_t.changed() ||
 			data().diff_m.changed() ||
 			data().porosity.changed() ||
-			data().cross_section->changed());
+			data().cross_section.changed());
 }
 
 
@@ -146,7 +146,7 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 {
 	vector<double> elem_csec(point_list.size()), por_m(point_list.size());
 
-	data().cross_section->value_list(point_list, ele_acc, elem_csec);
+	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por_m);
 
 	for (unsigned int i=0; i<point_list.size(); i++)
@@ -185,7 +185,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	data().disp_l.value_list(point_list, ele_acc, alphaL);
 	data().disp_t.value_list(point_list, ele_acc, alphaT);
 	data().porosity.value_list(point_list, ele_acc, por_m);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
 		for (int sbi=0; sbi<n_subst; sbi++) {

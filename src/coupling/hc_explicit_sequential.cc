@@ -119,22 +119,23 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         if (it->type() == TransportOperatorSplitting::input_type)
         {
             transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-            transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
         {
             transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
-            transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else if (it->type() == TransportDG<HeatTransferModel>::input_type)
         {
         	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
-        	transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else
         {
             xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
         }
+
+        // setup fields
+        transport_reaction->data().get_field("cross_section")
+        		.copy_from(water->data().get_field("cross_section"));
 
     } else {
         transport_reaction = new TransportNothing(*mesh);
@@ -166,7 +167,10 @@ void HC_ExplicitSequential::run_simulation()
 
     double velocity_interpolation_time;
     bool velocity_changed;
-    //Vec velocity_field;
+
+
+    water->zero_time_step();
+
 
 
     // following cycle is designed to support independent time stepping of
@@ -221,6 +225,8 @@ void HC_ExplicitSequential::run_simulation()
                 transport_reaction->set_velocity_field( water->get_mh_dofhandler() );
                 velocity_changed = false;
             }
+            if (transport_reaction->time().tlevel() == 0) transport_reaction->zero_time_step();
+
             transport_reaction->update_solution();
             
             //transport_reaction->time().view("TRANSPORT");        //show transport time governor
@@ -229,7 +235,7 @@ void HC_ExplicitSequential::run_simulation()
         }
 
         // Write all data
-        OutputTime::write_all_data();
+        //OutputTime::write_all_data();
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }

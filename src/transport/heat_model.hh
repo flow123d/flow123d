@@ -63,7 +63,7 @@ public:
 		Field<3, FieldValue<3>::Scalar> heat_dispersivity;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
 
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
@@ -104,7 +104,7 @@ public:
 
 	void init_data(unsigned int n_subst_) override;
 
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) override;
+	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) override;
 
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
 

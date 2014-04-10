@@ -221,6 +221,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
+	this->eq_data_ = &data_;
+
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     time_->fix_dt_until_mark();
 
@@ -240,10 +242,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.fracture_sigma.n_comp(n_subst_);
     data_.dg_penalty.n_comp(n_subst_);
     Model::init_data(n_subst_);
-
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.set_time(*time_);
+
 
     // DG variant
     dg_variant = in_rec.val<DGVariant>("dg_variant");
@@ -326,19 +327,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
 
-
-    // set initial conditions
-    set_initial_condition();
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
-
-
-    // gather the solution from all processors
-    output_vector_gather();
-	// on the main processor fill the output array and save to file
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream);
-
 }
 
 template<class Model>
@@ -370,6 +358,7 @@ TransportDG<Model>::~TransportDG()
 
     gamma.clear();
     subst_names_.clear();
+    delete output_stream;
 }
 
 
@@ -392,16 +381,25 @@ void TransportDG<Model>::output_vector_gather()
 }
 
 
+
+template<class Model>
+void TransportDG<Model>::zero_time_step()
+{
+    data_.set_time(*time_);
+
+    // set initial conditions
+    set_initial_condition();
+    for (int sbi = 0; sbi < n_subst_; sbi++)
+    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
+
+	output_data();
+}
+
+
 template<class Model>
 void TransportDG<Model>::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
-
-	// save solution and calculate mass balance at initial time
-	if (!allocation_done)
-	{
-		output_data();
-	}
 
     time_->next_time();
     time_->view("TDG");
@@ -437,6 +435,7 @@ void TransportDG<Model>::update_solution()
 		mass_matrix_changed())
 	{
 		ls_dt->start_add_assembly();
+		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
 		mass_matrix = ls_dt->get_matrix();
@@ -568,12 +567,9 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-	// on the main processor fill the output array and save to file
-	//if (feo->dh()->el_ds()->myp() == 0)
-	//{
-		data_.output_fields.set_time(*time_);
-		data_.output_fields.output(output_stream);
-	//}
+	data_.output_fields.set_time(*time_);
+	data_.output_fields.output(output_stream);
+	output_stream->write_time_frame();
 
 	if (mass_balance() != NULL)
 		mass_balance()->output(time_->t());
@@ -1052,8 +1048,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell_sub->element_accessor(), mm_coef_lower);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)

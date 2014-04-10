@@ -35,6 +35,7 @@
 #include "equation.hh"
 #include "system/system.hh"
 #include "input/accessors.hh"
+#include "fields/field_set.hh"
 
 #include <boost/foreach.hpp>
 
@@ -58,8 +59,10 @@ namespace std {
  */
 
 EquationBase::EquationBase()
-: mesh_(NULL), time_(NULL),
-  input_record_()
+: mesh_(NULL),
+  time_(NULL),
+  input_record_(),
+  eq_data_(nullptr)
 {}
 
 
@@ -67,7 +70,8 @@ EquationBase::EquationBase()
 EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
 : mesh_(&mesh),
   time_(NULL),
-  input_record_(in_rec)
+  input_record_(in_rec),
+  eq_data_(nullptr)
 {}
 
 

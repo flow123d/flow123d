@@ -91,11 +91,11 @@ HeatTransferModel::HeatTransferModel() :
 void HeatTransferModel::init_data(unsigned int n_subst_)
 {}
 
-
-void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
+/*
+void HeatTransferModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
 {
-	data().cross_section = cross_section;
-}
+	data().cross_section.copy_from(cross_section);
+}*/
 
 
 void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
@@ -112,7 +112,7 @@ bool HeatTransferModel::mass_matrix_changed()
 			data().fluid_heat_capacity.changed() ||
 			data().solid_density.changed() ||
 			data().solid_heat_capacity.changed() ||
-			data().cross_section->changed());
+			data().cross_section.changed());
 }
 
 
@@ -125,7 +125,7 @@ bool HeatTransferModel::stiffness_matrix_changed()
 			data().fluid_heat_conductivity.changed() ||
 			data().solid_heat_conductivity.changed() ||
 			data().heat_dispersivity.changed() ||
-			data().cross_section->changed());
+			data().cross_section.changed());
 }
 
 
@@ -146,7 +146,7 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::
 			f_c(point_list.size()),
 			s_c(point_list.size());
 
-	data().cross_section->value_list(point_list, ele_acc, elem_csec);
+	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_c);
@@ -174,7 +174,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 	data().solid_heat_conductivity.value_list(point_list, ele_acc, s_cond);
 	data().heat_dispersivity.value_list(point_list, ele_acc, disp);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
 		ad_coef[0][i] = velocity[i]*f_rho[i]*f_cap[i];

@@ -110,6 +110,8 @@ RegionSet ConvectionTransport::EqData::read_descriptor_hook(Input::Record rec) {
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
+	this->eq_data_ = &data_;
+
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     target_mark_type = time_->equation_fixed_mark_type();
@@ -126,8 +128,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-    if (it)
-    	mass_balance_ = new MassBalance(this, *it);
+    if (it) mass_balance_ = new MassBalance(this, *it);
 
     data_.init_conc.n_comp(n_subst_);
     data_.bc_conc.n_comp(n_subst_);
@@ -136,10 +137,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     data_.sources_conc.n_comp(n_subst_);
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-    data_.mark_input_times(target_mark_type);
-
     data_.set_limit_side(LimitSide::right);
-    data_.set_time(*time_);
+    //data_.set_time(*time_);
 
 
     sub_problem = 0;
@@ -148,8 +147,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
     transport_matrix_time = -1.0; // or -infty
-    set_initial_condition();
-
     is_convection_matrix_scaled = false;
     need_time_rescaling=true;
 
@@ -170,11 +167,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 	output_stream_->mark_output_times(*time_);
 
-
-    // write initial condition
-    output_vector_gather();
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream_);
 }
 
 
@@ -254,6 +246,8 @@ ConvectionTransport::~ConvectionTransport()
     xfree(sources_sigma);
     xfree(cumulative_corr);
     
+    delete output_stream_;
+
     /*
     for (ph = 0; ph < MAX_PHASES; ph++) {
       if ((sub_problem & ph) == ph) {
@@ -292,11 +286,11 @@ void ConvectionTransport::set_flow_field_vector(const MH_DofHandler &dh){
 	create_transport_matrix_mpi();
 };
 */
-
-void ConvectionTransport::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {
-    data_.cross_section = cross_section;
+/*
+void ConvectionTransport::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) {
+    data_.cross_section.copy_from(cross_section);
 }
-
+*/
 
 
 
@@ -457,7 +451,7 @@ void ConvectionTransport::set_boundary_conditions()
         elm = mesh_->element(el_4_loc[loc_el]);
         if (elm->boundary_idx_ != NULL) {
             unsigned int new_i = row_4_el[elm.index()];
-            double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
+            double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
             double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
 
             FOR_ELEMENT_SIDES(elm,si) {
@@ -581,7 +575,23 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 }
 
 
-void ConvectionTransport::compute_one_step() {
+void ConvectionTransport::zero_time_step()
+{
+	ASSERT_EQUAL(time_->tlevel(), 0);
+
+	data_.mark_input_times(target_mark_type);
+	data_.set_time(*time_);
+
+    set_initial_condition();
+
+
+    // write initial condition
+	output_data();
+}
+
+
+
+void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
@@ -837,7 +847,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         elm = mesh_->element(el_4_loc[loc_el]);
         new_i = row_4_el[elm.index()];
 
-        double csection = data_.cross_section->value(elm->centre(), elm->element_accessor());
+        double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
         double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
 
         FOR_ELEMENT_SIDES(elm,si) {
@@ -895,7 +905,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 if (flux < 0.0) {
                         aii -= (-flux) / (elm->measure() * csection * por_m);                           // diagonal drain
                         aij = (-flux) / (el2->measure() *
-                                        data_.cross_section->value(el2->centre(), el2->element_accessor()) *
+                                        data_.cross_section.value(el2->centre(), el2->element_accessor()) *
                                         data_.porosity.value(el2->centre(), el2->element_accessor()));
                 } else aij=0;
                 MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
@@ -1192,7 +1202,7 @@ void ConvectionTransport::transport_until_time(double time_interval) {
 	    	time += time_step;
 	     //   SET_TIMER_SUBFRAMES("TRANSPORT",t);  // should be in destructor as soon as we have class iteration counter
 		START_TIMER("transport_step");
-	    	compute_one_step();
+	    	update_solution();
 		END_TIMER("transport_step");
 
 		     /*/ Calling linear reactions and Semchem together
@@ -1348,7 +1358,7 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
         	if (!el_ds->is_local(index)) continue;
         	ElementAccessor<3> ele_acc = elem->element_accessor();
         	double por_m = data_.porosity.value(elem->centre(), ele_acc);
-        	double csection = data_.cross_section->value(elem->centre(), ele_acc);
+        	double csection = data_.cross_section.value(elem->centre(), ele_acc);
         	int loc_index = index - el_ds->begin();
 			//double sum_sol_phases = 0;
 
@@ -1369,23 +1379,19 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 
 void ConvectionTransport::output_data() {
 
+	cout << time_->marks() << endl;
+	time_->view("output_data");
     if (time_->is_current( time_->marks().type_output() )) {
-
+    	DBGMSG("output\n");
         output_vector_gather();
 
-        int rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    	// Register fresh output data
-		//Input::Record output_rec = this->in_rec_->val<Input::Record>("output");
-		//OutputTime::register_data<3, FieldValue<3>::Scalar>(output_rec, OutputTime::ELEM_DATA, &data_.conc_mobile);
 		data_.output_fields.set_time(*time_);
 		data_.output_fields.output(output_stream_);
+		output_stream_->write_time_frame();
 
-        if (mass_balance_)
-        	mass_balance_->output(time_->t());
+        if (mass_balance_) 	mass_balance_->output(time_->t());
 
         //for synchronization when measuring time by Profiler
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
     }
 }

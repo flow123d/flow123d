@@ -198,13 +198,14 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
 {
     using namespace Input;
-
     START_TIMER("Darcy constructor");
+
+    this->eq_data_ = &data_;
 
     //connecting data fields with mesh
     START_TIMER("data init");
-    data.set_mesh(mesh_in);
-    data.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    data_.set_mesh(mesh_in);
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
 
 
 
@@ -239,9 +240,9 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     if (make_tg) {
     	// steady time governor
     	time_ = new TimeGovernor();
-    	data.mark_input_times(this->mark_type());
-    	data.set_limit_side(LimitSide::right);
-    	data.set_time(*time_);
+    	data_.mark_input_times(this->mark_type());
+    	data_.set_limit_side(LimitSide::right);
+    	data_.set_time(*time_);
 
     	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     	create_linear_system();
@@ -428,8 +429,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ele = mesh_->element(el_4_loc[i_loc]);
         el_row = row_4_el[el_4_loc[i_loc]];
         unsigned int nsides = ele->n_sides();
-        if (fill_matrix) fe_values.update(ele, data.anisotropy, data.cross_section, data.conductivity);
-        double cross_section = data.cross_section.value(ele->centre(), ele->element_accessor());
+        if (fill_matrix) fe_values.update(ele, data_.anisotropy, data_.cross_section, data_.conductivity);
+        double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
 
         for (unsigned int i = 0; i < nsides; i++) {
             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
@@ -444,25 +445,25 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
-                EqData::BC_Type type = (EqData::BC_Type)data.bc_type.value(b_ele.centre(), b_ele);
+                EqData::BC_Type type = (EqData::BC_Type)data_.bc_type.value(b_ele.centre(), b_ele);
                 //DBGMSG("BCD id: %d sidx: %d type: %d\n", ele->id(), i, type);
                 if ( type == EqData::none) {
                     // homogeneous neumann
                 } else if ( type == EqData::dirichlet ) {
                     c_val = 0.0;
-                    double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
                     loc_side_rhs[i] -= bc_pressure;
                     ls->rhs_set_value(edge_row, -bc_pressure);
                     ls->mat_set_value(edge_row, edge_row, -1.0);
 
                 } else if ( type == EqData::neumann) {
-                    double bc_flux = data.bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
                     //DBGMSG("neumann edge_row, ele_index,el_idx: %d \t %d \t %d\n", edge_row, ele->index(), ele->side(i)->el_idx());
 
                 } else if ( type == EqData::robin) {
-                    double bc_pressure = data.bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = data.bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
 
@@ -503,8 +504,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
         // set sources
         ls->rhs_set_value(el_row, -1.0 * ele->measure() *
-                          data.cross_section.value(ele->centre(), ele->element_accessor()) * 
-                          data.water_source_density.value(ele->centre(), ele->element_accessor()) );
+                          data_.cross_section.value(ele->centre(), ele->element_accessor()) * 
+                          data_.water_source_density.value(ele->centre(), ele->element_accessor()) );
         
         
         // D block: non-compatible conections and diagonal: element-element
@@ -538,12 +539,12 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             	break;
             }
 
-            double value = data.sigma.value( ele->centre(), ele->element_accessor()) *
-            		2*data.conductivity.value( ele->centre(), ele->element_accessor()) *
-            		arma::dot(data.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                    data.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                    data.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+            double value = data_.sigma.value( ele->centre(), ele->element_accessor()) *
+            		2*data_.conductivity.value( ele->centre(), ele->element_accessor()) *
+            		arma::dot(data_.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    data_.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                     ngh->side()->measure();
 
 
@@ -647,12 +648,12 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		if (bcd) {
 			dirichlet.resize(ele->n_sides());
 			ElementAccessor<3> b_ele = bcd->element_accessor();
-			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data.bc_type.value(b_ele.centre(), b_ele);
+			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
 			if (type == DarcyFlowMH::EqData::dirichlet) {
 				//DBGMSG("Dirichlet: %d\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
-				double bc_pressure = darcy_.data.bc_pressure.value(b_ele.centre(), b_ele);
+				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
 				dirichlet[i_side] = bc_pressure;
 			}
 		}
@@ -693,7 +694,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		master_ = intersections_[ml_it_->front()].master_iter();
 		delta_0 = master_->measure();
 
-		double master_sigma=darcy_.data.sigma.value( master_->centre(), master_->element_accessor());
+		double master_sigma=darcy_.data_.sigma.value( master_->centre(), master_->element_accessor());
 
 		// rows
 		for(i = 0; i <= ml_it_->size(); ++i) {
@@ -730,12 +731,12 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 			if (bcd) {
 				ElementAccessor<3> b_ele = bcd->element_accessor();
-				DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data.bc_type.value(b_ele.centre(), b_ele);
+				DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
 				if (type == DarcyFlowMH::EqData::dirichlet) {
 					//DBGMSG("Dirichlet: %d\n", ele->index());
 					dofs[shift + i_side] = -dofs[shift + i_side];
-					double bc_pressure = darcy_.data.bc_pressure.value(b_ele.centre(), b_ele);
+					double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
 					dirichlet[shift + i_side] = bc_pressure;
 				}
 			}
@@ -767,7 +768,7 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 
        	add_sides(master, 0, dofs, dirichlet);
        	add_sides(slave, 2, dofs, dirichlet);
-		double master_sigma=darcy_.data.sigma.value( master->centre(), master->element_accessor());
+		double master_sigma=darcy_.data_.sigma.value( master->centre(), master->element_accessor());
 
 /*
  * Local coordinates on 1D
@@ -980,9 +981,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 void DarcyFlowMH_Steady::assembly_linear_system() {
 
-	data.set_time(*time_);
+	data_.set_time(*time_);
 	DBGMSG("Assembly linear system\n");
-	if (data.changed()) {
+	if (data_.changed()) {
 		DBGMSG("  Data changed\n");
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
@@ -1096,9 +1097,9 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // version for rho scaling
         // trace computation
         arma::vec3 centre = el->centre();
-        double conduct = data.conductivity.value( centre , el->element_accessor() );
-        double cs = data.cross_section.value( centre, el->element_accessor() );
-        arma::mat33 aniso = data.anisotropy.value( centre, el->element_accessor() );
+        double conduct = data_.conductivity.value( centre , el->element_accessor() );
+        double cs = data_.cross_section.value( centre, el->element_accessor() );
+        arma::mat33 aniso = data_.anisotropy.value( centre, el->element_accessor() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1211,6 +1212,8 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 		VecDestroy(&sol_vec);
 		xfree(solution);
 	}
+
+	delete output_object;
 
 	//VecScatterDestroy(&par_to_all);
 
@@ -1646,9 +1649,9 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     : DarcyFlowMH_Steady(mesh_in, in_rec, false)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-	data.mark_input_times(this->mark_type());
-	data.set_limit_side(LimitSide::right);
-	data.set_time(*time_);
+	data_.mark_input_times(this->mark_type());
+	data_.set_limit_side(LimitSide::right);
+	data_.set_time(*time_);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
@@ -1689,7 +1692,7 @@ void DarcyFlowMH_Unsteady::read_init_condition()
 		int i_loc_row = i_loc_el + side_ds->lsize();
 
 		// set initial condition
-		local_sol[i_loc_row] = data.init_pressure.value(ele->centre(),ele->element_accessor());
+		local_sol[i_loc_row] = data_.init_pressure.value(ele->centre(),ele->element_accessor());
 	}
 
 	solution_changed_for_scatter=true;
@@ -1713,7 +1716,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
         int i_loc_row = i_loc_el + side_ds->lsize();
 
         // set new diagonal
-        local_diagonal[i_loc_row]= - data.storativity.value(ele->centre(), ele->element_accessor()) * 
+        local_diagonal[i_loc_row]= - data_.storativity.value(ele->centre(), ele->element_accessor()) * 
                                   ele->measure() / time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
@@ -1750,11 +1753,11 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
     : DarcyFlowMH_Steady(mesh_in, in_rec,false)
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    data.mark_input_times(this->mark_type());
+    data_.mark_input_times(this->mark_type());
 
 
-    data.set_limit_side(LimitSide::right);
-	data.set_time(*time_);
+    data_.set_limit_side(LimitSide::right);
+	data_.set_time(*time_);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
@@ -1783,7 +1786,7 @@ void DarcyFlowLMH_Unsteady::read_init_condition()
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 	 ele = mesh_->element(el_4_loc[i_loc_el]);
 
-	 init_value = data.init_pressure.value(ele->centre(), ele->element_accessor());
+	 init_value = data_.init_pressure.value(ele->centre(), ele->element_accessor());
 
 	 FOR_ELEMENT_SIDES(ele,i) {
 		 int edge_row = row_4_edge[ele->side(i)->edge_idx()];
@@ -1815,14 +1818,14 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 		ele = mesh_->element(el_4_loc[i_loc_el]);
 
-		init_value = data.init_pressure.value(ele->centre(), ele->element_accessor());
+		init_value = data_.init_pressure.value(ele->centre(), ele->element_accessor());
 
 		FOR_ELEMENT_SIDES(ele,i) {
 			int edge_row = row_4_edge[ele->side(i)->edge_idx()];
 			// set new diagonal
 			VecSetValue(new_diagonal,edge_row, - ele->measure() *
-					  data.storativity.value(ele->centre(), ele->element_accessor()) *
-					  data.cross_section.value(ele->centre(), ele->element_accessor()) /
+					  data_.storativity.value(ele->centre(), ele->element_accessor()) *
+					  data_.cross_section.value(ele->centre(), ele->element_accessor()) /
 					  time_->dt() / ele->n_sides(),ADD_VALUES);
 		}
 	}
@@ -1879,8 +1882,8 @@ void DarcyFlowLMH_Unsteady::postprocess() {
           ele = edg->side(i)->element();
           side_row = side_row_4_id[ mh_dh.side_dof( edg->side(i) ) ];
           time_coef = - ele->measure() *
-              data.cross_section.value(ele->centre(), ele->element_accessor()) *
-              data.storativity.value(ele->centre(), ele->element_accessor()) /
+              data_.cross_section.value(ele->centre(), ele->element_accessor()) *
+              data_.storativity.value(ele->centre(), ele->element_accessor()) /
               time_->dt() / ele->n_sides();
             VecSetValue(schur0->get_solution(), side_row, time_coef * (new_pressure - old_pressure), ADD_VALUES);
         }
@@ -1904,8 +1907,8 @@ void DarcyFlowLMH_Unsteady::postprocess() {
       FOR_ELEMENT_SIDES(ele,i) {
           side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
           values[i] = -1.0 * ele->measure() *
-            data.cross_section.value(ele->centre(), ele->element_accessor()) *
-            data.water_source_density.value(ele->centre(), ele->element_accessor()) /
+            data_.cross_section.value(ele->centre(), ele->element_accessor()) *
+            data_.water_source_density.value(ele->centre(), ele->element_accessor()) /
             ele->n_sides();
       }
       VecSetValues(schur0->get_solution(), ele->n_sides(), side_rows, values, ADD_VALUES);

@@ -92,7 +92,7 @@ public:
     /**
      * \brief This method write all registered data to output streams
      */
-    static void write_all_data(void);
+    //static void write_all_data(void);
 
 
 
@@ -141,6 +141,10 @@ public:
     void register_data(const DiscreteSpace ref_type,
             Field<spacedim, Value> &field);
 
+    /**
+     * Write all data registered as a new time frame.
+     */
+    void write_time_frame();
 
     /**
      * \brief Registers names of output fields that can be written using this stream.

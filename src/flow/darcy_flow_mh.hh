@@ -203,10 +203,6 @@ public:
        return mh_dh;
     }
     
-    //returns reference to equation data
-    virtual EqData &get_data() = 0;
-    
-    
     virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
 
     virtual void set_concentration_vector(Vec &vc){};
@@ -284,10 +280,6 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector);
     void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
-    //returns reference to equation data
-    virtual DarcyFlowMH::EqData &get_data()
-    {return data;}
-
     /// postprocess velocity field (add sources)
     virtual void postprocess();
     virtual void output_data() override;
@@ -374,8 +366,9 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
         
-  EqData data;
+  EqData data_;
 
+  friend class DarcyFlowMHOutput;
   friend class P0_CouplingAssembler;
   friend class P1_CouplingAssembler;
 };
@@ -531,10 +524,6 @@ public:
     
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
-
-    //returns reference to equation data
-    //virtual DarcyFlowMH::EqData &get_data()
-    //{return data;}
     
     static Input::Type::Record input_type;
 protected:

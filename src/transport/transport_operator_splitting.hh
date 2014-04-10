@@ -46,7 +46,7 @@ public:
 
 
 
-    virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
+    //virtual void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) = 0;
 
     virtual unsigned int n_substances() = 0;
 
@@ -88,7 +88,7 @@ public:
 		Field<3, FieldValue<3>::Scalar> porosity;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
 
 		/// Concentration sources - density of substance source, only positive part is used.
 		Field<3, FieldValue<3>::Vector> sources_density;
@@ -190,7 +190,7 @@ public:
 
     inline virtual void output_data() {};
 
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {};
+    void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) {};
 
     TimeIntegrationScheme time_scheme() { return none; }
 
@@ -233,7 +233,9 @@ public:
 
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
-    virtual void update_solution();
+
+    void zero_time_step() override;
+    void update_solution() override;
     //virtual void compute_one_step();
     //virtual void compute_until();
     virtual void get_parallel_solution_vector(Vec &vc);
@@ -249,7 +251,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+    //void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section);
 
     TimeIntegrationScheme time_scheme() { return none; }
 

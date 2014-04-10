@@ -78,6 +78,8 @@ TransportBase::TransportEqData::TransportEqData()
 {
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
+	ADD_FIELD(cross_section, "");
+	cross_section.just_copy();
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
@@ -88,8 +90,8 @@ TransportBase::TransportEqData::TransportEqData()
 
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : AdvectionProcessBase(mesh, in_rec ),
-  mh_dh(NULL),
-  mass_balance_(NULL)
+  mh_dh(nullptr),
+  mass_balance_(nullptr)
 {
 }
 
@@ -119,6 +121,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
 	convection = new ConvectionTransport(*mesh_, in_rec);
+	this->eq_data_ = &(convection->data());
 
 	//output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type() );
@@ -190,17 +193,16 @@ void TransportOperatorSplitting::output_data(){
 }
 
 
+void TransportOperatorSplitting::zero_time_step()
+{
+	convection->zero_time_step();
+}
+
+
 
 void TransportOperatorSplitting::update_solution() {
 
-	static bool first_time_call = true;
 
-	if (first_time_call)
-	{
-		if (convection->mass_balance() != NULL)
-			convection->mass_balance()->output(convection->time().t());
-		first_time_call = false;
-	}
 
     time_->next_time();
     time_->view("TOS");    //show time governor
@@ -218,7 +220,7 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-	    convection->compute_one_step();
+	    convection->update_solution();
             if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
 	    if (convection->mass_balance() != NULL)
@@ -245,31 +247,23 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 
 
 void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
-	convection->compute_one_step();
+	convection->update_solution();
 };
 
 
 
 void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
-	convection->compute_one_step();
+	convection->update_solution();
 };
 
 
-
-void TransportOperatorSplitting::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
+/*
+void TransportOperatorSplitting::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
 {
     convection->set_cross_section_field(cross_section);
 
-    /*if (Semchem_reactions != NULL) {
-        Semchem_reactions->set_cross_section(cross_section);
-        Semchem_reactions->set_sorption_fields(&convection->get_data()->porosity, &convection->get_data()->por_imm, &convection->get_data()->phi);
-    }
-  if (sorptions != NULL)
-  {
-	  sorptions->set_porosity(&(convection->get_data()->porosity),&(convection->get_data()->por_imm));
-  }*/
-}
-
+ }
+*/
 
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)

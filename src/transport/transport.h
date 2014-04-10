@@ -126,9 +126,13 @@ public:
 	virtual ~ConvectionTransport();
 
 	/**
+	 * Initialize solution at zero time.
+	 */
+    void zero_time_step() override;
+	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void compute_one_step();
+	void update_solution() override;
 
 	/**
 	 * Use new flow field vector for construction of convection matrix.
@@ -142,7 +146,7 @@ public:
 	 *
 	 * TODO: Make this and previous part of Transport interface in TransportBase.
 	 */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+	//oid set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section);
 
 
     /**
