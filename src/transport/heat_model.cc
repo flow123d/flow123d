@@ -61,6 +61,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
 	ADD_FIELD(heat_dispersivity, "Heat dispersivity", "0.0" );
 
+	*this += cross_section.name("cross_section").just_copy();
 	output_fields += output_field.name("temperature").units("M/L^3");
 }
 
