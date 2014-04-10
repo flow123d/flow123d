@@ -1,5 +1,5 @@
 # ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: inf
+# Time of computed water balance: 0
 
 
 # Boundary water balance:

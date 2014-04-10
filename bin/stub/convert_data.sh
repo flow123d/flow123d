@@ -47,7 +47,7 @@ function convert_file {
   
   ########################################################################
   # substitute inf time -> 0 time for steady ref data
-  perl -i.orig -0pe 's/inf /0 /g' $TMP
+  perl -i.orig -0pe 's/inf([ \n])/0\1/g' $TMP
   
   mv tmp $FILE
   rm tmp.orig
