@@ -166,7 +166,9 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 	else
 		K.zeros();
 
-	K = ((vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
+	// Note that the velocity vector is in fact the Darcian flux,
+	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
+	K = (vnorm*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
 }
 
 
@@ -214,13 +216,22 @@ void ConcentrationTransportModel::compute_dirichlet_bc(const std::vector<arma::v
 
 void ConcentrationTransportModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_conc,
+			std::vector<arma::vec> &sources_value,
 			std::vector<arma::vec> &sources_density,
 			std::vector<arma::vec> &sources_sigma)
 {
-	data().sources_conc.value_list(point_list, ele_acc, sources_conc);
+	const unsigned int qsize = point_list.size();
+	vector<double> csection(qsize);
+	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().sources_conc.value_list(point_list, ele_acc, sources_value);
 	data().sources_density.value_list(point_list, ele_acc, sources_density);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+
+	for (unsigned int k=0; k<qsize; k++)
+	{
+		sources_density[k] *= csection[k];
+		sources_sigma[k] *= csection[k];
+	}
 }
 
 
@@ -228,7 +239,13 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 			const ElementAccessor<3> &ele_acc,
 			std::vector<arma::vec> &sources_sigma)
 {
+	const unsigned int qsize = point_list.size();
+	vector<double> csection(qsize);
+	data().cross_section->value_list(point_list, ele_acc, csection);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+
+	for (unsigned int k=0; k<qsize; k++)
+		sources_sigma[k] *= csection[k];
 }
 
 
