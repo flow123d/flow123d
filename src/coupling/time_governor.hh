@@ -389,14 +389,11 @@ public:
         {return time_level_;}
 
     /**
-     * Prints out TimeGovernor status -- time level, end time, actual time and step.
+     * Prints output of TimeGovernor.
      * @param name is the name of time governor that you want to show up in output (just for your convenience)
+     *
      */
-    void view(const char *name="") const
-    {
-        xprintf(MsgLog, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f type: %x\n",
-                name, time_level_, end_time_, time_, time_step_, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval_, eq_mark_type_);
-    }
+    void view(const char *name="") const;
 
     /// Infinity time used for steady case.
     static const double inf_time;

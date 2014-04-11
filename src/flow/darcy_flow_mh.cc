@@ -269,7 +269,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
     if (! time_->is_steady()) time_->next_time();
     
-    time_->view("DARCY"); //time governor information output
+
 
     assembly_linear_system();
     int convergedReason = schur0->solve();
@@ -314,6 +314,7 @@ void DarcyFlowMH_Steady::postprocess()
 
 
 void DarcyFlowMH_Steady::output_data() {
+    time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 }
 

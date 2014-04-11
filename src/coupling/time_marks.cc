@@ -120,8 +120,6 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
         for (double t = time; t <= end_time*1.001; t += dt) {
         	auto mark = TimeMark(t, type);
             add(mark);
-            //DBGMSG("Adding mark:\n");
-            cout << mark;
         }
    // }
 }

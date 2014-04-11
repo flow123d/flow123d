@@ -163,9 +163,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
         }
 
     }
-
-
-	darcy_flow->time().view("Darcy output");
 }
 
 
@@ -218,7 +215,6 @@ void DarcyFlowMHOutput::output()
       make_node_scalar_param();
 
       water_balance();
-      MPI_Barrier(MPI_COMM_WORLD);
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 

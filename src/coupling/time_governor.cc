@@ -383,3 +383,18 @@ void TimeGovernor::next_time()
     //if (time_level_ == 7) time_ = end_time_;
 }
 
+
+
+void TimeGovernor::view(const char *name) const
+{
+    //xprintf(Msg, "\nTG[%s]: level: %d end_time: %f time: %f step: %f upper: %f lower: %f end_fixed_time: %f type: %x\n",
+    //        name, time_level_, end_time_, time_, time_step_, upper_constraint_, lower_constraint_, end_of_fixed_dt_interval_, eq_mark_type_);
+
+    xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
+            name, time_level_, time_, time_step_, lower_constraint_, upper_constraint_ );
+#ifdef DEBUG_MESSAGES
+    xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
+#else
+    xprintf(Msg,"\n");
+#endif
+}
