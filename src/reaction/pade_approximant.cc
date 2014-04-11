@@ -44,11 +44,9 @@ Record Pade_approximant::input_type
 using namespace std;
 
 
-Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
-      : Linear_reaction(init_mesh, in_rec, names)
+Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec)
+      : Linear_reaction(init_mesh, in_rec)
 {
-	init_from_input(in_rec);
-	//DBGMSG("Pade_approximant constructor is running.\n");
 }
 
 Pade_approximant::~Pade_approximant()
@@ -70,17 +68,22 @@ Pade_approximant::~Pade_approximant()
 	DBGMSG("Pade approximant destructor is running.\n");
 }
 
+void Pade_approximant::zero_time_step()
+{
+    init_from_input(input_record_);
+}
+
 double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
 {
 	unsigned int rows, cols;
 
 	cout << "We are going to allocate reaction matrix" << endl;
-	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(n_all_substances_ * sizeof(double*));//allocation section
-	for(rows = 0; rows < n_all_substances_; rows++){
-		reaction_matrix[rows] = (double *)xmalloc(n_all_substances_ * sizeof(double));
+	if (reaction_matrix == NULL) reaction_matrix = (double **)xmalloc(names_.size() * sizeof(double*));//allocation section
+	for(rows = 0; rows < names_.size(); rows++){
+		reaction_matrix[rows] = (double *)xmalloc(names_.size() * sizeof(double));
 	}
-	for(rows = 0; rows < n_all_substances_;rows++){
-	 for(cols = 0; cols < n_all_substances_; cols++){
+	for(rows = 0; rows < names_.size();rows++){
+	 for(cols = 0; cols < names_.size(); cols++){
 		 reaction_matrix[rows][cols] = 0.0;
 	 }
 	}
@@ -110,7 +113,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 
 	//create the matrix Reaction_matrix
 	MatCreate(PETSC_COMM_SELF, &Reaction_matrix);
-	MatSetSizes(Reaction_matrix, PETSC_DECIDE, PETSC_DECIDE, n_all_substances_, n_all_substances_); //should be probably multiplied by 2 (which is the value of m)
+	MatSetSizes(Reaction_matrix, PETSC_DECIDE, PETSC_DECIDE, names_.size(), names_.size()); //should be probably multiplied by 2 (which is the value of m)
 	MatSetType(Reaction_matrix, MATAIJ);
 	MatSetUp(Reaction_matrix);
 
@@ -176,25 +179,25 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	PCSetUp(Precond);
 
 	VecCreate(PETSC_COMM_WORLD, &tmp1);
-	VecSetSizes(tmp1, PETSC_DECIDE, n_all_substances_);
+	VecSetSizes(tmp1, PETSC_DECIDE, names_.size());
 	VecSetFromOptions(tmp1);
 	VecDuplicate(tmp1, &tmp2);
 
 
     //create the matrix pade
     MatCreate(PETSC_COMM_SELF, &Pade_approximant);
-    MatSetSizes(Pade_approximant, PETSC_DECIDE, PETSC_DECIDE, n_all_substances_, n_all_substances_); //should be probably multiplied by 2 (which is the value of m)
+    MatSetSizes(Pade_approximant, PETSC_DECIDE, PETSC_DECIDE, names_.size(), names_.size()); //should be probably multiplied by 2 (which is the value of m)
     MatSetType(Pade_approximant, MATAIJ);
     MatSetUp(Pade_approximant);
 
-	for(rows = 0; rows < (int)( n_all_substances_ ); rows++){
+	for(rows = 0; rows < (int)( names_.size() ); rows++){
 		MatGetColumnVector(Nominator, tmp1, rows);
 		//VecView(tmp1, PETSC_VIEWER_STDOUT_SELF);
 		PCApply(Precond, tmp1, tmp2);
 		PCView(Precond, PETSC_VIEWER_STDOUT_WORLD);
 		//VecView(tmp2, PETSC_VIEWER_STDOUT_SELF);
 		VecGetArray(tmp2, &Array_hlp);
-		for(cols = 0; cols < (int)( n_all_substances_ ); cols++)
+		for(cols = 0; cols < (int)( names_.size() ); cols++)
 		{
 			MatSetValue(Pade_approximant, rows, cols, Array_hlp[cols], ADD_VALUES);
 		}
@@ -203,18 +206,18 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
-	for(rows = 0; rows < (int)( n_all_substances_ ); rows++)
+	for(rows = 0; rows < (int)( names_.size() ); rows++)
 		{
-			for(cols = 0; cols < (int)( n_all_substances_ ); cols++)
+			for(cols = 0; cols < (int)( names_.size() ); cols++)
 			{
 				reaction_matrix[rows][cols] = 0.0;
 			}
 		}
-	for(rows = 0; rows < (int)( n_all_substances_ ); rows++)
+	for(rows = 0; rows < (int)( names_.size() ); rows++)
 	{
-		for(cols = 0; cols < (int)( n_all_substances_ ); cols++)
+		for(cols = 0; cols < (int)( names_.size() ); cols++)
 		{
-			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[n_all_substances_*rows + cols]);
+			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[names_.size()*rows + cols]);
 			reaction_matrix[rows][cols] = (double) (Hlp_mat[0]);
 		}
 	}
@@ -238,7 +241,7 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 
 	//create Identity matrix
 	MatCreate(PETSC_COMM_SELF, &Identity);
-	MatSetSizes(Identity, PETSC_DECIDE, PETSC_DECIDE, n_all_substances_, n_all_substances_); //should be probably multiplied by 2 (which is the value of m)
+	MatSetSizes(Identity, PETSC_DECIDE, PETSC_DECIDE, names_.size(), names_.size()); //should be probably multiplied by 2 (which is the value of m)
 	MatSetType(Identity, MATAIJ);
 	MatSetUp(Identity);
 
@@ -264,13 +267,13 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 
     if (reaction_matrix == NULL) return concentrations;
 
-	for(cols = 0; cols < n_all_substances_; cols++){
+	for(cols = 0; cols < names_.size(); cols++){
 		prev_conc[cols] = concentrations[cols][loc_el];
 		concentrations[cols][loc_el] = 0.0;
 	}
 
-	for(cols = 0; cols < n_all_substances_; cols++){
-		for(rows = 0; rows < n_all_substances_; rows++){
+	for(cols = 0; cols < names_.size(); cols++){
+		for(rows = 0; rows < names_.size(); rows++){
             concentrations[cols][loc_el] += reaction_matrix[cols][rows]*prev_conc[rows];
         }
     }

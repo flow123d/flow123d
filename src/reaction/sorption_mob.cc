@@ -23,14 +23,12 @@ IT::Record SorptionMob::input_type
 
 
 
-SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-	: SorptionDual(init_mesh, in_rec, names)
+SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
+	: SorptionDual(init_mesh, in_rec)
 {
   //DBGMSG("SorptionMob constructor.\n");
 	data_ = new EqData("conc_solid");
 	output_selection = make_output_selection("conc_solid", "SorptionMobile_Output");
-
-	init_from_input(in_rec);
 }
 
 SorptionMob::~SorptionMob(void)

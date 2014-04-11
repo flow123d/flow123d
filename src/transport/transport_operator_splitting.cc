@@ -131,22 +131,18 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
         if ( reactions_it ) {
             if (reactions_it->type() == Linear_reaction::input_type ) {
-                reaction =  new Linear_reaction(init_mesh, *reactions_it, subst_names_);
-                
+                reaction =  new Linear_reaction(init_mesh, *reactions_it);
             } else
             if (reactions_it->type() == Pade_approximant::input_type) {
-                reaction = new Pade_approximant(init_mesh, *reactions_it, subst_names_ );
-              
+                reaction = new Pade_approximant(init_mesh, *reactions_it);
             } else
             if (reactions_it->type() == SorptionSimple::input_type ) {
-                reaction =  new SorptionSimple(init_mesh, *reactions_it, subst_names_);
-                
+                reaction =  new SorptionSimple(init_mesh, *reactions_it);
                 static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else
             if (reactions_it->type() == DualPorosity::input_type ) {
-                reaction =  new DualPorosity(init_mesh, *reactions_it, subst_names_);
-                
+                reaction =  new DualPorosity(init_mesh, *reactions_it);
                 static_cast<DualPorosity *> (reaction) -> set_porosity(convection->get_data()->porosity);
                 
             } else
@@ -161,9 +157,12 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             //temporary, until new mass balance considering reaction term is created
             xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
                           "Only the mass flux over boundaries is correct.\n");
-            reaction->set_time_governor(*(convection->time_));
-            reaction->set_concentration_matrix(convection->get_concentration_matrix()[MOBILE], el_distribution, el_4_loc, convection->get_row_4_el());
-            reaction->initialize(convection->output_stream());
+
+            reaction->names(subst_names_)
+                    .concentration_matrix(convection->get_concentration_matrix()[MOBILE],
+                            el_distribution, el_4_loc, convection->get_row_4_el())
+                    .output_stream(*(convection->output_stream()))
+                    .set_time_governor(*(convection->time_));
             
         } else {
             reaction = nullptr;
@@ -189,13 +188,18 @@ void TransportOperatorSplitting::output_data(){
         START_TIMER("TOS-output data");
 
         convection->output_data();
-        if(reaction) reaction->output_data();
+        if(reaction) reaction->output_data(); // do not perform write_time_frame
+        convection->output_stream_->write_time_frame();
+
 }
 
 
 void TransportOperatorSplitting::zero_time_step()
 {
-	convection->zero_time_step();
+    convection->zero_time_step();
+    if(reaction) reaction->zero_time_step();
+    convection->output_stream_->write_time_frame();
+
 }
 
 

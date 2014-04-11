@@ -37,63 +37,63 @@ public:
    *  Constructor with parameter for initialization of a new declared class member
    *  TODO: parameter description
    */
-  ReactionTerm(Mesh &init_mesh, Input::Record in_rec, const std::vector<string> &names);
+  ReactionTerm(Mesh &init_mesh, Input::Record in_rec);
   /**
    * Destructor.
    */
   ~ReactionTerm(void);
   
-  /** Some of the ascendants need to do some job after setting time, mesh, distribution etc.
-   * This method can be overriden just for that purpose.
-   */
-  virtual void initialize(OutputTime *stream) {};
-  
+
+
+  ///@name Setters
+  //@{
+  ReactionTerm &names(const std::vector<string> &names)
+  {names_=names; return *this;}
+
+  ReactionTerm &output_stream(OutputTime &ostream)
+  {output_stream_=&ostream; return *this;}
+
   /**
-   * For simulation of chemical reaction in one element only. 
-   * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
+   * Sets the concentration matrix for the mobile zone, all substances and on all elements.
    */
-  virtual double **compute_reaction(double **concentrations, int loc_el);
-  /**
-   * Virtual method that is reimplemented in ascendants. Computes new solution of the reaction model.
-   */
-  virtual void update_solution(void) = 0;
-  
+  ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, int *el_4_loc, int *row_4_el)
+  {
+    concentration_matrix_ = concentration;
+    distribution = conc_distr;
+    this->el_4_loc = el_4_loc;
+    this->row_4_el = row_4_el;
+    return *this;
+  }
+  //@}
+
   /** Output method.
    * Some reaction models have their own data to output (sorption, dual porosity) - this is where it must be solved.
    * On the other hand, some do not have (linear reaction, pade approximant) - that is why it is not pure virtual.
    */
   virtual void output_data(void){};
-  /**
-   * Communicate parallel concentration vectors into sequential output vector.
-   */
-  virtual void output_vector_gather(void){};
-  
-  ///@name Setters
-  //@{
-  /**
-   * Sets the concentration matrix for the mobile zone, all substances and on all elements.
-   */
-  virtual void set_concentration_matrix(double **ConcentrationMatrix, Distribution *conc_distr, int *el_4_loc, int *row_4_el);
-  
-  /// Set mesh used by the model.
-  inline void set_mesh(Mesh &mesh) 
-    { mesh_ = &mesh; };
-  
-  /**
-   * TODO: implement in ascendants
-   */
-  virtual void set_concentration_vector(Vec &vec){};
-  
-  //@}
-  
+
+
   /// @name Inherited and not used.
+  /// TODO: make default empty implementation in EquationBase
   //@{
+
   virtual void choose_next_time(void);
   virtual void get_parallel_solution_vector(Vec &vc);
   virtual void get_solution_vector(double* &vector, unsigned int &size);
   //@}
                 
 protected:
+  /**
+   * Communicate parallel concentration vectors into sequential output vector.
+   */
+  virtual void output_vector_gather(void){};
+
+  /**
+   * For simulation of chemical reaction in one element only.
+   * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
+   */
+  virtual double **compute_reaction(double **concentrations, int loc_el);
+
   /** Initialize data from record in input file.
    * It is intended to use in ascendants.
    */
@@ -102,7 +102,7 @@ protected:
   /**
    * Pointer to two-dimensional array[species][elements] containing mobile concentrations.
    */
-  double **concentration_matrix;
+  double **concentration_matrix_;
   
   /**
    * Indices of elements belonging to local dofs.
@@ -122,11 +122,12 @@ protected:
    * Names belonging to substances. Should be same as in the transport.
    */
   vector<string> names_;
-  
-  unsigned int n_all_substances_;   //< number of all substances in the transport model
-  std::map<unsigned int, unsigned int> substance_id;    //< mapping from local indexing of substances to global
 
-  OutputTime *output_stream;
+  /// Mapping from local indexing of substances to global
+  std::map<unsigned int, unsigned int> substance_id;
+
+  /// Pointer to a transport output stream.
+  OutputTime *output_stream_;
 
 };
 

@@ -19,14 +19,12 @@ IT::Record SorptionSimple::input_type
 
 
 
-SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)//
-  : SorptionBase(init_mesh, in_rec, names)
+SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)//
+  : SorptionBase(init_mesh, in_rec)
 {
   //DBGMSG("SorptionSimple constructor.\n");
 	data_ = new EqData("conc_solid");
 	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
-
-	init_from_input(in_rec);
 }
 
 SorptionSimple::~SorptionSimple(void)

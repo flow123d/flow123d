@@ -22,7 +22,7 @@ public:
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
-  SorptionSimple(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); 
+  SorptionSimple(Mesh &init_mesh, Input::Record in_rec);
   /**
    * Destructor.
    */

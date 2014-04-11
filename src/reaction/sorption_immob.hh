@@ -21,7 +21,7 @@ public:
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
-  SorptionImmob(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
+  SorptionImmob(Mesh &init_mesh, Input::Record in_rec);
   /**
    * Destructor.
    */

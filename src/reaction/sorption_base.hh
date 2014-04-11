@@ -60,11 +60,14 @@ public:
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
-  SorptionBase(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  SorptionBase(Mesh &init_mesh, Input::Record in_rec);
   /**
    * Destructor.
    */
   virtual ~SorptionBase(void);
+
+  void zero_time_step() override;
+
   /**
    * Prepared to compute sorption inside all of considered elements. 
    * It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
@@ -92,14 +95,13 @@ public:
    */
   void make_tables(void);
   
-  void initialize(OutputTime *stream) override;
   void output_data(void) override;
   void output_vector_gather(void) override;
   
   /**
    * Meaningless inherited method.
    */
-  void set_concentration_vector(Vec &vec) override;
+  //void set_concentration_vector(Vec &vec) override;
     
 protected:
   /**

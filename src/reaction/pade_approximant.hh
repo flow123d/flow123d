@@ -36,12 +36,14 @@ class Pade_approximant: public Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Pade_approximant(Mesh &mesh, Input::Record in_rec, vector<string> &names);
+		Pade_approximant(Mesh &mesh, Input::Record in_rec);
 
 		/**
 		*	Destructor.
 		*/
 		~Pade_approximant(void);
+
+		void zero_time_step() override;
 
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.

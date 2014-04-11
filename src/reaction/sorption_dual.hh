@@ -23,7 +23,7 @@ public:
      *  Constructor with parameter for initialization of a new declared class member
      *  TODO: parameter description
      */
-    SorptionDual(Mesh &init_mesh, Input::Record in_rec, vector<string> &names); //, pScalar mob_porosity, pScalar immob_porosity);
+    SorptionDual(Mesh &init_mesh, Input::Record in_rec);
     /**
      * Destructor.
      */

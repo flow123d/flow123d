@@ -50,12 +50,14 @@ public:
     static Input::Type::Selection output_selection;
   };
 
-  DualPorosity(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+  DualPorosity(Mesh &init_mesh, Input::Record in_rec);
   /**
    * Destructor.
    */
   ~DualPorosity(void);
-                
+
+  void make_reactions();
+
   /**
    * Updates the solution according to the dual porosity model.
    */
@@ -65,7 +67,7 @@ public:
    * Initialization routines after all necessary members have been set.
    * It also sets and initializes possible following reaction models.
    */
-  void initialize(OutputTime *stream) override;
+  void zero_time_step() override;
   
   void output_data(void) override;
   void output_vector_gather(void) override;
