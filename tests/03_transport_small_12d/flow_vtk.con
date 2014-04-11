@@ -50,15 +50,14 @@
         }
       ],
       
-      
       reaction_term = {
         TYPE = "DualPorosity",
         
         input_fields= [
           {
             r_set="ALL",
-            diffusion_rate_immobile= [0.01,0.01],
-            porosity_immobile= 0.25,
+            diffusion_rate_immobile = [0.01,0.01],
+            porosity_immobile = 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
         ],
@@ -67,52 +66,38 @@
         
         reaction_mobile = {
           TYPE = "SorptionMobile",
-          solvent_density= 1.0,
+          solvent_density = 1.0,
           substances = ["age", "U235"],
-          molar_mass= [1.0, 1.0],
+          molar_mass = [1.0, 1.0],
           solubility = [1.0, 1.0],
           
           input_fields= [
             {
               r_set="ALL",
               rock_density = 1.0,
-              sorption_type=  ["linear", "freundlich"],
-              isotherm_mult= 0.02, 
-              isotherm_other= [0, 0.5]
+              sorption_type =  ["linear", "freundlich"],
+              isotherm_mult = 0.02, 
+              isotherm_other = [0, 0.5]
             }
           ],
           output_fields = []
         },
         reaction_immobile = {
           TYPE = "SorptionImmobile",
-          solvent_density= 1.0,
+          solvent_density = 1.0,
           substances = ["age", "U235"],
-          molar_mass= [1.0, 1.0],
+          molar_mass = [1.0, 1.0],
           solubility = [1.0, 1.0],
-          
-          input_fields= [
-            {
-              r_set="ALL",
-              rock_density = 1.0,
-              sorption_type=  ["linear", "freundlich"],
-              isotherm_mult= 0.02, 
-              isotherm_other= [0, 0.5]
-            }
-          ],
+          input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
         }
       },
       
       output_stream = { REF = "/system/output_streams/1" },
 
-      time = {
-        end_time = 1.0
-      },
-      mass_balance = {
-        cumulative = true
-      }
+      time = { end_time = 1.0 },
+      mass_balance = { cumulative = true }
     } // secondary_equation
-    
   }, // problem
  
   system = {
