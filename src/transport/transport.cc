@@ -1379,10 +1379,7 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 
 void ConvectionTransport::output_data() {
 
-	cout << time_->marks() << endl;
-	time_->view("output_data");
     if (time_->is_current( time_->marks().type_output() )) {
-    	DBGMSG("output\n");
         output_vector_gather();
 
 		data_.output_fields.set_time(*time_);

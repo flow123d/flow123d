@@ -235,7 +235,7 @@ void TransportOperatorSplitting::update_solution() {
 
 
     
-    xprintf( Msg, "    CONVECTION: steps: %d\n",steps);
+    xprintf( MsgLog, "    CONVECTION: steps: %d\n",steps);
 }
 
 
