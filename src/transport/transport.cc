@@ -1387,7 +1387,7 @@ void ConvectionTransport::output_data() {
 
 		data_.output_fields.set_time(*time_);
 		data_.output_fields.output(output_stream_);
-		output_stream_->write_time_frame();
+
 
         if (mass_balance_) 	mass_balance_->output(time_->t());
 
