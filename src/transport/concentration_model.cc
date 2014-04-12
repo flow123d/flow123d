@@ -217,7 +217,7 @@ void ConcentrationTransportModel::compute_source_coefficients(const std::vector<
 {
 	const unsigned int qsize = point_list.size();
 	vector<double> csection(qsize);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().sources_conc.value_list(point_list, ele_acc, sources_value);
 	data().sources_density.value_list(point_list, ele_acc, sources_density);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
@@ -236,7 +236,7 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 {
 	const unsigned int qsize = point_list.size();
 	vector<double> csection(qsize);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
 
 	for (unsigned int k=0; k<qsize; k++)

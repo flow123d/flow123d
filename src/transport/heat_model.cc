@@ -245,7 +245,7 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().solid_density.value_list(point_list, ele_acc, s_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
@@ -282,7 +282,7 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().solid_density.value_list(point_list, ele_acc, s_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
