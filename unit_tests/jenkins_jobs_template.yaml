@@ -301,6 +301,7 @@
           wipe-workspace: yes
           branches:
             - master
+            - 1.8.0_master
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H H(0-6) * * *"
@@ -309,7 +310,8 @@
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
-      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file;rm -rf external_projects build-*;cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
+      # escaping quotas and double braces are due to YAML format
+      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
