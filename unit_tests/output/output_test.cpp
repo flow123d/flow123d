@@ -145,6 +145,7 @@ TEST_F( OutputTest, test_create_output_stream ) {
 /**
  *
  */
+/*
 TEST( OutputTest, find_outputstream_by_name ) {
 	Input::JSONToStorage reader_1(output_stream1, OutputTime::input_type);
     auto os_1 = OutputTime::output_stream(reader_1.get_root_interface<Input::Record>());
@@ -164,6 +165,7 @@ TEST( OutputTest, find_outputstream_by_name ) {
     EXPECT_EQ(os_3, OutputTime::output_stream_by_name("flow_output_stream3"));
     EXPECT_EQ(nullptr, OutputTime::output_stream_by_name("flow_output_stream4"));
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Test compute_field_data for all possible template parameters.

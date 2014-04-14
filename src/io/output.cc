@@ -45,9 +45,6 @@ using namespace Input::Type;
 
 Record OutputTime::input_type
     = Record("OutputStream", "Parameters of output.")
-    // The name
-    .declare_key("name", String(), Default::obligatory(),
-            "The name of this stream. Used to reference the output stream.")
     // The stream
     .declare_key("file", FileName::output(), Default::obligatory(),
             "File path to the connected output file.")
@@ -63,16 +60,6 @@ Record OutputTime::input_type
 	.declare_key("add_input_times", Bool(), Default("false"),
 			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
 
-#if 0
-    // The format
-    .declare_key("format", OutputFormat::input_type, Default::optional(),
-            "Format of output stream and possible parameters.");
-
-AbstractRecord OutputFormat::input_type
-    = AbstractRecord("OutputFormat",
-            "Format of output stream and possible parameters.");
-    // Complete declaration of  abstract record OutputFormat
-#endif
 
 AbstractRecord OutputTime::input_format_type
     = AbstractRecord("OutputTime",
@@ -144,6 +131,7 @@ void OutputTime::destroy_all(void)
     OutputTime::output_streams.clear();
 }
 
+/*
 OutputTime *OutputTime::output_stream_by_name(string name)
 {
 	OutputTime *output_time;
@@ -160,8 +148,9 @@ OutputTime *OutputTime::output_stream_by_name(string name)
 
     return NULL;
 }
+*/
 
-
+/*
 OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, const string key_name)
 {
 	// TODO: do not try to find empty string and raise exception
@@ -177,7 +166,7 @@ OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, c
 	// Try to find existing output stream
 	return output_stream_by_name(*stream_name_iter);
 }
-
+*/
 
 OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 {
@@ -201,7 +190,7 @@ OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
     return output_time;
 }
 
-
+/*
 OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 {
     // testing rank of process
@@ -209,10 +198,10 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
-    /* It's possible now to do output to the file only in the first process */
+    // It's possible now to do output to the file only in the first process
     //if(rank != 0) {
     //    xprintf(MsgLog, "NOT MASTER PROC\n");
-    //    /* TODO: do something, when support for Parallel VTK is added */
+    //    // TODO: do something, when support for Parallel VTK is added
     //    return NULL;
     //}
 
@@ -237,7 +226,7 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
     ASSERT(output_time == OutputTime::output_stream_by_name(name),"Wrong stream push back.\n");
     return output_time;
 }
-
+*/
 
 void OutputTime::add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel)
 {
@@ -275,7 +264,7 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     string *base_filename;
 
     string fname = in_rec.val<FilePath>("file");
-    string stream_name = in_rec.val<string>("name");
+    //string stream_name = in_rec.val<string>("name");
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
@@ -307,7 +296,7 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     base_filename = new string(fname);
 
-    this->name = stream_name;
+   //this->name = stream_name;
     this->current_step = 0;
 
     set_base_file(base_file);
@@ -384,13 +373,13 @@ void OutputTime::write_time_frame()
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
-			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n", name.c_str(), time);
+			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n", _base_filename->c_str(), time);
 			write_data();
 			// Remember the last time of writing to output stream
 			write_time = time;
 			current_step++;
 		} else {
-			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n", name.c_str(), time);
+			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n", _base_filename->c_str(), time);
 		}
     }
     clear_data();

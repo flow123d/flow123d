@@ -64,12 +64,12 @@ public:
     /**
      * \brief Try to find output stream from a key in record.
      */
-    static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+    //static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
 
     /**
      * \brief Try to find output stream with this name
      */
-    static OutputTime *output_stream_by_name(string name);
+    //static OutputTime *output_stream_by_name(string name);
 
     /**
      * \brief Does OutputStream with same name and filename exist?
@@ -81,7 +81,7 @@ public:
      *
      * \param[in] in_rec  The reference at the input record
      */
-    static OutputTime *output_stream(const Input::Record &in_rec);
+    //static OutputTime *output_stream(const Input::Record &in_rec);
 
     /**
      * \brief This method delete all object instances of class OutputTime stored
@@ -262,7 +262,7 @@ protected:
 
     OutFileFormat   file_format;
     //OutputFormat    *output_format;
-    string          name;              ///< Name of output stream
+    //string          name;              ///< Name of output stream
 
     vector<OutputDataBase*>    node_data;
     vector<OutputDataBase*>    corner_data;

@@ -253,7 +253,7 @@ void OutputTime::register_data(const DiscreteSpace type,
 	else
 	{
 		// We are trying to output field that is not recognized by the stream.
-		DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
+		//DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
 	}
 }
 
@@ -271,7 +271,7 @@ void OutputTime::register_data(const DiscreteSpace ref_type,
 	else
 	{
 		// We are trying to output field that is not recognized by the stream.
-		DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
+		//DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
 	}
 }
 

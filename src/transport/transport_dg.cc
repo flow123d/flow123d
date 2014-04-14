@@ -306,7 +306,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
 	data_.output_fields.set_limit_side(LimitSide::left);
-	output_stream = OutputTime::output_stream(output_rec);
+	output_stream = OutputTime::create_output_stream(output_rec);
 	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
     // set time marks for writing the output
