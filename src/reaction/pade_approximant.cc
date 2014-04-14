@@ -70,7 +70,16 @@ Pade_approximant::~Pade_approximant()
 
 void Pade_approximant::zero_time_step()
 {
-    init_from_input(input_record_);
+
+    Linear_reaction::zero_time_step();
+
+    // init from input
+    nom_pol_deg = input_record_.val<int>("nom_pol_deg");
+    den_pol_deg = input_record_.val<int>("den_pol_deg");
+    if((nom_pol_deg + den_pol_deg) < 0){
+        xprintf(UsrErr, "You did not specify Pade approximant required polynomial degrees.");
+        //TODO: This occasion should cause an error.
+    }
 }
 
 double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
@@ -281,16 +290,6 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 	return concentrations;
 }
 
-
-void Pade_approximant::init_from_input(Input::Record in_rec)
-{
-	nom_pol_deg = in_rec.val<int>("nom_pol_deg");
-	den_pol_deg = in_rec.val<int>("den_pol_deg");
-	if((nom_pol_deg + den_pol_deg) < 0){
-		xprintf(UsrErr, "You did not specify Pade approximant required polynomial degrees.");
-		//TODO: This occasion should cause an error.
-	}
-}
 
 
 int Pade_approximant::factorial(int k)
