@@ -98,7 +98,12 @@ public:
     		if (!field->is_just_copy()) {
     			string units = field->units();
     			string description =  field->desc();
-    			if (units != "") description+= " [" +field->units() + "]";
+
+    			// Adding units is not so simple.
+    			// 1) It must be correct for Latex.
+    			// 2) It should be consistent with rest of documentation.
+    			// 3) Should be specified for all fields.
+    			//if (units != "") description+= " [" +field->units() + "]";
     			rec.declare_key(field->name(), field->get_input_type(), description);
     		}
 
@@ -119,7 +124,7 @@ public:
     	{
     		if (!field->is_bc())
     		{
-    			string desc = "Output of field " + field->name()  + " [" + field->units() + "]";
+    			string desc = "Output of field " + field->name(); //  + " [" + field->units() + "]";
     			if (field->desc().length() > 0)
     				desc += " (" + field->desc() + ").";
     			else

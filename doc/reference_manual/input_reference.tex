@@ -58,10 +58,10 @@ neighborings of elements of different dimension.}
 \KeyItem{same\_dimension\_neghboring}{Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).}
 \end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::TimeGovernor}{TimeGovernor}}{}{}{}{Setting of the simulation time. (can be specific to one eqaution)}
+\begin{RecordType}{\HTRaised{IT::TimeGovernor}{TimeGovernor}}{}{\hyperlink{TimeGovernor::init-dt}{init\_dt}}{}{Setting of the simulation time. (can be specific to one equation)}
 \KeyItem{\hyperB{TimeGovernor::start-time}{start\_time}}{Double }{0.0}{}{Start time of the simulation.}
-\KeyItem{\hyperB{TimeGovernor::end-time}{end\_time}}{Double }{\textless\it obligatory\textgreater}{}{End time of the simulation.}
-\KeyItem{\hyperB{TimeGovernor::init-dt}{init\_dt}}{Double [0, ]}{\textless\it optional\textgreater}{}{Initial guess for the time step. The time step is fixed if hard time step limits are not set.}
+\KeyItem{\hyperB{TimeGovernor::end-time}{end\_time}}{Double }{\textless\it optional\textgreater}{}{End time of the simulation.}
+\KeyItem{\hyperB{TimeGovernor::init-dt}{init\_dt}}{Double [0, ]}{0.0}{}{Initial guess for the time step.\\The time step is fixed if the hard time step limits are not set.\\If set to 0.0, the time step is determined in fully autonomous way if the equation supports it.}
 \KeyItem{\hyperB{TimeGovernor::min-dt}{min\_dt}}{Double [0, ]}{"Machine precision or 'init\_dt' if specified"}{}{Hard lower limit for the time step.}
 \KeyItem{\hyperB{TimeGovernor::max-dt}{max\_dt}}{Double [0, ]}{"Whole time of the simulation or 'init\_dt' if specified"}{}{Hard upper limit for the time step.}
 \end{RecordType}
@@ -108,8 +108,7 @@ neighborings of elements of different dimension.}
 \KeyItem{\hyperB{DarcyMHOutput::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hyperB{DarcyMHOutput::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::DarcyMHOutput-Selection}{DarcyMHOutput\_Selection}}{\textless\it obligatory\textgreater}{}{List of fields to write to output file.}
 \KeyItem{\hyperB{DarcyMHOutput::balance-output}{balance\_output}}{output file name}{water\_balance.txt}{}{Output file for water balance table.}
-\KeyItem{\hyperB{DarcyMHOutput::subdomains}{subdomains}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for subdomain indices (partitioning of mesh elements) used by DarcyFlow module.}
-\KeyItem{\hyperB{DarcyMHOutput::compute-errors}{compute\_errors}}{Bool}{false}{}{SPECIAL PURPOSE. Computing errors pro noncompatible coupling.}
+\KeyItem{\hyperB{DarcyMHOutput::compute-errors}{compute\_errors}}{Bool}{false}{}{SPECIAL PURPOSE. Computing errors pro non-compatible coupling.}
 \KeyItem{\hyperB{DarcyMHOutput::raw-flow-output}{raw\_flow\_output}}{output file name}{\textless\it optional\textgreater}{}{Output file with raw data form MH module.}
 \end{RecordType}
 
@@ -117,8 +116,9 @@ neighborings of elements of different dimension.}
 \KeyItem{\hyperB{OutputStream::name}{name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The name of this stream. Used to reference the output stream.}
 \KeyItem{\hyperB{OutputStream::file}{file}}{output file name}{\textless\it obligatory\textgreater}{}{File path to the connected output file.}
 \KeyItem{\hyperB{OutputStream::format}{format}}{abstract type: \hyperlink{IT::OutputTime}{OutputTime}}{\textless\it optional\textgreater}{}{Format of output stream and possible parameters.}
-\KeyItem{\hyperB{OutputStream::time-step}{time\_step}}{Double [0, ]}{0.0}{}{Interval between outputs.}
-\KeyItem{\hyperB{OutputStream::time-list}{time\_list}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Explicit array of output times (can be combined with 'time\_step'.}
+\KeyItem{\hyperB{OutputStream::time-step}{time\_step}}{Double [0, ]}{\textless\it optional\textgreater}{}{Time interval between outputs.\\Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\\The start time and the end time are always added. }
+\KeyItem{\hyperB{OutputStream::time-list}{time\_list}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Explicit array of output time points (can be combined with 'time\_step'.}
+\KeyItem{\hyperB{OutputStream::add-input-times}{add\_input\_times}}{Bool}{false}{}{Add all input time points of the equation, mentioned in the 'input\_fields' list, also as the output points.}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::OutputTime}{OutputTime}}{}{}{Format of output stream and possible parameters.}
@@ -148,21 +148,21 @@ neighborings of elements of different dimension.}
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::DarcyMHOutput-Selection}{DarcyMHOutput\_Selection}}{Selection of fields available for output.}
-\KeyItem{anisotropy}{Output of field anisotropy [] (Anisotropy of the conductivity tensor.).}
-\KeyItem{cross\_section}{Output of field cross\_section [] (Complement dimension parameter (cross section for 1D, thickness for 2D).).}
-\KeyItem{conductivity}{Output of field conductivity [] (Isotropic conductivity scalar.).}
-\KeyItem{sigma}{Output of field sigma [] (Transition coefficient between dimensions.).}
-\KeyItem{water\_source\_density}{Output of field water\_source\_density [] (Water source density.).}
-\KeyItem{init\_pressure}{Output of field init\_pressure [] (Initial condition as pressure).}
-\KeyItem{storativity}{Output of field storativity [] (Storativity.).}
-\KeyItem{pressure\_p0}{Output of field pressure\_p0 [L].}
-\KeyItem{pressure\_p1}{Output of field pressure\_p1 [L].}
-\KeyItem{piezo\_head\_p0}{Output of field piezo\_head\_p0 [L].}
-\KeyItem{velocity\_p0}{Output of field velocity\_p0 [L/T].}
-\KeyItem{subdomain}{Output of field subdomain [0].}
-\KeyItem{pressure\_diff}{Output of field pressure\_diff [0].}
-\KeyItem{velocity\_diff}{Output of field velocity\_diff [0].}
-\KeyItem{div\_diff}{Output of field div\_diff [0].}
+\KeyItem{anisotropy}{Output of field anisotropy (Anisotropy of the conductivity tensor.).}
+\KeyItem{cross\_section}{Output of field cross\_section (Complement dimension parameter (cross section for 1D, thickness for 2D).).}
+\KeyItem{conductivity}{Output of field conductivity (Isotropic conductivity scalar.).}
+\KeyItem{sigma}{Output of field sigma (Transition coefficient between dimensions.).}
+\KeyItem{water\_source\_density}{Output of field water\_source\_density (Water source density.).}
+\KeyItem{init\_pressure}{Output of field init\_pressure (Initial condition as pressure).}
+\KeyItem{storativity}{Output of field storativity (Storativity.).}
+\KeyItem{pressure\_p0}{Output of field pressure\_p0.}
+\KeyItem{pressure\_p1}{Output of field pressure\_p1.}
+\KeyItem{piezo\_head\_p0}{Output of field piezo\_head\_p0.}
+\KeyItem{velocity\_p0}{Output of field velocity\_p0.}
+\KeyItem{subdomain}{Output of field subdomain.}
+\KeyItem{pressure\_diff}{Output of field pressure\_diff.}
+\KeyItem{velocity\_diff}{Output of field velocity\_diff.}
+\KeyItem{div\_diff}{Output of field div\_diff.}
 \end{SelectionType}
 
 \begin{SelectionType}{\HTRaised{IT::MH-MortarMethod}{MH\_MortarMethod}}{}
@@ -272,7 +272,6 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
 \Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
 \Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
 \Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
 \Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
 \end{AbstractType}
@@ -293,13 +292,6 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
 \KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
 \KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
@@ -419,7 +411,6 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{\AddDoc{Field:R3 $\rightarrow$ Enum[n]}}{Abstract record for all time-space functions.}
 \Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
 \Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
 \Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
 \Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
 \end{AbstractType}
@@ -439,13 +430,6 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field given by runtime interpreted formula.}
 \KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum[n]\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
 \KeyItem{\hyperB{FieldFormula::value}{value}}{Array [1, ] of String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum[n]\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field constant in space.}
@@ -498,13 +482,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::Sorption-Output}{Sorption\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density [] (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type [] (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult [] (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other [] (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid [M/L^3] (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity [1].}
-\KeyItem{conc\_solid}{Output of field conc\_solid [M/L^3].}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_solid}{Output of field conc\_solid.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::DualPorosity}{DualPorosity}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Dual porosity model in transport problems.
@@ -525,16 +509,17 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{DualPorosity-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
 \KeyItem{\hyperB{DualPorosity-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
 \KeyItem{\hyperB{DualPorosity-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DualPorosity-Data::diffusion-rate-immobile}{diffusion\_rate\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. Vector, one value for every substance.}
+\KeyItem{\hyperB{DualPorosity-Data::diffusion-rate-immobile}{diffusion\_rate\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.}
 \KeyItem{\hyperB{DualPorosity-Data::porosity-immobile}{porosity\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Porosity of the immobile zone.}
-\KeyItem{\hyperB{DualPorosity-Data::init-conc-immobile}{init\_conc\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentration of substances in the immobile zone. Vector, one value for every substance.}
+\KeyItem{\hyperB{DualPorosity-Data::init-conc-immobile}{init\_conc\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentration of substances in the immobile zone.}
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::DualPorosity-Output}{DualPorosity\_Output}}{}
-\KeyItem{diffusion\_rate\_immobile}{Output of field diffusion\_rate\_immobile [] (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. Vector, one value for every substance.).}
-\KeyItem{porosity\_immobile}{Output of field porosity\_immobile [0] (Porosity of the immobile zone.).}
-\KeyItem{init\_conc\_immobile}{Output of field init\_conc\_immobile [M/L^3] (Initial concentration of substances in the immobile zone. Vector, one value for every substance.).}
-\KeyItem{conc\_immobile}{Output of field conc\_immobile [M/L^3].}
+\KeyItem{diffusion\_rate\_immobile}{Output of field diffusion\_rate\_immobile (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.).}
+\KeyItem{porosity\_immobile}{Output of field porosity\_immobile (Porosity of the immobile zone.).}
+\KeyItem{init\_conc\_immobile}{Output of field init\_conc\_immobile (Initial concentration of substances in the immobile zone.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_immobile}{Output of field conc\_immobile.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Definition of information about a single isotope.}
@@ -557,13 +542,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density [] (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type [] (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult [] (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other [] (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid [M/L^3] (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity [1].}
-\KeyItem{conc\_solid}{Output of field conc\_solid [M/L^3].}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_solid}{Output of field conc\_solid.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::SorptionImmobile}{SorptionImmobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
@@ -580,13 +565,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density [] (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type [] (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult [] (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other [] (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid [M/L^3] (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity [1].}
-\KeyItem{conc\_immobile\_solid}{Output of field conc\_immobile\_solid [M/L^3].}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_immobile\_solid}{Output of field conc\_immobile\_solid.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-Data}{TransportOperatorSplitting\_Data}}{}{}{}{Record to set fields of the equation.
@@ -607,12 +592,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::ConvectionTransport-Output}{ConvectionTransport\_Output}}{}
-\KeyItem{porosity}{Output of field porosity [] (Mobile porosity).}
-\KeyItem{sources\_density}{Output of field sources\_density [] (Density of concentration sources.).}
-\KeyItem{sources\_sigma}{Output of field sources\_sigma [] (Concentration flux.).}
-\KeyItem{sources\_conc}{Output of field sources\_conc [] (Concentration sources threshold.).}
-\KeyItem{init\_conc}{Output of field init\_conc [] (Initial concentrations.).}
-\KeyItem{conc}{Output of field conc [M/L^3].}
+\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
+\KeyItem{conc}{Output of field conc.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::SoluteTransport-DG}{SoluteTransport\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for solute transport.}
@@ -659,17 +645,18 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{SelectionType}
 
 \begin{SelectionType}{\HTRaised{IT::SoluteTransport-DG-Output}{SoluteTransport\_DG\_Output}}{Output record for DG solver for solute transport.}
-\KeyItem{conc}{Output of field conc [M/L^3].}
-\KeyItem{porosity}{Output of field porosity [] (Mobile porosity).}
-\KeyItem{sources\_density}{Output of field sources\_density [] (Density of concentration sources.).}
-\KeyItem{sources\_sigma}{Output of field sources\_sigma [] (Concentration flux.).}
-\KeyItem{sources\_conc}{Output of field sources\_conc [] (Concentration sources threshold.).}
-\KeyItem{init\_conc}{Output of field init\_conc [] (Initial concentrations.).}
-\KeyItem{disp\_l}{Output of field disp\_l [] (Longitudal dispersivity (for each substance).).}
-\KeyItem{disp\_t}{Output of field disp\_t [] (Transversal dispersivity (for each substance).).}
-\KeyItem{diff\_m}{Output of field diff\_m [] (Molecular diffusivity (for each substance).).}
-\KeyItem{fracture\_sigma}{Output of field fracture\_sigma [] (Coefficient of diffusive transfer through fractures (for each substance).).}
-\KeyItem{dg\_penalty}{Output of field dg\_penalty [] (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\KeyItem{conc}{Output of field conc.}
+\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
+\KeyItem{disp\_l}{Output of field disp\_l (Longitudal dispersivity (for each substance).).}
+\KeyItem{disp\_t}{Output of field disp\_t (Transversal dispersivity (for each substance).).}
+\KeyItem{diff\_m}{Output of field diff\_m (Molecular diffusivity (for each substance).).}
+\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::HeatTransfer-DG}{HeatTransfer\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for heat transfer.}
@@ -717,24 +704,25 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::HeatTransfer-DG-Output}{HeatTransfer\_DG\_Output}}{Selection for output fields of DG solver for heat transfer.}
-\KeyItem{temperature}{Output of field temperature [M/L^3].}
-\KeyItem{init\_temperature}{Output of field init\_temperature [] (Initial temperature.).}
-\KeyItem{porosity}{Output of field porosity [] (Porosity.).}
-\KeyItem{fluid\_density}{Output of field fluid\_density [] (Density of fluid.).}
-\KeyItem{fluid\_heat\_capacity}{Output of field fluid\_heat\_capacity [] (Heat capacity of fluid.).}
-\KeyItem{fluid\_heat\_conductivity}{Output of field fluid\_heat\_conductivity [] (Heat conductivity of fluid.).}
-\KeyItem{solid\_density}{Output of field solid\_density [] (Density of solid (rock).).}
-\KeyItem{solid\_heat\_capacity}{Output of field solid\_heat\_capacity [] (Heat capacity of solid (rock).).}
-\KeyItem{solid\_heat\_conductivity}{Output of field solid\_heat\_conductivity [] (Heat conductivity of solid (rock).).}
-\KeyItem{disp\_l}{Output of field disp\_l [] (Longitudal heat dispersivity in fluid.).}
-\KeyItem{disp\_t}{Output of field disp\_t [] (Transversal heat dispersivity in fluid.).}
-\KeyItem{fluid\_thermal\_source}{Output of field fluid\_thermal\_source [] (Thermal source density in fluid.).}
-\KeyItem{solid\_thermal\_source}{Output of field solid\_thermal\_source [] (Thermal source density in solid.).}
-\KeyItem{fluid\_heat\_exchange\_rate}{Output of field fluid\_heat\_exchange\_rate [] (Heat exchange rate in fluid.).}
-\KeyItem{solid\_heat\_exchange\_rate}{Output of field solid\_heat\_exchange\_rate [] (Heat exchange rate in solid.).}
-\KeyItem{fluid\_ref\_temperature}{Output of field fluid\_ref\_temperature [] (Reference temperature in fluid.).}
-\KeyItem{solid\_ref\_temperature}{Output of field solid\_ref\_temperature [] (Reference temperature in solid.).}
-\KeyItem{fracture\_sigma}{Output of field fracture\_sigma [] (Coefficient of diffusive transfer through fractures (for each substance).).}
-\KeyItem{dg\_penalty}{Output of field dg\_penalty [] (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\KeyItem{temperature}{Output of field temperature.}
+\KeyItem{init\_temperature}{Output of field init\_temperature (Initial temperature.).}
+\KeyItem{porosity}{Output of field porosity (Porosity.).}
+\KeyItem{fluid\_density}{Output of field fluid\_density (Density of fluid.).}
+\KeyItem{fluid\_heat\_capacity}{Output of field fluid\_heat\_capacity (Heat capacity of fluid.).}
+\KeyItem{fluid\_heat\_conductivity}{Output of field fluid\_heat\_conductivity (Heat conductivity of fluid.).}
+\KeyItem{solid\_density}{Output of field solid\_density (Density of solid (rock).).}
+\KeyItem{solid\_heat\_capacity}{Output of field solid\_heat\_capacity (Heat capacity of solid (rock).).}
+\KeyItem{solid\_heat\_conductivity}{Output of field solid\_heat\_conductivity (Heat conductivity of solid (rock).).}
+\KeyItem{disp\_l}{Output of field disp\_l (Longitudal heat dispersivity in fluid.).}
+\KeyItem{disp\_t}{Output of field disp\_t (Transversal heat dispersivity in fluid.).}
+\KeyItem{fluid\_thermal\_source}{Output of field fluid\_thermal\_source (Thermal source density in fluid.).}
+\KeyItem{solid\_thermal\_source}{Output of field solid\_thermal\_source (Thermal source density in solid.).}
+\KeyItem{fluid\_heat\_exchange\_rate}{Output of field fluid\_heat\_exchange\_rate (Heat exchange rate in fluid.).}
+\KeyItem{solid\_heat\_exchange\_rate}{Output of field solid\_heat\_exchange\_rate (Heat exchange rate in solid.).}
+\KeyItem{fluid\_ref\_temperature}{Output of field fluid\_ref\_temperature (Reference temperature in fluid.).}
+\KeyItem{solid\_ref\_temperature}{Output of field solid\_ref\_temperature (Reference temperature in solid.).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
 \end{SelectionType}
 
