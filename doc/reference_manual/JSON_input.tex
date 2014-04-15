@@ -252,28 +252,28 @@ Example:
 \begin{verbatim}
 input_fields = [   
     { // time=0.0  - default value
-        r_set="BULK"
+        r_set="BULK",
         conductivity=1   // setting the conductivity field on all regions
-    }
+    },
     {
-        region="2d_part"
+        region="2d_part",
         conductivity=2  // overwriting the previous value
-    }
-    {   time=1.0
-        region="2d_part"
+    },
+    {   time=1.0,
+        region="2d_part",
         conductivity={
             // from time=1.0 we switch to the linear function in time
-            TYPE=FieldFormula
+            TYPE=FieldFormula,
             value="2+t"      
         }    
-    }
-    {   time=2.0
-        region="2d_part"
+    },
+    {   time=2.0,
+        region="2d_part",
         conductivity={
             // from time=2.0 we switch to elementwise field, but only
             // on the region "2d_part"
-            TYPE=FieldElementwise
-            gmsh_file="./input/data.msh"
+            TYPE=FieldElementwise,
+            gmsh_file="./input/data.msh",
             field_name="conductivity"
         }
     }    

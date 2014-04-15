@@ -1,24 +1,26 @@
 List of all changes in user interface and major internal changes.
 
-2014-03-31  ver 1.8.0 (output-master, 32b16290f, 2013-03-27) from    ver 1.7.0 (05062a1ff, 2013-03-28)
 
-User interface:
+***
+
+#Flow123d version 1.8.0 
+(2014-03-31)
+
+### User interface:
 * every equation can output any input, computed, or post-processed field,
-  keys: 'output_stream', 'output_fields'
+  new keys: 'output_stream', 'output_fields'
 * input fields given in one list under key 'input_fields' instead of separated 'bulk_data' and 'bc_data' lists   
 * improved mass balance files (yet not correct with reaction term) 
 * output of discontinuous linear finite elements
-* enhancements in flow123d.sh script; changed syntax, support for Metacentrum clusters
-* support for BDDCML parallel solver for Darcy flow
+* enhancements in flow123d.sh script; changed syntax, support for MetaCentrum clusters
+* support for BDDCML parallel solver in Darcy flow model
 * relative references in the input file produce warning reporting used absolute path
 * input interface warnings for unknown keys in the input file
 * warning for usage of field default values
 * Flow123d tries to keep IDs of nodes and elements in output into GMSH format same as in the input mesh;
   but it is not guaranteed to future and/or for parallel case
  
-
-
-Physics:
+### Physics:
 * transition coefficients in coupling of different dimensions are computed from other parameters,
   'sigma' parameter is additional scaling coefficient with default value 1.0
 * concentration sources in Transport DG
@@ -31,7 +33,7 @@ Physics:
 * ConvectionTransport adapt its time step to match change times of  the input fields 
 
 
-Internals:
+### Internals:
 * transition to git, github
 * transition to ci2 test server; YAML description of tests
 * new output subsystem
