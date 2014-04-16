@@ -113,27 +113,42 @@ SorptionBase::~SorptionBase(void)
 void SorptionBase::initialize_substance_ids(const vector< string >& names, Input::Record in_rec)
 {
   Input::Array substances_array = in_rec.val<Input::Array>("substances");
-  unsigned int k, idx, i_spec = 0;
+  unsigned int k, global_idx, i_subst = 0;
+  bool found;
   
-  for(Input::Iterator<string> spec_iter = substances_array.begin<string>(); spec_iter != substances_array.end(); ++spec_iter, i_spec++)
+  for(Input::Iterator<string> spec_iter = substances_array.begin<string>(); spec_iter != substances_array.end(); ++spec_iter, i_subst++)
   {
-    //finding name in the global array of names
+    //finding the name of a substance in the global array of names
+    found = false;
     for(k = 0; k < names.size(); k++)
     {
       if (*spec_iter == names[k]) 
       {
-        idx = k;
+        global_idx = k;
+        found = true;
         break;
       }
     }
     
-    if ((idx < names.size()) && (idx >= 0)) 
+    if(!found)
+      xprintf(UsrErr,"Wrong name of %d-th substance - not found in global set of transported substances.\n", i_subst);
+    
+    //finding the global index of substance in the local array
+    found = false;
+    for(k = 0; k < substance_global_idx_.size(); k++)
     {
-      substance_id[i_spec] = idx;       //mapping - if not found, it creates new map
+      if(substance_global_idx_[k] == global_idx)
+      {
+        found = true;
+        break;
+      }
     }
-      else    xprintf(UsrErr,"Wrong name of %d-th reaction specie - not found in global set of transported substances.\n", i_spec);
-    }
-    n_substances_ = substance_id.size();
+    
+    if(!found)
+      substance_global_idx_.push_back(global_idx);
+
+  }  
+  n_substances_ = substance_global_idx_.size();
 }
 
 void SorptionBase::init_from_input(Input::Record in_rec)
@@ -198,7 +213,7 @@ void SorptionBase::zero_time_step()
   //     cout << s  << "  " << names_[s] << endl;
   //
   //   for(unsigned int s=0; s<n_substances_; s++)
-  //     cout << s << "  " << substance_id[s] << "  " << names_[substance_id[s]] << endl;
+  //     cout << s << "  " << substance_global_idx_[s] << "  " << names_[substance_global_idx_[s]] << endl;
 
     nr_of_regions = mesh_->region_db().bulk_size();
     nr_of_points = input_record_.val<int>("substeps");
@@ -251,7 +266,7 @@ void SorptionBase::zero_time_step()
 		//setting initial solid concentration for substances involved in adsorption
 		for (int sbi = 0; sbi < n_substances_; sbi++)
 		{
-			int subst_id = substance_id[sbi];
+			int subst_id = substance_global_idx_[sbi];
 			conc_solid[subst_id][loc_el] = value(sbi);
 		}
 	}
@@ -383,7 +398,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
     {
       for(i_subst = 0; i_subst < n_substances_; i_subst++)
       {
-        subst_id = substance_id[i_subst];
+        subst_id = substance_global_idx_[i_subst];
         //DBGMSG("on s_%d precomputed %d\n",subst_id, isotherms_vec[i_subst].is_precomputed());
       
         Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
@@ -396,7 +411,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
       
       for(i_subst = 0; i_subst < n_substances_; i_subst++)
       {
-        subst_id = substance_id[i_subst];
+        subst_id = substance_global_idx_[i_subst];
         Isotherm & isotherm = this->isotherms[reg_id_nr][i_subst];
         isotherm.compute((concentration_matrix_[subst_id][loc_el]), conc_solid[subst_id][loc_el]);
       }

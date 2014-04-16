@@ -100,7 +100,7 @@ protected:
   virtual void init_from_input(Input::Record in_rec) {};
 
   /**
-   * Pointer to two-dimensional array[species][elements] containing mobile concentrations.
+   * Pointer to two-dimensional array[species][elements] containing concentrations.
    */
   double **concentration_matrix_;
   
@@ -122,9 +122,6 @@ protected:
    * Names belonging to substances. Should be same as in the transport.
    */
   vector<string> names_;
-
-  /// Mapping from local indexing of substances to global
-  std::map<unsigned int, unsigned int> substance_id;
 
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;
