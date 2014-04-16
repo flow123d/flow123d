@@ -964,7 +964,6 @@ void DarcyFlowMH_Steady::create_linear_system() {
             schur0->start_allocation();
             assembly_steady_mh_matrix(); // preallocation
     	    VecZeroEntries(schur0->get_solution());
-    	    schur0->start_add_assembly(); // finish allocation
             END_TIMER("PETSC PREALLOCATION");
         }
 
@@ -988,9 +987,11 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 		DBGMSG("  Data changed\n");
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
+        if (typeid(*schur0) != typeid(LinSys_BDDC)) {
+            schur0->start_add_assembly(); // finish allocation and create matrix
+        }
 	    schur0->mat_zero_entries();
 	    schur0->rhs_zero_entries();
-	    //schur0->start_add_assembly(); // finish allocation and create matrix
 	    assembly_steady_mh_matrix(); // fill matrix
 	    schur0->finish_assembly();
 	    schur0->set_matrix_changed();
