@@ -600,7 +600,7 @@ if( PETSC_FOUND )
   add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
 
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
-  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h )
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h ) 
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
@@ -636,7 +636,16 @@ install(PROGRAMS   bin/tests/run_test.sh 	DESTINATION bin/tests)
 install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
 install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
 install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
-install(TARGETS    bin/flow123d 
+
+# install cygwin libraries
+if (CYGWIN)
+    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/cygwin_copy_dll.sh\"  WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    install(DIRECTORY build_tree/bin/            
+        DESTINATION bin/
+        PATTERN mpiexec EXCLUDE)
+endif()
+
+install(TARGETS    bin/flow123d  
 	RUNTIME DESTINATION bin/)
 install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
@@ -670,14 +679,14 @@ SET(CPACK_PACKAGE_VERSION_PATCH "0")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
-if (UNIX)
-    set(CPACK_GENERATOR "TGZ")
-    set(CPACK_SOURCE_GENERATOR "TGZ")
-elseif (CYGWIN)
+if (CYGWIN) 
     #set(CPACK_CYGWIN_BUILD_SCRIPT "") 
     #set(CPACK_CYGWIN_PATCH_FILE "")
     set(CPACK_GENERATOR "ZIP")
     set(CPACK_SOURCE_GENERATOR "ZIP")
+elseif (UNIX)
+    set(CPACK_GENERATOR "TGZ")
+    set(CPACK_SOURCE_GENERATOR "TGZ")
 endif()
 
 
