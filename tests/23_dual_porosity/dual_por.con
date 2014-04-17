@@ -10,12 +10,12 @@
       TYPE = "Steady_MH",
       
       input_fields= [
-        { region = "volume", 
-          conductivity = 1e-20
+        { r_set = "ALL", 
+          conductivity = 1e-15
         },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
-          bc_pressure = { TYPE="FieldFormula", value = "1"}
+          bc_pressure = 0
         }
       ],
        
@@ -37,11 +37,11 @@
  
       input_fields= [
         { r_set = "ALL",
-          init_conc = 1.0,
+          init_conc = [1.0, 1.0],
           porosity= 0.25 
         },
         { r_set = "BOUNDARY",
-          bc_conc = {TYPE="FieldFormula", value = "0"}
+          bc_conc = 0
         }
       ],
       
@@ -68,7 +68,7 @@
             init_conc_immobile = [0.0, 0.0]
           }
         ],
-        output_fields = []
+        output_fields = ["conc_immobile"]
       }
     } 
   }, 
