@@ -173,7 +173,10 @@ protected:
    */
   std::vector<std::vector<Isotherm> > isotherms;
   
-  unsigned int n_substances_;   //< number of substances that take part in the sorption model
+  unsigned int n_substances_;   //< number of substances that take part in the sorption mode
+  
+  /// Mapping from local indexing of substances to global.
+  std::vector<unsigned int> substance_global_idx_;
   
   /**
    * Array for storage infos about sorbed species concentrations.
