@@ -27,8 +27,8 @@ namespace la{
 
     namespace detail_{
 
-        template< typename NODE, typename MAPTYPE >
-        int getLocalNumber( NODE * np, MAPTYPE & map ) {
+        template< typename DOFHOLDER, typename MAPTYPE >
+        int getLocalNumber( DOFHOLDER * np, MAPTYPE & map ) {
 
             unsigned globalIndex = np -> giveId( );
 

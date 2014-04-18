@@ -76,6 +76,10 @@ public:
 
     void rhs_set_values( int nrow, int *rows, double *vals );
 
+    PetscErrorCode mat_zero_entries();
+
+    PetscErrorCode rhs_zero_entries();
+
     void finish_assembly( );
 
     void apply_constrains( double scalar = 1. );
