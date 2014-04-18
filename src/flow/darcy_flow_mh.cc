@@ -413,18 +413,17 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     //int  nsides;
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
     double local_vb[4]; // 2x2 matrix
-    double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
+
+    // to make space for second schur complement, max. 10 neighbour edges of one el.
+    double zeros[1000];
+    for(int i=0; i<1000; i++) zeros[i]=0.0;
+
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
     std::map<int,double> subdomain_diagonal_map;
     F_ENTRY;
 
-    //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
-    //DBGPRINT_INT("el_row_4_id",mesh->max_elm_id+1,el_row_4_id);
-    //DBGPRINT_INT("edge_row_4_id",mesh->max_edg_id+1,edge_row_4_id);
-    //DBGPRINT_INT("el_id_4_loc",el_ds->lsize(),el_id_4_loc);
 
-    SET_ARRAY_ZERO(zeros,1000);
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
 
         ele = mesh_->element(el_4_loc[i_loc]);
