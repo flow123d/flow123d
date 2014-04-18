@@ -138,6 +138,8 @@ set (sources_lib_coupling
    coupling/equation.cc
        flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
+    
+    fields/field_record_factory.cc
 )
 
 set(sources_lib_non_system

@@ -11,6 +11,7 @@
 
 #include "system/system.hh"
 #include "fields/field_base.hh"
+#include "fields/field_record_factory.hh"
 #include "mesh/point.hh"
 
 
@@ -67,6 +68,12 @@ public:
 private:
 
 };
+
+/*static Registrar field_constant_registrar("FieldConstant", [](void) -> Input::Type::Record * { return &FieldConstant< 3, FieldValue<0>::Scalar >::get_input_type(
+		*(new Input::Type::AbstractRecord("Field:"+FieldBase<3, FieldValue<0>::Scalar>::template_name(), "Abstract record for all time-space functions.")),
+		nullptr );
+		}
+);*/
 
 
 #endif /* FIELD_CONSTANT_HH_ */
