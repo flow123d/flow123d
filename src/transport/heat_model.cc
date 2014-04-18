@@ -47,7 +47,6 @@ using namespace Input::Type;
 
 
 
-
 HeatTransferModel::ModelEqData::ModelEqData()
 {
 	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
@@ -68,16 +67,27 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(solid_heat_exchange_rate, "Heat exchange rate in solid.", "0.0");
 	ADD_FIELD(fluid_ref_temperature, "Reference temperature in fluid.", "0.0");
 	ADD_FIELD(solid_ref_temperature, "Reference temperature in solid.", "0.0");
+
+	*this += cross_section.name("cross_section").just_copy();
+	output_fields += output_field.name("temperature").units("M/L^3");
 }
 
 
 IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record("HeatTransfer_" + implementation, description + " for heat transfer.")
+	static IT::Record input_type = IT::Record(ModelEqData::name() + "_" + implementation, description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::input_type);
 
 	return input_type;
 
+}
+
+
+IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+{
+	static IT::Selection input_type = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
+
+	return input_type;
 }
 
 
@@ -89,17 +99,17 @@ HeatTransferModel::HeatTransferModel() :
 void HeatTransferModel::init_data(unsigned int n_subst_)
 {}
 
-
-void HeatTransferModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
+/*
+void HeatTransferModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
 {
-	data().cross_section = cross_section;
-}
+	data().cross_section.copy_from(cross_section);
+}*/
 
 
 void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	names.clear();
-	names.push_back("temperature");
+	names.push_back("");
 }
 
 
@@ -110,7 +120,7 @@ bool HeatTransferModel::mass_matrix_changed()
 			data().fluid_heat_capacity.changed() ||
 			data().solid_density.changed() ||
 			data().solid_heat_capacity.changed() ||
-			data().cross_section->changed());
+			data().cross_section.changed());
 }
 
 
@@ -124,7 +134,7 @@ bool HeatTransferModel::stiffness_matrix_changed()
 			data().solid_heat_conductivity.changed() ||
 			data().disp_l.changed() ||
 			data().disp_t.changed() ||
-			data().cross_section->changed());
+			data().cross_section.changed());
 }
 
 
@@ -151,7 +161,7 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::
 			f_c(point_list.size()),
 			s_c(point_list.size());
 
-	data().cross_section->value_list(point_list, ele_acc, elem_csec);
+	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_c);
@@ -180,7 +190,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 	data().disp_l.value_list(point_list, ele_acc, disp_l);
 	data().disp_t.value_list(point_list, ele_acc, disp_t);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int k=0; k<qsize; k++) {
 		ad_coef[0][k] = velocity[k]*f_rho[k]*f_cap[k];
@@ -235,7 +245,7 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().solid_density.value_list(point_list, ele_acc, s_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);
@@ -272,7 +282,7 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().fluid_density.value_list(point_list, ele_acc, f_rho);
 	data().solid_density.value_list(point_list, ele_acc, s_rho);
 	data().fluid_heat_capacity.value_list(point_list, ele_acc, f_cap);

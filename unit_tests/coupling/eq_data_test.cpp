@@ -158,6 +158,7 @@ protected:
         BCField<3, FieldValue<3>::Vector > bc_conc;
     };
 
+    void output_data() override {}
 };
 
 IT::Selection SomeEquationBase::EqData::bc_type_selection =

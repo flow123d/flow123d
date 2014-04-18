@@ -52,8 +52,19 @@ public:
 		Field<3, FieldValue<3>::Vector> diff_m;
 
 
+		MultiField<3, FieldValue<3>::Scalar> output_field;
+
+        /// Fields indended for output, i.e. all input fields plus those representing solution.
+        FieldSet output_fields;
+
 		ModelEqData();
-		static string name() {return "TransportDG";}
+
+		static string name() { return "SoluteTransport"; }
+
+		static string default_output_field() { return "conc"; }
+
+		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
+
 	};
 
 protected:
@@ -79,7 +90,7 @@ public:
 
 	void init_data(unsigned int n_subst_) override;
 
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) override;
+	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) override;
 
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
 

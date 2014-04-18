@@ -160,7 +160,8 @@ void Record::make_copy_keys(Record &origin) {
 void Record::make_copy_keys_all() {
 	for(auto &ptr : data_->copy_from_ptr) {
 		ASSERT( ptr && TypeBase::was_constructed( ptr ), "Invalid pointer to source record for copy keys operation.\n");
-		make_copy_keys(*ptr);
+		Record tmp(*ptr);
+		make_copy_keys(tmp);
 		ptr = NULL;
 	}
 	data_->copy_from_ptr.clear();
@@ -182,9 +183,10 @@ Record &Record::derive_from(AbstractRecord &parent) {
 
 
 
-Record &Record::copy_keys(Record &other) {
+Record &Record::copy_keys(const Record &other) {
     if (TypeBase::was_constructed(&other)) {
-    	make_copy_keys(other);
+    	Record tmp(other);
+    	make_copy_keys(tmp);
     } else { //postponed
         data_->copy_from_ptr.push_back( &other );
     }
@@ -272,10 +274,10 @@ bool Record::finish()
     if (data_->auto_conversion_key_idx != -1 ) {
         data_->auto_conversion_key_idx=key_index(data_->auto_conversion_key);
 
-        // check that all other keys have default values
+        // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
-            if (! it->default_.has_value_at_declaration() && it->key_index != data_->auto_conversion_key_idx)
-                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
+            if (it->default_.is_obligatory() && it->key_index != data_->auto_conversion_key_idx)
+                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other obligatory key: '%s' has no default value.\n",
                         data_->auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
         }
     }

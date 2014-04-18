@@ -16,11 +16,10 @@
 #include "petscmat.h"
 #include "petscksp.h"
 
-//#include "reaction/linear_reaction.hh"
 
 class Mesh;
 class Distribution;
-class Reaction;
+class Linear_reaction;
 
 class Pade_approximant: public Linear_reaction
 {
@@ -37,38 +36,36 @@ class Pade_approximant: public Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Pade_approximant(Mesh &mesh, Input::Record in_rec, vector<string> &names);
+		Pade_approximant(Mesh &mesh, Input::Record in_rec);
 
 		/**
 		*	Destructor.
 		*/
 		~Pade_approximant(void);
 
+		void zero_time_step() override;
+
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
 		*/
-		double **compute_reaction(double **concentrations, int loc_el);
-		/**
-		*	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-		*/
-		//void compute_one_step(void);
-		/**
-		*	This method enables to change the timestep for computation of simple chemical reactions. Such a change is conected together with creating of a new reaction matrix necessity.
-		*/
-		//void set_time_step(double new_timestep);
-		/**
-		* Folowing method enabels the timestep for chemistry to have the value written in ini-file.
-		*/
-		virtual void set_time_step(double time_step);
+		double **compute_reaction(double **concentrations, int loc_el) override;
+
 		/**
 		*	Evaluates Pade approximant from Reaction_matrix.
 		*/
-		virtual double **modify_reaction_matrix(void);
+		double **modify_reaction_matrix(void) override;
 		/**
 		* It enables to evaluate matrix nominator and denominator present in Pade approximant.
 		*/
 		void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
+		
 	protected:
+        /**
+        *       Enables to compute factorial k!.
+        */
+        int factorial(int k);
+                
+                
 		/**
 		*	This method reads a sequence of numbers defining an order of substances in decay chain. The string section defines where too look for indices inside of ini-file, whereas n_subst is a number of isotopes in described decay chain.
 		*/

@@ -136,15 +136,6 @@ public:
 
     double get_solution_precision();
 
-    void set_matrix_changed() {
-    	matrix_changed_ = true;
-    };
-
-    void set_rhs_changed() {
-    	rhs_changed_ = true;
-    };
-
-
     ~LinSys_PETSC( );
 
 private:
@@ -182,8 +173,7 @@ protected:
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
 
     double  solution_precision_; // precision of KSP system solver
-    bool    matrix_changed_;     // indicate if matrix was changed since the last solving
-    bool    rhs_changed_;        // indicate if right side was changed since the last solving
+
 
 };
 

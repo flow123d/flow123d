@@ -1,2 +1,0 @@
-Moznost 3 tagu. Do teto chvile se pouzivali jen 2. Treti tag odkazuje na 
-materialu (jeho id), ktery popisuje storativitu daneho elementu.

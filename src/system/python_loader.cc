@@ -66,9 +66,7 @@ internal::PythonRunning PythonLoader::py_running;
 namespace internal {
 
 PythonRunning::PythonRunning() {
-    DBGMSG("Init python\n");
     Py_Initialize();
-    DBGMSG("Init python, done\n");
 }
 
 
