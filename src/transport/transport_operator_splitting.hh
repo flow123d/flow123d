@@ -5,6 +5,7 @@
 
 #include <limits>
 #include "io/output.h"
+#include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
@@ -28,34 +29,67 @@ class Semchem_interface;
 class ConvectionTransport;
 
 
+
+class AdvectionProcessBase : public EquationBase, public EquationForMassBalance {
+
+public:
+
+	AdvectionProcessBase(Mesh &mesh, const Input::Record in_rec) : EquationBase(mesh, in_rec) {};
+
+    /**
+     * This method takes sequential PETSc vector of side velocities and update
+     * transport matrix. The ordering is same as ordering of sides in the mesh.
+     * We just keep the pointer, but do not destroy the object.
+     *
+     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
+     */
+    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+
+    /**
+     * @brief Write computed fields.
+     */
+    virtual void output_data() =0;
+
+    virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
+
+    virtual unsigned int n_substances() = 0;
+
+    virtual vector<string> &substance_names() = 0;
+
+
+	/// Common specification of the input record for secondary equations.
+    static Input::Type::AbstractRecord input_type;
+
+
+};
+
+
+
 /**
  * @brief Specification of transport model interface.
  *
  * Here one has to specify methods for setting or getting data particular to
  * transport equations.
  */
-class TransportBase : public EquationBase, public EquationForMassBalance {
+class TransportBase : public AdvectionProcessBase {
 public:
 
     /**
      * Class with fields that are common to all transport models.
      */
-	class TransportEqData : public EqDataBase {
+	class TransportEqData : public FieldSet {
 	public:
 
-		TransportEqData(const std::string& eq_name);
+		TransportEqData();
 		inline virtual ~TransportEqData() {};
-
-		/// Initial concentrations.
-		Field<3, FieldValue<3>::Vector> init_conc;
+/*
+		Input::Type::Record boundary_input_type() {
+			return EqDataBase::boundary_input_type()
+				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "Input file with boundary conditions (obsolete).");
+		}
+*/
 		/// Mobile porosity
 		Field<3, FieldValue<3>::Scalar> por_m;
-
-		/**
-		 * Boundary conditions (Dirichlet) for concentrations.
-		 * They are applied only on water inflow part of the boundary.
-		 */
-		BCField<3, FieldValue<3>::Vector> bc_conc;
 
 		/// Pointer to DarcyFlow field cross_section
 		Field<3, FieldValue<3>::Scalar > *cross_section;
@@ -68,8 +102,6 @@ public:
 
 	};
 
-	/// Common specification of the Transport input record.
-    static Input::Type::AbstractRecord input_type;
     /**
      * Specification of the output record. Need not to be used by all transport models, but they should
      * allow output of similar fields.
@@ -79,17 +111,11 @@ public:
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
 
-
-    /**
-     * This method takes sequential PETSc vector of side velocities and update
-     * transport matrix. The ordering is same as ordering of sides in the mesh.
-     * We just keep the pointer, but do not destroy the object.
-     *
-     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     */
     virtual void set_velocity_field(const MH_DofHandler &dh) {
-        mh_dh=&dh;
+    	mh_dh=&dh;
     }
+
+
 
     /**
      * @brief Sets pointer to data of other equations.
@@ -97,11 +123,6 @@ public:
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
     //virtual void set_cross_section_field(Field<3, FieldValue<3>::Scalar > *cross_section) =0;
-
-    /**
-     * @brief Write computed fields.
-     */
-    virtual void output_data() =0;
 
     /**
      * Getter for mass balance class
@@ -171,6 +192,8 @@ public:
 
     inline virtual void output_data() {};
 
+    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {};
+
     TimeIntegrationScheme time_scheme() { return none; }
 
 private:
@@ -228,7 +251,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-    void set_eq_data(Field<3, FieldValue<3>::Scalar > *cross_section);
+    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
 
     TimeIntegrationScheme time_scheme() { return none; }
 

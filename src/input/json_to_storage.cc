@@ -206,7 +206,8 @@ std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
  */
 
 JSONToStorage::JSONToStorage()
-: envelope(NULL), storage_(&Array::empty_storage_), root_type_(NULL)
+: storage_(nullptr),
+  root_type_(nullptr)
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
@@ -221,15 +222,32 @@ JSONToStorage::JSONToStorage()
 }
 
 
-void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
+
+JSONToStorage::JSONToStorage(istream &in, const Type::TypeBase &root_type)
+: JSONToStorage()
+{
+	read_stream(in,root_type);
+}
+
+
+
+JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type)
+: JSONToStorage()
+{
+	try {
+		istringstream is(str);
+		read_stream(is, root_type);
+	} catch (ExcNotJSONFormat &e) {
+		e << EI_File(str); throw;
+	}
+}
+
+
+
+void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
+{
     namespace io = boost::iostreams;
-
-    F_ENTRY;
-
-    if (envelope != NULL) {
-        delete envelope;
-        envelope=NULL;
-    }
+    ASSERT(storage_==nullptr," ");
 
     // finish all lazy input types
     Input::Type::TypeBase::lazy_finish();
@@ -252,34 +270,12 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type) {
 
     root_type_ = &root_type;
     storage_ = make_storage(root_path, root_type_);
-    envelope =  new StorageArray(1);
-    envelope->new_item(0,storage_);
 
-    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
+    ASSERT(  storage_ != nullptr, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
 }
 
 
 
-void JSONToStorage::read_from_default( const string &default_str, const Type::TypeBase &root_type) {
-    namespace io = boost::iostreams;
-    F_ENTRY;
-
-    if (envelope != NULL) {
-        delete envelope;
-        envelope=NULL;
-    }
-
-    // finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
-
-    root_type_ = &root_type;
-    storage_ =  make_storage_from_default(default_str, &root_type);
-    envelope =  new StorageArray(1);
-    envelope->new_item(0,storage_);
-
-    ASSERT(  storage_ != NULL, "Internal error in JSON reader, the storage pointer is NULL after reading the stream.\n");
-
-}
 
 
 
@@ -608,7 +604,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
             if (a_record->begin()->default_.has_value_at_declaration() )    // a_record->bagin() ... TYPE key
                 return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
             else
-                xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str());
         } else
         if (typeid(*type) == typeid(Type::Record) ) {
             // an auto-convertible Record can be initialized form default value
@@ -631,7 +627,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
 
                 return storage_array;
             } else {
-                xprintf(PrgErr,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", type->type_name().c_str());
             }
         } else
         if (typeid(*type) == typeid(Type::Array) ) {
@@ -643,7 +639,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                 storage_array->new_item(0, make_storage_from_default(dflt_str, &sub_type) );
                 return storage_array;
             } else {
-                xprintf(PrgErr,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", typeid(type).name());
+                xprintf(PrgErr,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", type->type_name().c_str());
             }
 
         } else

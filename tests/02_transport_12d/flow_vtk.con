@@ -9,18 +9,16 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      data= [
         { rid = 48,
           anisotropy = 10,
+          sigma = 0.05,
           cross_section = 1
         },
         { rid = 184,
           anisotropy = 1,
           cross_section = 1
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
         }
@@ -44,13 +42,11 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      bc_data=[
+      data=[
         { 
           region="IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test2.tbc"
-        }
-      ],
-      bulk_data=[
+          transport_old_bcd_file = "./input/test2.tbc"
+        },
         {
           rid=48,
           init_conc = 0,

@@ -13,17 +13,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.00169146    0             
+  30            center                   A             0.00676582    0             
   20            region_20                A             0             0             
   24            region_24                A             0             0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    0             0             
+  A             0.00676582    0             0             0.00676582    0.00676582    0             0             
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -41,17 +41,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.00112266    0             
-  20            region_20                A             0.000534415   0             
-  24            region_24                A             3.43839e-05   0             
+  30            center                   A             0.00427087    0             
+  20            region_20                A             0.00111968    0             
+  24            region_24                A             0.00137527    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.001]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    -2.1684e-19   1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.02782e-15  1.51914e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -69,17 +69,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000776296   0             
-  20            region_20                A             0.000839053   0             
-  24            region_24                A             7.61067e-05   0             
+  30            center                   A             0.00314682    0             
+  20            region_20                A             0.00118211    0             
+  24            region_24                A             0.00243689    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.002]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    0             0             
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.50661e-15  2.22679e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -97,17 +97,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000564622   0             
-  20            region_20                A             0.00101271    0             
-  24            region_24                A             0.000114124   0             
+  30            center                   A             0.00252787    0             
+  20            region_20                A             0.00109162    0             
+  24            region_24                A             0.00314634    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.003]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    2.1684e-19    1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.75641e-15  2.596e-13     
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -125,17 +125,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000434801   0             
-  20            region_20                A             0.0011117     0             
-  24            region_24                A             0.000144953   0             
+  30            center                   A             0.00214669    0             
+  20            region_20                A             0.000999226   0             
+  24            region_24                A             0.00361991    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.004]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    0             0             
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.88304e-15  2.78317e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -153,17 +153,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000354905   0             
-  20            region_20                A             0.00116813    0             
-  24            region_24                A             0.000168419   0             
+  30            center                   A             0.00189543    0             
+  20            region_20                A             0.00092492    0             
+  24            region_24                A             0.00394548    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.005]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    2.1684e-19    1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.93161e-15  2.85496e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -181,17 +181,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000305571   0             
-  20            region_20                A             0.0012003     0             
-  24            region_24                A             0.000185586   0             
+  30            center                   A             0.00172108    0             
+  20            region_20                A             0.000866746   0             
+  24            region_24                A             0.004178      0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.006]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    -2.1684e-19   1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.94636e-15  2.87675e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -209,17 +209,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000275009   0             
-  20            region_20                A             0.00121864    0             
-  24            region_24                A             0.000197812   0             
+  30            center                   A             0.00159438    0             
+  20            region_20                A             0.000820349   0             
+  24            region_24                A             0.00435109    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.007]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    0             0             
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.94376e-15  2.87291e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -237,17 +237,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000256018   0             
-  20            region_20                A             0.00122909    0             
-  24            region_24                A             0.00020635    0             
+  30            center                   A             0.00149811    0             
+  20            region_20                A             0.000782204   0             
+  24            region_24                A             0.00448551    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.008]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    -2.1684e-19   1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.93682e-15  2.86265e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -265,17 +265,17 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000244183   0             
-  20            region_20                A             0.00123505    0             
-  24            region_24                A             0.000212227   0             
+  30            center                   A             0.00142177    0             
+  20            region_20                A             0.000749854   0             
+  24            region_24                A             0.0045942     0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.009]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    -2.1684e-19   1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.92554e-15  2.84598e-13   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -293,16 +293,16 @@
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  30            center                   A             0.000236787   0             
-  20            region_20                A             0.00123844    0             
-  24            region_24                A             0.000216226   0             
+  30            center                   A             0.00135881    0             
+  20            region_20                A             0.000721654   0             
+  24            region_24                A             0.00468536    0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             0.00169146    0             
+# Total mass [M] and sources [M/T]       A             0.00676582    0             
 
 
 # Cumulative mass balance on time interval [0,0.01]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0.00169146    0             0             0.00169146    0.00169146    -2.1684e-19   1.28198e-16   
+  A             0.00676582    0             0             0.00676582    0.00676582    -1.90386e-15  2.81394e-13   
 
 

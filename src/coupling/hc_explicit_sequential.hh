@@ -40,7 +40,7 @@ class DarcyFlowMH;
 class DarcyFlowMHOutput;
 class Mesh;
 class EquationBase;
-class TransportBase;
+class AdvectionProcessBase;
 class MaterialDatabase;
 
 
@@ -80,7 +80,7 @@ private:
     DarcyFlowMHOutput *water_output;
 
     /// explicit transport with chemistry through operator splitting
-    TransportBase *transport_reaction;
+    AdvectionProcessBase *transport_reaction;
 
 };
 

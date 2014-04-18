@@ -5,6 +5,7 @@
 #include "plain.h"
 #include "abscissa.h"
 #include "mesh/bounding_box.hh"
+#include "mesh/elements.h"
 
 class TTriangle {
 private:
@@ -33,6 +34,9 @@ public:
     TTriangle();
     TTriangle(const TTriangle&);
     TTriangle(const TPoint&, const TPoint&, const TPoint&);
+    TTriangle(const Element&);
+    void update();
+
     ~TTriangle();
 
     TTriangle & operator =(const TTriangle &t);

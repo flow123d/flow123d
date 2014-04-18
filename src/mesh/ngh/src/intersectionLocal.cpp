@@ -31,7 +31,7 @@ bool IntersectionPoint::operator ==(const IntersectionPoint &IP) {
 	return true;
 }
 
-IntersectionPoint *interpolate(IntersectionPoint &A1, IntersectionPoint &A2, double t) {
+IntersectionPoint *interpolate(const IntersectionPoint &A1, const IntersectionPoint &A2, double t) {
     if (! (A1.el1_coord().size() == 1 && A2.el1_coord().size() == 1 ) ) {
         THROW( ExcAssertMsg() << EI_Message( "Interpolation of IntersectionPoints with non line first element.") );
     }

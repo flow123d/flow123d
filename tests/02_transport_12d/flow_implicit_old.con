@@ -1,3 +1,4 @@
+
 {
   problem = {
     TYPE = "SequentialCoupling", 
@@ -21,16 +22,15 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      bc_data=[
+      data=[
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
-        }
-      ],
-      bulk_data=[
+        },
         { rid = 48,
           anisotropy = 10,
-          cross_section = 1
+          cross_section = 1,
+          sigma = 0.05
         },
         { rid = 184,
           anisotropy = 1,
@@ -40,7 +40,7 @@
     },
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "ConcentrationTransport_DG", 
       output = {
         mobile_p0 = "transport_output_stream", 
         output_stream = {
@@ -63,13 +63,11 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      bc_data=[
+      data=[
         { 
           region="IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test2.tbc"
-        }
-      ],
-      bulk_data=[
+          bc_conc = 1
+        },
         {
           rid=48,
           init_conc = 0,

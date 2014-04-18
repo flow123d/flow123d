@@ -91,7 +91,7 @@ set(sources_mesh_lib
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    mesh/bih_node.cc
+    # mesh/bih_node.cc
     mesh/bih_tree.cc
     
     mesh/ngh/src/abscissa.cpp
@@ -127,16 +127,11 @@ set(sources_lib_interpolation
 )
 
 
-
-set(sources_lib_field
+set (sources_lib_coupling
     fields/field_values.cc
     fields/field_base.cc
-    fields/field_other.cc
-)
-
-
-set (sources_lib_coupling
-
+    fields/field.cc
+    
     coupling/time_marks.cc
     coupling/time_governor.cc
 
@@ -165,6 +160,8 @@ set(sources_lib_non_system
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
+    transport/concentration_model.cc
+    transport/heat_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
@@ -231,15 +228,11 @@ add_library(interpolation_lib ${sources_lib_interpolation})
 target_link_libraries(interpolation_lib
     system_lib )
 
-# field_lib  
-add_library(field_lib ${sources_lib_field})
-target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
- 
+
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
 target_link_libraries(coupling_lib
-    system_lib input_lib field_lib mesh_lib)
+    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
   
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})

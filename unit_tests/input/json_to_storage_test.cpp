@@ -87,6 +87,13 @@ protected:
     }
     virtual void TearDown() {
     };
+
+    // overload parent class method in order to reset pointers
+    void read_stream(istream &in, const Type::TypeBase &root_type) {
+    	this->storage_ = nullptr;
+    	this->root_type_ = nullptr;
+    	JSONToStorage::read_stream(in,root_type);
+    }
 };
 
 TEST_F(InputJSONToStorageTest, Integer) {
@@ -489,8 +496,7 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
     one_rec.finish();
 
     stringstream ss("{ one=1 }");
-    JSONToStorage json_reader;
-    json_reader.read_stream(ss, one_rec);
+    JSONToStorage json_reader(ss, one_rec);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);

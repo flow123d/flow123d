@@ -160,22 +160,7 @@ double_fix_tensor_cdiag=1.3
 }
 )INPUT";
 
-string formula_input = R"INPUT(
-{   
-double_scalar="x",
 
-double_fix_vector_full=["x", "y", "z"],
-double_fix_vector_const="x",
-
-double_vector_full=["x","y"],
-double_vector_const="x",
-
-double_fix_tensor_full=[ ["x", "y", "z"], ["x*x", "y*y", "z*z"] ],
-double_fix_tensor_symm=[ "x*x", "x*y", "y*y"],
-double_fix_tensor_diag=[ "x*x", "y*y"],
-double_fix_tensor_cdiag="x*y*z"
-}
-)INPUT";
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -212,9 +197,7 @@ TEST(FieldValue_, init_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 
@@ -312,7 +295,22 @@ TEST(FieldValue_, init_from_input) {
     }
 }
 
+string formula_input = R"INPUT(
+{   
+double_scalar="x",
 
+double_fix_vector_full=["x", "y", "z"],
+double_fix_vector_const="x",
+
+double_vector_full=["x","y"],
+double_vector_const="x",
+
+double_fix_tensor_full=[ ["x", "y", "z"], ["x*x", "y*y", "z*z"] ],
+double_fix_tensor_symm=[ "x*x", "x*y", "y*y"],
+double_fix_tensor_diag=[ "x*x", "y*y"],
+double_fix_tensor_cdiag="x*y*z"
+}
+)INPUT";
 
 TEST(FieldValue_, string_values_init_from_input) {
     // setup FilePath directories
@@ -335,9 +333,7 @@ TEST(FieldValue_, string_values_init_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(formula_input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( formula_input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 

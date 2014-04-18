@@ -59,12 +59,11 @@ it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
 
 
 LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
-                          Distribution * rows_ds,
-                          const MPI_Comm comm,
+                          const Distribution * rows_ds,
                           const int matrixTypeInt,
                           const int  numSubLoc,
                           const bool swap_sign )
-        : LinSys( rows_ds, comm ),
+        : LinSys( rows_ds ),
           swap_sign_(swap_sign)
 {
 #ifdef HAVE_BDDCML
@@ -95,7 +94,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
     bddcml_ = new Bddcml_( size_,
                            numDofsSub,
                            matrixType,
-                           comm, 
+                           rows_ds->get_comm(),
                            numSubLoc );
 
     // prepare space for local solution
@@ -370,4 +369,13 @@ void LinSys_BDDC::gatherSolution_( )
     ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
 #endif // HAVE_BDDCML
 }
+
+double LinSys_BDDC::get_solution_precision()
+{
+	double bnorm=0.0;
+	VecNorm(locSolVec_, NORM_2, &bnorm);
+
+	return max(a_tol_, r_tol_*bnorm);
+}
+
 

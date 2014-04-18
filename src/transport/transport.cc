@@ -30,6 +30,9 @@
  *
  */
 
+
+#include <memory>
+
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
@@ -74,21 +77,26 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
 
 
 
-ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData("TransportOperatorSplitting")
+ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
-    ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", IT::Default("0"));
+	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
+	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
+    ADD_FIELD(por_imm, "Porosity material parameter of the immobile zone. Vector, one value for every substance.", "0.0");
     ADD_FIELD(alpha, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-            " Vector, one value for every substance.", IT::Default("0"));
-    ADD_FIELD(sorp_type, "Type of sorption isotherm.", IT::Default("none"));
-    sorp_type.set_selection(&sorption_type_selection);
-    ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", IT::Default("0"));
+            " Vector, one value for every substance.", "0.0");
+    ADD_FIELD(sorp_type, "Type of sorption isotherm.", "\"none\"");
+    sorp_type.input_selection(&sorption_type_selection);
+    ADD_FIELD(sorp_coef0, "First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. ", "0.0");
     ADD_FIELD(sorp_coef1, "Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). "
-            "Vector, one value for every substance.", IT::Default("0"));
+            "Vector, one value for every substance.", "1.0");
     ADD_FIELD(phi, "Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). "
-            "Used only in combination with dual porosity model. Vector, one value for every substance.", IT::Default("1.0"));
+            "Used only in combination with dual porosity model. Vector, one value for every substance.", "1.0");
+
+    bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 }
 
-RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec) {
+/*
+RegionSet ConvectionTransport::EqData::read_descriptor_hook(Input::Record rec) {
     // Base method EqDataBase::read_boundary_list_item must be called first!
     RegionSet domain = EqDataBase::read_boundary_list_item(rec);
     FilePath bcd_file;
@@ -98,7 +106,7 @@ RegionSet ConvectionTransport::EqData::read_boundary_list_item(Input::Record rec
         OldBcdInput::instance()->read_transport(bcd_file, bc_conc);
 
     return domain;
-}
+}*/
 
 
 
@@ -126,17 +134,19 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     if (it)
     	mass_balance_ = new MassBalance(this, *it);
 
-    data_.init_conc.set_n_comp(n_subst_);
-    data_.bc_conc.set_n_comp(n_subst_);
-    data_.alpha.set_n_comp(n_subst_);
-    data_.sorp_type.set_n_comp(n_subst_);
-    data_.sorp_coef0.set_n_comp(n_subst_);
-    data_.sorp_coef1.set_n_comp(n_subst_);
-    data_.sources_density.set_n_comp(n_subst_);
-    data_.sources_sigma.set_n_comp(n_subst_);
-    data_.sources_conc.set_n_comp(n_subst_);
-    data_.set_mesh(&init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), in_rec.val<Input::Array>("bc_data") );
+    data_.init_conc.n_comp(n_subst_);
+    data_.bc_conc.n_comp(n_subst_);
+    data_.alpha.n_comp(n_subst_);
+    data_.sorp_type.n_comp(n_subst_);
+    data_.sorp_coef0.n_comp(n_subst_);
+    data_.sorp_coef1.n_comp(n_subst_);
+    data_.sources_density.n_comp(n_subst_);
+    data_.sources_sigma.n_comp(n_subst_);
+    data_.sources_conc.n_comp(n_subst_);
+    data_.set_mesh(init_mesh);
+    data_.set_input_list( in_rec.val<Input::Array>("data") );
+
+    data_.set_limit_side(LimitSide::right);
     data_.set_time(*time_);
 
 
@@ -163,9 +173,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     // register output vectors
     Input::Record output_rec = in_rec.val<Input::Record>("output");
     data_.conc_mobile.init(subst_names_);
-    data_.conc_mobile.set_mesh(mesh_);
-    data_.conc_mobile.set_name("conc_mobile");
-    data_.conc_mobile.set_units("M/L^3");
+    data_.conc_mobile.set_mesh(*mesh_);
+    data_.conc_mobile.name("conc_mobile");
+    data_.conc_mobile.units("M/L^3");
 
     field_output=OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
     for(unsigned int subst_id=0; subst_id < n_subst_; subst_id++) {
@@ -174,7 +184,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
          // create FieldElementwise for every substance, set it to data->conc_mobile
          data_.conc_mobile[subst_id].set_field(
                  mesh_->region_db().get_region_set("ALL"),
-                 boost::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() )
+                 std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar > >( out_conc[MOBILE][subst_id] , 1, mesh_->n_elements() ),
+                 time_->t()
                  );
 
 
@@ -512,9 +523,9 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
   //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
   
   //checking if the data were changed
-    if( (data_.sources_density.changed_during_set_time) 
-          || (data_.sources_conc.changed_during_set_time) 
-          || (data_.sources_sigma.changed_during_set_time) )
+    if( (data_.sources_density.changed() )
+          || (data_.sources_conc.changed() )
+          || (data_.sources_sigma.changed() ) )
       {
         START_TIMER("sources_reinit");
         for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
@@ -560,9 +571,9 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 	//TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
 
 	//checking if the data were changed
-	if( (data_.sources_density.changed_during_set_time)
-		  || (data_.sources_conc.changed_during_set_time)
-		  || (data_.sources_sigma.changed_during_set_time) )
+	if( (data_.sources_density.changed() )
+		  || (data_.sources_conc.changed() )
+		  || (data_.sources_sigma.changed() ) )
 	{
 		START_TIMER("sources_reinit");
 		for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
@@ -605,8 +616,8 @@ void ConvectionTransport::compute_one_step() {
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
 
-    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed_during_set_time) {
-        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed_during_set_time);
+    if (mh_dh->time_changed() > transport_matrix_time  || data_.por_m.changed() ) {
+        DBGMSG("mh time: %f tm: %f por: %d\n", mh_dh->time_changed(), transport_matrix_time, data_.por_m.changed() );
         create_transport_matrix_mpi();
 
         // need new fixation of the time step
@@ -621,7 +632,7 @@ void ConvectionTransport::compute_one_step() {
         need_time_rescaling = true;
     } else {
         // possibly read boundary conditions
-        if (data_.bc_conc.changed_during_set_time) {
+        if (data_.bc_conc.changed() ) {
             set_boundary_conditions();
             // scale boundary sources
             for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());

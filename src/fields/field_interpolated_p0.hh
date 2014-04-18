@@ -58,7 +58,7 @@ public:
 	 */
 	static Input::Type::Record input_type;
 
-	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
 	/**
 	 * Initialization from the input interface.
@@ -116,7 +116,7 @@ protected:
 	BIHTree* bih_tree_;
 
 	/// stored index to last computed element
-	unsigned int computed_elm_idx_;
+	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;
@@ -167,17 +167,17 @@ public:
 	/**
 	 * Create triangle from element
 	 */
-	static void create_triangle(Element *ele, TTriangle &tr);
+	static void create_triangle(const Element *ele, TTriangle &tr);
 
 	/**
 	 * Create abscissa from element
 	 */
-	static void create_abscissa(Element *ele, TAbscissa &ab);
+	static void create_abscissa(const Element *ele, TAbscissa &ab);
 
 	/**
 	 * Create point from element
 	 */
-	static void create_point(Element *ele, TPoint &p);
+	static void create_point(const Element *ele, TPoint &p);
 };
 
 
