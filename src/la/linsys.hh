@@ -227,11 +227,17 @@ public:
         ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the matrix 
+     */
     virtual PetscErrorCode mat_zero_entries()
     {
     	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the right-hand side 
+     */
     virtual PetscErrorCode rhs_zero_entries()
     {
     	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
