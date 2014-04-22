@@ -63,4 +63,20 @@ public:
 	IntersectionPoint(const arma::vec3 &lc1,const arma::vec3 &lc2) : local_coords1(lc1), local_coords2(lc2){};
 };
 
+/**
+
+// interpolation of barycentric coordinate on Simplex<M> to Simplex<N>
+template<int M, int N>
+arma::vec.fixed<N+1> interpolate(const arma::vec.fixed<M+1> &coord, unsigned int sub_simplex_idx)
+{
+    std::array< vec.fixed<N+1>, M+1 >  simplex_M_vertices = RefElement<N>.sub_element<M>.bary_coords(sub_simplex_idx);
+    arma::vec.fixed<N+1> sum;
+    sum.zero();
+    for(int i=0; i<M+1; i++) sum += coord[i]*simplex_M_vertices(i);
+    return sum;
+}
+
+
+
+ */
 } // END namespace
