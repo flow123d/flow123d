@@ -64,7 +64,6 @@
 \AddDoc{DarcyMHOutput::compute\_errors}
 \AddDoc{DarcyMHOutput::raw\_flow\_output}
 \AddDoc{OutputStream}
-\AddDoc{OutputStream::name}
 \AddDoc{OutputStream::file}
 \AddDoc{OutputStream::format}
 \AddDoc{OutputStream::time\_step}
@@ -144,6 +143,11 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
+\AddDoc{FieldPython}
+\AddDoc{FieldPython::TYPE}
+\AddDoc{FieldPython::script\_string}
+\AddDoc{FieldPython::script\_file}
+\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
@@ -224,6 +228,11 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
+\AddDoc{FieldPython}
+\AddDoc{FieldPython::TYPE}
+\AddDoc{FieldPython::script\_string}
+\AddDoc{FieldPython::script\_file}
+\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
