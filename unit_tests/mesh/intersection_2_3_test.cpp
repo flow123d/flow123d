@@ -90,26 +90,33 @@ TEST(intersections, all) {
 
 	Simplex<2> sim2(pole_vectoru2);
 	Simplex<3> sim3(pole_vectoru);
+	IntersectionLocal il1;
+	IntersectionLocal il2;
+
 
 	ComputeIntersection<Simplex<2>, Simplex<3> > novyCI(sim2, sim3);
 
 	//novyCI.setPC_tetrahedron(test_plucker, 1);
 	//novyCI.setPC_triangle(test_plucker2,0);
 	novyCI.init();
-	novyCI.compute();
+	novyCI.compute(il1);
 
 	arma::vec3 bodA; bodA[0] = 3; bodA[1] = 3; bodA[2] =4;
 	arma::vec3 bodB; bodB[0] = 3; bodB[1] = 3; bodB[2] =-4;
+	arma::vec3 bodC; bodC[0] = 5; bodC[1] = 5; bodC[2] = 5;
 	arma::vec3 Alfa; Alfa[0] = 1; Alfa[1] = 2; Alfa[2] =4;
 	arma::vec3 Beta; Beta[0] = 5; Beta[1] = 2; Beta[2] =4;
 	arma::vec3 Gama; Gama[0] = 1; Gama[1] = 6; Gama[2] =4;
+	arma::vec3 Delta; Delta[0] = 1; Delta[1] = 4; Delta[2] = 8;
 
-
-	arma::vec3 vec_1[] = {bodA, bodB};
-	arma::vec3 vec_2[] = {Alfa, Beta, Gama};
-	Simplex<1> sim_1(vec_1);
+	arma::vec3 vec_2[] = {bodA, bodB, bodC};
+	arma::vec3 vec_3[] = {Alfa, Beta, Gama, Delta};
 	Simplex<2> sim_2(vec_2);
-	//ComputeIntersection<Simplex<1>, Simplex<2>> CI12(sim_1, sim_2);
+	Simplex<3> sim_3(vec_3);
+	cout << "=================" << endl;
+	ComputeIntersection<Simplex<2>, Simplex<3>> CI23(sim_2, sim_3);
+	CI23.init();
+	CI23.compute(il2);
 	//CI12.compute();
 	//CI12.toStringPluckerCoordinates();
 

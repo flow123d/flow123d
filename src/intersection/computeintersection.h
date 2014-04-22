@@ -15,7 +15,7 @@ using namespace std;
 namespace computeintersection {
 // Metody pro konvezi objektů
 
-Plucker getPluckerFromSimplex(const Simplex<1> &abs);
+//Plucker getPluckerFromSimplex(const Simplex<1> &abs);
 //Simplex<1> getAbsicca(const Simplex<2> &abs, int i);
 //Simplex<1> getAbsicca(const Simplex<3> &abs, int i);
 
@@ -33,7 +33,7 @@ template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
 
 	ComputeIntersection();
-	ComputeIntersection(Simplex<1> abs, Simplex<2> triang);
+	ComputeIntersection(Simplex<1> &abs, Simplex<2> &triang);
 	//ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang);
 	inline ~ComputeIntersection() {}
 
@@ -62,8 +62,8 @@ public:
 	//bool getDirection();
 
 private:
-	Simplex<1> abscissa;
-	Simplex<2> triangle;
+	Simplex<1> *abscissa;
+	Simplex<2> *triangle;
 
 	std::vector<Plucker *> plucker_coordinates_abscissa;
 	std::vector<Plucker *> plucker_coordinates_triangle;
@@ -84,12 +84,11 @@ template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 public:
 
 	ComputeIntersection();
-	ComputeIntersection(Simplex<1> abs,Simplex<3> tetr);
 	ComputeIntersection(Simplex<1> &abs,Simplex<3> &tetr);
 
 	void clear_all();
 	void init();
-	void compute();
+	void compute(IntersectionLocal &lokalni_mnohouhelnik, unsigned int edge_index);
 
 	std::vector<Plucker *> &getPC_abscissa();
 	std::vector<Plucker *> &getPC_tetrahedron();
@@ -131,7 +130,7 @@ public:
 
 	void clear_all();
 	void init();
-	void compute();
+	void compute(IntersectionLocal &lokalni_mnohouhlenik);
 
 
 	std::vector<Plucker *> &getPC_triangle();
@@ -164,7 +163,7 @@ public:
 	ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
 
 	// Intersection objects
-	std::vector<IntersectionLocal> intersections;
+	//std::vector<IntersectionLocal> intersections;
 
 
 };

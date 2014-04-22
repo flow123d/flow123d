@@ -1,5 +1,5 @@
 #include "plucker.h"
-#include <iostream>
+
 using namespace std;
 namespace computeintersection{
 
@@ -11,6 +11,7 @@ Plucker::Plucker(){
 Plucker::Plucker(const arma::vec3 a,const arma::vec3 b){
 
 	this->compute(a, b);
+	computed = true;
 
 };
 

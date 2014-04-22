@@ -26,7 +26,7 @@ public:
 	inline ~Simplex() {
 	}
 	;
-	inline arma::vec3 getPointCoordinates() const {
+	inline arma::vec3 &getPointCoordinates(){
 		return coordinates;
 	}
 	;
@@ -77,7 +77,7 @@ public:
 	}
 	;
 	//inline Simplex<N-1,3> operator[](int a){return Simplices[a];};
-	inline Simplex<N - 1> operator[](int a) const {
+	inline Simplex<N - 1> &operator[](int a){
 		return Simplices[a];
 	}
 	;
@@ -100,7 +100,7 @@ public:
 		return N;
 	}
 	;
-	Simplex<1> getAbscissa(unsigned int index);
+	Simplex<1> &getAbscissa(unsigned int index);
 };
 
 

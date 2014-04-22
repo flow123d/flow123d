@@ -4,7 +4,7 @@
 using namespace std;
 namespace computeintersection {
 
-template<> Simplex<1> Simplex<3>::getAbscissa(unsigned int index) {
+template<> Simplex<1> &Simplex<3>::getAbscissa(unsigned int index) {
 
 	if (index < 3) {
 		return this->Simplices[0][index];
@@ -16,10 +16,10 @@ template<> Simplex<1> Simplex<3>::getAbscissa(unsigned int index) {
 
 }
 
-template<> Simplex<1> Simplex<2>::getAbscissa(unsigned int index) {
+template<> Simplex<1> &Simplex<2>::getAbscissa(unsigned int index) {
 	return this->Simplices[index];
 }
-template<> Simplex<1> Simplex<1>::getAbscissa(unsigned int index) {
+template<> Simplex<1> &Simplex<1>::getAbscissa(unsigned int index) {
 	return this[0];
 }
 
