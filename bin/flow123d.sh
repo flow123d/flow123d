@@ -227,7 +227,7 @@ function call_flow() {
       if [ -x "${FLOW123D}" ]
       then
               (
-              ulimit -S -v ${MEM_LIMIT}
+              ulimit -S -v ${MEM_LIMIT} >/dev/null
               nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
               exit $?
               )
@@ -300,6 +300,7 @@ if [ -f "${0%/*}/config/${HOSTNAME}.sh" ]
 then
 	. "${0%/*}/config/${HOSTNAME}.sh"
 fi 
+
 
 # Run Flow123d
 run_flow
