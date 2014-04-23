@@ -23,40 +23,43 @@ class ReactionTerm: public EquationBase
 public:
   
   /**
-   * Static variable for definition of common input record in reactions.
+   * Static variable for definition of common input record in reaction term.
    */
   static Input::Type::AbstractRecord input_type;
   
+  /// Specification of the output record. 
   /**
-   * Specification of the output record. Need not to be used by all reaction models, but they should
+   * Need not to be used by all reaction models, but they should
    * allow output of similar fields.
    */
   static Input::Type::Record input_type_output_record;
-    
-  /**
-   *  Constructor with parameter for initialization of a new declared class member
-   *  TODO: parameter description
+
+  /// Constructor.
+  /** @param init_mesh is the reference to the computational mesh
+   * @param in_rec is the input record
    */
   ReactionTerm(Mesh &init_mesh, Input::Record in_rec);
-  /**
-   * Destructor.
-   */
+
+  /// Destructor.
   ~ReactionTerm(void);
   
 
-
   ///@name Setters
   //@{
+  ///Sets the names of substances considered in transport.
   ReactionTerm &names(const std::vector<string> &names)
   {names_=names; return *this;}
 
+  ///Sets the output stream which is given from transport class.
   ReactionTerm &output_stream(OutputTime &ostream)
   {output_stream_=&ostream; return *this;}
 
   /**
-   * Sets the concentration matrix for the mobile zone, all substances and on all elements.
+   * Sets the pointer to concentration matrix for the mobile zone, 
+   * all substances and on all elements (given by transport).
    */
-  ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, int *el_4_loc, int *row_4_el)
+  ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, 
+                                     int *el_4_loc, int *row_4_el)
   {
     concentration_matrix_ = concentration;
     distribution = conc_distr;
@@ -66,22 +69,16 @@ public:
   }
   //@}
 
-  /** Output method.
+  /** @brief Output method.
+   * 
    * Some reaction models have their own data to output (sorption, dual porosity) - this is where it must be solved.
    * On the other hand, some do not have (linear reaction, pade approximant) - that is why it is not pure virtual.
    */
   virtual void output_data(void){};
 
+  /// Disable changes in TimeGovernor by empty method.
+  void choose_next_time(void) override;
 
-  /// @name Inherited and not used.
-  /// TODO: make default empty implementation in EquationBase
-  //@{
-
-  virtual void choose_next_time(void);
-  virtual void get_parallel_solution_vector(Vec &vc);
-  virtual void get_solution_vector(double* &vector, unsigned int &size);
-  //@}
-                
 protected:
   /**
    * Communicate parallel concentration vectors into sequential output vector.
@@ -89,7 +86,7 @@ protected:
   virtual void output_vector_gather(void){};
 
   /**
-   * For simulation of chemical reaction in one element only.
+   * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
    */
   virtual double **compute_reaction(double **concentrations, int loc_el);
@@ -104,22 +101,17 @@ protected:
    */
   double **concentration_matrix_;
   
-  /**
-   * Indices of elements belonging to local dofs.
-   */
+  /// Indices of elements belonging to local dofs.
   int *el_4_loc;
-  /**
-   * Indices of rows belonging to elements.
-   */
+  /// Indices of rows belonging to elements.
   int *row_4_el;
   
-  /**
-   * Pointer to reference to distribution of elements between processors.
-   */
+  /// Pointer to reference to distribution of elements between processors.
   Distribution *distribution;
   
-  /**
-   * Names belonging to substances. Should be same as in the transport.
+  /// Names belonging to substances.
+  /**  
+   * Must be same as in the transport.
    */
   vector<string> names_;
 
@@ -128,4 +120,4 @@ protected:
 
 };
 
-#endif
+#endif  // REACT
