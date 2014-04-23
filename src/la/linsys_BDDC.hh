@@ -72,26 +72,13 @@ public:
 
     void load_diagonal( std::map<int,double> & diag );
 
-    PetscErrorCode mat_zero_entries() override
-    {
-    	// no need to zero the matrix ??
-    	return 0;
-    }
-
-    PetscErrorCode rhs_zero_entries() override
-    {
-    	// no need to zero the rhs ??
-    	return 0;
-    }
-
-
     void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );
 
     void rhs_set_values( int nrow, int *rows, double *vals );
 
-    PetscErrorCode mat_zero_entries();
+    PetscErrorCode mat_zero_entries() override;
 
-    PetscErrorCode rhs_zero_entries();
+    PetscErrorCode rhs_zero_entries() override;
 
     void finish_assembly( );
 
