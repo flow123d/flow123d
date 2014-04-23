@@ -107,6 +107,14 @@ doxy-doc: cmake update-build-tree
 ref-doc: cmake update-build-tree
 	make -C $(BUILD_DIR)/doc/reference_manual pdf
 
+# call Flow123d and extract petsc command line arguments
+.PHONY: petsc-doc
+petsc-doc: #build-flow123d
+	cd tests/02*; \
+	mkdir output; \
+	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
+
+	
 
 ############################################################################################
 #Input file generation.

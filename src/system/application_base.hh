@@ -75,7 +75,7 @@ protected:
 	/**
 	 * Read system parameters, open log.
 	 */
-	void system_init( MPI_Comm comm, const string &log_filename );
+	void system_init( MPI_Comm comm, const string &log_filename);
 
 	/**
 	 * Parse command line parameters before Flow123D initialization.
@@ -84,6 +84,10 @@ protected:
 	 */
 	virtual void parse_cmd_line(const int argc, char ** argv) {}
 
+	/**
+	 * Implement printf function for PETSc with support for redirecting.
+	 */
+	static PetscErrorCode petscvfprintf(FILE *fd, const char format[], va_list Argp);
 	/**
 	 * Initialize PETSC.
 	 */
@@ -102,11 +106,18 @@ protected:
 	virtual void after_run() {}
 
     /**
-     * Log file name argument - passed to system_init; "" menas default, "\n" means no logging
+     * Log file name argument - passed to system_init; "" means default, "\n" means no logging
      * TODO: move whole system_init into Application, use singleton for some runtime global options
      * for the Flow123d library.
      */
     string log_filename_;
+
+    ///  Optional file name for output of PETSc parameters.
+    ///  Has to be set in @p parse_cmd_line()
+    string petsc_redirect_file_="";
+
+    /// File handler for redirecting PETSc output
+    static FILE *petsc_output_;
 };
 
 #endif /* APPLICATION_BASE_HH_ */
