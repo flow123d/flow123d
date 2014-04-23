@@ -1,12 +1,8 @@
-#include <iostream>
-#include <cstring>
 #include <stdlib.h>
-#include <math.h>
 
 #include "reaction/reaction.hh"
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "mesh/mesh.h"
-#include "mesh/elements.h"
 #include "io/output.h"
 
 using namespace Input::Type;
@@ -37,22 +33,14 @@ ReactionTerm::~ReactionTerm()
 }
 
 
-
-double **ReactionTerm::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)
 {
-    cout << "double **ReactionTerm::compute_reaction(double **concentrations, int loc_el) needs to be re-implemented in ancestors." << endl;
-        return concentrations;
-}
-
-void ReactionTerm::get_parallel_solution_vector(Vec &vec){
-	cout << "ReactionTerm.get_parallel_solution_vector(Vec &vec) is not implemented." << endl; //convection->compute_one_step();
-}
-
-void ReactionTerm::get_solution_vector(double * &x, unsigned int &a){
-	cout << "ReactionTerm.get_solution_vector(double * &x, unsigned int &a) is not implemented." << endl; //convection->compute_one_step();
+  ASSERT(0,"double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)" 
+           "needs to be re-implemented in ancestors.\n");
+  return concentrations;
 }
 
 void ReactionTerm::choose_next_time(void)
 {
-	cout << "ReactionTerm::choose_next_time() is not implemented." << endl;
+  ASSERT(0,"ReactionTerm does not change TimeGovernor.\n");
 }

@@ -189,8 +189,6 @@ public:
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	int *get_el_4_loc();
 	int *get_row_4_el();
-	virtual void get_parallel_solution_vector(Vec &vc);
-	virtual void get_solution_vector(double* &vector, unsigned int &size);
 
 	TimeIntegrationScheme time_scheme() { return explicit_euler; }
 

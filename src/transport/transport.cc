@@ -1276,15 +1276,6 @@ void ConvectionTransport::output_vector_gather() {
 }
 
 
-void ConvectionTransport::get_parallel_solution_vector(Vec &vc){
-	return;
-};
-
-void ConvectionTransport::get_solution_vector(double* &vector, unsigned int &size){
-	return;
-};
-
-
 double ***ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }

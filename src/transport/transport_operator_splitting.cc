@@ -250,16 +250,16 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 };
 
 
-
-void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
-	convection->update_solution();
-};
-
-
-
-void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
-	convection->update_solution();
-};
+//DELETE
+// void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
+// 	convection->update_solution();
+// };
+// 
+// 
+// 
+// void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
+// 	convection->update_solution();
+// };
 
 
 /*
