@@ -39,6 +39,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "io/output.h"
+#include "fields/field_fe.hh"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"
 #include "input/accessors.hh"
@@ -67,15 +68,24 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
                .add_value(robin, "robin");
 
 template<class Model>
+Selection TransportDG<Model>::EqData::output_selection =
+		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+		.copy_values(EqData().output_fields.make_output_field_selection("").close())
+		.close();
+
+template<class Model>
 Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("data", Array(TransportDG<Model>::EqData().make_field_descriptor_type(EqData::name())), IT::Default::obligatory(), "")
+    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).");
+    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+    .declare_key("output_fields", Array(EqData::output_selection),
+    		Default(Model::ModelEqData::default_output_field()),
+       		"List of fields to write to output file.");
 
 
 
@@ -195,7 +205,11 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
+
+    // add all input fields to the output list
+    this->output_fields += *this;
 }
+
 
 
 template<class Model>
@@ -207,7 +221,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
+	this->eq_data_ = &data_;
+
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.
@@ -226,10 +242,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.fracture_sigma.n_comp(n_subst_);
     data_.dg_penalty.n_comp(n_subst_);
     Model::init_data(n_subst_);
-
-    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.set_time(*time_);
+
 
     // DG variant
     dg_variant = in_rec.val<DGVariant>("dg_variant");
@@ -269,37 +284,41 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     	}
     }
 
-    // set up output class
-    Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+    // register output fields
+    output_rec = in_rec.val<Input::Record>("output_stream");
+	output_vec.resize(n_subst_);
+	output_solution.resize(n_subst_);
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// for each substance we allocate output array and vector
+		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+	}
+	data_.output_field.init(subst_names_);
+	data_.output_field.set_mesh(*mesh_);
+	data_.output_fields.output_type(OutputTime::CORNER_DATA);
 
-    // allocate output arrays
-    if (feo->dh()->el_ds()->myp() == 0)
-    {
-    	int n_corners = 0;
-    	FOR_ELEMENTS(mesh_, elem)
-    		n_corners += elem->dim()+1;
-    	output_solution.resize(n_subst_);
-    	for (int i=0; i<n_subst_; i++)
-    	{
-			output_solution[i] = new double[n_corners];
-			for(int j=0; j<n_corners; j++)
-				output_solution[i][j] = 0.0;
-			OutputTime::register_corner_data<double>(mesh_, subst_names_[i], "M/L^3",
-					output_rec.val<Input::Record>("output_stream"), output_solution[i], n_corners);
-		}
-    }
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
+		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
+		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	}
+	data_.output_fields.set_limit_side(LimitSide::left);
+	output_stream = OutputTime::create_output_stream(output_rec);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
     // set time marks for writing the output
-    output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
-    time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
+    output_stream->mark_output_times(*time_);
+    //output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
+    //time_->marks().add_time_marks(0.0, output_rec.val<double>("time_step"), time_->end_time(), output_mark_type);
 
     // allocate matrix and vector structures
     
     ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
-//    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
     for (int sbi = 0; sbi < n_subst_; sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
@@ -307,12 +326,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
-
-
-    // set initial conditions
-    set_initial_condition();
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
 }
 
@@ -325,7 +338,10 @@ TransportDG<Model>::~TransportDG()
     if (feo->dh()->el_ds()->myp() == 0)
     {
 		for (int i=0; i<n_subst_; i++)
+		{
+			VecDestroy(&output_vec[i]);
 			delete[] output_solution[i];
+		}
     }
 
     for (int i=0; i<n_subst_; i++)
@@ -342,20 +358,48 @@ TransportDG<Model>::~TransportDG()
 
     gamma.clear();
     subst_names_.clear();
+    delete output_stream;
 }
 
+
+template<class Model>
+void TransportDG<Model>::output_vector_gather()
+{
+    IS is;
+    VecScatter output_scatter;
+    int idx[] = { 0 };
+	for (int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// gather solution to output_vec[sbi]
+		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
+		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterDestroy(&(output_scatter));
+		ISDestroy(&(is));
+	}
+}
+
+
+
+template<class Model>
+void TransportDG<Model>::zero_time_step()
+{
+    data_.set_time(*time_);
+
+    // set initial conditions
+    set_initial_condition();
+    for (int sbi = 0; sbi < n_subst_; sbi++)
+    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
+
+	output_data();
+}
 
 
 template<class Model>
 void TransportDG<Model>::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
-
-	// save solution and calculate mass balance at initial time
-	if (!allocation_done)
-	{
-		output_data();
-	}
 
     time_->next_time();
     time_->view("TDG");
@@ -391,6 +435,7 @@ void TransportDG<Model>::update_solution()
 		mass_matrix_changed())
 	{
 		ls_dt->start_add_assembly();
+		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
 		mass_matrix = ls_dt->get_matrix();
@@ -516,103 +561,16 @@ void TransportDG<Model>::output_data()
     double *solution;
     unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
 
-    if (!time_->is_current(output_mark_type)) return;
+    if (!time_->is_current( time_->marks().type_output() )) return;
 
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    IS is;
-    VecScatter output_scatter;
-    int row_ids[feo->dh()->n_global_dofs()];
-	Vec solution_vec;
+    output_vector_gather();
+	data_.output_fields.set_time(*time_);
+	data_.output_fields.output(output_stream);
+	output_stream->write_time_frame();
 
-	for (int i=0; i<feo->dh()->n_global_dofs(); i++)
-		row_ids[i] = i;
-
-	for (int sbi=0; sbi<n_subst_; sbi++)
-	{
-		VecCreateSeq(PETSC_COMM_SELF, ls[sbi]->size(), &solution_vec);
-
-		ISCreateGeneral(PETSC_COMM_SELF, ls[sbi]->size(), row_ids, PETSC_COPY_VALUES, &is); //WithArray
-		VecScatterCreate(ls[sbi]->get_solution(), is, solution_vec, PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
-
-		// on the main processor fill the output array and save to file
-		if (feo->dh()->el_ds()->myp() == 0)
-		{
-			int corner_id = 0; //, node_id;
-
-			// The solution is evaluated at vertices of each element.
-			// For this reason we construct quadratures whose quadrature
-			// points are placed at the vertices of the reference element.
-			Quadrature<1> q1(2);
-			Quadrature<2> q2(3);
-			Quadrature<3> q3(4);
-
-			for (int i=0; i<2; i++)
-				q1.set_point(i, RefElement<1>::node_coords(i).subvec(0,0));
-			for (int i=0; i<3; i++)
-				q2.set_point(i, RefElement<2>::node_coords(i).subvec(0,1));
-			for (int i=0; i<4; i++)
-				q3.set_point(i, RefElement<3>::node_coords(i).subvec(0,2));
-
-			FEValues<1,3> fv1(*feo->mapping<1>(), q1, *feo->fe<1>(), update_values);
-			FEValues<2,3> fv2(*feo->mapping<2>(), q2, *feo->fe<2>(), update_values);
-			FEValues<3,3> fv3(*feo->mapping<3>(), q3, *feo->fe<3>(), update_values);
-
-			VecGetArray(solution_vec, &solution);
-			FOR_ELEMENTS(mesh_, elem)
-			{
-				feo->dh()->get_dof_indices(elem, dof_indices);
-				switch (elem->dim())
-				{
-				case 1:
-					fv1.reinit(elem);
-					for (unsigned int k=0; k<q1.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv1.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv1.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 2:
-					fv2.reinit(elem);
-					for (unsigned int k=0; k<q2.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv2.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv2.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 3:
-					fv3.reinit(elem);
-					for (unsigned int k=0; k<q3.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv3.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv3.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				default:
-					break;
-				}
-
-			}
-		}
-
-		VecDestroy(&solution_vec);
-	}
-
-	if(transport_output) {
-		xprintf(MsgLog, "transport DG: write_data()\n");
-		transport_output->write_data(time_->t());
-	}
 	if (mass_balance() != NULL)
 		mass_balance()->output(time_->t());
 
@@ -1090,8 +1048,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell_sub->element_accessor(), mm_coef_lower);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
 
 		for (int sbi=0; sbi<n_subst_; sbi++)

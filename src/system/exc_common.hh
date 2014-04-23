@@ -20,7 +20,9 @@
  * Assert exception with an string message.
  */
 TYPEDEF_ERR_INFO( EI_Message, std::string);
-DECLARE_EXCEPTION( ExcAssertMsg, << "Violated Assert! " << EI_Message::val);
+TYPEDEF_ERR_INFO( EI_MPI_Rank, int);
+DECLARE_EXCEPTION( ExcAssertMsg, << "[" << EI_MPI_Rank::val << "] "
+		                         << "Violated Assert! " << EI_Message::val);
 
 /**
  * General exception with message.

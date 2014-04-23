@@ -186,5 +186,4 @@ protected:
 };
 
 
-
 #endif /* FUNCTION_BASE_HH_ */

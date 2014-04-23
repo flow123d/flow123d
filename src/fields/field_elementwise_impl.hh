@@ -45,7 +45,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 : FieldBase<spacedim, Value>(n_comp),
-  allow_init_from_input(true), data_(NULL), reader_(NULL), mesh_(NULL)
+  internal_raw_data(true), data_(NULL), reader_(NULL), mesh_(NULL)
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
@@ -56,7 +56,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size )
 : FieldBase<spacedim, Value>(n_components),
-  allow_init_from_input(false), data_size_(size), data_(data_ptr), reader_(NULL), mesh_(NULL)
+  internal_raw_data(false), data_size_(size), data_(data_ptr), reader_(NULL), mesh_(NULL)
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
 }
@@ -65,7 +65,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned i
 
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
-    ASSERT( allow_init_from_input, "Trying to initialize internal FieldElementwise from input.");
+    ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
     FilePath input_file = rec.val<FilePath>("gmsh_file");
     ASSERT( reader_ == NULL, "Multiple call of init_from_input.\n");
     reader_ = new GmshMeshReader(input_file);
@@ -176,7 +176,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::~FieldElementwise() {
-    if (data_ != NULL) delete [] data_;
+    if (internal_raw_data && data_ != NULL) delete [] data_;
     if (reader_ != NULL) delete reader_;
 }
 

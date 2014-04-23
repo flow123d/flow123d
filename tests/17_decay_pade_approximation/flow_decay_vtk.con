@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      data= [
+      input_fields= [
         { rid = 1,
           anisotropy = 0.01
         },
@@ -23,9 +23,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -36,7 +34,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      data= [
+      input_fields= [
         { rid = 1,
           init_conc = 
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
@@ -47,12 +45,8 @@
         }
       ],
 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
       substances = [
         "A", 
@@ -65,11 +59,12 @@
         end_time = 10.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE="PadeApproximant",
         matrix_exp_on = true,
         nom_pol_deg = 3,
         den_pol_deg = 3,
+
         decays = [
           {
             parent = "A",
@@ -123,6 +118,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

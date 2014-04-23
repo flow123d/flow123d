@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="6" NumberOfCells="3">
+<Points>
+<DataArray type="Float64" NumberOfComponents="3" format="ascii">
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int32" Name="connectivity" format="ascii">
+0 1 2 4 0 2 3 4 2 3 4 5 
+</DataArray>
+<DataArray type="Int32" Name="offsets" format="ascii">
+4 8 12 
+</DataArray>
+<DataArray type="UInt8" Name="types" format="ascii">
+10 10 10 
+</DataArray>
+</Cells>
+<CellData Scalars="A_conc,B_conc,A_conc_immobile,B_conc_immobile,A_conc_solid,B_conc_solid,A_conc_immobile_solid,B_conc_immobile_solid," Vectors="" Tensors="">
+<DataArray type="Float64" Name="A_conc" format="ascii">
+7.647520042517166e-05 2.521799879520305e-05 2.799760289740403e-21 
+</DataArray>
+<DataArray type="Float64" Name="B_conc" format="ascii">
+2.597645839114392e-04 8.621380790581223e-05 9.571655457764323e-21 
+</DataArray>
+<DataArray type="Float64" Name="A_conc_immobile" format="ascii">
+5.039489233965482e-03 2.518572945014104e-03 2.796177672752651e-19 
+</DataArray>
+<DataArray type="Float64" Name="B_conc_immobile" format="ascii">
+1.724409365015719e-02 8.617881891083997e-03 9.567770898981649e-19 
+</DataArray>
+<DataArray type="Float64" Name="A_conc_solid" format="ascii">
+4.917845421470594e-05 1.621678913218251e-05 1.800425268004012e-21 
+</DataArray>
+<DataArray type="Float64" Name="B_conc_solid" format="ascii">
+1.525654163872606e-04 5.064229488842667e-05 5.622424180498823e-21 
+</DataArray>
+<DataArray type="Float64" Name="A_conc_immobile_solid" format="ascii">
+3.240714495420934e-03 1.619603787556798e-03 1.798121415715670e-19 
+</DataArray>
+<DataArray type="Float64" Name="B_conc_immobile_solid" format="ascii">
+1.012943523505267e-02 5.062269114102063e-03 5.620247727324911e-19 
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>

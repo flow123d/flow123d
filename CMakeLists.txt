@@ -627,7 +627,7 @@ endif()
 
 
 # mpiexec, hope this will work
-install(DIRECTORY config 			DESTINATION bin/)
+install(DIRECTORY bin/config 			DESTINATION bin/)
 install(DIRECTORY bin/ndiff 			DESTINATION bin/)
 install(DIRECTORY bin/paraview 			DESTINATION bin/)
 install(DIRECTORY bin/py			DESTINATION bin/)
@@ -639,14 +639,16 @@ install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
 install(TARGETS    bin/flow123d 
 	RUNTIME DESTINATION bin/)
 install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
+install(FILES bin/README                        DESTINATION bin/)
 
 # make manual optional until we have Latex on Windows build machine
+install(DIRECTORY doc/con_syntax                DESTINATION doc/)
 install(FILES ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf 
-						DESTINATION doc/ OPTIONAL)
+						DESTINATION doc/)
 install(FILES doc/petsc_options_help 		DESTINATION doc/)
-install(FILES doc/flow_json.xml			DESTINATION doc/)
-install(FILES LICENSE DESTINATION doc/)
-install(FILES GPL3    DESTINATION doc/)
+install(FILES doc/LICENSE                       DESTINATION doc/)
+install(FILES doc/GPL3                          DESTINATION doc/)
+install(FILES doc/README                        DESTINATION doc/)
 
 # clean tests directory before install
 find_program (MAKE_EXECUTABLE NAMES make gmake)
@@ -661,10 +663,10 @@ INCLUDE(InstallRequiredSystemLibraries)
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
 SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "8")
-SET(CPACK_PACKAGE_VERSION_PATCH "0.alpha")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 

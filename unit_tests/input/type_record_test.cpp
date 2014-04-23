@@ -147,21 +147,24 @@ using namespace Input::Type;
 //::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     {
-    static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
-    sub_rec.declare_key("int_key", Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
+     Record sub_rec = Record( "SubRecord", "")
+    				 .declare_key("default_bool", Bool(), Default("false"), "")
+    				 .declare_key("optional_bool", Bool(), Default::optional(), "")
+    				 .declare_key("read_time_bool", Bool(), Default::read_time(""), "")
+     	 	 	 	 .declare_key("int_key", Integer(),  "")
+     	 	 	 	 .allow_auto_conversion("int_key");
     sub_rec.finish();
 
-    EXPECT_EQ(1, sub_rec.auto_conversion_key_iter()->key_index );
+    EXPECT_EQ(3, sub_rec.auto_conversion_key_iter()->key_index );
     }
 
     {
     static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), "");
+    sub_rec.declare_key("obligatory_int", Integer(), Default::obligatory(), "");
     sub_rec.declare_key("int_key", Integer(),  "");
     sub_rec.allow_auto_conversion("int_key");
-    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg, "Finishing Record auto convertible from the key 'int_key', but other key: 'bool_key' has no default value.");
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg,
+    		"Finishing Record auto convertible from the key 'int_key', but other obligatory key: 'obligatory_int' has no default value.");
     }
 
     {
