@@ -940,14 +940,9 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::input_type) {
-    		xprintf(Warn, "For BDDC is using no Schur complements.");
-            n_schur_compls = 0;
-    	} else if (n_schur_compls > 2) {
-            xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
-            n_schur_compls = 2;
-        }
-        if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
 #ifdef HAVE_BDDCML
+            xprintf(Warn, "For BDDC is using no Schur complements.");
+            n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
@@ -962,14 +957,17 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 #else
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
 #endif
-        }
-
-
+        } 
+        else if (in_rec.type() == LinSys_PETSC::input_type) {
         // use PETSC for serial case even when user wants BDDC
-        if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
-        	LinSys_PETSC *schur1, *schur2;
+            if (n_schur_compls > 2) {
+                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+                n_schur_compls = 2;
+            }
 
-        	if (n_schur_compls == 0) {
+            LinSys_PETSC *schur1, *schur2;
+
+            if (n_schur_compls == 0) {
                 LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
@@ -981,35 +979,35 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
                 ls->set_solution( NULL );
                 schur0=ls;
-        	} else {
-        		IS is;
-        		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-        		ASSERT(err == 0,"Error in ISCreateStride.");
+            } else {
+                IS is;
+                err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+                ASSERT(err == 0,"Error in ISCreateStride.");
 
-        		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
-        		ls->set_from_input(in_rec);
-        		ls->set_solution( NULL );
-        		ls->set_positive_definite();
+                SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
+                ls->set_from_input(in_rec);
+                ls->set_solution( NULL );
+                ls->set_positive_definite();
 
-        		// make schur1
-            	Distribution *ds = ls->make_complement_distribution();
-            	if (n_schur_compls==1) {
-            		schur1 = new LinSys_PETSC(ds);
-            	} else {
-        			IS is;
-        			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-        			ASSERT(err == 0,"Error in ISCreateStride.");
-        			SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
-        			ls1->set_negative_definite();
+                // make schur1
+                Distribution *ds = ls->make_complement_distribution();
+                if (n_schur_compls==1) {
+                    schur1 = new LinSys_PETSC(ds);
+                } else {
+                    IS is;
+                    err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    ASSERT(err == 0,"Error in ISCreateStride.");
+                    SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+                    ls1->set_negative_definite();
 
-        			// make schur2
-        			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
-        			ls1->set_complement( schur2 );
-        			schur1 = ls1;
-            	}
-            	ls->set_complement( schur1 );
-        		schur0=ls;
-        	}
+                    // make schur2
+                    schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+                    ls1->set_complement( schur2 );
+                    schur1 = ls1;
+                }
+                ls->set_complement( schur1 );
+                schur0=ls;
+            }
 
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
@@ -1022,8 +1020,7 @@ void DarcyFlowMH_Steady::make_schurs( const Input::AbstractRecord in_rec) {
 
             VecZeroEntries(schur0->get_solution());
         }
-
-        if (schur0==NULL) {
+        else {
             xprintf(Err, "Unknown solver type. Internal error.\n");
         }
     }

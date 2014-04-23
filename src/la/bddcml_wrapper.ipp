@@ -350,8 +350,9 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int lnumSubLev   = numSubLev.size();
     int commInt      = MPI_Comm_c2f( comm_ ); // translate C MPI communicator hanlder to Fortran integer
     int numBase      = 0;                     // indexing starts with 0 for C++
+    int justDirectSolve = 0;
 
-    bddcml_init( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase );
+    bddcml_init( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase, &justDirectSolve );
 
 
     //============= uploading data for subdomain
@@ -500,7 +501,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;
-    bddcml_dotprod_subdomain( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
+    if (nProc_ > 1 ) {
+        bddcml_dotprod_subdomain( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
+    } else {
+        for ( double elem: rhsVec_ )  normSquaredLoc += elem*elem;
+    }
 
     // sum over processes
     double normSquared = 0.;
@@ -536,7 +541,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     normSquaredLoc = 0.;
-    bddcml_dotprod_subdomain( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
+    if (nProc_ > 1 ) {
+       bddcml_dotprod_subdomain( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
+    } else {
+        for ( double elem: sol_ )  normSquaredLoc += elem*elem;
+    }
 
     // sum over processes
     normSquared = 0.;
