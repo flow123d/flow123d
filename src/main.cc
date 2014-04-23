@@ -106,7 +106,7 @@ void Application::display_version() {
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
+    xprintf(Msg, "This is Flow123d, version %s, commit: %s\n", version.c_str(), revision.c_str());
     xprintf(Msg,
     	 "Branch: %s\n"
 		 "Build: %s\n"
