@@ -73,7 +73,7 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
-
+class DarcyFlowMHOutput;
 
 
 /**
@@ -158,6 +158,10 @@ public:
          * introduce some kind of context pointer into @p FieldCommonBase.
          */
         static arma::vec4 gravity_;
+
+        FieldSet	time_term_fields;
+        FieldSet	main_matrix_fields;
+        FieldSet	rhs_fields;
     };
 
 
@@ -169,9 +173,6 @@ public:
      *   we want to make this class see values in
      *
      */
-    //class
-
-
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
@@ -190,15 +191,21 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
+        // here assume that velocity field is extended as constant
+        // to the previous time, so here we set left bound of the interval where the velocity
+        // has current value; this may not be good for every transport !!
+        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
+        // let every equation set time according to nature of the time scheme
+
+        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
+        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
     
-    //returns reference to equation data
-    virtual EqData &get_data() = 0;
-    
-    
     virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
+
+    virtual void set_concentration_vector(Vec &vc){};
 
 
 protected:
@@ -211,22 +218,19 @@ protected:
 
     }
 
-    virtual void postprocess() =0;
+    //virtual void postprocess() =0;
 
     virtual double solution_precision() const = 0;
 
     //virtual void balance();
     //virtual void integrate_sources();
 
-protected:  
     
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
-    // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
-    double mortar_sigma_;
 };
 
 
@@ -267,7 +271,7 @@ public:
       {}
     };
     
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
 
     static Input::Type::Record input_type;
 
@@ -276,44 +280,71 @@ public:
     virtual void get_parallel_solution_vector(Vec &vector);
     void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
-    //returns reference to equation data
-    virtual DarcyFlowMH::EqData &get_data()
-    {return data;}
-
     /// postprocess velocity field (add sources)
     virtual void postprocess();
+    virtual void output_data() override;
+
     ~DarcyFlowMH_Steady();
 
 
 protected:
-    virtual void modify_system() {};
-    void set_R() {};
+    void make_serial_scatter();
+    virtual void modify_system()
+    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
+    virtual void setup_time_term()
+    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+
+
+    //void set_R() {};
     void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
-    void preallocate_mh_matrix();
+
+    /**
+     * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
+     */
+    void create_linear_system();
+
+    /**
+     * Read initial condition into solution vector.
+     * Must be called after create_linear_system.
+     *
+     */
+    virtual void read_init_condition() {};
+
+    /**
+     * Abstract assembly method used for both assembly and preallocation.
+     * Assembly only steady part of the equation.
+     * TODO:
+     * - use general preallocation methods in DofHandler
+     * - include alos time term
+     * - add support for Robin type sources
+     * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
+     *
+     */
     void assembly_steady_mh_matrix();
-    void coupling_P0_mortar_assembly();
-    void mh_abstract_assembly_intersection();
-    //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schurs( const Input::AbstractRecord in_rec);
+
+    /**
+     * Assembly or update whole linear system.
+     */
+    void assembly_linear_system();
+
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     double solution_precision() const;
+
+
+    DarcyFlowMHOutput *output_object;
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	//struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
-	LinSys_PETSC *schur1;  	//< first schur compl.
-	LinSys_PETSC *schur2;  	//< second ..
+	//LinSys_PETSC *schur1;  	//< first schur compl.
+	//LinSys_PETSC *schur2;  	//< second ..
 
 
 	// parallel
-	int np;                         //< number of procs
-	int myp;                        //< my proc number
-	int	 lsize;	                //< local size of whole MH matrix
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
@@ -334,11 +365,10 @@ protected:
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-
-    double mortar_sigma;
         
-  EqData data;
+  EqData data_;
 
+  friend class DarcyFlowMHOutput;
   friend class P0_CouplingAssembler;
   friend class P1_CouplingAssembler;
 };
@@ -452,7 +482,8 @@ public:
     
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     
 private:
@@ -493,14 +524,11 @@ public:
     
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
-
-    //returns reference to equation data
-    //virtual DarcyFlowMH::EqData &get_data()
-    //{return data;}
     
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     virtual void postprocess();
 private:
@@ -508,9 +536,10 @@ private:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
-    Vec time_term;
+    //Vec time_term;
 };
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------
 // vim: set cindent:
+

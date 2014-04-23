@@ -1,0 +1,12 @@
+unit list:
+  - $PLACEHOLDER_unit_list$
+  
+unit jobs:
+  - name "Flow123d_$PLACEHOLDER_unit_list$"  
+  
+test list:
+  - $PLACEHOLDER_test_list$
+  
+test jobs:
+  - name "Flow123d_$PLACEHOLDER_test_list$"  
+  

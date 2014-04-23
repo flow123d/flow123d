@@ -217,7 +217,7 @@ public:
     /**
      * Copy keys from other record. If @p other record is not yet constructed, we postpone copy to the finish phase.
      */
-    Record &copy_keys(Record &other);
+    Record &copy_keys(const Record &other);
 
     /**
      * Allows shorter input of the Record providing only value of the \p from_key given as the parameter.
@@ -334,9 +334,9 @@ protected:
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        if (! is_finished()) {
-            DBGMSG("Record not finished!\n");
-        }
+        //if (! is_finished()) {
+        //    DBGMSG("Record not finished!\n");
+        //}
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
@@ -393,7 +393,7 @@ protected:
         /**
          * List of pointers to copy keys from at finish phase.
          */
-        vector<Record *> copy_from_ptr;
+        vector<const Record *> copy_from_ptr;
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
         boost::shared_ptr<AbstractRecord> parent_ptr_;

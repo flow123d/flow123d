@@ -173,6 +173,7 @@ add_subdirectory("fields")
 add_subdirectory("fem")
 add_subdirectory("mesh")
 add_subdirectory("coupling")
+add_subdirectory("output")
 
 
 #################################################################################################

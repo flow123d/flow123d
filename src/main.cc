@@ -51,7 +51,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.7.0_dev"
+#define _PROGRAM_VERSION_   "1.8.0"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -79,9 +79,9 @@ it::Record Application::input_type
     .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
-    		"If true, the program will wait for key press before it terminates.")
-    .declare_key("output_streams", it::Array( OutputTime::input_type ),
-    		"Array of formated output streams to open.");
+    		"If true, the program will wait for key press before it terminates.");
+//    .declare_key("output_streams", it::Array( OutputTime::input_type ),
+//    		"Array of formated output streams to open.");
 
 
 
@@ -105,10 +105,13 @@ void Application::display_version() {
     string url(_GIT_URL_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
-    int mpi_size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
+
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
-    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
+    xprintf(Msg,
+    	 "Branch: %s\n"
+		 "Build: %s\n"
+		 "Fetch URL: %s\n",
+		 branch.c_str(), build.c_str() , url.c_str() );
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
 
@@ -123,7 +126,6 @@ Input::Record Application::read_input() {
     
     // read main input file
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
@@ -152,9 +154,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("solve,s", po::value< string >(), "Main input file to solve.")
-        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
-        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
-        ("log,l", po::value< string >(), "Set base name for log files.")
+        ("input_dir,i", po::value< string >()->default_value("input"), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >()->default_value("output"), "Directory for all produced output files.")
+        ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
@@ -188,6 +190,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("help")) {
         cout << desc << "\n";
         exit( exit_output );
+    }
+
+    if (vm.count("version")) {
+    	display_version();
+    	exit( exit_output );
     }
 
     // if there is "full_doc" option
@@ -252,14 +259,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
+    if (vm.count("log")) {
+        log_filename_ = vm["log"].as<string>();
+    }
+
     if (vm.count("no_log")) {
-        log_filename_="\n";     // do not open log files
-    } else {
-        if (vm.count("log_filename")) {
-            log_filename_ = vm["log"].as<string>();
-        } else {
-            log_filename_ = ""; // use default
-        }
+        log_filename_="//";     // override; do not open log files
     }
 
     ostringstream tmp_stream(program_arguments_desc_);
@@ -273,7 +278,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::run() {
     //use_profiler=true;
-    Profiler::initialize();
+
 
     display_version();
 
@@ -293,35 +298,10 @@ void Application::run() {
 
         if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
-            // try to find "output_streams" record
-            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
-
-            int rank=0;
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // Go through all configuration of "root" output streams and create them.
-                // Other output streams can be created on the fly and added to the array
-                // of output streams
-                if(output_streams) {
-                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-                            output_stream_rec != (*output_streams).end();
-                            i++, ++output_stream_rec)
-                    {
-                        OutputTime::output_stream(*output_stream_rec);
-                    }
-                }
-            }
-
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
             // run simulation
             problem->run_simulation();
-
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // free all output streams
-                OutputTime::destroy_all();
-            }
 
             delete problem;
         } else {

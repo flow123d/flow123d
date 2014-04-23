@@ -1,30 +1,58 @@
-This file contain list and description of all binaries and scripts located
-in ./bin directory. If you add new script or binary to this directory, then
+
+bin/ folder description
+=======================
+
+If you add new script or binary to this directory, then
 please add short description about it to this file.
 
-ndiff
+benchmark/
+ - support for benchmarks (in developement)
+ - SOURCE PACKAGE ONLY
+ 
+config/
+ - configuration files for flow123d.sh script
+ 
+ndiff/
  - Folder containing Perl scripts for smart diff of output files
 
-py
+paraview/
+ - some useful scripts for Paraview 
+ 
+py/
  - Folder with some Python scripts
 
-stub
+stub/
  - Folder with obsolete scripts
+ - SOURCE PACKAGE ONLY
 
-tests
+tests/
  - Folder with test scripts
  
+flow123d.sh 
+ - script to help starting parallel computations, namely on PBS systems
+ 
+ini2json.sh
+ - conversion form old INI files (used by versions up to 1.6.7) to the CON files 
+   (of version 1.7.0) not fully automatic, manual modifications may be necessary
+ 
+time_limit.sh
+ - script to run other process with with execution time limit (in portable way)
+ 
+python.supp 
+ - suppression file for valgrind (doesn't work yet)
+ - SOURCE PACKAGE ONLY
+ 
 flow123d
- - flow123d binary is product of build system
+ - link to the flow123d binary is product of build system
  - Generated file
 
 mpiexec
- - Bash script containing current absolute path to the mpiexec binary
+ - link to the Bash script containing current absolute path to the mpiexec binary
  - Generated file
- - Obsolete
- 
-README
- - This file
 
-svnversion.sh
- - Script for getting the highest number of svn revision
+git_post_checkout_hook
+ - git hook to manage links from then source directory to the build directory
+ - SOURCE PACKAGE ONLY
+
+
+

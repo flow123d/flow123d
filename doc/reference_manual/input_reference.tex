@@ -1,8 +1,7 @@
 
-\begin{RecordType}{\HTRaised{IT::Root}{Root}}{}{}{\relax}{Root record of JSON input for Flow123d.}
+\begin{RecordType}{\HTRaised{IT::Root}{Root}}{}{}{}{Root record of JSON input for Flow123d.}
 \KeyItem{\hyperB{Root::problem}{problem}}{abstract type: \hyperlink{IT::Problem}{Problem}}{\textless\it obligatory\textgreater}{}{Simulation problem to be solved.}
 \KeyItem{\hyperB{Root::pause-after-run}{pause\_after\_run}}{Bool}{false}{}{If true, the program will wait for key press before it terminates.}
-\KeyItem{\hyperB{Root::output-streams}{output\_streams}}{Array  of record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it optional\textgreater}{}{Array of formated output streams to open.}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Problem}{Problem}}{}{}{The root record of description of particular the problem to solve.}
@@ -19,8 +18,8 @@
 \KeyItem{\hyperB{SequentialCoupling::secondary-equation}{secondary\_equation}}{abstract type: \hyperlink{IT::Transport}{Transport}}{\textless\it optional\textgreater}{}{The equation that depends (the velocity field) on the result of the primary equation.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::Mesh}{Mesh}}{}{}{\hyperlink{}{}}{Record with mesh related data.}
-\KeyItem{\hyperB{Mesh::mesh-file}{mesh\_file}}{input file name}{\textless\it obligatory\textgreater}{\hyperlink{}{}}{Input file with mesh description.}
+\begin{RecordType}{\HTRaised{IT::Mesh}{Mesh}}{}{}{}{Record with mesh related data.}
+\KeyItem{\hyperB{Mesh::mesh-file}{mesh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with mesh description.}
 \KeyItem{\hyperB{Mesh::regions}{regions}}{Array  of record: \hyperlink{IT::Region}{Region}}{\textless\it optional\textgreater}{}{List of additional region definitions not contained in the mesh.}
 \KeyItem{\hyperB{Mesh::sets}{sets}}{Array  of record: \hyperlink{IT::RegionSet}{RegionSet}}{\textless\it optional\textgreater}{}{List of region set definitions. There are three region sets implicitly defined:\\ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)}
 \KeyItem{\hyperB{Mesh::partitioning}{partitioning}}{record: \hyperlink{IT::Partition}{Partition}}{any\_neighboring}{}{Parameters of mesh partitioning algorithms.\\}
@@ -59,10 +58,10 @@ neighborings of elements of different dimension.}
 \KeyItem{same\_dimension\_neghboring}{Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).}
 \end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::TimeGovernor}{TimeGovernor}}{}{}{}{Setting of the simulation time. (can be specific to one eqaution)}
+\begin{RecordType}{\HTRaised{IT::TimeGovernor}{TimeGovernor}}{}{\hyperlink{TimeGovernor::init-dt}{init\_dt}}{}{Setting of the simulation time. (can be specific to one equation)}
 \KeyItem{\hyperB{TimeGovernor::start-time}{start\_time}}{Double }{0.0}{}{Start time of the simulation.}
-\KeyItem{\hyperB{TimeGovernor::end-time}{end\_time}}{Double }{\textless\it obligatory\textgreater}{}{End time of the simulation.}
-\KeyItem{\hyperB{TimeGovernor::init-dt}{init\_dt}}{Double [0, ]}{\textless\it optional\textgreater}{}{Initial guess for the time step. The time step is fixed if hard time step limits are not set.}
+\KeyItem{\hyperB{TimeGovernor::end-time}{end\_time}}{Double }{\textless\it optional\textgreater}{}{End time of the simulation.}
+\KeyItem{\hyperB{TimeGovernor::init-dt}{init\_dt}}{Double [0, ]}{0.0}{}{Initial guess for the time step.\\The time step is fixed if the hard time step limits are not set.\\If set to 0.0, the time step is determined in fully autonomous way if the equation supports it.}
 \KeyItem{\hyperB{TimeGovernor::min-dt}{min\_dt}}{Double [0, ]}{"Machine precision or 'init\_dt' if specified"}{}{Hard lower limit for the time step.}
 \KeyItem{\hyperB{TimeGovernor::max-dt}{max\_dt}}{Double [0, ]}{"Whole time of the simulation or 'init\_dt' if specified"}{}{Hard upper limit for the time step.}
 \end{RecordType}
@@ -79,8 +78,7 @@ neighborings of elements of different dimension.}
 \KeyItem{\hyperB{Steady-MH::solver}{solver}}{abstract type: \hyperlink{IT::LinSys}{LinSys}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{Steady-MH::output}{output}}{record: \hyperlink{IT::DarcyMHOutput}{DarcyMHOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output form MH module.}
 \KeyItem{\hyperB{Steady-MH::mortar-method}{mortar\_method}}{selection: \hyperlink{IT::MH-MortarMethod}{MH\_MortarMethod}}{None}{}{Method for coupling Darcy flow between dimensions.}
-\KeyItem{\hyperB{Steady-MH::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{Steady-MH::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{Steady-MH::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Data}{DarcyFlowMH\_Data}}{\textless\it obligatory\textgreater}{}{}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::LinSys}{LinSys}}{}{}{Linear solver setting.}
@@ -107,30 +105,29 @@ neighborings of elements of different dimension.}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::DarcyMHOutput}{DarcyMHOutput}}{}{}{}{Parameters of MH output.}
-\KeyItem{\hyperB{DarcyMHOutput::save-step}{save\_step}}{Double [0, ]}{1.0}{}{Regular step between MH outputs.}
 \KeyItem{\hyperB{DarcyMHOutput::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{DarcyMHOutput::velocity-p0}{velocity\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for P0 approximation of the velocity field.}
-\KeyItem{\hyperB{DarcyMHOutput::pressure-p0}{pressure\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for P0 approximation of the pressure field.}
-\KeyItem{\hyperB{DarcyMHOutput::pressure-p1}{pressure\_p1}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for P1 approximation of the pressure field.}
-\KeyItem{\hyperB{DarcyMHOutput::piezo-head-p0}{piezo\_head\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for P0 approximation of the piezometric head field.}
+\KeyItem{\hyperB{DarcyMHOutput::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::DarcyMHOutput-Selection}{DarcyMHOutput\_Selection}}{\textless\it obligatory\textgreater}{}{List of fields to write to output file.}
 \KeyItem{\hyperB{DarcyMHOutput::balance-output}{balance\_output}}{output file name}{water\_balance.txt}{}{Output file for water balance table.}
-\KeyItem{\hyperB{DarcyMHOutput::subdomains}{subdomains}}{String (generic)}{\textless\it optional\textgreater}{}{Output stream for subdomain indices (partitioning of mesh elements) used by DarcyFlow module.}
+\KeyItem{\hyperB{DarcyMHOutput::compute-errors}{compute\_errors}}{Bool}{false}{}{SPECIAL PURPOSE. Computing errors pro non-compatible coupling.}
 \KeyItem{\hyperB{DarcyMHOutput::raw-flow-output}{raw\_flow\_output}}{output file name}{\textless\it optional\textgreater}{}{Output file with raw data form MH module.}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::OutputStream}{OutputStream}}{}{}{}{Parameters of output.}
 \KeyItem{\hyperB{OutputStream::name}{name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The name of this stream. Used to reference the output stream.}
 \KeyItem{\hyperB{OutputStream::file}{file}}{output file name}{\textless\it obligatory\textgreater}{}{File path to the connected output file.}
-\KeyItem{\hyperB{OutputStream::format}{format}}{abstract type: \hyperlink{IT::OutputFormat}{OutputFormat}}{\textless\it optional\textgreater}{}{Format of output stream and possible parameters.}
+\KeyItem{\hyperB{OutputStream::format}{format}}{abstract type: \hyperlink{IT::OutputTime}{OutputTime}}{\textless\it optional\textgreater}{}{Format of output stream and possible parameters.}
+\KeyItem{\hyperB{OutputStream::time-step}{time\_step}}{Double [0, ]}{\textless\it optional\textgreater}{}{Time interval between outputs.\\Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\\The start time and the end time are always added. }
+\KeyItem{\hyperB{OutputStream::time-list}{time\_list}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Explicit array of output time points (can be combined with 'time\_step'.}
+\KeyItem{\hyperB{OutputStream::add-input-times}{add\_input\_times}}{Bool}{false}{}{Add all input time points of the equation, mentioned in the 'input\_fields' list, also as the output points.}
 \end{RecordType}
 
-\begin{AbstractType}{\HTRaised{IT::OutputFormat}{OutputFormat}}{}{}{Format of output stream and possible parameters.}
+\begin{AbstractType}{\HTRaised{IT::OutputTime}{OutputTime}}{}{}{Format of output stream and possible parameters.}
 \Descendant{\hyperlink{IT::vtk}{vtk}}
 \Descendant{\hyperlink{IT::gmsh}{gmsh}}
 \end{AbstractType}
 
-\begin{RecordType}{\HTRaised{IT::vtk}{vtk}}{\hyperlink{IT::OutputFormat}{OutputFormat}}{}{}{Parameters of vtk output format.}
-\KeyItem{\hyperB{vtk::TYPE}{TYPE}}{selection: OutputFormat\_TYPE\_selection}{vtk}{}{Sub-record selection.}
+\begin{RecordType}{\HTRaised{IT::vtk}{vtk}}{\hyperlink{IT::OutputTime}{OutputTime}}{}{}{Parameters of vtk output format.}
+\KeyItem{\hyperB{vtk::TYPE}{TYPE}}{selection: OutputTime\_TYPE\_selection}{vtk}{}{Sub-record selection.}
 \KeyItem{\hyperB{vtk::variant}{variant}}{selection: \hyperlink{IT::VTK variant (ascii or binary)}{VTK variant (ascii or binary)}}{ascii}{}{Variant of output stream file format.}
 \KeyItem{\hyperB{vtk::parallel}{parallel}}{Bool}{false}{}{Parallel or serial version of file format.}
 \KeyItem{\hyperB{vtk::compression}{compression}}{selection: \hyperlink{IT::Type of compression of VTK file format}{Type of compression of VTK file format}}{none}{}{Compression used in output stream file format.}
@@ -146,9 +143,27 @@ neighborings of elements of different dimension.}
 \KeyItem{zlib}{Data in VTK file format are compressed using zlib (not supported yet)}
 \end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::gmsh}{gmsh}}{\hyperlink{IT::OutputFormat}{OutputFormat}}{}{}{Parameters of gmsh output format.}
-\KeyItem{\hyperB{gmsh::TYPE}{TYPE}}{selection: OutputFormat\_TYPE\_selection}{gmsh}{}{Sub-record selection.}
+\begin{RecordType}{\HTRaised{IT::gmsh}{gmsh}}{\hyperlink{IT::OutputTime}{OutputTime}}{}{}{Parameters of gmsh output format.}
+\KeyItem{\hyperB{gmsh::TYPE}{TYPE}}{selection: OutputTime\_TYPE\_selection}{gmsh}{}{Sub-record selection.}
 \end{RecordType}
+
+\begin{SelectionType}{\HTRaised{IT::DarcyMHOutput-Selection}{DarcyMHOutput\_Selection}}{Selection of fields available for output.}
+\KeyItem{anisotropy}{Output of field anisotropy (Anisotropy of the conductivity tensor.).}
+\KeyItem{cross\_section}{Output of field cross\_section (Complement dimension parameter (cross section for 1D, thickness for 2D).).}
+\KeyItem{conductivity}{Output of field conductivity (Isotropic conductivity scalar.).}
+\KeyItem{sigma}{Output of field sigma (Transition coefficient between dimensions.).}
+\KeyItem{water\_source\_density}{Output of field water\_source\_density (Water source density.).}
+\KeyItem{init\_pressure}{Output of field init\_pressure (Initial condition as pressure).}
+\KeyItem{storativity}{Output of field storativity (Storativity.).}
+\KeyItem{pressure\_p0}{Output of field pressure\_p0.}
+\KeyItem{pressure\_p1}{Output of field pressure\_p1.}
+\KeyItem{piezo\_head\_p0}{Output of field piezo\_head\_p0.}
+\KeyItem{velocity\_p0}{Output of field velocity\_p0.}
+\KeyItem{subdomain}{Output of field subdomain.}
+\KeyItem{pressure\_diff}{Output of field pressure\_diff.}
+\KeyItem{velocity\_diff}{Output of field velocity\_diff.}
+\KeyItem{div\_diff}{Output of field div\_diff.}
+\end{SelectionType}
 
 \begin{SelectionType}{\HTRaised{IT::MH-MortarMethod}{MH\_MortarMethod}}{}
 \KeyItem{None}{Mortar space: P0 on elements of lower dimension.}
@@ -156,112 +171,28 @@ neighborings of elements of different dimension.}
 \KeyItem{P1}{Mortar space: P1 on intersections, using non-conforming pressures.}
 \end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'DarcyFlowMH\_Steady'.
+\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Data}{DarcyFlowMH\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\textless\it optional\textgreater}{}{Default Field value: none \\ Boundary condition type, possible values:}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-pressure}{bc\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Dirichlet BC condition value for pressure.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Flux in Neumman or Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::bc-piezo-head}{bc\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Boundary condition for pressure as piezometric head.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BoundaryData::flow-old-bcd-file}{flow\_old\_bcd\_file}}{input file name}{\textless\it optional\textgreater}{}{}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{selection: \hyperlink{IT::EqData-bc-Type}{EqData\_bc\_Type}}{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{SelectionType}{\HTRaised{IT::EqData-bc-Type}{EqData\_bc\_Type}}{}
-\KeyItem{none}{Homogeneous Neoumann BC.}
-\KeyItem{dirichlet}{}
-\KeyItem{neumann}{}
-\KeyItem{robin}{}
-\KeyItem{total\_flux}{}
-\end{SelectionType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldInterpolatedP0::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldInterpolatedP0}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldInterpolatedP0::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
-\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
-\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
-\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
-\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
-\Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
-\end{AbstractType}
-
-\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
-\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
-\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
-\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
-\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
-\KeyItem{\hyperB{FieldInterpolatedP0::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldInterpolatedP0}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldInterpolatedP0::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
-\KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
-\end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'DarcyFlowMH\_Steady'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any DarcyFlowMH\_Steady\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::anisotropy}{anisotropy}}{abstract type: \hyperlink{IT::Field:R3 - Real[3,3]}{Field:R3 $\rightarrow$ Real[3,3]}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Anisotropy of the conductivity tensor.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::cross-section}{cross\_section}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Complement dimension parameter (cross section for 1D, thickness for 2D).}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::conductivity}{conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Isotropic conductivity scalar.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::sigma}{sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Transition coefficient between dimensions.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::water-source-density}{water\_source\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Water source density.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-pressure}{init\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Initial condition as pressure}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::storativity}{storativity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Storativity.}
-\KeyItem{\hyperB{DarcyFlowMH-Steady-BulkData::init-piezo-head}{init\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial condition for pressure as piezometric head.}
+ any DarcyFlowMH\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{DarcyFlowMH-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::anisotropy}{anisotropy}}{abstract type: \hyperlink{IT::Field:R3 - Real[3,3]}{Field:R3 $\rightarrow$ Real[3,3]}}{\textless\it optional\textgreater}{}{Anisotropy of the conductivity tensor.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::cross-section}{cross\_section}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Complement dimension parameter (cross section for 1D, thickness for 2D).}
+\KeyItem{\hyperB{DarcyFlowMH-Data::conductivity}{conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Isotropic conductivity scalar.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::sigma}{sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transition coefficient between dimensions.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::water-source-density}{water\_source\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Water source density.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\textless\it optional\textgreater}{}{Boundary condition type, possible values:}
+\KeyItem{\hyperB{DarcyFlowMH-Data::bc-pressure}{bc\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Dirichlet BC condition value for pressure.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Flux in Neumman or Robin boundary condition.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::init-pressure}{init\_pressure}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial condition as pressure}
+\KeyItem{\hyperB{DarcyFlowMH-Data::storativity}{storativity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Storativity.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::bc-piezo-head}{bc\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Boundary condition for pressure as piezometric head.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::init-piezo-head}{init\_piezo\_head}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial condition for pressure as piezometric head.}
+\KeyItem{\hyperB{DarcyFlowMH-Data::flow-old-bcd-file}{flow\_old\_bcd\_file}}{input file name}{\textless\it optional\textgreater}{}{File with mesh dependent boundary conditions (obsolete).}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Real[3,3]}{Field:R3 $\rightarrow$ Real[3,3]}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{\AddDoc{Field:R3 $\rightarrow$ Real[3,3]}}{Abstract record for all time-space functions.}
@@ -301,15 +232,88 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
 \end{RecordType}
 
+\begin{AbstractType}{\HTRaised{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
+\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
+\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
+\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
+\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
+\Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
+\end{AbstractType}
+
+\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Real Field constant in space.}
+\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldConstant::value}{value}}{Double }{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by a Python script.}
+\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
+\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
+\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field given by runtime interpreted formula.}
+\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
+\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
+\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{}{}{R3 $\rightarrow$ Real Field constant in space.}
+\KeyItem{\hyperB{FieldInterpolatedP0::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Real\_TYPE\_selection}{FieldInterpolatedP0}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldInterpolatedP0::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
+\KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
+\end{RecordType}
+
+\begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
+\Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
+\Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
+\Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
+\Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
+\end{AbstractType}
+
+\begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Enum Field constant in space.}
+\KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldConstant::value}{value}}{selection: \hyperlink{IT::EqData-bc-Type}{EqData\_bc\_Type}}{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
+\end{RecordType}
+
+\begin{SelectionType}{\HTRaised{IT::EqData-bc-Type}{EqData\_bc\_Type}}{}
+\KeyItem{none}{Homogeneous Neoumann BC.}
+\KeyItem{dirichlet}{}
+\KeyItem{neumann}{}
+\KeyItem{robin}{}
+\KeyItem{total\_flux}{}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
+\KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
+\KeyItem{\hyperB{FieldInterpolatedP0::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldInterpolatedP0}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldInterpolatedP0::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
+\KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldElementwise}{FieldElementwise}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
+\KeyItem{\hyperB{FieldElementwise::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldElementwise}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldElementwise::gmsh-file}{gmsh\_file}}{input file name}{\textless\it obligatory\textgreater}{}{Input file with ASCII GMSH file format.}
+\KeyItem{\hyperB{FieldElementwise::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
+\end{RecordType}
+
 \begin{RecordType}{\HTRaised{IT::Unsteady-MH}{Unsteady\_MH}}{\hyperlink{IT::DarcyFlowMH}{DarcyFlowMH}}{}{}{Mixed-Hybrid solver for unsteady saturated Darcy flow.}
 \KeyItem{\hyperB{Unsteady-MH::TYPE}{TYPE}}{selection: DarcyFlowMH\_TYPE\_selection}{Unsteady\_MH}{}{Sub-record selection.}
 \KeyItem{\hyperB{Unsteady-MH::n-schurs}{n\_schurs}}{Integer [0, 2]}{2}{}{Number of Schur complements to perform when solving MH sytem.}
 \KeyItem{\hyperB{Unsteady-MH::solver}{solver}}{abstract type: \hyperlink{IT::LinSys}{LinSys}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{Unsteady-MH::output}{output}}{record: \hyperlink{IT::DarcyMHOutput}{DarcyMHOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output form MH module.}
 \KeyItem{\hyperB{Unsteady-MH::mortar-method}{mortar\_method}}{selection: \hyperlink{IT::MH-MortarMethod}{MH\_MortarMethod}}{None}{}{Method for coupling Darcy flow between dimensions.}
+\KeyItem{\hyperB{Unsteady-MH::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Data}{DarcyFlowMH\_Data}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{Unsteady-MH::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the unsteady Darcy flow model.}
-\KeyItem{\hyperB{Unsteady-MH::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{Unsteady-MH::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{\textless\it obligatory\textgreater}{}{}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::Unsteady-LMH}{Unsteady\_LMH}}{\hyperlink{IT::DarcyFlowMH}{DarcyFlowMH}}{}{}{Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.}
@@ -318,14 +322,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{Unsteady-LMH::solver}{solver}}{abstract type: \hyperlink{IT::LinSys}{LinSys}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
 \KeyItem{\hyperB{Unsteady-LMH::output}{output}}{record: \hyperlink{IT::DarcyMHOutput}{DarcyMHOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output form MH module.}
 \KeyItem{\hyperB{Unsteady-LMH::mortar-method}{mortar\_method}}{selection: \hyperlink{IT::MH-MortarMethod}{MH\_MortarMethod}}{None}{}{Method for coupling Darcy flow between dimensions.}
+\KeyItem{\hyperB{Unsteady-LMH::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Data}{DarcyFlowMH\_Data}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{Unsteady-LMH::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the unsteady Darcy flow model.}
-\KeyItem{\hyperB{Unsteady-LMH::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BoundaryData}{DarcyFlowMH\_Steady\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{Unsteady-LMH::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{DarcyFlowMH\_Steady\_BulkData}}{\textless\it obligatory\textgreater}{}{}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Transport}{Transport}}{}{}{Secondary equation for transport of substances.}
 \Descendant{\hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}}
-\Descendant{\hyperlink{IT::ConcentrationTransport-DG}{ConcentrationTransport\_DG}}
+\Descendant{\hyperlink{IT::SoluteTransport-DG}{SoluteTransport\_DG}}
 \Descendant{\hyperlink{IT::HeatTransfer-DG}{HeatTransfer\_DG}}
 \end{AbstractType}
 
@@ -334,15 +337,12 @@ coupled with reaction and adsorption model (ODE per element)
  via operator splitting.}
 \KeyItem{\hyperB{TransportOperatorSplitting::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{TransportOperatorSplitting}{}{Sub-record selection.}
 \KeyItem{\hyperB{TransportOperatorSplitting::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the secondary equation.}
+\KeyItem{\hyperB{TransportOperatorSplitting::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hyperB{TransportOperatorSplitting::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
-\KeyItem{\hyperB{TransportOperatorSplitting::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hyperB{TransportOperatorSplitting::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
-\KeyItem{\hyperB{TransportOperatorSplitting::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
-\KeyItem{\hyperB{TransportOperatorSplitting::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
-\KeyItem{\hyperB{TransportOperatorSplitting::reactions}{reactions}}{abstract type: \hyperlink{IT::Reactions}{Reactions}}{\textless\it optional\textgreater}{}{Initialization of per element reactions.}
-\KeyItem{\hyperB{TransportOperatorSplitting::adsorptions}{adsorptions}}{record: \hyperlink{IT::Sorptions}{Sorptions}}{\textless\it optional\textgreater}{}{Initialization of per element sorptions.}
-\KeyItem{\hyperB{TransportOperatorSplitting::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{TransportOperatorSplitting::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-BulkData}{TransportOperatorSplitting\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{TransportOperatorSplitting::reaction-term}{reaction\_term}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model involved in transport.}
+\KeyItem{\hyperB{TransportOperatorSplitting::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::TransportOperatorSplitting-Data}{TransportOperatorSplitting\_Data}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{TransportOperatorSplitting::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::ConvectionTransport-Output}{ConvectionTransport\_Output}}{conc}{}{List of fields to write to output file.}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::MassBalance}{MassBalance}}{}{}{}{Balance of mass, boundary fluxes and sources for transport of substances.}
@@ -350,48 +350,62 @@ coupled with reaction and adsorption model (ODE per element)
 \KeyItem{\hyperB{MassBalance::file}{file}}{output file name}{mass\_balance.txt}{}{File name for output of mass balance.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::TransportOutput}{TransportOutput}}{}{}{}{Output setting for transport equations.}
-\KeyItem{\hyperB{TransportOutput::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{TransportOutput::save-step}{save\_step}}{Double [0, ]}{\textless\it obligatory\textgreater}{}{Interval between outputs.}
-\KeyItem{\hyperB{TransportOutput::output-times}{output\_times}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Explicit array of output times (can be combined with 'save\_step'.}
-\KeyItem{\hyperB{TransportOutput::conc-mobile-p0}{conc\_mobile\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the concentration in mobile phase.}
-\KeyItem{\hyperB{TransportOutput::conc-immobile-p0}{conc\_immobile\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the concentration in immobile phase.}
-\KeyItem{\hyperB{TransportOutput::conc-mobile-sorbed-p0}{conc\_mobile\_sorbed\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the surface concentration of sorbed mobile phase.}
-\KeyItem{\hyperB{TransportOutput::conc-immobile-sorbed-p0}{conc\_immobile\_sorbed\_p0}}{String (generic)}{\textless\it optional\textgreater}{}{Name of output stream for P0 approximation of the surface concentration of sorbed immobile phase.}
-\end{RecordType}
-
-\begin{AbstractType}{\HTRaised{IT::Reactions}{Reactions}}{}{}{Equation for reading information about simple chemical reactions.}
-\Descendant{\hyperlink{IT::Sorptions}{Sorptions}}
+\begin{AbstractType}{\HTRaised{IT::ReactionTerm}{ReactionTerm}}{}{}{Equation for reading information about simple chemical reactions.}
 \Descendant{\hyperlink{IT::LinearReactions}{LinearReactions}}
 \Descendant{\hyperlink{IT::PadeApproximant}{PadeApproximant}}
+\Descendant{\hyperlink{IT::Sorption}{Sorption}}
+\Descendant{\hyperlink{IT::DualPorosity}{DualPorosity}}
 \Descendant{\hyperlink{IT::Isotope}{Isotope}}
+\Descendant{\hyperlink{IT::SorptionMobile}{SorptionMobile}}
+\Descendant{\hyperlink{IT::SorptionImmobile}{SorptionImmobile}}
 \end{AbstractType}
 
-\begin{RecordType}{\HTRaised{IT::Sorptions}{Sorptions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information about all the limited solubility affected adsorptions.}
-\KeyItem{\hyperB{Sorptions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Sorptions}{}{Sub-record selection.}
-\KeyItem{\hyperB{Sorptions::solvent-dens}{solvent\_dens}}{Double }{1.0}{}{Density of the solvent.}
-\KeyItem{\hyperB{Sorptions::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
-\KeyItem{\hyperB{Sorptions::species}{species}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of all the adsorbing species}
-\KeyItem{\hyperB{Sorptions::molar-masses}{molar\_masses}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the sorbing species}
-\KeyItem{\hyperB{Sorptions::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the sorbing species}
-\KeyItem{\hyperB{Sorptions::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
-\KeyItem{\hyperB{Sorptions::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::Sorption-BulkData}{Sorption\_BulkData}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessery to construct isotherms.}
-\KeyItem{\hyperB{Sorptions::time}{time}}{Double }{1.0}{}{Key called time required by TimeGovernor in Sorption constructor.}
+\begin{RecordType}{\HTRaised{IT::LinearReactions}{LinearReactions}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information for a decision about the way to simulate radioactive decay.}
+\KeyItem{\hyperB{LinearReactions::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{LinearReactions}{}{Sub-record selection.}
+\KeyItem{\hyperB{LinearReactions::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::Sorption-BulkData}{Sorption\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'Sorption'.
+\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
+\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
+\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
+\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
+\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
+\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::PadeApproximant}{PadeApproximant}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Abstract record with an information about pade approximant parameters.}
+\KeyItem{\hyperB{PadeApproximant::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{PadeApproximant}{}{Sub-record selection.}
+\KeyItem{\hyperB{PadeApproximant::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
+\KeyItem{\hyperB{PadeApproximant::nom-pol-deg}{nom\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant.}
+\KeyItem{\hyperB{PadeApproximant::den-pol-deg}{den\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::Sorption}{Sorption}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
+\KeyItem{\hyperB{Sorption::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{Sorption}{}{Sub-record selection.}
+\KeyItem{\hyperB{Sorption::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
+\KeyItem{\hyperB{Sorption::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
+\KeyItem{\hyperB{Sorption::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{Sorption::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
+\KeyItem{\hyperB{Sorption::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
+\KeyItem{\hyperB{Sorption::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
+\KeyItem{\hyperB{Sorption::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
+\KeyItem{\hyperB{Sorption::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
+\KeyItem{\hyperB{Sorption::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::Sorption-Output}{Sorption\_Output}}{conc\_solid}{}{List of fields to write to output stream.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::Sorption-Data}{Sorption\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any Sorption\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{Sorption-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{Sorption-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{Sorption-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{Sorption-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{Sorption-BulkData::rock-density}{rock\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Rock matrix density.}
-\KeyItem{\hyperB{Sorption-BulkData::sorption-types}{sorption\_types}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Considered adsorption is described by selected isotherm.}
-\KeyItem{\hyperB{Sorption-BulkData::mult-coefs}{mult\_coefs}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.}
-\KeyItem{\hyperB{Sorption-BulkData::second-params}{second\_params}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).}
-\KeyItem{\hyperB{Sorption-BulkData::alphas}{alphas}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity). Vector, one value for every substance.}
+ any Sorption\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{Sorption-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{Sorption-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{Sorption-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{Sorption-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{Sorption-Data::rock-density}{rock\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Rock matrix density.}
+\KeyItem{\hyperB{Sorption-Data::sorption-type}{sorption\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Considered adsorption is described by selected isotherm.}
+\KeyItem{\hyperB{Sorption-Data::isotherm-mult}{isotherm\_mult}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.}
+\KeyItem{\hyperB{Sorption-Data::isotherm-other}{isotherm\_other}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).}
+\KeyItem{\hyperB{Sorption-Data::init-conc-solid}{init\_conc\_solid}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial solid concentration of substances. Vector, one value for every substance.}
 \end{RecordType}
 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{\AddDoc{Field:R3 $\rightarrow$ Enum[n]}}{Abstract record for all time-space functions.}
@@ -403,14 +417,14 @@ and after the time given by the key 'time'. The field setting can be overridden 
 
 \begin{RecordType}{\HTRaised{IT::FieldConstant}{FieldConstant}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\hyperlink{FieldConstant::value}{value}}{}{R3 $\rightarrow$ Enum[n] Field constant in space.}
 \KeyItem{\hyperB{FieldConstant::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum[n]\_TYPE\_selection}{FieldConstant}{}{Sub-record selection.}
-\KeyItem{\hyperB{FieldConstant::value}{value}}{Array [1, ] of selection: \hyperlink{IT::SorptionType}{SorptionType}}{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
+\KeyItem{\hyperB{FieldConstant::value}{value}}{Array [1, ] of selection: \hyperlink{IT::AdsorptionType}{AdsorptionType}}{\textless\it obligatory\textgreater}{}{Value of the constant field.\\For vector values, you can use scalar value to enter constant vector.\\For square NxN-matrix values, you can use:\\* vector of size N to enter diagonal matrix\\* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* scalar to enter multiple of the unit matrix.}
 \end{RecordType}
 
-\begin{SelectionType}{\HTRaised{IT::SorptionType}{SorptionType}}{}
-\KeyItem{none}{No sorption considered}
-\KeyItem{linear}{Linear isotherm described sorption considered.}
-\KeyItem{langmuir}{Langmuir isotherm described sorption considered}
-\KeyItem{freundlich}{Freundlich isotherm described sorption considered}
+\begin{SelectionType}{\HTRaised{IT::AdsorptionType}{AdsorptionType}}{}
+\KeyItem{none}{No adsorption considered.}
+\KeyItem{linear}{Linear isotherm runs the concentration exchange between liquid and solid.}
+\KeyItem{langmuir}{Langmuir isotherm runs the concentration exchange between liquid and solid.}
+\KeyItem{freundlich}{Freundlich isotherm runs the concentration exchange between liquid and solid.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field given by runtime interpreted formula.}
@@ -467,116 +481,161 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{FieldInterpolatedP0::field-name}{field\_name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The values of the Field are read from the \$ElementData section with field name given by this key.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::LinearReactions}{LinearReactions}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Information for a decision about the way to simulate radioactive decay.}
-\KeyItem{\hyperB{LinearReactions::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{LinearReactions}{}{Sub-record selection.}
-\KeyItem{\hyperB{LinearReactions::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
-\KeyItem{\hyperB{LinearReactions::matrix-exp-on}{matrix\_exp\_on}}{Bool}{false}{}{Enables to use Pade approximant of matrix exponential.}
+\begin{SelectionType}{\HTRaised{IT::Sorption-Output}{Sorption\_Output}}{}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_solid}{Output of field conc\_solid.}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::DualPorosity}{DualPorosity}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Dual porosity model in transport problems.
+Provides computing the concentration of substances in mobile and immobile zone.
+}
+\KeyItem{\hyperB{DualPorosity::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{DualPorosity}{}{Sub-record selection.}
+\KeyItem{\hyperB{DualPorosity::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::DualPorosity-Data}{DualPorosity\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct dual porosity model.}
+\KeyItem{\hyperB{DualPorosity::reaction-mobile}{reaction\_mobile}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model in mobile zone.}
+\KeyItem{\hyperB{DualPorosity::reaction-immobile}{reaction\_immobile}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model in immobile zone.}
+\KeyItem{\hyperB{DualPorosity::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::DualPorosity-Output}{DualPorosity\_Output}}{conc\_immobile}{}{List of fields to write to output stream.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::Substep}{Substep}}{}{}{}{Equation for reading information about radioactive decays.}
-\KeyItem{\hyperB{Substep::parent}{parent}}{String (generic)}{\textless\it obligatory\textgreater}{}{Identifier of an isotope.}
-\KeyItem{\hyperB{Substep::half-life}{half\_life}}{Double }{\textless\it optional\textgreater}{}{Half life of the parent substance.}
-\KeyItem{\hyperB{Substep::kinetic}{kinetic}}{Double }{\textless\it optional\textgreater}{}{Kinetic constants describing first order reactions.}
-\KeyItem{\hyperB{Substep::products}{products}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Identifies isotopes which decays parental atom to.}
-\KeyItem{\hyperB{Substep::branch-ratios}{branch\_ratios}}{Array  of Double }{1.0}{}{Decay chain branching percentage.}
+\begin{RecordType}{\HTRaised{IT::DualPorosity-Data}{DualPorosity\_Data}}{}{}{}{Record to set fields of the equation.
+The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
+and after the time given by the key 'time'. The field setting can be overridden by
+ any DualPorosity\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{DualPorosity-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{DualPorosity-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{DualPorosity-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{DualPorosity-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{DualPorosity-Data::diffusion-rate-immobile}{diffusion\_rate\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.}
+\KeyItem{\hyperB{DualPorosity-Data::porosity-immobile}{porosity\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Porosity of the immobile zone.}
+\KeyItem{\hyperB{DualPorosity-Data::init-conc-immobile}{init\_conc\_immobile}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentration of substances in the immobile zone.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::PadeApproximant}{PadeApproximant}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Abstract record with an information about pade approximant parameters.}
-\KeyItem{\hyperB{PadeApproximant::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{PadeApproximant}{}{Sub-record selection.}
-\KeyItem{\hyperB{PadeApproximant::decays}{decays}}{Array  of record: \hyperlink{IT::Substep}{Substep}}{\textless\it obligatory\textgreater}{}{Description of particular decay chain substeps.}
-\KeyItem{\hyperB{PadeApproximant::nom-pol-deg}{nom\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant.}
-\KeyItem{\hyperB{PadeApproximant::den-pol-deg}{den\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant}
-\end{RecordType}
+\begin{SelectionType}{\HTRaised{IT::DualPorosity-Output}{DualPorosity\_Output}}{}
+\KeyItem{diffusion\_rate\_immobile}{Output of field diffusion\_rate\_immobile (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.).}
+\KeyItem{porosity\_immobile}{Output of field porosity\_immobile (Porosity of the immobile zone.).}
+\KeyItem{init\_conc\_immobile}{Output of field init\_conc\_immobile (Initial concentration of substances in the immobile zone.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_immobile}{Output of field conc\_immobile.}
+\end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::Reactions}{Reactions}}{}{}{Definition of information about a single isotope.}
-\KeyItem{\hyperB{Isotope::TYPE}{TYPE}}{selection: Reactions\_TYPE\_selection}{Isotope}{}{Sub-record selection.}
+\begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Definition of information about a single isotope.}
+\KeyItem{\hyperB{Isotope::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{Isotope}{}{Sub-record selection.}
 \KeyItem{\hyperB{Isotope::identifier}{identifier}}{Integer }{\textless\it obligatory\textgreater}{}{Identifier of the isotope.}
 \KeyItem{\hyperB{Isotope::half-life}{half\_life}}{Double }{\textless\it obligatory\textgreater}{}{Half life parameter.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BoundaryData}{TransportOperatorSplitting\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportOperatorSplitting'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any TransportOperatorSplitting\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Boundary conditions for concentrations.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
-\KeyItem{\hyperB{TransportOperatorSplitting-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
+\begin{RecordType}{\HTRaised{IT::SorptionMobile}{SorptionMobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
+\KeyItem{\hyperB{SorptionMobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionMobile}{}{Sub-record selection.}
+\KeyItem{\hyperB{SorptionMobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
+\KeyItem{\hyperB{SorptionMobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
+\KeyItem{\hyperB{SorptionMobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{SorptionMobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionMobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionMobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
+\KeyItem{\hyperB{SorptionMobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
+\KeyItem{\hyperB{SorptionMobile::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
+\KeyItem{\hyperB{SorptionMobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{conc\_solid}{}{List of fields to write to output stream.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-BulkData}{TransportOperatorSplitting\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'TransportOperatorSplitting'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any TransportOperatorSplitting\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::por-m}{por\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1 \\ Mobile porosity}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-density}{sources\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Density of concentration sources.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-sigma}{sources\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Concentration flux.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sources-conc}{sources\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Concentration sources threshold.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Initial concentrations.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::por-imm}{por\_imm}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Porosity material parameter of the immobile zone. Vector, one value for every substance.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::alpha}{alpha}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity). Vector, one value for every substance.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sorp-type}{sorp\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Default Field value: none \\ Type of sorption isotherm.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sorp-coef0}{sorp\_coef0}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ First parameter of sorption: Scaling of the isothem for all types. Vector, one value for every substance. }
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::sorp-coef1}{sorp\_coef1}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Second parameter of sorption: exponent( Freundlich isotherm), limit concentration (Langmuir isotherm). Vector, one value for every substance.}
-\KeyItem{\hyperB{TransportOperatorSplitting-BulkData::phi}{phi}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Fraction of the total sorption surface exposed to the mobile zone, in interval (0,1). Used only in combination with dual porosity model. Vector, one value for every substance.}
+\begin{SelectionType}{\HTRaised{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_solid}{Output of field conc\_solid.}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::SorptionImmobile}{SorptionImmobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
+\KeyItem{\hyperB{SorptionImmobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionImmobile}{}{Sub-record selection.}
+\KeyItem{\hyperB{SorptionImmobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
+\KeyItem{\hyperB{SorptionImmobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
+\KeyItem{\hyperB{SorptionImmobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{SorptionImmobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionImmobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionImmobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
+\KeyItem{\hyperB{SorptionImmobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
+\KeyItem{\hyperB{SorptionImmobile::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
+\KeyItem{\hyperB{SorptionImmobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{conc\_immobile\_solid}{}{List of fields to write to output stream.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::ConcentrationTransport-DG}{ConcentrationTransport\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for solute transport.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{ConcentrationTransport\_DG}{}{Sub-record selection.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the secondary equation.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::sorption-enable}{sorption\_enable}}{Bool}{false}{}{Model of sorption.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::dual-porosity}{dual\_porosity}}{Bool}{false}{}{Dual porosity model.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::solver}{solver}}{record: \hyperlink{IT::Petsc}{Petsc}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{ConcentrationTransport-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{ConcentrationTransport-DG::dg-variant}{dg\_variant}}{selection: \hyperlink{IT::DG-variant}{DG\_variant}}{non-symmetric}{}{Variant of interior penalty discontinuous Galerkin method.}
-\KeyItem{\hyperB{ConcentrationTransport-DG::dg-order}{dg\_order}}{Integer [0, 3]}{1}{}{Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}
-\end{RecordType}
+\begin{SelectionType}{\HTRaised{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{}
+\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{porosity}{Output of field porosity.}
+\KeyItem{conc\_immobile\_solid}{Output of field conc\_immobile\_solid.}
+\end{SelectionType}
 
-\begin{RecordType}{\HTRaised{IT::TransportDG-BoundaryData}{TransportDG\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'TransportDG'.
+\begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-Data}{TransportOperatorSplitting\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any TransportDG\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportDG-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Dirichlet boundary condition (for each substance).}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Default Field value: inflow \\ Boundary condition type, possible values: inflow, dirichlet, neumann, robin.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Flux in Neumann boundary condition.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Conductivity coefficient in Robin boundary condition.}
-\KeyItem{\hyperB{TransportDG-BoundaryData::old-boundary-file}{old\_boundary\_file}}{input file name}{\textless\it optional\textgreater}{}{Input file with boundary conditions (obsolete).}
-\KeyItem{\hyperB{TransportDG-BoundaryData::bc-times}{bc\_times}}{Array  of Double }{\textless\it optional\textgreater}{}{Times for changing the boundary conditions (obsolete).}
+ any TransportOperatorSplitting\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::porosity}{porosity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Mobile porosity}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::sources-density}{sources\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Density of concentration sources.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::sources-sigma}{sources\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Concentration flux.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::sources-conc}{sources\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Concentration sources threshold.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Boundary conditions for concentrations.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentrations.}
+\KeyItem{\hyperB{TransportOperatorSplitting-Data::transport-old-bcd-file}{transport\_old\_bcd\_file}}{input file name}{\textless\it optional\textgreater}{}{File with mesh dependent boundary conditions (obsolete).}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::TransportDG-BulkData}{TransportDG\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'TransportDG'.
+\begin{SelectionType}{\HTRaised{IT::ConvectionTransport-Output}{ConvectionTransport\_Output}}{}
+\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
+\KeyItem{conc}{Output of field conc.}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::SoluteTransport-DG}{SoluteTransport\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for solute transport.}
+\KeyItem{\hyperB{SoluteTransport-DG::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{SoluteTransport\_DG}{}{Sub-record selection.}
+\KeyItem{\hyperB{SoluteTransport-DG::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the secondary equation.}
+\KeyItem{\hyperB{SoluteTransport-DG::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
+\KeyItem{\hyperB{SoluteTransport-DG::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
+\KeyItem{\hyperB{SoluteTransport-DG::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of transported substances.}
+\KeyItem{\hyperB{SoluteTransport-DG::solver}{solver}}{record: \hyperlink{IT::Petsc}{Petsc}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
+\KeyItem{\hyperB{SoluteTransport-DG::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::SoluteTransport-DG-Data}{SoluteTransport\_DG\_Data}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{SoluteTransport-DG::dg-variant}{dg\_variant}}{selection: \hyperlink{IT::DG-variant}{DG\_variant}}{non-symmetric}{}{Variant of interior penalty discontinuous Galerkin method.}
+\KeyItem{\hyperB{SoluteTransport-DG::dg-order}{dg\_order}}{Integer [0, 3]}{1}{}{Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}
+\KeyItem{\hyperB{SoluteTransport-DG::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SoluteTransport-DG-Output}{SoluteTransport\_DG\_Output}}{conc}{}{List of fields to write to output file.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::SoluteTransport-DG-Data}{SoluteTransport\_DG\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any TransportDG\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{TransportDG-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{TransportDG-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{TransportDG-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{TransportDG-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{TransportDG-BulkData::por-m}{por\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1 \\ Mobile porosity}
-\KeyItem{\hyperB{TransportDG-BulkData::sources-density}{sources\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Density of concentration sources.}
-\KeyItem{\hyperB{TransportDG-BulkData::sources-sigma}{sources\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Concentration flux.}
-\KeyItem{\hyperB{TransportDG-BulkData::sources-conc}{sources\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Concentration sources threshold.}
-\KeyItem{\hyperB{TransportDG-BulkData::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Initial concentrations.}
-\KeyItem{\hyperB{TransportDG-BulkData::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Longitudal dispersivity (for each substance).}
-\KeyItem{\hyperB{TransportDG-BulkData::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Transversal dispersivity (for each substance).}
-\KeyItem{\hyperB{TransportDG-BulkData::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Molecular diffusivity (for each substance).}
-\KeyItem{\hyperB{TransportDG-BulkData::fracture-sigma}{fracture\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1 \\ Coefficient of diffusive transfer through fractures (for each substance).}
-\KeyItem{\hyperB{TransportDG-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
+ any SoluteTransport\_DG\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{SoluteTransport-DG-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::porosity}{porosity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Mobile porosity}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::sources-density}{sources\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Density of concentration sources.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::sources-sigma}{sources\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Concentration flux.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::sources-conc}{sources\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Concentration sources threshold.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::bc-conc}{bc\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Dirichlet boundary condition (for each substance).}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::init-conc}{init\_conc}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Initial concentrations.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Longitudal dispersivity (for each substance).}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Transversal dispersivity (for each substance).}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::diff-m}{diff\_m}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Molecular diffusivity (for each substance).}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::fracture-sigma}{fracture\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Coefficient of diffusive transfer through fractures (for each substance).}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Boundary condition type, possible values: inflow, dirichlet, neumann, robin.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Flux in Neumann boundary condition.}
+\KeyItem{\hyperB{SoluteTransport-DG-Data::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::DG-variant}{DG\_variant}}{Type of penalty term.}
@@ -585,50 +644,85 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{symmetric}{symmetric weighted interior penalty DG method}
 \end{SelectionType}
 
+\begin{SelectionType}{\HTRaised{IT::SoluteTransport-DG-Output}{SoluteTransport\_DG\_Output}}{Output record for DG solver for solute transport.}
+\KeyItem{conc}{Output of field conc.}
+\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
+\KeyItem{disp\_l}{Output of field disp\_l (Longitudal dispersivity (for each substance).).}
+\KeyItem{disp\_t}{Output of field disp\_t (Transversal dispersivity (for each substance).).}
+\KeyItem{diff\_m}{Output of field diff\_m (Molecular diffusivity (for each substance).).}
+\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\end{SelectionType}
+
 \begin{RecordType}{\HTRaised{IT::HeatTransfer-DG}{HeatTransfer\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for heat transfer.}
 \KeyItem{\hyperB{HeatTransfer-DG::TYPE}{TYPE}}{selection: Transport\_TYPE\_selection}{HeatTransfer\_DG}{}{Sub-record selection.}
 \KeyItem{\hyperB{HeatTransfer-DG::time}{time}}{record: \hyperlink{IT::TimeGovernor}{TimeGovernor}}{\textless\it obligatory\textgreater}{}{Time governor setting for the secondary equation.}
+\KeyItem{\hyperB{HeatTransfer-DG::output-stream}{output\_stream}}{record: \hyperlink{IT::OutputStream}{OutputStream}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hyperB{HeatTransfer-DG::mass-balance}{mass\_balance}}{record: \hyperlink{IT::MassBalance}{MassBalance}}{\textless\it optional\textgreater}{}{Settings for computing mass balance.}
-\KeyItem{\hyperB{HeatTransfer-DG::output}{output}}{record: \hyperlink{IT::TransportOutput}{TransportOutput}}{\textless\it obligatory\textgreater}{}{Parameters of output stream.}
 \KeyItem{\hyperB{HeatTransfer-DG::solver}{solver}}{record: \hyperlink{IT::Petsc}{Petsc}}{\textless\it obligatory\textgreater}{}{Linear solver for MH problem.}
-\KeyItem{\hyperB{HeatTransfer-DG::bc-data}{bc\_data}}{Array  of record: \hyperlink{IT::HeatTransfer-BoundaryData}{HeatTransfer\_BoundaryData}}{\textless\it obligatory\textgreater}{}{}
-\KeyItem{\hyperB{HeatTransfer-DG::bulk-data}{bulk\_data}}{Array  of record: \hyperlink{IT::HeatTransfer-BulkData}{HeatTransfer\_BulkData}}{\textless\it obligatory\textgreater}{}{}
+\KeyItem{\hyperB{HeatTransfer-DG::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::HeatTransfer-DG-Data}{HeatTransfer\_DG\_Data}}{\textless\it obligatory\textgreater}{}{}
 \KeyItem{\hyperB{HeatTransfer-DG::dg-variant}{dg\_variant}}{selection: \hyperlink{IT::DG-variant}{DG\_variant}}{non-symmetric}{}{Variant of interior penalty discontinuous Galerkin method.}
 \KeyItem{\hyperB{HeatTransfer-DG::dg-order}{dg\_order}}{Integer [0, 3]}{1}{}{Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}
+\KeyItem{\hyperB{HeatTransfer-DG::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::HeatTransfer-DG-Output}{HeatTransfer\_DG\_Output}}{temperature}{}{List of fields to write to output file.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::HeatTransfer-BoundaryData}{HeatTransfer\_BoundaryData}}{}{}{}{Record to set BOUNDARY fields of the equation 'HeatTransfer'.
+\begin{RecordType}{\HTRaised{IT::HeatTransfer-DG-Data}{HeatTransfer\_DG\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
 and after the time given by the key 'time'. The field setting can be overridden by
- any HeatTransfer\_BoundaryData record that comes later in the boundary data array.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::bc-temperature}{bc\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Boundary value of temperature.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Default Field value: inflow \\ Boundary condition type, possible values: inflow, dirichlet, neumann, robin.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Flux in Neumann boundary condition.}
-\KeyItem{\hyperB{HeatTransfer-BoundaryData::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 0.0 \\ Conductivity coefficient in Robin boundary condition.}
+ any HeatTransfer\_DG\_Data record that comes later in the boundary data array.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
+\KeyItem{\hyperB{HeatTransfer-DG-Data::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::bc-temperature}{bc\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Boundary value of temperature.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::init-temperature}{init\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Initial temperature.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::porosity}{porosity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Porosity.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-density}{fluid\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Density of fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-heat-capacity}{fluid\_heat\_capacity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat capacity of fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-heat-conductivity}{fluid\_heat\_conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat conductivity of fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-density}{solid\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Density of solid (rock).}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-heat-capacity}{solid\_heat\_capacity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat capacity of solid (rock).}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-heat-conductivity}{solid\_heat\_conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat conductivity of solid (rock).}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::disp-l}{disp\_l}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Longitudal heat dispersivity in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::disp-t}{disp\_t}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Transversal heat dispersivity in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-thermal-source}{fluid\_thermal\_source}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Thermal source density in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-thermal-source}{solid\_thermal\_source}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Thermal source density in solid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-heat-exchange-rate}{fluid\_heat\_exchange\_rate}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat exchange rate in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-heat-exchange-rate}{solid\_heat\_exchange\_rate}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat exchange rate in solid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-ref-temperature}{fluid\_ref\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Reference temperature in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-ref-temperature}{solid\_ref\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Reference temperature in solid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fracture-sigma}{fracture\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Coefficient of diffusive transfer through fractures (for each substance).}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::bc-type}{bc\_type}}{abstract type: \hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\textless\it optional\textgreater}{}{Boundary condition type, possible values: inflow, dirichlet, neumann, robin.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::bc-flux}{bc\_flux}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Flux in Neumann boundary condition.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::bc-robin-sigma}{bc\_robin\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Conductivity coefficient in Robin boundary condition.}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::HeatTransfer-BulkData}{HeatTransfer\_BulkData}}{}{}{}{Record to set BULK fields of the equation 'HeatTransfer'.
-The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
-and after the time given by the key 'time'. The field setting can be overridden by
- any HeatTransfer\_BulkData record that comes later in the bulk data array.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::r-set}{r\_set}}{String (generic)}{\textless\it optional\textgreater}{}{Name of region set where to set fields.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::region}{region}}{String (generic)}{\textless\it optional\textgreater}{}{Label of the region where to set fields. }
-\KeyItem{\hyperB{HeatTransfer-BulkData::rid}{rid}}{Integer [0, ]}{\textless\it optional\textgreater}{}{ID of the region where to set fields.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::time}{time}}{Double [0, ]}{0.0}{}{Apply field setting in this record after this time.\\These times have to form an increasing sequence.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::init-temperature}{init\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Initial temperature.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::porosity}{porosity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 1 \\ Porosity.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::fluid-density}{fluid\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Density of fluid.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::fluid-heat-capacity}{fluid\_heat\_capacity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat capacity of fluid.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::fluid-heat-conductivity}{fluid\_heat\_conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat conductivity of fluid.}
-\KeyItem{\hyperB{HeatTransfer-BulkData::solid-density}{solid\_density}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Density of solid (rock).}
-\KeyItem{\hyperB{HeatTransfer-BulkData::solid-heat-capacity}{solid\_heat\_capacity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat capacity of solid (rock).}
-\KeyItem{\hyperB{HeatTransfer-BulkData::solid-heat-conductivity}{solid\_heat\_conductivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat conductivity of solid (rock).}
-\KeyItem{\hyperB{HeatTransfer-BulkData::heat-dispersivity}{heat\_dispersivity}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Default Field value: 0 \\ Heat dispersivity}
-\KeyItem{\hyperB{HeatTransfer-BulkData::fracture-sigma}{fracture\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1 \\ Coefficient of diffusive transfer through fractures (for each substance).}
-\KeyItem{\hyperB{HeatTransfer-BulkData::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Default Field value: 1.0 \\ Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
-\end{RecordType}
+\begin{SelectionType}{\HTRaised{IT::HeatTransfer-DG-Output}{HeatTransfer\_DG\_Output}}{Selection for output fields of DG solver for heat transfer.}
+\KeyItem{temperature}{Output of field temperature.}
+\KeyItem{init\_temperature}{Output of field init\_temperature (Initial temperature.).}
+\KeyItem{porosity}{Output of field porosity (Porosity.).}
+\KeyItem{fluid\_density}{Output of field fluid\_density (Density of fluid.).}
+\KeyItem{fluid\_heat\_capacity}{Output of field fluid\_heat\_capacity (Heat capacity of fluid.).}
+\KeyItem{fluid\_heat\_conductivity}{Output of field fluid\_heat\_conductivity (Heat conductivity of fluid.).}
+\KeyItem{solid\_density}{Output of field solid\_density (Density of solid (rock).).}
+\KeyItem{solid\_heat\_capacity}{Output of field solid\_heat\_capacity (Heat capacity of solid (rock).).}
+\KeyItem{solid\_heat\_conductivity}{Output of field solid\_heat\_conductivity (Heat conductivity of solid (rock).).}
+\KeyItem{disp\_l}{Output of field disp\_l (Longitudal heat dispersivity in fluid.).}
+\KeyItem{disp\_t}{Output of field disp\_t (Transversal heat dispersivity in fluid.).}
+\KeyItem{fluid\_thermal\_source}{Output of field fluid\_thermal\_source (Thermal source density in fluid.).}
+\KeyItem{solid\_thermal\_source}{Output of field solid\_thermal\_source (Thermal source density in solid.).}
+\KeyItem{fluid\_heat\_exchange\_rate}{Output of field fluid\_heat\_exchange\_rate (Heat exchange rate in fluid.).}
+\KeyItem{solid\_heat\_exchange\_rate}{Output of field solid\_heat\_exchange\_rate (Heat exchange rate in solid.).}
+\KeyItem{fluid\_ref\_temperature}{Output of field fluid\_ref\_temperature (Reference temperature in fluid.).}
+\KeyItem{solid\_ref\_temperature}{Output of field solid\_ref\_temperature (Reference temperature in solid.).}
+\KeyItem{cross\_section}{Output of field cross\_section.}
+\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\end{SelectionType}
 

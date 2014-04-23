@@ -68,8 +68,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_),
-	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -345,7 +344,6 @@ int LinSys_PETSC::solve()
     //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
     //if (r_tol < 0) r_tol=solver_accuracy;
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
     ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     ierr = KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero

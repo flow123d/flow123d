@@ -35,6 +35,7 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
+class OutputTime;
 class DOFHandlerBase;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
@@ -149,6 +150,8 @@ public:
         };
         static Input::Type::Selection bc_type_selection;
 
+        static Input::Type::Selection output_selection;
+
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
@@ -191,9 +194,14 @@ public:
     static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
+     * @brief Initialize solution in the zero time.
+     */
+	void zero_time_step() override;
+
+    /**
      * @brief Computes the solution in one time instant.
      */
-	void update_solution();
+	void update_solution() override;
 
 	/**
 	 * @brief Returns the serialized solution array.
@@ -228,7 +236,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) { Model::set_cross_section_field(cross_section); }
+	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) { Model::set_cross_section_field(cross_section); }
 
 	/**
 	 * @brief Getter for field data.
@@ -245,6 +253,8 @@ public:
 private:
 
 	typename Model::ModelEqData &data() { return data_; }
+
+	void output_vector_gather();
 
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
@@ -518,8 +528,14 @@ private:
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
-	/// Class for handling the solution output.
-	OutputTime *transport_output;
+	/// Vector of solution data.
+	vector<Vec> output_vec;
+
+	/// Record with output specification.
+	Input::Record output_rec;
+
+	OutputTime *output_stream;
+
 
 	// @}
 

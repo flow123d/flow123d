@@ -80,7 +80,7 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
         double scalar, flux, sigma;
         unsigned int id;
 
-        xprintf(Msg, "Reading old BCD file for flow: %s ...", tok.f_name().c_str());
+        xprintf(MsgLog, "Reading old BCD file for flow: %s ...", tok.f_name().c_str());
         tok.skip_to("$BoundaryConditions");
         tok.next_line(false);
         unsigned int n_boundaries = lexical_cast<unsigned int>(*tok); ++tok;
@@ -198,7 +198,7 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
             }
             */
         }
-        xprintf(Msg, "DONE\n");
+        xprintf(MsgLog, "DONE\n");
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());
     } // flow bcd reader
@@ -220,7 +220,7 @@ void OldBcdInput::read_transport(unsigned int n_substances, const FilePath &tran
     try {
         unsigned int bcd_id, boundary_id, bc_ele_idx;
 
-        xprintf(Msg, "Reading old BCD file for transport: %s ...", tok.f_name().c_str());
+        xprintf(MsgLog, "Reading old BCD file for transport: %s ...", tok.f_name().c_str());
         if (tok.skip_to("$Transport_BCDFormat")) tok.next_line(false);
         tok.skip_to("$Transport_BCD");
         tok.next_line(false);
@@ -243,7 +243,7 @@ void OldBcdInput::read_transport(unsigned int n_substances, const FilePath &tran
 
         }
 
-        xprintf(Msg, "DONE\n");
+        xprintf(MsgLog, "DONE\n");
 
     } catch (bad_lexical_cast &) {
         xprintf(UsrErr, "Wrong format of number, %s.\n", tok.position_msg().c_str());

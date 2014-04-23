@@ -134,6 +134,8 @@ unsigned int FieldBase<spacedim, Value>::n_comp() const {
 
 /****************************************************************************
  *  Macros for explicit instantiation of particular field class template.
+    ASSERT(this->region_fields_[reg.idx()], "Field %s on region %d not initialized.", this->name_.c_str(), reg.id() );
+
  */
 
 

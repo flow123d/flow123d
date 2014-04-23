@@ -13,9 +13,11 @@
 #include <armadillo>
 //#include <boost/type_traits.hpp>
 #include <boost/format.hpp>
-
+#include <system/exceptions.hh>
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include <ostream>
+
 namespace IT=Input::Type;
 
 /**
@@ -35,26 +37,28 @@ DECLARE_INPUT_EXCEPTION( ExcFV_Input, << "Wrong field value input: " << EI_Input
 class StringTensor {
 public:
     StringTensor( unsigned int n_rows, unsigned int n_cols )
-    : n_rows(n_rows),values_(n_rows) {
-        for(unsigned int row=0; row<values_.size(); row++) values_[row].resize(n_cols);
-    }
+    : n_rows(n_rows),n_cols(n_cols),n_elem(n_rows*n_cols), values_(n_elem) {}
+
     StringTensor(const std::string &value)
-    : n_rows(1), values_(1) {
-        values_[0].resize(1); (values_[0])[0]=value;
-    }
-    std::string & at(unsigned int row) { return (values_[row])[0]; }
-    std::string & at(unsigned int row, unsigned int col) { return (values_[row])[col]; }
+    : n_rows(1), n_cols(1), n_elem(1), values_(1, value) {}
+
+    std::string & at(unsigned int row) { return at(row,0); }
+    std::string & at(unsigned int row, unsigned int col) { return values_[col*n_rows+row]; }
     void zeros() {
-        for(unsigned int row=0; row<values_.size(); row++)
-            for(unsigned int col=0; col<values_[row].size(); col++) (values_[row])[col]="0.0";
+        for( auto &elem: values_) elem = "0.0";
     }
     unsigned int n_rows;
+    unsigned int n_cols;
+    unsigned int n_elem;
     operator std::string() {
-        ASSERT( n_rows==1 && values_[0].size()==1, "Converting StringTensor(n,m) too std::string with m!=1 or n!=1.");
-        return values_[0][0];
+        ASSERT_EQUAL( n_elem, 1);
+        return values_[0];
+    }
+    const std::string * memptr() {
+    	return &(values_[0]);
     }
 private:
-    std::vector< std::vector<std::string> > values_;
+    std::vector<std::string>  values_;
 
 };
 
@@ -213,17 +217,18 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
 
 
     void init_from_input( AccessType rec ) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
-        if (NRows == NCols) {
+        if (it->size() == 1 && NRows == NCols) {
             // square tensor
-            // input = 3  expands  to [ [ 3 ] ]; init to  3 times identity matrix
+            // input = 3  expands  to [ [ 3 ] ]; init to  3 * (identity matrix)
             // input = [1, 2, 3] expands to [[1], [2], [3]]; init to diag. matrix
             // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1 ,2 ,3], [2, 4, 5], [ 3, 5, 6] ]
 
-            if (it->size() == 1) {
+
                 if (rec.size() == 1)  {// scalar times identity
                     value_.zeros();
                     ET scalar=*(it->begin<ET>());
@@ -247,7 +252,7 @@ public:
 
                          );
                 }
-            }
+
         } else {
             // accept only full tensor
             if (rec.size() == NRows && it->size() == NCols) {
@@ -278,6 +283,8 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int j)
         { return value_.at(i,j); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i,j); }
     inline operator return_type() const
         { return value_;}
 
@@ -290,6 +297,9 @@ struct AccessTypeDispatch { typedef ET type;};
 template <>
 struct AccessTypeDispatch<unsigned int> { typedef Input::Enum type; };
 
+
+
+/// **********************************************************************
 /// Specialization for scalars
 template <class ET>
 class FieldValue_<1,1,ET> {
@@ -317,6 +327,7 @@ public:
      * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
      */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
+    const ET * mem_ptr() { return &(internal::scalar_value_conversion(value_)); }
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
@@ -327,6 +338,9 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return internal::scalar_value_conversion(value_); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return internal::scalar_value_conversion(value_); }
+
     inline operator return_type() const
         { return value_;}
 
@@ -336,6 +350,8 @@ private:
 
 
 
+
+/// **********************************************************************
 /// Specialization for variable size vectors
 template <class ET>
 class FieldValue_<0,1,ET> {
@@ -357,6 +373,7 @@ public:
         }
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
@@ -390,6 +407,9 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i); }
+
     inline operator return_type() const
         { return value_;}
 
@@ -397,6 +417,7 @@ private:
     return_type &value_;
 };
 
+/// **********************************************************************
 /// Specialization for fixed size vectors
 template <int NRows, class ET>
 class FieldValue_<NRows,1,ET> {
@@ -420,6 +441,8 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
+    const ET * mem_ptr() { return value_.memptr(); }
+
     void init_from_input( AccessType rec ) {
         Input::Iterator<ET> it = rec.begin<ET>();
 
@@ -446,6 +469,9 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
+    inline ET operator() ( unsigned int i, unsigned int j) const
+        { return value_.at(i); }
+
     inline operator return_type() const
         { return value_;}
 
