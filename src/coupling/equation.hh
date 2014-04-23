@@ -194,13 +194,15 @@ public:
      * Child class have to implement getter for sequential solution vector.
      * OBSOLETE
      */
-    virtual void get_solution_vector(double * &vector, unsigned int &size) =0;
+    virtual void get_solution_vector(double * &vector, unsigned int &size)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * Child class have to implement getter for parallel solution vector.
      * OBSOLETE
      */
-    virtual void get_parallel_solution_vector(Vec &vector) =0;
+    virtual void get_parallel_solution_vector(Vec &vector)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * @brief Write computed fields.
@@ -240,9 +242,7 @@ public:
         size = 0;
     }
 
-    void get_parallel_solution_vector(Vec &vector) override
-    {}
-
+    void get_parallel_solution_vector(Vec &vector) override {};
 
     virtual ~EquationNothing() {};
 
