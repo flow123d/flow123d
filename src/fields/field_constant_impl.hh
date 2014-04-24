@@ -43,6 +43,8 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
     return type;
 }
 
+template <int spacedim, class Value>
+const Input::Registrar< FieldConstant<spacedim, Value> > FieldConstant<spacedim, Value>::registrar = Input::Registrar< FieldConstant<spacedim, Value> >("FieldConstant"+FieldBase<spacedim, Value>::template_name());
 
 
 template <int spacedim, class Value>
