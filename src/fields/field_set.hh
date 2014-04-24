@@ -36,15 +36,15 @@ public:
 	 * 			.description("Initial temperature");
 	 *
 	 */
-	FieldSet &operator +=(FieldCommonBase &field) {
-		FieldCommonBase *found_field = field_by_name(field.name());
+	FieldSet &operator +=(FieldCommonBase &add_field) {
+		FieldCommonBase *found_field = field(add_field.name());
 		if (found_field) {
-			ASSERT(&field==found_field, "Another field of the same name exists when adding field: %s\n", field.name().c_str());
+			ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n", add_field.name().c_str());
 		} else {
-			field_list.push_back(&field);
-			if (mesh_) field.set_mesh(*mesh_);
-			if (!input_list_.is_empty()) field.set_input_list(input_list_);
-			if (side_ != LimitSide::unknown) field.set_limit_side(side_);
+			field_list.push_back(&add_field);
+			if (mesh_) add_field.set_mesh(*mesh_);
+			if (!input_list_.is_empty()) add_field.set_input_list(input_list_);
+			if (side_ != LimitSide::unknown) add_field.set_limit_side(side_);
 		}
 		return *this;
 	}
@@ -62,7 +62,7 @@ public:
 	 */
 	FieldSet subset(std::vector<std::string> names) const {
 		FieldSet set;
-		for(auto name : names) set += this->get_field( name);
+		for(auto name : names) set += (*this)[name];
 		return set;
 	}
 
@@ -145,23 +145,35 @@ public:
      * and same instances of FieldBase classes but each copy can be set to different time and different limit side.
      */
     void set_field(const std::string &dest_field_name, FieldCommonBase &source) {
-    	auto &field = get_field(dest_field_name);
+    	auto &field = (*this)[dest_field_name];
     	field.copy_from(source);
     	if (mesh_) ASSERT_EQUAL(mesh_, field.mesh() );
     	if (side_ != LimitSide::unknown) field.set_limit_side(side_);
     }
 
-    /**
-     * Returns pointer to the field given by name @p field_name. Throws if the field with given name is not found.
-     */
-    FieldCommonBase &get_field(const std::string &field_name) const {
-    	FieldCommonBase *found_field=field_by_name(field_name);
-    	if (found_field) return *found_field;
 
-		THROW(ExcUnknownField() << FieldCommonBase::EI_Field(field_name));
-		return *field_list[0]; // formal to prevent compiler warning
+
+    /**
+     * Return pointer to the field given by name @p field_name. Return nullptr if not found.
+     */
+    FieldCommonBase *field(const std::string &field_name) const {
+        for(auto field : field_list)
+            if (field->name() ==field_name) return field;
+        return nullptr;
     }
 
+
+    /**
+     * Returns reference to the field given by @p field_name.
+     * Throws if the field with given name is not found.
+     */
+    FieldCommonBase &operator[](const std::string &field_name) const {
+        FieldCommonBase *found_field=field(field_name);
+        if (found_field) return *found_field;
+
+        THROW(ExcUnknownField() << FieldCommonBase::EI_Field(field_name));
+        return *field_list[0]; // formal to prevent compiler warning
+    }
 
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
@@ -244,14 +256,6 @@ public:
     }
 
 protected:
-    /**
-     * Return pointer to the field of given name. REturn nullptr if not found.
-     */
-    FieldCommonBase *field_by_name(const std::string &field_name) const {
-		for(auto field : field_list)
-			if (field->name() ==field_name) return field;
-		return nullptr;
-    }
 
 
     /// List of all fields.
