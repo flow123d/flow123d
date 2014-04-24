@@ -54,8 +54,8 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 
 FILE *ApplicationBase::petsc_output_ =NULL;
 
-PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
 #ifdef HAVE_PETSC
+PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
@@ -71,9 +71,8 @@ PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_
     fwrite(buff, sizeof(char), length, petsc_output_);
   }
   PetscFunctionReturn(0);
-#endif
 }
-
+#endif
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef HAVE_PETSC
