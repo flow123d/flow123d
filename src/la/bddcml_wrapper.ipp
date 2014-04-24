@@ -350,8 +350,9 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int lnumSubLev   = numSubLev.size();
     int commInt      = MPI_Comm_c2f( comm_ ); // translate C MPI communicator hanlder to Fortran integer
     int numBase      = 0;                     // indexing starts with 0 for C++
+    int justDirectSolve = 0;
 
-    bddcml_init( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase );
+    bddcml_init( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase, &justDirectSolve );
 
 
     //============= uploading data for subdomain
@@ -492,13 +493,19 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int weights_type              = 3;
 
     // setup multilevel BDDC preconditioner
+    START_TIMER("BDDC preconditioner setup");
     bddcml_setup_preconditioner( & matrixTypeInt, & use_defaults_int, 
                                  & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int,
                                  & weights_type );
+    END_TIMER("BDDC preconditioner setup");
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;
-    bddcml_dotprod_subdomain( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
+    if (nProc_ > 1 ) {
+        bddcml_dotprod_subdomain( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
+    } else {
+        for ( double elem: rhsVec_ )  normSquaredLoc += elem*elem;
+    }
 
     // sum over processes
     double normSquared = 0.;
@@ -518,9 +525,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int max_number_of_stored_vectors = 100;
 
     // call iterative solver
+    START_TIMER("BDDC solve");
     bddcml_solve( & commInt, & method, & tol, & maxIt, & ndecrMax, 
                   & recycling_int, & max_number_of_stored_vectors,
                   & numIter_, & convergedReason_, & condNumber_);
+    END_TIMER("BDDC solve");
 
 
     //============= downloading solution from BDDCML solver
@@ -532,7 +541,11 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     normSquaredLoc = 0.;
-    bddcml_dotprod_subdomain( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
+    if (nProc_ > 1 ) {
+       bddcml_dotprod_subdomain( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
+    } else {
+        for ( double elem: sol_ )  normSquaredLoc += elem*elem;
+    }
 
     // sum over processes
     normSquared = 0.;

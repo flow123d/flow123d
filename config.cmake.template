@@ -43,7 +43,7 @@
 # if you set PETSC_CONFIG=bddcml.
 #
 # example:
-# set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+# set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
 ### Python setting ###############################################################
 # USE_PYTHON - only use python if this is set to "yes"

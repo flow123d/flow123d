@@ -14,6 +14,7 @@
 
 #include <system/global_defs.h>
 #include <system/xio.h>
+#include "system/sys_profiler.hh"
 
 extern "C" { 
     #include <bddcml_interface_c.h>
@@ -26,8 +27,8 @@ namespace la{
 
     namespace detail_{
 
-        template< typename NODE, typename MAPTYPE >
-        int getLocalNumber( NODE * np, MAPTYPE & map ) {
+        template< typename DOFHOLDER, typename MAPTYPE >
+        int getLocalNumber( DOFHOLDER * np, MAPTYPE & map ) {
 
             unsigned globalIndex = np -> giveId( );
 

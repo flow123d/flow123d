@@ -420,7 +420,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
-    std::map<int,double> subdomain_diagonal_map;
+    // diagonal of the matrix for uploading weights to BDDCML 
+    // S = -C - B*inv(A)*B'
+    // diag(S) ~ - diag(C) - 1./diag(A)
+    // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+    // to a continuous one
+    // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+    // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
+    std::map<int,double> subdomain_diagonal_map; 
     F_ENTRY;
 
 
@@ -556,8 +563,10 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // update matrix for weights in BDDCML
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
-               double new_val = value;
+               // there is -value on diagonal
+               double new_val = - value;
                std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
+               ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
                if ( it != subdomain_diagonal_map.end() ) {
                   new_val = new_val + it->second;
                }
@@ -597,7 +606,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     }
 
     if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-       ls->load_diagonal( subdomain_diagonal_map );
+       static_cast<LinSys_BDDC*>(ls)->load_diagonal( subdomain_diagonal_map );
     }
 
     //if (! mtx->ins_mod == ALLOCATE ) {
@@ -887,14 +896,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::input_type) {
-    		xprintf(Warn, "BDDC is using no Schur complements.");
-            n_schur_compls = 0;
-    	} else if (n_schur_compls > 2) {
-            xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
-            n_schur_compls = 2;
-        }
-        if (in_rec.type() == LinSys_BDDC::input_type && rows_ds->np() > 1) {
 #ifdef HAVE_BDDCML
+            xprintf(Warn, "For BDDC is using no Schur complements.");
+            n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
@@ -909,14 +913,17 @@ void DarcyFlowMH_Steady::create_linear_system() {
 #else
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
 #endif
-        }
+        } 
+        else if (in_rec.type() == LinSys_PETSC::input_type) {
+        // use PETSC for serial case even when user wants BDDC
+            if (n_schur_compls > 2) {
+                xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
+                n_schur_compls = 2;
+            }
 
+            LinSys_PETSC *schur1, *schur2;
 
-        // use PETSC for serial case even when user want BDDC
-        if (in_rec.type() == LinSys_PETSC::input_type || schur0==NULL) {
-        	LinSys_PETSC *schur1, *schur2;
-
-        	if (n_schur_compls == 0) {
+            if (n_schur_compls == 0) {
                 LinSys_PETSC *ls = new LinSys_PETSC( &(*rows_ds) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
@@ -928,35 +935,35 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
                 ls->set_solution( NULL );
                 schur0=ls;
-        	} else {
-        		IS is;
-        		err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-        		ASSERT(err == 0,"Error in ISCreateStride.");
+            } else {
+                IS is;
+                err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+                ASSERT(err == 0,"Error in ISCreateStride.");
 
-        		SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
-        		ls->set_from_input(in_rec);
-        		ls->set_solution( NULL );
-        		ls->set_positive_definite();
+                SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
+                ls->set_from_input(in_rec);
+                ls->set_solution( NULL );
+                ls->set_positive_definite();
 
-        		// make schur1
-            	Distribution *ds = ls->make_complement_distribution();
-            	if (n_schur_compls==1) {
-            		schur1 = new LinSys_PETSC(ds);
-            	} else {
-        			IS is;
-        			err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-        			ASSERT(err == 0,"Error in ISCreateStride.");
-        			SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
-        			ls1->set_negative_definite();
+                // make schur1
+                Distribution *ds = ls->make_complement_distribution();
+                if (n_schur_compls==1) {
+                    schur1 = new LinSys_PETSC(ds);
+                } else {
+                    IS is;
+                    err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    ASSERT(err == 0,"Error in ISCreateStride.");
+                    SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+                    ls1->set_negative_definite();
 
-        			// make schur2
-        			schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
-        			ls1->set_complement( schur2 );
-        			schur1 = ls1;
-            	}
-            	ls->set_complement( schur1 );
-        		schur0=ls;
-        	}
+                    // make schur2
+                    schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+                    ls1->set_complement( schur2 );
+                    schur1 = ls1;
+                }
+                ls->set_complement( schur1 );
+                schur0=ls;
+            }
 
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
@@ -965,8 +972,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
     	    VecZeroEntries(schur0->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
-
-        if (schur0==NULL) {
+        else {
             xprintf(Err, "Unknown solver type. Internal error.\n");
         }
     }
@@ -1032,11 +1038,19 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // prepare mesh for BDDCML
     // initialize arrays
+    // auxiliary map for creating coordinates of local dofs and global-to-local numbering
     std::map<int,arma::vec3> localDofMap;
+    // connectivity for the subdomain, i.e. global dof numbers on element, stored element-by-element
+    // Indices of Nodes on Elements
     std::vector<int> inet;
+    // number of degrees of freedom on elements - determines elementwise chunks of INET array
+    // Number of Nodes on Elements
     std::vector<int> nnet;
+    // Indices of Subdomain Elements in Global Numbering - for local elements, their global indices
     std::vector<int> isegn;
 
+    // This array is currently not used in BDDCML, it was used as an interface scaling alternative to scaling
+    // by diagonal. It corresponds to the rho-scaling.
     std::vector<double> element_permeability;
 
     // maximal and minimal dimension of elements
@@ -1115,9 +1129,15 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         element_permeability.push_back( 1. / coef );
     }
     //convert set of dofs to vectors
+    // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
     ASSERT_EQUAL( numNodeSub, global_row_4_sub_row->size() );
+    // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
+    // pseudo-coordinates of local nodes (i.e. dofs)
+    // they need not be exact, they are used just for some geometrical considerations in BDDCML, 
+    // such as selection of corners maximizing area of a triangle, bounding boxes fro subdomains to 
+    // find candidate neighbours etc.
     std::vector<double> xyz( numNodeSub * 3 ) ;
     int ind = 0;
     std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
@@ -1133,7 +1153,8 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     }
     localDofMap.clear();
 
-    // nndf is trivially one
+    // Number of Nodal Degrees of Freedom
+    // nndf is trivially one - dofs coincide with nodes
     std::vector<int> nndf( numNodeSub, 1 );
 
     // prepare auxiliary map for renumbering nodes
