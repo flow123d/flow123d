@@ -486,7 +486,13 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                double val_side =  (fe_values.local_matrix())[i*nsides+i];
                double val_edge =  -1./ (fe_values.local_matrix())[i*nsides+i];
                subdomain_diagonal_map.insert( std::make_pair( side_row, val_side ) );
-               subdomain_diagonal_map.insert( std::make_pair( edge_row, val_edge ) );
+
+               double new_val= val_edge;
+               std::map<int,double>::iterator it = subdomain_diagonal_map.find( edge_row );
+               if ( it != subdomain_diagonal_map.end() ) {
+                  new_val = new_val + it->second;
+               }
+               subdomain_diagonal_map.insert( std::make_pair( edge_row, new_val ) );
             }
         }
 
@@ -566,7 +572,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                // there is -value on diagonal
                double new_val = - value;
                std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
-               ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
+               //ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
                if ( it != subdomain_diagonal_map.end() ) {
                   new_val = new_val + it->second;
                }
