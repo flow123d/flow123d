@@ -71,7 +71,7 @@ class EquationBase {
 public:
 
     /**
-     * Default constructor. Necessary to make tests fixtures for equations.
+     * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
      * TODO:
      * Replace setting all in constructor with appropriate getters and setters.
      * Make appropriate checks if key ingredients are initialized.
@@ -95,17 +95,27 @@ public:
      *  has to be set after the constructor and before zero_time_step.
      */
     virtual void zero_time_step() {
-        // solve equation here ...
+      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
     /**
      *  Calculation of the next time step and its output.
      */
     virtual void update_solution() {
-        // solve equation here ...
-        time_->next_time();
+      if (equation_empty_) DBGMSG("Calling 'update_solution' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'update_solution' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
+    ///Initialize fields.
+    /** 
+     * All members that are needed to set fields must be set at this moment (e.g. number of components).
+     */
+    virtual void initialize() {
+      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());      
+    }
+    
     /**
      *  Computation of one time step is split into update_solution() and choose_next_time() in order to allow dependency of the next time step
      *  on other coupled models.
@@ -192,14 +202,14 @@ public:
 
     /**
      * Child class have to implement getter for sequential solution vector.
-     * OBSOLETE
+     * DEPRECATED
      */
     virtual void get_solution_vector(double * &vector, unsigned int &size)
     { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * Child class have to implement getter for parallel solution vector.
-     * OBSOLETE
+     * DEPRECATED
      */
     virtual void get_parallel_solution_vector(Vec &vector)
     { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
@@ -207,14 +217,18 @@ public:
     /**
      * @brief Write computed fields.
      */
-    virtual void output_data() =0;
+    virtual void output_data() {
+      if (equation_empty_) DBGMSG("Calling 'output_data' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'output_data' of '%s' is not implemented.\n",typeid(*this).name());
+    }
 
 protected:
+    bool equation_empty_;       ///< flag is true if only default constructor was called
     Mesh * mesh_;
     TimeGovernor *time_;
     //TimeMark::Type equation_mark_type_;
     Input::Record input_record_;
-
+    
     /**
      * Pointer to the equation data object. Every particular equation is responsible
      * to set the pointer in its constructor. This is used by the general method
@@ -228,25 +242,25 @@ protected:
 
 
 
-/**
+/** OBSOLETE
  * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
  */
-class EquationNothing : public EquationBase {
-
-public:
-    EquationNothing(Mesh &mesh);
-
-    void get_solution_vector(double * &vector, unsigned int &size) override
-    {
-        vector = NULL;
-        size = 0;
-    }
-
-    void get_parallel_solution_vector(Vec &vector) override {};
-
-    virtual ~EquationNothing() {};
-
-};
+// class EquationNothing : public EquationBase {
+// 
+// public:
+//     EquationNothing(Mesh &mesh);
+// 
+//     void get_solution_vector(double * &vector, unsigned int &size) override
+//     {
+//         vector = NULL;
+//         size = 0;
+//     }
+// 
+//     void get_parallel_solution_vector(Vec &vector) override {};
+// 
+//     virtual ~EquationNothing() {};
+// 
+// };
 
 
 #endif /* EQUATION_HH_ */
