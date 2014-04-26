@@ -24,6 +24,7 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)//
 {
   //DBGMSG("SorptionSimple constructor.\n");
 	data_ = new EqData("conc_solid");
+  this->eq_data_ = data_;
 	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
 }
 

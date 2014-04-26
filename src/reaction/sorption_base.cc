@@ -73,7 +73,10 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 
     // porosity field is set from governing equation (transport) later
     // hence we do not add it to the input_data_set_
-    *this += porosity.name("porosity").units("1").just_copy();
+    *this += porosity
+             .name("porosity")
+             .units("1")
+             .just_copy();
     
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units("M/L^3");
@@ -84,6 +87,8 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)//
 	: ReactionTerm(init_mesh, in_rec),
 	  data_(nullptr)
 {
+  // creating reaction from input and setting their parameters
+  make_reactions(input_record_);
 }
 
 
@@ -93,11 +98,8 @@ SorptionBase::~SorptionBase(void)
   
   if (data_ != nullptr) delete data_;
 
-//  if(!output_rec.is_empty())
-  {
-    VecDestroy(vconc_solid);
-    VecDestroy(vconc_solid_out);
-  }
+  VecDestroy(vconc_solid);
+  VecDestroy(vconc_solid_out);
 
   for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
   {
@@ -107,7 +109,85 @@ SorptionBase::~SorptionBase(void)
   xfree(conc_solid);
 }
 
+void SorptionBase::make_reactions(Input::Record in_rec)
+{
+  //DBGMSG("SorptionBase init_from_input\n");
+  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction");
+  if ( reactions_it )
+  {
+    if (reactions_it->type() == Linear_reaction::input_type ) {
+        reaction =  new Linear_reaction(*mesh_, *reactions_it);
+    } else
+    if (reactions_it->type() == Pade_approximant::input_type) {
+        reaction = new Pade_approximant(*mesh_, *reactions_it);
+    } else
+    if (reactions_it->type() == SorptionBase::input_type ) {
+        xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
+    } else
+    if (reactions_it->type() == DualPorosity::input_type ) {
+        xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
+    } else
+    if (reactions_it->type() == Semchem_interface::input_type )
+    {
+        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+    } else
+    {
+        xprintf(UsrErr, "Unknown reactions type in Sorption model.\n");
+    }
+  } else
+  {
+    reaction = nullptr;
+  }
+}
 
+void SorptionBase::initialize()
+{
+  //DBGMSG("SorptionBase - initialize.\n");
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  ASSERT(output_stream_,"Null output stream.");
+  ASSERT_LESS(0, names_.size());
+  
+  initialize_substance_ids(names_, input_record_); //computes present substances and sets indices
+  init_from_input(input_record_);          //reads non-field data from input
+  
+  nr_of_regions = mesh_->region_db().bulk_size();
+  nr_of_points = input_record_.val<int>("substeps");
+  
+  //isotherms array resized bellow
+  isotherms.resize(nr_of_regions);
+  for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
+  {
+    isotherms[i_reg].resize(n_substances_);
+    for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+    {
+      isotherms[i_reg][i_subst] = Isotherm();
+    }
+  }   
+  
+  //allocating new array for sorbed concentrations
+  conc_solid = (double**) xmalloc(names_.size() * sizeof(double*));//new double * [n_substances_];
+  conc_solid_out = (double**) xmalloc(names_.size() * sizeof(double*));
+  for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
+  {
+    conc_solid[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
+    conc_solid_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
+    //zero initialization of solid concentration for all substances
+    for(unsigned int i=0; i < distribution->lsize(); i++)
+      conc_solid[sbi][i] = 0;
+  }
+
+  allocate_output_mpi();
+  
+  initialize_fields();
+  
+  if(reaction != nullptr)
+  {
+    reaction->names(names_)
+      .concentration_matrix(concentration_matrix_, distribution, el_4_loc, row_4_el)
+      .set_time_governor(*time_);
+  }
+}
 
 
 void SorptionBase::initialize_substance_ids(const vector< string >& names, Input::Record in_rec)
@@ -153,20 +233,11 @@ void SorptionBase::initialize_substance_ids(const vector< string >& names, Input
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 {
-	data_->sorption_type.n_comp(n_substances_);
-	data_->isotherm_mult.n_comp(n_substances_);
-	data_->isotherm_other.n_comp(n_substances_);
-	data_->init_conc_solid.n_comp(n_substances_);
-
-	// read fields from input file
-	data_->input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));
-
-	data_->set_mesh(*mesh_);
-	data_->set_limit_side(LimitSide::right);
-
   // Common data for all the isotherms loaded bellow
 	solvent_density = in_rec.val<double>("solvent_density");
 
+  molar_masses.resize( n_substances_ );
+  
 	Input::Array molar_mass_array = in_rec.val<Input::Array>("molar_mass");
 
 	if (molar_mass_array.size() == molar_masses.size() )   molar_mass_array.copy_to( molar_masses );
@@ -199,143 +270,77 @@ void SorptionBase::init_from_input(Input::Record in_rec)
 	}
 }
 
+void SorptionBase::initialize_fields()
+{
+  ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
+  data_->sorption_type.n_comp(n_substances_);
+  data_->isotherm_mult.n_comp(n_substances_);
+  data_->isotherm_other.n_comp(n_substances_);
+  data_->init_conc_solid.n_comp(n_substances_);
+
+  // read fields from input file
+  data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+
+  data_->set_mesh(*mesh_);
+  data_->set_limit_side(LimitSide::right);
+
+  //initialization of output
+  output_array = input_record_.val<Input::Array>("output_fields");
+    //initialization of output
+  data_->conc_solid.init(names_);
+  data_->conc_solid.set_mesh(*mesh_);
+  data_->output_fields.output_type(OutputTime::ELEM_DATA);
+  for (int sbi=0; sbi<names_.size(); sbi++)
+  {
+      // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+      std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
+          new FieldElementwise<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], names_.size(), mesh_->n_elements()));
+      data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+  }
+  data_->output_fields.set_limit_side(LimitSide::right);
+  output_stream_->add_admissible_field_names(output_array, output_selection);
+}
+
+
 void SorptionBase::zero_time_step()
 {
-    ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
-    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-
-
-
-    //DBGMSG("SorptionBase constructor.\n");
-    initialize_substance_ids(names_, input_record_);
-
-  //   for(unsigned int s=0; s<names_.size(); s++)
-  //     cout << s  << "  " << names_[s] << endl;
-  //
-  //   for(unsigned int s=0; s<n_substances_; s++)
-  //     cout << s << "  " << substance_global_idx_[s] << "  " << names_[substance_global_idx_[s]] << endl;
-
-    nr_of_regions = mesh_->region_db().bulk_size();
-    nr_of_points = input_record_.val<int>("substeps");
-
-  //  Input::Iterator<Input::Record> out_rec = in_rec.find<Input::Record>("output");
-    //output_rec = in_rec.find<Input::Record>("output");
-  //  if(out_rec) output_rec = *out_rec;
-    output_array = input_record_.val<Input::Array>("output_fields");
-
-    //Simple vectors holding  common informations.
-    molar_masses.resize( n_substances_ );
-
-    //isotherms array resized bellow
-    isotherms.resize(nr_of_regions);
-    for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-      for(int i_spec = 0; i_spec < n_substances_; i_spec++)
-      {
-        Isotherm iso_mob;
-        isotherms[i_reg].push_back(iso_mob);
-      }
-
-
-    init_from_input(input_record_);
-    data_->set_time(*time_);
-    make_tables();
+  //DBGMSG("SorptionBase - zero_time_step.\n");
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  ASSERT(output_stream_,"Null output stream.");
+  ASSERT_LESS(0, names_.size());
   
-    //allocating new array for sorbed concentrations
-    conc_solid = (double**) xmalloc(names_.size() * sizeof(double*));//new double * [n_substances_];
-    conc_solid_out = (double**) xmalloc(names_.size() * sizeof(double*));
-    for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
-    {
-      conc_solid[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
-      conc_solid_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
-      //zero initialization of solid concentration for all substances
-      for(unsigned int i=0; i < distribution->lsize(); i++)
-        conc_solid[sbi][i] = 0;
-    }
-
-    allocate_output_mpi();
+  data_->set_time(*time_);
+  set_initial_condition();
+  make_tables();
+    
+  // write initial condition
+  output_vector_gather();
+  data_->output_fields.set_time(*time_);
+  data_->output_fields.output(output_stream_);
   
-  
-    //setting initial condition for solid concentrations
-	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	{
-		unsigned int index = el_4_loc[loc_el];
-		ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-		arma::vec value = data_->init_conc_solid.value(ele_acc.centre(),
-				ele_acc);
-
-		//setting initial solid concentration for substances involved in adsorption
-		for (int sbi = 0; sbi < n_substances_; sbi++)
-		{
-			int subst_id = substance_global_idx_[sbi];
-			conc_solid[subst_id][loc_el] = value(sbi);
-		}
-	}
-  
-    //initialization of output
-	data_->conc_solid.init(names_);
-	data_->conc_solid.set_mesh(*mesh_);
-	data_->output_fields.output_type(OutputTime::ELEM_DATA);
-	for (int sbi=0; sbi<names_.size(); sbi++)
-	{
-			// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-			std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-				  new FieldElementwise<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], names_.size(), mesh_->n_elements()));
-			data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-	}
-	data_->output_fields.set_limit_side(LimitSide::right);
-	output_stream_->add_admissible_field_names(output_array, output_selection);
-
-  
-    //DBGMSG("Going to write initial condition.\n");
-    // write initial condition
-    output_vector_gather();
-    data_->output_fields.set_time(*time_);
-    data_->output_fields.output(output_stream_);
-  
-    // creating reaction from input and setting their parameters
-    init_from_input_reaction(input_record_);
-  
-    if(reaction != nullptr)
-    {
-        reaction->names(names_);
-    	reaction->set_time_governor(*time_);
-		reaction->concentration_matrix(concentration_matrix_, distribution, el_4_loc, row_4_el);
-		reaction->zero_time_step();
-	}
+  if(reaction != nullptr)
+    reaction->zero_time_step();
 }
 
-void SorptionBase::init_from_input_reaction(Input::Record in_rec)
+void SorptionBase::set_initial_condition()
 {
-  //DBGMSG("SorptionBase init_from_input\n");
-  Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction");
-  if ( reactions_it ) 
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
   {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction =  new Linear_reaction(*mesh_, *reactions_it);
-                
-    } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction = new Pade_approximant(*mesh_, *reactions_it);
-        
-    } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
-    } else
-    if (reactions_it->type() == DualPorosity::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
-    } else
-    if (reactions_it->type() == Semchem_interface::input_type ) 
+    unsigned int index = el_4_loc[loc_el];
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
+    arma::vec value = data_->init_conc_solid.value(ele_acc.centre(),
+        ele_acc);
+
+    //setting initial solid concentration for substances involved in adsorption
+    for (int sbi = 0; sbi < n_substances_; sbi++)
     {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
-    } else 
-    {
-        xprintf(UsrErr, "Unknown reactions type in Sorption model.\n");
+      int subst_id = substance_global_idx_[sbi];
+      conc_solid[subst_id][loc_el] = value(sbi);
     }
-  } else
-  {
-    reaction = nullptr;
   }
 }
+
 
 void SorptionBase::update_solution(void)
 {
@@ -420,24 +425,6 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
   return concentrations;
 }
 
-void SorptionBase::set_porosity(Field< 3, FieldValue_< 1, 1, double > >& por_m)
-{
-  data_->set_field(data_->porosity.name(),por_m);
-}
-
-
-void SorptionBase::print_sorption_parameters(void)
-{
-  DBGMSG("Not implemented.\n");
-  xprintf(Msg, "\nSorption parameters are defined as follows:\n");
-}
-
-/*
-void SorptionBase::set_concentration_vector(Vec &vc)
-{
-  DBGMSG("Not implemented.\n");      
-}
-*/
 
 /**************************************** OUTPUT ***************************************************/
 

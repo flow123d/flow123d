@@ -81,7 +81,11 @@ DualPorosity::EqData::EqData()
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)
 {
-    make_reactions();
+  //set pointer to equation data fieldset
+  this->eq_data_ = &data_;
+  
+  //reads input and creates possibly other reaction terms
+  make_reactions();
 }
 
 DualPorosity::~DualPorosity(void)
@@ -104,13 +108,6 @@ DualPorosity::~DualPorosity(void)
   xfree(conc_immobile);
 }
 
-
-void DualPorosity::set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
-{
-	data_.set_field(data_.porosity.name(),por_m);
-
-
-}
 
 void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
@@ -171,117 +168,139 @@ void DualPorosity::make_reactions() {
 
 }
 
-void DualPorosity::zero_time_step()
+void DualPorosity::initialize()
 {
-	//DBGMSG("DualPorosity - initialize.\n");
-	ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
-	ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-	ASSERT(output_stream_,"Null output stream.");
-	ASSERT_LESS(0, names_.size());
-
-    data_.diffusion_rate_immobile.n_comp(names_.size());
-    data_.init_conc_immobile.n_comp(names_.size());
-
-    //setting fields that are set from input file
-    input_data_set_+=data_;
-    input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
-
-
-
-    data_.set_mesh(*mesh_);
-    data_.set_limit_side(LimitSide::right);
-    output_array = input_record_.val<Input::Array>("output_fields");
-
-
-    //DBGMSG("dual_por init_from_input\n");
-
-
-
-	data_.set_time(*time_);
-    
-	//allocating memory for immobile concentration matrix
-	conc_immobile = (double**) xmalloc(names_.size() * sizeof(double*));
-	conc_immobile_out = (double**) xmalloc(names_.size() * sizeof(double*));
-	for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
-	{
-		conc_immobile[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
-		conc_immobile_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
-	}
+  //DBGMSG("DualPorosity - initialize.\n");
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  ASSERT(output_stream_,"Null output stream.");
+  ASSERT_LESS(0, names_.size());
   
-	//DBGMSG("DualPorosity - init_conc_immobile.\n");
-	//setting initial condition for immobile concentration matrix
-	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
-	{
-		unsigned int index = el_4_loc[loc_el];
-		ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-		arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
-        
-		for (int sbi=0; sbi < names_.size(); sbi++)
-		{
-			conc_immobile[sbi][loc_el] = value(sbi);
-		}
-	}
+  // creating reactions from input and setting their parameters
+  init_from_input(input_record_);
   
-    //initialization of output
-    allocate_output_mpi();
-	data_.conc_immobile.init(names_);
-	data_.conc_immobile.set_mesh(*mesh_);
-	data_.output_fields.output_type(OutputTime::ELEM_DATA);
-
-	for (int sbi=0; sbi<names_.size(); sbi++)
-	{
-		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-				new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], names_.size(), mesh_->n_elements()));
-		data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-	}
-	data_.output_fields.set_limit_side(LimitSide::right);
-	output_stream_->add_admissible_field_names(output_array, data_.output_selection);
-    
-    // write initial condition
-    output_vector_gather();
-    data_.output_fields.set_time(*time_);
-    data_.output_fields.output(output_stream_);
+  //allocating memory for immobile concentration matrix
+  conc_immobile = (double**) xmalloc(names_.size() * sizeof(double*));
+  conc_immobile_out = (double**) xmalloc(names_.size() * sizeof(double*));
+  for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
+  {
+    conc_immobile[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));
+    conc_immobile_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
+  }
+  allocate_output_mpi();
   
-	// creating reactions from input and setting their parameters
-	init_from_input(input_record_);
+  initialize_fields();
 
-    // assign porosities to reactions
-    SorptionMob   *sorption_mob   = dynamic_cast<SorptionMob   *>(reaction_mobile);
-    SorptionImmob *sorption_immob = dynamic_cast<SorptionImmob *>(reaction_immobile);
-
-    if (sorption_mob != nullptr)
-    {
-        sorption_mob->set_porosity(data_.porosity);
-        sorption_mob->set_porosity_immobile(data_.porosity_immobile);
-    }
-    if (sorption_immob != nullptr)
-    {
-        sorption_immob->set_porosity(data_.porosity);
-        sorption_immob->set_porosity_immobile(data_.porosity_immobile);
-    }
-
-
-	if(reaction_mobile != nullptr)
-	{
-		reaction_mobile->set_time_governor(*time_);
-        reaction_mobile->names(names_)
+  if(reaction_mobile != nullptr)
+  {
+    reaction_mobile->names(names_)
                 .output_stream(*output_stream_)
                 .concentration_matrix(concentration_matrix_, distribution, el_4_loc, row_4_el)
-                .zero_time_step();
-	}
+                .set_time_governor(*time_);
+    reaction_mobile->initialize();
+  }
 
-	if(reaction_immobile != nullptr)
-	{
-        reaction_immobile->set_time_governor(*time_);
-        reaction_immobile->names(names_)
+  if(reaction_immobile != nullptr)
+  {
+    reaction_immobile->names(names_)
                 .output_stream(*output_stream_)
                 .concentration_matrix(conc_immobile, distribution, el_4_loc, row_4_el)
-                .zero_time_step();
-	}
+                .set_time_governor(*time_);
+    reaction_immobile->initialize();
+  }
 
 }
 
+void DualPorosity::initialize_fields()
+{
+  //setting fields in data
+  data_.diffusion_rate_immobile.n_comp(names_.size());
+  data_.init_conc_immobile.n_comp(names_.size());
+
+  //setting fields that are set from input file
+  input_data_set_+=data_;
+  input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+
+  data_.set_mesh(*mesh_);
+  data_.set_limit_side(LimitSide::right);
+  
+  //initialization of output
+  output_array = input_record_.val<Input::Array>("output_fields");
+  
+  //initialization of output
+  data_.conc_immobile.init(names_);
+  data_.conc_immobile.set_mesh(*mesh_);
+  data_.output_fields.output_type(OutputTime::ELEM_DATA);
+
+  for (int sbi=0; sbi<names_.size(); sbi++)
+  {
+    // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+    std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
+        new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], names_.size(), mesh_->n_elements()));
+    data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+  }
+  data_.output_fields.set_limit_side(LimitSide::right);
+  output_stream_->add_admissible_field_names(output_array, data_.output_selection);
+}
+
+
+void DualPorosity::zero_time_step()
+{
+  //DBGMSG("DualPorosity - zero_time_step.\n");
+  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  ASSERT(output_stream_,"Null output stream.");
+  ASSERT_LESS(0, names_.size());
+ 
+  //coupling - passing fields
+  if(reaction_mobile)
+  if (typeid(*reaction_mobile) == typeid(SorptionMob))
+  {
+          reaction_mobile->data().get_field("porosity")
+            .copy_from(data_.get_field("porosity"));
+          reaction_mobile->data().get_field("porosity_immobile")
+            .copy_from(data_.get_field("porosity_immobile"));
+  }
+  if(reaction_immobile)
+  if (typeid(*reaction_immobile) == typeid(SorptionImmob))
+  {
+          reaction_immobile->data().get_field("porosity")
+            .copy_from(data_.get_field("porosity"));
+          reaction_immobile->data().get_field("porosity_immobile")
+            .copy_from(data_.get_field("porosity_immobile"));
+  }
+  
+  data_.set_time(*time_);
+  set_initial_condition();
+  
+  // write initial condition
+  output_vector_gather();
+  data_.output_fields.set_time(*time_);
+  data_.output_fields.output(output_stream_);
+  
+  if(reaction_mobile != nullptr)
+    reaction_mobile->zero_time_step();
+
+  if(reaction_immobile != nullptr)
+    reaction_immobile->zero_time_step();
+}
+
+void DualPorosity::set_initial_condition()
+{
+  //DBGMSG("DualPorosity - init_conc_immobile.\n");
+  //setting initial condition for immobile concentration matrix
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+  {
+    unsigned int index = el_4_loc[loc_el];
+    ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
+    arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
+        
+    for (int sbi=0; sbi < names_.size(); sbi++)
+    {
+      conc_immobile[sbi][loc_el] = value(sbi);
+    }
+  }
+}
 
 void DualPorosity::update_solution(void) 
 {

@@ -66,7 +66,9 @@ public:
    */
   virtual ~SorptionBase(void);
 
+  void initialize() override;
   void zero_time_step() override;
+  void set_initial_condition();
 
   /**
    * Prepared to compute sorption inside all of considered elements. 
@@ -85,10 +87,6 @@ public:
    * Method data() which access EqData is pure virtual and cannot be called from the base constructor.
    */
   //void data_initialization(void);
-  /**
-   * Sets porosity field - makes a field copy from transport.
-   */
-  void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m);
   
   /**
    * Creates interpolation table for isotherms.
@@ -113,12 +111,15 @@ protected:
   
   /// Initializes private members of sorption from the input record.
   void init_from_input(Input::Record in_rec) override;
+  
+  /// Initializes field sets.
+  void initialize_fields();
 
   /** Initializes possible following reactions from input record.
    * It should be called after setting mesh, time_governor, distribution and concentration_matrix
    * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
    */
-  void init_from_input_reaction(Input::Record in_rec);
+  void make_reactions(Input::Record in_rec);
   
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
@@ -129,10 +130,6 @@ protected:
    */
   virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
   
-  /**
-   * or printing parameters of isotherms under consideration, not necessary to store
-   */
-  void print_sorption_parameters(void);
   
   void allocate_output_mpi(void);
   

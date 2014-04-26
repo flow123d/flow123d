@@ -56,12 +56,14 @@ public:
    */
   ~DualPorosity(void);
 
+  /// Resolves construction of following reactions.
   void make_reactions();
 
+  /// Prepares the object to usage.
   /**
-   * Updates the solution according to the dual porosity model.
+   * Allocating memory, reading input, initialization of fields.
    */
-  void update_solution(void) override;
+  void initialize() override;
   
   /**
    * Initialization routines after all necessary members have been set.
@@ -69,13 +71,16 @@ public:
    */
   void zero_time_step() override;
   
-  void output_data(void) override;
-  void output_vector_gather(void) override;
-  
   /**
-   * Set the porosity field which is passed from transport.
+   * Updates the solution according to the dual porosity model.
    */
-  void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m);
+  void update_solution(void) override;
+  
+  /// Main output routine.
+  void output_data(void) override;
+  
+  /// Gathers all the parallel vectors to enable them to be output.
+  void output_vector_gather(void) override;
   
   double **compute_reaction(double **concentrations, int loc_el) override;
   
@@ -85,6 +90,11 @@ protected:
    */
   DualPorosity();
 
+  /// Sets initial condition from input.
+  void set_initial_condition();
+  /// Initializes field sets.
+  void initialize_fields();
+  
   void allocate_output_mpi(void);
   
   /**

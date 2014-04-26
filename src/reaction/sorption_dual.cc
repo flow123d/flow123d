@@ -24,6 +24,8 @@ using namespace std;
 SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec)//
 	: SorptionBase(init_mesh, in_rec)
 {
+  immob_porosity_.just_copy()
+    .name("porosity_immobile");
 }
 
 SorptionDual::~SorptionDual(void)

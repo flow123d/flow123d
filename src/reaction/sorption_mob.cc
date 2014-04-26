@@ -28,6 +28,8 @@ SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
 {
   //DBGMSG("SorptionMob constructor.\n");
 	data_ = new EqData("conc_solid");
+  *data_+=(immob_porosity_);
+  this->eq_data_ = data_;
 	output_selection = make_output_selection("conc_solid", "SorptionMobile_Output");
 }
 
