@@ -416,14 +416,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double zeros[1000]; // to make space for second schur complement, max. 10 neighbour edges of one el.
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
-    // diagonal of the matrix for uploading weights to BDDCML 
-    // S = -C - B*inv(A)*B'
-    // diag(S) ~ - diag(C) - 1./diag(A)
-    // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-    // to a continuous one
-    // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-    // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-    std::map<int,double> subdomain_diagonal_map; 
     F_ENTRY;
 
     //DBGPRINT_INT("side_row_4_id",mesh->max_side_id+1,side_row_4_id);
@@ -482,18 +474,21 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
 
-            // update matrix for weights in BDDCML
+            // assemble matrix for weights in BDDCML
+            // approximation to diagonal of 
+            // S = -C - B*inv(A)*B'
+            // as 
+            // diag(S) ~ - diag(C) - 1./diag(A)
+            // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+            // to a continuous one
+            // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+            // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                double val_side =  (fe_values.local_matrix())[i*nsides+i];
                double val_edge =  -1./ (fe_values.local_matrix())[i*nsides+i];
-               subdomain_diagonal_map.insert( std::make_pair( side_row, val_side ) );
 
-               double new_val= val_edge;
-               std::map<int,double>::iterator it = subdomain_diagonal_map.find( edge_row );
-               if ( it != subdomain_diagonal_map.end() ) {
-                  new_val = new_val + it->second;
-               }
-               subdomain_diagonal_map.insert( std::make_pair( edge_row, new_val ) );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_row, val_side );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_row, val_edge );
             }
         }
 
@@ -525,6 +520,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         // D block: non-compatible conections and diagonal: element-element
 
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+        if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
+           double val_ele =  1.;
+           static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( el_row, val_ele );
+        }
 
         // D, E',E block: compatible connections: element-edge
         
@@ -570,14 +570,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // update matrix for weights in BDDCML
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
-               // there is -value on diagonal
+               // there is -value on diagonal in block C!
                double new_val = - value;
-               std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
-               //ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
-               if ( it != subdomain_diagonal_map.end() ) {
-                  new_val = new_val + it->second;
-               }
-               subdomain_diagonal_map.insert( std::make_pair( ind, new_val ) );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ind, new_val );
             }
 
             if (n_schur_compls == 2) {
@@ -610,10 +605,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // -(C')*(A-)*C block conect all edges of every element
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
-    }
-
-    if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-       static_cast<LinSys_BDDC*>(ls)->load_diagonal( subdomain_diagonal_map );
     }
 
     //if (! mtx->ins_mod == ALLOCATE ) {
