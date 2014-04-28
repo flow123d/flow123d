@@ -7,7 +7,7 @@
 
 
 #include "fields/field_base.hh"
-#include "input/factory_impl.hh"
+#include "input/factory.hh"
 
 
 namespace Input {

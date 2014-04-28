@@ -30,6 +30,7 @@
 
 #include "system/system.hh"
 #include "fields/field_base.hh"
+#include "input/factory.hh"
 
 class GmshMeshReader;
 
@@ -108,6 +109,8 @@ private:
     GmshMeshReader *reader_;
     const Mesh *mesh_;
     std::string field_name_;
+    /// Registrar of class to factory
+    static const Input::Registrar< FieldElementwise > registrar;
 };
 
 

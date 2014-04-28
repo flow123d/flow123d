@@ -8,9 +8,6 @@
 #ifndef FACTORY_IMPL_HH_
 #define FACTORY_IMPL_HH_
 
-#include "input/factory.hh"
-#include "fields/field_base.hh"
-
 
 namespace Input {
 

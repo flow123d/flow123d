@@ -16,6 +16,7 @@
 #include "system/python_loader.hh"
 #include "fields/field_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -72,6 +73,9 @@ public:
     virtual ~FieldPython();
 
 private:
+    /// Registrar of class to factory
+    static const Input::Registrar< FieldPython > registrar;
+
     /**
      * Common part of set_python_field_from_* methods
      */

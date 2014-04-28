@@ -12,6 +12,7 @@
 #include "system/system.hh"
 #include "fields/field_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -78,6 +79,10 @@ private:
     // Full address of the FiledFormula 'value' key.
     // Necessary in the case of an error during parsing.
     std::string value_input_address_;
+
+    /// Registrar of class to factory
+    static const Input::Registrar< FieldFormula > registrar;
+
 
 };
 

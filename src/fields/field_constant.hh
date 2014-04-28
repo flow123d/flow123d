@@ -11,7 +11,7 @@
 
 #include "system/system.hh"
 #include "fields/field_base.hh"
-#include "input/factory_impl.hh"
+#include "input/factory.hh"
 #include "mesh/point.hh"
 
 
@@ -66,6 +66,7 @@ public:
     virtual ~FieldConstant();
 
 private:
+    /// Registrar of class to factory
     static const Input::Registrar< FieldConstant > registrar;
 
 };

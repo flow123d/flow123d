@@ -78,6 +78,11 @@ Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
 
 
 template <int spacedim, class Value>
+const Input::Registrar< FieldInterpolatedP0<spacedim, Value> > FieldInterpolatedP0<spacedim, Value>::registrar =
+		Input::Registrar< FieldInterpolatedP0<spacedim, Value> >("FieldInterpolatedP0");
+
+
+template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
 : FieldBase<spacedim, Value>(n_comp)
 {}

@@ -39,6 +39,7 @@
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/tetrahedron.h"
+#include "input/factory.hh"
 
 
 template <int spacedim, class Value>
@@ -178,6 +179,10 @@ public:
 	 * Create point from element
 	 */
 	static void create_point(const Element *ele, TPoint &p);
+
+private:
+    /// Registrar of class to factory
+    static const Input::Registrar< FieldInterpolatedP0 > registrar;
 };
 
 

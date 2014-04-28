@@ -58,4 +58,7 @@ private:
 
 } // closing namespace Input
 
+// include implementation of templates and inline methods
+#include "factory_impl.hh"
+
 #endif // FIELD_RECORD_FACTORY_HH_
