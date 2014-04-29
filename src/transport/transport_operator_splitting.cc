@@ -24,7 +24,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/sorption_base.hh"
+//#include "reaction/sorption_base.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_por_exchange.hh"
 

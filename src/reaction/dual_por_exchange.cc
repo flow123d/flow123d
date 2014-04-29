@@ -14,9 +14,10 @@
 #include "mesh/region.hh"
 #include "fields/field_elementwise.hh" 
 
-#include "reaction/sorption_dual.hh"
-#include "reaction/sorption_immob.hh"
-#include "reaction/sorption_mob.hh"
+#include "reaction/sorption.hh"
+// #include "reaction/sorption_dual.hh"
+// #include "reaction/sorption_immob.hh"
+// #include "reaction/sorption_mob.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
