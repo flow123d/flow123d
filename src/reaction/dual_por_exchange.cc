@@ -1,8 +1,6 @@
 #include <iostream>
-#include <cstring>
 #include <stdlib.h>
 #include <math.h>
-#include <boost/foreach.hpp>
 
 #include "reaction/reaction.hh"
 #include "reaction/dual_por_exchange.hh"
@@ -174,9 +172,6 @@ void DualPorosity::initialize()
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, names_.size());
-  
-  // creating reactions from input and setting their parameters
-  init_from_input(input_record_);
   
   //allocating memory for immobile concentration matrix
   conc_immobile = (double**) xmalloc(names_.size() * sizeof(double*));

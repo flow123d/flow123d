@@ -1,8 +1,9 @@
-/** @brief class Sorption is used to enable simulation of sorption described by either linear or Langmuir isotherm in combination with limited solubility under consideration.
+/** @brief Class SorptionBase is abstract class representing model of sorption in transport.
+ * 
+ * The sorption is described by several types of isotherms - linear, Freundlich or Langmuir. 
+ * Limited solubility can be considered.
  *
- * Class in this file makes it possible to handle the dataset describing solid phase as either precipitated or sorbed species.
- *
- *
+ * Interpolation tables are used to speed up evaluation of isotherms.
  *
  *
  */
@@ -26,8 +27,24 @@ public:
    *   Static variable for new input data types input
    */
   static Input::Type::Record input_type;
+  
+  struct SorptionRecord {
+    typedef enum { simple,      ///< Only sorption model is considered in transport.
+                   mobile,      ///< Sorption model in mobile zone of dual porosity model is considered.
+                   immobile     ///< Sorption model in immobile zone of dual porosity model is considered. 
+    } Type;
+  };
+  
+  /// Creates the input record for different cases of sorption model (simple or in dual porosity).
+  static Input::Type::Record record_factory(SorptionRecord::Type);
+  
+  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
+  {
+      return EqData(output_field_name).output_fields.make_output_field_selection(selection_name)
+        .close();
+  }
 
-  class EqData : public FieldSet // should be written in class Sorption
+  class EqData : public FieldSet
   {
   public:
     /**
@@ -39,15 +56,18 @@ public:
     EqData(const string &output_field_name);
 
     Field<3, FieldValue<3>::EnumVector > sorption_type; ///< Discrete need Selection for initialization.
-    Field<3, FieldValue<3>::Scalar > rock_density; ///< Rock matrix density.
-    Field<3, FieldValue<3>::Vector > isotherm_mult; ///< Multiplication coefficients (k, omega) for all types of isotherms. Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a
-    Field<3, FieldValue<3>::Vector > isotherm_other; ///< Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
-    Field<3, FieldValue<3>::Vector> init_conc_solid; ///< Initial sorbed concentrations. 
-
-    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field copied from transport
+    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
+    
+    /// Multiplication coefficients (k, omega) for all types of isotherms. 
+    /** Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a */
+    Field<3, FieldValue<3>::Vector > isotherm_mult;  
+    /// Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
+    Field<3, FieldValue<3>::Vector > isotherm_other; 
+    
+    Field<3, FieldValue<3>::Vector> init_conc_solid;    ///< Initial sorbed concentrations. 
+    Field<3, FieldValue<3>::Scalar > porosity;          ///< Porosity field copied from transport.
     
     MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
-
 
     /// Input data set - fields in this set are read from the input file.
     FieldSet input_data_set_;
@@ -66,40 +86,26 @@ public:
    */
   virtual ~SorptionBase(void);
 
+  /// Prepares the object to usage.
+  /**
+   * Allocating memory, reading input, initialization of fields.
+   */
   void initialize() override;
+  
+  /**
+   * Does first computation after initialization process.
+   * The time is set and initial condition is set and output.
+   */
   void zero_time_step() override;
-  void set_initial_condition();
 
+  /// Updates the solution. 
   /**
-   * Prepared to compute sorption inside all of considered elements. 
-   * It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
+   * Goes through local distribution of elements and calls @p compute_reaction.
    */
-  virtual void update_solution(void);
-  
-  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
-  {
-	  return EqData(output_field_name).output_fields.make_output_field_selection(selection_name)
-		.close();
-  }
-
-  /**
-   * Initialization routines that are done in constructors of descendants.
-   * Method data() which access EqData is pure virtual and cannot be called from the base constructor.
-   */
-  //void data_initialization(void);
-  
-  /**
-   * Creates interpolation table for isotherms.
-   */
-  void make_tables(void);
+  void update_solution(void) override;
   
   void output_data(void) override;
-  void output_vector_gather(void) override;
   
-  /**
-   * Meaningless inherited method.
-   */
-  //void set_concentration_vector(Vec &vec) override;
     
 protected:
   /**
@@ -107,53 +113,64 @@ protected:
    */
   SorptionBase();
   
-  void initialize_substance_ids(const std::vector<string> &names, Input::Record in_rec);
-  
-  /// Initializes private members of sorption from the input record.
-  void init_from_input(Input::Record in_rec) override;
-  
-  /// Initializes field sets.
-  void initialize_fields();
-
   /** Initializes possible following reactions from input record.
    * It should be called after setting mesh, time_governor, distribution and concentration_matrix
    * if there are some setting methods for reactions called (they are not at the moment, so it could be part of init_from_input).
    */
-  void make_reactions(Input::Record in_rec);
+  void make_reactions();
+  
+  /// Reads names of substances from input and creates indexing to global vector of substance,
+  void initialize_substance_ids();
+  
+  /// Initializes private members of sorption from the input record.
+  void initialize_from_input();
+  
+  /// Initializes field sets.
+  void initialize_fields();
+
+  ///Reads and sets initial condition for concentration in solid.
+  void set_initial_condition();
+    
+    /// Allocates petsc vectors and prepares them for output.
+  void allocate_output_mpi(void);
+  
+  /// Gathers all the parallel vectors to enable them to be output.
+  void output_vector_gather(void) override;
   
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
   double **compute_reaction(double **concentrations, int loc_el);
+  
+  /// Reinitializes the isotherm.
   /**
-   *
+   * On data change the isotherm is recomputed, possibly new interpolation table is made.
+   * Pure virtual method.
    */
   virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
   
-  
-  void allocate_output_mpi(void);
+    /**
+   * Creates interpolation table for isotherms.
+   */
+  void make_tables(void);
   
 
-
+  /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;
 
   /**
-   * Number of regions.
-   */
-  int nr_of_regions;
-  /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
    */
-  int nr_of_points;
+  unsigned int n_interpolation_steps_;
   /**
    * Molar masses of dissolved species (substances)
    */
-  std::vector<double> molar_masses;
+  std::vector<double> molar_masses_;
   /**
    * Density of the solvent. 
    *  TODO: Could be done region dependent, easily.
    */
-  double solvent_density;
+  double solvent_density_;
   /**
    * Critical concentrations of species dissolved in water.
    */

@@ -61,7 +61,7 @@ void Linear_reaction::zero_time_step()
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
 
   prev_conc = new double[ names_.size() ];
-  init_from_input(input_record_);
+  init_from_input();
 
   allocate_reaction_matrix();
   modify_reaction_matrix();
@@ -193,11 +193,11 @@ void Linear_reaction::print_half_lives(int nr_of_substances) {
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
-void Linear_reaction::init_from_input(Input::Record in_rec)
+void Linear_reaction::init_from_input()
 {
     unsigned int idx;
 
-	Input::Array decay_array = in_rec.val<Input::Array>("decays");
+	Input::Array decay_array = input_record_.val<Input::Array>("decays");
 
 	substance_ids.resize( decay_array.size() );
 	half_lives.resize( decay_array.size() );

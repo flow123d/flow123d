@@ -5,8 +5,8 @@
  *
  *
  */
-#ifndef SORPTION_DUAL
-#define SORPTION_DUAL
+#ifndef SORPTION_DUAL_H
+#define SORPTION_DUAL_H
 
 #include "fields/field_base.hh"
 #include "reaction/sorption_base.hh"
@@ -54,4 +54,4 @@ protected:
     //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
-#endif
+#endif  //SORPTION_DUAL_H

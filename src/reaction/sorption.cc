@@ -1,5 +1,3 @@
-#include <boost/foreach.hpp>
-
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 //#include "system/system.hh"
@@ -10,21 +8,14 @@
 using namespace std;
 
 
-IT::Record SorptionSimple::input_type
-	= IT::Record("Sorption", "Information about all the limited solubility affected adsorptions.")
-	.derive_from( ReactionTerm::input_type )
-	.copy_keys(SorptionBase::input_type)
-	.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
-            IT::Default("conc_solid"), "List of fields to write to output stream.");
-
-
+IT::Record SorptionSimple::input_type = SorptionBase::record_factory(SorptionRecord::simple);
 
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)//
   : SorptionBase(init_mesh, in_rec)
 {
-  //DBGMSG("SorptionSimple constructor.\n");
+    //DBGMSG("SorptionSimple constructor.\n");
 	data_ = new EqData("conc_solid");
-  this->eq_data_ = data_;
+    this->eq_data_ = data_;
 	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
 }
 
@@ -52,7 +43,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 		//scales are different for the case of sorption in mobile and immobile pores
 		double scale_aqua = por_m, 
-                       scale_sorbed = (1 - por_m) * rock_density * molar_masses[i_subst];
+                       scale_sorbed = (1 - por_m) * rock_density * molar_masses_[i_subst];
 
                 //DBGMSG("molar_masses[%d %d]: %f\n",i_subst, substance_id[i_subst], molar_masses[i_subst]);
 		if ( scale_sorbed == 0.0)
@@ -67,7 +58,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 			table_limit=solubility_vec_[i_subst];
 		}
 		isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
-					solvent_density, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
+					solvent_density_, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
 	}
 

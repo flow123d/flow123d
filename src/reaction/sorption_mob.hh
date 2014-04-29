@@ -3,8 +3,8 @@
  * Class in this file makes it possible to handle the dataset describing solid phase as either precipitated or sorbed species.
  *
  */
-#ifndef SORPTION_DPMOB
-#define SORPTION_DPMOB
+#ifndef SORPTION_DPMOB_H
+#define SORPTION_DPMOB_H
 
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_dual.hh"
@@ -37,4 +37,4 @@ protected:
 
 };
 
-#endif
+#endif  //SORPTION_DPMOB_H

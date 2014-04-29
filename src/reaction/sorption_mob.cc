@@ -1,5 +1,3 @@
-#include <boost/foreach.hpp>
-
 #include "reaction/reaction.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_mob.hh"
@@ -14,14 +12,7 @@ using namespace std;
 namespace IT = Input::Type;
 
 
-IT::Record SorptionMob::input_type
-	= IT::Record("SorptionMobile", "Information about all the limited solubility affected adsorptions.")
-	.derive_from( ReactionTerm::input_type )
-	.copy_keys(SorptionBase::input_type)
-	.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
-            IT::Default("conc_solid"), "List of fields to write to output stream.");
-
-
+IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord::mobile);
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
 	: SorptionDual(init_mesh, in_rec)
@@ -69,7 +60,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
                 //scales are different for the case of sorption in mobile and immobile pores
                 double scale_aqua, scale_sorbed;
                 scale_aqua = por_m;
-                scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst];
+                scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses_[i_subst];
                 if(scale_sorbed == 0.0)
                         xprintf(UsrErr, "Parameter scale_sorbed (phi * (1 - por_m - por_imm) * rock_density * molar_masses[i_subst]) is equal to zero.");
                 bool limited_solubility_on;
@@ -83,7 +74,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
                         table_limit=solubility_vec_[i_subst];
                 }
                 isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
-                                        solvent_density, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
+                                        solvent_density_, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
         }
 

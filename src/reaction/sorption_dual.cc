@@ -4,8 +4,7 @@
 #include <math.h>
 #include <boost/foreach.hpp>
 
-//#include "reaction/reaction.hh"
-//#include "reaction/isotherm.hh"
+
 #include "reaction/sorption_dual.hh"
 //#include "system/system.hh"
 //#include "system/sys_profiler.hh"
@@ -14,10 +13,6 @@
 #include "mesh/mesh.h"
 //#include "mesh/elements.h"
 //#include "mesh/region.hh"
-
-//#include "coupling/time_governor.hh"
-
-
 
 using namespace std;
 

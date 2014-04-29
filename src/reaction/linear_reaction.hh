@@ -63,7 +63,7 @@ class Linear_reaction: public ReactionTerm
 		*/
 		Linear_reaction();
                 
-                virtual void init_from_input(Input::Record in_rec) override;
+        void init_from_input();
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/

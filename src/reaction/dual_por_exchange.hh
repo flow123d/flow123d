@@ -58,9 +58,6 @@ public:
   ///Destructor.
   ~DualPorosity(void);
 
-  /// Resolves construction of following reactions.
-  void make_reactions();
-
   /// Prepares the object to usage.
   /**
    * Allocating memory, reading input, initialization of fields.
@@ -68,8 +65,8 @@ public:
   void initialize() override;
   
   /**
-   * Initialization routines after all necessary members have been set.
-   * It also sets and initializes possible following reaction models.
+   * Does first computation after initialization process.
+   * The time is set and initial condition is set and output.
    */
   void zero_time_step() override;
   
@@ -81,23 +78,26 @@ public:
   /// Main output routine.
   void output_data(void) override;
   
-  /// Gathers all the parallel vectors to enable them to be output.
-  void output_vector_gather(void) override;
-  
-  double **compute_reaction(double **concentrations, int loc_el) override;
-  
 protected:
   /**
    * This method disables to use constructor without parameters.
    */
   DualPorosity();
 
+  /// Resolves construction of following reactions.
+  void make_reactions();
+  
   /// Sets initial condition from input.
   void set_initial_condition();
   /// Initializes field sets.
   void initialize_fields();
   /// Allocates petsc vectors and prepares them for output.
   void allocate_output_mpi(void);
+  
+  double **compute_reaction(double **concentrations, int loc_el) override;
+  
+  /// Gathers all the parallel vectors to enable them to be output.
+  void output_vector_gather(void) override;
   
   /**
    * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.

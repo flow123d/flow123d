@@ -89,11 +89,6 @@ protected:
    */
   virtual double **compute_reaction(double **concentrations, int loc_el) =0;
 
-  /** Initialize data from record in input file.
-   * It is intended to use in ascendants.
-   */
-  virtual void init_from_input(Input::Record in_rec) {};
-
   /**
    * Pointer to two-dimensional array[species][elements] containing concentrations.
    */
