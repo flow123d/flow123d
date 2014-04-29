@@ -143,7 +143,7 @@ void SorptionBase::make_reactions(Input::Record in_rec)
 void SorptionBase::initialize()
 {
   //DBGMSG("SorptionBase - initialize.\n");
-  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, names_.size());
@@ -170,10 +170,10 @@ void SorptionBase::initialize()
   conc_solid_out = (double**) xmalloc(names_.size() * sizeof(double*));
   for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
   {
-    conc_solid[sbi] = (double*) xmalloc(distribution->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
-    conc_solid_out[sbi] = (double*) xmalloc(distribution->size() * sizeof(double));
+    conc_solid[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));//new double[ nr_of_local_elm ];
+    conc_solid_out[sbi] = (double*) xmalloc(distribution_->size() * sizeof(double));
     //zero initialization of solid concentration for all substances
-    for(unsigned int i=0; i < distribution->lsize(); i++)
+    for(unsigned int i=0; i < distribution_->lsize(); i++)
       conc_solid[sbi][i] = 0;
   }
 
@@ -184,7 +184,7 @@ void SorptionBase::initialize()
   if(reaction != nullptr)
   {
     reaction->names(names_)
-      .concentration_matrix(concentration_matrix_, distribution, el_4_loc, row_4_el)
+      .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
       .set_time_governor(*time_);
   }
 }
@@ -305,7 +305,7 @@ void SorptionBase::initialize_fields()
 void SorptionBase::zero_time_step()
 {
   //DBGMSG("SorptionBase - zero_time_step.\n");
-  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, names_.size());
@@ -325,9 +325,9 @@ void SorptionBase::zero_time_step()
 
 void SorptionBase::set_initial_condition()
 {
-  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+  for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
   {
-    unsigned int index = el_4_loc[loc_el];
+    unsigned int index = el_4_loc_[loc_el];
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
     arma::vec value = data_->init_conc_solid.value(ele_acc.centre(),
         ele_acc);
@@ -354,7 +354,7 @@ void SorptionBase::update_solution(void)
     
 
   START_TIMER("Sorption");
-  for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+  for (int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
   {
     compute_reaction(concentration_matrix_, loc_el);
   }
@@ -386,7 +386,7 @@ void SorptionBase::make_tables(void)
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // Sorption simulations are realized just for one element.
 {
   //DBGMSG("compute_reaction\n");
-    ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
+    ElementFullIter elem = mesh_->element(el_4_loc_[loc_el]);
     double porosity;
     double rock_density;
     Region region = elem->region();
@@ -437,7 +437,7 @@ void SorptionBase::allocate_output_mpi(void )
     vconc_solid_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution->lsize(), mesh_->n_elements(), conc_solid[sbi],
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
                 &vconc_solid[sbi]);
         VecZeroEntries(vconc_solid[sbi]);
 
@@ -454,7 +454,7 @@ void SorptionBase::output_vector_gather()
     VecScatter vconc_out_scatter;
     //PetscViewer inviewer;
 
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
     VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);

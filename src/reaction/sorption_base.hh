@@ -6,8 +6,8 @@
  *
  *
  */
-#ifndef SORPTION_BASE
-#define SORPTION_BASE
+#ifndef SORPTION_BASE_H
+#define SORPTION_BASE_H
 
 #include <vector>
 
@@ -196,4 +196,4 @@ protected:
   //@}
 };
 
-#endif
+#endif  //SORPTION_BASE_H

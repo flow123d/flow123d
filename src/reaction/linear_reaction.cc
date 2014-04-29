@@ -57,7 +57,7 @@ Linear_reaction::~Linear_reaction()
 
 void Linear_reaction::zero_time_step()
 {
-  ASSERT(distribution != nullptr, "Distribution has not been set yet.\n");
+  ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
 
   prev_conc = new double[ names_.size() ];
@@ -266,7 +266,7 @@ void Linear_reaction::update_solution(void)
     if (reaction_matrix == nullptr)   return;
 
     START_TIMER("linear reaction step");
-	for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+	for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix_, loc_el);
 // 	    if (dual_porosity_on == true) {
