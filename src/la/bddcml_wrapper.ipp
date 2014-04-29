@@ -165,22 +165,6 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
 }
 
 //------------------------------------------------------------------------------
-/** Routine for loading raw mesh data into the solver - for cases of strange meshes, 
- * where these are not Mesh or Grid objects, user can create own raw description
- * to exploit the flexibility of mesh format underlaying BDDCML.
- */
-void la::BddcmlWrapper::loadDiagonal( std::map<int,double> & diag )
-{
-
-    diag_ = diag;
-
-    // change the state
-    //diagLoaded_     = true;
-
-    return;
-}
-
-//------------------------------------------------------------------------------
 /** Routine for preparing MATRIX assembly. It reserves memory in triplet.
  */
 void la::BddcmlWrapper::prepareMatAssembly( unsigned numElements, unsigned elMatSize )
@@ -288,6 +272,39 @@ void la::BddcmlWrapper::fixDOF( const unsigned index, const double scalar )
     thisConstraint.clear();
     return;
 }
+
+//------------------------------------------------------------------------------
+/** Insert elements on diagonal for weights.
+ */
+void la::BddcmlWrapper::insertToDiagonalWeights( const int & index,
+                                                 const double & value )
+{
+    // insert value
+    diagWeightsCoo_.insert( index, index, value );
+
+    // set flag
+    isDiagAssembled_ = false;
+
+    return;
+}
+
+//------------------------------------------------------------------------------
+/** Routine for diagonal finalization.
+ */
+void la::BddcmlWrapper::finishDiagAssembly( )
+{
+    // do nothing if already called
+    if ( isDiagAssembled_ ) return;
+
+    // finish assembly of triplet
+    diagWeightsCoo_.finishAssembly( );
+
+    // set flag
+    isDiagAssembled_ = true;
+
+    return;
+}
+
 //------------------------------------------------------------------------------
 /** Solve the system by BDDCML
  */
@@ -423,19 +440,47 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     // due to remap, it is not guaranteed that the triplet is still correctly ordered
     int isMatAssembledInt = 0;
 
-
     int la = a_sparse.size();
 
-    int lsub_diagonal = numDofsSub_;
-    std::vector<double> sub_diagonal( lsub_diagonal, 0. );
-    for ( std::map<int,double>::iterator it = diag_.begin(); it != diag_.end(); ++it ){
-        indRow = it->first;
+    // diagonal weights for BDDC loaded by user
+    ASSERT( diagWeightsCoo_.size() > 0,
+            "It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n " );
+
+    std::vector<int>    i_diag_sparse;
+    std::vector<int>    j_diag_sparse;
+    std::vector<double> diag_sparse;
+
+    // copy out arrays from triplet
+    this -> finishDiagAssembly();
+    diagWeightsCoo_.extractArrays( i_diag_sparse, j_diag_sparse, diag_sparse );
+    diagWeightsCoo_.clear();
+
+    // map global row indices to local subdomain indices
+    indRow    = -1;
+    indRowLoc = -1;
+    for ( unsigned inz = 0; inz < diag_sparse.size(); inz++ ) {
+        indRow = i_diag_sparse[inz];
         Global2LocalMap_::iterator pos = global2LocalDofMap_.find( static_cast<unsigned> ( indRow ) );
         ASSERT( pos != global2LocalDofMap_.end(),
-                       "Cannot remap index %d to local indices. \n ", indRow );
+                                "Cannot remap index %d to local indices. \n ", indRow );
         indRowLoc = static_cast<int> ( pos -> second );
-        sub_diagonal[indRowLoc] = it->second;
+
+        i_diag_sparse[ inz ] = indRowLoc;
     }
+
+    int lsub_diagonal = numDofsSub_;
+    ASSERT( lsub_diagonal == diag_sparse.size(),
+            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
+
+    std::vector<double> sub_diagonal( lsub_diagonal, -1. );
+    // permute the vector according to subdomain indexing
+    for ( unsigned i = 0; i < lsub_diagonal; i++ ){
+        indRowLoc    = i_diag_sparse[i];
+        double value = diag_sparse[i];
+        sub_diagonal[indRowLoc] = value;
+    }
+    ASSERT( std::find(sub_diagonal.begin(), sub_diagonal.end(), -1. ) == sub_diagonal.end(),
+            "There are missing entries in the diagonal of weights. \n " );
 
     // remove const attribute
     int numDofsInt    = static_cast<int> ( numDofs_ );
