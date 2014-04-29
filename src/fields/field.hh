@@ -48,18 +48,27 @@ public:
 	DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
 			<< "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
 	DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
-			<< "Missing domain specification (region, r_id, or r_set) in fields descriptor:");
+			<< "Missing domain specification (region, r_id, or r_set) in the field descriptor:");
 	DECLARE_EXCEPTION(ExcFieldMeshDifference,
 			<< "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
 
 
-
     /**
-     *  Set name of the field, used for naming the field's key in EqData record.
-     *  It can also be used to name a corresponding output data set, e.g. when outut the field into a VTK file.
+     *  Set name of the field. In fact there are two attributes set by this method.
+     *
+     *  The first is name used to identify the field as part of a FieldSet or MultiField objects.
+     *  This name is permanent and can be set only by this method. Can be accessed by @p name() method.
+     *  This name is also used at output.
+     *
+     *  The second is @p input_name_ that determines appropriate key name in the input field descriptor.
+     *  This name is also set by this method, but is stored in the internal shared space which
+     *  is overwritten during call of copy_from method or  assignment operator. Can be accessed by @p input_name() mathod.
+     *
      */
     FieldCommonBase &name(const string & name)
-    { shared_->name_ = name; return *this;}
+    { name_=shared_->input_name_ = name;
+      return *this;
+    }
     /**
      * Mark field to be used only as a copy of other field (do not produce key in record, do not set input list).
      */
@@ -68,8 +77,8 @@ public:
     /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
-    FieldCommonBase & desc(const string & desc)
-    { shared_->desc_ = desc; return *this;}
+    FieldCommonBase & description(const string & description)
+    { shared_->input_description_ = description; return *this;}
     /**
      * Set default value for the field's key from which the default constant valued field will be constructed.
      *
@@ -80,8 +89,8 @@ public:
      * as the value of the field. In particular it can be whole record with @p TYPE of the field etc.
      * Most common choice is however mere constant.
      */
-    FieldCommonBase & input_default(const string &dflt)
-    { shared_->default_ = dflt; return *this;}
+    FieldCommonBase & input_default(const string &input_default)
+    { shared_->input_default_ = input_default; return *this;}
     /**
      * @brief Set basic units of the field.
      *
@@ -104,7 +113,7 @@ public:
      */
     FieldCommonBase & input_selection(const Input::Type::Selection *element_selection)
     {
-      shared_->element_selection_=element_selection;
+      shared_->input_element_selection_=element_selection;
       return *this;
     }
 
@@ -152,14 +161,17 @@ public:
     /**
      * Getters.
      */
-    const std::string &name() const
-    { return shared_->name_;}
+    const std::string &input_name() const
+    { return shared_->input_name_;}
 
-    const std::string desc() const
-    {return shared_->desc_;}
+    const std::string &name() const
+    { return name_;}
+
+    const std::string description() const
+    {return shared_->input_description_;}
 
     const std::string &input_default() const
-    { return shared_->default_;}
+    { return shared_->input_default_;}
 
     const std::string &units() const
     { return shared_->units_;}
@@ -315,11 +327,11 @@ protected:
 	    /**
 	     * Name of the particular field. Used to name the key in the Field list Record.
 	     */
-	    std::string name_;
+	    std::string input_name_;
 	    /**
 	     * Description of corresponding key in the Field list Record.
 	     */
-	    std::string desc_;
+	    std::string input_description_;
 	    /**
 	     * Units of the field values. Currently just a string description.
 	     */
@@ -332,11 +344,11 @@ protected:
 	     *
 	     * In fact we must use raw pointer since selection may not be constructed yet (static variable).
 	     */
-	    const IT::Selection *element_selection_;
+	    const IT::Selection *input_element_selection_;
 	    /**
 	     * Possible default value of the field.
 	     */
-	    string default_;
+	    string input_default_;
 	    /**
 	     * Pointer to the mesh on which the field lives.
 	     */
@@ -367,7 +379,15 @@ protected:
 
 	};
 
+	/**
+	 * Name that identifies the field in the field_set. By default this is same as
+	 * shared_->input_name_.
+	 */
+	std::string name_;
 
+	/**
+	 * Data shared among copies of the same input field.
+	 */
 	std::shared_ptr<SharedData> shared_;
 
     /**

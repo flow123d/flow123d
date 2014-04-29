@@ -53,19 +53,19 @@ DualPorosity::EqData::EqData()
 {
   *this += diffusion_rate_immobile
            .name("diffusion_rate_immobile")
-           .desc("Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.")
+           .description("Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.")
            .input_default("0")
            .units("");
   
   *this += porosity_immobile
           .name("porosity_immobile")
-          .desc("Porosity of the immobile zone.")
+          .description("Porosity of the immobile zone.")
           .input_default("0")
           .units("1");
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
-          .desc("Initial concentration of substances in the immobile zone.")
+          .description("Initial concentration of substances in the immobile zone.")
           .units("M/L^3");
 
   //creating field for porosity that is set later from the governing equation (transport)

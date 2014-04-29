@@ -36,18 +36,18 @@ public:
 		EqData() {
 			*this += velocity
 						.name("velocity")
-						.desc("Velocity vector.")
+						.description("Velocity vector.")
 						.input_default("0.0")
 						.units("LM^{-1}");
 			*this += init_pressure
 						.disable_where(type, {r_first, r_second })
 						.name("init_pressure")
-						.desc("Pressure head")
+						.description("Pressure head")
 						.units("L");
 
 			*this += type
 						.name("reaction_type")
-						.desc("")
+						.description("")
 						.input_selection(&reaction_type_sel);
 		}
 
@@ -73,17 +73,17 @@ TEST_F(SomeEquation, access) {
 
 	EXPECT_EQ(3, data.size() );
 
-	EXPECT_EQ(&data.velocity,  &(data.get_field("velocity")) );
-	EXPECT_EQ("velocity",  data.get_field("velocity").name() );
-	EXPECT_EQ("Velocity vector.",  data.get_field("velocity").desc() );
+	EXPECT_EQ(&data.velocity,  &(data["velocity"]) );
+	EXPECT_EQ("velocity",  data["velocity"].name() );
+	EXPECT_EQ("Velocity vector.",  data["velocity"].description() );
 
 	FieldSet set=data.subset({"velocity", "init_pressure"});
 
 	EXPECT_EQ(2, set.size());
-	EXPECT_EQ(&data.velocity,  &(data.get_field("velocity")) );
+	EXPECT_EQ(&data.velocity,  &(data["velocity"]) );
 
-	EXPECT_THROW({data.get_field("noname");}, FieldSet::ExcUnknownField);
-	EXPECT_THROW({set.get_field("reaction_type");}, FieldSet::ExcUnknownField);
+	EXPECT_THROW({data["noname"];}, FieldSet::ExcUnknownField);
+	EXPECT_THROW({set["reaction_type"];}, FieldSet::ExcUnknownField);
 }
 
 

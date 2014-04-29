@@ -25,7 +25,7 @@ FieldCommonBase::FieldCommonBase()
   is_copy_(false)
 {
 	shared_->bc_=false;
-	shared_->default_="";
+	shared_->input_default_="";
 	shared_->n_comp_ = 0;
 	shared_->mesh_ = nullptr;
 	shared_->is_fully_initialized_=false;
@@ -71,14 +71,14 @@ void FieldCommonBase::set_input_list(const Input::Array &list)
 	if (list.size() == 0) return;
 	for( auto it = shared_->input_list_.begin<Input::Record>();
 			it != shared_->input_list_.end(); ++it)
-		if (it->find<Input::AbstractRecord>(name())) {
+		if (it->find<Input::AbstractRecord>(input_name())) {
 			// field descriptor appropriate to the field
 		    time = it->val<double>("time");
 		    if (time < last_time) {
 		    	cout << shared_->input_list_.address_string();
 		    	THROW( ExcNonascendingTime()
 		    			<< EI_Time(time)
-		    			<< EI_Field(name())
+		    			<< EI_Field(input_name())
 		    			<< shared_->input_list_.ei_address());
 		    }
 		    last_time=time;
@@ -97,7 +97,7 @@ void FieldCommonBase::mark_input_times(TimeMark::Type mark_type) {
 	double time,last_time=0.0;
 	for( auto it = shared_->input_list_.begin<Input::Record>();
 	     it != shared_->input_list_.end(); ++it)
-		if (it->find<Input::AbstractRecord>(name())) {
+		if (it->find<Input::AbstractRecord>(input_name())) {
 		    time = it->val<double>("time"); // default time=0
 		    TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
 		}

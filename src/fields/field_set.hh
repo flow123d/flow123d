@@ -39,7 +39,8 @@ public:
 	FieldSet &operator +=(FieldCommonBase &add_field) {
 		FieldCommonBase *found_field = field(add_field.name());
 		if (found_field) {
-			ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n", add_field.name().c_str());
+			ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
+			        add_field.name().c_str());
 		} else {
 			field_list.push_back(&add_field);
 			if (mesh_) add_field.set_mesh(*mesh_);
@@ -97,14 +98,14 @@ public:
     	for(auto field : field_list) {
     		if (!field->is_just_copy()) {
     			string units = field->units();
-    			string description =  field->desc();
+    			string description =  field->description();
 
     			// Adding units is not so simple.
     			// 1) It must be correct for Latex.
     			// 2) It should be consistent with rest of documentation.
     			// 3) Should be specified for all fields.
     			//if (units != "") description+= " [" +field->units() + "]";
-    			rec.declare_key(field->name(), field->get_input_type(), description);
+    			rec.declare_key(field->input_name(), field->get_input_type(), description);
     		}
 
     	}
@@ -124,9 +125,9 @@ public:
     	{
     		if (!field->is_bc())
     		{
-    			string desc = "Output of field " + field->name(); //  + " [" + field->units() + "]";
-    			if (field->desc().length() > 0)
-    				desc += " (" + field->desc() + ").";
+    			string desc = "Output of the field " + field->name(); //  + " [" + field->units() + "]";
+    			if (field->description().length() > 0)
+    				desc += " (" + field->description() + ").";
     			else
     				desc += ".";
     			sel.add_value(i, field->name(), desc);
@@ -251,7 +252,7 @@ public:
      * @p d_val with default value. This method is rather called through the macro ADD_FIELD
      */
     FieldCommonBase &add_field( FieldCommonBase *field, const string &name, const string &desc, const string & d_val="") {
-    	*this += field->name(name).desc(desc).input_default(d_val);
+    	*this += field->name(name).description(desc).input_default(d_val);
     	return *field;
     }
 

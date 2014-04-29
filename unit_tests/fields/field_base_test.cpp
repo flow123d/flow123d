@@ -679,7 +679,7 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the input field");
     }
     //
     {

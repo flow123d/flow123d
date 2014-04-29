@@ -136,7 +136,9 @@ template<int spacedim, class Value>
 it::AbstractRecord Field<spacedim,Value>::make_input_tree() {
 	ASSERT(is_enum_valued,
 			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
-    return get_input_type_resolution<FieldBaseType>( shared_->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
+    return get_input_type_resolution<FieldBaseType>(
+            shared_->input_element_selection_ ,
+            boost::is_same<typename Value::element_type, FieldEnum>());
 }
 
 
@@ -241,7 +243,7 @@ template<int spacedim, class Value>
 auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommonBase &field) -> FieldBasePtr
 {
 	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.name(), field_record))
+	if (rec.opt_val(field.input_name(), field_record))
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
@@ -318,7 +320,8 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
-	ASSERT(this->is_copy_, "Try to call copy from the field '%s' to the non-copy field '%s'.", other.name().c_str(), this->name().c_str());
+	ASSERT(this->is_copy_, "Try to call copy from the field '%s' to the non-copy field '%s'.",
+	        other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);
@@ -380,7 +383,6 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
           xprintf(Warn, "Unknown region with id: '%d'\n", id);
 			} else {
 				THROW(ExcMissingDomain()
-						<< EI_Field(this->name())
 						<< shared_->list_it_->ei_address() );
 			}
 		    
@@ -429,18 +431,19 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                              != shared_->no_check_values_.end() )
                         continue;                  // the field is not needed on this region
                 }
-                if (shared_->default_ != "") {    // try to use default
+                if (shared_->input_default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
-                	xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n",
-                			name().c_str(), reg.id(), reg.label().c_str() );
+                	xprintf(UsrErr, "Missing value of the input field '%s' ('%s') on region ID: %d label: %s.\n",
+                			input_name().c_str(), name().c_str(), reg.id(), reg.label().c_str() );
                 }
             }
         }
 
     // possibly set from default value
     if ( regions_to_init.size() ) {
-    	xprintf(Warn, "Using default value '%s' for part of field '%s'.\n", input_default().c_str(), name().c_str());
+    	xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n",
+    	        input_default().c_str(), input_name().c_str(), name().c_str());
 
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
