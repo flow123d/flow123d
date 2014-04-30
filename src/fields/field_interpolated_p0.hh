@@ -47,6 +47,7 @@ class FieldInterpolatedP0: public FieldBase<spacedim, Value> {
 public:
 
     typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef FieldBase<spacedim, Value> FactoryBaseType;
 
 	/**
 	 * Constructor

@@ -24,6 +24,7 @@ class FieldConstant : public FieldBase<spacedim, Value>
 {
 public:
     typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef FieldBase<spacedim, Value> FactoryBaseType;
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.

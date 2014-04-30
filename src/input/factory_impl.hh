@@ -15,14 +15,23 @@ using namespace std;
 
 template<class Type>
 Registrar<Type>::Registrar(string name)
+: factory_ref( *( Factory<BaseType>::instance() ) )
 {
     // register the class factory function
-	Factory::instance()->register_function<Type>(name, [](void) -> Type * { return new Type();});
+	Factory<BaseType>::instance()->register_function(name, []() -> BaseType * { return new Type(); });
 }
 
 
 template<class Type>
-void Factory::register_function(string name, function<Type*(void)> class_factory_function)
+Factory<Type> * Factory<Type>::instance()
+{
+    static Factory<Type> factory;
+    return &factory;
+}
+
+
+template<class Type>
+void Factory<Type>::register_function(string name, function<Type*(void)> class_factory_function)
 {
     // register the class factory function
 	field_factory_registry_[name] = class_factory_function;
@@ -30,7 +39,7 @@ void Factory::register_function(string name, function<Type*(void)> class_factory
 
 
 template<class Type>
-shared_ptr<Type> Factory::create(AbstractRecord &rec)
+shared_ptr<Type> Factory<Type>::create(AbstractRecord &rec)
 {
 	Type * instance = nullptr;
 	string name = rec.type().type_name();

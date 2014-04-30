@@ -39,6 +39,7 @@ class FieldElementwise : public FieldBase<spacedim, Value>
 {
 public:
     typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef FieldBase<spacedim, Value> FactoryBaseType;
 
     FieldElementwise(unsigned int n_comp=0);
 

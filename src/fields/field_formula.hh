@@ -34,6 +34,7 @@ class FieldFormula : public FieldBase<spacedim, Value>
 {
 public:
     typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef FieldBase<spacedim, Value> FactoryBaseType;
 
     FieldFormula(unsigned int n_comp=0);
 

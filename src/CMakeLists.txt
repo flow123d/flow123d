@@ -63,7 +63,6 @@ set(sources_lib_input
     input/type_output.cc
     
     input/accessors.cc
-    input/factory.cc
 )
 
 

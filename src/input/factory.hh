@@ -21,15 +21,8 @@ namespace Input {
 
 using namespace std;
 
-// A helper class to register a factory function
-template<class Type>
-class Registrar {
-public:
-    Registrar(string className);
-};
-
-
 // The factory - implements singleton pattern!
+template <class Type>
 class Factory
 {
 	friend class AbstractRecord;
@@ -39,11 +32,9 @@ public:
 
 //protected:
     /// register a factory function to create an instance of className
-    template<class Type>
     void register_function(string name, function<Type*(void)> class_factory_function);
 
     /// create an instance of a registered class
-    template<class Type>
     shared_ptr<Type> create(AbstractRecord &rec);
 
 private:
@@ -53,6 +44,18 @@ private:
     /// the registry of factory functions
     map<string, function<void*(void)>> field_factory_registry_;
 
+};
+
+
+// A helper class to register a factory function
+template<class Type>
+class Registrar {
+public:
+	typedef typename Type::FactoryBaseType BaseType;
+
+	Registrar(string className);
+
+    Factory<BaseType> &factory_ref;
 };
 
 

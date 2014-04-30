@@ -38,6 +38,7 @@ class FieldPython : public FieldBase<spacedim, Value>
 {
 public:
     typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef FieldBase<spacedim, Value> FactoryBaseType;
 
     FieldPython(unsigned int n_comp=0);
 
