@@ -18,6 +18,8 @@
  *  Implementation of FieldCommon
  */
 
+
+
 FieldCommonBase::FieldCommonBase()
 : shared_( std::make_shared<SharedData>() ),
   limit_side_(LimitSide::unknown),

@@ -137,6 +137,7 @@ set (sources_lib_coupling
     fields/field_values.cc
     fields/field_base.cc
     fields/field.cc
+    fields/field_flag.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc

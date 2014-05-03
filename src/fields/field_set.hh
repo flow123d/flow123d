@@ -10,14 +10,15 @@
 
 
 #include <system/exceptions.hh>
-#include <fields/field.hh>
+#include "fields/field.hh"
+#include "fields/field_flag.hh"
 
 
 
 /**
  * TODO: implementation robust against destroying fields before the FieldSet.
  */
-class FieldSet {
+class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommonBase::EI_Field::qval);
 

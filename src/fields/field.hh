@@ -19,7 +19,9 @@ using namespace std;
 #include "coupling/time_governor.hh"
 
 #include "fields/field_base.hh"
+#include "fields/field_flag.hh"
 #include "io/output_time.hh"
+
 
 namespace IT=Input::Type;
 
@@ -32,6 +34,7 @@ enum class LimitSide {
 	right=1,
 	unknown=2 	// undefined value
 };
+
 
 
 /**
@@ -51,6 +54,7 @@ public:
 			<< "Missing domain specification (region, r_id, or r_set) in the field descriptor:");
 	DECLARE_EXCEPTION(ExcFieldMeshDifference,
 			<< "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
+
 
 
     /**
@@ -187,6 +191,9 @@ public:
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
+
+    FieldFlag::Flags &flags()
+    { return flags_; }
 
     bool is_just_copy() const
     { return is_copy_;}
@@ -424,6 +431,9 @@ protected:
 
     /// Flag field that has to be set as a copy of other field using copy_from method.
     bool is_copy_=false;
+
+    ///
+    FieldFlag::Flags   flags_;
 
 };
 
