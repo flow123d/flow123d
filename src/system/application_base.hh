@@ -15,6 +15,9 @@
 #include "system/xio.h"
 #include "system/file_path.hh"
 
+#ifdef HAVE_PETSC
+#include "petsc.h"
+#endif
 
 using namespace std;
 
