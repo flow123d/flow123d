@@ -33,7 +33,7 @@ public:
      */
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
       { 
-    	immob_porosity_.just_copy();
+    	immob_porosity_.flags().set(FieldFlag::input_copy);
         immob_porosity_.copy_from(por_imm); 
         *data_+=(immob_porosity_);
       }

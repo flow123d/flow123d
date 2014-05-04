@@ -64,7 +64,7 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	ASSERT(this->is_copy_, "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 
 	// check for self assignement
@@ -320,7 +320,7 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
-	ASSERT(this->is_copy_, "Try to call copy from the field '%s' to the non-copy field '%s'.",
+	ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
 	        other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);

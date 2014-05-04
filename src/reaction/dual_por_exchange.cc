@@ -72,7 +72,7 @@ DualPorosity::EqData::EqData()
   *this +=porosity
         .name("porosity")
         .units("1")
-        .just_copy();
+        .flags( FieldFlag::input_copy );
 
   output_fields += *this;
   output_fields += conc_immobile.name("conc_immobile").units("M/L^3");

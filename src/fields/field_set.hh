@@ -97,7 +97,7 @@ public:
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const {
     	Input::Type::Record rec = FieldCommonBase::field_descriptor_record(equation_name + "_Data");
     	for(auto field : field_list) {
-    		if (!field->is_just_copy()) {
+    		if ( field->flags().match(FieldFlag::declare_input) ) {
     			string units = field->units();
     			string description =  field->description();
 

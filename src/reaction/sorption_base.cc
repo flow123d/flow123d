@@ -73,7 +73,10 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 
     // porosity field is set from governing equation (transport) later
     // hence we do not add it to the input_data_set_
-    *this += porosity.name("porosity").units("1").just_copy();
+    *this += porosity
+            .name("porosity")
+            .units("1")
+            .flags(FieldFlag::input_copy);
     
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units("M/L^3");

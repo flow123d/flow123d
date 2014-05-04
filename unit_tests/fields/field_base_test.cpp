@@ -472,7 +472,9 @@ TYPED_TEST(FieldFix, constructors) {
 	// copies
 	// check that we can have copies in different times
 	this->field_.name("a");
-	field_default.name("b").just_copy();
+	field_default
+	    .name("b")
+	    .flags(FieldFlag::input_copy);
 	this->field_.set_mesh( *(this->my_mesh) );
 	field_default.set_mesh( *(this->my_mesh) );
 

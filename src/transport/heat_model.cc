@@ -68,7 +68,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 	ADD_FIELD(fluid_ref_temperature, "Reference temperature in fluid.", "0.0");
 	ADD_FIELD(solid_ref_temperature, "Reference temperature in solid.", "0.0");
 
-	*this += cross_section.name("cross_section").just_copy();
+	*this += cross_section.name("cross_section").flags( FieldFlag::input_copy);
 	output_fields += output_field.name("temperature").units("M/L^3");
 }
 

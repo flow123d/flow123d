@@ -24,6 +24,8 @@ public:
     static constexpr Flags::Mask declare_input{2};
     /// The field can output. Is part of generated output selection. (default on)
     static constexpr Flags::Mask allow_output{4};
+    // A field that is input of its equation and cna not read from input, thus muzt be set by copy.
+    static constexpr Flags::Mask input_copy = ~declare_input & equation_input;
 
     static constexpr Flags::Mask in_time_term{8};
     static constexpr Flags::Mask in_mass_matrix{16};

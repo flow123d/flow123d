@@ -469,8 +469,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     }
 
     int lsub_diagonal = numDofsSub_;
-    ASSERT( lsub_diagonal == diag_sparse.size(),
-            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
+//    ASSERT( lsub_diagonal == diag_sparse.size(),
+//            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing

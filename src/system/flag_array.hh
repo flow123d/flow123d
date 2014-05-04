@@ -127,6 +127,13 @@ public:
     : flags_(BitField(0))
     {}
 
+    /// Conversion from the mask.
+    FlagArray(Mask mask)
+    : FlagArray()
+    {
+        this->set(mask);
+    }
+
     /**
      * The FlagArray match a mask if and only if
      * bits given by the @p mask.mask_ are same in both

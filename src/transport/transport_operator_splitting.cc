@@ -79,7 +79,7 @@ TransportBase::TransportEqData::TransportEqData()
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
 	ADD_FIELD(cross_section, "");
-	cross_section.just_copy();
+	cross_section.flags( FieldFlag::input_copy );
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
