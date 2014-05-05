@@ -46,7 +46,7 @@ if(CMAKE_HAVE_CXX11)
     
     define_test(lazy_types)
 
-    define_test(input_factory)
+    define_test(factory)
 
 endif()
 

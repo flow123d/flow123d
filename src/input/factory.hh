@@ -35,14 +35,14 @@ public:
     void register_function(string name, function<Type*(void)> class_factory_function);
 
     /// create an instance of a registered class
-    shared_ptr<Type> create(AbstractRecord &rec);
+    shared_ptr<Type> create(string name);
 
 private:
     /// a private constructor
     Factory(){}
 
     /// the registry of factory functions
-    map<string, function<void*(void)>> field_factory_registry_;
+    map<string, function<Type*(void)>> field_factory_registry_;
 
 };
 

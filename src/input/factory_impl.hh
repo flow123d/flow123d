@@ -39,21 +39,22 @@ void Factory<Type>::register_function(string name, function<Type*(void)> class_f
 
 
 template<class Type>
-shared_ptr<Type> Factory<Type>::create(AbstractRecord &rec)
+shared_ptr<Type> Factory<Type>::create(string name)
 {
 	Type * instance = nullptr;
-	string name = rec.type().type_name();
 
     // find name in the registry and call factory method.
     auto it = field_factory_registry_.find(name);
-    if(it != field_factory_registry_.end())
-        instance = it->second();
+    if(it != field_factory_registry_.end()) {
+    	instance = it->second();
+    }
 
     // wrap instance in a shared ptr and return
-    if(instance != nullptr)
-        return shared_ptr<Type>(instance);
-    else
+    if(instance != nullptr) {
+    	return shared_ptr<Type>(instance);
+    } else {
         return nullptr;
+    }
 }
 
 } // namespace Input
