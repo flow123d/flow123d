@@ -147,11 +147,11 @@ void SorptionBase::make_reactions()
   Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction");
   if ( reactions_it )
   {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction =  new Linear_reaction(*mesh_, *reactions_it);
+    if (reactions_it->type() == LinearReaction::input_type ) {
+        reaction =  new LinearReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction = new Pade_approximant(*mesh_, *reactions_it);
+    if (reactions_it->type() == PadeApproximant::input_type) {
+        reaction = new PadeApproximant(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");

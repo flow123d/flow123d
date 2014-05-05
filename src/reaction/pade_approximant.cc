@@ -16,7 +16,7 @@
 
 using namespace Input::Type;
 
-Record Pade_approximant::input_type_one_decay_substep
+Record PadeApproximant::input_type_one_decay_substep
 	= Record("Substep", "Equation for reading information about radioactive decays.")
 	.declare_key("parent", String(), Default::obligatory(),
 				"Identifier of an isotope.")
@@ -30,10 +30,10 @@ Record Pade_approximant::input_type_one_decay_substep
 				"Decay chain branching percentage.");
 
 
-Record Pade_approximant::input_type
+Record PadeApproximant::input_type
 	= Record("PadeApproximant", "Abstract record with an information about pade approximant parameters.")
 	.derive_from( ReactionTerm::input_type )
-    .declare_key("decays", Array( Pade_approximant::input_type_one_decay_substep ), Default::obligatory(),
+    .declare_key("decays", Array( PadeApproximant::input_type_one_decay_substep ), Default::obligatory(),
                 "Description of particular decay chain substeps.")
 	.declare_key("nom_pol_deg", Integer(), Default("2"),
 				"Polynomial degree of the nominator of Pade approximant.")
@@ -44,12 +44,12 @@ Record Pade_approximant::input_type
 using namespace std;
 
 
-Pade_approximant::Pade_approximant(Mesh &init_mesh, Input::Record in_rec)
-      : Linear_reaction(init_mesh, in_rec)
+PadeApproximant::PadeApproximant(Mesh &init_mesh, Input::Record in_rec)
+      : LinearReaction(init_mesh, in_rec)
 {
 }
 
-Pade_approximant::~Pade_approximant()
+PadeApproximant::~PadeApproximant()
 {
 	/*int i, rows, n_subst;
 
@@ -68,10 +68,10 @@ Pade_approximant::~Pade_approximant()
 	DBGMSG("Pade approximant destructor is running.\n");
 }
 
-void Pade_approximant::zero_time_step()
+void PadeApproximant::zero_time_step()
 {
 
-    Linear_reaction::zero_time_step();
+    LinearReaction::zero_time_step();
 
     // init from input
     nom_pol_deg = input_record_.val<int>("nom_pol_deg");
@@ -82,7 +82,7 @@ void Pade_approximant::zero_time_step()
     }
 }
 
-double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix initialization
+double **PadeApproximant::allocate_reaction_matrix(void) //reaction matrix initialization
 {
 	unsigned int rows, cols;
 
@@ -100,7 +100,7 @@ double **Pade_approximant::allocate_reaction_matrix(void) //reaction matrix init
 	return reaction_matrix;
 }
 
-double **Pade_approximant::modify_reaction_matrix(void)
+double **PadeApproximant::modify_reaction_matrix(void)
 {
 	Mat Denominator;
 	Mat Nominator;
@@ -244,7 +244,7 @@ double **Pade_approximant::modify_reaction_matrix(void)
 	return reaction_matrix;
 }
 
-void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef)
+void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef)
 {
 	Mat Identity;
 
@@ -270,7 +270,7 @@ void Pade_approximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction
 }
 
 
-double **Pade_approximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+double **PadeApproximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     unsigned int cols, rows;
 
@@ -292,7 +292,7 @@ double **Pade_approximant::compute_reaction(double **concentrations, int loc_el)
 
 
 
-int Pade_approximant::factorial(int k)
+int PadeApproximant::factorial(int k)
 {
         int faktor = 1;
 

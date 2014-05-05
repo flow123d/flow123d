@@ -15,9 +15,6 @@
 #include "fields/field_elementwise.hh" 
 
 #include "reaction/sorption.hh"
-// #include "reaction/sorption_dual.hh"
-// #include "reaction/sorption_immob.hh"
-// #include "reaction/sorption_mob.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
@@ -111,12 +108,12 @@ void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == Linear_reaction::input_type ) {
-          reaction_mobile =  new Linear_reaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == LinearReaction::input_type ) {
+          reaction_mobile =  new LinearReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == Pade_approximant::input_type) {
-          reaction_mobile = new Pade_approximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == PadeApproximant::input_type) {
+          reaction_mobile = new PadeApproximant(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionMob::input_type ) {
           reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
@@ -139,12 +136,12 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == Linear_reaction::input_type ) {
-          reaction_immobile =  new Linear_reaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == LinearReaction::input_type ) {
+          reaction_immobile =  new LinearReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == Pade_approximant::input_type) {
-          reaction_immobile = new Pade_approximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == PadeApproximant::input_type) {
+          reaction_immobile = new PadeApproximant(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionImmob::input_type ) {
           reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);

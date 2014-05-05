@@ -4,6 +4,10 @@
  * The difference is only in the isotherm_reinit method. 
  * Passing immobile porosity from dual porosity model is solved in abstract class SorptionDual.
  * 
+ * TODO:
+ * It seems that the methods isotherm_reinit() are different only at computation of scale_aqua and scale_sorbed.
+ * So it could be moved to SorptionDual and the only method which would be virtual would be 
+ * compute_sorbing_scale(). It is prepared in comment code.
  */
 #ifndef SORPTION_H
 #define SORPTION_H

@@ -12,13 +12,10 @@
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
-#define MOBILE 0
-#define IMMOBILE 1
-
-
+using namespace std;
 using namespace Input::Type;
 
-Record Linear_reaction::input_type_one_decay_substep
+Record LinearReaction::input_type_one_decay_substep
 	= Record("Substep", "Equation for reading information about radioactive decays.")
 	.declare_key("parent", String(), Default::obligatory(),
 				"Identifier of an isotope.")
@@ -32,22 +29,22 @@ Record Linear_reaction::input_type_one_decay_substep
 				"Decay chain branching percentage.");
 
 
-Record Linear_reaction::input_type
+Record LinearReaction::input_type
 	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
 	.derive_from( ReactionTerm::input_type )
-    .declare_key("decays", Array( Linear_reaction::input_type_one_decay_substep ), Default::obligatory(),
+    .declare_key("decays", Array( LinearReaction::input_type_one_decay_substep ), Default::obligatory(),
                 "Description of particular decay chain substeps.");
 
 
-using namespace std;
 
-Linear_reaction::Linear_reaction(Mesh &init_mesh, Input::Record in_rec)
+
+LinearReaction::LinearReaction(Mesh &init_mesh, Input::Record in_rec)
       : ReactionTerm(init_mesh, in_rec),
       reaction_matrix(nullptr)
 {
 }
 
-Linear_reaction::~Linear_reaction()
+LinearReaction::~LinearReaction()
 {
   release_reaction_matrix();
   if(prev_conc != nullptr){
@@ -55,10 +52,19 @@ Linear_reaction::~Linear_reaction()
   }
 }
 
-void Linear_reaction::zero_time_step()
+void LinearReaction::initialize()
+{
+    ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
+    ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+    ASSERT_LESS(0, names_.size());
+}
+
+
+void LinearReaction::zero_time_step()
 {
   ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
+  ASSERT_LESS(0, names_.size());
 
   prev_conc = new double[ names_.size() ];
   init_from_input();
@@ -68,7 +74,7 @@ void Linear_reaction::zero_time_step()
 }
 
 
-double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initialization
+double **LinearReaction::allocate_reaction_matrix(void) //reaction matrix initialization
 {
 	unsigned int rows, cols;
 
@@ -88,7 +94,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 	return reaction_matrix;
 }
 
-/*double **Linear_reaction::modify_reaction_matrix(Input::Record in_rec) //prepare the matrix, which describes reactions
+/*double **LinearReaction::modify_reaction_matrix(Input::Record in_rec) //prepare the matrix, which describes reactions
 {
 	int rows,cols, index_par, bif_id;
 	int *index_child;
@@ -135,7 +141,7 @@ double **Linear_reaction::allocate_reaction_matrix(void) //reaction matrix initi
 	return reaction_matrix;
 }*/
 
-double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are supposed to be known
+double **LinearReaction::modify_reaction_matrix(void) //All the parameters are supposed to be known
         {
     unsigned int index_par;
     double rel_step;
@@ -158,7 +164,7 @@ double **Linear_reaction::modify_reaction_matrix(void) //All the parameters are 
     return reaction_matrix;
 }
 
-double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+double **LinearReaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {
     unsigned int cols, rows;
 
@@ -179,7 +185,7 @@ double **Linear_reaction::compute_reaction(double **concentrations, int loc_el) 
 }
 
 
-void Linear_reaction::print_half_lives(int nr_of_substances) {
+void LinearReaction::print_half_lives(int nr_of_substances) {
     int i;
 
     xprintf(Msg, "\nHalf-lives are defined as:");
@@ -193,7 +199,7 @@ void Linear_reaction::print_half_lives(int nr_of_substances) {
 
 // TODO: check duplicity of parents
 //       raise warning if sum of ratios is not one
-void Linear_reaction::init_from_input()
+void LinearReaction::init_from_input()
 {
     unsigned int idx;
 
@@ -251,7 +257,7 @@ void Linear_reaction::init_from_input()
 	}
 }
 
-void Linear_reaction::update_solution(void)
+void LinearReaction::update_solution(void)
 {
   DBGMSG("LinearReactions - update solution\n");
   if(time_->is_changed_dt())
@@ -269,16 +275,12 @@ void Linear_reaction::update_solution(void)
 	for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
 	 {
 	 	this->compute_reaction(concentration_matrix_, loc_el);
-// 	    if (dual_porosity_on == true) {
-// 	     this->compute_reaction(concentration_matrix[IMMOBILE], loc_el);
-//	    }
-
 	 }
     END_TIMER("linear reaction step");
 	 return;
 }
 
-void Linear_reaction::release_reaction_matrix(void)
+void LinearReaction::release_reaction_matrix(void)
 {
 	if(reaction_matrix != nullptr)
 	{
@@ -295,7 +297,7 @@ void Linear_reaction::release_reaction_matrix(void)
 	}
 }
 
-void Linear_reaction::print_reaction_matrix(void)
+void LinearReaction::print_reaction_matrix(void)
 {
 	unsigned int cols,rows;
 
@@ -315,7 +317,7 @@ void Linear_reaction::print_reaction_matrix(void)
 	return;
 }
 
-unsigned int Linear_reaction::find_subst_name(const string &name)
+unsigned int LinearReaction::find_subst_name(const string &name)
 {
 
     unsigned int k=0;

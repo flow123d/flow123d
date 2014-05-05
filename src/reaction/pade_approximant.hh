@@ -19,9 +19,9 @@
 
 class Mesh;
 class Distribution;
-class Linear_reaction;
+class LinearReaction;
 
-class Pade_approximant: public Linear_reaction
+class PadeApproximant: public LinearReaction
 {
 	public:
 		/*
@@ -36,12 +36,12 @@ class Pade_approximant: public Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Pade_approximant(Mesh &mesh, Input::Record in_rec);
+		PadeApproximant(Mesh &mesh, Input::Record in_rec);
 
 		/**
 		*	Destructor.
 		*/
-		~Pade_approximant(void);
+		~PadeApproximant(void);
 
 		void zero_time_step() override;
 
