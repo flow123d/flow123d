@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <boost/functional/factory.hpp>
+
 
 namespace Input {
 
@@ -37,6 +39,10 @@ public:
     /// create an instance of a registered class
     shared_ptr<Type> create(string name);
 
+    template<class... Arguments>
+    shared_ptr<Type> create(string name, Arguments... arguments);
+
+
 private:
     /// a private constructor
     Factory(){}
@@ -55,7 +61,7 @@ public:
 
 	Registrar(string className);
 
-    Factory<BaseType> &factory_ref;
+    //Factory<BaseType> &factory_ref;
 };
 
 

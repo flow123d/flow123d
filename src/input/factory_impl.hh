@@ -15,7 +15,7 @@ using namespace std;
 
 template<class Type>
 Registrar<Type>::Registrar(string name)
-: factory_ref( *( Factory<BaseType>::instance() ) )
+//: factory_ref( *( Factory<BaseType>::instance() ) )
 {
     // register the class factory function
 	Factory<BaseType>::instance()->register_function(name, []() -> BaseType * { return new Type(); });
@@ -46,7 +46,7 @@ shared_ptr<Type> Factory<Type>::create(string name)
     // find name in the registry and call factory method.
     auto it = field_factory_registry_.find(name);
     if(it != field_factory_registry_.end()) {
-    	instance = it->second();
+    	instance = it->second(); // here we call constructor through saved lambda function
     }
 
     // wrap instance in a shared ptr and return
@@ -56,6 +56,30 @@ shared_ptr<Type> Factory<Type>::create(string name)
         return nullptr;
     }
 }
+
+/*
+template<class Type>
+template<class... Arguments>
+shared_ptr<Type> Factory<Type>::create(string name, Arguments... arguments)
+{
+    Type * instance = nullptr;
+
+    // find name in the registry and call factory method.
+    auto it = field_factory_registry_.find(name);
+    if(it != field_factory_registry_.end()) {
+        auto factory_function =  boost::any_cast<std::function< shared_ptr<Type>(Arguments...)> > (it->second);
+        instance = factory_function(arguments);
+        //instance = (it->second)(); // here we call constructor through saved lambda function
+    }
+
+    // wrap instance in a shared ptr and return
+    if(instance != nullptr) {
+        return shared_ptr<Type>(instance);
+    } else {
+        return nullptr;
+    }
+}
+*/
 
 } // namespace Input
 
