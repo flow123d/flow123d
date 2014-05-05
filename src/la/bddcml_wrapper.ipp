@@ -443,7 +443,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int la = a_sparse.size();
 
     // diagonal weights for BDDC loaded by user
-    ASSERT( diagWeightsCoo_.size() > 0,
+    ASSERT( diagWeightsCoo_.nnz() > 0,
             "It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n " );
 
     std::vector<int>    i_diag_sparse;
