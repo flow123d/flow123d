@@ -43,9 +43,10 @@ public:
   
     void zero_time_step() override;
                 
+    /// Updates the solution. 
     /**
-    *	Prepared to compute simple chemical reactions inside all of considered elements. It calls compute_reaction(...) for all the elements controled by concrete processor, when the computation is paralelized.
-    */
+     * Goes through local distribution of elements and calls @p compute_reaction.
+     */
     void update_solution(void) override;
     
 protected:
@@ -53,16 +54,19 @@ protected:
     /**
     *   This method modificates reaction matrix as described in ini-file a single section [Decay_i] or [FoReact_i]. It is used when bifurcation is switched off.
     */
-    virtual double **modify_reaction_matrix(void);
+    virtual void modify_reaction_matrix(void);
     
     /**
      *   For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
      */
     virtual double **compute_reaction(double **concentrations, int loc_el) override;
         
-    double **allocate_reaction_matrix(void);
+    
+    /// Resets reaction matrix as eye matrix.
+    void reset_reaction_matrix();
             
-    void init_from_input();
+    /// Initializes private members of sorption from the input record.
+    void initialize_from_input();
 	/**
 	*	For control printing of a matrix describing simple chemical raections.
 	*/
@@ -71,39 +75,41 @@ protected:
 	*	For printing nr_of_isotopes identifies of isotopes in a current decay chain.
 	*/
 	void print_indices(int dec_nr, int n_subst);
-	/**
-	* Following method releases reaction matrix to make it possible to set a new time step for chemistry.
-	*/
-	void release_reaction_matrix();
+
 	/**
 	*	For printing (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes on screen.
 	*/
-	void print_half_lives(int n_subst);
+	void print_half_lives();
             
-            /**
-            *       Finds a position of a string in specified array.
-            */
-            unsigned int find_subst_name(const std::string &name);
+    /**
+    *       Finds a position of a string in specified array.
+    */
+    unsigned int find_subst_name(const std::string &name);
+    
 	/**
 	*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 	*/
-	double **reaction_matrix;
-            /**
-            *       Pointer to reference previous concentration array used in compute_reaction().
-            */
-            double *prev_conc;
+	//double **reaction_matrix;
+	std::vector<std::vector<double> > reaction_matrix_;
+    /**
+     *       Pointer to reference previous concentration array used in compute_reaction().
+     */
+    //double *prev_conc;
+    std::vector<double> prev_conc_;
 	/**
 	*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
 	*/
-	vector<double> half_lives;
+	std::vector<double> half_lives_;
 	/**
 	*	Sequence of integers describing an order of isotopes in decay chain or first order reaction.
 	*/
-	vector< vector <unsigned int> >substance_ids;
+	std::vector< std::vector <unsigned int> >substance_ids_;
 	/**
 	*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
 	*/
-	std::vector<std::vector<double> > bifurcation;
+	std::vector<std::vector<double> > bifurcation_;
+    
+    unsigned int n_substances_;
 };
 
 #endif  // LINEAR_REACTION_H

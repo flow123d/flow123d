@@ -216,6 +216,7 @@ void SorptionBase::initialize()
     reaction->names(names_)
       .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
       .set_time_governor(*time_);
+    reaction->initialize();
   }
 }
 
