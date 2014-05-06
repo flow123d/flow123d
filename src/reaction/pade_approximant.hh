@@ -41,12 +41,6 @@ public:
 	void zero_time_step() override;
 
 protected:
-    
-    /**
-    *   For simulation of chemical reaction in just one element.
-    */
-    double **compute_reaction(double **concentrations, int loc_el) override;
-
     /**
     *   Evaluates Pade approximant from Reaction_matrix.
     */
@@ -56,70 +50,9 @@ protected:
     */
     void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
     
-    /**
-    *       Enables to compute factorial k!.
-    */
+    /// Computes factorial of @p k.
     int factorial(int k);
             
-            
-	/**
-	*	This method reads a sequence of numbers defining an order of substances in decay chain. The string section defines where too look for indices inside of ini-file, whereas n_subst is a number of isotopes in described decay chain.
-	*/
-	//int *set_indeces(char *section, int n_subst);
-	/**
-	*	This method reads an information about a number of isotopes in a decay chain described inside of ini-file in section given as an argument. This method is used for radioactive decay simulation.
-	*/
-	//void set_nr_of_isotopes(char* section);
-	/**
-	*	This method sets number of isotopes for the case of first order reaction. The value should be always 2.
-	*/
-	//void set_nr_of_isotopes(int Nr_of_isotopes);
-	/**
-	*	This method reads a sequence of (nr_of_isotopes - 1) halflives belonging to separate decay chain step. This information is placed in ini-file in a block starting with a string section.
-	*/
-	//double *set_half_lives(char *section);
-	/**
-	*	This method reads form ini-file an information for construction of a matrix describing bifurcation of every single decay chain on one row of the reaction matrix. Informations about bifurcation are placed in a block starting with a string section. dec_nr identifies which one decay chain is handled and which row of twodimensional bifurcation matrix (double **array)should be affected.
-	*/
-	//void set_bifurcation(char *section, int dec_nr);
-	/**
-	*	This method reads from ini-file an information if the bifurcation for a current decay chain is switched on in a block starting with a string section. Initialy bifurcation is switched of.
-	*/
-	//void set_bifurcation_on(char *section);
-	/**
-	*	This method reads from ini-file an information if first order reactions simulation is switched on.
-	*/
-	//void set_For_on(void);
-	/**
-	*	This method reads from ini-file an information if a radioactive decay simulation is switched on.
-	*/
-	//void set_decay_on(void);
-	/**
-	*	This method reads from ini-file an information and prepares a vector (onedimensional double *array) containing kinetic constants of every single first order reactions. Those informations are placed in a block with a string section at the beginning. From those constants half-lives belonging to first order reactions are computed.
-	*/
-	//void set_kinetic_constants(char *section, int reaction_nr);
-
-	/**
-	*	For printing nr_of_isotopes identifies of isotopes in a current decay chain.
-	*/
-	//void print_indeces(int n_subst);
-
-	/**
-	*	Informs about the number of isotopes in a current decay chain.
-	*/
-	//int nr_of_isotopes;
-	/**
-	*	Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
-	*/
-	//std::vector<std::vector<double> > bifurcation;
-	/**
-	*	One dimensional array of kinetic constants belonging to considered reactions.
-	*/
-	//std::vector<double> kinetic_constant;
-	/**
-	*	Boolean which enables to turn on branching of considered decay chain.
-	*/
-	//bool bifurcation_on;
 	/**
 	*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
 	*/

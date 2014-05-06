@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstring>
 #include <stdlib.h>
 #include <math.h>
 
@@ -99,7 +98,7 @@ void LinearReaction::modify_reaction_matrix(void) //All the parameters are suppo
         reaction_matrix_[index_par][index_par] = pow(0.5, rel_step);
 
         for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product)
-            reaction_matrix_[index_par][ substance_ids_[i_decay][i_product] ]
+            reaction_matrix_[ substance_ids_[i_decay][i_product] ][index_par]
                                        = (1 - pow(0.5, rel_step))* bifurcation_[i_decay][i_product-1];
     }
     
@@ -111,18 +110,33 @@ double **LinearReaction::compute_reaction(double **concentrations, int loc_el) /
 {
     unsigned int cols, rows;
 
-	for(cols = 0; cols < names_.size(); cols++){
-		prev_conc_[cols] = concentrations[cols][loc_el];
-		concentrations[cols][loc_el] = 0.0;
-	}
-
-	for(rows = 0; rows < names_.size(); rows++){
-        for(cols = 0; cols < names_.size(); cols++){
-            concentrations[rows][loc_el] += prev_conc_[cols] * reaction_matrix_[cols][rows];
+    for(rows = 0; rows < names_.size(); rows++){
+        prev_conc_[rows] = concentrations[rows][loc_el];
+        concentrations[rows][loc_el] = 0.0;
+    }
+    
+    for(rows = 0; rows < n_substances_; rows++){
+        for(cols = 0; cols < n_substances_; cols++){
+            concentrations[rows][loc_el] += reaction_matrix_[rows][cols]*prev_conc_[cols];
         }
     }
 
-	return concentrations;
+    return concentrations;
+    
+//     unsigned int cols, rows;
+// 
+// 	for(cols = 0; cols < names_.size(); cols++){
+// 		prev_conc_[cols] = concentrations[cols][loc_el];
+// 		concentrations[cols][loc_el] = 0.0;
+// 	}
+// 
+// 	for(rows = 0; rows < names_.size(); rows++){
+//         for(cols = 0; cols < names_.size(); cols++){
+//             concentrations[rows][loc_el] += prev_conc_[cols] * reaction_matrix_[cols][rows];
+//         }
+//     }
+// 
+// 	return concentrations;
 }
 
 

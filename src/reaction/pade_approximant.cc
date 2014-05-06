@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <math.h>
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
@@ -99,11 +98,11 @@ void PadeApproximant::modify_reaction_matrix(void)
     for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
         index_par = substance_ids_[i_decay][0];
         rel_step = time_->dt() / half_lives_[i_decay];
+        //DBGMSG("time_dt: %f, half_life: %f rel_step: %f\n", time_->dt(), half_lives_[i_decay], rel_step);
         extent = -log(2)*rel_step; //pow(0.5, rel_step);
-        DBGMSG("parental index: %d, extent: %d", index_par, extent);
+        //PetscPrintf(PETSC_COMM_WORLD,"extent %f\n", PetscRealPart(extent));
         MatSetValue(Reaction_matrix, index_par, index_par, extent,INSERT_VALUES);
         for (unsigned int i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product){
-            //reaction_matrix[index_par][ substance_ids_[i_decay][i_product] ]
             extent = log(2)*rel_step* bifurcation_[i_decay][i_product-1];
             index_child = substance_ids_[i_decay][i_product];
         	MatSetValue(Reaction_matrix, index_par, index_child,extent,INSERT_VALUES);
@@ -164,18 +163,20 @@ void PadeApproximant::modify_reaction_matrix(void)
     MatCreate(PETSC_COMM_SELF, &Pade_approximant);
     
     //should be probably multiplied by 2 (which is the value of m)
-    MatSetSizes(Pade_approximant, PETSC_DECIDE, PETSC_DECIDE, n_substances_, n_substances_); 
+    MatSetSizes(Pade_approximant, PETSC_DECIDE, PETSC_DECIDE, n_substances_, n_substances_);
     MatSetType(Pade_approximant, MATAIJ);
     MatSetUp(Pade_approximant);
 
-	for(rows = 0; rows < (int)( n_substances_ ); rows++){
+	for(rows = 0; rows < n_substances_ ; rows++){
+        DBGMSG("error\n");
 		MatGetColumnVector(Nominator, tmp1, rows);
 		//VecView(tmp1, PETSC_VIEWER_STDOUT_SELF);
 		PCApply(Precond, tmp1, tmp2);
+        DBGMSG("error\n");
 		PCView(Precond, PETSC_VIEWER_STDOUT_WORLD);
 		//VecView(tmp2, PETSC_VIEWER_STDOUT_SELF);
 		VecGetArray(tmp2, &Array_hlp);
-		for(cols = 0; cols < (int)( n_substances_ ); cols++)
+		for(cols = 0; cols < n_substances_; cols++)
 		{
 			MatSetValue(Pade_approximant, rows, cols, Array_hlp[cols], ADD_VALUES);
 		}
@@ -184,23 +185,23 @@ void PadeApproximant::modify_reaction_matrix(void)
 	MatAssemblyEnd(Pade_approximant, MAT_FINAL_ASSEMBLY);
 
 	//pade assembled to reaction_matrix
-	for(rows = 0; rows < (int)( n_substances_ ); rows++)
+	for(rows = 0; rows < n_substances_; rows++)
 		{
-			for(cols = 0; cols < (int)( n_substances_ ); cols++)
+			for(cols = 0; cols < n_substances_; cols++)
 			{
 				reaction_matrix_[rows][cols] = 0.0;
 			}
 		}
-	for(rows = 0; rows < (int)( n_substances_ ); rows++)
+	for(rows = 0; rows < n_substances_; rows++)
 	{
-		for(cols = 0; cols < (int)( n_substances_ ); cols++)
+		for(cols = 0; cols < n_substances_ ; cols++)
 		{
 			MatGetValues(Pade_approximant, 1, &rows, 1, &cols, Hlp_mat); //&Hlp_mat[n_substances_*rows + cols]);
 			reaction_matrix_[rows][cols] = (double) (Hlp_mat[0]);
 		}
 	}
 
-	print_reaction_matrix(); //for visual control of equality of reaction_matrix in comparison with pade aproximant*/
+	print_reaction_matrix(); //for visual control of equality of reaction_matrix in comparison with pade aproximant
 
 	VecDestroy(&tmp1);
 	VecDestroy(&tmp2);
@@ -234,40 +235,18 @@ void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_
 }
 
 
-double **PadeApproximant::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
-{
-    unsigned int cols, rows;
-
-	for(rows = 0; rows < n_substances_; rows++){
-        
-        prev_conc_[rows] = concentrations[rows][loc_el];
-        concentrations[rows][loc_el] = 0.0;
-        
-        for(cols = 0; cols < n_substances_; cols++){
-            concentrations[rows][loc_el] += reaction_matrix_[rows][cols]*prev_conc_[cols];
-        }
-    }
-
-	return concentrations;
-}
-
-
-
 int PadeApproximant::factorial(int k)
 {
-    int faktor = 1;
+    int fact = 1;
 
     if(k < 0)
-    {
-            //an error message should be placed here
-            return 0;
-    }
+        xprintf(UsrErr, "Cannot compute factorial of negative number '%d'.\n",k);
 
     while(k > 1)
     {
-            faktor *= k;
+            fact *= k;
             k--;
     }
-    //xprintf(Msg,"\n Koeficient has a value %d.\n",faktor);
-    return faktor;
+
+    return fact;
 }
