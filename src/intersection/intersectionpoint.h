@@ -1,13 +1,31 @@
 #include <armadillo>
+#include <array>
 #include "system/system.hh"
+#include "refsimplex.h"
 
 using namespace std;
 namespace computeintersection{
 
 //class ProlongationPoint;
 
-template<int N, int M> class IntersectionPoint{};
+template<int N, int M> class IntersectionPoint{
 
+	arma::vec::fixed<N+1> local_coords1;
+	arma::vec::fixed<M+1> local_coords2;
+
+	public:
+	IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
+					  const arma::vec::fixed<M+1> &lc2)
+					  : local_coords1(lc1),
+					    local_coords2(lc2){};
+	inline arma::vec::fixed<N+1> getLocalCoords1(){
+			return local_coords1;
+		};
+	inline arma::vec::fixed<M+1> getLocalCoords2(){
+			return local_coords2;
+		};
+};
+/*
 template<> class IntersectionPoint<2,1>{
 
 	arma::vec3 local_coords1;
@@ -61,22 +79,10 @@ template<> class IntersectionPoint<2,3>{
 
 public:
 	IntersectionPoint(const arma::vec3 &lc1,const arma::vec3 &lc2) : local_coords1(lc1), local_coords2(lc2){};
-};
+};*/
 
-/**
 
+//template<int M, int N> arma::vec::fixed<N+1> interpolate(arma::vec::fixed<M+1> &coord, unsigned int sub_simplex_idx);
 // interpolation of barycentric coordinate on Simplex<M> to Simplex<N>
-template<int M, int N>
-arma::vec.fixed<N+1> interpolate(const arma::vec.fixed<M+1> &coord, unsigned int sub_simplex_idx)
-{
-    std::array< vec.fixed<N+1>, M+1 >  simplex_M_vertices = RefElement<N>.sub_element<M>.bary_coords(sub_simplex_idx);
-    arma::vec.fixed<N+1> sum;
-    sum.zero();
-    for(int i=0; i<M+1; i++) sum += coord[i]*simplex_M_vertices(i);
-    return sum;
-}
 
-
-
- */
 } // END namespace

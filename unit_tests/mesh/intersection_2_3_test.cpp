@@ -2,7 +2,7 @@
 #include <flow_gtest.hh>
 //#define Flow123d_DEBUG
 #include "system/sys_profiler.hh"
-
+#include <array>
 //#include "mesh/mesh.h"
 //#include "mesh/msh_gmshreader.h"
 //#include "mesh/bih_tree.hh"
@@ -153,6 +153,30 @@ TEST(intersections, all) {
 		neco(*kam_koukam);
 
 */
+
+	cout << "===============" << endl;
+
+	arma::vec::fixed<2> moje;
+	arma::vec::fixed<4> nove;
+	moje[0] = 0.2;
+	moje[1] = 0.8;
+	//moje[2] = 0.45;
+
+
+
+	xprintf(Msg, "Puvodni: %f %f\n",moje[0],moje[1]);
+	for(unsigned int pp = 0; pp < 6; pp++){
+		nove = RefSimplex<3>::interpolate<1>(moje, pp);
+
+		xprintf(Msg, "Interpolovanej: %f %f %f %f\n",nove[0],nove[1],nove[2],nove[3]);
+
+	}
+
+
+	//RefSimplex<3>::RefSimplex<1>::bary_coords(1);
+
+//	nove = interpolate<1,3>(moje, 1);
+
 
 	cout << "==================================================================" << endl;
 }

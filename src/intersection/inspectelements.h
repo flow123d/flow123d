@@ -5,14 +5,15 @@
  *      Author: viktor
  */
 
-#ifndef INSPECTELEMENTS_H_
-#define INSPECTELEMENTS_H_
+#include "system/system.hh"
+#include "system/sys_profiler.hh"
+#include "mesh/mesh.h"
 
-#include "system.hh"
 #include "computeintersection.h"
 
-using namespace computeintersection;
 using namespace std;
+namespace computeintersection {
+
 
 class InspectElements {
 
@@ -42,4 +43,4 @@ public:
 	void UpdateTetraheadron(const ElementFullIter &el);
 };
 
-#endif /* INSPECTELEMENTS_H_ */
+} // END namespace

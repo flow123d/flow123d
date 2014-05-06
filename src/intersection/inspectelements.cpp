@@ -6,13 +6,11 @@
  */
 
 #include "inspectelements.h"
+namespace computeintersection {
 
-inspect_elements::InspectElements() {
+InspectElements::InspectElements() {
 	// TODO Auto-generated constructor stub
 
 }
 
-inspect_elements::InspectElements() {
-	// TODO Auto-generated destructor stub
 }
-
