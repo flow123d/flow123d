@@ -89,6 +89,7 @@ DualPorosity::~DualPorosity(void)
   if(reaction_mobile != nullptr) delete reaction_mobile;
   if(reaction_immobile != nullptr) delete reaction_immobile;
 
+  VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_immobile);
   VecDestroy(vconc_immobile_out);
 
@@ -378,8 +379,8 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 
 void DualPorosity::allocate_output_mpi(void )
 {
-  //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    //DBGMSG("DualPorosity - allocate_output_mpi.\n");
+    int sbi, n_subst, ierr;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -395,33 +396,28 @@ void DualPorosity::allocate_output_mpi(void )
         ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
         VecZeroEntries(vconc_immobile_out[sbi]);
     }
+    
+    // create output vector scatter
+    IS is;
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
+    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
+    ISDestroy(&(is));
 }
 
 
 void DualPorosity::output_vector_gather() 
 {
-  //DBGMSG("DualPorosity - output_vector_gather.\n");
-    unsigned int sbi/*, rank, np*/;
-    IS is;
-    VecScatter vconc_out_scatter;
+    //DBGMSG("DualPorosity - output_vector_gather.\n");
+    unsigned int sbi;
+
     //PetscViewer inviewer;
 
-//     MPI_Barrier(PETSC_COMM_WORLD);
-//     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-//     MPI_Comm_size(PETSC_COMM_WORLD, &np);
-
-    
-    //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
 }
 
 

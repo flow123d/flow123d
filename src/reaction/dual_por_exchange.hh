@@ -91,7 +91,7 @@ protected:
   void set_initial_condition();
   /// Initializes field sets.
   void initialize_fields();
-  /// Allocates petsc vectors and prepares them for output.
+  /// Allocates petsc vectors, prepares them for output and creates output vector scatter.
   void allocate_output_mpi(void);
   
   double **compute_reaction(double **concentrations, int loc_el) override;
@@ -126,6 +126,7 @@ protected:
   
   ///@name members used in output routines
   //@{
+  VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
   Vec *vconc_immobile_out; ///< PETSC concentration vector output for immobile phase (gathered - sequential)
   double **conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)  

@@ -128,6 +128,7 @@ SorptionBase::~SorptionBase(void)
   if(reaction != nullptr) delete reaction;
   if (data_ != nullptr) delete data_;
 
+  VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_solid);
   VecDestroy(vconc_solid_out);
 
@@ -465,7 +466,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
 void SorptionBase::allocate_output_mpi(void )
 {
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    int sbi, n_subst, ierr;// rank, np , i, j, ph;
     n_subst = names_.size();
 
     vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -479,26 +480,26 @@ void SorptionBase::allocate_output_mpi(void )
         ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
         VecZeroEntries(vconc_solid_out[sbi]);
     }
+    
+    // creating output vector scatter
+    IS is;
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
+    VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
+    ISDestroy(&(is));
 }
 
 
 void SorptionBase::output_vector_gather() 
 {
-    unsigned int sbi/*, rank, np*/;
-    IS is;
-    VecScatter vconc_out_scatter;
+    unsigned int sbi;
     //PetscViewer inviewer;
 
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
 }
 
 
