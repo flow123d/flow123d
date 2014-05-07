@@ -119,10 +119,11 @@ protected:
   ReactionTerm *reaction_mobile;       ///< Reaction running in mobile zone
   ReactionTerm *reaction_immobile;     ///< Reaction running in immobile zone
   
-  /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
-   * Else it is replaced with simple forward difference approximation.
+  /// Dual porosity computational scheme tolerance. 
+  /** According to this tolerance the analytical solution of dual porosity concentrations or
+   * simple forward difference approximation of concentrations is chosen for computation.
    */
-  static const double min_dt_;
+  static const double scheme_tolerance_;
   
   ///@name members used in output routines
   //@{
