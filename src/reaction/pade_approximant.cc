@@ -1,8 +1,7 @@
-#include <stdlib.h>
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "system/system.hh"
+#include "system/global_defs.h"
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"

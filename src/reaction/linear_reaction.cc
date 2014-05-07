@@ -1,11 +1,9 @@
-#include <iostream>
-#include <stdlib.h>
 #include <math.h>
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "system/system.hh"
+#include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
 #include "la/distribution.hh"
@@ -122,31 +120,6 @@ double **LinearReaction::compute_reaction(double **concentrations, int loc_el) /
     }
 
     return concentrations;
-    
-//     unsigned int cols, rows;
-// 
-// 	for(cols = 0; cols < names_.size(); cols++){
-// 		prev_conc_[cols] = concentrations[cols][loc_el];
-// 		concentrations[cols][loc_el] = 0.0;
-// 	}
-// 
-// 	for(rows = 0; rows < names_.size(); rows++){
-//         for(cols = 0; cols < names_.size(); cols++){
-//             concentrations[rows][loc_el] += prev_conc_[cols] * reaction_matrix_[cols][rows];
-//         }
-//     }
-// 
-// 	return concentrations;
-}
-
-
-void LinearReaction::print_half_lives() {
-    unsigned int i;
-
-    xprintf(Msg, "\nHalf-lives are defined as:\n");
-    for (i = 0; i < half_lives_.size(); i++) {
-            xprintf(Msg, "parent_id: %d half_life: %f\n",substance_ids_[i][0], half_lives_[i]);
-    }
 }
 
 //       raise warning if sum of ratios is not one
@@ -244,6 +217,15 @@ void LinearReaction::print_reaction_matrix(void)
 		xprintf(Msg,"\nReaction matrix needs to be allocated.\n");
 	}
 	return;
+}
+
+void LinearReaction::print_half_lives() {
+    unsigned int i;
+
+    xprintf(Msg, "\nHalf-lives are defined as:\n");
+    for (i = 0; i < half_lives_.size(); i++) {
+            xprintf(Msg, "parent_id: %d half_life: %f\n",substance_ids_[i][0], half_lives_[i]);
+    }
 }
 
 unsigned int LinearReaction::find_subst_name(const string &name)

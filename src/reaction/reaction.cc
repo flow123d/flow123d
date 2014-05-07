@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "reaction/reaction.hh"
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
