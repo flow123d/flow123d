@@ -82,7 +82,9 @@ template<> const unsigned int RefSimplex<3>::side_lines[][3] = {
 //const unsigned int RefElement<dim>::side_lines[][0] = {{}};
 
 
-
+/*
+ * Indexes of nodes for each line
+ * */
 template<> const unsigned int RefSimplex<3>::line_nodes[][2] = {
         {0,1},
         {0,2},
@@ -97,6 +99,21 @@ template<> const unsigned int RefSimplex<2>::line_nodes[][2] = {
 		{0,2},
 		{1,2}
 };
+
+/**
+ * Indexes of sides for each line
+ */
+
+template<> const unsigned int RefSimplex<3>::line_sides[][2] = {
+		{0,1},
+		{0,2},
+		{0,3},
+		{1,2},
+		{1,3},
+		{2,3}
+};
+
+
 //template<unsigned int dim>
 //const unsigned int RefElement<dim>::line_nodes[][0] = {};
 

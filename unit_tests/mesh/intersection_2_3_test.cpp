@@ -99,7 +99,7 @@ TEST(intersections, all) {
 	//novyCI.setPC_tetrahedron(test_plucker, 1);
 	//novyCI.setPC_triangle(test_plucker2,0);
 	novyCI.init();
-	novyCI.compute(il1);
+	//novyCI.compute(il1);
 
 	arma::vec3 bodA; bodA[0] = 3; bodA[1] = 3; bodA[2] =4;
 	arma::vec3 bodB; bodB[0] = 3; bodB[1] = 3; bodB[2] =-4;
@@ -116,7 +116,7 @@ TEST(intersections, all) {
 	cout << "=================" << endl;
 	ComputeIntersection<Simplex<2>, Simplex<3>> CI23(sim_2, sim_3);
 	CI23.init();
-	CI23.compute(il2);
+	//CI23.compute(il2);
 	//CI12.compute();
 	//CI12.toStringPluckerCoordinates();
 
@@ -171,6 +171,15 @@ TEST(intersections, all) {
 		xprintf(Msg, "Interpolovanej: %f %f %f %f\n",nove[0],nove[1],nove[2],nove[3]);
 
 	}
+
+	arma::vec::fixed<1> th;th[0] = 0.6;
+	arma::vec::fixed<3> tr;
+	tr[0] = 0.6;
+	tr[1] = 0.3;
+	tr[2] = 0.1;
+
+
+	IntersectionPoint<1,2> IP(moje,tr,1,2);
 
 
 	//RefSimplex<3>::RefSimplex<1>::bary_coords(1);

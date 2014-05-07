@@ -13,17 +13,40 @@ template<int N, int M> class IntersectionPoint{
 	arma::vec::fixed<N+1> local_coords1;
 	arma::vec::fixed<M+1> local_coords2;
 
+	int edge_idx;
+	int side_idx;
+
 	public:
-	IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
-					  const arma::vec::fixed<M+1> &lc2)
+	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
+					  const arma::vec::fixed<M+1> &lc2,
+					  int edge = -1,
+					  int side = -1)
 					  : local_coords1(lc1),
-					    local_coords2(lc2){};
+					    local_coords2(lc2),
+					    edge_idx(edge),
+					    side_idx(side){};
 	inline arma::vec::fixed<N+1> getLocalCoords1(){
 			return local_coords1;
 		};
 	inline arma::vec::fixed<M+1> getLocalCoords2(){
 			return local_coords2;
 		};
+
+	inline void setEdge(int e){
+		edge_idx = e;
+	};
+
+	inline void setSide(int s){
+		side_idx = s;
+	};
+
+	inline int getEdge(){
+		return edge_idx;
+	};
+
+	inline int getSide(){
+		return side_idx;
+	};
 };
 /*
 template<> class IntersectionPoint<2,1>{

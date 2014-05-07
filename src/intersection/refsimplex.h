@@ -70,6 +70,16 @@ public:
 		return sum;
 	};
 
+	inline static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> &first_coords, arma::vec::fixed<dim+1> &second_coords, double &first_theta, double &second_theta, double theta){
+		arma::vec::fixed<dim+1> bary_interpolated_coords;
+
+		bary_interpolated_coords = ((theta - first_theta) * second_coords + (second_theta - theta) * first_coords)/(second_theta - first_theta);
+
+		return bary_interpolated_coords;
+	};
+
+	//inline static arma::vec::fixed<dim+1> point_interpolation(arma::vec3 &point_coords, Simplex<3> &tetrahedron){};
+
 	/**
 	 * Return barycentric coordinates of given node.
 	 * @param nid Node number.
@@ -124,7 +134,12 @@ public:
 	 */
     static const unsigned int line_nodes[n_lines][2];
 
-	/**
+
+
+	static const unsigned int line_sides[n_lines][2];
+
+
+    /**
 	 * Number of permutations of nodes on sides.
 	 * dim   value
 	 * -----------
