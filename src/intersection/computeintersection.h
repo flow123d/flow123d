@@ -36,10 +36,10 @@ public:
 	ComputeIntersection();
 	ComputeIntersection(Simplex<1> &abs, Simplex<2> &triang);
 	//ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang);
-	inline ~ComputeIntersection() {}
+	inline ~ComputeIntersection() {};
 
 	void clear_all();
-	bool compute(double &theta, arma::vec3 &local_triangle);
+	bool compute(IntersectionPoint<1,2> &IP);
 
 	std::vector<Plucker *> &getPC_abscissa();
 	std::vector<Plucker *> &getPC_triangle();
@@ -89,7 +89,7 @@ public:
 
 	void clear_all();
 	void init();
-	void compute(IntersectionLocal &lokalni_mnohouhelnik, unsigned int edge_index);
+	int compute(std::vector<IntersectionPoint<1,3>> &IP13s);
 
 	std::vector<Plucker *> &getPC_abscissa();
 	std::vector<Plucker *> &getPC_tetrahedron();

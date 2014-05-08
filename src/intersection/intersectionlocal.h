@@ -15,7 +15,7 @@ class IntersectionLocal {
 	//static int numberInstance;
 	int id;
 
-	std::vector<IntersectionPoint<2,3> *> i_points; //vektor ukazatelu na dvojice lokal. souradnic
+	std::vector<IntersectionPoint<2,3>> i_points; //vektor ukazatelu na dvojice lokal. souradnic
 
 	unsigned int element_2D_idx;
 	unsigned int element_3D_idx;
@@ -26,16 +26,17 @@ public:
     IntersectionLocal(unsigned int elem2D,unsigned int elem3D);
     ~IntersectionLocal();
 
-    void add_local_coord(const std::vector<double> &coordin1, const double &coordin2); //metoda na pridani souradnic do i_points
-    void add_local_point(IntersectionPoint<2,3> *InPoint);
+    void addIP(IntersectionPoint<2,3> InPoint);
 
-    inline IntersectionPoint<2,3> * get_point(const unsigned int index)
+    inline IntersectionPoint<2,3> get_point(const unsigned int index)
     {
-          if (index >= i_points.size() ) return NULL;
-          else return i_points[index];
+         return i_points[index];
     }
     inline int getID(){
     	return id;
+    }
+    inline int getIPsize(){
+    	return i_points.size();
     }
     inline unsigned int idx_2D(){return element_2D_idx;}
     inline unsigned int idx_3D(){return element_3D_idx;}
@@ -44,24 +45,63 @@ public:
     	//xprintf(Msg, "Local Coords: 1D: ", &i_points[0]->el2_coord());
 
     }
+
+
+
+    template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> flipDimension(IntersectionPoint<dim, subdim> IP){
+    		cout << "IntersectionLocal::flipDimension<" << dim << "," << subdim << "> na <" << subdim << "," <<  dim << ">" << endl;
+        	IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords2(), IP.getLocalCoords1(), IP.getSide2(), IP.getSide1());
+        	return IPn;
+     };
+
+     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-1> IP){
+
+        	arma::vec::fixed<d+1> interpolovane;
+        	cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
+        	if(d == 3){
+        		interpolovane = RefSimplex<3>::interpolate<2>(IP.getLocalCoords2(), IP.getSide2());
+        	}else if(d == 2){
+        		interpolovane = RefSimplex<2>::interpolate<1>(IP.getLocalCoords2(), IP.getSide2());
+        	}else{
+        		cout << "zakazany stav" << endl;
+        		interpolovane.zeros();
+        	}
+        	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2());
+        	return IPn;
+      };
+
+     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-2> IP){
+
+             	arma::vec::fixed<d+1> interpolovane;
+             	cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-2 << "> na <" << sd << "," <<  d << ">" << endl;
+             	if(d == 3){
+             		interpolovane = RefSimplex<3>::interpolate<1>(IP.getLocalCoords2(), IP.getSide2());
+             	}else{
+             		cout << "zakazany stav" << endl;
+             		interpolovane.zeros();
+             	}
+             	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2());
+             	return IPn;
+           };
+
+        /*template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> interpolateDimension(IntersectionPoint<subdim, dim-2> &IP){
+
+    		arma::vec::fixed<dim+1> interpolovane = RefSimplex<dim>::interpolate<dim-2>(IP.getSide2());
+    		IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2());
+
+    		return IPn;
+    	};*/
     //inline std::vector<int> getSide(const int number){
     //	if (number >= sides.size() ) return NULL;
     //	else return sides[index];
     //}
 
-    inline static IntersectionPoint<2,3>* convertTo23(IntersectionPoint<1,2> &ip){
 
-    	return NULL;
-    }
 
-    inline static IntersectionPoint<2,3>* convertTo23(IntersectionPoint<2,1> &ip){
-       	return NULL;
-    }
 
-    inline static IntersectionPoint<2,3>* convertTo23(IntersectionPoint<1,3> &ip){
-       	return NULL;
-    }
 
 };
+
+
 
 } // namespace computeintersection close

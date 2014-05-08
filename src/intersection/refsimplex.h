@@ -61,7 +61,7 @@ public:
 			return bary_c;
 	};
 
-	template<unsigned int subdim> inline static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> &coord, unsigned int sub_simplex_idx){
+	template<unsigned int subdim> inline static arma::vec::fixed<dim+1> interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx){
 
 		std::array<arma::vec::fixed<dim+1>, subdim+1> simplex_M_vertices = RefSimplex<dim>::bary_coords<subdim>(sub_simplex_idx);
 		arma::vec::fixed<dim+1> sum;
@@ -70,7 +70,7 @@ public:
 		return sum;
 	};
 
-	inline static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> &first_coords, arma::vec::fixed<dim+1> &second_coords, double &first_theta, double &second_theta, double theta){
+	inline static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> first_coords, arma::vec::fixed<dim+1> second_coords, double first_theta, double second_theta, double theta){
 		arma::vec::fixed<dim+1> bary_interpolated_coords;
 
 		bary_interpolated_coords = ((theta - first_theta) * second_coords + (second_theta - theta) * first_coords)/(second_theta - first_theta);

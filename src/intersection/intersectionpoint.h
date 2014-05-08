@@ -8,23 +8,45 @@ namespace computeintersection{
 
 //class ProlongationPoint;
 
+
 template<int N, int M> class IntersectionPoint{
 
 	arma::vec::fixed<N+1> local_coords1;
 	arma::vec::fixed<M+1> local_coords2;
 
-	int edge_idx;
-	int side_idx;
+	int side_idx1;
+	int side_idx2;
 
 	public:
+
+	inline IntersectionPoint(){
+		side_idx1 = -1;
+		side_idx2 = -1;
+	};
 	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
-					  int edge = -1,
-					  int side = -1)
+					  int side1 = -1,
+					  int side2 = -1)
 					  : local_coords1(lc1),
 					    local_coords2(lc2),
-					    edge_idx(edge),
-					    side_idx(side){};
+					    side_idx1(side1),
+					    side_idx2(side2){};
+	inline ~IntersectionPoint(){};
+
+	inline void clear(){
+		local_coords1.zeros();
+		local_coords2.zeros();
+		side_idx1 = -1;
+		side_idx2 = -1;
+	};
+
+	inline void print(){
+		cout << "Local coords on the first element on side(" << side_idx1 << ")" << endl;
+		local_coords1.print();
+		cout << "Local coords on the second element on side(" << side_idx2 << ")" << endl;
+		local_coords2.print();
+	};
+
 	inline arma::vec::fixed<N+1> getLocalCoords1(){
 			return local_coords1;
 		};
@@ -32,22 +54,40 @@ template<int N, int M> class IntersectionPoint{
 			return local_coords2;
 		};
 
-	inline void setEdge(int e){
-		edge_idx = e;
+	inline void setLocalCoords1(const arma::vec::fixed<N+1> lc1){
+			local_coords1 = lc1;
 	};
 
-	inline void setSide(int s){
-		side_idx = s;
+	inline void setLocalCoords2(const arma::vec::fixed<M+1> lc2){
+			local_coords2 = lc2;
 	};
 
-	inline int getEdge(){
-		return edge_idx;
+	inline void setSide1(int s){
+		side_idx1 = s;
 	};
 
-	inline int getSide(){
-		return side_idx;
+	inline void setSide2(int s){
+		side_idx2 = s;
 	};
+
+	inline int getSide1(){
+		return side_idx1;
+	};
+
+	inline int getSide2(){
+		return side_idx2;
+	};
+
+	inline int getDim1(){
+		return N;
+	};
+	inline int getDim2(){
+		return M;
+	};
+
 };
+
+
 /*
 template<> class IntersectionPoint<2,1>{
 

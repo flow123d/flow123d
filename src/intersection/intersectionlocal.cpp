@@ -17,7 +17,7 @@ IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):el
 IntersectionLocal::IntersectionLocal(){};
 IntersectionLocal::~IntersectionLocal(){};
 
-void IntersectionLocal::add_local_point(IntersectionPoint<2,3> *InPoint){
+void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
 	i_points.push_back(InPoint);
 };
 

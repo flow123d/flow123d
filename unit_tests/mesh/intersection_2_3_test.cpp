@@ -68,46 +68,14 @@ TEST(intersections, all) {
 	cout << "=========================================" << endl;
 	cout << "=========================================" << endl;
 
-
-	arma::vec3 vector;
-	vector[0] = 1;
-	vector[1] = 1;
-	vector[2] = 1;
-	arma::vec3 vector2;
-	vector2[0] = 9;
-	vector2[1] = 1;
-	vector2[2] = 2;
-	arma::vec3 vector3;
-	vector3[0] = 5;
-	vector3[1] = 9;
-	vector3[2] = 3;
-	arma::vec3 vector4;
-	vector4[0] = 6;
-	vector4[1] = 5;
-	vector4[2] = -2;
-	arma::vec3 pole_vectoru[] = {vector,vector2,vector3,vector4};
-	arma::vec3 pole_vectoru2[] = {vectorB,vectorC,vectorD};
-
-	Simplex<2> sim2(pole_vectoru2);
-	Simplex<3> sim3(pole_vectoru);
-	IntersectionLocal il1;
 	IntersectionLocal il2;
-
-
-	ComputeIntersection<Simplex<2>, Simplex<3> > novyCI(sim2, sim3);
-
-	//novyCI.setPC_tetrahedron(test_plucker, 1);
-	//novyCI.setPC_triangle(test_plucker2,0);
-	novyCI.init();
-	//novyCI.compute(il1);
-
-	arma::vec3 bodA; bodA[0] = 3; bodA[1] = 3; bodA[2] =4;
-	arma::vec3 bodB; bodB[0] = 3; bodB[1] = 3; bodB[2] =-4;
-	arma::vec3 bodC; bodC[0] = 5; bodC[1] = 5; bodC[2] = 5;
-	arma::vec3 Alfa; Alfa[0] = 1; Alfa[1] = 2; Alfa[2] =4;
-	arma::vec3 Beta; Beta[0] = 5; Beta[1] = 2; Beta[2] =4;
-	arma::vec3 Gama; Gama[0] = 1; Gama[1] = 6; Gama[2] =4;
-	arma::vec3 Delta; Delta[0] = 1; Delta[1] = 4; Delta[2] = 8;
+	arma::vec3 bodA; bodA[0] = -5; bodA[1] = 1; bodA[2] = -5;
+	arma::vec3 bodB; bodB[0] = 10; bodB[1] = 2; bodB[2] = -4;
+	arma::vec3 bodC; bodC[0] = 6; bodC[1] = 3; bodC[2] = 10;
+	arma::vec3 Alfa; Alfa[0] = 0; Alfa[1] = 0; Alfa[2] = 0;
+	arma::vec3 Beta; Beta[0] = 10; Beta[1] = 0; Beta[2] = 0;
+	arma::vec3 Gama; Gama[0] = 5; Gama[1] = 0; Gama[2] = 5;
+	arma::vec3 Delta; Delta[0] = 5; Delta[1] = 5; Delta[2] = 0;
 
 	arma::vec3 vec_2[] = {bodA, bodB, bodC};
 	arma::vec3 vec_3[] = {Alfa, Beta, Gama, Delta};
@@ -116,75 +84,27 @@ TEST(intersections, all) {
 	cout << "=================" << endl;
 	ComputeIntersection<Simplex<2>, Simplex<3>> CI23(sim_2, sim_3);
 	CI23.init();
-	//CI23.compute(il2);
-	//CI12.compute();
-	//CI12.toStringPluckerCoordinates();
+	CI23.compute(il2);
 
-	//novyCI.clear_all();
-		//novyCI.toStringPluckerCoordinatesTree();
-		/*
-		arma::vec3 vecAA; vecAA[0] = 0; vecAA[1]= 2;vecAA[2] = 0;
-		arma::vec3 vecBB; vecBB[0] = 2; vecBB[1]= 3;vecBB[2] = 4;
-		arma::vec3 vecCC; vecCC[0] = 5; vecCC[1]= 1;vecCC[2] = -1;
-		arma::vec3 vecDD; vecDD[0] = 6; vecDD[1]= 6;vecDD[2] = 1;
-
-		Plucker AB(vecAA, vecBB);
-		Plucker CD(vecCC, vecDD);
-		Plucker DC(vecDD, vecCC);
-
-		double soucinABCD = AB*CD;
-		double soucinABDC = AB*DC;
-
-		AB.toString();
-		CD.toString();
-		DC.toString();
-		cout << soucinABCD << " - " << soucinABDC << endl;
-		cout << CD*AB << "-" << AB*CD << endl;
-		cout << DC*AB << "-" << AB*DC << endl;
-
-
-		cout << "test referenci: " << endl;
-		AB.toString();
-		cout << "adresa: " << &AB << endl;
-
-		Plucker *kam_koukam = NULL;
-		cout << "adresa kam koukam uvnitr pointru: " << kam_koukam << endl;
-		cout << "primo adresa pointru:" << &kam_koukam << endl;
-		neco(*kam_koukam);
-
-*/
-
-	cout << "===============" << endl;
-
-	arma::vec::fixed<2> moje;
-	arma::vec::fixed<4> nove;
-	moje[0] = 0.2;
-	moje[1] = 0.8;
-	//moje[2] = 0.45;
-
-
-
-	xprintf(Msg, "Puvodni: %f %f\n",moje[0],moje[1]);
-	for(unsigned int pp = 0; pp < 6; pp++){
-		nove = RefSimplex<3>::interpolate<1>(moje, pp);
-
-		xprintf(Msg, "Interpolovanej: %f %f %f %f\n",nove[0],nove[1],nove[2],nove[3]);
-
+	for(unsigned int i = 0; i < il2.getIPsize();i++){
+		IntersectionPoint<2,3> IP23 = il2.get_point(i);
+		IP23.getLocalCoords1().print();
+		sim_2.toString();
+		arma::vec3 T_globalni = (IP23.getLocalCoords1())[0] * sim_2[0][0].getPointCoordinates()
+							   +(IP23.getLocalCoords1())[1] * sim_2[0][1].getPointCoordinates()
+							   +(IP23.getLocalCoords1())[2] * sim_2[1][1].getPointCoordinates();
+		arma::vec3 C_globalni = (IP23.getLocalCoords2())[0] * sim_3[0][0][0].getPointCoordinates()
+							   +(IP23.getLocalCoords2())[1] * sim_3[0][0][1].getPointCoordinates()
+							   +(IP23.getLocalCoords2())[2] * sim_3[0][1][1].getPointCoordinates()
+							   +(IP23.getLocalCoords2())[3] * sim_3[1][1][1].getPointCoordinates();
+		cout << "musi byt stejne - tenhle:" << endl;
+		T_globalni.print();
+		cout << "a tento:" << endl;
+		C_globalni.print();
 	}
 
-	arma::vec::fixed<1> th;th[0] = 0.6;
-	arma::vec::fixed<3> tr;
-	tr[0] = 0.6;
-	tr[1] = 0.3;
-	tr[2] = 0.1;
 
-
-	IntersectionPoint<1,2> IP(moje,tr,1,2);
-
-
-	//RefSimplex<3>::RefSimplex<1>::bary_coords(1);
-
-//	nove = interpolate<1,3>(moje, 1);
+	cout << "===============" << endl;
 
 
 	cout << "==================================================================" << endl;
