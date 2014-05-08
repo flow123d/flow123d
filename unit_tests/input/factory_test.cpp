@@ -28,6 +28,6 @@ template class FactoryDerivedB<3>;
 
 
 TEST(FactoryTest, ClassHierarchy) {
-	Input::Factory< FactoryBase<3> >::instance()->create("FactoryDerivedA3");
+	Input::Factory< FactoryBase<3> >::instance()->create("FactoryDerivedA3", 2, 0.5);
 	Input::Factory< FactoryBase<3> >::instance()->create("FactoryDerivedB3");
 }

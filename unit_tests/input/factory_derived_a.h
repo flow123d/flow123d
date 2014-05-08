@@ -16,6 +16,8 @@
 #include "input/factory.hh"
 #include "factory_base.h"
 
+using namespace std;
+
 
 template<int spacedim>
 class FactoryDerivedA : public FactoryBase<spacedim>
@@ -24,23 +26,28 @@ public:
 	typedef FactoryBase<spacedim> FactoryBaseType;
 	static const Input::Registrar<FactoryDerivedA> reg;
 
-	FactoryDerivedA();
+	static shared_ptr< FactoryBase<spacedim> > create_instance(int n_comp, double time) {
+		return make_shared< FactoryDerivedA<spacedim> >(n_comp, time);
+	}
+
+	FactoryDerivedA(int n_comp, double time);
 
 };
 
+
+
 template <int spacedim>
 const Input::Registrar< FactoryDerivedA<spacedim> >
-    FactoryDerivedA<spacedim>::reg("FactoryDerivedA" + boost::lexical_cast<std::string>(spacedim));
-
-//}
-//Input::Registrar< FactoryDerivedA<spacedim> >
+    FactoryDerivedA<spacedim>::reg("FactoryDerivedA" + boost::lexical_cast<std::string>(spacedim),
+			function< shared_ptr< FactoryBase<spacedim> >(int, double) >( FactoryDerivedA<spacedim>::create_instance ) );
 
 
 template <int spacedim>
-FactoryDerivedA<spacedim>::FactoryDerivedA()
+FactoryDerivedA<spacedim>::FactoryDerivedA(int n_comp, double time)
 : FactoryBase<spacedim>()
 {
-	cout << "Constructor of FactoryDerivedA class with spacedim = " << spacedim << endl;
+	cout << "Constructor of FactoryDerivedA class with spacedim = " << spacedim;
+	cout << ", n_comp = " << n_comp << ", time = " << time << endl;
 };
 
 

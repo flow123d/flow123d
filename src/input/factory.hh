@@ -17,6 +17,7 @@
 #include <map>
 #include <functional>
 #include <boost/functional/factory.hpp>
+#include <boost/any.hpp>
 
 
 namespace Input {
@@ -32,13 +33,10 @@ public:
     /// Get the single instance of the factory
     static Factory * instance();
 
-//protected:
     /// register a factory function to create an instance of className
-    void register_function(string name, function<Type*(void)> class_factory_function);
+    void register_function(string name, const boost::any& func);
 
     /// create an instance of a registered class
-    shared_ptr<Type> create(string name);
-
     template<class... Arguments>
     shared_ptr<Type> create(string name, Arguments... arguments);
 
@@ -48,7 +46,7 @@ private:
     Factory(){}
 
     /// the registry of factory functions
-    map<string, function<Type*(void)>> field_factory_registry_;
+    map<string, boost::any> factory_registry_;
 
 };
 
@@ -61,7 +59,7 @@ public:
 
 	Registrar(string className);
 
-    //Factory<BaseType> &factory_ref;
+	Registrar(string className, const boost::any& func);
 };
 
 

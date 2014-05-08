@@ -28,9 +28,10 @@ public:
 
 };
 
+
 template <int spacedim>
-const Input::Registrar< FactoryDerivedB<spacedim> > FactoryDerivedB<spacedim>::reg =
-		Input::Registrar< FactoryDerivedB<spacedim> >("FactoryDerivedB" + boost::lexical_cast<std::string>(spacedim));
+const Input::Registrar< FactoryDerivedB<spacedim> >
+	FactoryDerivedB<spacedim>::reg("FactoryDerivedB" + boost::lexical_cast<std::string>(spacedim));
 
 
 template <int spacedim>
