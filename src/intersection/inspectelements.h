@@ -17,13 +17,13 @@ namespace computeintersection {
 
 class InspectElements {
 
-	std::vector<IntersectionLocal *> all_intersections;
+	std::vector<IntersectionLocal> all_intersections;
 
 	IntersectionLocal temporary_intersection;
 
 	Simplex<1> abscissa;
 	Simplex<2> triangle;
-	Simplex<3> tetraheadron;
+	Simplex<3> tetrahedron;
 
 	Mesh *mesh;
 
@@ -33,14 +33,16 @@ class InspectElements {
 public:
 	InspectElements();
 	InspectElements(Mesh *_mesh);
-	virtual ~InspectElements();
+	~InspectElements();
 
 	void ComputeIntersections23();
 	void ComputeIntersections13();
 
 	void UpdateAbscissa(const ElementFullIter &el);
 	void UpdateTriangle(const ElementFullIter &el);
-	void UpdateTetraheadron(const ElementFullIter &el);
+	void UpdateTetrahedron(const ElementFullIter &el);
+
+	void print(char *nazev,unsigned int vyber);
 };
 
 } // END namespace

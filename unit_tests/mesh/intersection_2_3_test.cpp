@@ -8,25 +8,12 @@
 //#include "mesh/bih_tree.hh"
 
 
-#include "intersection/computeintersection.h"
+//#include "intersection/computeintersection.h"
+#include "intersection/inspectelements.h"
 
 using namespace std;
 using namespace computeintersection;
 
-
-void neco(Plucker &p_ref){
-	//cout << "adresa vlozeneho parametru: " << p_ref << endl;
-	cout << "adresa vlozeneho parametru: " << &p_ref << endl;
-
-	Plucker *tak = &p_ref;
-	cout << "adresa noveho pointru - na co koukam:" << tak << endl;
-	cout << "adresa pointu: " << &tak << endl;
-	tak = new Plucker();
-	cout << "adresa noveho pointru - na co koukam:" << tak << endl;
-	//Plucker ha = p_ref;
-	//cout << "Adresa noveho objektu: " << &ha << endl;
-
-}
 
 TEST(intersections, all) {
 
@@ -69,9 +56,22 @@ TEST(intersections, all) {
 	cout << "=========================================" << endl;
 
 	IntersectionLocal il2;
+	/* ctyrsten uvnitr celeho trojuhelniku
 	arma::vec3 bodA; bodA[0] = -5; bodA[1] = 1; bodA[2] = -5;
 	arma::vec3 bodB; bodB[0] = 10; bodB[1] = 2; bodB[2] = -4;
 	arma::vec3 bodC; bodC[0] = 6; bodC[1] = 3; bodC[2] = 10;
+	*/
+	/* jeden vrchol trojuhelnika konci v ctyrstenu*/
+	/*arma::vec3 bodA; bodA[0] = -5; bodA[1] = 1; bodA[2] = -5;
+	arma::vec3 bodB; bodB[0] = 10; bodB[1] = 2; bodB[2] = -4;
+	arma::vec3 bodC; bodC[0] = 5.5; bodC[1] = 3; bodC[2] = 0.5;*/
+
+	// Trojúhelník je uvnitř čtyřstěnu
+	arma::vec3 bodA; bodA[0] = 2; bodA[1] = 0.5; bodA[2] = 1;
+	arma::vec3 bodB; bodB[0] = 6; bodB[1] = 0.6; bodB[2] = 0.5;
+	arma::vec3 bodC; bodC[0] = 5; bodC[1] = 0.2; bodC[2] = 2;
+
+
 	arma::vec3 Alfa; Alfa[0] = 0; Alfa[1] = 0; Alfa[2] = 0;
 	arma::vec3 Beta; Beta[0] = 10; Beta[1] = 0; Beta[2] = 0;
 	arma::vec3 Gama; Gama[0] = 5; Gama[1] = 0; Gama[2] = 5;

@@ -71,6 +71,9 @@ public:
 	};
 
 	inline static arma::vec::fixed<dim+1> line_barycentric_interpolation(arma::vec::fixed<dim+1> first_coords, arma::vec::fixed<dim+1> second_coords, double first_theta, double second_theta, double theta){
+
+		cout << "Barycentric interpolation (first theta, theta, second theta) - (" << first_theta << "," << theta << "," << second_theta << ")" << endl;
+
 		arma::vec::fixed<dim+1> bary_interpolated_coords;
 
 		bary_interpolated_coords = ((theta - first_theta) * second_coords + (second_theta - theta) * first_coords)/(second_theta - first_theta);

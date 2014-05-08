@@ -573,7 +573,7 @@ void InspectElements::print(char *nazev){
 	fprintf(soubor, "$Nodes\n");
 
 
-	int aa = 2*all_intersection.size();
+	int aa = 4*all_intersection.size();
 
 	//xprintf(Msg, "\n%d\n",aa);
 	fprintf(soubor, "%d\n", aa);

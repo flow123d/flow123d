@@ -442,12 +442,21 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 	for(unsigned int i = 0; i < 3;i++){
 		pocet_13_pruniku = CI13[i].compute(IP13s);
-		for(unsigned int j = 0; j < pocet_13_pruniku; j++){
-			IP13s[IP13s.size() - 1 - j].setSide1(i);
-			IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1 - j]);
+		for(unsigned int j = pocet_13_pruniku; j > 0; j--){
+			// Možné optimalizace => pokud je spočten vrchol u 2. hrany a 1. bodu => bod byl spočten již dříve
+			// pokud je spočten vrchol u 3. hrany -> oba vrcholy byly již spočteny dříve
+			if(i == 1 && j == 1 && IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0){
+				continue;
+			}
+			if(i == 2 && (IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - j].getLocalCoords1()[1] == 1)){
+				continue;
+			}
+
+			IP13s[IP13s.size() - j].setSide1(i);
+			IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - j]);
 			IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
 			IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
-			IP23.print();
+			//IP23.print();
 			lokalni_mnohouhelnik.addIP(IP23);
 		}
 	}
