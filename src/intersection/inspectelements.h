@@ -8,6 +8,10 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
+#include "mesh/bih_tree.hh"
+
+#include "mesh/bih_tree.hh"
+#include "fields/field_interpolated_p0.hh"
 
 #include "computeintersection.h"
 
@@ -42,7 +46,7 @@ public:
 	void UpdateTriangle(const ElementFullIter &el);
 	void UpdateTetrahedron(const ElementFullIter &el);
 
-	void print(char *nazev,unsigned int vyber);
+	void print(unsigned int vyber);
 };
 
 } // END namespace

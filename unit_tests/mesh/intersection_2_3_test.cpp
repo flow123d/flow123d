@@ -1,10 +1,12 @@
 
 #include <flow_gtest.hh>
 //#define Flow123d_DEBUG
+#include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/file_path.hh"
 #include <array>
 //#include "mesh/mesh.h"
-//#include "mesh/msh_gmshreader.h"
+#include "mesh/msh_gmshreader.h"
 //#include "mesh/bih_tree.hh"
 
 
@@ -105,8 +107,19 @@ TEST(intersections, all) {
 
 
 	cout << "===============" << endl;
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	FilePath mesh_file("/mesh/triangle_tetrahedron.msh", FilePath::input_file);
+
+	Profiler::initialize();
 
 
+	Mesh mesh;
+	GmshMeshReader reader(mesh_file);
+	reader.read_mesh(&mesh);
+	InspectElements ie(&mesh);
+
+	ie.print(0);
+	ie.print(1);
 	cout << "==================================================================" << endl;
 }
 
