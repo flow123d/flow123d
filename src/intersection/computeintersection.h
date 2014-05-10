@@ -105,6 +105,7 @@ public:
 	void toStringPluckerCoordinatesTree();
 
 	void setPluckerProduct(double* number, unsigned int index_CI, unsigned index_edge);
+	double* getPluckerProduct(unsigned int index_CI, unsigned index_edge);
 
 	inline ~ComputeIntersection() {}
 

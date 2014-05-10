@@ -69,7 +69,7 @@ TEST(intersections, all) {
 	arma::vec3 bodC; bodC[0] = 5.5; bodC[1] = 3; bodC[2] = 0.5;*/
 
 	// Trojúhelník je uvnitř čtyřstěnu
-	arma::vec3 bodA; bodA[0] = 2; bodA[1] = 0.5; bodA[2] = 1;
+	/*arma::vec3 bodA; bodA[0] = 2; bodA[1] = 0.5; bodA[2] = 1;
 	arma::vec3 bodB; bodB[0] = 6; bodB[1] = 0.6; bodB[2] = 0.5;
 	arma::vec3 bodC; bodC[0] = 5; bodC[1] = 0.2; bodC[2] = 2;
 
@@ -103,12 +103,12 @@ TEST(intersections, all) {
 		T_globalni.print();
 		cout << "a tento:" << endl;
 		C_globalni.print();
-	}
+	}*/
 
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/mesh/triangle_tetrahedron.msh", FilePath::input_file);
+	FilePath mesh_file("/mesh/site/triangle_tetrahedron8.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
@@ -116,11 +116,16 @@ TEST(intersections, all) {
 	Mesh mesh;
 	GmshMeshReader reader(mesh_file);
 	reader.read_mesh(&mesh);
+	cout << "Síť načtena!" << endl;
+	cout << "Probíhá výpočet průniku" << endl;
 	InspectElements ie(&mesh);
-
+	cout << "Výpočet průniku hotov!!" << endl;
+	cout << "Zapisování do souboru" << endl;
 	ie.print(0);
 	ie.print(1);
+	cout << "Zapsáno do souboru!" << endl;
 	cout << "==================================================================" << endl;
+
 }
 
 

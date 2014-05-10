@@ -101,15 +101,15 @@ template<> const unsigned int RefSimplex<2>::line_nodes[][2] = {
 };
 
 /**
- * Indexes of sides for each line
+ * Indexes of sides for each line - with right orientation
  */
 
 template<> const unsigned int RefSimplex<3>::line_sides[][2] = {
 		{0,1},
-		{0,2},
+		{2,0},
 		{0,3},
 		{1,2},
-		{1,3},
+		{3,1},
 		{2,3}
 };
 

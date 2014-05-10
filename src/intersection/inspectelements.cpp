@@ -43,7 +43,11 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 		IntersectionLocal il(el2_idx, el3_idx);
 		ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 		CI_23.init();
+		//CI_23.toStringPluckerCoordinatesTree();
 		CI_23.compute(il);
+		//CI_23.toStringPluckerCoordinatesTree();
+		il.printTracingTable();
+		il.tracePolygon();
 		all_intersections.push_back(il);
 
 		cout << "Velikost pole s pruseciky:" << all_intersections.size() << endl;

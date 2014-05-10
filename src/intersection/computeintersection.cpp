@@ -101,6 +101,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 		//IntersectionPoint<1,2> neto(theta, local_triangle);
 		IP.setLocalCoords1(theta);
 		IP.setLocalCoords2(local_triangle);
+		IP.setOrientation(*plucker_products[0] > 0 ? 1 : 0);
 		return true;
 	}else{
 		return false;
@@ -196,7 +197,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::init(){
 
 	for(unsigned int j = 0; j < 4;j++){
 		for(unsigned int i = 0; i < 3;i++){
-			CI12[0].setPC_triangle(*plucker_coordinates_tetrahedron[RefSimplex<3>::side_lines[j][i]], i);
+			CI12[j].setPC_triangle(*plucker_coordinates_tetrahedron[RefSimplex<3>::side_lines[j][i]], i);
 		}
 	}
 	/*
@@ -261,6 +262,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
 				IP13s[IP13s.size()-2].setLocalCoords2(interpolovane);
 				IP13s[IP13s.size()-2].setLocalCoords1(inter);
+				IP13s[IP13s.size()-2].setIsVertex(true);
 				first_theta = theta;
 			}
 			// Druhá souřadnice leží uvnitř čtyřstěnu
@@ -270,6 +272,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				arma::vec::fixed<4> interpolovane2 = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].getLocalCoords2(), IP13s[IP13s.size()-1].getLocalCoords2(), first_theta, second_theta,theta2);
 				IP13s[IP13s.size()-1].setLocalCoords2(interpolovane2);
 				IP13s[IP13s.size()-1].setLocalCoords1(inter2);
+				IP13s[IP13s.size()-1].setIsVertex(true);
 			}
 		}
 	}
@@ -336,6 +339,10 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::setPluckerProduct(double* numb
 	CI12[index_CI].setPluckerProduct(number, index_edge);
 };
 
+double* ComputeIntersection<Simplex<1>, Simplex<3>>::getPluckerProduct(unsigned int index_CI, unsigned index_edge){
+	return CI12[index_CI].getPluckerProduct(index_edge);
+};
+
 /****************************************************************
  * METODY PRO SIMPLEX 2 A SIMPLEX 3
  ****************************************************************/
@@ -398,68 +405,155 @@ for(unsigned int i = 0; i < 6;i++){
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lokalni_mnohouhelnik){
 
-	// čekat dokud se nenalezne první průsečík -> pak pokračovat jiným algoritmem
-	// == tady bude optimalizovaný algoritmus
-
-
-
-
-	// hrubý algoritmus
-	arma::vec3 docasna;
-	double c = 0;
 	IntersectionPoint<1,2> IP;
 	std::vector<IntersectionPoint<1,3>> IP13s;
 	int pocet_pruniku = 0;
 	int pocet_13_pruniku;
 
-	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
-	for(unsigned int i = 0; i < 6;i++){
-		if(CI12[i].compute(IP)){
-			pocet_pruniku++;
-			IP.setSide1(i);
-			if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
-								IP.print();
-								IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP);
-								IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
-								//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
-								IP23.print();
-								lokalni_mnohouhelnik.addIP(IP23);
-			}
-		}
-	}
+	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
+		for(unsigned int i = 0; i < 3;i++){
+			pocet_13_pruniku = CI13[i].compute(IP13s);
+			//(triange->getAbscissa(i)).toString();
+			// Vždy by měl být počet průniku 2 nebo 0
+			if(pocet_13_pruniku == 2){
+				cout << "Stena:" << IP13s[IP13s.size() - 2].getSide2();
+				// pokud se jedná o druhou hranu (index 1) - je opačná orientace
 
+				//if((IP13s[IP13s.size() - 2].getOrientation() == 1)){
+				//if((i != 1 && IP13s[IP13s.size() - 2].getOrientation() == 1) || (i == 1 && IP13s[IP13s.size() - 2].getOrientation() == 0)){
+				//cout << "HOOOODOOROROORORODO" << endl;
+					/*if(IP13s[IP13s.size() - 2].getSide2() == 1 || IP13s[IP13s.size() - 2].getSide2() == 3 || i != 1){
+
+						IntersectionPoint<1,3> sw = IP13s[IP13s.size() - 2];
+						IP13s[IP13s.size() - 2] = IP13s[IP13s.size() - 1];
+						IP13s[IP13s.size() - 1] = sw;
+
+					}*/
+				//}
+
+
+				IP13s[IP13s.size() - 2].setSide1(i);
+				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
+				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
+				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				lokalni_mnohouhelnik.addIP(IP23);
+
+				/*unsigned int tracing_index_1;
+				if(IP13s[IP13s.size() - 2].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - 2].getLocalCoords1()[1] == 1){
+					// První průnik je vrchol
+					tracing_index_1 = 4 + (3-i)%3;
+				}else{
+					// Průnik je na stěně
+					tracing_index_1 = IP13s[IP13s.size() - 2].getSide2();
+				}
+				if(i == 1){
+				lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
+				}else{
+					if(lokalni_mnohouhelnik.getTracingTableValue(tracing_index_1, 1) == -1){
+						lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,1,lokalni_mnohouhelnik.getIPsize() - 1);
+					}else{
+						lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
+					}
+				}*/
+
+
+				IP13s[IP13s.size() - 1].setSide1(i);
+				IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
+				IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
+				IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				lokalni_mnohouhelnik.addIP(IP23);
+
+				/*unsigned int tracing_index_2;
+				if(IP13s[IP13s.size() - 1].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - 1].getLocalCoords1()[1] == 1){
+					// První průnik je vrchol
+					tracing_index_2 = 4 + (4-i)%3;
+				}else{
+					// Průnik je na stěně
+					tracing_index_2 = IP13s[IP13s.size() - 1].getSide2();
+				}
+				if(i == 1){
+				lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
+				}else{
+					if(lokalni_mnohouhelnik.getTracingTableValue(tracing_index_2, 1) == -1){
+					lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,1,lokalni_mnohouhelnik.getIPsize() - 1);
+					}else{
+						lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
+					}
+				}*/
+
+
+					//lokalni_mnohouhelnik.setTracingTable(tracing_index_2,0,tracing_index_1);
+
+			}
+
+			/*for(unsigned int j = pocet_13_pruniku; j > 0; j--){
+				// Možné optimalizace => pokud je spočten vrchol u 2. hrany a 1. bodu => bod byl spočten již dříve
+				// pokud je spočten vrchol u 3. hrany -> oba vrcholy byly již spočteny dříve
+				if(i == 1 && j == 1 && IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0){
+					continue;
+				}
+				if(i == 2 && (IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - j].getLocalCoords1()[1] == 1)){
+					continue;
+				}
+
+				IP13s[IP13s.size() - j].setSide1(i);
+				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - j]);
+				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
+				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				//IP23.print();
+				lokalni_mnohouhelnik.addIP(IP23);
+			}*/
+		}
 	// Optimalizace: znovu použití již vypočítaných součinů
-	for(unsigned int i = 0; i < 3;i++){
+	/*for(unsigned int i = 0; i < 3;i++){
 		CI13[i].setPluckerProduct(CI12[0].getPluckerProduct(i),0,0);
 		CI13[i].setPluckerProduct(CI12[1].getPluckerProduct(i),0,1);
 		CI13[i].setPluckerProduct(CI12[2].getPluckerProduct(i),0,2);
 		CI13[i].setPluckerProduct(CI12[3].getPluckerProduct(i),1,1);
 		CI13[i].setPluckerProduct(CI12[4].getPluckerProduct(i),1,2);
 		CI13[i].setPluckerProduct(CI12[5].getPluckerProduct(i),2,2);
-	}
+	}*/
 
-
-	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 	for(unsigned int i = 0; i < 3;i++){
-		pocet_13_pruniku = CI13[i].compute(IP13s);
-		for(unsigned int j = pocet_13_pruniku; j > 0; j--){
-			// Možné optimalizace => pokud je spočten vrchol u 2. hrany a 1. bodu => bod byl spočten již dříve
-			// pokud je spočten vrchol u 3. hrany -> oba vrcholy byly již spočteny dříve
-			if(i == 1 && j == 1 && IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0){
-				continue;
-			}
-			if(i == 2 && (IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - j].getLocalCoords1()[1] == 1)){
-				continue;
-			}
-
-			IP13s[IP13s.size() - j].setSide1(i);
-			IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - j]);
-			IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-			IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
-			//IP23.print();
-			lokalni_mnohouhelnik.addIP(IP23);
-		}
+		CI12[0].setPluckerProduct(CI13[i].getPluckerProduct(0,0),i);
+		CI12[1].setPluckerProduct(CI13[i].getPluckerProduct(0,1),i);
+		CI12[2].setPluckerProduct(CI13[i].getPluckerProduct(0,2),i);
+		CI12[3].setPluckerProduct(CI13[i].getPluckerProduct(1,1),i);
+		CI12[4].setPluckerProduct(CI13[i].getPluckerProduct(1,2),i);
+		CI12[5].setPluckerProduct(CI13[i].getPluckerProduct(2,2),i);
 	}
+
+	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
+		for(unsigned int i = 0; i < 6;i++){
+			if(CI12[i].compute(IP)){
+				pocet_pruniku++;
+				IP.setSide1(i);
+				if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
+									IP.print();
+									IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP);
+									IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
+									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
+									IP23.print();
+									lokalni_mnohouhelnik.addIP(IP23);
+
+									/*cout << "PPPPPPPPPPPPPPPPPPPP" << endl;
+
+									unsigned int side1 = RefSimplex<3>::line_sides[IP.getSide1()][IP.getOrientation()];
+									unsigned int side2 = RefSimplex<3>::line_sides[IP.getSide1()][1-IP.getOrientation()];
+
+									lokalni_mnohouhelnik.setTracingTable(side1, 0, side2);
+									if(lokalni_mnohouhelnik.getTracingTableValue(side1,2) == -1){
+										lokalni_mnohouhelnik.setTracingTable(side1, 2, lokalni_mnohouhelnik.getIPsize() - 1);
+									}else{
+										lokalni_mnohouhelnik.setTracingTable(side1, 1, lokalni_mnohouhelnik.getTracingTableValue(side1, 2));
+										lokalni_mnohouhelnik.setTracingTable(side1, 2, lokalni_mnohouhelnik.getIPsize() - 1);
+
+									}*/
+				}
+			}
+		}
+
+
 };
 
 
