@@ -13,6 +13,9 @@ InspectElements::InspectElements(){};
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 	//projeti.assign(sit->n_elements(),false);
 
+	ComputeIntersections23();
+	return;
+
 	unsigned int elementLimit = 20;
 	unsigned int el2_idx;
 	unsigned int el3_idx;
@@ -59,6 +62,51 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 };
 
 InspectElements::~InspectElements(){};
+
+void InspectElements::ComputeIntersections23(){
+
+		unsigned int elementLimit = 20;
+		BIHTree bt(mesh, elementLimit);
+
+		FOR_ELEMENTS(mesh, elm) {
+			if (elm->dim() == 2) {
+
+				this->UpdateTriangle(elm);
+
+				std::vector<unsigned int> searchedElements;
+			    //TAbscissa ta;
+			    TTriangle tt;
+			    ElementFullIter efi = mesh->element(elm.index());
+			    //FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(efi, ta);
+	tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+				 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+				 TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
+
+			    //FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_triangle(efi,tt);
+			    //BoundingBox elementBoundingBox = ta.get_bounding_box();
+			    BoundingBox elementBoundingBox = tt.get_bounding_box();
+			    bt.find_bounding_box(elementBoundingBox, searchedElements);
+
+			    for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
+			    	int idx = *it;
+			        ElementFullIter ele = mesh->element( idx );
+			        if (ele->dim() == 3) {
+
+			        	this->UpdateTetrahedron(ele);
+
+			        	IntersectionLocal il(elm.index(), ele->index());
+			        	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+			        	CI_23.init();
+			        	CI_23.compute(il);
+			        	//il.printTracingTable();
+			        	il.tracePolygon();
+			        	all_intersections.push_back(il);
+
+			        }
+			    }
+			}
+		}
+};
 
 
 void InspectElements::UpdateTriangle(const ElementFullIter &element_2D){

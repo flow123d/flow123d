@@ -108,7 +108,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/mesh/site/triangle_tetrahedron13.msh", FilePath::input_file);
+	FilePath mesh_file("/mesh/triangle_tetrahedron.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
