@@ -412,7 +412,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 
 	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 		for(unsigned int i = 0; i < 3;i++){
-			pocet_13_pruniku = CI13[i].compute(IP13s);
+			pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
 			//(triange->getAbscissa(i)).toString();
 			// Vždy by měl být počet průniku 2 nebo 0
 			if(pocet_13_pruniku == 2){
@@ -432,7 +432,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 				//}
 
 
-				IP13s[IP13s.size() - 2].setSide1(i);
+				IP13s[IP13s.size() - 2].setSide1((3-i)%3);
 				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
 				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
 				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
@@ -457,7 +457,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 				}*/
 
 
-				IP13s[IP13s.size() - 1].setSide1(i);
+				IP13s[IP13s.size() - 1].setSide1((3-i)%3);
 				IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
 				IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
 				IP23 = IntersectionLocal::flipDimension<2,3>(IP32);

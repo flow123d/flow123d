@@ -111,7 +111,7 @@ public:
     			/*if(i_points[i].getOrientation() == 0){
     				j = 1;
     			}*/
-    			if((i_points[i].getSide2()%2) != i_points[i].getOrientation()){
+    			if((i_points[i].getSide2()%2) == i_points[i].getOrientation()){
     				j = 1;
     			}
 
@@ -143,24 +143,29 @@ public:
     				cout << "PRUSER" << endl;
     			}
 
-    			if(tracing_table(index1,1) == -1){
-					tracing_table(index1,1) = m;
-				}else{
-					tracing_table(index1,2) = m;
-				}
 
+    			if(m == 0 || m == 1){
+    				// začíná se zde polygon, přitom bod musí být brán jako koncový
+    				tracing_table(index1,2) = m;
+    			}else{
+					if(tracing_table(index1,1) == -1){
+						tracing_table(index1,1) = m;
+					}else{
+						tracing_table(index1,2) = m;
+					}
+    			}
 				if(tracing_table(index2,1) == -1){
 					tracing_table(index2,1) = n;
 				}else{
 					tracing_table(index2,2) = n;
 				}
 
-				if(i_points[m].getSide1() == 2){
+				/*if(i_points[m].getSide1() == 2){
 
 					int neto = tracing_table(index2,1);
 					tracing_table(index2,1) = tracing_table(index2,2);
 					tracing_table(index2,2) = neto;
-				}
+				}*/
 
 
 
@@ -168,6 +173,19 @@ public:
     			i++;
     		}else{
     			// jedná se o průniky 2 -> 1
+    			xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+    			unsigned int stena = i_points[i].getSide2();
+    			unsigned int index1 = RefSimplex<3>::line_sides[stena][i_points[i].getOrientation()];
+    			unsigned int index2 = RefSimplex<3>::line_sides[stena][1 - i_points[i].getOrientation()];
+    			tracing_table(index1,0) = index2;
+
+    			if(tracing_table(index1,1) == -1){
+					tracing_table(index1,1) = i;
+				}else{
+					tracing_table(index1,2) = i;
+				}
+
+
     		}
     	}
 
