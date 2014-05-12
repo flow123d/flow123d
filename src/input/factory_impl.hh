@@ -21,14 +21,14 @@ Registrar<Type>::Registrar(string name)
 	Factory<BaseType>::instance()->register_function(name, func);
 }
 
-
+/*
 template<class Type>
 Registrar<Type>::Registrar(string name, const boost::any& func)
 {
     // register the class factory function
 	Factory<BaseType>::instance()->register_function(name, func);
 }
-
+*/
 
 template<class Type>
 Factory<Type> * Factory<Type>::instance()

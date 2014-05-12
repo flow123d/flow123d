@@ -35,11 +35,16 @@ public:
 };
 
 
-
+/*
 template <int spacedim>
 const Input::Registrar< FactoryDerivedA<spacedim> >
     FactoryDerivedA<spacedim>::reg("FactoryDerivedA" + boost::lexical_cast<std::string>(spacedim),
 			function< shared_ptr< FactoryBase<spacedim> >(int, double) >( FactoryDerivedA<spacedim>::create_instance ) );
+*/
+
+template <int spacedim>
+const Input::Registrar< FactoryDerivedA<spacedim> >
+    FactoryDerivedA<spacedim>::reg("FactoryDerivedA", FactoryDerivedA<spacedim>::create_instance );
 
 
 template <int spacedim>

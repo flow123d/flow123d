@@ -30,6 +30,7 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "input/storage.hh"
 
 

@@ -10,7 +10,7 @@
 
 #include "input/accessors.hh"
 #include "input/type_record.hh"
-#include "fields/field_base.hh"
+//#include "fields/field_base.hh"
 
 #include <memory>
 #include <string>
@@ -36,6 +36,8 @@ public:
     /// register a factory function to create an instance of className
     void register_function(string name, const boost::any& func);
 
+    static void add(string name, const boost::any& func) {};
+
     /// create an instance of a registered class
     template<class... Arguments>
     shared_ptr<Type> create(string name, Arguments... arguments);
@@ -59,7 +61,12 @@ public:
 
 	Registrar(string className);
 
-	Registrar(string className, const boost::any& func);
+	//Registrar(string className, const boost::any& func);
+	template <class... args>
+	Registrar(string class_name, std::shared_ptr<BaseType>(* func)(args...) ) {
+	    auto func_wrapper = std::function<std::shared_ptr<BaseType>(args...)>(func);
+	    Factory<BaseType>::instance()->register_function(class_name, func_wrapper);
+	}
 };
 
 
