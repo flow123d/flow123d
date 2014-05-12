@@ -150,28 +150,6 @@ public:
     	set_solution(other.v_solution_);
     };
 
-    // Particular type of the linear system.
-    //LinSysType type;  //!< anyone can inquire my type
-
-    virtual void load_mesh( const int nDim, const int numNodes, const int numDofs,
-                            const std::vector<int> & inet, 
-                            const std::vector<int> & nnet, 
-                            const std::vector<int> & nndf, 
-                            const std::vector<int> & isegn, 
-                            const std::vector<int> & isngn, 
-                            const std::vector<int> & isvgvn,
-                            const std::vector<double> & xyz,
-                            const std::vector<double> & element_permeability,
-                            const int meshDim )
-    {
-        ASSERT( false, "Function load_mesh is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-
-    virtual void load_diagonal( std::map<int,double> & diag )
-    {
-        ASSERT( false, "Function load_diagonal is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-
     /**
      *  Returns global system size.
      */
@@ -260,11 +238,17 @@ public:
         ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the matrix 
+     */
     virtual PetscErrorCode mat_zero_entries()
     {
     	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the right-hand side 
+     */
     virtual PetscErrorCode rhs_zero_entries()
     {
     	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );

@@ -26,8 +26,6 @@ message(STATUS "BDDCML_ROOT: ${BDDCML_ROOT}")
 find_path (BDDCML_INCLUDES bddcml_interface_c.h  HINTS ${BDDCML_ROOT}/src )
 find_library (BDDCML_LIBRARY NAMES bddcml  HINTS ${BDDCML_ROOT}/lib )
 
-
-
 if (BDDCML_INCLUDES AND BDDCML_LIBRARY)
   message(STATUS "found: ${BDDCML_INCLUDES}, ${BDDCML_LIBRARY} ")
   set(BDDCML_LAST_ROOT ${BDDCML_ROOT} CACHE FILEPATH "_Clearad_") 
@@ -56,6 +54,7 @@ show :
   endmacro (BDDCML_GET_VARIABLE)
 
   bddcml_get_variable("BDDCML_LINK_SEQUENCE" BDDCML_LINK_SEQ)
+  bddcml_get_variable("BDDCML_CDEFS" BDDCML_CDEFS)
   bddcml_get_variable("BDDCML_INC" BDDCML_INC)
   STRING(REGEX REPLACE "( |^)-I" ";"  BDDCML_INC_DIRS ${BDDCML_INC})
   #message(STATUS ${BDDCML_INC_DIRS})
@@ -64,6 +63,7 @@ show :
   
  
   #message(STATUS "BDDCML_LIBS: ${BDDCML_LINK_SEQ}")
+  #message(STATUS "BDDCML_CDEFS: ${BDDCML_CDEFS}")
 
   #file (REMOVE ${config_makefile})
 endif()  

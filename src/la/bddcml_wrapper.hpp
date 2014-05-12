@@ -14,6 +14,7 @@
 
 #include <system/global_defs.h>
 #include <system/xio.h>
+#include "system/sys_profiler.hh"
 
 extern "C" { 
     #include <bddcml_interface_c.h>
@@ -26,8 +27,8 @@ namespace la{
 
     namespace detail_{
 
-        template< typename NODE, typename MAPTYPE >
-        int getLocalNumber( NODE * np, MAPTYPE & map ) {
+        template< typename DOFHOLDER, typename MAPTYPE >
+        int getLocalNumber( DOFHOLDER * np, MAPTYPE & map ) {
 
             unsigned globalIndex = np -> giveId( );
 
@@ -107,8 +108,6 @@ public:
                       const std::vector<double> & element_data,
                       const int meshDim = 0 );
 
-    void loadDiagonal( std::map<int,double> & diag );
-
     //! Prepare assembly of matrix - reserve space in underlying coordinate matrix object
     void prepareMatAssembly( unsigned numElements, unsigned elMatSize );
 
@@ -139,6 +138,15 @@ public:
     //! \param[in]  index   Global index of DOF to fix
     //! \param[in]  scalar  Value to put on diagonal (default 1.)
     void fixDOF( const unsigned index, const double scalar = 1. );
+
+    //! Insert a value to diagonal for creating weights in BDDC
+    //!
+    //! \param[in]  index   Global index of DOF 
+    //! \param[in]  value   Value to put on diagonal 
+    void insertToDiagonalWeights( const int & index, const double & value );
+
+    //! Finalize assembly of diagonal
+    void finishDiagAssembly( );
 
     //! Solve the system
     void solveSystem( double tol = 1.e-7,                        //!< tolerance on relative residual ||res||/||rhs||
@@ -254,7 +262,8 @@ private:
 
     la::MatrixCoo<int,double>  coo_;       //!< matrix in coordinate format (COO)
     bool                 isMatAssembled_;  //!< true if matrix is assembled
-    std::map<int,double> diag_;            //!< diagonal of subdomain matrix in sparse format and global numbers
+    la::MatrixCoo<int,double> diagWeightsCoo_; //!< diagonal of subdomain matrix in sparse format and global numbers
+    bool                 isDiagAssembled_; //!< true if diagonal is assembled
 
     std::vector<double>  rhsVec_;          //!< vector with RHS values restricted to subdomain, i.e. values are repeated at shared nodes
     double               normRhs_;         //!< norm of the global right-hand side
