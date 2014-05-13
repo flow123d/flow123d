@@ -344,13 +344,16 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    using namespace Input;
-    std::string ini_fname;
-
-    F_ENTRY;
-    Application app(argc, argv);
-
-    app.init(argc, argv);
+    try {
+        Application app(argc, argv);
+        app.init(argc, argv);
+    } catch (std::exception & e) {
+        std::cerr << e.what();
+        return ApplicationBase::exit_failure;
+    } catch (...) {
+        std::cerr << "Unknown exception" << endl;
+        return ApplicationBase::exit_failure;
+    }
 
     // Say Goodbye
     return ApplicationBase::exit_success;
