@@ -1,7 +1,17 @@
 --------------------------------------------------------------------------
+Petsc Release Version 3.4.0, May, 13, 2013 
+       The PETSc Team
+    petsc-maint@mcs.anl.gov
+ http://www.mcs.anl.gov/petsc/
+See docs/changes/index.html for recent updates.
+See docs/faq.html for problems.
+See docs/manualpages/index.html for help. 
+Libraries linked from /home/jb/local/petsc-3.4.0/gcc_4.8_O3_native_full/lib
+--------------------------------------------------------------------------
 Options for all PETSc programs:
+ -help: prints help method for each option
  -on_error_abort: cause an abort when an error is detected. Useful 
-       only when run in the debugger
+        only when run in the debugger
  -on_error_attach_debugger [gdb,dbx,xxgdb,ups,noxterm]
        start the debugger in new xterm
        unless noxterm is given
@@ -21,7 +31,8 @@ Options for all PETSc programs:
  -malloc_dump <optional filename>: dump list of unfreed memory at conclusion
  -malloc: use our error checking malloc
  -malloc no: don't use error checking malloc
- -mallocinfo: prints total memory usage
+ -malloc_info: prints total memory usage
+ -malloc_log: keeps log of all memory allocations
  -malloc_debug: enables extended checking for memory corruption
  -options_table: dump list of options inputted
  -options_left: dump list of unused options
@@ -30,8 +41,9 @@ Options for all PETSc programs:
  -shared_tmp: tmp directory is shared by all processors
  -not_shared_tmp: each processor has separate tmp directory
  -memory_info: print memory usage at end of run
+ -server <port>: Run PETSc webserver (default port is 8080) see PetscWebServe()
  -get_total_flops: total flops over all processors
- -log[_all _summary]: logging objects and events
+ -log[_summary _summary_python]: logging objects and events
  -log_trace [filename]: prints trace of all PETSc calls
  -info <optional filename>: print informative messages about the calculations
  -v: prints PETSc version number and release date
@@ -43,109 +55,84 @@ Options for all PETSc programs:
  -info_exclude: <null,vec,mat,pc,ksp,snes,ts>
 -----------------------------------------------
 Options database options -------------------------------------------------
-  -options_monitor <stdout>: Monitor options database (PetscOptionsSetMonitor)
-  -options_cancelmonitors: Cancel all options database monitors (PetscOptionsClearMonitor)
-Vector Options -------------------------------------------------
-  -vec_view: Print vector to stdout (VecView)
-  -vec_view_matlab: Print vector to stdout in a format Matlab can read (VecView)
-  -vec_view_socket: Send vector to socket (can be read from matlab) (VecView)
-  -vec_view_binary: Save vector to file in binary format (VecView)
-Vector Options -------------------------------------------------
-  -vec_view: Print vector to stdout (VecView)
-  -vec_view_matlab: Print vector to stdout in a format Matlab can read (VecView)
-  -vec_view_socket: Send vector to socket (can be read from matlab) (VecView)
-  -vec_view_binary: Save vector to file in binary format (VecView)
+  -options_monitor <stdout>: Monitor options database (PetscOptionsMonitorSet)
+  -options_monitor_cancel: <FALSE> Cancel all options database monitors (PetscOptionsMonitorCancel)
+Thread comm - setting number of threads -------------------------------------------------
+  -threadcomm_nthreads <1>: number of threads to use in the thread communicator (PetscThreadCommSetNThreads)
+Thread comm - setting thread affinities -------------------------------------------------
+  -threadcomm_affinities <48613168>: Set core affinities of threads (PetscThreadCommSetAffinities)
+Thread comm - setting number of kernels -------------------------------------------------
+  -threadcomm_nkernels <16>: number of kernels that can be launched simultaneously ()
+Thread comm - setting threading model -------------------------------------------------
+  -threadcomm_type <nothread>: Thread communicator model (one of) nothread (PetscThreadCommSetType)
 Options for SEQAIJ matrix -------------------------------------------------
-  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) ((null))
-  -mat_no_inode: <FALSE> Do not optimize for inodes (slower) ((null))
-  -mat_inode_limit <5>: Do not use inodes larger then this value ((null))
-Matrix Options -------------------------------------------------
-  -mat_view_info: Information on matrix size (MatView)
-  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
-  -mat_view: Print matrix to stdout (MatView)
-  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
-  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
-  -mat_view_binary: Save matrix to file in binary format (MatView)
-  -mat_view_draw: Draw the matrix nonzero structure (MatView)
-Matrix Options -------------------------------------------------
-  -mat_view_info: Information on matrix size (MatView)
-  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
-  -mat_view: Print matrix to stdout (MatView)
-  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
-  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
-  -mat_view_binary: Save matrix to file in binary format (MatView)
-  -mat_view_draw: Draw the matrix nonzero structure (MatView)
-Preconditioner (PC) Options -------------------------------------------------
-  -pc_type Preconditioner:(one of) none jacobi pbjacobi bjacobi sor lu shell mg
-      eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit tfs (PCSetType)
+  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) (None)
+  -mat_no_inode: <FALSE> Do not optimize for inodes -slower- (None)
+  -mat_inode_limit <5>: Do not use inodes larger then this value (None)
+Matrix (Mat) options -------------------------------------------------
+  -matmatmult_scalable: <FALSE> Use a scalable but slower C=A*B ()
+  -matmatmult_scalable_fast: <FALSE> Use a scalable but slower C=A*B ()
+  -matmatmult_heap: <FALSE> Use heap implementation of symbolic factorization C=A*B ()
+  -matmatmult_btheap: <FALSE> Use btheap implementation of symbolic factorization C=A*B ()
+  -matmatmult_llcondensed: <FALSE> Use LLCondensed to for symbolic C=A*B ()
+Preconditioner (PC) options -------------------------------------------------
+  -pc_type <icc>: Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg
+      eisenstat ilu icc cholesky asm gasm ksp composite redundant nn mat fieldsplit galerkin exotic hmpi asa cp lsc redistribute svd gamg hypre pfmg syspfmg tfs (PCSetType)
+  -pc_use_amat: <FALSE> use Amat (instead of Pmat) to define preconditioner in nested inner solves (PCSetUseAmat)
   ILU Options
+  -pc_factor_in_place: <FALSE> Form factored matrix in the same memory as the matrix (PCFactorSetUseInPlace)
+  -pc_factor_fill <1>: Expected non-zeros in factored matrix (PCFactorSetFill)
+  -pc_factor_shift_type <INBLOCKS> (choose one of) NONE NONZERO POSITIVE_DEFINITE INBLOCKS (PCFactorSetShiftType)
+  -pc_factor_shift_amount <2.22045e-14>: Shift added to diagonal (PCFactorSetShiftAmount)
+  -pc_factor_zeropivot <2.22045e-14>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
+  -pc_factor_column_pivot <-2>: Column pivot tolerance (used only for some factorization) (PCFactorSetColumnPivot)
+  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix dense blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
+  -pc_factor_reuse_fill: <FALSE> Use fill from previous factorization (PCFactorSetReuseFill)
+  -pc_factor_reuse_ordering: <FALSE> Reuse ordering from previous factorization (PCFactorSetReuseOrdering)
+  -pc_factor_mat_ordering_type <natural>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
+  -pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
   -pc_factor_levels <0>: levels of fill (PCFactorSetLevels)
-  -pc_factor_in_place: do factorization in place (PCFactorSetUseInPlace)
-  -pc_factor_diagonal_fill: Allow fill into empty diagonal entry (PCFactorSetAllowDiagonalFill)
-  -pc_factor_reuse_fill: Reuse fill ratio from previous factorization (PCFactorSetReuseFill)
-  -pc_factor_reuse_ordering: Reuse previous reordering (PCFactorSetReuseOrdering)
-  -pc_factor_shift_nonzero: Shift added to diagonal (PCFactorSetShiftNonzero)
-  -pc_factor_shift_nonzero <0>: Shift added to diagonal (PCFactorSetShiftNonzero)
-  -pc_factor_shift_positive_definite: Manteuffel shift applied to diagonal (PCFactorSetShiftPd)
-  -pc_factor_zeropivot <1e-12>: Pivot is considered zero if less than (PCFactorSetZeroPivot)
-  -pc_factor_use_drop_tolerance <-2>: <dt,dtcol,maxrowcount> (PCFactorSetUseDropTolerance)
-  -pc_factor_fill <1>: Expected fill in factorization (PCFactorSetFill)
+  -pc_factor_diagonal_fill: <FALSE> Allow fill into empty diagonal entry (PCFactorSetAllowDiagonalFill)
   -pc_factor_nonzeros_along_diagonal: Reorder to remove zeros from diagonal (PCFactorReorderForNonzeroDiagonal)
-  -pc_factor_mat_ordering_type Reorder to reduce nonzeros in ILU:(one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrdering)
-  -pc_factor_pivot_in_blocks: <TRUE> Pivot inside matrix blocks for BAIJ and SBAIJ (PCFactorSetPivotInBlocks)
-Krylov Method (KSP) Options -------------------------------------------------
-  -ksp_type Krylov method:(one of) cg cgne stcg richardson chebychev gmres tcqmr bcgs
-      bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd (KSPSetType)
+Krylov Method (KSP) options -------------------------------------------------
+  -ksp_type <gmres>: Krylov method (one of) cg groppcg pipecg cgne nash stcg gltr richardson
+      chebyshev gmres tcqmr bcgs ibcgs fbcgs fbcgsr bcgsl cgs tfqmr cr pipecr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd gcr pgmres specest dgmres (KSPSetType)
   -ksp_max_it <10000>: Maximum number of iterations (KSPSetTolerances)
-  -ksp_rtol <1e-06>: Relative decrease in residual norm (KSPSetTolerances)
-  -ksp_atol <1e-11>: Absolute value of residual norm (KSPSetTolerances)
+  -ksp_rtol <1e-12>: Relative decrease in residual norm (KSPSetTolerances)
+  -ksp_atol <1e-12>: Absolute value of residual norm (KSPSetTolerances)
   -ksp_divtol <10000>: Residual norm increase cause divergence (KSPSetTolerances)
-  -ksp_converged_use_initial_residual_norm: Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
-  -ksp_converged_use_min_initial_residual_norm: Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_converged_use_initial_residual_norm: <FALSE> Use initial residual residual norm for computing relative convergence (KSPDefaultConvergedSetUIRNorm)
+  -ksp_converged_use_min_initial_residual_norm: <FALSE> Use minimum of initial residual norm and b for computing relative convergence (KSPDefaultConvergedSetUMIRNorm)
+  -ksp_initial_guess_nonzero: <FALSE> Use the contents of the solution vector for initial guess (KSPSetInitialNonzero)
   -ksp_knoll: <FALSE> Use preconditioner applied to b for initial guess (KSPSetInitialGuessKnoll)
-  -ksp_norm_type <preconditioned> (choose one of) none preconditioned unpreconditioned natural
-  -ksp_diagonal_scale: Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
-  -ksp_diagonal_scale_fix: Fix diagonaled scaled matrix after solve (KSPSetDiagonalScaleFix)
-  -ksp_constant_null_space: Add constant null space to Krylov solver (KSPSetNullSpace)
-  -ksp_converged_reason: Print reason for converged or diverged (KSPSolve)
-  -ksp_cancelmonitors: Remove any hardwired monitor routines (KSPClearMonitor)
-  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPSetMonitor)
-  -ksp_vecmonitor: Monitor solution graphically (KSPSetMonitor)
-  -ksp_truemonitor <stdout>: Monitor preconditioned residual norm (KSPSetMonitor)
-  -ksp_singmonitor <stdout>: Monitor singular values (KSPSetMonitor)
-  -ksp_smonitor <stdout>: Monitor preconditioned residual norm with fewer digits (KSPSetMonitor)
-  -ksp_xmonitor: Monitor graphically preconditioned residual norm (KSPSetMonitor)
-  -ksp_xtruemonitor: Monitor graphically true residual norm (KSPSetMonitor)
-  Pick at most one of -------------
-    -ksp_left_pc: Use left preconditioning (KSPSetPreconditionerSide)
-    -ksp_right_pc: Use right preconditioning (KSPSetPreconditionerSide)
-    -ksp_symmetric_pc: Use symmetric (factorized) preconditioning (KSPSetPreconditionerSide)
-  -ksp_compute_singularvalues: Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
-  -ksp_compute_eigenvalues: Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
-  -ksp_plot_eigenvalues: Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
-  KSP GMRES Options
-  -ksp_gmres_restart <30>: Number of Krylov search directions (KSPGMRESSetRestart)
-  -ksp_gmres_haptol <1e-30>: Tolerance for exact convergence (happy ending) (KSPGMRESSetHapTol)
-  -ksp_gmres_preallocate: Preallocate Krylov vectors (KSPGMRESSetPreAllocateVectors)
-  Pick at most one of -------------
-    -ksp_gmres_classicalgramschmidt: Classical (unmodified) Gram-Schmidt (fast) (KSPGMRESSetOrthogonalization)
-    -ksp_gmres_modifiedgramschmidt: Modified Gram-Schmidt (slow,more stable) (KSPGMRESSetOrthogonalization)
-  -ksp_gmres_cgs_refinement_type <REFINE_NEVER> (choose one of) REFINE_NEVER REFINE_IFNEEDED REFINE_ALWAYS
-  -ksp_gmres_krylov_monitor: Plot the Krylov directions (KSPSetMonitor)
+  -ksp_error_if_not_converged: <FALSE> Generate error if solver does not converge (KSPSetErrorIfNotConverged)
+  -ksp_fischer_guess <0>: Use Paul Fischer's algorithm for initial guess (KSPSetUseFischerGuess)
+  -ksp_convergence_test <default> (choose one of) default skip (KSPSetConvergenceTest)
+  -ksp_norm_type <PRECONDITIONED> (choose one of) NONE PRECONDITIONED UNPRECONDITIONED NATURAL (KSPSetNormType)
+  -ksp_check_norm_iteration <-1>: First iteration to compute residual norm (KSPSetCheckNormIteration)
+  -ksp_lag_norm: <FALSE> Lag the calculation of the residual norm (KSPSetLagNorm)
+  -ksp_diagonal_scale: <FALSE> Diagonal scale matrix before building preconditioner (KSPSetDiagonalScale)
+  -ksp_diagonal_scale_fix: <FALSE> Fix diagonally scaled matrix after solve (KSPSetDiagonalScaleFix)
+  -ksp_constant_null_space: <FALSE> Add constant null space to Krylov solver (KSPSetNullSpace)
+  -ksp_converged_reason: <FALSE> Print reason for converged or diverged (KSPSolve)
+  -ksp_monitor_cancel: <FALSE> Remove any hardwired monitor routines (KSPMonitorCancel)
+  -ksp_monitor <stdout>: Monitor preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_range <stdout>: Monitor percent of residual entries more than 10 percent of max (KSPMonitorRange)
+  -ksp_monitor_solution: <FALSE> Monitor solution graphically (KSPMonitorSet)
+  -ksp_monitor_true_residual <stdout>: Monitor true residual norm (KSPMonitorSet)
+  -ksp_monitor_max <stdout>: Monitor true residual max norm (KSPMonitorSet)
+  -ksp_monitor_singular_value <stdout>: Monitor singular values (KSPMonitorSet)
+  -ksp_monitor_short <stdout>: Monitor preconditioned residual norm with fewer digits (KSPMonitorSet)
+  -ksp_monitor_python <(null)>: Use Python function (KSPMonitorSet)
+  -ksp_monitor_lg_residualnorm: <FALSE> Monitor graphically preconditioned residual norm (KSPMonitorSet)
+  -ksp_monitor_lg_true_residualnorm: <FALSE> Monitor graphically true residual norm (KSPMonitorSet)
+  -ksp_monitor_lg_range: <FALSE> Monitor graphically range of preconditioned residual norm (KSPMonitorSet)
+  -ksp_pc_side <LEFT> (choose one of) LEFT RIGHT SYMMETRIC (KSPSetPCSide)
+  -ksp_compute_singularvalues: <FALSE> Compute singular values of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_compute_eigenvalues: <FALSE> Compute eigenvalues of preconditioned operator (KSPSetComputeSingularValues)
+  -ksp_plot_eigenvalues: <FALSE> Scatter plot extreme eigenvalues (KSPSetComputeSingularValues)
+  KSP BCGS Options
   -ksp_view: View linear solver parameters (KSPView)
-  -ksp_view: View linear solver parameters (KSPView)
-Options for SEQAIJ matrix -------------------------------------------------
-  -mat_no_unroll: <FALSE> Do not optimize for inodes (slower) ((null))
-  -mat_no_inode: <FALSE> Do not optimize for inodes (slower) ((null))
-  -mat_inode_limit <5>: Do not use inodes larger then this value ((null))
-Matrix Options -------------------------------------------------
-  -mat_view_info: Information on matrix size (MatView)
-  -mat_view_info_detailed: Nonzeros in the matrix (MatView)
-  -mat_view: Print matrix to stdout (MatView)
-  -mat_view_matlab: Print matrix to stdout in a format Matlab can read (MatView)
-  -mat_view_socket: Send matrix to socket (can be read from matlab) (MatView)
-  -mat_view_binary: Save matrix to file in binary format (MatView)
-  -mat_view_draw: Draw the matrix nonzero structure (MatView)
 
     HYPRE Parasails Options
   -pc_hypre_parasails_nlevels <1>: Number of number of levels (None)
@@ -174,8 +161,3 @@ Matrix Options -------------------------------------------------
   -sub_pc_factor_mat_ordering_type <natural>: Reordering to reduce nonzeros in factored matrix (one of) natural nd 1wd rcm qmd rowlength (PCFactorSetMatOrderingType)
   -sub_pc_factor_mat_solver_package <petsc>: Specific direct solver to use (MatGetFactor)
   -sub_pc_factor_levels <0>: levels of fill (PCFactorSetLevels)
-
-
-  
-
-  
