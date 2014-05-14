@@ -450,8 +450,8 @@ endif()
 
 # optionaly we use Python interface
 # We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
-if (CYGWIN)
-else (CYGWIN) 
+#if (CYGWIN)
+#else (CYGWIN) 
   if (USE_PYTHON)
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
@@ -462,7 +462,7 @@ else (CYGWIN)
 	set(PYTHON_LIBRARIES "")
     endif()
   endif()  
-endif(CYGWIN)
+#endif(CYGWIN)
 
 message(STATUS "\n ======================================================= ")
 
@@ -675,7 +675,7 @@ SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "8")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "1")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
