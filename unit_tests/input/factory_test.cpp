@@ -17,17 +17,19 @@
 #include <input/type_output.hh>
 #include <input/factory.hh>
 
-#include "factory_base.h"
-#include "factory_derived_a.h"
-#include "factory_derived_b.h"
+#include "base.h"
+#include "descendant_a.h"
+#include "descendant_b.h"
 
 
-template class FactoryBase<3>;
-template class FactoryDerivedA<3>;
-template class FactoryDerivedB<3>;
+template class Base<3>;
+template class DescendantA<3>;
+template class DescendantB<3>;
 
 
 TEST(FactoryTest, ClassHierarchy) {
-	Input::Factory< FactoryBase<3> >::instance()->create("FactoryDerivedA", 2, 0.5);
-	Input::Factory< FactoryBase<3> >::instance()->create("FactoryDerivedB");
+	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 2, time = 0.5",
+			Input::Factory< Base<3> >::instance()->create("DescendantA", 2, 0.5).get()->get_infotext().c_str());
+	EXPECT_STREQ("Constructor of DescendantB class with spacedim = 3",
+			Input::Factory< Base<3> >::instance()->create("DescendantB").get()->get_infotext().c_str());
 }
