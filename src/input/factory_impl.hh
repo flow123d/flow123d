@@ -14,15 +14,6 @@ namespace Input {
 using namespace std;
 
 template<class Type>
-template <class... args>
-Registrar<Type>::Registrar(string class_name, std::shared_ptr<BaseType>(* func)(args...) )
-{
-	auto func_wrapper = std::function<std::shared_ptr<BaseType>(args...)>(func);
-	Factory<BaseType>::register_function(class_name, func_wrapper);
-}
-
-
-template<class Type>
 Factory<Type> * Factory<Type>::instance()
 {
     static Factory<Type> factory;

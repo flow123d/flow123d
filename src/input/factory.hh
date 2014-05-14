@@ -46,18 +46,6 @@ private:
 
 };
 
-
-// A helper class to register a factory function
-template<class Type>
-class Registrar {
-public:
-	typedef typename Type::FactoryBaseType BaseType;
-
-	template <class... args>
-	Registrar(string class_name, std::shared_ptr<BaseType>(* func)(args...) );
-};
-
-
 } // closing namespace Input
 
 // include implementation of templates and inline methods

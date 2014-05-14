@@ -182,8 +182,8 @@ public:
 	static void create_point(const Element *ele, TPoint &p);
 
 private:
-    /// Registrar of class to factory
-    static const Input::Registrar< FieldInterpolatedP0 > registrar;
+    /*/// Registrar of class to factory
+    static const Input::Registrar< FieldInterpolatedP0 > registrar;*/
 };
 
 

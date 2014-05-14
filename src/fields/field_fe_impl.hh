@@ -24,9 +24,9 @@ namespace it = Input::Type;
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 const Input::Registrar< FieldFE<spacedim, Value> > FieldFE<spacedim, Value>::registrar =
-		Input::Registrar< FieldFE<spacedim, Value> >("FieldFE");
+		Input::Registrar< FieldFE<spacedim, Value> >("FieldFE");*/
 
 
 

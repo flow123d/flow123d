@@ -81,8 +81,8 @@ private:
     // Necessary in the case of an error during parsing.
     std::string value_input_address_;
 
-    /// Registrar of class to factory
-    static const Input::Registrar< FieldFormula > registrar;
+    /* /// Registrar of class to factory
+    static const Input::Registrar< FieldFormula > registrar;*/
 
 
 };

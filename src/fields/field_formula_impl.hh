@@ -44,9 +44,9 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 const Input::Registrar< FieldFormula<spacedim, Value> > FieldFormula<spacedim, Value>::registrar =
-		Input::Registrar< FieldFormula<spacedim, Value> >("FieldFormula");
+		Input::Registrar< FieldFormula<spacedim, Value> >("FieldFormula");*/
 
 
 

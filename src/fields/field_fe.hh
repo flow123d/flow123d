@@ -74,8 +74,8 @@ private:
     Mapping<2,3> *map2_;
     Mapping<3,3> *map3_;
 
-    /// Registrar of class to factory
-    static const Input::Registrar< FieldFE > registrar;
+    /* /// Registrar of class to factory
+    static const Input::Registrar< FieldFE > registrar;*/
 };
 
 
