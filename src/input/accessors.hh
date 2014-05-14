@@ -462,6 +462,10 @@ public:
     string address_string() const;
 
 
+    template<class Type, class... Arguments>
+    std::shared_ptr<Type> factory(Arguments... arguments);
+
+
 private:
     /// Corresponding Type::AbstractRecord object.
     Input::Type::AbstractRecord record_type_ ;

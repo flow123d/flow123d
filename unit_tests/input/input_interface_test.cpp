@@ -18,6 +18,10 @@
 
 #include "system/file_path.hh"
 
+#include "base.h"
+#include "descendant_a.h"
+#include "descendant_b.h"
+
 
 
 
@@ -409,4 +413,29 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     }
 }
 
+
+template class Base<3>;
+template class DescendantA<3>;
+template class DescendantB<3>;
+
+
+TEST_F(InputInterfaceTest, AbstractFromFactory) {
+    using namespace Input;
+
+    Address addr(storage, main);
+    Record record(addr, *main);
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
+    	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 3, time = 0.25",
+    			( a_rec.factory< Base<3>, int, double >(3, 0.25) ).get()->get_infotext().c_str() );
+    }
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_2");
+    	EXPECT_STREQ("Constructor of DescendantB class with spacedim = 3",
+    			a_rec.factory< Base<3> >().get()->get_infotext().c_str());
+    }
+
+}
 
