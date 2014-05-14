@@ -8,10 +8,6 @@
 #ifndef FIELD_RECORD_FACTORY_HH_
 #define FIELD_RECORD_FACTORY_HH_
 
-#include "input/accessors.hh"
-#include "input/type_record.hh"
-//#include "fields/field_base.hh"
-
 #include <memory>
 #include <string>
 #include <map>
@@ -28,15 +24,13 @@ using namespace std;
 template <class Type>
 class Factory
 {
-	friend class AbstractRecord;
 public:
     /// Get the single instance of the factory
     static Factory * instance();
 
-    /// register a factory function to create an instance of className
-    void register_function(string name, const boost::any& func);
-
-    static void add(string name, const boost::any& func) {};
+    /// register a factory function to create an instance of class_name
+    template <class... Arguments>
+    static int register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) );
 
     /// create an instance of a registered class
     template<class... Arguments>
@@ -59,14 +53,8 @@ class Registrar {
 public:
 	typedef typename Type::FactoryBaseType BaseType;
 
-	Registrar(string className);
-
-	//Registrar(string className, const boost::any& func);
 	template <class... args>
-	Registrar(string class_name, std::shared_ptr<BaseType>(* func)(args...) ) {
-	    auto func_wrapper = std::function<std::shared_ptr<BaseType>(args...)>(func);
-	    Factory<BaseType>::instance()->register_function(class_name, func_wrapper);
-	}
+	Registrar(string class_name, std::shared_ptr<BaseType>(* func)(args...) );
 };
 
 

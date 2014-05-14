@@ -22,7 +22,11 @@ class FactoryDerivedB : public FactoryBase<spacedim>
 {
 public:
 	typedef FactoryBase<spacedim> FactoryBaseType;
-	static const Input::Registrar<FactoryDerivedB> reg;
+	static const int reg;
+
+	static shared_ptr< FactoryBase<spacedim> > create_instance() {
+		return make_shared< FactoryDerivedB<spacedim> >();
+	}
 
 	FactoryDerivedB();
 
@@ -30,8 +34,8 @@ public:
 
 
 template <int spacedim>
-const Input::Registrar< FactoryDerivedB<spacedim> >
-	FactoryDerivedB<spacedim>::reg("FactoryDerivedB");
+const int FactoryDerivedB<spacedim>::reg =
+		Input::Factory<FactoryBaseType>::register_function("FactoryDerivedB", FactoryDerivedB<spacedim>::create_instance );
 
 
 template <int spacedim>

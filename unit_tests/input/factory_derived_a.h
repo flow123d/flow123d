@@ -24,7 +24,7 @@ class FactoryDerivedA : public FactoryBase<spacedim>
 {
 public:
 	typedef FactoryBase<spacedim> FactoryBaseType;
-	static const Input::Registrar<FactoryDerivedA> reg;
+	static const int reg;
 
 	static shared_ptr< FactoryBase<spacedim> > create_instance(int n_comp, double time) {
 		return make_shared< FactoryDerivedA<spacedim> >(n_comp, time);
@@ -35,16 +35,9 @@ public:
 };
 
 
-/*
 template <int spacedim>
-const Input::Registrar< FactoryDerivedA<spacedim> >
-    FactoryDerivedA<spacedim>::reg("FactoryDerivedA" + boost::lexical_cast<std::string>(spacedim),
-			function< shared_ptr< FactoryBase<spacedim> >(int, double) >( FactoryDerivedA<spacedim>::create_instance ) );
-*/
-
-template <int spacedim>
-const Input::Registrar< FactoryDerivedA<spacedim> >
-    FactoryDerivedA<spacedim>::reg("FactoryDerivedA", FactoryDerivedA<spacedim>::create_instance );
+const int FactoryDerivedA<spacedim>::reg =
+		Input::Factory<FactoryBaseType>::register_function("FactoryDerivedA", FactoryDerivedA<spacedim>::create_instance );
 
 
 template <int spacedim>
