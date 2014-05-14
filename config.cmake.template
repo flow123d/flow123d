@@ -73,7 +73,7 @@
 # e.g.
 # make VERBOSE=1 all
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+#set(CMAKE_VERBOSE_MAKEFILE true)
 
 
 ### set compiler ###
