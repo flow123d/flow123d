@@ -462,6 +462,9 @@ public:
     string address_string() const;
 
 
+    /**
+     * Construct classes given by TYPE key of AbstractRecord.
+     */
     template<class Type, class... Arguments>
     std::shared_ptr<Type> factory(Arguments... arguments);
 
