@@ -69,11 +69,10 @@ Neighbour::Neighbour()
 : edge_idx_(-1)
 {}
 
-void Neighbour::reinit(ElementIter ele, unsigned int edg_idx, double sigma_in)
+void Neighbour::reinit(ElementIter ele, unsigned int edg_idx)
 {
     element_=ele;
     edge_idx_=edg_idx;
-    sigma = sigma_in;
 }
 
 

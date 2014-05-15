@@ -60,7 +60,7 @@ TimeMarks::TimeMarks()
     // add predefined base mark types
     type_fixed_time_ = new_mark_type();
     type_output_ = new_mark_type();
-    type_bc_change_ = new_mark_type();
+    type_input_ = new_mark_type();
 
     // insert start and end stoppers
     marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));

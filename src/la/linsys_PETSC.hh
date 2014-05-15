@@ -45,8 +45,12 @@ class LinSys_PETSC : public LinSys
 public:
     static Input::Type::Record input_type;
 
-    LinSys_PETSC( Distribution * rows_ds,
-                  const MPI_Comm comm = PETSC_COMM_WORLD ); 
+    LinSys_PETSC(const  Distribution * rows_ds);
+
+    /**
+     * Copy constructor.
+     */
+    LinSys_PETSC( LinSys_PETSC &other );
 
     /**
      * Returns whole Distribution class for distribution of the solution.
@@ -68,21 +72,25 @@ public:
 
     PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
+        matrix_changed_ = true;
     	return MatCopy(matrix, matrix_, str);
     }
 
     PetscErrorCode set_rhs(Vec &rhs)
     {
+        rhs_changed_ = true;
     	return VecCopy(rhs, rhs_);
     }
 
     PetscErrorCode mat_zero_entries()
     {
+        matrix_changed_ = true;
     	return MatZeroEntries(matrix_);
     }
 
     PetscErrorCode rhs_zero_entries()
     {
+        rhs_changed_ = true;
     	return VecSet(rhs_, 0);
     }
 
@@ -106,6 +114,8 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
+    void set_initial_guess_nonzero(bool set_nonzero = true);
+
     int solve();
 
     /**
@@ -123,6 +133,16 @@ public:
      * Sets specific parameters of LinSys_PETSC defined by user in input file and used to calculate
      */
     void set_from_input(const Input::Record in_rec);
+
+    double get_solution_precision();
+
+    void set_matrix_changed() {
+    	matrix_changed_ = true;
+    };
+
+    void set_rhs_changed() {
+    	rhs_changed_ = true;
+    };
 
 
     ~LinSys_PETSC( );
@@ -147,9 +167,11 @@ private:
 
     void gatherSolution_( );
 
-private:
+protected:
 
-    std::string params_;		 // command-line-like options for the PETSc solver
+    std::string params_;		 //!< command-line-like options for the PETSc solver
+
+    bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
@@ -158,6 +180,10 @@ private:
 
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
+
+    double  solution_precision_; // precision of KSP system solver
+    bool    matrix_changed_;     // indicate if matrix was changed since the last solving
+    bool    rhs_changed_;        // indicate if right side was changed since the last solving
 
 };
 

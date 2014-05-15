@@ -41,7 +41,7 @@ endif(CCACHE_CXX_COMPILER)
 project(Flow123d CXX C Fortran)
 
 # CMake version required for pre-build this project
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
   cmake_policy(SET CMP0017 NEW)
@@ -98,6 +98,7 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
     add_definitions(-DDEBUG_PROFILER)
+    add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")

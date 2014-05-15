@@ -130,7 +130,7 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(ElementIter ele, unsigned int edg_idx, double sigma_in);
+    void reinit(ElementIter ele, unsigned int edg_idx);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
@@ -147,7 +147,6 @@ public:
     unsigned int edge_idx_;  // edge
     ElementIter element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
-    double sigma;
 };
 
 

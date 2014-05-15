@@ -158,11 +158,19 @@
     ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
+
+#define ASSERT_LE( a, b) do {\
+    stringstream ss; ss << (a) << " > " << (b); \
+    ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+    } while (0)
+
 #else
 
 #define ASSERT_LESS( a, b)
+#define ASSERT_LE( a, b)
 
 #endif
+
 
 
 

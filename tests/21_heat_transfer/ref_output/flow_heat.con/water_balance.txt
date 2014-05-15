@@ -1,0 +1,26 @@
+# ---------------------------------------- WATER BALANCE ----------------------------------------
+# Time of computed water balance: inf
+
+
+# Boundary water balance:
+# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
+# -----------------------------------------------------------------------------------------------
+  1             .fracture_bottom           -0.01         0             -0.01         inf           
+  2             .fracture_top              0.01          0.01          0             inf           
+  4             .left                      -1.94479e-17  8.73867e-17   -1.06835e-16  inf           
+  5             .right                     8.25078e-17   1.25009e-16   -4.25007e-17  inf           
+  6             .rock_bottom               -0.002        0             -0.002        inf           
+  7             .rock_top                  0.002         0.002         0             inf           
+# -----------------------------------------------------------------------------------------------
+# total boundary balance                   3.02065e-09   0.012         -0.012        
+
+
+# Source fluxes over material subdomains:
+# [region_id]   [label]                  [total_balance]                            [time]        
+# -----------------------------------------------------------------------------------------------
+  3             fracture                   0                                         inf           
+  8             rock                       0                                         inf           
+# -----------------------------------------------------------------------------------------------
+# total sources balance                    0             
+
+

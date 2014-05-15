@@ -180,6 +180,17 @@ protected:
          * Actual storage - tip of the storage tree
          */
         const StorageBase * actual_storage_;
+
+        /**
+         * Delete whole storage tree when last root input accessor is destroyed.
+         */
+        ~AddressData() {
+        	if (	parent_ == nullptr
+        			&& root_storage_ == actual_storage_
+        			&& root_type_ ) {
+        		delete root_storage_;
+        	}
+        }
     };
 
 public:
@@ -246,12 +257,6 @@ TYPEDEF_ERR_INFO( EI_Address, const Address);
 inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
 	return stream << address.make_full_address();
 }
-
-/**
- *  Declaration of error info class for passing Input::Address through exceptions.
- *  Is returned by input accessors : Input::Record, Input::Array, etc.
- */
-TYPEDEF_ERR_INFO( EI_Address, const Address);
 
 
 /**
@@ -719,6 +724,9 @@ public:
 
     /// Prefix. Advance operator.
     inline Iterator<T> &operator ++ ();
+
+    /// Prefix. Back operator.
+    inline Iterator<T> &operator -- ();
 
     /**
      *  Dereference operator * ; Shouldn't we return type T, i.e. try to cast from OutputType to T ??

@@ -311,7 +311,6 @@ DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage:
 
 
 
-
 /***********************************************************************
  * Implementation of templated method
  */

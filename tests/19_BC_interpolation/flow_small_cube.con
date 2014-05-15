@@ -7,7 +7,7 @@
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      bc_data=[
+      data=[
         {
           region = "IMPLICIT BOUNDARY",
           bc_type = "dirichlet",
@@ -16,12 +16,11 @@
             gmsh_file = "${INPUT}/large_cube_solution.msh",
             field_name = "piezo_head_elements_[L]"
           }
-        }
-      ],
-      bulk_data=[
+        },
         {
           r_set = "BULK",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         }
       ],
       n_schurs = 2, 

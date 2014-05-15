@@ -10,21 +10,22 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "1d_channel",
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         { region = "2d_fracture_1",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { region = "2d_fracture_2",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { region = "3d_cube",
           anisotropy = 0.1
-        }
-      ],
-      bc_data = [
+        },
         { region="IMPLICIT BOUNDARY",
           flow_old_bcd_file="${INPUT}/test1_new_fbc.fbc"
         }

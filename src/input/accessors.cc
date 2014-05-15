@@ -68,9 +68,9 @@ const char * Exception::what() const throw () {
 Address::Address()
 : data_(boost::make_shared<AddressData>())
 {
-   data_->root_type_ = NULL;
+   data_->root_type_ = nullptr;
    data_->root_storage_ = &Array::empty_storage_;
-   data_->parent_ = NULL;
+   data_->parent_ = nullptr;
    data_->descendant_order_ = 0;
    data_->actual_storage_ = &Array::empty_storage_;
 }
@@ -79,14 +79,14 @@ Address::Address()
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
 : data_( boost::make_shared<AddressData>() )
 {
-    if (storage_root == NULL)
+    if (! storage_root)
         THROW( ExcAddressNullPointer() << EI_AccessorName("storage_root") );
-    if (!type_root || type_root == NULL)
+    if (! type_root )
         THROW( ExcAddressNullPointer() << EI_AccessorName("type_root") );
 
     data_->root_type_ = type_root;
     data_->root_storage_ = storage_root;
-    data_->parent_ = NULL;
+    data_->parent_ = nullptr;
     data_->descendant_order_ = 0;
     data_->actual_storage_ = storage_root;
 }

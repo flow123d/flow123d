@@ -32,10 +32,9 @@ TEST(Partitioning, all) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::JSONToStorage reader;
-    std::stringstream in(mesh_input);
-    reader.read_stream( in, Mesh::input_type );
-    Mesh mesh( reader.get_root_interface<Input::Record>() );
+    Input::JSONToStorage reader( mesh_input, Mesh::input_type );
+    auto rec = reader.get_root_interface<Input::Record>();
+    Mesh mesh( rec );
     mesh.init_from_input();
     const Distribution * init_ds = mesh.get_part()->get_init_distr();
 

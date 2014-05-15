@@ -25,7 +25,7 @@ it::Record FieldElementwise<spacedim, Value>::input_type
 
 template <int spacedim, class Value>
 Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
     it::Record type=
@@ -113,9 +113,9 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
 
 
 template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::set_mesh(Mesh *mesh, bool boundary_domain) {
-    // set mesh only once
-    ASSERT(mesh_ == NULL, "Trying to change mesh of the FieldElementwise.");
+void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
+    // set mesh only once or to same value
+    ASSERT(mesh_ == nullptr || mesh_ == mesh, "Trying to change mesh of the FieldElementwise.");
     boundary_domain_ = boundary_domain;
 
     mesh_=mesh;

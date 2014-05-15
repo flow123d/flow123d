@@ -192,7 +192,7 @@ public:
     const static int NCols_ = NCols;
 
     static std::string type_name() { return boost::str(boost::format("%s[%d,%d]") % internal::type_name_( ET() ) % NRows % NCols); }
-    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+    static IT::Array get_input_type(const ElementInputType *element_input_type=nullptr) {
         if (element_input_type) {
             // has sense only for ET==FieldEnum
             if (NRows == NCols)
@@ -302,7 +302,7 @@ public:
     const static int NCols_ = 1;
 
     static std::string type_name() { return boost::str(boost::format("%s") % internal::type_name_( ET() ) ); }
-    static ElementInputType get_input_type(ElementInputType *element_input_type=NULL)
+    static ElementInputType get_input_type(const ElementInputType *element_input_type=nullptr)
     {
         if (element_input_type)
             return *element_input_type;
@@ -349,7 +349,7 @@ public:
 
 
     static std::string type_name() { return boost::str(boost::format("%s[n]") % internal::type_name_( ET() ) ); }
-    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+    static IT::Array get_input_type(const ElementInputType *element_input_type=nullptr) {
         if (element_input_type) {
             return IT::Array( *element_input_type, 1);
         } else {
@@ -410,7 +410,7 @@ public:
 
 
     static std::string type_name() { return boost::str(boost::format("%s[%d]") % internal::type_name_( ET() ) % NRows ); }
-    static IT::Array get_input_type(ElementInputType *element_input_type=NULL) {
+    static IT::Array get_input_type(const ElementInputType *element_input_type=nullptr) {
         if (element_input_type) {
             return IT::Array( *element_input_type, 1, NRows);
         } else {

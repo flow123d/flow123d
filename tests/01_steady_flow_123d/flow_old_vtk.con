@@ -10,22 +10,22 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { rid = 62,     // 1D channel
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         { rid = 63,     // 2D fracture
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { rid = 64,     // 2D fracture
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         }, 
         { rid = 65,     // 3D cube
           anisotropy = 0.1
-        }
-      ],
-      
-      bc_data = [
+        },
         { region="IMPLICIT BOUNDARY",
           flow_old_bcd_file="${INPUT}/old_mesh.fbc"
         }

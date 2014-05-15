@@ -160,11 +160,17 @@ public:
 
     ///  * dereference operator
     inline const TimeMark & operator *() const
-            { return *it_; }
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return *it_;
+    }
 
     /// -> dereference operator
     inline const TimeMark * operator ->() const
-            { return &(*(it_)); }
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return &(*(it_));
+    }
     
     inline bool operator ==(const TimeMarksIterator &other) const
         {return it_ == other.it_; }
@@ -253,8 +259,8 @@ public:
 
     /// Predefined base TimeMark type for times when the boundary condition is changed.
     /// Is defined by constructor as 0x04.
-    inline TimeMark::Type type_bc_change()
-    { return type_bc_change_;}
+    inline TimeMark::Type type_input()
+    { return type_input_;}
 
 
     /**
@@ -325,7 +331,7 @@ private:
     /// Predefined type for output.
     TimeMark::Type type_output_;
     /// Predefined type for change of boundary condition.
-    TimeMark::Type type_bc_change_;
+    TimeMark::Type type_input_;
 };
 
 

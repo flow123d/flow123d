@@ -23,7 +23,7 @@ it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldBase<
 
 template <int spacedim, class Value>
 Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit
+        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
     it::Record type
@@ -94,7 +94,6 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
                             value_input_address_.c_str() );
             }
             if (time_dependent) {
-                // DBGMSG("set t= %g\n", time);
                 parser_matrix_[row][col].AddConstant("t", time);
             }
 

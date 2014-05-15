@@ -9,17 +9,14 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      data= [
         { region = "plane",
           anisotropy = 1,
           water_source_density = {
             TYPE = "FieldFormula",
             value = "2*(1-x^2)+2*(1-y^2)"
           }
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".plane_boundary",
           bc_type = "dirichlet",
           bc_pressure = 0

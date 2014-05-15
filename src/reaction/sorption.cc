@@ -49,25 +49,24 @@ Record Sorption::input_type
 	//.declare_key("table_limits", Array(Double()), Default("-1.0"), //
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("bulk_data", Array(Sorption::EqData().bulk_input_type()), Default::obligatory(), //
-                   	   	   "Containes region specific data necessery to construct isotherms.")//;
+    .declare_key("data", Array(Sorption::EqData().make_field_descriptor_type("Sorption")), Default::obligatory(), //
+                   	   	   "Containes region specific data necessary to construct isotherms.")//;
 	.declare_key("time", Double(), Default("1.0"),
 			"Key called time required by TimeGovernor in Sorption constructor.");/**/
 
 Sorption::EqData::EqData()
-: EqDataBase("Sorption")
 {
-    ADD_FIELD(rock_density, "Rock matrix density.", Input::Type::Default("0.0"));
+    ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
 
     ADD_FIELD(sorption_types,"Considered adsorption is described by selected isotherm."); //
-              sorption_types.set_selection(&sorption_type_selection);
+              sorption_types.input_selection(&sorption_type_selection);
 
-    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", Input::Type::Default("1.0"));
+    ADD_FIELD(mult_coefs,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.", "1.0");
 
-    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", Input::Type::Default("1.0"));
+    ADD_FIELD(second_params,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).", "1.0");
 
     ADD_FIELD(alphas, "Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone (dual porosity)."
-            " Vector, one value for every substance.", Input::Type::Default("0"));
+            " Vector, one value for every substance.", "0.0");
 }
 
 using namespace std;
@@ -81,13 +80,15 @@ Sorption::Sorption(Mesh &init_mesh, Input::Record in_rec, vector<string> &names)
     nr_of_substances = in_rec.val<Input::Array>("species").size();
     nr_of_points = in_rec.val<int>("substeps");
 
-    data_.sorption_types.set_n_comp(nr_of_substances);
-    data_.mult_coefs.set_n_comp(nr_of_substances);
-    data_.second_params.set_n_comp(nr_of_substances);
+    data_.sorption_types.n_comp(nr_of_substances);
+    data_.mult_coefs.n_comp(nr_of_substances);
+    data_.second_params.n_comp(nr_of_substances);
     int nr_transp_subst = names.size();
-    data_.alphas.set_n_comp(nr_transp_subst);
-    data_.set_mesh(&init_mesh);
-    data_.init_from_input( in_rec.val<Input::Array>("bulk_data"), Input::Array());
+    data_.alphas.n_comp(nr_transp_subst);
+    data_.set_mesh(init_mesh);
+    data_.set_input_list( in_rec.val<Input::Array>("data"));
+
+    data_.set_limit_side(LimitSide::right);
     data_.set_time(tg);
 
 	//Simple vectors holding  common informations.
@@ -171,20 +172,19 @@ void Sorption::prepare_inputs(Input::Record in_rec, int porosity_type)
 
 void Sorption::make_tables(void)
 {
-	ElementAccessor<3> elm;
-
 	BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
 	{
 		int reg_idx = reg_iter.bulk_idx();
 
 		// Creates interpolation tables in the case of constant rock matrix parameters
-		if((data_.rock_density.get_const_accessor(reg_iter, elm)) &&
-				(data_.mult_coefs.get_const_accessor(reg_iter, elm)) &&
-				(data_.second_params.get_const_accessor(reg_iter, elm)) &&
-				(this->porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->immob_porosity_->get_const_accessor(reg_iter, elm)) &&
-				(this->phi_->get_const_accessor(reg_iter, elm)))/**/
+		if((data_.rock_density.is_constant(reg_iter)) &&
+				(data_.mult_coefs.is_constant(reg_iter)) &&
+				(data_.second_params.is_constant(reg_iter)) &&
+				(this->porosity_->is_constant(reg_iter)) &&
+				(this->immob_porosity_->is_constant(reg_iter)) &&
+				(this->phi_->is_constant(reg_iter)))/**/
 		{
+			ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
 			isotherm_reinit(isotherms[reg_idx],elm);
 			xprintf(Msg,"parameters are constant\n");
 			for(int i_subst = 0; i_subst < nr_of_substances; i_subst++)
@@ -295,12 +295,12 @@ void Sorption::compute_one_step(void)
 {
     data_.set_time(*time_); // set to the last computed time
     //if parameters changed during last time step, reinit isotherms and eventualy update interpolation tables in the case of constant rock matrix parameters
-	if((data_.rock_density.changed_during_set_time) &&
-		(data_.mult_coefs.changed_during_set_time) &&
-		(data_.second_params.changed_during_set_time) &&
-		(this->porosity_->changed_during_set_time) &&
-		(this->immob_porosity_->changed_during_set_time) &&
-		(this->phi_->changed_during_set_time))
+	if((data_.rock_density.changed() ) &&
+		(data_.mult_coefs.changed() ) &&
+		(data_.second_params.changed() ) &&
+		(this->porosity_->changed() ) &&
+		(this->immob_porosity_->changed() ) &&
+		(this->phi_->changed() ))
 	{
 		make_tables();
 	}

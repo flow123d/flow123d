@@ -111,7 +111,7 @@ void * xrealloc( void * ptr, size_t size );
 #ifndef xfree
     #define xfree(p) \
     do { if (p) { free(p); (p)=NULL; } \
-         else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__); \
+         else {/*DBGMSG("Freeing NULL pointer?\n")*/; \
               } \
     } while (0) /// test & free memory
 #endif

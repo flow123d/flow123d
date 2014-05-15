@@ -42,9 +42,7 @@ TEST(FieldFormula, read_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;
@@ -132,9 +130,7 @@ TEST(FieldFormula, set_time) {
     Input::Type::Array  input_type(VectorField::input_type);
 
     // read input string
-    std::stringstream ss(set_time_input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, input_type );
+    Input::JSONToStorage reader( set_time_input, input_type );
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();
