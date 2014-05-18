@@ -10,8 +10,10 @@
 #
 
 # check build_tree link,
-# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+# this do not duplicate of the similar call in main makefile,
+# since CMakeList.txt can be called by generated makefiles.
 execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 
 # Include settings given by user first
@@ -46,6 +48,8 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
+
+
 
 # allow duplicate custom targets for makefiles
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
@@ -448,21 +452,57 @@ IF (PETSC_FOUND)
       ) 
 endif()
 
+####################################################################################
+# PYTHON
+#
 # optionaly we use Python interface
-# We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
-if (CYGWIN)
-else (CYGWIN) 
+
   if (USE_PYTHON)
+    message(STATUS "\n ======================================================= ")
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
+        
+        if (PYTHON_COPY)
+            set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
+            add_definitions(-DPYTHON_HOME="..")
+            
+            # copy python files to build tree 
+            # first get prefix (we support just one prefix)
+            execute_process(
+                COMMAND python -c "import sys; print sys.prefix"
+                OUTPUT_VARIABLE PY_PREFIX
+                OUTPUT_STRIP_TRAILING_WHITESPACE)        
+            execute_process(
+                COMMAND python -c "import sys; print sys.exec_prefix"
+                OUTPUT_VARIABLE PY_EXEC_PREFIX
+                OUTPUT_STRIP_TRAILING_WHITESPACE)        
+            message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
+            message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+            if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
+                message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
+            endif()
+            message(STATUS "Python prefix: ${PY_PREFIX} target prefix: ${TARGET_PREFIX}")
+            
+            # copy python library
+            string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
+            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_VERSION})
+            execute_process(
+                COMMAND mkdir -p ${TARGET_PREFIX}/lib 
+                )             
+            # recursive copy, not overwrite existing files
+            # we copy all and exclute some paths and files during install    
+            execute_process(
+                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
+                )
+                
+        endif()
     else()
-	set(PYTHON_INCLUDE_DIRS "")
-	set(PYTHON_LIBRARIES "")
+	   set(PYTHON_INCLUDE_DIRS "")
+	   set(PYTHON_LIBRARIES "")
     endif()
   endif()  
-endif(CYGWIN)
 
 message(STATUS "\n ======================================================= ")
 
@@ -593,12 +633,18 @@ endif()
 
 
 if( PETSC_FOUND )
+  ########################
+# Setting for RPATH
+
+ 
+  SET (CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/../lib" )
+  
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
-
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h ) 
 else()
@@ -618,15 +664,20 @@ message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "===========================================")
 
+
+#include(EchoTargets)
+#message(STATUS "Lib sufix: ${CMAKE_FIND_LIBRARY_SUFFIX}")
+#echo_targets("bin/flow123d")
+
 ####################################################################################
 # Install and Packaging
 
 if (UNIX)
-  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/Flow123d")
+  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
 
-# mpiexec, hope this will work
+# install bin directory
 install(DIRECTORY bin/config 			DESTINATION bin/)
 install(DIRECTORY bin/ndiff 			DESTINATION bin/)
 install(DIRECTORY bin/paraview 			DESTINATION bin/)
@@ -637,16 +688,35 @@ install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
 install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
 install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
 
-# install cygwin libraries
+# install shared libraries
 if (CYGWIN)
-    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/cygwin_copy_dll.sh\"  WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE)
+
+else()
+    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    install(DIRECTORY build_tree/lib/            
+        DESTINATION lib/
+        PATTERN lib/python* EXCLUDE
+        PATTERN *.a EXCLUDE
+        )
+endif()        
+
+# install python modules
+if (PYTHON_COPY)
+    install(DIRECTORY build_tree/${PYTHON_COPY_LIB_TARGET} 
+            DESTINATION lib
+            PATTERN *.dll EXCLUDE
+            PATTERN *.a EXCLUDE
+            PATTERN *.so EXCLUDE
+            PATTERN */dist-packages EXCLUDE
+            PATTERN *.py EXCLUDE)
 endif()
 
 install(TARGETS    bin/flow123d  
-	RUNTIME DESTINATION bin/)
+	RUNTIME DESTINATION bin)
 install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
@@ -659,11 +729,16 @@ install(FILES doc/LICENSE                       DESTINATION doc/)
 install(FILES doc/GPL3                          DESTINATION doc/)
 install(FILES doc/README                        DESTINATION doc/)
 
+
 # clean tests directory before install
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 install(DIRECTORY tests DESTINATION .)
+
+
+# copy base directory
 install(FILES README.md DESTINATION .)
+install(FILES CHANGES.md DESTINATION .)
 
 # To install MSVC runtime libraries ... ?
 INCLUDE(InstallRequiredSystemLibraries)
