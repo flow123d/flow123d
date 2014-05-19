@@ -54,9 +54,9 @@ using namespace std;
 
 //! @brief basic definitions
 /// @{
-static XFILE xstdin  = {"stdin","r",0};
-static XFILE xstdout = {"stdout","w",0};
-static XFILE xstderr = {"stderr","w",0};
+static XFILE xstdin  = {&std::string("stdin")[0], &std::string("r")[0], 0};
+static XFILE xstdout = {&std::string("stdout")[0], &std::string("w")[0], 0};
+static XFILE xstderr = {&std::string("stderr")[0], &std::string("w")[0], 0};
 //! @}
 
 static XFILE * xio_getfptr( FILE * f );
