@@ -112,7 +112,8 @@ private:
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_cont_data(OutputDataBase* output_data);
+    template<class element>
+    void write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data);
 
     /**
      * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
