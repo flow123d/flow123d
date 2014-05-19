@@ -15,6 +15,9 @@
 #include "system/xio.h"
 #include "system/file_path.hh"
 
+#ifdef HAVE_PETSC
+#include <petsc.h>
+#endif
 
 using namespace std;
 
@@ -87,7 +90,10 @@ protected:
 	/**
 	 * Implement printf function for PETSc with support for redirecting.
 	 */
+#ifdef HAVE_PETSC
 	static PetscErrorCode petscvfprintf(FILE *fd, const char format[], va_list Argp);
+#endif
+
 	/**
 	 * Initialize PETSC.
 	 */

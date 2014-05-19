@@ -1,7 +1,30 @@
 List of all changes in user interface and major internal changes.
 
+***********************************************
 
-***
+#Flow123d version 1.8.1
+(2014-05-14)
+
+### Bug fixes
+
+* fix missing error messages under Windows
+* fix a memory leak in LinSys_PETSC::gather_solution
+* fix weights in BDDC for Darcy flow
+* fix wrong behavior when wrong region name is specified
+
+
+
+### Other changes
+* minor improvements of manual
+* add Python support under Windows
+* add BDDC support under Windows
+* use BDDCML 2.4
+* fix and unit tests for BIHTree class
+* improved test 23 - dual porosity
+* updated petsc_options_help
+
+
+************************************************
 
 #Flow123d version 1.8.0 
 (2014-03-31)
