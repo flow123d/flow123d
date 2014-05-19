@@ -20,7 +20,7 @@ namespace internal {
  */
 class PythonRunning {
 public:
-    PythonRunning();
+    PythonRunning(const std::string &python_home);
     ~PythonRunning();
 };
 } // close namespace internal
@@ -40,7 +40,20 @@ public:
  */
 class PythonLoader {
 public:
-    PythonLoader();
+
+    /**
+     * Calls python initialization and guarantee that appropriate finalization will be called.
+     * Do nothing if initialization was done.
+     *
+     * The method with no parameters is called at the beginning of every function of this class, so an explicit call
+     * to it has only sense if one would like to provide alternative python home directories.
+     * The string has form <prafix>[:<exec_prefix>] where <prefix> is prefix for platform independent libraries
+     * (namely sources of python standard libraries) and <exec_prefix> is prefix for platform dependent libraries namely
+     * for the python executable.
+     */
+
+    static void initialize(const std::string &python_home="");
+
     /**
      * This function loads a module from the given file.
      * Resulting module has to be deallocated by Py_DECREF() macro.
@@ -51,10 +64,6 @@ public:
      * Resulting module has to be deallocated by Py_DECREF() macro.
      */
     static PyObject * load_module_from_string(const std::string& module_name, const std::string& source_string);
-
-protected:
-    // implements automatic initialization and finalization
-    static internal::PythonRunning py_running;
 };
 
 

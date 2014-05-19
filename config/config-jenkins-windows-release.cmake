@@ -6,4 +6,5 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 
 set(PETSC_INSTALL_CONFIG "full")
 set(USE_PYTHON "yes")
+set(PYTHON_COPY "yes")
 set(BDDCML_ROOT "_INSTALL_")
