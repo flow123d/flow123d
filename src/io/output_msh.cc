@@ -89,7 +89,8 @@ void OutputMSH::write_msh_topology(void)
 }
 
 
-void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
+template<class element>
+void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
 {
     ofstream &file = this->get_base_file();
 
@@ -99,7 +100,7 @@ void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
 
 
     for(unsigned int i=0; i < output_data->n_values; i ++) {
-    	file << i+1 << " ";
+    	file << vec(i).id() << " ";
         output_data->print(file, i);
         file << std::endl;
     }
@@ -159,7 +160,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << output_data->n_elem_ << endl;   // number of components
             file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(output_data);
+            this->write_msh_ascii_cont_data(mesh->node_vector, output_data);
 
             file << "$EndNodeData" << endl;
         }
@@ -216,7 +217,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
             file << output_data->n_elem_ << endl;   // number of components
             file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(output_data);
+            this->write_msh_ascii_cont_data(this->get_mesh()->element, output_data);
 
             file << "$EndElementData" << endl;
         }
