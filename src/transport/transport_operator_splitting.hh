@@ -180,14 +180,6 @@ public:
     inline virtual ~TransportNothing()
     {}
 
-    inline virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    }
-
-    virtual void get_parallel_solution_vector(Vec &vector) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    };
-
     inline virtual void output_data() {};
 
     void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) {};
@@ -238,8 +230,10 @@ public:
     void update_solution() override;
     //virtual void compute_one_step();
     //virtual void compute_until();
-    virtual void get_parallel_solution_vector(Vec &vc);
-    virtual void get_solution_vector(double* &vector, unsigned int &size);
+
+// DELETE
+//     virtual void get_parallel_solution_vector(Vec &vc);
+//     virtual void get_solution_vector(double* &vector, unsigned int &size);
 
     void compute_until_save_time();
     void compute_internal_step();

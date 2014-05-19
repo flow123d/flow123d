@@ -163,9 +163,6 @@ set(sources_lib_non_system
     reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
-    reaction/sorption_dual.cc
-    reaction/sorption_mob.cc
-    reaction/sorption_immob.cc
     reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
@@ -221,7 +218,7 @@ add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
     armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
-#set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
+set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})

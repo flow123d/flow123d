@@ -429,15 +429,15 @@ void LinSys_PETSC::gatherSolution_( )
     // create a large local solution vector for gathering 
     PetscErrorCode ierr;
     Vec solutionGathered;              //!< large vector of global solution stored locally
-    ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr ); 
+    //ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr );
 
     // prepare gathering scatter
     VecScatter VSdistToLarge;          //!< scatter for gathering local parts into large vector
-    ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr ); 
+    ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr );
     //ierr = VecScatterCreate( solution_, PETSC_NULL, solutionGathered, PETSC_NULL, &VSdistToLarge ); CHKERRV( ierr ); 
 
     // get global solution vector at each process
-    ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr ); 
+    ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
     ierr = VecScatterEnd(   VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
 
     // extract array of global solution for copy
@@ -447,7 +447,7 @@ void LinSys_PETSC::gatherSolution_( )
     // copy the result to calling routine
     //std::transform( &(solutionGatheredArray[0]), &(solutionGatheredArray[ globalSize ]), sol_disordered.begin( ), 
     //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
-    
+
     //reorder solution
     globalSolution_.resize( globalSize );
     for ( int i = 0; i < globalSize; i++ ) {

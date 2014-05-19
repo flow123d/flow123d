@@ -6,8 +6,8 @@
  * also in both zones.
  *
  */
-#ifndef DUAL_POROSITY
-#define DUAL_POROSITY
+#ifndef DUAL_POROSITY_H
+#define DUAL_POROSITY_H
 
 #include <vector>
 #include <input/input_type.hh>
@@ -20,6 +20,7 @@ class Mesh;
 class Distribution;
 class SorptionBase;
 
+/// Class representing dual porosity model in transport.
 class DualPorosity:  public ReactionTerm
 {
 public:
@@ -28,7 +29,8 @@ public:
    */
   static Input::Type::Record input_type;
 
-  class EqData : public FieldSet // should be written in class Sorption
+  /// DualPorosity data
+  class EqData : public FieldSet
   {
   public:
 
@@ -50,34 +52,31 @@ public:
     static Input::Type::Selection output_selection;
   };
 
+  /// Constructor.
   DualPorosity(Mesh &init_mesh, Input::Record in_rec);
-  /**
-   * Destructor.
-   */
+   
+  ///Destructor.
   ~DualPorosity(void);
 
-  void make_reactions();
-
+  /// Prepares the object to usage.
+  /**
+   * Allocating memory, reading input, initialization of fields.
+   */
+  void initialize() override;
+  
+  /**
+   * Does first computation after initialization process.
+   * The time is set and initial condition is set and output.
+   */
+  void zero_time_step() override;
+  
   /**
    * Updates the solution according to the dual porosity model.
    */
   void update_solution(void) override;
   
-  /**
-   * Initialization routines after all necessary members have been set.
-   * It also sets and initializes possible following reaction models.
-   */
-  void zero_time_step() override;
-  
+  /// Main output routine.
   void output_data(void) override;
-  void output_vector_gather(void) override;
-  
-  /**
-   * Set the porosity field which is passed from transport.
-   */
-  void set_porosity(Field<3, FieldValue<3>::Scalar > &por_m);
-  
-  double **compute_reaction(double **concentrations, int loc_el) override;
   
 protected:
   /**
@@ -85,15 +84,28 @@ protected:
    */
   DualPorosity();
 
+  /// Resolves construction of following reactions.
+  void make_reactions();
+  
+  /// Sets initial condition from input.
+  void set_initial_condition();
+  /// Initializes field sets.
+  void initialize_fields();
+  /// Allocates petsc vectors and prepares them for output.
   void allocate_output_mpi(void);
   
+  double **compute_reaction(double **concentrations, int loc_el) override;
+  
+  /// Gathers all the parallel vectors to enable them to be output.
+  void output_vector_gather(void) override;
+  
   /**
-   * Pointer to thwodimensional array[species][elements] containing concentrations either in immobile.
+   * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.
    */
   double **conc_immobile;
 
   /**
-   * Equation data - all data field are in this set.
+   * Equation data - all data fields are in this set.
    */
   EqData data_;
 
@@ -110,7 +122,7 @@ protected:
   /** Minimal time for which the analytical solution of dual porosity concentrations are evaluated.
    * Else it is replaced with simple forward difference approximation.
    */
-  static const double min_dt;
+  static const double min_dt_;
   
   ///@name members used in output routines
   //@{
@@ -121,4 +133,4 @@ protected:
   
 };
 
-#endif  //DUAL_POROSITY
+#endif  //DUAL_POROSITY_H

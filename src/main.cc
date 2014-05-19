@@ -163,7 +163,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("full_doc", "Prints full structure of the main input file.")
         ("JSON_template", "Prints description of the main input file as a valid CON file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+
     ;
 
     // parse the command line
@@ -226,6 +228,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         exit( exit_output );
     }
 
+    if (vm.count("petsc_redirect")) {
+        this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
+    }
+
     // if there is "solve" option
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
@@ -260,11 +266,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
     if (vm.count("log")) {
-        log_filename_ = vm["log"].as<string>();
+        this->log_filename_ = vm["log"].as<string>();
     }
 
     if (vm.count("no_log")) {
-        log_filename_="//";     // override; do not open log files
+        this->log_filename_="//";     // override; do not open log files
     }
 
     ostringstream tmp_stream(program_arguments_desc_);
