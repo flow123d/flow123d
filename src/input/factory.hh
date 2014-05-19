@@ -83,9 +83,17 @@ public:
     /// Get the single instance of the factory
     static Factory * instance();
 
+    /// Register lambda function that calls default constructor of Type.
+    static int register_function(string class_name);
+
     /// register a factory function to create an instance of class_name
     template <class... Arguments>
     static int register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) );
+
+    /*
+    template <class... Arguments>
+    static int register_function(string class_name, Creater< Type, Arguments...> creater );
+    */
 
     /// create an instance of a registered class
     template<class... Arguments>

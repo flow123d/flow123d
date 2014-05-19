@@ -41,6 +41,6 @@ Input::Type::AbstractRecord Base<spacedim>::input_type
     = Input::Type::AbstractRecord("Base:"+spacedim, "Abstract record desc.");
 
 
-template class Input::Factory< Base<3> >;
+//template class Input::Factory< Base<3> >;
 
 #endif /* BASE_HH_ */
