@@ -1,6 +1,13 @@
 #!/bin/bash
 
-set -x
+#set -x
+
+if [ "$1" == "" ]
+then
+  echo "Syntax:"
+  echo "  valgrind.sh <valgrind args> -- <flow args>"
+  exit
+fi  
 
     VALGRIND_ARGS=""
     while [ "$1" != "--" ]

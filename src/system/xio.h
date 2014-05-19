@@ -47,6 +47,8 @@
 
 #include <map>
 
+// Size of buffer for text input lines.
+#define LINE_SIZE 65536
 
 //! @brief XFILE structure holds additional info to generic FILE
 /// @{

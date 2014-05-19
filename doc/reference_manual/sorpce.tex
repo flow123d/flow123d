@@ -106,7 +106,7 @@ and an empirical adsorption law
 c_s = f(c_l),
 \end{equation}
 given in terms of the so-called isotherm $f$.
-Its form is determined by the parameter \hyperA{Adsorption-Data::sorption-type}{\tt sorption\_type}:
+Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{\tt sorption\_type}:
 \begin{itemize}
  \item ``$none$'': $f(c_l)=0$ (the adsorption model returns zero concentration in solid);
  \item ``$linear$'': $f(c_l) = k_l c_l$;
@@ -124,11 +124,11 @@ Notation:
  \item Concentration in liquid $c_l = \frac{m}{m_l}$ \units{}{}{}, where $m_l$ is 
        the mass of liquid in unit volume. The relation between $c_l$ and the concentration $c$ from 
        transport equation \eqref{e:ADE} is $c = c_l \varrho_l$;
- \item \hyperA{Adsorption::solvent-density}{$\varrho_l$}, \hyperA{Adsorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively;
- \item \hyperA{Adsorption::molar-mass}{$M_s$} denotes the molar mass of a substance;
+ \item \hyperA{Sorption::solvent-density}{$\varrho_l$}, \hyperA{Sorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively;
+ \item \hyperA{Sorption::molar-mass}{$M_s$} denotes the molar mass of a substance;
  \item Multiplication parameters $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$] are given by 
-       \hyperA{Adsorption-Data::isotherm-mult}{\tt isotherm\_mult};
- \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Adsorption-Data::isotherm-other}{\tt isotherm\_other}.
+       \hyperA{Sorption-Data::isotherm-mult}{\tt isotherm\_mult};
+ \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Sorption-Data::isotherm-other}{\tt isotherm\_other}.
 \end{itemize}
 
 Denoting
@@ -142,7 +142,7 @@ which can be either solved iteratively or using interpolation.
 To solve \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
 to look for the solution (unknown $c_l$), see Figure \ref{fig:sorpce}. The lower bound is $0$ (concentration can not reach negative values). 
 The upper bound is derived using a simple mapping. Let us suppose limmited 
-\hyperA{Adsorption::solubility}{$solubility$} of the selected transported substance and let us denote the 
+\hyperA{Sorption::solubility}{$solubility$} of the selected transported substance and let us denote the 
 limmit $\bar{c}_l$. We keep the maximal "total mass" 
 $\bar{c}_T= \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, but we dissolve all the mass to get 
 maximal $c_l^{max} > \bar{c}_l$. That means $c_s = 0$ at this moment. We can slightly enlarge the interval by setting the upper bound equal to 
@@ -162,7 +162,7 @@ coordination system at first. The approach for construction of interpolation tab
 \begin{enumerate}
  \item Maximal ``total mass'' $\bar{c}_T = \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ is computed.
  \item Total mass step is derived $mass\_step = \bar{c}_T/n\_steps$. $n\_steps$ is given by
-       \hyperA{Adsorption::substeps}{$substeps$}.
+       \hyperA{Sorption::substeps}{$substeps$}.
  \item Appropriate $c_T^j = (mass\_step\cdot j)/\mu_l,~j\in \{0,\ldots, n\_steps\}$ are computed. 
  \item The equations $\mu_l \cdot c_T^j = \mu_l\cdot c_l^j + \mu_s\cdot f(c_l^j)~j\in \{0,\ldots, n\_steps\}$ are solved 
        for $c_l^j$ as unknowns. The solution is the set of ordered couples (points) 

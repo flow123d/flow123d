@@ -38,30 +38,6 @@
 #include "system/exc_common.hh"
 
 
-/// @brief Global constants.
-/// @{
-
-/// size of input line buffer at various places
-#define LINE_SIZE 65536
-
-/// @}
-
-
-/// @brief Macros to enhance readability
-/// @{
-
-//#define NDEF  -1    ///< not defined positive integer (obsolete - ints should be initialized by value)
-//#define NONULL(p)   ((p) != NULL)   /// true for non-null pointer
-
-
-// set array of pointers of given size to NULL
-#define SET_ARRAY_NULL(ptrs,n) do {int i; for(i=0;i<n;i++) *(ptrs+i)=NULL;} while (0)
-// set array of ints, float, or doubles to 0
-#define SET_ARRAY_ZERO(array,n) memset((array), 0, sizeof(*(array))*(n))
-
-// Useful for printing boolean ints
-#define BOOL_2_STR(i) 	( (i) ? "No" : "Yes" )
-
 /*! @brief Debugging macros.
  *
  *  The macro ASSERT has to be used for assertion tests. An error occures if
@@ -199,18 +175,6 @@
 
 #define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
 
-/// this is simple macro for debugging output of array of ints
-/// Use this with care !!!
-#define DBGPRINT_INT(name,size,idx) \
-    do {\
-        int i__;\
-        xprintf(Msg,    "%s (int array size=%d):\n",(name),(size));\
-        for(i__=0;i__<(size);i__++) \
-            xprintf(Msg,"i: %d int: %d\n",i__,(idx)[i__]); \
-    } while (0)
-
-
-
 
 /**
  * Usage:
@@ -232,7 +196,6 @@
 #else
 
 #define DBGMSG(...)
-#define DBGPRINT_INT(...)
 #define DBGCOUT(...)
 #define DBGVAR(var)
 

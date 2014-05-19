@@ -3,7 +3,10 @@
  *
  */
 
+#ifdef HAVE_PETSC
 #include <petsc.h>
+#include <petscsys.h>
+#endif
 
 #include "system/application_base.hh"
 #include "system/sys_profiler.hh"
@@ -49,10 +52,38 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 }
 
 
+FILE *ApplicationBase::petsc_output_ =NULL;
+
+#ifdef HAVE_PETSC
+PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  if (fd != stdout && fd != stderr) { /* handle regular files */
+    ierr = PetscVFPrintfDefault(fd,format,Argp); CHKERRQ(ierr);
+  } else {
+    const int buf_size = 65000;
+    char buff[65000];
+    size_t length;
+    ierr = PetscVSNPrintf(buff,buf_size,format,&length,Argp);CHKERRQ(ierr);
+
+    /* now send buff to whatever stream or whatever you want */
+    fwrite(buff, sizeof(char), length, petsc_output_);
+  }
+  PetscFunctionReturn(0);
+}
+#endif
+
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef HAVE_PETSC
     PetscErrorCode ierr;
+    if (petsc_redirect_file_ != "") {
+        petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
+        PetscVFPrintf = this->petscvfprintf;
+    }
+
+
     ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
     int mpi_size;
@@ -70,6 +101,8 @@ int ApplicationBase::petcs_finalize() {
 		PetscErrorCode ierr=0;
 
 		ierr = PetscFinalize(); CHKERRQ(ierr);
+
+		if (petsc_output_) fclose(petsc_output_);
 
 		petsc_initialized = false;
 
@@ -90,12 +123,8 @@ void ApplicationBase::init(int argc, char ** argv) {
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
-	//try {
-		this->run();
-	//} catch (std::exception & e) {
-	//	std::cerr << e.what();
-	//	exit( exit_failure );
-	//}
+
+    this->run();
 
 	this->after_run();
 }
