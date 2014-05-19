@@ -60,7 +60,7 @@ SparseGraph::SparseGraph(const Distribution &distr)
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
-    for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
+    for(unsigned int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;
 }
 
 
@@ -77,7 +77,7 @@ SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
-    for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
+    for(unsigned int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;
 }
 
 void SparseGraph::set_edge(const int a, const int b,int weight)
@@ -119,7 +119,7 @@ void SparseGraph::finalize()
    F_ENTRY;
    ASSERT( adj==NULL, "Graph is already finalized\n");
 
-   int proc;
+   unsigned int proc;
    int total_size;
    vector< stack<Edge> >::iterator s;
    unsigned int edge_size=3;   // 3 = number of integers in Edge to send
@@ -241,7 +241,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     checked_vtx.resize(vtx_distr.size(), 0);
     std::vector<bool> checked_proc(vtx_distr.np(), false);
 
-    int n_proc=0;
+    unsigned int n_proc=0;
     for(unsigned int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
         if (checked_vtx[vtx] != 2) {
             proc_to_check=part_to_check[vtx];

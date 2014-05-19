@@ -74,7 +74,8 @@ void Partitioning::make_element_connection_graph() {
     Distribution edistr = graph_->get_distr();
 
     Edge *edg;
-    int li, e_idx, i_neigh;
+    int li, e_idx;
+    unsigned int i_neigh;
     int i_s, n_s;
     F_ENTRY;
 

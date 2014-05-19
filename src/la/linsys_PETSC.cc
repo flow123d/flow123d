@@ -196,7 +196,7 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( on_vec_,  &on_array );
     VecGetArray( off_vec_, &off_array );
 
-    for ( int i=0; i<rows_ds_->lsize(); i++ ) {
+    for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
         on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
         off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
     }
@@ -450,7 +450,7 @@ void LinSys_PETSC::gatherSolution_( )
 
     //reorder solution
     globalSolution_.resize( globalSize );
-    for ( int i = 0; i < globalSize; i++ ) {
+    for ( unsigned int i = 0; i < globalSize; i++ ) {
         globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
     }
 

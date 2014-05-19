@@ -251,7 +251,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	  fe3d_(0)
 {
 	object_dofs = new int**[mesh_->n_elements()];
-	for (int i=0; i<mesh_->n_elements(); i++)
+	for (unsigned int i=0; i<mesh_->n_elements(); i++)
 		object_dofs[i] = NULL;
 
 	make_elem_partitioning();
@@ -296,7 +296,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 
     // Broadcast partition of elements to all processes.
     int *loc_part;
-    int myp = mesh_->get_part()->get_init_distr()->myp();
+    unsigned int myp = mesh_->get_part()->get_init_distr()->myp();
     if (myp == 0)
     {
     	loc_part = (int*)mesh_->get_part()->get_loc_part();
@@ -309,7 +309,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 
     // Distribute element dofs.
     // First we distribute dofs on elements associated to process 0 and so on.
-    for (int proc=0; proc<mesh_->get_part()->get_init_distr()->np(); proc++)
+    for (unsigned int proc=0; proc<mesh_->get_part()->get_init_distr()->np(); proc++)
     {
     	if (proc == myp)
     		loffset_ = next_free_dof;
@@ -325,7 +325,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 			//       In the future we want to distribute dofs on vertices, lines,
 			//       and triangles as well.
 			object_dofs[cell.index()] = new int*[dim+1];
-			for (int i=0; i<dim+1; i++)
+			for (unsigned int i=0; i<dim+1; i++)
 				object_dofs[cell.index()][i] = NULL;
 			object_dofs[cell.index()][dim] = new int[n_obj_dofs[dim][dim]];
 
@@ -394,7 +394,7 @@ DOFHandlerMultiDim::~DOFHandlerMultiDim()
 	for (ElementFullIter elem=mesh_->element.begin(); elem!=mesh_->element.end(); ++elem)
 		if (object_dofs[elem.index()] != NULL)
 		{
-			for (int j=0; j<elem->dim(); j++)
+			for (unsigned int j=0; j<elem->dim(); j++)
 				if (object_dofs[elem.index()][j] != NULL)
 					delete[] object_dofs[elem.index()][j];
 
