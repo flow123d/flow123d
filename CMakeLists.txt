@@ -450,19 +450,16 @@ endif()
 
 # optionaly we use Python interface
 # We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
-if (CYGWIN)
-else (CYGWIN) 
-  if (USE_PYTHON)
+if (USE_PYTHON)
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
     else()
-	set(PYTHON_INCLUDE_DIRS "")
-	set(PYTHON_LIBRARIES "")
+        set(PYTHON_INCLUDE_DIRS "")
+        set(PYTHON_LIBRARIES "")
     endif()
-  endif()  
-endif(CYGWIN)
+endif()  
 
 message(STATUS "\n ======================================================= ")
 
