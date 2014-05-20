@@ -13,26 +13,24 @@ namespace Input {
 
 using namespace std;
 
-template<class Type>
-Factory<Type> * Factory<Type>::instance()
+template<class Type, class... Arguments>
+Factory<Type, Arguments...> * Factory<Type, Arguments...>::instance()
 {
-    static Factory<Type> factory;
+    static Factory<Type, Arguments...> factory;
     return &factory;
 }
 
 
-template<class Type>
-template <class... Arguments>
-int Factory<Type>::register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) ) {
+template<class Type, class... Arguments>
+int Factory<Type, Arguments...>::register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) ) {
 	auto func_wrapper = std::function<std::shared_ptr<Type>(Arguments...)>(func);
-	Factory<Type>::instance()->factory_registry_[class_name] = func_wrapper;
+	Factory<Type, Arguments...>::instance()->factory_registry_[class_name] = func_wrapper;
 	return 0;
 }
 
 
-template<class Type>
-template<class... Arguments>
-shared_ptr<Type> Factory<Type>::create(string name, Arguments... arguments)
+template<class Type, class... Arguments>
+shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... arguments)
 {
     // find name in the registry and call factory method.
     auto it = factory_registry_.find(name);

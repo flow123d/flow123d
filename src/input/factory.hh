@@ -76,7 +76,7 @@ using namespace std;
 		 Input::Factory< SomeBase >::register_function("SomeDescendant", SomeDescendant::create_instance );
  @endcode
  */
-template <class Type>
+template <class Type, class... Arguments>
 class Factory
 {
 public:
@@ -87,7 +87,6 @@ public:
     static int register_function(string class_name);
 
     /// register a factory function to create an instance of class_name
-    template <class... Arguments>
     static int register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) );
 
     /*
@@ -96,7 +95,6 @@ public:
     */
 
     /// create an instance of a registered class
-    template<class... Arguments>
     shared_ptr<Type> create(string name, Arguments... arguments);
 
 

@@ -37,7 +37,7 @@ public:
 
 template <int spacedim>
 const int DescendantA<spacedim>::reg =
-		Input::Factory<FactoryBaseType>::register_function("DescendantA", DescendantA<spacedim>::create_instance );
+		Input::Factory<FactoryBaseType, int, double>::register_function("DescendantA", DescendantA<spacedim>::create_instance );
 
 
 template <int spacedim>
