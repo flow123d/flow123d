@@ -84,7 +84,8 @@ public:
     static Factory * instance();
 
     /// Register lambda function that calls default constructor of Type.
-    static int register_function(string class_name);
+    // Type of factory is BaseClass - not Type what is created
+    //static int register_function(string class_name);
 
     /// register a factory function to create an instance of class_name
     static int register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) );
@@ -106,6 +107,18 @@ private:
     map<string, boost::any> factory_registry_;
 
 };
+
+
+/*template <class Type, class... Arguments>
+class Creater {
+public:
+    shared_ptr<Type> operator()(Arguments ... args) {
+        return make_shared<Type>(args...);
+    }
+
+private:
+    Creater() {};
+};*/
 
 } // closing namespace Input
 

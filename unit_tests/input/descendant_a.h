@@ -24,7 +24,6 @@ class DescendantA : public Base<spacedim>
 {
 public:
 	typedef Base<spacedim> FactoryBaseType;
-	static const int reg;
 
 	static shared_ptr< Base<spacedim> > create_instance(int n_comp, double time) {
 		return make_shared< DescendantA<spacedim> >(n_comp, time);
@@ -32,12 +31,18 @@ public:
 
 	DescendantA(int n_comp, double time);
 
+private:
+	static const int reg;
 };
 
 
 template <int spacedim>
 const int DescendantA<spacedim>::reg =
 		Input::Factory<FactoryBaseType, int, double>::register_function("DescendantA", DescendantA<spacedim>::create_instance );
+/*template <int spacedim>
+const int DescendantA<spacedim>::reg =
+        Input::Factory<FactoryBaseType>::register_function("DescendantA",
+        	Input::Creater<DescendantA<spacedim>, int, double>() ); */
 
 
 template <int spacedim>

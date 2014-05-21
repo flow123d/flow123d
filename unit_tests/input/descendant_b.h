@@ -22,7 +22,6 @@ class DescendantB : public Base<spacedim>
 {
 public:
 	typedef Base<spacedim> FactoryBaseType;
-	static const int reg;
 
 	static shared_ptr< Base<spacedim> > create_instance() {
 		return make_shared< DescendantB<spacedim> >();
@@ -30,6 +29,8 @@ public:
 
 	DescendantB();
 
+private:
+	static const int reg;
 };
 
 
@@ -37,21 +38,6 @@ template <int spacedim>
 const int DescendantB<spacedim>::reg =
 		Input::Factory<FactoryBaseType>::register_function("DescendantB", DescendantB<spacedim>::create_instance );
 
-/*
- * Is following construct possible?
- *
-template <int spacedim>
-const int DescendantB<spacedim>::reg =
-        Input::Factory<FactoryBaseType>::register_function("DescendantB",
-            Creater<DescendantB<spacedim>, int, double>() );
-
-template <....>
-class Creater {
-    shared_ptr<Type> operator(Args ... args) {
-           return make_shared<Type>(args);
-    }
-}
-*/
 
 template <int spacedim>
 DescendantB<spacedim>::DescendantB()
