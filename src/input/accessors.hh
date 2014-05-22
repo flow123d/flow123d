@@ -464,6 +464,8 @@ public:
 
     /**
      * Construct classes given by TYPE key of AbstractRecord.
+     *
+     * Method uses code implemented in Input::Factory class.
      */
     template<class Type, class... Arguments>
     std::shared_ptr<Type> factory(Arguments... arguments);
