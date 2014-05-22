@@ -636,7 +636,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 	const Element *ele;
 
-	if (i_ele == ml_it_->size() ) { // master element .. 1D
+	if (i_ele == (int)(ml_it_->size()) ) { // master element .. 1D
 		ele_type = 0;
 		delta = -delta_0;
 		ele=master_;
@@ -1054,7 +1054,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // maximal and minimal dimension of elements
     int elDimMax = 1;
     int elDimMin = 3;
-    for ( int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
+    for ( unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
         ElementFullIter el = mesh_->element(el_4_loc[i_loc]);
         int e_idx = el.index();
@@ -1096,7 +1096,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         }
 
         // insert dofs related to compatible connections
-        for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+        for ( unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
             int edge_row = row_4_edge[ el->neigh_vb[i_neigh]->edge_idx()  ];
             arma::vec3 coord = el->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
@@ -1175,9 +1175,9 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
     // renumber nodes in the inet array to locals
     int indInet = 0;
-    for ( int iEle = 0; iEle < isegn.size(); iEle++ ) {
+    for ( unsigned int iEle = 0; iEle < isegn.size(); iEle++ ) {
         int nne = nnet[ iEle ];
-        for ( unsigned ien = 0; ien < nne; ien++ ) {
+        for ( int ien = 0; ien < nne; ien++ ) {
 
             int indGlob = inet[indInet];
             // map it to local node
@@ -1881,7 +1881,7 @@ void DarcyFlowLMH_Unsteady::modify_system() {
 
 
 void DarcyFlowLMH_Unsteady::postprocess() {
-    int i_loc, side_row, loc_edge_row, i;
+    int side_row, loc_edge_row, i;
     Edge* edg;
     ElementIter ele;
     double new_pressure, old_pressure, time_coef;
@@ -1891,7 +1891,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
 
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
-    for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
+    for (unsigned int i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
 
         edg = &( mesh_->edges[ edge_4_loc[i_loc] ] );
         loc_edge_row = side_ds->lsize() + el_ds->lsize() + i_loc;

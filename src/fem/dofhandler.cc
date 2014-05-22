@@ -316,7 +316,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 
     	FOR_ELEMENTS(mesh_, cell)
 		{
-    		if (loc_part[cell.index()] != proc) continue;
+    		if (loc_part[cell.index()] != (int)proc) continue;
 
     		unsigned int dim = cell->dim();
 

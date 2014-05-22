@@ -214,7 +214,7 @@ void SorptionBase::zero_time_step()
     //isotherms array resized bellow
     isotherms.resize(nr_of_regions);
     for(int i_reg = 0; i_reg < nr_of_regions; i_reg++)
-      for(int i_spec = 0; i_spec < n_substances_; i_spec++)
+      for(unsigned int i_spec = 0; i_spec < n_substances_; i_spec++)
       {
         Isotherm iso_mob;
         isotherms[i_reg].push_back(iso_mob);
@@ -249,7 +249,7 @@ void SorptionBase::zero_time_step()
 				ele_acc);
 
 		//setting initial solid concentration for substances involved in adsorption
-		for (int sbi = 0; sbi < n_substances_; sbi++)
+		for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
 		{
 			int subst_id = substance_id[sbi];
 			conc_solid[subst_id][loc_el] = value(sbi);
@@ -260,7 +260,7 @@ void SorptionBase::zero_time_step()
 	data_->conc_solid.init(names_);
 	data_->conc_solid.set_mesh(*mesh_);
 	data_->output_fields.output_type(OutputTime::ELEM_DATA);
-	for (int sbi=0; sbi<names_.size(); sbi++)
+	for (unsigned int sbi=0; sbi<names_.size(); sbi++)
 	{
 			// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 			std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
@@ -334,7 +334,7 @@ void SorptionBase::update_solution(void)
     
 
   START_TIMER("Sorption");
-  for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+  for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
   {
     compute_reaction(concentration_matrix_, loc_el);
   }
@@ -355,7 +355,7 @@ void SorptionBase::make_tables(void)
       ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
       isotherm_reinit(isotherms[reg_idx],elm);
       //xprintf(MsgDbg,"parameters are constant\n");
-      for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+      for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
       {
         isotherms[reg_idx][i_subst].make_table(nr_of_points);
       }
@@ -372,7 +372,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
     Region region = elem->region();
     int reg_id_nr = region.bulk_idx();
     int variabl_int = 0;
-    int i_subst, subst_id;
+    unsigned int i_subst, subst_id;
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
 

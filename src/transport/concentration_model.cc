@@ -185,7 +185,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
-		for (int sbi=0; sbi<n_subst; sbi++) {
+		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
 			calculate_dispersivity_tensor(velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i], dif_coef[sbi][i]);
 		}

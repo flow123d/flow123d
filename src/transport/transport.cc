@@ -156,7 +156,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	data_.conc_mobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-	for (int sbi=0; sbi<n_subst_; sbi++)
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
@@ -304,7 +304,7 @@ void ConvectionTransport::set_initial_condition()
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 		arma::vec value = data_.init_conc.value(elem->centre(), ele_acc);
 
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
 			//pconc[MOBILE][sbi][index] = value(sbi);
@@ -318,7 +318,8 @@ void ConvectionTransport::set_initial_condition()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    int i, sbi, n_subst, ph; //, j;
+    unsigned int i;
+    int sbi, n_subst, ph;
     //ElementIter elm;
     n_subst = n_subst_;
 
@@ -804,10 +805,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
-    //struct Neighbour *ngh;
-    //struct Transport *transport;
-    int n, s, j, np, rank, new_j, new_i; //, i;
-    double max_sum, aij, aii; //, *solution;
+    unsigned int n;
+    int s, j, np, rank, new_j, new_i;
+    double max_sum, aij, aii;
     /*
     DarcyFlow *water;
 
@@ -1315,7 +1315,7 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
     double mass_flux[n_substances()];
     double *pconc[n_substances()];
 
-    for (int sbi=0; sbi<n_substances(); sbi++)
+    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
     	VecGetArray(vpconc[sbi], &pconc[sbi]);
 
     FOR_BOUNDARIES(mesh_, bcd) {

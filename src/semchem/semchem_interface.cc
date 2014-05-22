@@ -129,7 +129,7 @@ void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
 	{
-		for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+		for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 		{
 			START_TIMER("semchem-one step");
 	   	   this->compute_reaction(dual_porosity_on, mesh_->element(el_4_loc[loc_el]), loc_el, concentration_matrix);

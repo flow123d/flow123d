@@ -216,7 +216,7 @@ void DualPorosity::zero_time_step()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
 		arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
-		for (int sbi=0; sbi < names_.size(); sbi++)
+		for (unsigned int sbi=0; sbi < names_.size(); sbi++)
 		{
 			conc_immobile[sbi][loc_el] = value(sbi);
 		}
@@ -228,7 +228,7 @@ void DualPorosity::zero_time_step()
 	data_.conc_immobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-	for (int sbi=0; sbi<names_.size(); sbi++)
+	for (unsigned int sbi=0; sbi<names_.size(); sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
