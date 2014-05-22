@@ -45,7 +45,7 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldConstant<spacedim, Value>::registrar =
-		Input::Factory<FactoryBaseType>::register_function("FieldConstant", FieldConstant<spacedim, Value>::create_instance );
+		Input::Factory<FactoryBaseType, unsigned int>::register_function("FieldConstant", FieldConstant<spacedim, Value>::create_instance );
 
 
 template <int spacedim, class Value>
