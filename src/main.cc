@@ -65,7 +65,7 @@
     #define _COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
 
-static void main_convert_to_output();
+//static void main_convert_to_output();
 
 
 namespace it = Input::Type;
@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
-void main_convert_to_output() {
+/*void main_convert_to_output() {
     // TODO: implement output of input data fields
     // Fields to output:
     // 1) volume data (simple)
@@ -391,7 +391,7 @@ void main_convert_to_output() {
     //    flow and transport bcd
 
     xprintf(Err, "Not implemented yet in this version\n");
-}
+}*/
 #if 0
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM
