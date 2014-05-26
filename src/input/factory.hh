@@ -19,6 +19,17 @@
 namespace Input {
 
 using namespace std;
+/*
+template <class Type, class... Arguments>
+class Creater {
+public:
+    shared_ptr<Type> operator()(Arguments ... args) {
+        return make_shared<Type>(args...);
+    }
+
+};
+*/
+
 
 /**
  * This class implements more general factory mechanism to construct classes.
@@ -92,10 +103,10 @@ public:
     /// register a factory function to create an instance of class_name
     static int register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) );
 
-    /*
-    template <class... Arguments>
-    static int register_function(string class_name, Creater< Type, Arguments...> creater );
-    */
+
+    template <class Child>
+    static int register_constructor(string class_name);
+
 
     /// create an instance of a registered class
     shared_ptr<Type> create(string name, Arguments... arguments);
@@ -111,16 +122,6 @@ private:
 };
 
 
-/*template <class Type, class... Arguments>
-class Creater {
-public:
-    shared_ptr<Type> operator()(Arguments ... args) {
-        return make_shared<Type>(args...);
-    }
-
-private:
-    Creater() {};
-};*/
 
 } // closing namespace Input
 

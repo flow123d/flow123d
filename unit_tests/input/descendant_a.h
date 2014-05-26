@@ -39,11 +39,30 @@ private:
 template <int spacedim>
 const int DescendantA<spacedim>::reg =
 		Input::Factory<FactoryBaseType, int, double>::register_function("DescendantA", DescendantA<spacedim>::create_instance );
-/*template <int spacedim>
-const int DescendantA<spacedim>::reg =
-        Input::Factory<FactoryBaseType>::register_function("DescendantA",
-        	Input::Creater<DescendantA<spacedim>, int, double>() ); */
+/*
 
+
+class XBase {
+
+};
+
+class X :public XBase {
+public:
+    static const int reg;
+    typedef XBase FactoryBaseType;
+    X(int n_comp, double time) {};
+};
+
+
+template <int spacedim>
+const int DescendantA<spacedim>::reg =
+        Input::Factory<FactoryBaseType, int, double>::register_constructor< typename DescendantA<spacedim> >("DescendantA");
+
+
+const int X::reg =
+        Input::Factory<FactoryBaseType, int, double>::register_constructor< X >("DescendantA");
+
+*/
 
 template <int spacedim>
 DescendantA<spacedim>::DescendantA(int n_comp, double time)

@@ -28,6 +28,16 @@ int Factory<Type, Arguments...>::register_function(string class_name, std::share
 	return 0;
 }
 
+template<class Type, class... Arguments>
+template<class Child>
+int Factory<Type, Arguments...>::register_constructor(string class_name) {
+    auto creating_function =
+        [](Arguments... args)->std::shared_ptr<Type>
+        { return std::make_shared<Child>(args...); };
+    register_function(class_name, creating_function);
+    return 0;
+}
+
 
 template<class Type, class... Arguments>
 shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... arguments)
@@ -38,7 +48,8 @@ shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... a
     	auto factory_function = boost::any_cast<std::function< shared_ptr<Type>(Arguments...)> > (it->second);
         return factory_function(arguments...);
     } else {
-    	xprintf(UsrErr, "Key %s isn't registered in factory!\n", name.c_str());
+        // pouzit vyjimku
+    	xprintf(UsrErr, "Key %s isn't registered in factory for type '%s'!\n", name.c_str(), typeid(Type).name() );
     	return nullptr;
     }
 }
