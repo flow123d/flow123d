@@ -287,7 +287,6 @@ void Application::run() {
 
     {
         using namespace Input;
-        int i;
 
         // get main input record handle
 

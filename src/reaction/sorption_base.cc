@@ -367,11 +367,8 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el) // 
 {
   //DBGMSG("compute_reaction\n");
     ElementFullIter elem = mesh_->element(el_4_loc[loc_el]);
-    double porosity;
-    double rock_density;
     Region region = elem->region();
     int reg_id_nr = region.bulk_idx();
-    int variabl_int = 0;
     unsigned int i_subst, subst_id;
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_id_nr];
@@ -428,7 +425,7 @@ void SorptionBase::set_concentration_vector(Vec &vc)
 
 void SorptionBase::allocate_output_mpi(void )
 {
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    int sbi, n_subst, ierr;
     n_subst = names_.size();
 
     vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -470,7 +467,7 @@ void SorptionBase::output_data(void )
     //DBGMSG("Sorption output\n");
     output_vector_gather();
 
-    int ierr, rank;
+    int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0)
     {

@@ -558,9 +558,6 @@ void TransportDG<Model>::set_velocity_field(const MH_DofHandler &dh)
 template<class Model>
 void TransportDG<Model>::output_data()
 {
-    double *solution;
-    unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-
     if (!time_->is_current( time_->marks().type_output() )) return;
 
     START_TIMER("DG-OUTPUT");

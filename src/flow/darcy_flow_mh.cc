@@ -289,8 +289,6 @@ void DarcyFlowMH_Steady::update_solution() {
 void DarcyFlowMH_Steady::postprocess() 
 {
     START_TIMER("postprocess");
-    int side_rows[4];
-    double values[4];
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
@@ -874,9 +872,6 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 void DarcyFlowMH_Steady::create_linear_system() {
   
     START_TIMER("preallocation");
-    int i_loc, el_row;
-    Element *ele;
-    Vec aux;
     PetscErrorCode err;
 
     F_ENTRY;
@@ -1084,7 +1079,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         nne++;
 
         FOR_ELEMENT_SIDES(el,si) {
-            Edge *edg=el->side(si)->edge();
+            //Edge *edg=el->side(si)->edge();
 
             // insert local edge dof
             int edge_row = row_4_edge[ el->side(si)->edge_idx() ];
@@ -1111,7 +1106,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // trace computation
         arma::vec3 centre = el->centre();
         double conduct = data_.conductivity.value( centre , el->element_accessor() );
-        double cs = data_.cross_section.value( centre, el->element_accessor() );
+        //double cs = data_.cross_section.value( centre, el->element_accessor() );
         arma::mat33 aniso = data_.anisotropy.value( centre, el->element_accessor() );
 
         // compute mean on the diagonal

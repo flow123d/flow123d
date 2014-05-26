@@ -438,8 +438,6 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 
 void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
-	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
-
 	if (doc_type_ == key_record) {
 		stream << "AdHocAbstractRecord" << endl;
 		stream << setw(padding_size + size_setw_) << "";
@@ -1167,8 +1165,6 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
 void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
-	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
-
 	if (doc_type_ == key_record) {
         stream << "adhoc abstract type}";
         stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";

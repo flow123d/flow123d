@@ -215,7 +215,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 ConvectionTransport::~ConvectionTransport()
 {
-    unsigned int sbi, ph;
+    unsigned int sbi;
 
     if (mass_balance_ != NULL)
     	delete mass_balance_;
@@ -602,7 +602,7 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
-    unsigned int loc_el,sbi;
+    unsigned int sbi;
     
     START_TIMER("data reinit");
     data_.set_time(*time_); // set to the last computed time

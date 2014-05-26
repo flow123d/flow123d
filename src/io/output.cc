@@ -366,8 +366,6 @@ void OutputTime::write_time_frame()
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
-    OutputTime *output_time = NULL;
-
     /* TODO: do something, when support for Parallel VTK is added */
     if (rank == 0) {
     	// Write data to output stream, when data registered to this output

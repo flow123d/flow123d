@@ -303,7 +303,7 @@ void DualPorosity::update_solution(void)
 double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
 {
   double conc_avg = 0.0;
-  unsigned int sbi, sbi_loc;
+  unsigned int sbi;
   double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
    
   ElementFullIter ele = mesh_->element(el_4_loc[loc_el]);
@@ -368,7 +368,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 void DualPorosity::allocate_output_mpi(void )
 {
   //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    int sbi, n_subst, ierr;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
