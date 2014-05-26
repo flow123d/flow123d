@@ -585,7 +585,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)
+					if ( (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord))
 							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))

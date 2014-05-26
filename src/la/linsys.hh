@@ -408,11 +408,12 @@ public:
         	    	for(unsigned int l_col = 0; l_col < col_dofs.size(); l_col++)
         	    		if (col_dofs[l_col] < 0 && row_dofs[l_row] == col_dofs[l_col]) {
         	    			double new_diagonal = fabs(matrix.at(l_row,l_col));
-        	    			if (new_diagonal == 0.0)
+        	    			if (new_diagonal == 0.0) {
         	    				if (matrix.is_square()) {
         	    					new_diagonal = arma::sum( abs(matrix.diag())) / matrix.n_rows;
         	    				} else {
         	    					new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
+        	    				}
         	    			}
         	    			tmp.at(l_row, l_col) = new_diagonal;
         	    			tmp_rhs(l_row) = new_diagonal * row_solution[l_row];
