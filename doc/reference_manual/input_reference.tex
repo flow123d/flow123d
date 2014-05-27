@@ -113,7 +113,6 @@ neighborings of elements of different dimension.}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::OutputStream}{OutputStream}}{}{}{}{Parameters of output.}
-\KeyItem{\hyperB{OutputStream::name}{name}}{String (generic)}{\textless\it obligatory\textgreater}{}{The name of this stream. Used to reference the output stream.}
 \KeyItem{\hyperB{OutputStream::file}{file}}{output file name}{\textless\it obligatory\textgreater}{}{File path to the connected output file.}
 \KeyItem{\hyperB{OutputStream::format}{format}}{abstract type: \hyperlink{IT::OutputTime}{OutputTime}}{\textless\it optional\textgreater}{}{Format of output stream and possible parameters.}
 \KeyItem{\hyperB{OutputStream::time-step}{time\_step}}{Double [0, ]}{\textless\it optional\textgreater}{}{Time interval between outputs.\\Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\\The start time and the end time are always added. }
@@ -272,6 +271,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{}{Abstract record for all time-space functions.}
 \Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
 \Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
+\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
 \Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
 \Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
 \end{AbstractType}
@@ -292,6 +292,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by runtime interpreted formula.}
 \KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
 \KeyItem{\hyperB{FieldFormula::value}{value}}{String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field given by a Python script.}
+\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
+\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
+\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum}{Field:R3 $\rightarrow$ Enum}}{}{}{R3 $\rightarrow$ Enum Field constant in space.}
@@ -411,6 +418,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{AbstractType}{\HTRaised{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{\hyperlink{IT::FieldConstant}{FieldConstant}}{\AddDoc{Field:R3 $\rightarrow$ Enum[n]}}{Abstract record for all time-space functions.}
 \Descendant{\hyperlink{IT::FieldConstant}{FieldConstant}}
 \Descendant{\hyperlink{IT::FieldFormula}{FieldFormula}}
+\Descendant{\hyperlink{IT::FieldPython}{FieldPython}}
 \Descendant{\hyperlink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}
 \Descendant{\hyperlink{IT::FieldElementwise}{FieldElementwise}}
 \end{AbstractType}
@@ -430,6 +438,13 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \begin{RecordType}{\HTRaised{IT::FieldFormula}{FieldFormula}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field given by runtime interpreted formula.}
 \KeyItem{\hyperB{FieldFormula::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum[n]\_TYPE\_selection}{FieldFormula}{}{Sub-record selection.}
 \KeyItem{\hyperB{FieldFormula::value}{value}}{Array [1, ] of String (generic)}{\textless\it obligatory\textgreater}{}{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.\\For vector values, you can use just one string to enter homogeneous vector.\\For square NxN-matrix values, you can use:\\* array of strings of size N to enter diagonal matrix\\* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\\* just one string to enter (spatially variable) multiple of the unit matrix.\\Formula can contain variables x,y,z,t and usual operators and functions.}
+\end{RecordType}
+
+\begin{RecordType}{\HTRaised{IT::FieldPython}{FieldPython}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field given by a Python script.}
+\KeyItem{\hyperB{FieldPython::TYPE}{TYPE}}{selection: Field:R3 $\rightarrow$ Enum[n]\_TYPE\_selection}{FieldPython}{}{Sub-record selection.}
+\KeyItem{\hyperB{FieldPython::script-string}{script\_string}}{String (generic)}{"Obligatory if 'script\_file' is not given."}{}{Python script given as in place string}
+\KeyItem{\hyperB{FieldPython::script-file}{script\_file}}{input file name}{"Obligatory if 'script\_striong' is not given."}{}{Python script given as external file}
+\KeyItem{\hyperB{FieldPython::function}{function}}{String (generic)}{\textless\it obligatory\textgreater}{}{Function in the given script that returns tuple containing components of the return type.\\For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}
 \end{RecordType}
 
 \begin{RecordType}{\HTRaised{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}{\hyperlink{IT::Field:R3 - Enum[n]}{Field:R3 $\rightarrow$ Enum[n]}}{}{}{R3 $\rightarrow$ Enum[n] Field constant in space.}

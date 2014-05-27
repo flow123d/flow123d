@@ -532,17 +532,6 @@ void TransportDG<Model>::update_solution()
 }
 
 
-
-template<class Model>
-void TransportDG<Model>::get_solution_vector(double *& vector, unsigned int & size)
-{}
-
-
-template<class Model>
-void TransportDG<Model>::get_parallel_solution_vector(Vec & vector)
-{}
-
-
 template<class Model>
 void TransportDG<Model>::set_velocity_field(const MH_DofHandler &dh)
 {

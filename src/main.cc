@@ -32,12 +32,13 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
-#include "io/output.h"
+//#include "io/output.h"
 
 #include <iostream>
 #include <fstream>
@@ -51,7 +52,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.8.0"
+#define _PROGRAM_VERSION_   "1.8.1"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -92,9 +93,32 @@ Application::Application( int argc,  char ** argv)
   passed_argc_(0),
   passed_argv_(0),
   use_profiler(true)
-{}
+{
+    // initialize python stuff if we have
+    // nonstandard python home (release builds)
+    std::cout << "Application constructor" << std::endl;
+#ifdef HAVE_PYTHON
+#ifdef PYTHON_HOME
+    PythonLoader::initialize(argv[0]);
+#endif
+#endif
+
+}
 
 
+void Application::split_path(const string& path, string& directory, string& file_name) {
+
+    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
+    if (delim_pos < string::npos) {
+
+        // It seems, that there is some path in fname ... separate it
+        directory =path.substr(0,delim_pos);
+        file_name =path.substr(delim_pos+1); // till the end
+    } else {
+        directory = ".";
+        file_name = path;
+    }
+}
 
 void Application::display_version() {
     // Say Hello
@@ -163,7 +187,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("full_doc", "Prints full structure of the main input file.")
         ("JSON_template", "Prints description of the main input file as a valid CON file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+
     ;
 
     // parse the command line
@@ -226,22 +252,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         exit( exit_output );
     }
 
+    if (vm.count("petsc_redirect")) {
+        this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
+    }
+
     // if there is "solve" option
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
-
-
-        // Try to find absolute or relative path in fname
-        size_t delim_pos=input_filename.find_last_of(DIR_DELIMITER);
-        if (delim_pos < input_filename.npos) {
-
-            // It seems, that there is some path in fname ... separate it
-            main_input_dir_ =input_filename.substr(0,delim_pos);
-            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
-        } else {
-            main_input_dir_ = ".";
-            main_input_filename_ = input_filename;
-        }
+        split_path(input_filename, main_input_dir_, main_input_filename_);
     } 
 
     // possibly turn off profilling
@@ -260,11 +278,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
     if (vm.count("log")) {
-        log_filename_ = vm["log"].as<string>();
+        this->log_filename_ = vm["log"].as<string>();
     }
 
     if (vm.count("no_log")) {
-        log_filename_="//";     // override; do not open log files
+        this->log_filename_="//";     // override; do not open log files
     }
 
     ostringstream tmp_stream(program_arguments_desc_);
@@ -337,13 +355,16 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    using namespace Input;
-    std::string ini_fname;
-
-    F_ENTRY;
-    Application app(argc, argv);
-
-    app.init(argc, argv);
+    try {
+        Application app(argc, argv);
+        app.init(argc, argv);
+    } catch (std::exception & e) {
+        std::cerr << e.what();
+        return ApplicationBase::exit_failure;
+    } catch (...) {
+        std::cerr << "Unknown exception" << endl;
+        return ApplicationBase::exit_failure;
+    }
 
     // Say Goodbye
     return ApplicationBase::exit_success;

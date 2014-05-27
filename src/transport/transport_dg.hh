@@ -204,19 +204,6 @@ public:
 	void update_solution() override;
 
 	/**
-	 * @brief Returns the serialized solution array.
-	 * @param vector the solution
-	 * @param size   size of the array
-	 */
-	void get_solution_vector(double * &vector, unsigned int &size);
-
-	/**
-	 * @brief Returns the (possibly) parallel solution vector.
-	 * @param vector
-	 */
-	void get_parallel_solution_vector(Vec &vector);
-
-	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
 	 * 
          * @param dh mixed hybrid dof handler

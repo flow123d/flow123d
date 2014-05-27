@@ -42,21 +42,13 @@
 
 
 namespace it = Input::Type;
-/*template <int spacedim, class Value>
-it::Record FieldInterpolatedP0<spacedim, Value>::input_type
-    = it::Record("FieldInterpolatedP0", "Field given by P0 data on another mesh. Currently defined only on boundary.")
-	.derive_from(FieldBase<spacedim, Value>::input_type)
-	// TODO: use mesh record here, but make it possibly of the same simplicity (the file name only)
-	.declare_key("mesh", it::FileName::input(),it::Default::obligatory(),
-			"File with the mesh from which we interpolate. (currently only GMSH supported)")
-	// TODO: allow interpolation from VTK files (contains also mesh), and our own format of raw data, that includes:
-	// mesh, dof_handler, and dof values
-	.declare_key("raw_data", it::FileName::input(), it::Default::obligatory(),
-			"File with raw output from flow calculation. Currently we can interpolate only pressure."); */
+
+
 
 template <int spacedim, class Value>
 it::Record FieldInterpolatedP0<spacedim, Value>::input_type
     = FieldInterpolatedP0<spacedim, Value>::get_input_type(FieldBase<spacedim, Value>::input_type, NULL);
+
 
 
 template <int spacedim, class Value>
@@ -77,11 +69,11 @@ Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
 }
 
 
+
 template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
 : FieldBase<spacedim, Value>(n_comp)
 {}
-
 
 
 
@@ -105,66 +97,6 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	field_name_ = rec.val<std::string>("field_name");
 }
 
-
-
-/**
- * TODO:
- * nahradit  pressure_ -> value_
- *
- * for(unsigned int i=0; i < value_.n_rows(); i ++)
- *      for( ... n_cols() )
- *          value_.at(i,j) = 0.0;
- *
- * Value tmp_value;
- * Value::from_raw(tmp_value, (typename Value::element_type *)(data_+idx));
- * for(unsigned int i=0; i < value_.n_rows(); i ++)
- *      for( ... n_cols() )
- *          value_.at(i,j) += measure * tmp_value.at(i,j);
- *
- * ?? spojit caluculate_abscissa a calculate_triangle
- */
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_tetrahedron(Element *ele, TTetrahedron &te) {
-	ASSERT(( ele->dim() == 3 ), "Dimension of element must be 3!\n");
-
-	te.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-				TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
-				TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)),
-				TPoint(ele->node[3]->point()(0), ele->node[3]->point()(1), ele->node[3]->point()(2)) );
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_triangle(const Element *ele, TTriangle &tr) {
-	ASSERT(( ele->dim() == 2 ), "Dimension of element must be 2!\n");
-
-	tr.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-				 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)),
-				 TPoint(ele->node[2]->point()(0), ele->node[2]->point()(1), ele->node[2]->point()(2)) );
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_abscissa(const Element *ele, TAbscissa &ab) {
-	ASSERT(( ele->dim() == 1 ), "Dimension of element must be 1!\n");
-
-	ab.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),
-			 	 TPoint(ele->node[1]->point()(0), ele->node[1]->point()(1), ele->node[1]->point()(2)) );
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::create_point(const Element *ele, TPoint &p) {
-	ASSERT(( ele->dim() == 0 ), "Dimension of element must be 0!\n");
-
-	p.SetCoord( ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2) );
-}
 
 
 
@@ -237,11 +169,11 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		{
 			ElementFullIter ele = source_mesh_->element( *it );
 			if (ele->dim() == 3) {
-				create_tetrahedron(ele, tetrahedron_);
+			    ngh::set_tetrahedron_from_element(tetrahedron_, ele);
 				// get intersection (set measure = 0 if intersection doesn't exist)
 				switch (elm.dim()) {
 					case 0: {
-						create_point(elm.element(), point_);
+					    ngh::set_point_from_element(point_, elm.element());
 						if ( tetrahedron_.IsInner(point_) ) {
 							measure = 1.0;
 						} else {
@@ -250,7 +182,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 						break;
 					}
 					case 1: {
-						create_abscissa(elm.element(), abscissa_);
+					    ngh::set_abscissa_from_element(abscissa_, elm.element());
 						GetIntersection(abscissa_, tetrahedron_, iType, measure);
 						if (iType != line) {
 							measure = 0.0;
@@ -258,7 +190,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 						break;
 					}
 			        case 2: {
-			        	create_triangle(elm.element(), triangle_);
+			        	ngh::set_triangle_from_element(triangle_, elm.element());
 						GetIntersection(triangle_, tetrahedron_, iType, measure);
 						if (iType != area) {
 							measure = 0.0;

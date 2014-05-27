@@ -364,20 +364,30 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 
 			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-				domain.push_back( mesh()->region_db().find_label(domain_name) );    // try find region by label
-				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
+        // try find region by label
+        Region region = mesh()->region_db().find_label(domain_name); 
+        if(region.is_valid())
+          domain.push_back(region);
+        else
+          xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (shared_->list_it_->opt_val("rid", id)) {
-				domain.push_back( mesh()->region_db().find_id(id) );         // try find region by ID
-				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with id: '%d'\n", id);
-
+        // try find region by ID
+        Region region = mesh()->region_db().find_id(id);
+				if(region.is_valid())
+          domain.push_back(region);         
+        else
+          xprintf(Warn, "Unknown region with id: '%d'\n", id);
 			} else {
 				THROW(ExcMissingDomain()
 						<< EI_Field(this->name())
 						<< shared_->list_it_->ei_address() );
 			}
-		    if (domain.size() == 0) continue;
-
+		    
+		  if (domain.size() == 0) {
+        ++shared_->list_it_;
+        continue;
+      }
 			// get field instance
 			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
 			if (field_instance)  // skip descriptors without related keys
