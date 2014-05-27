@@ -703,13 +703,13 @@ void Mesh::make_intersec_elements() {
 	 *
 	 */
 	BIHTree bih_tree( this );
-	vector<unsigned int> candidate_list(20);
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
 		Element &ele = this->element[i_ele];
 
 		if (ele.dim() == 1) {
+			vector<unsigned int> candidate_list;
 			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
 			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
 			//for(int i_elm: candidate_list) {

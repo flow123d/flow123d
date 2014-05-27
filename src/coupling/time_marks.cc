@@ -45,6 +45,8 @@ ostream& operator<<(ostream& stream, const TimeMark &mark)
 }
 
 const TimeMark::Type TimeMark::every_type =  ~0x0;
+const TimeMark::Type TimeMark::none_type =  0x0;
+
 
 //This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks //OBSOLETE
 //const TimeMark::Type TimeMark::strict =  0x1;
@@ -104,20 +106,27 @@ void TimeMarks::add(const TimeMark &mark) {
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
-    if (end_time == TimeGovernor::inf_time) {
-        if (time == TimeGovernor::inf_time) return;
-        else add(TimeMark(time, type));
-    }
-    else {
+	ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
+	ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
+    //if (end_time == TimeGovernor::inf_time) {
+    //    if (time == TimeGovernor::inf_time) return;
+    //    else add(TimeMark(time, type));
+    //} else
+    //if (dt == 0) {
+    	// prevent infinite loop - add only initial time
+    //	add(TimeMark(time, type));
+    //}
+    //else {
         for (double t = time; t <= end_time*1.001; t += dt) {
-            add(TimeMark(t, type));
+        	auto mark = TimeMark(t, type);
+            add(mark);
         }
-    }
+   // }
 }
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
-    if (tg.end_time() == TimeGovernor::inf_time) return (tg.t() == TimeGovernor::inf_time);
+    if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
@@ -140,6 +149,31 @@ TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type
     // cout << "TimeMark::last(): " << *first_ge << endl;
     return TimeMarksIterator(marks_, first_ge, mask);
 }
+
+
+
+TimeMarks::iterator TimeMarks::last(const TimeMark::Type &mask) const
+{
+	auto it = TimeMarksIterator(marks_, --marks_.end(), mask); // +INF time mark
+	--it;
+	return it;
+}
+
+
+
+TimeMarks::iterator TimeMarks::begin(TimeMark::Type mask) const
+{
+	return TimeMarksIterator(marks_, marks_.begin(), mask);
+}
+
+
+
+TimeMarks::iterator TimeMarks::end(TimeMark::Type mask) const
+{
+	return TimeMarksIterator(marks_, --marks_.end(), mask);
+}
+
+
 
 ostream& operator<<(ostream& stream, const TimeMarks &marks)
 {

@@ -64,11 +64,14 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
+	ASSERT(this->is_copy_, "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+
 	// check for self assignement
 	if (&other == this) return *this;
 
 	shared_ = other.shared_;
+    shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
 	limit_side_ = other.limit_side_;
 
@@ -200,6 +203,10 @@ void Field<spacedim, Value>::set_field(
 		FieldBasePtr field,
 		double time)
 {
+	ASSERT(field, "Null field pointer.\n");
+
+    //DBGMSG("test value: %g\n", pressure);
+
     ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
@@ -246,21 +253,21 @@ auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const Fiel
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 {
-	ASSERT( mesh() , "NULL mesh pointer. set_mesh must be called before.\n");
-	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side before calling set_time.\n");
-
-	// possibly update our control field
-	if (no_check_control_field_) {
-		no_check_control_field_->set_limit_side(limit_side_);
-		no_check_control_field_->set_time(time);
-	}
-
-	set_time_result_ = TimeStatus::constant;
+	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
+	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
     if (time.t() == last_time_)  return changed();
     last_time_=time.t();
 
+        // possibly update our control field
+        if (no_check_control_field_) {
+                no_check_control_field_->set_limit_side(limit_side_);
+                no_check_control_field_->set_time(time);
+        }
+        
+    set_time_result_ = TimeStatus::constant;
+    
     // read all descriptors satisfying time.ge(input_time)
     update_history(time);
     check_initialized_region_fields_();
@@ -311,11 +318,23 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
+	ASSERT(this->is_copy_, "Try to call copy from the field '%s' to the non-copy field '%s'.", other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);
 	}
 }
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::output(OutputTime *stream)
+{
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
+}
+
 
 
 template<int spacedim, class Value>
@@ -345,20 +364,30 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 
 			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-				domain.push_back( mesh()->region_db().find_label(domain_name) );    // try find region by label
-				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
+        // try find region by label
+        Region region = mesh()->region_db().find_label(domain_name); 
+        if(region.is_valid())
+          domain.push_back(region);
+        else
+          xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (shared_->list_it_->opt_val("rid", id)) {
-				domain.push_back( mesh()->region_db().find_id(id) );         // try find region by ID
-				if (! domain[0].is_valid() ) xprintf(Warn, "Unknown region with id: '%d'\n", id);
-
+        // try find region by ID
+        Region region = mesh()->region_db().find_id(id);
+				if(region.is_valid())
+          domain.push_back(region);         
+        else
+          xprintf(Warn, "Unknown region with id: '%d'\n", id);
 			} else {
 				THROW(ExcMissingDomain()
 						<< EI_Field(this->name())
 						<< shared_->list_it_->ei_address() );
 			}
-		    if (domain.size() == 0) continue;
-
+		    
+		  if (domain.size() == 0) {
+        ++shared_->list_it_;
+        continue;
+      }
 			// get field instance
 			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
 			if (field_instance)  // skip descriptors without related keys
@@ -454,7 +483,14 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
     sub_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].name( name() + "_" + sub_names_[i_comp] );
+    {
+    	sub_fields_[i_comp].units( units() );
+
+    	if (sub_names_[i_comp].length() == 0)
+    		sub_fields_[i_comp].name( name() );
+    	else
+    		sub_fields_[i_comp].name( sub_names_[i_comp] + "_" + name());
+    }
 }
 
 
@@ -465,12 +501,21 @@ it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 
 
 template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_limit_side(LimitSide side)
+{
+	for ( SubFieldType &field : sub_fields_)
+		field.set_limit_side(side);
+}
+
+
+template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)
 {
 	bool any=false;
 	for( SubFieldType &field : sub_fields_) {
-		any=any || field.set_time(time);
+		if (field.set_time(time))
+			any = true;
 	}
     return any;
 }
@@ -496,6 +541,18 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
 		sub_fields_[0] = other_field;
 	}
 }
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::output(OutputTime *stream)
+{
+	// currently we cannot output boundary fields
+	if (!is_bc())
+		stream->register_data(this->output_type(), *this);
+}
+
+
 
 
 

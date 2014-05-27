@@ -8,10 +8,13 @@
 
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
-#include "transport/transport.h"
+//#include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "fields/field_base.hh"
 #include "fields/field_values.hh"
+
+#define MOBILE 0
+#define IMMOBILE 1
 
 using namespace std;
 
@@ -39,7 +42,7 @@ it::Record Specie::input_type = it::Record("Isotope", "Definition of information
 
 
 it::Record General_reaction::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
-	.derive_from(Reaction::input_type)
+	.derive_from(ReactionTerm::input_type)
         //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
         //        "Description of general chemical reactions.");
 	.declare_key("identifier", it::Integer(), it::Default::obligatory(),
@@ -122,7 +125,7 @@ void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por
 	return;
 }*/
 
-void Semchem_interface::compute_one_step(void)
+void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
 	{

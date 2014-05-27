@@ -41,6 +41,7 @@
 #include "la/linsys_BDDC.hh"
 
 
+
 namespace it = Input::Type;
 
 
@@ -168,14 +169,6 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 #endif // HAVE_BDDCML
 }
 
-void LinSys_BDDC::load_diagonal( std::map<int,double> & diag )
-{
-#ifdef HAVE_BDDCML
-    // simply pass the data to BDDCML solver
-    bddcml_ -> loadDiagonal( diag );
-#endif // HAVE_BDDCML
-}
-
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
 #ifdef HAVE_BDDCML
@@ -204,7 +197,7 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
 void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
 {
 #ifdef HAVE_BDDCML
-	namespace ublas = boost::numeric::ublas;
+    namespace ublas = boost::numeric::ublas;
 
     std::vector< unsigned >  myRows( nrow ); 
     ublas::vector< double >  vec( nrow ); 
@@ -219,6 +212,27 @@ void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
     }
 
     bddcml_ -> insertToRhs( vec, myRows );
+#endif // HAVE_BDDCML
+}
+
+void LinSys_BDDC::diagonal_weights_set_value( int global_index, double value )
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> insertToDiagonalWeights( global_index, value );
+#endif // HAVE_BDDCML
+}
+
+PetscErrorCode LinSys_BDDC::mat_zero_entries()
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> clearMatrix( );
+#endif // HAVE_BDDCML
+}
+
+PetscErrorCode LinSys_BDDC::rhs_zero_entries()
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> clearRhs( );
 #endif // HAVE_BDDCML
 }
 

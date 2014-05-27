@@ -77,11 +77,22 @@ public:
 		Field<3, FieldValue<3>::Scalar> solid_ref_temperature;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
+
+
+		MultiField<3, FieldValue<3>::Scalar> output_field;
+
+        /// Fields indended for output, i.e. all input fields plus those representing solution.
+        FieldSet output_fields;
 
 
 		ModelEqData();
-		static string name() {return "HeatTransfer";}
+
+		static string name() { return "HeatTransfer"; }
+
+		static string default_output_field() { return "temperature"; }
+
+		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
 	};
 
 protected:
@@ -107,7 +118,7 @@ public:
 
 	void init_data(unsigned int n_subst_) override;
 
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) override;
+	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) override;
 
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
 

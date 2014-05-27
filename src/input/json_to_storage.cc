@@ -238,7 +238,7 @@ JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type
 		istringstream is(str);
 		read_stream(is, root_type);
 	} catch (ExcNotJSONFormat &e) {
-		e << EI_File(str); throw;
+		e << EI_File("STRING: "+str); throw;
 	}
 }
 
@@ -388,8 +388,8 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
         if ( auto_key_it != record->end() ) {
             // try auto conversion
-            stringstream ss;
-            ss << p;
+            //stringstream ss;
+            //ss << p;
             //xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
 
             StorageArray *storage_array = new StorageArray(record->size());
@@ -397,13 +397,16 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
                 if ( it == auto_key_it ) {
                     // one key is initialized by input
                     storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
-                } else {
-                    ASSERT( it->default_.has_value_at_declaration() ,
-                            "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+                } else if (it->default_.has_value_at_declaration() ) {
                     // other key from default values
                     storage_array->new_item(it->key_index,
                             make_storage_from_default( it->default_.value(), it->type_.get() ) );
-                }
+                 } else { // defalut - optional or default at read time
+                     ASSERT( ! it->default_.is_obligatory() ,
+                             "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+                     // set null
+                     storage_array->new_item(it->key_index, new StorageNull() );
+                 }
             }
 
             return storage_array;
@@ -448,11 +451,17 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
     }
 
     // perform automatic conversion
-    stringstream ss;
-    ss << p;
+    //stringstream ss;
+    //ss << p;
     // xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
 
-    return make_storage(p, abstr_rec->get_default_descendant() );
+    const Type::Record *default_child = abstr_rec->get_default_descendant();
+    if (! default_child) THROW(ExcInputError()
+    		<< EI_Specification("Auto conversion of AbstractRecord not allowed.\n")
+    		<< EI_ErrorAddress(p)
+    		<< EI_InputType(abstr_rec->desc())
+    		);
+    return make_storage(p, default_child );
 }
 
 
@@ -598,6 +607,12 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
+    	/*
+    	// Possible simplification of this method (need default strings to be valid JSON)
+    	JSONToStorage  tmp_storage(dflt_str, *type);
+    	return tmp_storage.storage_;
+		*/
+
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {
@@ -617,11 +632,17 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                         // one key is initialized by the record default string
                         storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
                     } else {
-                        ASSERT( it->default_.has_value_at_declaration() ,
+
+                        ASSERT( ! it->default_.is_obligatory(),
                                 "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
-                        // other key from theirs default values
-                        storage_array->new_item(it->key_index,
-                                make_storage_from_default( it->default_.value(), it->type_.get() ) );
+
+                        if (it->default_.has_value_at_declaration() ) {
+                           storage_array->new_item(it->key_index,
+                                   make_storage_from_default( it->default_.value(), it->type_.get() ) );
+                        } else { // defalut - optional or default at read time
+                            // set null
+                            storage_array->new_item(it->key_index, new StorageNull() );
+                        }
                     }
                 }
 
@@ -661,6 +682,8 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
             // default error
             xprintf(PrgErr,"Can not store default value for type: %s\n", typeid(type).name());
         }
+
+
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration
         xprintf(Msg, "Wrong default value while reading an input stream:\n");

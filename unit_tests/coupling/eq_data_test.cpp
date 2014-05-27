@@ -158,6 +158,7 @@ protected:
         BCField<3, FieldValue<3>::Vector > bc_conc;
     };
 
+    void output_data() override {}
 };
 
 IT::Selection SomeEquationBase::EqData::bc_type_selection =
@@ -187,10 +188,6 @@ public:
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
     };
 
-public:
-
-    void get_solution_vector(double*&, unsigned int&) {}
-    void get_parallel_solution_vector(_p_Vec*&) {}
 protected:
     static Input::Type::Record input_type;
     EqData data;

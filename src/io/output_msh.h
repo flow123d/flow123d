@@ -35,18 +35,18 @@
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputMSH : public OutputFormat {
+class OutputMSH : public OutputTime {
 public:
 
     /**
      * \brief The constructor of this class
      */
-    OutputMSH(OutputTime *_output_time);
+    OutputMSH();
 
     /**
      * \brief The constructor of this class
      */
-    OutputMSH(OutputTime *_output_time, const Input::Record &in_rec);
+    OutputMSH(const Input::Record &in_rec);
 
     /**
      * \brief The destructor of this class
@@ -59,14 +59,6 @@ public:
     static Input::Type::Record input_type;
 
     /**
-     * \brief This method writes data to the GMSH (.msh) file format. This method
-     * is used for static data
-     *
-     * \return      This function returns 1
-     */
-    int write_data(void);
-
-    /**
      * \brief This method writes head of GMSH (.msh) file format
      *
      * \return      This function returns 1
@@ -74,13 +66,11 @@ public:
     int write_head(void);
 
     /**
-     * \brief This method writes data to GMSH (.msh) file format for current step
-     *
-     * \param[in]   time        The time from start
+     * \brief This method writes data to GMSH (.msh) file format for current time
      *
      * \return      This function returns 1
      */
-    int write_data(double time);
+    int write_data(void);
 
     /**
      * \brief This method should write tail of GMSH (.msh) file format
@@ -92,9 +82,6 @@ public:
      */
     int write_tail(void);
 
-protected:
-
-    OutputMSH() {}
 
 private:
 
@@ -102,20 +89,6 @@ private:
      * Was header already written to output file?
      */
     bool header_written;
-
-    /**
-     * \brief The declaration enumeration used for variant of GMSH file format
-     */
-    typedef enum Variant {
-    	VARIANT_ASCII  = 1,
-    	VARIANT_BINARY = 2
-    } Variant;
-
-
-    /**
-     * \brief The pointer at OutputTime
-     */
-    OutputTime *output_time;
 
     /**
      * \brief This function write header of GMSH (.msh) file format
@@ -139,14 +112,15 @@ private:
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_cont_data(OutputData *out_data);
+    template<class element>
+    void write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data);
 
     /**
      * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_discont_data(OutputData *out_data);
+    void write_msh_ascii_discont_data(OutputDataBase* output_data);
 
     /**
      * \brief This function write all data on nodes to output file. This function

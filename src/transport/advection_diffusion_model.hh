@@ -48,7 +48,7 @@ public:
 	virtual void init_data(unsigned int n_subst_) = 0;
 
 	/// Temporary solution for sharing data from other equations.
-	virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
+	//virtual void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) = 0;
 
 	/// Read or set names of solution components.
 	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;

@@ -142,33 +142,13 @@ public:
       lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
       positive_definite_(other.positive_definite_), negative_definite_( other.negative_definite_ ),
       spd_via_symmetric_general_(other.spd_via_symmetric_general_), globalSolution_(other.globalSolution_),
-      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_)
+      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_),
+	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+
     {
     	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
-
-    // Particular type of the linear system.
-    //LinSysType type;  //!< anyone can inquire my type
-
-    virtual void load_mesh( const int nDim, const int numNodes, const int numDofs,
-                            const std::vector<int> & inet, 
-                            const std::vector<int> & nnet, 
-                            const std::vector<int> & nndf, 
-                            const std::vector<int> & isegn, 
-                            const std::vector<int> & isngn, 
-                            const std::vector<int> & isvgvn,
-                            const std::vector<double> & xyz,
-                            const std::vector<double> & element_permeability,
-                            const int meshDim )
-    {
-        ASSERT( false, "Function load_mesh is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-
-    virtual void load_diagonal( std::map<int,double> & diag )
-    {
-        ASSERT( false, "Function load_diagonal is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
 
     /**
      *  Returns global system size.
@@ -218,20 +198,29 @@ public:
     }
     
     /**
-     * Sets matrix changed flag  (only for PETSC solvers)
+     * Sets matrix changed flag.
      */
-    virtual void set_matrix_changed()
-    {
-        ASSERT( false, "Function set_matrix_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
+    void set_matrix_changed()
+    { matrix_changed_ = true;}
 
     /**
      * Sets rhs changed flag  (only for PETSC solvers)
      */
-    virtual void set_rhs_changed()
-    {
-        ASSERT( false, "Function set_rhs_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
+    void set_rhs_changed()
+    { rhs_changed_ = true; }
+
+    /**
+     * Returns true if the system matrix has changed since the last solve.
+     */
+    bool is_matrix_changed()
+    { return matrix_changed_;}
+
+    /**
+     * Returns true if the system RHS has changed since the last solve.
+     */
+    bool is_rhs_changed()
+    { return rhs_changed_;}
+
 
     /**
      * Sets PETSC matrix (only for PETSC solvers)
@@ -249,11 +238,17 @@ public:
         ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the matrix 
+     */
     virtual PetscErrorCode mat_zero_entries()
     {
     	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
     }
 
+    /**
+     * Clears entries of the right-hand side 
+     */
     virtual PetscErrorCode rhs_zero_entries()
     {
     	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
@@ -603,6 +598,9 @@ protected:
     bool             positive_definite_;
     bool             negative_definite_;
     bool             spd_via_symmetric_general_;
+
+    bool    matrix_changed_;     //!< true if the matrix was changed since the last solve
+    bool    rhs_changed_;        //!< true if the right hand side was changed since the last solve
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
     double  *v_solution_;        //!< local solution array pointing into Vec solution_

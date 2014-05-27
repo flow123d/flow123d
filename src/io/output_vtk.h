@@ -31,13 +31,14 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
+#include "fields/field_base.hh"
 
 #include "io/output.h"
 
 /**
  * \brief This class is used for output data to VTK file format
  */
-class OutputVTK : public OutputFormat {
+class OutputVTK : public OutputTime {
 
 public:
 
@@ -45,13 +46,13 @@ public:
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
-    OutputVTK(OutputTime *_output_time, const Input::Record &in_rec);
+    OutputVTK(const Input::Record &in_rec);
 
     /**
      * \brief The constructor of this class. The head of file is written, when
      * constructor is called
      */
-    OutputVTK(OutputTime *_output_time);
+    OutputVTK();
 
     /**
      * \brief The destructor of this class. It writes tail of the file too.
@@ -74,17 +75,10 @@ public:
     static Input::Type::Selection input_type_compression;
 
     /**
-     * \brief This function output data to serial VTK file format (single .vtu)
+     * \brief This function write data to VTK (.pvd) file format
+     * for curent time
      */
     int write_data(void);
-
-    /**
-     * \brief This function write data to VTK (.pvd and .vtu) file format
-     * for specific time
-     *
-     * \param[in]   time        The time from start
-     */
-    int write_data(double time);
 
     /**
      * \brief This function writes header of VTK (.pvd) file format
@@ -119,11 +113,6 @@ private:
     	COMPRESSION_NONE = 1,
     	COMPRESSION_GZIP = 2
     } Compression;
-
-    /**
-     * \brief The pointer at OutputTime
-     */
-    OutputTime *output_time;
 
     // VTK Element types
     typedef enum {
@@ -185,54 +174,15 @@ private:
     void write_vtk_discont_topology(void);
 
     /**
-     * \brief This function writes ascii continuous data to VTK (.vtu) output file.
      *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
      */
-    void write_vtk_ascii_cont_data(OutputData *data);
+    void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
 
     /**
-     * \brief This function writes ascii data to VTK (.vtu) output file.
-     *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
+     * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
+     * Output is done into stream @p file.
      */
-    void write_vtk_ascii_data(OutputData *data);
-
-    /**
-     * \brief Write scalar data to the VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
-     */
-    void write_vtk_scalar_ascii(OutputData *data);
-
-    /**
-     * \brief Write vector data to VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at structure storing pointer at own data.
-     */
-    void write_vtk_vector_ascii(OutputData *data);
-
-    /**
-     * \brief Go through all vectors of scalars and vectors and call functions that
-     * write these data to VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
-     */
-    void write_vtk_data_ascii(std::vector<OutputData> *data);
-
-    /**
-     * \brief Write names of scalar values to the VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
-     */
-    void write_vtk_scalar_data_names(vector<OutputData> *data);
-
-    /**
-     * \brief Write names of vector values to the VTK file (.vtu)
-     *
-     * \param[in]   *data   The pointer at vector of data
-     */
-    void write_vtk_vector_data_names(vector<OutputData> *data);
+    void write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &output_data);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)

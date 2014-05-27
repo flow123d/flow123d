@@ -26,24 +26,23 @@
 \label{sc:transport_model}
 
 The motion of substances dissolved in water is governed by the \emph{advection}, and the \emph{hydrodynamic dispersion}.
-In $\Omega_d$, $d\in\{1,2,3\}$, we consider the following system of mass balance equations:
+In $\Omega_d$, $d\in\{1,2,3\}$, we consider the following system of mass balance equations\footnote{For $d\in\{1,2\}$ this form can be derived as in Section \ref{sc:ad_on_fractures} using $w:=\delta\th c^i$, $u:=c^i$, $\tn A:=\delta\th\tn D^i$, $\vc b:=\vc v=\frac{\vc q}{\th\delta}$.}:
 \begin{equation}
     \label{e:ADE}
    \partial_t ( \delta \th c^i) + \div ( \vc q c^i ) - \div (\th \delta \D^i \grad c^i ) = F_S^i + F^c_C(c^i) + F_R(c^1,\dots, c^s).
 \end{equation}
-For $d\in\{1,2\}$ this form can be derived as in Section \ref{sc:ad_on_fractures} using $w:=\delta\th c^i$, $u:=c^i$, $\tn A:=\delta\th\tn D^i$, $\vc b:=\vc v=\frac{\vc q}{\th\delta}$.
 The principal unknown is the concentration $c^i$ \units{1}{-3}{} of a substance $i\in\{1,\dots, s\}$, which means weight of the substance in unit volume of the water.
 Other quantities are:
 \begin{itemize}
 
-\item $\th$ \units{}{}{} is the \hyperA{TransportDG-BulkData::por-m}{porosity}, i.e. fraction of space occupied by water and the total volume.
+\item $\th$ \units{}{}{} is the \hyperA{SoluteTransport-DG-Data::porosity}{porosity}, i.e. fraction of space occupied by water and the total volume.
 \item The hydrodynamic dispersivity tensor $\D^i$ \units{}{2}{-1} has the form
 \begin{equation} 
   \label{eqn:transport_disp}
   \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
 \end{equation}
 which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
-Here $D_m^i$ \units{}{2}{-1} is the \hyperA{TransportDG-BulkData::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{TransportDG-BulkData::disp-l}{longitudal dispersivity} and the \hyperA{TransportDG-BulkData::disp-t}{transverse dispersivity}, respectively.
+Here $D_m^i$ \units{}{2}{-1} is the \hyperA{SoluteTransport-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{SoluteTransport-DG-Data::disp-l}{longitudal dispersivity} and the \hyperA{SoluteTransport-DG-Data::disp-t}{transverse dispersivity}, respectively.
 Note that although we allow dispersivities to have different values for different substances, it is often assumed that they are intrinsic parameters of the porous medium.
 Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
 The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
@@ -54,17 +53,17 @@ Its form is:
 \begin{equation}
  F_S^i = \delta f^i_S + \delta(c_S^i-c^i)\sigma_S. \label{eqn:transport_sources}
 \end{equation}
-Here $f_S^i$ \units{1}{-3}{-1} is the \hyperA{TransportDG-BulkData::sources-density}{density of concentration sources}, $c_S^i$ \units{1}{-3}{} is an \hyperA{TransportDG-BulkData::sources-conc}{equilibrium concentration} and $\sigma_S^i$ \units{}{}{-1} is the \hyperA{TransportDG-BulkData::sources-sigma}{concentration flux}.
+Here $f_S^i$ \units{1}{-3}{-1} is the \hyperA{SoluteTransport-DG-Data::sources-density}{density of concentration sources}, $c_S^i$ \units{1}{-3}{} is an \hyperA{SoluteTransport-DG-Data::sources-conc}{equilibrium concentration} and $\sigma_S^i$ \units{}{}{-1} is the \hyperA{SoluteTransport-DG-Data::sources-sigma}{concentration flux}.
 
 \item $F^c_C(c^i)$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
 
-\item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is currently neglected.
+\item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is thoroughly described in the next section \ref{sec:reaction_term}.
 \end{itemize}
 
 
 
 \paragraph{Initial and boundary conditions.}
-At time $t=0$ the concentration is determined by the \hyperA{TransportDG-BulkData::init-conc}{initial condition}
+At time $t=0$ the concentration is determined by the \hyperA{SoluteTransport-DG-Data::init-conc}{initial condition}
 $$ c^i(0,\vc x) = c^i_0(\vc x). $$
 The physical boundary $\partial\Omega_d$ is decomposed into the parts $\Gamma_I\cup\Gamma_D\cup\Gamma_N\cup\Gamma_R$, which may change during simulation time.
 The first part $\Gamma_I$ is further divided into two segments:
@@ -74,13 +73,13 @@ The first part $\Gamma_I$ is further divided into two segments:
 \end{align*}
 where $\vc n$ stands for the unit outward normal vector to $\partial\Omega_d$.
 We prescribe the following boundary conditions:
-On the inflow parts $\Gamma_I^+\cup\Gamma_D$, the user must provide \hyperA{TransportDG-BoundaryData::bc-conc}{Dirichlet boundary condition} $c_D^i$ for concentrations:
+On the inflow parts $\Gamma_I^+\cup\Gamma_D$, the user must provide \hyperA{SoluteTransport-DG-Data::bc-conc}{Dirichlet boundary condition} $c_D^i$ for concentrations:
 $$ c^i = c^i_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. $$
 On $\Gamma_I^-$ we impose homogeneous Neumann boundary condition:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-, $$
-on $\Gamma_N$ we impose Neumann boundary condition with user-defined \hyperA{TransportDG-BoundaryData::bc-flux}{concentration flux} $f^i_N$:
+on $\Gamma_N$ we impose Neumann boundary condition with user-defined \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = f^i_N \mbox{ on }\Gamma_N, $$
-and finally on $\Gamma_R$ we impose Robin boundary condition through \hyperA{TransportDG-BoundaryData::bc-robin-sigma}{transition parameter} $\sigma^i_R$ and \hyperA{TransportDG-BoundaryData::bc-conc}{reference concentration} $c^i_D$:
+and finally on $\Gamma_R$ we impose Robin boundary condition through \hyperA{SoluteTransport-DG-Data::bc-robin-sigma}{transition parameter} $\sigma^i_R$ and \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c^i_D$:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = \sigma^i_R(c^i-c^i_D) \mbox{ on }\Gamma_R. $$
 
 
@@ -93,15 +92,15 @@ Transport of substances is considered also on interfaces of physical domains wit
 Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the comunication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
 \begin{equation}
   \label{e:inter_dim_flux}
-  q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + \begin{cases}q^w_{d+1,d} c_{d+1} & \mbox{ if }q^w_{d+1,d}\ge 0,\\q^w_{d+1,d} \frac{\th_d}{\th_{d+1}} c_d & \mbox{ if }q^w_{d+1,d}<0,\end{cases}
+  q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + \begin{cases}q^l_{d+1,d} c_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\q^l_{d+1,d} \frac{\th_d}{\th_{d+1}} c_d & \mbox{ if }q^l_{d+1,d}<0,\end{cases}
 \end{equation}
 where
 \begin{itemize}
 \item $q^c_{d+1,d}$ \units{1}{-d}{-1} is the density of concentration flux from $\Omega_{d+1}$ to $\Omega_d$,
-\item $\sigma^c_{d+1,d}$ \units{}{}{} is a \hyperA{TransportDG-BulkData::sigma-c}{transition parameter}.
+\item $\sigma^c_{d+1,d}$ \units{}{}{} is a \hyperA{SoluteTransport-DG-Data::fracture-sigma}{transition parameter}.
 Its value determines the mass exchange between dimensions whenever the concentrations differ.
 In general, it is recommended to leave the default value $\sigma^c=1$ or to set $\sigma^c=0$ (when exchange is due to water flux only).
-\item $q^w_{d+1,d}$ \units{}{3-d}{-1} is the water flux from $\Omega_{d+1}$ to $\Omega_d$, i.e. $q^w_{d+1,d} = \vc q_{d+1}\cdot\n_{d+1}$.
+\item $q^l_{d+1,d}$ \units{}{3-d}{-1} is the water flux from $\Omega_{d+1}$ to $\Omega_d$, i.e. $q^l_{d+1,d} = \vc q_{d+1}\cdot\n_{d+1}$.
 \end{itemize}
 The communication between dimensions is incorporated as the total flux boundary condition for the problem on $\Omega_{d+1}$:
 \begin{equation}
@@ -116,30 +115,6 @@ F^c_{C1} = q^c_{21}.
 \end{equation}
 
 
-\paragraph{Dual porosity.}
-Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into two zones -- the mobile zone and the immobile zone. 
-Both occupy the same macroscopic volume, however on the microscopic scale, the immobile zone is formed by the dead-end pores, where the liquid is trapped and cannot pass through.
-The rest of the pore volume is occupied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due to molecular diffusion.
-We consider simple nonequilibrium linear model:
-\begin{align}
-    \theta_m \partial_t c_m &= \alpha ( c_i - c_m), \\
-    \theta_i \partial_t c_i &= \alpha ( c_m - c_i) 
-\end{align}
-where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone, $\alpha$ is a diffusion parameter, $\theta_m$ and $\theta_i$ are porosities of the mobile zone and the immobile zone respectively, while 
-\[
-  \theta_m +\theta_i =\theta.
-\]
-
-The solution of this system is:
-\begin{align}
-     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0), \\
-     c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- \alpha\left(\frac{1}{\theta_m} + \frac{1}{\theta_i}\right) t \right) + c_a(0)
-\end{align}
-where $c_a$ is weighted average:
-\[
-  c_a = \frac{\theta_m c_m + \theta_i c_i}{\theta_m + \theta_i}.
-\]
-
 
 \paragraph{Mass balance.}
 The advection-dispersion equation satisfies the balance of mass in the following form:
@@ -153,6 +128,12 @@ is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \
 The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
 
 
+\paragraph{Two transport models.}
+Within the above presented model, Flow123d presents two possible approaches to solute transport.
+\begin{itemize}
+\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and adsorption).
+\item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3. Reaction term is currently not implemented.
+\end{itemize}
 
 
 

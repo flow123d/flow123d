@@ -20,13 +20,12 @@ class Mesh;
 //class Distribution;
 //class SparseGraph;
 
-class Reaction;
-class Linear_reaction;
-//class Pade_approximant;
-class Sorption;
-//class Dual_por_exchange;
-class Semchem_interface;
+class ReactionTerm;
 class ConvectionTransport;
+
+class Semchem_interface;
+
+
 
 
 
@@ -45,12 +44,9 @@ public:
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
-    /**
-     * @brief Write computed fields.
-     */
-    virtual void output_data() =0;
 
-    virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
+
+    //virtual void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) = 0;
 
     virtual unsigned int n_substances() = 0;
 
@@ -89,10 +85,10 @@ public:
 		}
 */
 		/// Mobile porosity
-		Field<3, FieldValue<3>::Scalar> por_m;
+		Field<3, FieldValue<3>::Scalar> porosity;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
 
 		/// Concentration sources - density of substance source, only positive part is used.
 		Field<3, FieldValue<3>::Vector> sources_density;
@@ -135,6 +131,8 @@ public:
     /// Returns reference to the vector of substnace names.
     inline vector<string> &substance_names() { return subst_names_; }
 
+    virtual void set_concentration_vector(Vec &vec){};
+
 
 protected:
 
@@ -158,7 +156,7 @@ protected:
      * Mark type mask that is true for time marks of output points of the transport model.
      * E.g. for TransportOperatorSplitting this is same as the output points of its transport sub-model.
      */
-    TimeMark::Type output_mark_type;
+    //TimeMark::Type output_mark_type;
 
     /// object for calculation and writing the mass balance to file.
     MassBalance *mass_balance_;
@@ -182,17 +180,9 @@ public:
     inline virtual ~TransportNothing()
     {}
 
-    inline virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    }
-
-    virtual void get_parallel_solution_vector(Vec &vector) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    };
-
     inline virtual void output_data() {};
 
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {};
+    void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) {};
 
     TimeIntegrationScheme time_scheme() { return none; }
 
@@ -235,11 +225,15 @@ public:
 
 
     virtual void set_velocity_field(const MH_DofHandler &dh);
-    virtual void update_solution();
+
+    void zero_time_step() override;
+    void update_solution() override;
     //virtual void compute_one_step();
     //virtual void compute_until();
-    virtual void get_parallel_solution_vector(Vec &vc);
-    virtual void get_solution_vector(double* &vector, unsigned int &size);
+
+// DELETE
+//     virtual void get_parallel_solution_vector(Vec &vc);
+//     virtual void get_solution_vector(double* &vector, unsigned int &size);
 
     void compute_until_save_time();
     void compute_internal_step();
@@ -251,7 +245,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+    //void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section);
 
     TimeIntegrationScheme time_scheme() { return none; }
 
@@ -267,10 +261,8 @@ private:
     void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
     ConvectionTransport *convection;
-    Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
-    Sorption *sorptions;
-    Sorption *sorptions_immob;
-    //Dual_por_exchange *dual_por_exchange;
+    ReactionTerm *reaction;
+
     Semchem_interface *Semchem_reactions;
     //int steps;
 

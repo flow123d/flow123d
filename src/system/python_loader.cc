@@ -16,7 +16,15 @@
 #include <fstream>
 #include <sstream>
 
+void PythonLoader::initialize(const std::string &python_home)
+{
+    static internal::PythonRunning _running(python_home);
+}
+
+
 PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
+    initialize();
+
     // don't know direct way how to load module form file, so we read it into string and use load_module_from_string
     std::ifstream file_stream( fname.c_str() );
     // check correct openning
@@ -42,6 +50,7 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
 
 
 PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
+    initialize();
 
     // for unknown reason module name is non-const, so we have to make char * copy
     char * tmp_name = new char[ module_name.size() + 2 ];
@@ -60,15 +69,23 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
 }
 
 
-internal::PythonRunning PythonLoader::py_running;
-
 
 namespace internal {
 
-PythonRunning::PythonRunning() {
-    DBGMSG("Init python\n");
+PythonRunning::PythonRunning(const std::string& python_home)
+{
+    /*
+     * Possibly set alternative path to non-library part of Python.
+     * This is necessary for release builds.
+     */
+    if (python_home != "") {
+        static string _python_home_storage = python_home; // permanent non-const storage required
+        //Py_SetPythonHome( &(_python_home_storage[0]) );
+        //Py_SetPythonHome( ".." );
+        Py_SetProgramName( &(_python_home_storage[0]) );
+        std::cout << Py_GetPath() << std::endl;
+    }
     Py_Initialize();
-    DBGMSG("Init python, done\n");
 }
 
 

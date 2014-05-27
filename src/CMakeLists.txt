@@ -128,6 +128,12 @@ set(sources_lib_interpolation
 
 
 set (sources_lib_coupling
+   # unfortunatelly field sources depends on output sources
+   # and viceversa
+    io/output.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    
     fields/field_values.cc
     fields/field_base.cc
     fields/field.cc
@@ -138,7 +144,9 @@ set (sources_lib_coupling
    coupling/equation.cc
        flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
-    
+   
+
+   
 )
 
 set(sources_lib_non_system
@@ -149,15 +157,13 @@ set(sources_lib_non_system
     flow/darcy_flow_mh.cc
 
 
-    io/output.cc
-    io/output_vtk.cc
-    io/output_msh.cc
     
     reaction/reaction.cc
     reaction/linear_reaction.cc
     reaction/pade_approximant.cc
+    reaction/sorption_base.cc
     reaction/sorption.cc
-    #reaction/dual_por_exchange.cc
+    reaction/dual_por_exchange.cc
     reaction/isotherm.cc
     semchem/semchem_interface.cc
 
@@ -212,7 +218,7 @@ add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
     armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
-#set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
+set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})

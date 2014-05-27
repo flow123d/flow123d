@@ -150,7 +150,6 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 
 			// explicit flush of all streams
 			fflush(NULL);
-			F_STACK_SHOW( stderr );
 			BOOST_THROW_EXCEPTION( ExcXprintfMsg()
 				<< EI_XprintfHeader( boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line) )
 				<< EI_XprintfMessage( format_message ) );
@@ -172,7 +171,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
             fprintf(sys_info.log,"[msg_id=%d] ", mpi_msg_id );
         mpi_msg_id++;
     }
-
+#ifndef DEBUG_MESSAGES
+    if (type == Warn) mf.head="\nWarning: ";
+#endif
 	// print head
 	if (mf.head) {
 		if (screen) fprintf(screen,mf.head,xprintf_file,xprintf_func,xprintf_line);

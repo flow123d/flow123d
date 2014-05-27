@@ -111,8 +111,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
             xprintf(UsrErr,"Equation type not implemented.");
     }
 
-    // object for water postprocessing and output
-    water_output = new DarcyFlowMHOutput(water, Record(prim_eq).val<Record>("output") );
+
 
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
@@ -120,22 +119,23 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         if (it->type() == TransportOperatorSplitting::input_type)
         {
             transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-            transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
         {
             transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
-            transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else if (it->type() == TransportDG<HeatTransferModel>::input_type)
         {
         	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
-        	transport_reaction->set_cross_section_field( &water->get_data().cross_section );
         }
         else
         {
             xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
         }
+
+        // setup fields
+        transport_reaction->data().get_field("cross_section")
+        		.copy_from(water->data().get_field("cross_section"));
 
     } else {
         transport_reaction = new TransportNothing(*mesh);
@@ -167,7 +167,10 @@ void HC_ExplicitSequential::run_simulation()
 
     double velocity_interpolation_time;
     bool velocity_changed;
-    //Vec velocity_field;
+
+
+    water->zero_time_step();
+
 
 
     // following cycle is designed to support independent time stepping of
@@ -183,11 +186,6 @@ void HC_ExplicitSequential::run_simulation()
     //
     // The question is how to choose intervals t_dt. That should depend on variability of the velocity field in time.
     // Currently we simply use t_dt == w_dt.
-
-    // output initial condition
-    water_output->postprocess();
-    water_output->output();
-
 
     while (! (water->time().is_end() && transport_reaction->time().is_end() ) ) {
 
@@ -207,13 +205,12 @@ void HC_ExplicitSequential::run_simulation()
         if (water->solved_time() < velocity_interpolation_time) {
             // solve water over the nearest transport interval
             water->update_solution();
-            water_output->postprocess();
+
             // here possibly save solution from water for interpolation in time
 
             //water->time().view("WATER");     //show water time governor
             
-            water_output->output();
-
+            //water->output_data();
             water->choose_next_time();
 
             velocity_changed = true;
@@ -228,6 +225,8 @@ void HC_ExplicitSequential::run_simulation()
                 transport_reaction->set_velocity_field( water->get_mh_dofhandler() );
                 velocity_changed = false;
             }
+            if (transport_reaction->time().tlevel() == 0) transport_reaction->zero_time_step();
+
             transport_reaction->update_solution();
             
             //transport_reaction->time().view("TRANSPORT");        //show transport time governor
@@ -235,7 +234,8 @@ void HC_ExplicitSequential::run_simulation()
             transport_reaction->output_data();
         }
 
-        // write_all_data()
+        // Write all data
+        //OutputTime::write_all_data();
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }
@@ -244,7 +244,6 @@ void HC_ExplicitSequential::run_simulation()
 HC_ExplicitSequential::~HC_ExplicitSequential() {
     //delete material_database;
     delete water;
-    delete water_output;
     delete transport_reaction;
     delete mesh;
 }
