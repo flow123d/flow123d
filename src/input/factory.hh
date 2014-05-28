@@ -19,6 +19,13 @@
 namespace Input {
 
 using namespace std;
+
+
+TYPEDEF_ERR_INFO( EI_KeyName, const string);
+TYPEDEF_ERR_INFO( EI_TypeName, const string);
+DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
+		<< " isn't registered in factory for type " << EI_TypeName::val << "!");
+
 /*
 template <class Type, class... Arguments>
 class Creater {
@@ -93,7 +100,7 @@ template <class Type, class... Arguments>
 class Factory
 {
 public:
-    /// Get the single instance of the factory
+	/// Get the single instance of the factory
     static Factory * instance();
 
     /// Register lambda function that calls default constructor of Type.

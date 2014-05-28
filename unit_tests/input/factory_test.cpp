@@ -35,7 +35,7 @@ TEST(FactoryTest, ClassHierarchy) {
 
 	EXPECT_THROW_WHAT(
 			{ ( Input::Factory< Base<3>, double, double >::instance() )->create("DescendantA", 1.5, 0.5); },
-			ExcXprintfMsg,
+			Input::ExcNotRegistredClass,
 			"isn't registered in factory"
 			);
 }

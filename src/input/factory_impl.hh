@@ -48,8 +48,7 @@ shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... a
     	auto factory_function = boost::any_cast<std::function< shared_ptr<Type>(Arguments...)> > (it->second);
         return factory_function(arguments...);
     } else {
-        // pouzit vyjimku
-    	xprintf(UsrErr, "Key %s isn't registered in factory for type '%s'!\n", name.c_str(), typeid(Type).name() );
+    	THROW( ExcNotRegistredClass() << EI_KeyName(name) << EI_TypeName(typeid(Type).name()) );
     	return nullptr;
     }
 }
