@@ -23,10 +23,6 @@ class DescendantB : public Base<spacedim>
 public:
 	typedef Base<spacedim> FactoryBaseType;
 
-	static shared_ptr< Base<spacedim> > create_instance() {
-		return make_shared< DescendantB<spacedim> >();
-	}
-
 	DescendantB();
 
 private:
@@ -36,7 +32,7 @@ private:
 
 template <int spacedim>
 const int DescendantB<spacedim>::reg =
-		Input::Factory<FactoryBaseType>::register_function("DescendantB", DescendantB<spacedim>::create_instance );
+        Input::Factory<FactoryBaseType>::template register_class< DescendantB<spacedim> >("DescendantB");
 
 
 template <int spacedim>

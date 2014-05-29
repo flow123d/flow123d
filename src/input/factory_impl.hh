@@ -22,19 +22,14 @@ Factory<Type, Arguments...> * Factory<Type, Arguments...>::instance()
 
 
 template<class Type, class... Arguments>
-int Factory<Type, Arguments...>::register_function(string class_name, std::shared_ptr<Type>(* func)(Arguments...) ) {
-	auto func_wrapper = std::function<std::shared_ptr<Type>(Arguments...)>(func);
-	Factory<Type, Arguments...>::instance()->factory_registry_[class_name] = func_wrapper;
-	return 0;
-}
-
-template<class Type, class... Arguments>
 template<class Child>
-int Factory<Type, Arguments...>::register_constructor(string class_name) {
+int Factory<Type, Arguments...>::register_class(string class_name) {
     auto creating_function =
         [](Arguments... args)->std::shared_ptr<Type>
         { return std::make_shared<Child>(args...); };
-    register_function(class_name, creating_function);
+
+	auto func_wrapper = std::function<std::shared_ptr<Type>(Arguments...)>(creating_function);
+	Factory<Type, Arguments...>::instance()->factory_registry_[class_name] = func_wrapper;
     return 0;
 }
 

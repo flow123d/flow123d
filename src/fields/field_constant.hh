@@ -41,14 +41,6 @@ public:
     static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     /**
-     * Create shared_ptr of FieldConstant instance.
-     * Used for registration into Input::Factory
-     */
-	static shared_ptr< FactoryBaseType > create_instance(unsigned int n_comp=0) {
-		return make_shared< FieldConstant<spacedim, Value> >(n_comp);
-	}
-
-    /**
      * Smart setter from the given value to return.
      */
     FieldConstant<spacedim, Value> &set_value(const typename Value::return_type &val);
