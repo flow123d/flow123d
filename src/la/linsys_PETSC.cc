@@ -47,8 +47,8 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
         : LinSys( rows_ds ),
-          matrix_(0),
-          init_guess_nonzero(false)
+          init_guess_nonzero(false),
+          matrix_(0)
 {
     // set type
     //type = LinSys::PETSC;
@@ -68,7 +68,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_)
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);

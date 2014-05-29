@@ -123,9 +123,9 @@ public:
      * in the constructor instead of the method set_solution().
      */
     LinSys(const  Distribution *rows_ds)
-      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( rows_ds->get_comm() ), solution_(NULL), v_solution_(NULL),
-        positive_definite_( false ), negative_definite_( false ), symmetric_( false ),
-        spd_via_symmetric_general_( false ), status_( NONE )
+      : comm_( rows_ds->get_comm() ), status_( NONE ), lsize_( rows_ds->lsize() ), rows_ds_(rows_ds),
+        symmetric_( false ), positive_definite_( false ), negative_definite_( false ),
+        spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL)
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
@@ -141,9 +141,9 @@ public:
     : r_tol_(other.r_tol_), a_tol_(other.a_tol_), max_it_(other.max_it_), comm_(other.comm_), status_(other.status_),
       lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
       positive_definite_(other.positive_definite_), negative_definite_( other.negative_definite_ ),
-      spd_via_symmetric_general_(other.spd_via_symmetric_general_), globalSolution_(other.globalSolution_),
-      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_),
-	  matrix_changed_(other.matrix_changed_), rhs_changed_(other.rhs_changed_)
+      spd_via_symmetric_general_(other.spd_via_symmetric_general_), matrix_changed_(other.matrix_changed_),
+	  rhs_changed_(other.rhs_changed_), residual_norm_(other.residual_norm_), constraints_(other.constraints_),
+      globalSolution_(other.globalSolution_), in_rec_(other.in_rec_)
 
     {
     	ASSERT( false, "Using copy constructor of LinSys is not allowed!");

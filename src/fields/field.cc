@@ -35,8 +35,8 @@ FieldCommonBase::FieldCommonBase()
 
 FieldCommonBase::FieldCommonBase(const FieldCommonBase & other)
 : shared_(other.shared_),
-  set_time_result_(TimeStatus::unknown),
   limit_side_(LimitSide::unknown),
+  set_time_result_(TimeStatus::unknown),
   is_copy_(true)
 {}
 

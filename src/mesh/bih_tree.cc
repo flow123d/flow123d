@@ -39,7 +39,7 @@ const double BIHTree::size_reduce_factor = 0.8;
 
 
 BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
-: r_gen(123), mesh_(mesh), leaf_size_limit(soft_leaf_size_limit)
+: mesh_(mesh), leaf_size_limit(soft_leaf_size_limit), r_gen(123)
 {
 	ASSERT(mesh != nullptr, " ");
 	max_n_levels = 2*log(mesh->n_elements())/log(2);
