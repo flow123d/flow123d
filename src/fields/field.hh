@@ -139,6 +139,12 @@ public:
     { flags_ = FieldFlag::Flags(mask); return *this; }
 
     /**
+     * Add given mask to the field flags.
+     */
+    FieldCommonBase & flags_add(FieldFlag::Flags::Mask mask)
+    { flags().add(mask); return *this; }
+
+    /**
      * Set number of components for run-time sized vectors. This is used latter when we construct
      * objects derived from FieldBase<...>.
      *

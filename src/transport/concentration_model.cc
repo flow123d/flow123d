@@ -45,16 +45,38 @@ using namespace Input::Type;
 
 
 
-ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::TransportEqData()
+ConcentrationTransportModel::ModelEqData::ModelEqData()
+: TransportBase::TransportEqData()
 {
-	ADD_FIELD(bc_conc, "Dirichlet boundary condition (for each substance).", "0.0");
+    *this+=bc_conc
+            .name("bc_conc")
+            .description("Dirichlet boundary condition (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_rhs );
+    *this+=init_conc
+            .name("init_conc")
+            .description("Initial concentrations.")
+            .input_default("0.0");
+    *this+=disp_l
+            .name("disp_l")
+            .description("Longitudal dispersivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_t
+            .name("disp_t")
+            .description("Transversal dispersivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
+    *this+=diff_m
+            .name("diff_m")
+            .description("Molecular diffusivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
 
-	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
-	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", "0.0");
-	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
-	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
-
-	output_fields += output_field.name("conc").units("M/L^3");
+	*this+=output_field
+	        .name("conc")
+	        .units("M/L^3")
+	        .flags( equation_result );
 }
 
 
@@ -108,7 +130,7 @@ void ConcentrationTransportModel::set_component_names(std::vector<string> &names
 	in_rec.val<Input::Array>("substances").copy_to(names);
 }
 
-
+/*
 bool ConcentrationTransportModel::mass_matrix_changed()
 {
 	return (data().cross_section.changed() || data().porosity.changed());
@@ -118,9 +140,7 @@ bool ConcentrationTransportModel::mass_matrix_changed()
 bool ConcentrationTransportModel::stiffness_matrix_changed()
 {
 	return (flux_changed ||
-			data().disp_l.changed() ||
-			data().disp_t.changed() ||
-			data().diff_m.changed() ||
+
 			data().porosity.changed() ||
 			data().cross_section.changed());
 }
@@ -134,6 +154,7 @@ bool ConcentrationTransportModel::rhs_changed()
 			data().sources_density.changed() ||
 			data().sources_sigma.changed());
 }
+*/
 
 void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 		const ElementAccessor<3> &ele_acc,

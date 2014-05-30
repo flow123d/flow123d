@@ -49,27 +49,111 @@ using namespace Input::Type;
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-	ADD_FIELD(bc_temperature, "Boundary value of temperature.", "0.0");
 
-	ADD_FIELD(init_temperature, "Initial temperature.", "0.0");
-	ADD_FIELD(porosity, "Porosity.", "1.0" );
-	ADD_FIELD(fluid_density, "Density of fluid.");
-	ADD_FIELD(fluid_heat_capacity, "Heat capacity of fluid.");
-	ADD_FIELD(fluid_heat_conductivity, "Heat conductivity of fluid.");
-	ADD_FIELD(solid_density, "Density of solid (rock).");
-	ADD_FIELD(solid_heat_capacity, "Heat capacity of solid (rock).");
-	ADD_FIELD(solid_heat_conductivity, "Heat conductivity of solid (rock).");
-	ADD_FIELD(disp_l, "Longitudal heat dispersivity in fluid.", "0.0" );
-	ADD_FIELD(disp_t, "Transversal heat dispersivity in fluid.", "0.0" );
-	ADD_FIELD(fluid_thermal_source, "Thermal source density in fluid.", "0.0");
-	ADD_FIELD(solid_thermal_source, "Thermal source density in solid.", "0.0");
-	ADD_FIELD(fluid_heat_exchange_rate, "Heat exchange rate in fluid.", "0.0");
-	ADD_FIELD(solid_heat_exchange_rate, "Heat exchange rate in solid.", "0.0");
-	ADD_FIELD(fluid_ref_temperature, "Reference temperature in fluid.", "0.0");
-	ADD_FIELD(solid_ref_temperature, "Reference temperature in solid.", "0.0");
+    *this+=bc_temperature
+            .name("bc_temperature")
+            .description("Boundary value of temperature.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
 
-	*this += cross_section.name("cross_section").flags( FieldFlag::input_copy);
-	output_fields += output_field.name("temperature").units("M/L^3");
+    *this+=init_temperature
+            .name("init_temperature")
+            .description("Initial temperature.")
+            .input_default("0.0");
+
+    *this+=porosity
+            .name("porosity")
+            .description("Porosity.")
+            .input_default("1.0")
+            .flags_add(in_main_matrix & in_time_term);
+
+    *this+=fluid_density
+            .name("fluid_density")
+            .description("Density of fluid.")
+            .flags_add(in_main_matrix & in_time_term);
+
+    *this+=fluid_heat_capacity
+            .name("fluid_heat_capacity")
+            .description("Heat capacity of fluid.")
+            .flags_add(in_main_matrix & in_time_term);
+
+    *this+=fluid_heat_conductivity
+            .name("fluid_heat_conductivity")
+            .description("Heat conductivity of fluid.")
+            .flags_add(in_main_matrix);
+
+
+    *this+=solid_density
+            .name("solid_density")
+            .description("Density of solid (rock).")
+            .flags_add(in_time_term);
+
+    *this+=solid_heat_capacity
+            .name("solid_heat_capacity")
+            .description("Heat capacity of solid (rock).")
+            .flags_add(in_time_term);
+
+    *this+=solid_heat_conductivity
+            .name("solid_heat_conductivity")
+            .description("Heat conductivity of solid (rock).")
+            .flags_add(in_main_matrix);
+
+    *this+=disp_l
+            .name("disp_l")
+            .description("Longitudal heat dispersivity in fluid.")
+            .input_default("0.0")
+            .flags_add(in_main_matrix);
+
+    *this+=disp_t
+            .name("disp_t")
+            .description("Transversal heat dispersivity in fluid.")
+            .input_default("0.0")
+            .flags_add(in_main_matrix);
+
+    *this+=fluid_thermal_source
+            .name("fluid_thermal_source")
+            .description("Thermal source density in fluid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=solid_thermal_source
+            .name("solid_thermal_source")
+            .description("Thermal source density in solid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=fluid_heat_exchange_rate
+            .name("fluid_heat_exchange_rate")
+            .description("Heat exchange rate in fluid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=solid_heat_exchange_rate
+            .name("solid_heat_exchange_rate")
+            .description("Heat exchange rate of source in solid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=fluid_ref_temperature
+            .name("fluid_ref_temperature")
+            .description("Reference temperature of source in fluid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=solid_ref_temperature
+            .name("solid_ref_temperature")
+            .description("Reference temperature in solid.")
+            .input_default("0.0")
+            .flags_add(in_rhs);
+
+    *this+=cross_section
+            .name("cross_section")
+            .flags(input_copy & in_time_term & in_main_matrix);
+
+    *this+=output_field
+            .name("temperature")
+            .units("M/L^3")
+            .flags(equation_result);
 }
 
 
@@ -112,43 +196,6 @@ void HeatTransferModel::set_component_names(std::vector<string> &names, const In
 	names.push_back("");
 }
 
-
-bool HeatTransferModel::mass_matrix_changed()
-{
-	return (data().porosity.changed() ||
-			data().fluid_density.changed() ||
-			data().fluid_heat_capacity.changed() ||
-			data().solid_density.changed() ||
-			data().solid_heat_capacity.changed() ||
-			data().cross_section.changed());
-}
-
-
-bool HeatTransferModel::stiffness_matrix_changed()
-{
-	return (flux_changed ||
-			data().fluid_density.changed() ||
-			data().fluid_heat_capacity.changed() ||
-			data().porosity.changed() ||
-			data().fluid_heat_conductivity.changed() ||
-			data().solid_heat_conductivity.changed() ||
-			data().disp_l.changed() ||
-			data().disp_t.changed() ||
-			data().cross_section.changed());
-}
-
-
-bool HeatTransferModel::rhs_changed()
-{
-	return (flux_changed ||
-			data().fluid_thermal_source.changed() ||
-			data().solid_thermal_source.changed() ||
-			data().fluid_heat_exchange_rate.changed() ||
-			data().solid_heat_exchange_rate.changed() ||
-			data().fluid_ref_temperature.changed() ||
-			data().solid_ref_temperature.changed() ||
-			data().bc_temperature.changed());
-}
 
 void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 		const ElementAccessor<3> &ele_acc,

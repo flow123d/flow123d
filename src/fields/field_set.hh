@@ -16,7 +16,31 @@
 
 
 /**
- * TODO: implementation robust against destroying fields before the FieldSet.
+ * @brief Container for various descendants of FieldCommonBase.
+ *
+ * Provides various collective operations.
+ * Typical usage:
+ *
+ * class EqData : public FieldSet
+ * {
+ *      EqData() {
+ *          *this += scalar_field
+ *                  .name("scalar_field")
+ *                  .description("Some description for input and output documentation.")
+ *                  .input_default("{0.0}")
+ *                  .units("m");
+ *          *this += vector_field
+ *                  .name("vector_field")
+ *                  .description("Some description for input and output documentation.")
+ *                  .units("m");
+ *      }
+ *
+ *      Field<3, FieldValue<3>::Scalar> scalar_field;
+ *      Field<3, FieldValue<3>::Vector> vector_field;
+ * };
+ *
+ * This way the fields are destructed just before pointers to them stored in the FieldSet.
+ *
  */
 class FieldSet : public FieldFlag {
 public:
@@ -32,7 +56,7 @@ public:
 	 *
 	 * 		field_set +=
 	 * 			some_field
-	 * 			.disable_where(type, {dirichlet, neumann}); // this must come first since it is not member of FieldCommonBase
+	 * 			.disable_where(type, {dirichlet, neumann}) // this must come first since it is not member of FieldCommonBase
 	 * 			.name("init_temperature")
 	 * 			.description("Initial temperature");
 	 *
@@ -68,6 +92,22 @@ public:
 		return set;
 	}
 
+
+    /**
+     * Make new FieldSet as a subset of *this.
+     * The new FieldSet contains all fields that match given @p mask.
+     */
+    FieldSet subset( FieldFlag::Flags::Mask mask) const {
+        FieldSet set;
+        for(auto field : field_list)
+            if (field->flags().match(mask))  set += *field;
+        return set;
+    }
+
+
+	/**
+	 * Number of fields in the FieldSet.
+	 */
 	unsigned int size() const {
 		return field_list.size();
 	}
@@ -75,7 +115,7 @@ public:
 	/**
 	 * Returns input type for a field descriptor, that can contain any of the fields in the set.
 	 * Typical usage is from derived class, where we add fields in the constructor and make auxiliary temporary instance
-	 * to get the record odf the field descriptor. Simplest example:
+	 * to get the record of the field descriptor. Simplest example:
 	 *
 	 * @code
 	 * class EqData : public FieldSet {
@@ -124,7 +164,7 @@ public:
     	// add value for each field excluding boundary fields
     	for( auto field : field_list)
     	{
-    		if (!field->is_bc())
+    		if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
     		{
     			string desc = "Output of the field " + field->name(); //  + " [" + field->units() + "]";
     			if (field->description().length() > 0)
@@ -240,10 +280,19 @@ public:
 	}
 
     /**
+     * Collective interface to @p FieldCommonBase::flags().
+     * @param mask   mask to set for all fields in the field set.
+     */
+    void flags( FieldFlag::Flags::Mask mask) {
+        for (auto field : field_list) field->flags(mask);
+    }
+    /**
      * Collective interface to @p FieldCommonBase::output().
      */
     void output(OutputTime *stream) {
-    	for(auto field : field_list) field->output(stream);
+    	for(auto field : field_list)
+    	    if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+    	        field->output(stream);
     }
 
 

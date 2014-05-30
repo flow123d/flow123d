@@ -131,7 +131,7 @@ public:
     FlagArray(Mask mask)
     : FlagArray()
     {
-        this->set(mask);
+        this->add(mask);
     }
 
     /**
@@ -146,7 +146,7 @@ public:
      * Apply the mask to the flags.
      * Bits by the @p mask.mask_ are overwritten by the @p mask.set_ values.
      */
-    FlagArray &set(Mask mask)
+    FlagArray &add(Mask mask)
     { flags_ = Mask::mask_set(flags_, mask.mask_, mask.set_); return *this; }
 
     friend std::ostream &operator<<(std::ostream & s, const FlagArray &f) {

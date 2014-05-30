@@ -39,7 +39,7 @@ FieldCommonBase::FieldCommonBase(const FieldCommonBase & other)
   set_time_result_(TimeStatus::unknown),
   limit_side_(LimitSide::unknown)
 {
-     flags_.set( FieldFlag::input_copy );
+     flags_.add( FieldFlag::input_copy );
 }
 
 

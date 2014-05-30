@@ -54,13 +54,13 @@ public:
 	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;
 
 	/// Check if mass matrix coefficients have changed.
-	virtual bool mass_matrix_changed() = 0;
+	//virtual bool mass_matrix_changed() = 0;
 
 	/// Check if stiffness matrix coefficients have changed.
-	virtual bool stiffness_matrix_changed() = 0;
+	//virtual bool stiffness_matrix_changed() = 0;
 
 	/// Check if right hand side coefficients have changed.
-	virtual bool rhs_changed() = 0;
+	//virtual bool rhs_changed() = 0;
 
 	/**
 	 * Compute coefficients of mass matrix.

@@ -243,19 +243,20 @@ private:
 
 	void output_vector_gather();
 
+	/*
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
-    			data_.fracture_sigma.changed() ||
-				data_.dg_penalty.changed();
+
+
     }
 
     bool mass_matrix_changed() { return Model::mass_matrix_changed(); }
 
     bool rhs_changed() {
     	return Model::rhs_changed() ||
-    		data_.dg_penalty.changed();
-    }
 
+    }
+*/
 	/**
 	 * @brief Assembles the mass matrix.
 	 *

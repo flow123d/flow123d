@@ -14,7 +14,7 @@ constexpr FieldFlag::Flags::Mask FieldFlag::allow_output;
 constexpr FieldFlag::Flags::Mask FieldFlag::input_copy;
 
 constexpr FieldFlag::Flags::Mask FieldFlag::in_time_term;
-constexpr FieldFlag::Flags::Mask FieldFlag::in_mass_matrix;
-constexpr FieldFlag::Flags::Mask FieldFlag::in_right_hand_side;
+constexpr FieldFlag::Flags::Mask FieldFlag::in_main_matrix;
+constexpr FieldFlag::Flags::Mask FieldFlag::in_rhs;
 
 constexpr FieldFlag::Flags::Mask FieldFlag::equation_result;
