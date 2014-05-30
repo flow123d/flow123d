@@ -70,9 +70,9 @@ public:
 		 Input::Factory< SomeBase >::register_class< SomeDescendant >("SomeDescendant");
  @endcode
  *
- * Factory allow to accept constructor with one or more parameters. In this case Factory is also templated
- * by these parameters.
- * For example Factory< SomeBase, int, double > accepts constructors with two parameters (int, double).
+ * Factory allow to accept constructor with one or more parameters. In this case Factory is
+ * also templated by these parameters. For example Factory< SomeBase, int, double > accepts
+ * constructors with two parameters (int, double).
  *
  * If registered class is templated the following design have to be used:
  @code
@@ -85,7 +85,8 @@ public:
 
      /// implementation of registration variable uses disambiguator template keyword
      const int SomeDescendant::reg =
-		 Input::Factory< SomeBase<dimension> >::template register_class< SomeDescendant<dimension> >("SomeDescendant");
+		 Input::Factory< SomeBase<dimension> >::template
+		     register_class< SomeDescendant<dimension> >("SomeDescendant");
  @endcode
  *
  * Factory can be used in two ways:
@@ -99,7 +100,9 @@ public:
  *   Example for same constructor:
  @code
      AbstractRecord a_rec = record.val<AbstractRecord>("problem");
-     SomeBase * sb = a_rec.factory< SomeBase, double >(0.25);
+     SomeBase * sb = a_rec.factory< SomeBase, double>(0.25);
+     // If arguments types can be deduced (by compiler) from actual arguments one can even use:
+     SomeBase * sb = a_rec.factory< SomeBase>(0.25);
  @endcode
  *
  */

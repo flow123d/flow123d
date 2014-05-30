@@ -428,7 +428,7 @@ TEST_F(InputInterfaceTest, AbstractFromFactory) {
     {
     	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
     	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 3, time = 0.25",
-    			( a_rec.factory< Base<3>, int, double >(3, 0.25) )->get_infotext().c_str() );
+    			( a_rec.factory< Base<3> >(3, 0.25) )->get_infotext().c_str() );
     }
 
     {
