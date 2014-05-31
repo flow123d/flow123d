@@ -74,9 +74,9 @@ public:
 			        add_field.name().c_str());
 		} else {
 			field_list.push_back(&add_field);
-			if (mesh_) add_field.set_mesh(*mesh_);
-			if (!input_list_.is_empty()) add_field.set_input_list(input_list_);
-			if (side_ != LimitSide::unknown) add_field.set_limit_side(side_);
+//			if (mesh_) add_field.set_mesh(*mesh_);
+//			if (!input_list_.is_empty()) add_field.set_input_list(input_list_);
+//			if (side_ != LimitSide::unknown) add_field.set_limit_side(side_);
 		}
 		return *this;
 	}
@@ -195,8 +195,8 @@ public:
     void set_field(const std::string &dest_field_name, FieldCommonBase &source) {
     	auto &field = (*this)[dest_field_name];
     	field.copy_from(source);
-    	if (mesh_) ASSERT_EQUAL(mesh_, field.mesh() );
-    	if (side_ != LimitSide::unknown) field.set_limit_side(side_);
+//    	if (mesh_) ASSERT_EQUAL(mesh_, field.mesh() );
+//    	if (side_ != LimitSide::unknown) field.set_limit_side(side_);
     }
 
 
@@ -236,7 +236,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_mesh(const Mesh &mesh) {
-    	mesh_ = &mesh;
+//    	mesh_ = &mesh;
     	for(auto field : field_list) field->set_mesh(mesh);
     }
 
@@ -244,7 +244,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_input_list(Input::Array input_list) {
-    	input_list_ = input_list;
+//    	input_list_ = input_list;
     	for(auto field : field_list) field->set_input_list(input_list);
     }
 
@@ -252,7 +252,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_limit_side(LimitSide side) {
-    	side_ = side;
+//    	side_ = side;
     	for(auto field : field_list) field->set_limit_side(side);
     }
     /**
@@ -328,13 +328,13 @@ protected:
     std::vector<FieldCommonBase *> field_list;
 
     /// value set by last set_mesh(); set  the same to added fields
-    const Mesh *mesh_ = nullptr;
+//    const Mesh *mesh_ = nullptr;
 
     /// value set by last set_input_list(); set  the same to added fields
-    Input::Array input_list_;
+//    Input::Array input_list_;
 
     /// value set by last set_time_limit(); set  the same to added fields
-    LimitSide side_ = LimitSide::unknown;
+//    LimitSide side_ = LimitSide::unknown;
  };
 
 

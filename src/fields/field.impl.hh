@@ -66,6 +66,8 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 {
 	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	        "Assignment between fields with different meshes.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -73,7 +75,6 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	shared_ = other.shared_;
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
-	limit_side_ = other.limit_side_;
 
 	read_field_descriptor_hook = other.read_field_descriptor_hook;
 	data_ = other.data_;
