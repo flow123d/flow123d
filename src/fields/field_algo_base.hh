@@ -1,5 +1,5 @@
 /*
- * field_base.hh
+ * field_algo_base.hh
  *
  *  Created on: Aug 31, 2012
  *      Author: jb
@@ -18,8 +18,8 @@
  */
 
 
-#ifndef FIELD_BASE_HH_
-#define FIELD_BASE_HH_
+#ifndef field_algo_base_HH_
+#define field_algo_base_HH_
 
 #include <string>
 #include <memory>
@@ -50,7 +50,7 @@ typedef enum  {
  * Base class for space-time function classes.
  */
 template <int spacedim, class Value>
-class FieldBase {
+class FieldAlgorithmBase {
 public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
@@ -62,7 +62,7 @@ public:
         * Kind of default constructor , with possible setting of the initial time.
         * Fields that returns variable size vectors accepts number of components @p n_comp.
         */
-       FieldBase(unsigned int n_comp=0);
+       FieldAlgorithmBase(unsigned int n_comp=0);
 
        /**
         * Returns template parameters as string in order to distinguish name of AbstractRecords
@@ -87,7 +87,7 @@ public:
         * dispatch to correct constructor and initialize appropriate function object from the input.
         * Returns shared pointer to  FunctionBase<>.
         */
-       static std::shared_ptr< FieldBase<spacedim, Value> >
+       static std::shared_ptr< FieldAlgorithmBase<spacedim, Value> >
            function_factory(const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
        /**
@@ -172,7 +172,7 @@ public:
        /**
         * Virtual destructor.
         */
-       virtual ~FieldBase() {}
+       virtual ~FieldAlgorithmBase() {}
 
 
 protected:

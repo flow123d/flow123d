@@ -6,7 +6,7 @@
 #ifndef SORPTION_SIMPLE
 #define SORPTION_SIMPLE
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "reaction/sorption_base.hh"
 
 class Mesh;

@@ -1,5 +1,5 @@
     /*
- * field_formula_impl.hh
+ * field_formula.impl.hh
  *
  *  Created on: Jan 2, 2013
  *      Author: jb
@@ -19,7 +19,7 @@
 namespace it = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldBase<spacedim,Value>::input_type, NULL);
+it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldAlgorithmBase<spacedim,Value>::input_type, NULL);
 
 template <int spacedim, class Value>
 Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
@@ -27,7 +27,7 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
         )
 {
     it::Record type
-            = it::Record("FieldFormula", FieldBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+            = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(a_type)
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
@@ -47,7 +47,7 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp),
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   formula_matrix_helper_(formula_matrix_), parser_matrix_(this->value_.n_rows())
 {

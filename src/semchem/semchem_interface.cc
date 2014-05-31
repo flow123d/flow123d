@@ -10,7 +10,7 @@
 #include "semchem/semchem_interface.hh"
 //#include "transport/transport.h"
 #include "mesh/mesh.h"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 
 #define MOBILE 0

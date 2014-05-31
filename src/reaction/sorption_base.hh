@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
 #include "reaction/reaction.hh"
 

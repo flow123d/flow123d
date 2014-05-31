@@ -1,5 +1,5 @@
 /*
- * field_constant_impl.hh
+ * field_constant.impl.hh
  *
  *  Created on: Dec 15, 2012
  *      Author: jb
@@ -20,7 +20,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 it::Record FieldConstant<spacedim, Value>::input_type
-    = FieldConstant<spacedim, Value>::get_input_type(FieldBase<spacedim, Value>::input_type, NULL);
+    = FieldConstant<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
 
 
 template <int spacedim, class Value>
@@ -29,7 +29,7 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
         )
 {
     it::Record type=
-        it::Record("FieldConstant", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
+        it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
                                     "Value of the constant field.\n"
@@ -47,7 +47,7 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldConstant<spacedim, Value>::FieldConstant( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp)
+: FieldAlgorithmBase<spacedim, Value>(n_comp)
 {}
 
 

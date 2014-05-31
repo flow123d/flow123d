@@ -8,7 +8,7 @@
 #ifndef SORPTION_DUAL
 #define SORPTION_DUAL
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "reaction/sorption_base.hh"
 
 class Mesh;

@@ -7,7 +7,7 @@
 #include "io/output.h"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "transport/mass_balance.hh"
 

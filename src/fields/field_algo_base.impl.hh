@@ -6,15 +6,15 @@
  */
 
 
-#ifndef FIELD_BASE_IMPL_HH_
-#define FIELD_BASE_IMPL_HH_
+#ifndef field_algo_base_IMPL_HH_
+#define field_algo_base_IMPL_HH_
 
 #include <string>
 #include <limits>
 #include <memory>
 using namespace std;
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_interpolated_p0.hh"
 #include "fields/field_python.hh"
 #include "fields/field_constant.hh"
@@ -32,7 +32,7 @@ namespace it = Input::Type;
  */
 
 template <int spacedim, class Value>
-FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
+FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : time_( -numeric_limits<double>::infinity() ),
   value_(r_value_)
 {
@@ -42,21 +42,21 @@ FieldBase<spacedim, Value>::FieldBase(unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-string FieldBase<spacedim, Value>::template_name() {
+string FieldAlgorithmBase<spacedim, Value>::template_name() {
     return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
 }
 
 
 
 template <int spacedim, class Value>
-it::AbstractRecord FieldBase<spacedim, Value>::input_type
+it::AbstractRecord FieldAlgorithmBase<spacedim, Value>::input_type
     = it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
           .allow_auto_conversion("FieldConstant");
 
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
+Input::Type::AbstractRecord FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
     it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
     type.allow_auto_conversion("FieldConstant");
 
@@ -74,10 +74,10 @@ Input::Type::AbstractRecord FieldBase<spacedim, Value>::get_input_type(const typ
 
 
 template <int spacedim, class Value>
-shared_ptr< FieldBase<spacedim, Value> >
-FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
+shared_ptr< FieldAlgorithmBase<spacedim, Value> >
+FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
 {
-    shared_ptr< FieldBase<spacedim, Value> > func;
+    shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
 	//xprintf(PrgErr,"TYPE of Field currently not functional.\n");
@@ -102,7 +102,7 @@ FieldBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, u
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -110,7 +110,7 @@ void FieldBase<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-bool FieldBase<spacedim, Value>::set_time(double time) {
+bool FieldAlgorithmBase<spacedim, Value>::set_time(double time) {
     time_ = time;
     return false; // no change
 }
@@ -118,13 +118,13 @@ bool FieldBase<spacedim, Value>::set_time(double time) {
 
 
 template <int spacedim, class Value>
-void FieldBase<spacedim, Value>::set_mesh(const Mesh *mesh,  bool boundary_domain) {
+void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *mesh,  bool boundary_domain) {
 }
 
 
 
 template<int spacedim, class Value>
-unsigned int FieldBase<spacedim, Value>::n_comp() const {
+unsigned int FieldAlgorithmBase<spacedim, Value>::n_comp() const {
     return (Value::NRows_ ? 0 : value_.n_rows());
 }
 

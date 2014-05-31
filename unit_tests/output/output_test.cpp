@@ -17,7 +17,7 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_constant.hh"
 
 

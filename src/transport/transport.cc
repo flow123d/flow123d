@@ -61,7 +61,7 @@
 
 #include "coupling/time_governor.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_elementwise.hh" 
 #include "reaction/isotherm.hh" // SorptionType enum

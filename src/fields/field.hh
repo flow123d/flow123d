@@ -18,7 +18,7 @@ using namespace std;
 #include "coupling/time_marks.hh"
 #include "coupling/time_governor.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_flag.hh"
 #include "io/output_time.hh"
 
@@ -478,9 +478,9 @@ template<int spacedim, class Value>
 class Field : public FieldCommonBase {
 public:
 
-    typedef FieldBase<spacedim, Value> FieldBaseType;
+    typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
     static const unsigned int space_dim = spacedim;

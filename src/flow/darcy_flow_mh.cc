@@ -71,7 +71,7 @@
 
 #include "coupling/time_governor.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
@@ -114,8 +114,8 @@ it::Record DarcyFlowMH_Steady::input_type
     .derive_from(DarcyFlowMH::input_type)
     .declare_key("input_fields", it::Array(
                 DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
+                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
+                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
                 ), it::Default::obligatory(), ""  );
 

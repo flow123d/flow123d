@@ -31,7 +31,7 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 
 #include "io/output.h"
 

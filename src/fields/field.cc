@@ -8,10 +8,10 @@
 #include "system/exceptions.hh"
 #include "mesh/mesh.h"
 
-#include "fields/field_base_impl.hh"	// for instantiation macros
+#include "fields/field_algo_base.impl.hh"	// for instantiation macros
 
 #include "field.hh"
-#include "fields/field_impl.hh"
+#include "fields/field.impl.hh"
 
 
 /****************************************************************************

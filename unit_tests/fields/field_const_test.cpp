@@ -33,8 +33,8 @@ string input = R"INPUT(
 )INPUT";
 
 
-typedef FieldBase<3, FieldValue<3>::TensorFixed > TensorField;
-typedef FieldBase<3, FieldValue<3>::Vector > VectorField;
+typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
+typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
 
 void check_tensor_field(std::shared_ptr<TensorField> field,const  std::string& expected, vector<Space<3>::Point> points,ElementAccessor<3> elem) {

@@ -111,7 +111,7 @@ protected:
 
         static IT::Selection bc_type_selection;
 
-        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
+        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
         	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
         {
         		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
@@ -247,10 +247,10 @@ IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
         .declare_key("data", IT::Array(
                 SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
+                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
                 .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
+                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 ), IT::Default::obligatory(), ""  );
 
 

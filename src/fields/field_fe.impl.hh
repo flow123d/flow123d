@@ -1,5 +1,5 @@
 /*
- * field_constant_impl.hh
+ * field_constant.impl.hh
  *
  *  Created on: Dec 15, 2012
  *      Author: jb
@@ -26,7 +26,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp),
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr),
   data_(nullptr),
   data_vec_(nullptr),
