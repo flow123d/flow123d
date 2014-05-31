@@ -39,7 +39,13 @@
  *      Field<3, FieldValue<3>::Vector> vector_field;
  * };
  *
- * This way the fields are destructed just before pointers to them stored in the FieldSet.
+ * This way the fields are destructed just before their pointers stored in the FieldSet.
+ *
+ * TODO:
+ * Some set_XY functions set also to the fields added to the FieldSet in future.
+ * This behavior should be removed, since it is misleading in combination with mask subsets. If one set
+ * something to mask subset, it does not influence fields added to the original field set even if
+ * they match the mask of the subset.
  *
  */
 class FieldSet : public FieldFlag {
@@ -217,6 +223,15 @@ public:
         return *field_list[0]; // formal to prevent compiler warning
     }
 
+    /**
+     * Collective interface to @p FieldCommonBase::set_n_components().
+     * It is safe to call this for field sets containing also fields
+     * with return value other then variable vector as long as all variable
+     * vector fields should be set to the same number of components.
+     */
+    void set_n_components(unsigned int n_comp) {
+        for(auto field : field_list) field->set_n_components(n_comp);
+    }
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */

@@ -156,10 +156,7 @@ void SorptionBase::initialize_substance_ids(const vector< string >& names, Input
 
 void SorptionBase::init_from_input(Input::Record in_rec)
 {
-	data_->sorption_type.n_comp(n_substances_);
-	data_->isotherm_mult.n_comp(n_substances_);
-	data_->isotherm_other.n_comp(n_substances_);
-	data_->init_conc_solid.n_comp(n_substances_);
+    data_->set_n_components(n_substances_);
 
 	// read fields from input file
 	data_->input_data_set_.set_input_list(in_rec.val<Input::Array>("input_fields"));

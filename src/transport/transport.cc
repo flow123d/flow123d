@@ -130,11 +130,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
     if (it) mass_balance_ = new MassBalance(this, *it);
 
-    data_.init_conc.n_comp(n_subst_);
-    data_.bc_conc.n_comp(n_subst_);
-    data_.sources_density.n_comp(n_subst_);
-    data_.sources_sigma.n_comp(n_subst_);
-    data_.sources_conc.n_comp(n_subst_);
+    data_.set_n_components(n_subst_);
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::right);

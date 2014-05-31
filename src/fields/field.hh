@@ -150,7 +150,7 @@ public:
      *
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
-    void n_comp( unsigned int n_comp)
+    void set_n_components( unsigned int n_comp)
     { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
 
 

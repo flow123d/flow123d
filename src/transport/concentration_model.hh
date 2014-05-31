@@ -89,7 +89,7 @@ public:
 
 	ConcentrationTransportModel();
 
-	void init_data(unsigned int n_subst_) override;
+	//void init_data(unsigned int n_subst_) override;
 
 	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) override;
 

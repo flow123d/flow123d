@@ -572,7 +572,7 @@ TEST(Field, init_from_input) {
 
 
     sorption_type.input_selection(&sorption_type_sel);
-    init_conc.n_comp(3);
+    init_conc.set_n_components(3);
 
     it::Record main_record =
             it::Record("main", "desc")

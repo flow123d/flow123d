@@ -179,14 +179,11 @@ void DualPorosity::zero_time_step()
 	ASSERT(output_stream_,"Null output stream.");
 	ASSERT_LESS(0, names_.size());
 
-    data_.diffusion_rate_immobile.n_comp(names_.size());
-    data_.init_conc_immobile.n_comp(names_.size());
+    data_.set_n_components(names_.size());
 
     //setting fields that are set from input file
     input_data_set_+=data_;
     input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
-
-
 
     data_.set_mesh(*mesh_);
     data_.set_limit_side(LimitSide::right);

@@ -211,8 +211,8 @@ protected:
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.n_comp(4);        // set number of substances posibly read from elsewhere
-        data.bc_conc.n_comp(4);
+        data.init_conc.set_n_components(4);        // set number of substances posibly read from elsewhere
+        data.bc_conc.set_n_components(4);
 
         /* Regions in the test mesh:
          * $PhysicalNames

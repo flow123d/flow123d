@@ -105,7 +105,7 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)
 {}
 
-
+/*
 void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 {
 	data().init_conc.n_comp(n_subst_);
@@ -117,6 +117,7 @@ void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 	data().disp_l.n_comp(n_subst_);
 	data().disp_t.n_comp(n_subst_);
 }
+*/
 
 /*
 void ConcentrationTransportModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar >& cross_section)

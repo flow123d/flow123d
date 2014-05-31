@@ -220,7 +220,7 @@ public:
 		// make field init it form the init string
 		F field("test_field", false); // bulk field
 		field.input_default(init);
-		field.n_comp(3);
+		field.set_n_components(3);
 		field.input_selection(&test_selection);
 
 		field.set_mesh(*my_mesh);

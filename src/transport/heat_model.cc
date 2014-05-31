@@ -179,9 +179,10 @@ HeatTransferModel::HeatTransferModel() :
 		flux_changed(true)
 {}
 
-
+/*
 void HeatTransferModel::init_data(unsigned int n_subst_)
 {}
+*/
 
 /*
 void HeatTransferModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
