@@ -188,9 +188,12 @@ public:
 
 
     /**
-     * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter @p dest_field_name.
-     * The source field is given as the second parameter @p source. The field copies share same input descriptor list
-     * and same instances of FieldBase classes but each copy can be set to different time and different limit side.
+     * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter
+     * @p dest_field_name. The source field is given as the second parameter @p source. The field
+     * copies share the same input descriptor list and the same instances of FieldBase classes
+     * but each copy can be set to different time and different limit side.
+     *
+     * See @p FieldCommonBase::copy_from documentation for details.
      */
     void set_field(const std::string &dest_field_name, FieldCommonBase &source) {
     	auto &field = (*this)[dest_field_name];
@@ -255,6 +258,30 @@ public:
 //    	side_ = side;
     	for(auto field : field_list) field->set_limit_side(side);
     }
+
+    /**
+     * Collective interface to @p FieldCommonBase::flags_add().
+     * @param mask   mask to set for all fields in the field set.
+     */
+    void flags_add( FieldFlag::Flags::Mask mask) {
+        for (auto field : field_list) field->flags_add(mask);
+    }
+
+    /**
+     * Collective interface to @p FieldCommonBase::set_mesh().
+     */
+    void set_time(const TimeGovernor &time) {
+        for(auto field : field_list) field->set_time(time);
+    }
+
+    /**
+     * Collective interface to @p FieldCommonBase::output_type().
+     * @param rt   Discrete function space (element, node or corner data).
+     */
+    void output_type(OutputTime::DiscreteSpace rt) {
+        for (auto field : field_list) field->output_type(rt);
+    }
+
     /**
      * Collective interface to @p FieldCommonBase::mar_input_times().
      */
@@ -280,28 +307,6 @@ public:
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::set_mesh().
-     */
-    void set_time(const TimeGovernor &time) {
-    	for(auto field : field_list) field->set_time(time);
-    }
-
-    /**
-     * Collective interface to @p FieldCommonBase::output_type().
-     * @param rt   Discrete function space (element, node or corner data).
-     */
-    void output_type(OutputTime::DiscreteSpace rt) {
-    	for (auto field : field_list) field->output_type(rt);
-	}
-
-    /**
-     * Collective interface to @p FieldCommonBase::flags().
-     * @param mask   mask to set for all fields in the field set.
-     */
-    void flags( FieldFlag::Flags::Mask mask) {
-        for (auto field : field_list) field->flags(mask);
-    }
-    /**
      * Collective interface to @p FieldCommonBase::output().
      */
     void output(OutputTime *stream) {
@@ -312,6 +317,8 @@ public:
 
 
     /**
+     * OBSOLETE
+     *
      * Adds given field into list of fields for group operations on fields.
      * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
      * @p d_val with default value. This method is rather called through the macro ADD_FIELD
@@ -335,7 +342,18 @@ protected:
 
     /// value set by last set_time_limit(); set  the same to added fields
 //    LimitSide side_ = LimitSide::unknown;
- };
+
+    /**
+     * Stream output operator
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const FieldSet &set) {
+        for(FieldCommonBase * field : set.field_list) {
+            stream << *field
+                   << std::endl;
+        }
+        return stream;
+    }
+};
 
 
 /**
@@ -356,6 +374,8 @@ protected:
  */
 
 #define ADD_FIELD(name, ...)                   this->add_field(&name, string(#name), __VA_ARGS__)
+
+
 
 
 #endif /* FIELD_SET_HH_ */

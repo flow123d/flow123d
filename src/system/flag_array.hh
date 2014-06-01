@@ -71,6 +71,7 @@ public:
         : Mask(mask,mask)
         {}
 
+
         /**
          *  Apply mask @p other to *this mask. That is, join bit masks and overwrite
          *  bits given by @p other.mask_ by @p outher.set_ values.
@@ -80,7 +81,6 @@ public:
         constexpr Mask operator&(Mask other) const
         { return Mask( mask_ | other.mask_, mask_set(set_, other.mask_, other.set_) );
         }
-
 
         /// Mask negation.
         constexpr Mask operator~() const
@@ -132,6 +132,14 @@ public:
     : FlagArray()
     {
         this->add(mask);
+    }
+
+    friend constexpr bool operator==(FlagArray left,  FlagArray right)
+    { return (left.flags_==right.flags_);
+    }
+
+    friend bool operator!=(FlagArray left, FlagArray right)
+    { return (left.flags_!=right.flags_);
     }
 
     /**

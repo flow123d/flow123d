@@ -205,6 +205,9 @@ public:
     const Mesh * mesh() const
     { return shared_->mesh_;}
 
+    LimitSide limit_side() const
+    { return limit_side_;}
+
     FieldFlag::Flags &flags()
     { return flags_; }
 
@@ -448,9 +451,24 @@ protected:
     /// Field flags. Default setting is "an equation input field, that can read from user input, and can be written to output"
     FieldFlag::Flags   flags_ = FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output;
 
+    /**
+     * Stream output operator
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const FieldCommonBase &field) {
+
+        string limit_side_str =
+            (field.limit_side_ == LimitSide::left  ? "left" :
+            (field.limit_side_ == LimitSide::right ? "right" :
+              "unknown"));
+
+        stream
+        << "field name:" << field.name()
+        << " limit side:" << limit_side_str
+        << " n. comp.:" << field.n_comp()
+        << " last time:" << field.last_time_;
+        return stream;
+    }
 };
-
-
 
 
 

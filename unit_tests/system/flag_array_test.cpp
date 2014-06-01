@@ -63,4 +63,7 @@ TEST_F(FlagArrayFixture, set_and_test) {
     EXPECT_TRUE( flags_.match(this->young_flag) );
     EXPECT_TRUE( flags_.match(this->young_flag & ~man_flag));
     EXPECT_TRUE( flags_.match( young_bachelor & ~man_flag));
+
+    // operator ==
+    bool result= ( Flags(this->young_flag)==flags_ );
 }
