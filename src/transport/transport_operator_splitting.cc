@@ -24,7 +24,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-#include "reaction/sorption_base.hh"
+//#include "reaction/sorption_base.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_por_exchange.hh"
 
@@ -138,13 +138,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             } else
             if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it);
-                static_cast<SorptionSimple *> (reaction) -> set_porosity(convection->get_data()->porosity);
-                
             } else
             if (reactions_it->type() == DualPorosity::input_type ) {
                 reaction =  new DualPorosity(init_mesh, *reactions_it);
-                static_cast<DualPorosity *> (reaction) -> set_porosity(convection->get_data()->porosity);
-                
             } else
             if (reactions_it->type() == Semchem_interface::input_type ) {
                 Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
@@ -164,10 +160,21 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                     .output_stream(*(convection->output_stream()))
                     .set_time_governor(*(convection->time_));
             
+            reaction->initialize();
+
         } else {
             reaction = nullptr;
             Semchem_reactions = nullptr;
-        }   
+        }
+        
+  //coupling - passing fields
+  if(reaction)
+  if( typeid(*reaction) == typeid(SorptionSimple) || 
+      typeid(*reaction) == typeid(DualPorosity)
+    )
+  {
+    reaction->data().set_field("porosity", convection->data()["porosity"]);
+  }
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()
@@ -197,6 +204,7 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
+  
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream_->write_time_frame();

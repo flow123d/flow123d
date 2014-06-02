@@ -443,8 +443,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int la = a_sparse.size();
 
     // diagonal weights for BDDC loaded by user
-    //ASSERT( diagWeightsCoo_.size() > 0,
-    //        "It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n " );
+    ASSERT( diagWeightsCoo_.nnz() > 0,
+            "It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n " );
 
     std::vector<int>    i_diag_sparse;
     std::vector<int>    j_diag_sparse;
@@ -469,8 +469,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     }
 
     int lsub_diagonal = numDofsSub_;
-//    ASSERT( lsub_diagonal == diag_sparse.size(),
-//            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
+    ASSERT( lsub_diagonal == diag_sparse.size(),
+            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing

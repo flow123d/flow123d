@@ -51,6 +51,10 @@
 #
 # set(USE_PYTHON "yes")
 
+# PYTHON_COPY - make copy of python files, necessary for release builds
+# set(PYTHON_COPY "yes")
+
+
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
 #
@@ -73,7 +77,7 @@
 # e.g.
 # make VERBOSE=1 all
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+#set(CMAKE_VERBOSE_MAKEFILE true)
 
 
 ### set compiler ###

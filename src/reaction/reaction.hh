@@ -1,14 +1,10 @@
-/** @brief class Linear_reaction is used to enable simulation of simple chemical reactions
+/** @brief Class ReactionTerm is an abstract class representing reaction term in transport.
  *
- * Class in this file makes it possible to realize  simulation of reaction of the first order by simple matrix multiplication.
- * One step of the linear reaction is represented as a product of a matrix containing concentrations of observed speciesin elements in rows multiplied by so called
- * reaction_matrix. Through this way radioactive decay can bee also realized and that was exactly what we did at the begining of journey. :-)
- * Matrix containing concentrations has a dimension Nxn, where N is a number of elements in mesh and n denotes a number of transported chemical species.
- * The reaction_matrix is a square matrix and it has a dimension nxn.
- *
+ * Descending classes implements different physical models - dual porosity, sorption, decays, 
+ * chemical reactions.
  */
-#ifndef REACT
-#define REACT
+#ifndef REACTION_TERM_H
+#define REACTION_TERM_H
 
 #include "coupling/equation.hh"
 
@@ -36,7 +32,7 @@ public:
 
   /// Constructor.
   /** @param init_mesh is the reference to the computational mesh
-   * @param in_rec is the input record
+   *  @param in_rec is the input record
    */
   ReactionTerm(Mesh &init_mesh, Input::Record in_rec);
 
@@ -62,17 +58,19 @@ public:
                                      int *el_4_loc, int *row_4_el)
   {
     concentration_matrix_ = concentration;
-    distribution = conc_distr;
-    this->el_4_loc = el_4_loc;
-    this->row_4_el = row_4_el;
+    distribution_ = conc_distr;
+    el_4_loc_ = el_4_loc;
+    row_4_el_ = row_4_el;
     return *this;
   }
   //@}
 
   /** @brief Output method.
    * 
-   * Some reaction models have their own data to output (sorption, dual porosity) - this is where it must be solved.
-   * On the other hand, some do not have (linear reaction, pade approximant) - that is why it is not pure virtual.
+   * Some reaction models have their own data to output (sorption, dual porosity) 
+   * - this is where it must be reimplemented.
+   * On the other hand, some do not have (linear reaction, pade approximant) 
+   * - that is why it is not pure virtual.
    */
   virtual void output_data(void){};
 
@@ -89,12 +87,7 @@ protected:
    * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
    */
-  virtual double **compute_reaction(double **concentrations, int loc_el);
-
-  /** Initialize data from record in input file.
-   * It is intended to use in ascendants.
-   */
-  virtual void init_from_input(Input::Record in_rec) {};
+  virtual double **compute_reaction(double **concentrations, int loc_el) =0;
 
   /**
    * Pointer to two-dimensional array[species][elements] containing concentrations.
@@ -102,12 +95,12 @@ protected:
   double **concentration_matrix_;
   
   /// Indices of elements belonging to local dofs.
-  int *el_4_loc;
+  int *el_4_loc_;
   /// Indices of rows belonging to elements.
-  int *row_4_el;
+  int *row_4_el_;
   
   /// Pointer to reference to distribution of elements between processors.
-  Distribution *distribution;
+  Distribution *distribution_;
   
   /// Names belonging to substances.
   /**  
@@ -120,4 +113,4 @@ protected:
 
 };
 
-#endif  // REACT
+#endif  // REACTION_TERM_H

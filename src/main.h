@@ -86,6 +86,12 @@ protected:
      */
     virtual void parse_cmd_line(const int argc, char ** argv);
 
+    /**
+     * Split path to directory (part up to last DIR_SEPARATOR excluded) and filename.
+     * Directory is set to "." if no DIR_SEPARATOR is found.
+     */
+    void split_path(const string& path, string& directory, string& file_name);
+
 private:
 
     /// directory of main input file (used to resolve relative paths of other input files)
