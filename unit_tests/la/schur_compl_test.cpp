@@ -163,7 +163,7 @@ TEST(schur, complement) {
 	schurComplement->start_add_assembly();
 	schurComplement->fill_matrix( rank, ds, block_ds); // fill matrix
 	schurComplement->finish_assembly();
-	MatView(schurComplement->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+	MatView(*(schurComplement->get_matrix()),PETSC_VIEWER_STDOUT_WORLD);
 
 	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
@@ -179,9 +179,9 @@ TEST(schur, complement) {
 			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
 			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
 		}
-		MatGetRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+		MatGetRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);
 		EXPECT_FLOAT_EQ( ((double)block_size / (double)(rank + 2)), vals[0] );
-		MatRestoreRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+		MatRestoreRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);
 	}
 }
 

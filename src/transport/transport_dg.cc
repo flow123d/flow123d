@@ -438,7 +438,7 @@ void TransportDG<Model>::update_solution()
 		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
-		mass_matrix = ls_dt->get_matrix();
+		mass_matrix = *(ls_dt->get_matrix());
 	}
 
 	// assemble stiffness matrix
@@ -458,9 +458,9 @@ void TransportDG<Model>::update_solution()
         	ls[i]->finish_assembly();
 
         	if (stiffness_matrix[i] == NULL)
-        		MatConvert(ls[i]->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
+        		MatConvert(*( ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
         	else
-        		MatCopy(ls[i]->get_matrix(), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
+        		MatCopy(*( ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 

@@ -177,9 +177,10 @@ public:
 	 *   schur->set_matrix_changed();
 	 * @ENDCODE
      */
-    virtual const Mat &get_matrix()
+    virtual const Mat *get_matrix()
     {
         ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return NULL;
     }
 
     /**

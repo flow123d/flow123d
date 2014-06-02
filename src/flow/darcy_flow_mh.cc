@@ -1715,7 +1715,7 @@ void DarcyFlowMH_Unsteady::read_init_condition()
 
 void DarcyFlowMH_Unsteady::setup_time_term() {
     // save diagonal of steady matrix
-    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
     VecCopy(schur0->get_rhs(), steady_rhs);
 
@@ -1734,7 +1734,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
                                   ele->measure() / time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
-    MatDiagonalSet(schur0->get_matrix(), new_diagonal, ADD_VALUES);
+    MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
 
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
@@ -1744,10 +1744,10 @@ void DarcyFlowMH_Unsteady::modify_system() {
 	START_TIMER("modify system");
 	if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
 		// if time step has changed and setup_time_term not called
-		MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
+		MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
 
 		VecScale(new_diagonal, time_->last_dt()/time_->dt());
-		MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+		MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
 		schur0->set_matrix_changed();
 	}
 
@@ -1818,7 +1818,7 @@ void DarcyFlowLMH_Unsteady::read_init_condition()
 void DarcyFlowLMH_Unsteady::setup_time_term()
 {
     // save diagonal of steady matrix
-    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
     VecCopy(schur0->get_rhs(),steady_rhs);
 
@@ -1846,7 +1846,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	VecAssemblyBegin(new_diagonal);
 	VecAssemblyEnd(new_diagonal);
 
-	MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+	MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
 
 	solution_changed_for_scatter=true;
 	schur0->set_matrix_changed();
@@ -1857,9 +1857,9 @@ void DarcyFlowLMH_Unsteady::modify_system() {
     if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
     	// if time step has changed and setup_time_term not called
 
-        MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
+        MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
         VecScale(new_diagonal, time_->last_dt()/time_->dt());
-        MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+        MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
         schur0->set_matrix_changed();
     }
 
