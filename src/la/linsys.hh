@@ -230,6 +230,7 @@ public:
     virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
         ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return 0;
     }
 
     /**
@@ -238,6 +239,7 @@ public:
     virtual PetscErrorCode set_rhs(Vec &rhs)
     {
         ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return 0;
     }
 
     /**
@@ -246,6 +248,7 @@ public:
     virtual PetscErrorCode mat_zero_entries()
     {
     	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	return 0;
     }
 
     /**
@@ -254,6 +257,7 @@ public:
     virtual PetscErrorCode rhs_zero_entries()
     {
     	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	return 0;
     }
 
     /**
@@ -476,6 +480,7 @@ public:
      * Returns information on absolute solver accuracy
      */
     virtual double get_absolute_accuracy(){
+    	return 0.0;
     };
 
     /**

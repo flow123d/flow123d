@@ -496,9 +496,12 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
 
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
 template<int spacedim, class Value>
 it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 }
+#pragma GCC diagnostic pop
 
 
 template<int spacedim, class Value>

@@ -227,6 +227,7 @@ PetscErrorCode LinSys_BDDC::mat_zero_entries()
 #ifdef HAVE_BDDCML
     bddcml_ -> clearMatrix( );
 #endif // HAVE_BDDCML
+    return 0;
 }
 
 PetscErrorCode LinSys_BDDC::rhs_zero_entries()
@@ -234,6 +235,7 @@ PetscErrorCode LinSys_BDDC::rhs_zero_entries()
 #ifdef HAVE_BDDCML
     bddcml_ -> clearRhs( );
 #endif // HAVE_BDDCML
+    return 0;
 }
 
 void LinSys_BDDC::finish_assembly( )

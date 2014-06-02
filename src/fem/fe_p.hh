@@ -439,12 +439,14 @@ template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+    return arma::mat::fixed<dim,dim>();
 }
 
 

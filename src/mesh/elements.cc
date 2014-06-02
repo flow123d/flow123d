@@ -178,7 +178,7 @@ Region Element::region() const {
 
 
 unsigned int Element::id() const {
-	mesh_->element.get_id(this);
+	return mesh_->element.get_id(this);
 }
 
 double Element::quality_measure_smooth() {
