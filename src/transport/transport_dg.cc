@@ -479,8 +479,8 @@ void TransportDG<Model>::update_solution()
     	{
     		ls[i]->finish_assembly();
 
-    		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
-    		VecCopy(ls[i]->get_rhs(), rhs[i]);
+    		VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
+    		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }
 

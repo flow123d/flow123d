@@ -1676,14 +1676,14 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
-    VecDuplicate(schur0->get_rhs(), &steady_rhs);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
     assembly_linear_system();
 	read_init_condition();
 
 
 /*
-    VecDuplicate(schur0->get_rhs(), &time_term);
+    VecDuplicate(*( schur0->get_rhs()), &time_term);
   */
     //setup_time_term();
     output_data();
@@ -1717,7 +1717,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
-    VecCopy(schur0->get_rhs(), steady_rhs);
+    VecCopy(*( schur0->get_rhs()), steady_rhs);
 
 
     PetscScalar *local_diagonal;
@@ -1752,8 +1752,8 @@ void DarcyFlowMH_Unsteady::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
-    VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
     // swap solutions
@@ -1780,7 +1780,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 	VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
-    VecDuplicate(schur0->get_rhs(), &steady_rhs);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
     assembly_linear_system();
 	read_init_condition();
@@ -1820,7 +1820,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
     // save diagonal of steady matrix
     MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
-    VecCopy(schur0->get_rhs(),steady_rhs);
+    VecCopy(*( schur0->get_rhs()),steady_rhs);
 
 	VecZeroEntries(new_diagonal);
 
@@ -1864,8 +1864,8 @@ void DarcyFlowLMH_Unsteady::modify_system() {
     }
 
     // modify RHS - add previous solution
-    VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
-    VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
     // swap solutions

@@ -193,9 +193,10 @@ public:
 	 *   schur->set_rhs_changed();
 	 * @ENDCODE
      */
-    virtual const Vec &get_rhs()
+    virtual const Vec *get_rhs()
     {
         ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return NULL;
     }
     
     /**

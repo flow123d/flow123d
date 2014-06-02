@@ -246,10 +246,10 @@ void SchurComplement::form_schur()
 void SchurComplement::form_rhs()
 {
 	if (rhs_changed_ || matrix_changed_) {
-	    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
-	    VecAXPY(Compl->get_rhs(),-1,RHS2);
+	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
+	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
 	    if ( is_negative_definite() ) {
-	    	VecScale(Compl->get_rhs(), -1.0);
+	    	VecScale(*( Compl->get_rhs() ), -1.0);
 	    }
 	    Compl->set_rhs_changed();
 	    rhs_changed_ = false;
