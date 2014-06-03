@@ -26,17 +26,6 @@ TYPEDEF_ERR_INFO( EI_TypeName, const string);
 DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
 		<< " isn't registered in factory for type " << EI_TypeName::val << "!");
 
-/*
-template <class Type, class... Arguments>
-class Creater {
-public:
-    shared_ptr<Type> operator()(Arguments ... args) {
-        return make_shared<Type>(args...);
-    }
-
-};
-*/
-
 
 /**
  * This class implements more general factory mechanism to construct classes.
@@ -80,12 +69,16 @@ public:
      template <int dimension>
      class SomeDescendant : public SomeBase<dimension>
      {
-   	     ...
+     public:
+
+		/// constructor
+	    SomeDescendant(double time) {}
+  	    ...
      }
 
      /// implementation of registration variable uses disambiguator template keyword
      const int SomeDescendant::reg =
-		 Input::Factory< SomeBase<dimension> >::template
+		 Input::Factory< SomeBase<dimension>, double >::template
 		     register_class< SomeDescendant<dimension> >("SomeDescendant");
  @endcode
  *
@@ -102,7 +95,7 @@ public:
      AbstractRecord a_rec = record.val<AbstractRecord>("problem");
      SomeBase * sb = a_rec.factory< SomeBase, double>(0.25);
      // If arguments types can be deduced (by compiler) from actual arguments one can even use:
-     SomeBase * sb = a_rec.factory< SomeBase>(0.25);
+     SomeBase * sb = a_rec.factory< SomeBase >(0.25);
  @endcode
  *
  */

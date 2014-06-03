@@ -477,7 +477,9 @@ public:
     /**
      * Construct classes given by TYPE key of AbstractRecord.
      *
-     * Method uses code implemented in Input::Factory class.
+     * Method uses Input::Factory class. All constructed classes (representing by descendants
+     * of AbstractRecord) must be registered to factory (see Input::Factory class) and must have
+     * constructors with same parameters (given by Arguments).
      */
     template<class Type, class... Arguments>
     std::shared_ptr<Type> factory(Arguments... arguments);
