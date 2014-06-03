@@ -18,9 +18,9 @@
 
 #include "system/file_path.hh"
 
-#include "base.h"
-#include "descendant_a.h"
-#include "descendant_b.h"
+#include "factory_base.h"
+#include "factory_descendant_a.h"
+#include "factory_descendant_b.h"
 
 
 

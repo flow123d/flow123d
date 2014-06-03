@@ -8,13 +8,13 @@
  *
  */
 
-#ifndef DESCENDANT_B_HH_
-#define DESCENDANTD_B_HH_
+#ifndef FACTORY_DESCENDANT_B_HH_
+#define FACTORY_DESCENDANT_B_HH_
 
 #include <boost/lexical_cast.hpp>
 
 #include "input/factory.hh"
-#include "base.h"
+#include "factory_base.h"
 
 
 template<int spacedim>
@@ -43,4 +43,4 @@ DescendantB<spacedim>::DescendantB()
 };
 
 
-#endif /* DESCENDANT_B_HH_ */
+#endif /* FACTORY_DESCENDANT_B_HH_ */

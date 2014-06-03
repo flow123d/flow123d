@@ -8,13 +8,13 @@
  *
  */
 
-#ifndef DESCENDANT_A_HH_
-#define DESCENDANT_A_HH_
+#ifndef FACTORY_DESCENDANT_A_HH_
+#define FACTORY_DESCENDANT_A_HH_
 
 #include <boost/lexical_cast.hpp>
 
 #include "input/factory.hh"
-#include "base.h"
+#include "factory_base.h"
 
 using namespace std;
 
@@ -66,4 +66,4 @@ DescendantA<spacedim>::DescendantA(int n_comp, double time)
 };
 
 
-#endif /* DESCENDANT_A_HH_ */
+#endif /* FACTORY_DESCENDANT_A_HH_ */
