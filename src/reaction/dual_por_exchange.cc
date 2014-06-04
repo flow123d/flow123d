@@ -382,7 +382,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 void DualPorosity::allocate_output_mpi(void )
 {
   //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst, ierr;
+    int sbi, n_subst;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -390,12 +390,12 @@ void DualPorosity::allocate_output_mpi(void )
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
                 &vconc_immobile[sbi]);
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
+        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
         VecZeroEntries(vconc_immobile_out[sbi]);
     }
 }

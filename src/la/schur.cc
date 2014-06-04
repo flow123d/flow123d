@@ -289,7 +289,6 @@ Distribution *SchurComplement::make_complement_distribution()
 
 void SchurComplement::create_inversion_matrix()
 {
-    PetscErrorCode ierr;
     PetscInt ncols, pos_start, pos_start_IA;
 
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
@@ -313,7 +312,7 @@ void SchurComplement::create_inversion_matrix()
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
         unsigned int b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        ierr = MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -329,19 +328,19 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
-        ierr = MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
             processed_rows[ loc_row + i ] = mat_block;
             submat_rows.push_back( i + loc_row + pos_start_IA );
-            ierr = MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
             for (PetscInt j=0; j<ncols; j++) {
                 if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
                     submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
                 }
             }
-            ierr = MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
         // test output
 //            xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);

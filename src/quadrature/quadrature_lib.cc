@@ -75,7 +75,6 @@ QGauss<dim>::QGauss(const unsigned int order)
               };
     static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
     const pQUAD *q;
-    unsigned int nquads;
     vec::fixed<dim> p;
 
     switch (dim)
@@ -86,15 +85,12 @@ QGauss<dim>::QGauss(const unsigned int order)
         return;
     case 1:
         q = q1d;
-        nquads = sizeof(q1d) / sizeof(pQUAD);
         break;
     case 2:
         q = q2d;
-        nquads = sizeof(q2d) / sizeof(pQUAD);
         break;
     case 3:
         q = q3d;
-        nquads = sizeof(q3d) / sizeof(pQUAD);
         break;
     }
 

@@ -289,7 +289,7 @@ void DarcyFlowMH_Steady::update_solution() {
 void DarcyFlowMH_Steady::postprocess() 
 {
     START_TIMER("postprocess");
-    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
@@ -1827,12 +1827,11 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	// modify matrix diagonal
 	// cycle over local element rows
 	ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-	double init_value;
 
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 		ele = mesh_->element(el_4_loc[i_loc_el]);
 
-		init_value = data_.init_pressure.value(ele->centre(), ele->element_accessor());
+		data_.init_pressure.value(ele->centre(), ele->element_accessor());
 
 		FOR_ELEMENT_SIDES(ele,i) {
 			int edge_row = row_4_edge[ele->side(i)->edge_idx()];

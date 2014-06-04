@@ -77,14 +77,13 @@ PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef HAVE_PETSC
-    PetscErrorCode ierr;
     if (petsc_redirect_file_ != "") {
         petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
         PetscVFPrintf = this->petscvfprintf;
     }
 
 
-    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);

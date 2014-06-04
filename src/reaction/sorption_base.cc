@@ -464,18 +464,18 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
 void SorptionBase::allocate_output_mpi(void )
 {
-    int sbi, n_subst, ierr;
+    int sbi, n_subst;
     n_subst = names_.size();
 
     vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vconc_solid_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
                 &vconc_solid[sbi]);
         VecZeroEntries(vconc_solid[sbi]);
 
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
+        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
         VecZeroEntries(vconc_solid_out[sbi]);
     }
 }

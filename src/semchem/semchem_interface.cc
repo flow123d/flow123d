@@ -77,7 +77,7 @@ it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_m
 
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), fw_chem(NULL), mesh_(NULL), cross_section(cross_section)
+	:semchem_on(false), dual_porosity_on(false), fw_chem(NULL), mesh_(NULL), cross_section(NULL)
 {
 
   //temporary semchem output file name
@@ -152,7 +152,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    char *vystupni_soubor; //[] = "./output/semchem_output.txt";
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
-   double pomoc, n;
+   double pomoc;
    double el_por_m = por_m->value(ppelm->centre(), ppelm->element_accessor());
    double el_por_imm = por_imm->value(ppelm->centre(), ppelm->element_accessor());
    double el_phi = phi->value(ppelm->centre(), ppelm->element_accessor());
@@ -167,8 +167,6 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
   //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
    //==================================================================
-   n = (el_por_m) / (1 - el_por_m); //asi S/V jako zze splocha
-
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :
