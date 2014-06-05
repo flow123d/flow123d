@@ -34,7 +34,6 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "elements.h"
 #include "element_impls.hh"
 
 // following deps. should be removed
