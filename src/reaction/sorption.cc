@@ -174,7 +174,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
         arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
-        for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+        for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
         {
                 double mult_coef = mult_coef_vec[i_subst];
                 double second_coef = second_coef_vec[i_subst];
@@ -249,7 +249,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
     arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
     arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
-    for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+    for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
     {
         double mult_coef = mult_coef_vec[i_subst];
         double second_coef = second_coef_vec[i_subst];

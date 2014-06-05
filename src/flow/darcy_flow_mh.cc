@@ -1123,7 +1123,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    ASSERT_EQUAL( numNodeSub, global_row_4_sub_row->size() );
+    ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1614,7 +1614,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     FOR_EDGES(mesh_, edg) {
         solver_indices_.push_back( row_4_edge[i_edg++] );
     }
-    ASSERT( solver_indices_.size() == size, "Size of array does not match number of fills.\n" );
+    ASSERT( solver_indices_.size() == (unsigned int)size, "Size of array does not match number of fills.\n" );
     //std::cout << "Solve rindices:" << std::endl;
     //std::copy( solver_indices_.begin(), solver_indices_.end(), std::ostream_iterator<int>( std::cout, " " ) );
 }

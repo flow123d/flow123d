@@ -16,6 +16,8 @@ ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
 { }
 
+bool ApplicationBase::petsc_initialized = false;
+
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     int ierr;

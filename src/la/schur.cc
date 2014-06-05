@@ -310,7 +310,7 @@ void SchurComplement::create_inversion_matrix()
         if (processed_rows[loc_row] != 0) continue;
 
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
-        unsigned int b_vals = 0; // count of values stored in B-block of Orig system
+        PetscInt b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
         MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
