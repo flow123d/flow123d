@@ -191,6 +191,8 @@ public:
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
+    virtual ~FE_P();
+
 private:
 
     /// The auxiliary polynomial space.
@@ -246,6 +248,9 @@ public:
      * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+
+    /// Destructor
+    virtual ~FE_P_disc();
 
 private:
 
@@ -390,6 +395,11 @@ arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const uns
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
 }
 
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P<degree,dim,spacedim>::~FE_P()
+{}
+
+
 
 
 
@@ -448,6 +458,11 @@ arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(cons
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
     return arma::mat::fixed<dim,dim>();
 }
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
+{}
+
 
 
 

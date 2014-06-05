@@ -183,6 +183,11 @@ const vector<arma::vec::fixed<dim> > &FiniteElement<dim,spacedim>::get_generaliz
 }
 
 
+template<unsigned int dim, unsigned int spacedim>
+FiniteElement<dim,spacedim>::~FiniteElement()
+{}
+
+
 template class FiniteElement<0,3>;
 template class FiniteElement<1,3>;
 template class FiniteElement<2,3>;

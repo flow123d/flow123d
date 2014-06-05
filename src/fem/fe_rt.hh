@@ -123,6 +123,11 @@ public:
             FEInternalData &data,
             FEValuesData<dim,spacedim> &fv_data);
 
+    /**
+     * @brief Destructor.
+     */
+    virtual ~FE_RT0() {};
+
 };
 
 
