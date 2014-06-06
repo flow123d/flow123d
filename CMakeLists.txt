@@ -118,6 +118,7 @@ endif(FLOW_CC_FLAGS)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
 	    execute_process(
 	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
 	    if (CYGWIN)
 	        if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
 	          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
