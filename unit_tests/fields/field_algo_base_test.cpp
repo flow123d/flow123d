@@ -207,7 +207,7 @@ TYPED_TEST(FieldFix, set_input_list) {
 	this->field_.set_input_list( this->input_list(list_ok) );
 
 	this->field_.name("a");
-	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommonBase::ExcNonascendingTime, "for field 'a'" );
+	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
 }
 
 

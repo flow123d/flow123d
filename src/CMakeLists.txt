@@ -135,8 +135,9 @@ set (sources_lib_coupling
     io/output_msh.cc
     
     fields/field_values.cc
-    fields/field_algo_base.cc
+    fields/field_common.cc
     fields/field.cc
+    fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
     

@@ -112,7 +112,7 @@ protected:
         static IT::Selection bc_type_selection;
 
         inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
         {
         		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
 

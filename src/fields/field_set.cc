@@ -9,8 +9,8 @@
 
 
 
-FieldSet &FieldSet::operator +=(FieldCommonBase &add_field) {
-    FieldCommonBase *found_field = field(add_field.name());
+FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
+    FieldCommon *found_field = field(add_field.name());
     if (found_field) {
         ASSERT(&add_field==found_field, "Another field of the same name exists when adding field: %s\n",
                 add_field.name().c_str());
@@ -47,7 +47,7 @@ FieldSet FieldSet::subset( FieldFlag::Flags::Mask mask) const {
 
 
 Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equation_name) const {
-    Input::Type::Record rec = FieldCommonBase::field_descriptor_record(equation_name + "_Data");
+    Input::Type::Record rec = FieldCommon::field_descriptor_record(equation_name + "_Data");
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
             string units = field->units();
@@ -92,7 +92,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
 
 
 
-void FieldSet::set_field(const std::string &dest_field_name, FieldCommonBase &source)
+void FieldSet::set_field(const std::string &dest_field_name, FieldCommon &source)
 {
     auto &field = (*this)[dest_field_name];
     field.copy_from(source);
@@ -100,7 +100,7 @@ void FieldSet::set_field(const std::string &dest_field_name, FieldCommonBase &so
 
 
 
-FieldCommonBase *FieldSet::field(const std::string &field_name) const {
+FieldCommon *FieldSet::field(const std::string &field_name) const {
     for(auto field : field_list)
         if (field->name() ==field_name) return field;
     return nullptr;
@@ -108,11 +108,11 @@ FieldCommonBase *FieldSet::field(const std::string &field_name) const {
 
 
 
-FieldCommonBase &FieldSet::operator[](const std::string &field_name) const {
-    FieldCommonBase *found_field=field(field_name);
+FieldCommon &FieldSet::operator[](const std::string &field_name) const {
+    FieldCommon *found_field=field(field_name);
     if (found_field) return *found_field;
 
-    THROW(ExcUnknownField() << FieldCommonBase::EI_Field(field_name));
+    THROW(ExcUnknownField() << FieldCommon::EI_Field(field_name));
     return *field_list[0]; // formal to prevent compiler warning
 }
 
@@ -143,7 +143,7 @@ void FieldSet::output(OutputTime *stream) {
 
 
 // OBSOLETE method
-FieldCommonBase &FieldSet::add_field( FieldCommonBase *field, const string &name,
+FieldCommon &FieldSet::add_field( FieldCommon *field, const string &name,
                                       const string &desc, const string & d_val) {
     *this += field->name(name).description(desc).input_default(d_val);
     return *field;
@@ -152,7 +152,7 @@ FieldCommonBase &FieldSet::add_field( FieldCommonBase *field, const string &name
 
 
 std::ostream &operator<<(std::ostream &stream, const FieldSet &set) {
-    for(FieldCommonBase * field : set.field_list) {
+    for(FieldCommon * field : set.field_list) {
         stream << *field
                << std::endl;
     }

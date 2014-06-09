@@ -47,7 +47,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
-: FieldCommonBase(other),
+: FieldCommon(other),
   data_(other.data_),
   read_field_descriptor_hook( other.read_field_descriptor_hook )
 {
@@ -241,7 +241,7 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
-auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommonBase &field) -> FieldBasePtr
+auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommon &field) -> FieldBasePtr
 {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record))
@@ -320,7 +320,7 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
+void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 	ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
 	        other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
@@ -477,7 +477,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
-: FieldCommonBase()
+: FieldCommon()
 {}
 
 
@@ -535,7 +535,7 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
+void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
 		this->operator=(other_field);

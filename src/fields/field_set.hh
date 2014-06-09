@@ -50,7 +50,7 @@
  */
 class FieldSet : public FieldFlag {
 public:
-	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommonBase::EI_Field::qval);
+	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
 
 	/**
 	 * Add an existing Field to the list. It stores just pointer to the field.
@@ -67,7 +67,7 @@ public:
 	 * 			.description("Initial temperature");
 	 *
 	 */
-	FieldSet &operator +=(FieldCommonBase &add_field);
+	FieldSet &operator +=(FieldCommon &add_field);
 
 	/**
 	 * Add other FieldSet to current one.
@@ -129,18 +129,18 @@ public:
      *
      * See @p FieldCommonBase::copy_from documentation for details.
      */
-    void set_field(const std::string &dest_field_name, FieldCommonBase &source);
+    void set_field(const std::string &dest_field_name, FieldCommon &source);
 
     /**
      * Return pointer to the field given by name @p field_name. Return nullptr if not found.
      */
-    FieldCommonBase *field(const std::string &field_name) const;
+    FieldCommon *field(const std::string &field_name) const;
 
     /**
      * Returns reference to the field given by @p field_name.
      * Throws if the field with given name is not found.
      */
-    FieldCommonBase &operator[](const std::string &field_name) const;
+    FieldCommon &operator[](const std::string &field_name) const;
 
     /**
      * Collective interface to @p FieldCommonBase::set_n_components().
@@ -224,14 +224,14 @@ public:
      * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
      * @p d_val with default value. This method is rather called through the macro ADD_FIELD
      */
-    FieldCommonBase &add_field( FieldCommonBase *field, const string &name,
+    FieldCommon &add_field( FieldCommon *field, const string &name,
                                 const string &desc, const string & d_val="");
 
 protected:
 
 
     /// List of all fields.
-    std::vector<FieldCommonBase *> field_list;
+    std::vector<FieldCommon *> field_list;
 
     /**
      * Stream output operator
