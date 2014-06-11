@@ -55,8 +55,6 @@ SparseGraph::SparseGraph(const Distribution &distr)
       part_to_check(NULL),
       adj_of_proc( vtx_distr.np() )
 {
-    F_ENTRY;
-
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
@@ -72,8 +70,6 @@ SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
       adj_weights(NULL),
       adj_of_proc( vtx_distr.np() )
 {
-    F_ENTRY;
-
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
@@ -82,8 +78,6 @@ SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
 
 void SparseGraph::set_edge(const int a, const int b,int weight)
 {
-    F_ENTRY;
-
     Edge e={a,b, weight};
 
     adj_of_proc[vtx_distr.get_proc(a)].push(e);
@@ -116,7 +110,6 @@ bool operator <(const SparseGraph::Edge &a,const SparseGraph::Edge  &b)
 // check trivial case : Localized distribution
 void SparseGraph::finalize()
 {
-   F_ENTRY;
    ASSERT( adj==NULL, "Graph is already finalized\n");
 
    int proc;
@@ -232,8 +225,6 @@ void SparseGraph::finalize()
  */
 bool SparseGraph::check_subgraph_connectivity(int *part)
 {
-    F_ENTRY;
-
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size() , "Check of graph continuity not yet implemented for paralel case.\n");
     if (vtx_distr.myp()!=0) return(true);
 
@@ -398,8 +389,6 @@ void SparseGraphMETIS::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphMETIS::partition(int *part)
 {
-    F_ENTRY;
-
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
 

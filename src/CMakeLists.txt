@@ -42,7 +42,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(sources_lib_system
     system/python_loader.cc
     system/math_fce.cc
-    system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
     system/xio.cc

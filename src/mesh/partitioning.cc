@@ -76,7 +76,6 @@ void Partitioning::make_element_connection_graph() {
     Edge *edg;
     int li, e_idx, i_neigh;
     int i_s, n_s;
-    F_ENTRY;
 
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
@@ -166,7 +165,6 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     AO new_old_ao;
     int *old_4_new;
     int i_loc;
-    F_ENTRY;
     // make distribution and numbering
     //DBGPRINT_INT("Local partitioning",old_ds->lsize,loc_part_);
 

@@ -565,7 +565,6 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 //=============================================================================
 
 void DarcyFlowMHOutput::water_balance() {
-    F_ENTRY;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
     if (balance_output_file == NULL) return;
 

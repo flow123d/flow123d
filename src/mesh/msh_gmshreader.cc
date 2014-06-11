@@ -74,8 +74,6 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 void GmshMeshReader::read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
-    F_ENTRY;
-    
     START_TIMER("GMSHReader - read mesh");
     
     ASSERT( mesh , "Argument mesh is NULL.\n");

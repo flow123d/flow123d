@@ -40,8 +40,6 @@ Distribution::Distribution(const unsigned int size, MPI_Comm comm)
 :communicator(comm),
 lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -66,8 +64,6 @@ Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
 :communicator(comm),
  lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -87,8 +83,6 @@ Distribution::Distribution(const Vec &petsc_vector)
 :communicator(PETSC_COMM_WORLD),
  lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -111,8 +105,6 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 :communicator(comm),
  lsizes(NULL)
 {
-    F_ENTRY;
-    
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );

@@ -170,8 +170,6 @@ Partitioning *Mesh::get_part() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    F_ENTRY;
-
     FOR_ELEMENTS(this, elm)
     switch (elm->dim()) {
         case 1:
@@ -199,8 +197,6 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 
 void Mesh::init_from_input() {
-    F_ENTRY;
-
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
@@ -226,8 +222,6 @@ void Mesh::init_from_input() {
 
 
 void Mesh::setup_topology() {
-    F_ENTRY;
-
     START_TIMER("MESH - setup topology");
     
     count_element_types();

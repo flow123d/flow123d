@@ -261,8 +261,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 //=============================================================================
 void DarcyFlowMH_Steady::update_solution() {
     START_TIMER("Solving MH system");
-    F_ENTRY;
-
 
 
     if (time_->is_end()) return;
@@ -420,7 +418,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
-    F_ENTRY;
 
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
@@ -878,8 +875,6 @@ void DarcyFlowMH_Steady::create_linear_system() {
     Vec aux;
     PetscErrorCode err;
 
-    F_ENTRY;
-
     //xprintf(Msg,"****************** problem statistics \n");
     //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
     //xprintf(Msg,"sides: %d \n",mesh_->n_sides());
@@ -1260,7 +1255,6 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
     int e_weight;
 
     int edge_dim_weights[3] = { 100, 10, 1 };
-    F_ENTRY;
 
     i_edg=0;
     FOR_EDGES(mesh, edg) {
@@ -1307,7 +1301,6 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph, bool neigh_
     Edge *edg;
     int li, e_idx, i_neigh;
     int i_s, n_s;
-    F_ENTRY;
 
     //int elDimMax = 1;
     //int elDimMin = 3;
@@ -1470,8 +1463,6 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     int e_idx;
 
     
-    F_ENTRY;
-
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
     //ASSERT(ierr == 0, "Error in MPI_Barrier.");
 

@@ -254,8 +254,6 @@ void * xrealloc( void * ptr, size_t size )
 {
     void * rc;
 
-    F_ENTRY;
-
     rc = realloc( ptr, size );
     if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
@@ -313,8 +311,6 @@ int xsystem( const char *cmd )
 {
 	int rc;
 
-	F_ENTRY;
-
 	rc = system( cmd );
 	INPUT_CHECK(!( rc != 0 ),"Error executing external command: %s\n", cmd );
 	return(rc);
@@ -327,8 +323,6 @@ char *xstrcpy( const char *src )
 {
 	char *rc;
 	size_t length;
-
-	F_ENTRY;
 
 	ASSERT(!( src == NULL ),"NULL pointer as argument of function xstrcpy()\n");
 	length = strlen( src ) + 1;
@@ -348,8 +342,6 @@ char *xstrtok(char *s, int position)
     char *rc;
     const char * const whitespace_delim=" \t\r\n";
 
-    F_ENTRY;
-
     rc = xstrtok( s, whitespace_delim, position);
     return(rc);
 }
@@ -368,8 +360,6 @@ char *xstrtok( char *s1, const char *delim, int position )
 	char *rc;
 	static char * full_string = NULL;
 	static int token_count;
-
-	F_ENTRY;
 
 	ASSERT(!( delim == NULL ),"NULL pointer as delimiter in xstrtok()\n");
 
@@ -404,8 +394,6 @@ int xchomp( char * s )
     int no_erased = 0;
     char * p;
 
-    F_ENTRY;
-
     ASSERT( s, "Can not chomp NULL string.");
 
     if ( *s ) //string not empty
@@ -432,8 +420,6 @@ int xmkdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xmkdir()\n");
     rc = mkdir(s, S_IRWXU); // create dir with rwx perm. for user
     if (errno == EEXIST)
@@ -450,8 +436,6 @@ int xrmdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xrmdir()\n");
     rc = rmdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot delete directory %s\n", s );
@@ -465,8 +449,6 @@ int xchdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xchdir()\n");
     rc = chdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot change directory to %s\n", s );
@@ -479,8 +461,6 @@ int xchdir( const char *s )
 int xremove( const char *fname )
 {
     int rc;
-
-    F_ENTRY;
 
     ASSERT(!( fname == NULL ),"NULL pointer as argument of function xremove()\n");
     if( access( fname , F_OK ) == 0 )
@@ -502,8 +482,6 @@ char *xgetcwd( void )
     char tmp[PATH_MAX];
     char * rc;
 
-    F_ENTRY;
-
     rc = getcwd( tmp, PATH_MAX );
     ASSERT( rc,"Cannot get name of current working directory\n");
 
@@ -518,9 +496,8 @@ char *xgetcwd( void )
  *  @param[in]      pattern     String to look for.
  *  @return                     true - if we have found the section, false otherwise
  */
-bool skip_to( istream &in, const string &pattern )
+/*bool skip_to( istream &in, const string &pattern )
 {
-    F_ENTRY;
     if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
 
     for(std::string line; ! in.eof() ; std::getline(in, line) ) {
@@ -529,6 +506,6 @@ bool skip_to( istream &in, const string &pattern )
     }
 
     return false;
-}
+}*/
 
 

@@ -74,7 +74,6 @@ it::Record HC_ExplicitSequential::input_type
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
-    F_ENTRY;
     //int i=0;
     using namespace Input;
 

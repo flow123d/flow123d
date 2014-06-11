@@ -171,8 +171,6 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 //=============================================================================
 void ConvectionTransport::make_transport_partitioning() {
 
-    F_ENTRY;
-
     //int rank, np, i, j, k, row_MH, a;
     //struct DarcyFlowMH *water=transport->problem->water;
 /*
