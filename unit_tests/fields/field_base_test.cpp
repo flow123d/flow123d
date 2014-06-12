@@ -345,7 +345,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
-	double dt=tg.estimate_dt();
+	tg.estimate_dt();
 	tg.next_time();
 	this->update_history(tg);
 
