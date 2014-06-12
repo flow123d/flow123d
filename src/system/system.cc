@@ -496,7 +496,7 @@ char *xgetcwd( void )
  *  @param[in]      pattern     String to look for.
  *  @return                     true - if we have found the section, false otherwise
  */
-/*bool skip_to( istream &in, const string &pattern )
+bool skip_to( istream &in, const string &pattern )
 {
     if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
 
@@ -506,6 +506,6 @@ char *xgetcwd( void )
     }
 
     return false;
-}*/
+}
 
 

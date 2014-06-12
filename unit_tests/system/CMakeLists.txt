@@ -39,7 +39,7 @@ add_test_directory("${libs}")
     
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  
-        #define_test(system_func)
+        define_test(system_func)
         define_test(tokenizer)
     endif (CMAKE_HAVE_CXX11)  
 

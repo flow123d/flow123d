@@ -146,7 +146,7 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 
 //! @brief auxiliary
 /// @{
-//bool skip_to( istream &in, const string &pattern );
+bool skip_to( istream &in, const string &pattern );
 //! @}
 
 // string operations
