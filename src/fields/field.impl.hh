@@ -21,8 +21,8 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>()),
-  read_field_descriptor_hook( &read_field_descriptor )
+: read_field_descriptor_hook( &read_field_descriptor ),
+  data_(std::make_shared<SharedData>())
 
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -33,8 +33,9 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>()),
-  read_field_descriptor_hook( &read_field_descriptor )
+: read_field_descriptor_hook( &read_field_descriptor ),
+  data_(std::make_shared<SharedData>())
+
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -48,8 +49,8 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
-  data_(other.data_),
-  read_field_descriptor_hook( other.read_field_descriptor_hook )
+  read_field_descriptor_hook( other.read_field_descriptor_hook ),
+  data_(other.data_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -499,9 +500,12 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
 
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
 template<int spacedim, class Value>
 it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 }
+#pragma GCC diagnostic pop
 
 
 template<int spacedim, class Value>

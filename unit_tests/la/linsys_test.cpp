@@ -50,7 +50,9 @@ public:
 
 	void apply_constrains(double) {}
 
-	int solve() {}
+	int solve() {
+		return 0;
+	}
 };
 
 

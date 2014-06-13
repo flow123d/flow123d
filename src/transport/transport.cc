@@ -152,7 +152,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	data_.conc_mobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-	for (int sbi=0; sbi<n_subst_; sbi++)
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
@@ -209,7 +209,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 ConvectionTransport::~ConvectionTransport()
 {
-    unsigned int sbi, ph;
+    unsigned int sbi;
 
     if (mass_balance_ != NULL)
     	delete mass_balance_;
@@ -298,7 +298,7 @@ void ConvectionTransport::set_initial_condition()
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 		arma::vec value = data_.init_conc.value(elem->centre(), ele_acc);
 
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			conc[MOBILE][sbi][index] = value(sbi);
 			//pconc[MOBILE][sbi][index] = value(sbi);
@@ -312,7 +312,8 @@ void ConvectionTransport::set_initial_condition()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    int i, sbi, n_subst, ph; //, j;
+    unsigned int i;
+    int sbi, n_subst, ph;
     //ElementIter elm;
     n_subst = n_subst_;
 
@@ -380,7 +381,7 @@ void ConvectionTransport::alloc_transport_vectors() {
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
 
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    int sbi, n_subst, rank, np;
     //ElementIter elm;
     n_subst = n_subst_;
 
@@ -398,34 +399,34 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     vconc_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
     
 
-    ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), PETSC_DECIDE,
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), PETSC_DECIDE,
             sources_corr, &v_sources_corr);
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &bcvcorr[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &bcvcorr[sbi]);
         VecZeroEntries(bcvcorr[sbi]);
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(), conc[MOBILE][sbi],
                 &vconc[sbi]);
 
-//        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
+//        VecCreateMPIWithArray(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(),
 //                pconc[MOBILE][sbi], &vpconc[sbi]);
-        ierr = VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
         VecZeroEntries(vconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
         		cumulative_corr[sbi],&vcumulative_corr[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), out_conc[MOBILE][sbi], &vconc_out[sbi]);
+        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), out_conc[MOBILE][sbi], &vconc_out[sbi]);
 
         VecZeroEntries(vcumulative_corr[sbi]);
         VecZeroEntries(vconc_out[sbi]);
     }
 
 
-    ierr = MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
+    MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
             mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &tm);
 
 }
@@ -595,7 +596,7 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
-    unsigned int loc_el,sbi;
+    unsigned int sbi;
     
     START_TIMER("data reinit");
     data_.set_time(*time_); // set to the last computed time
@@ -798,10 +799,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
-    //struct Neighbour *ngh;
-    //struct Transport *transport;
-    int n, s, j, np, rank, new_j, new_i; //, i;
-    double max_sum, aij, aii; //, *solution;
+    unsigned int n;
+    int s, j, np, rank, new_j, new_i;
+    double max_sum, aij, aii;
     /*
     DarcyFlow *water;
 
@@ -1300,7 +1300,7 @@ void ConvectionTransport::calc_fluxes(vector<vector<double> > &bcd_balance, vect
     double mass_flux[n_substances()];
     double *pconc[n_substances()];
 
-    for (int sbi=0; sbi<n_substances(); sbi++)
+    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
     	VecGetArray(vpconc[sbi], &pconc[sbi]);
 
     FOR_BOUNDARIES(mesh_, bcd) {

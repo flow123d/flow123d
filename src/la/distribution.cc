@@ -113,7 +113,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
     ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {
-        int reminder, per_proc;
+        unsigned int reminder, per_proc;
 
         reminder=global_size % np(); per_proc=global_size / np();
         // set perproc rows to each proc, but for first "reminder" procs set one row more

@@ -697,13 +697,13 @@ void Mesh::make_intersec_elements() {
 	 *
 	 */
 	BIHTree bih_tree( this );
-	vector<unsigned int> candidate_list(20);
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
 		Element &ele = this->element[i_ele];
 
 		if (ele.dim() == 1) {
+			vector<unsigned int> candidate_list;
 			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
 			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
 			//for(int i_elm: candidate_list) {
@@ -745,7 +745,7 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         bulk_elements_id_.resize(n_elements());
         map_it = bulk_elements_id_.begin();
         last_id = -1;
-        for(int idx=0; idx < element.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
         	int id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
@@ -755,7 +755,7 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         boundary_elements_id_.resize(bc_elements.size());
         map_it = boundary_elements_id_.begin();
         last_id = -1;
-        for(int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
         	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id_

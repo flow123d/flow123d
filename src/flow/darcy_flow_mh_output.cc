@@ -218,9 +218,6 @@ void DarcyFlowMHOutput::output()
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-      double time  = darcy_flow->solved_time();
-
-
 	  output_fields.fields_for_output.set_time(darcy_flow->time());
 	  output_fields.fields_for_output.output(output_stream);
 	  output_stream->write_time_frame();
@@ -289,7 +286,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
 	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
-	int i_node;
+	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
 		dh->get_dof_indices(ele, indices);

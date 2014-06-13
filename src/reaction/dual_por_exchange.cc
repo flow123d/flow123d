@@ -232,7 +232,7 @@ void DualPorosity::initialize_fields()
   data_.conc_immobile.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-  for (int sbi=0; sbi<names_.size(); sbi++)
+  for (unsigned int sbi=0; sbi<names_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
     std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
@@ -291,7 +291,7 @@ void DualPorosity::set_initial_condition()
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
     arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
-    for (int sbi=0; sbi < names_.size(); sbi++)
+    for (unsigned int sbi=0; sbi < names_.size(); sbi++)
     {
       conc_immobile[sbi][loc_el] = value(sbi);
     }
@@ -318,7 +318,7 @@ void DualPorosity::update_solution(void)
 double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
 {
   double conc_avg = 0.0;
-  unsigned int sbi, sbi_loc;
+  unsigned int sbi;
   double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
    
   ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
@@ -383,7 +383,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 void DualPorosity::allocate_output_mpi(void )
 {
   //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst, ierr, rank, np; //, i, j, ph;
+    int sbi, n_subst;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -391,12 +391,12 @@ void DualPorosity::allocate_output_mpi(void )
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
                 &vconc_immobile[sbi]);
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
+        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
         VecZeroEntries(vconc_immobile_out[sbi]);
     }
 }

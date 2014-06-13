@@ -81,8 +81,13 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
             std::vector<std::string> var_list;
 
             FunctionParser tmp_parser;
-            int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-            ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+            {
+                int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
+                ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+            }
+#pragma GCC diagnostic pop
 
             bool time_dependent = false;
             BOOST_FOREACH(std::string &var_name, var_list ) {

@@ -123,6 +123,11 @@ public:
             FEInternalData &data,
             FEValuesData<dim,spacedim> &fv_data);
 
+    /**
+     * @brief Destructor.
+     */
+    virtual ~FE_RT0() {};
+
 };
 
 
@@ -172,6 +177,7 @@ template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad() may not be called for vectorial finite element.");
+    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int dim, unsigned int spacedim>

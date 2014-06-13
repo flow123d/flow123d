@@ -117,6 +117,8 @@ arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned
             return bas_delta[ face ]*(point - RT0_Y);
         }
     }
+
+    return arma::vec3("0 0 0");
 }
 
 

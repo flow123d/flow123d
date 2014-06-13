@@ -19,10 +19,10 @@ Record ReactionTerm::input_type_output_record
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
     : EquationBase(init_mesh, in_rec),
-      distribution_(nullptr),
       concentration_matrix_(nullptr),
       el_4_loc_(nullptr),
       row_4_el_(nullptr),
+      distribution_(nullptr),
       output_stream_(nullptr)
 
 {

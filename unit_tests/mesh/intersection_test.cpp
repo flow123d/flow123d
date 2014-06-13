@@ -8,7 +8,6 @@
 TEST(intersection, triangle_tetrahedron) {
 	TIntersectionType it;
 	double area;
-	double epsilon =0.0001;
 
 	// create tetrahedron
 	TPoint point0(0.00, 0.00, 0.00);
