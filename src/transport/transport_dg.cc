@@ -124,6 +124,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 
 	default:
+	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in TransportDG ", fe_order);
 		break;
 	}

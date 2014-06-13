@@ -21,8 +21,8 @@ FieldCommon::FieldCommon()
 
 FieldCommon::FieldCommon(const FieldCommon & other)
 : shared_(other.shared_),
-  set_time_result_(TimeStatus::unknown),
-  limit_side_(LimitSide::unknown)
+  limit_side_(LimitSide::unknown),
+  set_time_result_(TimeStatus::unknown)
 {
      flags_.add( FieldFlag::input_copy );
 }

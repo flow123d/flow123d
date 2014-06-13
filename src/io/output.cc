@@ -248,9 +248,8 @@ void OutputTime::add_admissible_field_names(const Input::Array &in_array, const 
 OutputTime::OutputTime(const Input::Record &in_rec)
 : input_record_(in_rec)
 {
-    int ierr;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
     
     /* It's possible now to do output to the file only in the first process */
     //if(rank!=0) {
@@ -362,9 +361,9 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 void OutputTime::write_time_frame()
 {
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
 
     /* TODO: do something, when support for Parallel VTK is added */
     if (rank == 0) {

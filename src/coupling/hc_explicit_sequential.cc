@@ -165,7 +165,7 @@ void HC_ExplicitSequential::run_simulation()
     
 
     double velocity_interpolation_time;
-    bool velocity_changed;
+    bool velocity_changed=true;
 
 
     water->zero_time_step();

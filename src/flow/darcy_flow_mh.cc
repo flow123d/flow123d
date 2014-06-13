@@ -868,7 +868,6 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 void DarcyFlowMH_Steady::create_linear_system() {
   
     START_TIMER("preallocation");
-    PetscErrorCode err;
 
     //xprintf(Msg,"****************** problem statistics \n");
     //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
@@ -924,8 +923,8 @@ void DarcyFlowMH_Steady::create_linear_system() {
                 schur0=ls;
             } else {
                 IS is;
-                err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-                ASSERT(err == 0,"Error in ISCreateStride.");
+                ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+                //ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
@@ -938,8 +937,8 @@ void DarcyFlowMH_Steady::create_linear_system() {
                     schur1 = new LinSys_PETSC(ds);
                 } else {
                     IS is;
-                    err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-                    ASSERT(err == 0,"Error in ISCreateStride.");
+                    ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    //ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1568,8 +1567,8 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
             unsigned int nsides = el->n_sides();
             for (unsigned int i = 0; i < nsides; i++) {
-                int side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
-		        int edge_row = row_4_edge[el->side(i)->edge_idx()];
+                side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
+		        edge_row = row_4_edge[el->side(i)->edge_idx()];
 
 		        global_row_4_sub_row->insert( side_row );
 		        global_row_4_sub_row->insert( edge_row );
@@ -1582,7 +1581,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
             for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
-                int edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
+                edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
                 global_row_4_sub_row->insert( edge_row );
             }
         }

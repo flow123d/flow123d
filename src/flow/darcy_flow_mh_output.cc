@@ -100,9 +100,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
   raw_output_file(NULL)
 {
     
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
     
 
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
@@ -150,6 +147,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_stream->mark_output_times(darcy_flow->time());
 	//DBGMSG("output stream: %p\n", output_stream);
 
+    int rank;
+    // int ierr
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	if (rank == 0) {
         // temporary solution for balance output

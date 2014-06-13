@@ -156,6 +156,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
                     dim = 0;
                     break;
                 default:
+                    dim = 0;
                     xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
                     break;
             }
@@ -175,7 +176,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
 
             // allocate element arrays TODO: should be in mesh class
-            Element *ele;
+            Element *ele=nullptr;
             // possibly modify region id
             if (el_to_reg_map) {
                 RegionDB::MapElementIDToRegionID::const_iterator it = el_to_reg_map->find(id);

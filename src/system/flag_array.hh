@@ -86,8 +86,11 @@ public:
         constexpr Mask operator~() const
         { return Mask( mask_ , mask_ & ~set_); }
 
+        /**
+         * Returns true if bits in passed @p flags are 1 on positions masked (equal to 1) by the Mask.
+         */
         constexpr bool match(BitField flags) const
-        { return ((mask_ & flags) ^ (mask_ &  set_) == 0); }
+        { return ( ((mask_ & flags) ^ (mask_ &  set_)) == 0); }
 
         friend std::ostream &operator<<(std::ostream &stream, const Mask &m)
         { stream << std::hex << m.mask_ << ", " << std::hex << m.set_;

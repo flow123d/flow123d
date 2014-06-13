@@ -368,7 +368,7 @@ void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int 
 
 void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
 {
-	int ndofs;
+	int ndofs=0;
 
 	switch (cell->dim())
 	{
