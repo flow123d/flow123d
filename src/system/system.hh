@@ -144,11 +144,6 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 //#define tmpfile xtmpfile  NOT_USED    ///< Open a temporary file (function)
 //! @}
 
-//! @brief auxiliary
-/// @{
-bool skip_to( istream &in, const string &pattern );
-//! @}
-
 // string operations
 char * xstrcpy(const char*);
 char * xstrtok(char *s, int position = -1);
