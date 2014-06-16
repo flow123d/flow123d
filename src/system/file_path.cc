@@ -6,7 +6,6 @@
  */
 
 
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "file_path.hh"
@@ -86,7 +85,6 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 #ifdef BOOST_WINDOWS_API
         boost::replace_all(output_dir, "\\", "/");
 #endif
-    }
 
     // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
