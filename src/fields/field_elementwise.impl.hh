@@ -1,5 +1,5 @@
 /*
- * field_elementwise_impl.hh
+ * field_elementwise.impl.hh
  *
  *  Created on: Jan 23, 2013
  *      Author: jb
@@ -20,7 +20,7 @@ namespace IT = Input::Type;
 
 template <int spacedim, class Value>
 it::Record FieldElementwise<spacedim, Value>::input_type
-    = FieldElementwise<spacedim, Value>::get_input_type(FieldBase<spacedim, Value>::input_type, NULL);
+    = FieldElementwise<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
 
 
 template <int spacedim, class Value>
@@ -29,7 +29,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
         )
 {
     it::Record type=
-        it::Record("FieldElementwise", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
+        it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
@@ -49,7 +49,7 @@ const Input::Registrar< FieldElementwise<spacedim, Value> > FieldElementwise<spa
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp),
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
   internal_raw_data(true), data_(NULL), reader_(NULL), mesh_(NULL)
 
 {
@@ -60,7 +60,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size )
-: FieldBase<spacedim, Value>(n_components),
+: FieldAlgorithmBase<spacedim, Value>(n_components),
   internal_raw_data(false), data_size_(size), data_(data_ptr), reader_(NULL), mesh_(NULL)
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();

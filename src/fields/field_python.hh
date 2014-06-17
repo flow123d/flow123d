@@ -14,7 +14,7 @@
 
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 #include "input/factory.hh"
 
@@ -34,11 +34,11 @@ using namespace std;
  *
  */
 template <int spacedim, class Value>
-class FieldPython : public FieldBase<spacedim, Value>
+class FieldPython : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
-    typedef FieldBase<spacedim, Value> FactoryBaseType;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldPython(unsigned int n_comp=0);
 

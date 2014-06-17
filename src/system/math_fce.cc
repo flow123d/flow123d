@@ -36,7 +36,7 @@
 #include "system/math_fce.h"
 
 
-static double Det2( SmallMtx2 a);
+//static double Det2( SmallMtx2 a);
 static double Inverse2(SmallMtx2 a,SmallMtx2 b);
 static double Inverse3(SmallMtx3 a,SmallMtx3 b);
 static double Inverse4(SmallMtx4 a,SmallMtx4 b);
@@ -104,9 +104,9 @@ void vector_difference( double u[], double v[], double x[] )
 //=============================================================================
 // DETERMINANT OF MATRIX 2x2
 //=============================================================================
-double Det2( SmallMtx2 a) {
+/*double Det2( SmallMtx2 a) {
 	return SUBDET2(0,1,0,1);
-}
+}*/
 
 /**************************************************
  * determinant 3x3

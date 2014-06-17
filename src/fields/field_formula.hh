@@ -10,7 +10,7 @@
 
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 #include "input/factory.hh"
 
@@ -30,11 +30,11 @@ class FunctionParser;
  *
  */
 template <int spacedim, class Value>
-class FieldFormula : public FieldBase<spacedim, Value>
+class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
-    typedef FieldBase<spacedim, Value> FactoryBaseType;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldFormula(unsigned int n_comp=0);
 

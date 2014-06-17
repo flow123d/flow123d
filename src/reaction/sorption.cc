@@ -38,7 +38,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
-	for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+	for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
 		double mult_coef = mult_coef_vec[i_subst];
 		double second_coef = second_coef_vec[i_subst];
@@ -73,11 +73,17 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 /*********************************** SORPTION_DUAL *********************************************************/
 /***********************************               *********************************************************/
 
-SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec)
+SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
+                           const string &output_conc_name,
+                           const string &output_selection_name)
     : SorptionBase(init_mesh, in_rec)
 {
-    immob_porosity_.just_copy()
-    .name("porosity_immobile");
+    data_ = new EqData(output_conc_name);
+    *data_+=immob_porosity_
+        .flags_add(FieldFlag::input_copy)
+        .name("porosity_immobile");
+    this->eq_data_ = data_;
+    output_selection = make_output_selection(output_conc_name, output_selection_name);
 }
 
 SorptionDual::~SorptionDual(void)
@@ -138,18 +144,12 @@ void SorptionDual::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const E
 IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord::mobile);
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
-    : SorptionDual(init_mesh, in_rec)
-{
-  //DBGMSG("SorptionMob constructor.\n");
-    data_ = new EqData("conc_solid");
-  *data_+=(immob_porosity_);
-  this->eq_data_ = data_;
-    output_selection = make_output_selection("conc_solid", "SorptionMobile_Output");
-}
+    : SorptionDual(init_mesh, in_rec, "conc_solid", "SorptionMobile_Output")
+{}
+
 
 SorptionMob::~SorptionMob(void)
-{
-}
+{}
 
 /*
 double SorptionMob::compute_sorbing_scale(double por_m, double por_imm)
@@ -174,7 +174,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
         arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
-        for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+        for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
         {
                 double mult_coef = mult_coef_vec[i_subst];
                 double second_coef = second_coef_vec[i_subst];
@@ -212,18 +212,11 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 IT::Record SorptionImmob::input_type = SorptionBase::record_factory(SorptionRecord::immobile);
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
-    : SorptionDual(init_mesh, in_rec)
-{
-    //DBGMSG("SorptionImmob constructor.\n");
-    data_ = new EqData("conc_immobile_solid");
-    *data_+=(immob_porosity_);
-    this->eq_data_ = data_;
-    output_selection = make_output_selection("conc_immobile_solid", "SorptionImmobile_Output");
-}
+: SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")
+{}
 
 SorptionImmob::~SorptionImmob(void)
-{
-}
+{}
 
 /*
 double SorptionImmob::compute_sorbing_scale(double por_m, double por_imm)
@@ -249,7 +242,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
     arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
     arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
-    for(int i_subst = 0; i_subst < n_substances_; i_subst++)
+    for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
     {
         double mult_coef = mult_coef_vec[i_subst];
         double second_coef = second_coef_vec[i_subst];

@@ -8,6 +8,7 @@
 #ifndef ELEMENT_IMPLS_HH_
 #define ELEMENT_IMPLS_HH_
 
+#include "elements.h"
 #include "sides.h"
 #include "side_impl.hh"
 

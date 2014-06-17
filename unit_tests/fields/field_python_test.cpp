@@ -108,8 +108,8 @@ TEST(FieldPython, double_3D) {
 
 
 TEST(FieldPython, read_from_input) {
-    typedef FieldBase<2, FieldValue<2>::VectorFixed > VectorField;
-    typedef FieldBase<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldAlgorithmBase<2, FieldValue<2>::VectorFixed > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > ScalarField;
     double pi = 4.0 * atan(1);
 
     // setup FilePath directories

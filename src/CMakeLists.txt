@@ -42,7 +42,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(sources_lib_system
     system/python_loader.cc
     system/math_fce.cc
-    system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
     system/xio.cc
@@ -135,8 +134,11 @@ set (sources_lib_coupling
     io/output_msh.cc
     
     fields/field_values.cc
-    fields/field_base.cc
+    fields/field_common.cc
     fields/field.cc
+    fields/field_algo_base.cc    
+    fields/field_flag.cc
+    fields/field_set.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc

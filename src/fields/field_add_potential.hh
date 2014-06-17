@@ -23,7 +23,7 @@
  * - We allow only Scalar Value with element_type double.
  */
 template <int spacedim, class Value>
-class FieldAddPotential : public FieldBase<spacedim, Value> {
+class FieldAddPotential : public FieldAlgorithmBase<spacedim, Value> {
 public:
     typedef typename Space<spacedim>::Point Point;
     /**
@@ -53,7 +53,7 @@ public:
 
 private:
     /// Field to which we add linear potential.
-    std::shared_ptr< FieldBase<spacedim, Value> > inner_field_;
+    std::shared_ptr< FieldAlgorithmBase<spacedim, Value> > inner_field_;
     /// Potential gradient.
     arma::vec::fixed<spacedim> grad_;
     /// Potential constant term.

@@ -1,5 +1,5 @@
 /*
- * field_base.cc
+ * field_algo_base.cc
  *
  *  Created on: Dec 4, 2012
  *      Author: jb
@@ -13,18 +13,18 @@
 /**
  * @file Instantiation of descendants of the FieldBase<...>
  */
-#include "fields/field_base_impl.hh"
+#include "fields/field_algo_base.impl.hh"
 
-#include "fields/field_python_impl.hh"
-#include "fields/field_constant_impl.hh"
-#include "fields/field_formula_impl.hh"
-#include "fields/field_interpolated_p0_impl.hh"
-#include "fields/field_add_potential_impl.hh"
-#include "fields/field_elementwise_impl.hh"
-#include "fields/field_fe_impl.hh"
+#include "fields/field_python.impl.hh"
+#include "fields/field_constant.impl.hh"
+#include "fields/field_formula.impl.hh"
+#include "fields/field_interpolated_p0.impl.hh"
+#include "fields/field_add_potential.impl.hh"
+#include "fields/field_elementwise.impl.hh"
+#include "fields/field_fe.impl.hh"
 
 
-INSTANCE_ALL(FieldBase)
+INSTANCE_ALL(FieldAlgorithmBase)
 INSTANCE_ALL(FieldConstant)
 INSTANCE_ALL(FieldPython)
 INSTANCE_ALL(FieldFormula)

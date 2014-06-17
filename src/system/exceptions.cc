@@ -97,7 +97,7 @@ void ExceptionBase::print_stacktrace(std::ostream &out) const {
         string magled_fname = frame.substr( start_pos, end_pos-start_pos );
 
         int status=-1;
-        char *demagled_f_name;
+        char *demagled_f_name = {0};
 
 #ifdef HAVE_DEMAGLER
         demagled_f_name = abi::__cxa_demangle(magled_fname.c_str(), 0, 0, &status);

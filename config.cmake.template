@@ -119,7 +119,6 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
-# DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:

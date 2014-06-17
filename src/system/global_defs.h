@@ -65,7 +65,6 @@
  * DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
  * DEBUG_ASSERTS - use assertion checks introduced by ASSERT
  * DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
- * DEBUG_FUNCTION_STACK  - use function stack introduced by F_ENTRY
  *
  * You can turn all off defining: Flow123d_NODEBUG
  * or turn all on defining: Flow123d_DEBUG
@@ -78,7 +77,6 @@
 #undef  DEBUG_MESSAGES
 #undef  DEBUG_ASSERTS
 #undef  DEBUG_PROFILER
-#undef  DEBUG_FUNCTION_STACK
 
 #endif
 
@@ -88,7 +86,6 @@
 #define  DEBUG_MESSAGES
 #define  DEBUG_ASSERTS
 #define  DEBUG_PROFILER
-#define  DEBUG_FUNCTION_STACK
 
 #endif
 

@@ -122,8 +122,8 @@ public:
         /**
          * Hook for processing "bc_piezo_head" key.
          */
-        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
         {
             	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
                 Input::AbstractRecord field_a_rec;

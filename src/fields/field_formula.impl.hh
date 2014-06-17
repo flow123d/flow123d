@@ -1,5 +1,5 @@
     /*
- * field_formula_impl.hh
+ * field_formula.impl.hh
  *
  *  Created on: Jan 2, 2013
  *      Author: jb
@@ -19,7 +19,7 @@
 namespace it = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldBase<spacedim,Value>::input_type, NULL);
+it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldAlgorithmBase<spacedim,Value>::input_type, NULL);
 
 template <int spacedim, class Value>
 Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
@@ -27,7 +27,7 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
         )
 {
     it::Record type
-            = it::Record("FieldFormula", FieldBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+            = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(a_type)
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
@@ -52,7 +52,7 @@ const Input::Registrar< FieldFormula<spacedim, Value> > FieldFormula<spacedim, V
 
 template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp),
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   formula_matrix_helper_(formula_matrix_), parser_matrix_(this->value_.n_rows())
 {
@@ -86,8 +86,13 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
             std::vector<std::string> var_list;
 
             FunctionParser tmp_parser;
-            int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-            ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+            {
+                int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
+                ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+            }
+#pragma GCC diagnostic pop
 
             bool time_dependent = false;
             BOOST_FOREACH(std::string &var_name, var_list ) {

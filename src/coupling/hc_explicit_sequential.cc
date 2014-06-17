@@ -74,7 +74,6 @@ it::Record HC_ExplicitSequential::input_type
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
-    F_ENTRY;
     //int i=0;
     using namespace Input;
 
@@ -134,8 +133,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         }
 
         // setup fields
-        transport_reaction->data().get_field("cross_section")
-        		.copy_from(water->data().get_field("cross_section"));
+        transport_reaction->data()["cross_section"]
+        		.copy_from(water->data()["cross_section"]);
 
     } else {
         transport_reaction = new TransportNothing(*mesh);
@@ -166,7 +165,7 @@ void HC_ExplicitSequential::run_simulation()
     
 
     double velocity_interpolation_time;
-    bool velocity_changed;
+    bool velocity_changed=true;
 
 
     water->zero_time_step();

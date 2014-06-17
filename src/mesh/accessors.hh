@@ -46,7 +46,7 @@ public:
      * Regional accessor.
      */
     ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
-    : mesh_(mesh), dim_(undefined_dim_), r_idx_(r_idx)
+    : dim_(undefined_dim_), mesh_(mesh), r_idx_(r_idx)
     {}
 
     /**

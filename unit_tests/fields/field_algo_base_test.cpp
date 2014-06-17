@@ -1,5 +1,5 @@
 /*
- * field_base_test.cpp
+ * field_algo_base_test.cpp
  *
  *  Created on: Feb 3, 2013
  *      Author: jb
@@ -14,7 +14,7 @@
 
 
 #include "fields/field.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -72,7 +72,7 @@ public:
 		root_input = input_list(field_input);
 		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
-		my_field_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
+		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
 
 		//input_list("[]");
 	}
@@ -136,7 +136,7 @@ public:
 	RegionSet my_domain;
 
 	// FieldConstant with value 314 (numeric return value) or "white" (enum return value)
-	std::shared_ptr<typename FieldType::FieldBaseType> my_field_base;
+	std::shared_ptr<typename FieldType::FieldBaseType> my_field_algo_base;
 
 	// simple field descriptor input type conataining fields "a" and "b"
 	std::shared_ptr<Input::Type::Record> test_field_descriptor;
@@ -207,7 +207,7 @@ TYPED_TEST(FieldFix, set_input_list) {
 	this->field_.set_input_list( this->input_list(list_ok) );
 
 	this->field_.name("a");
-	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommonBase::ExcNonascendingTime, "for field 'a'" );
+	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
 }
 
 
@@ -246,7 +246,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 
 
 TYPED_TEST(FieldFix, set_mesh) {
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_base);}, "Null; mesh pointer");
+	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base);}, "Null; mesh pointer");
 
 	EXPECT_EQ(nullptr, this->shared_->mesh_);
 	this->set_mesh(*(this->my_mesh));
@@ -272,7 +272,7 @@ TEST_F(FiledFix, get_const_accessor) {
 
 TYPED_TEST(FieldFix, set_field) {
 	this->set_mesh(*(this->my_mesh));
-	this->set_field(this->my_domain, this->my_field_base);
+	this->set_field(this->my_domain, this->my_field_algo_base);
 
 	Region reg = this->my_domain[0];
 	auto const &history = this->data_->region_history_[reg.idx()];
@@ -281,20 +281,20 @@ TYPED_TEST(FieldFix, set_field) {
 	EXPECT_EQ(0.0, history[0].first);
 	EXPECT_TRUE( bool(history[0].second) );
 
-	this->set_field(this->my_domain, this->my_field_base, 3.0);
+	this->set_field(this->my_domain, this->my_field_algo_base, 3.0);
 	EXPECT_EQ(2, history.size());
 	EXPECT_EQ(3.0, history[0].first);
 	EXPECT_EQ(0.0, history[1].first);
 
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_base, 1.0);}, "" );
+	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base, 1.0);}, "" );
 
-	this->set_field(this->my_domain, this->my_field_base, 6.0);
+	this->set_field(this->my_domain, this->my_field_algo_base, 6.0);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(6.0, history[0].first);
 	EXPECT_EQ(3.0, history[1].first);
 	EXPECT_EQ(0.0, history[2].first);
 
-	this->set_field(this->my_domain, this->my_field_base, 7.0);
+	this->set_field(this->my_domain, this->my_field_algo_base, 7.0);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(7.0, history[0].first);
 	EXPECT_EQ(6.0, history[1].first);
@@ -345,7 +345,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
-	double dt=tg.estimate_dt();
+	tg.estimate_dt();
 	tg.next_time();
 	this->update_history(tg);
 
@@ -472,7 +472,9 @@ TYPED_TEST(FieldFix, constructors) {
 	// copies
 	// check that we can have copies in different times
 	this->field_.name("a");
-	field_default.name("b").just_copy();
+	field_default
+	    .name("b")
+	    .flags(FieldFlag::input_copy);
 	this->field_.set_mesh( *(this->my_mesh) );
 	field_default.set_mesh( *(this->my_mesh) );
 
@@ -570,7 +572,7 @@ TEST(Field, init_from_input) {
 
 
     sorption_type.input_selection(&sorption_type_sel);
-    init_conc.n_comp(3);
+    init_conc.set_n_components(3);
 
     it::Record main_record =
             it::Record("main", "desc")
@@ -679,7 +681,7 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the input field");
     }
     //
     {

@@ -1,5 +1,5 @@
 /*
- * field_add_potential_impl.hh
+ * field_add_potential.impl.hh
  *
  *  Created on: Jan 22, 2013
  *      Author: jb
@@ -13,8 +13,8 @@
 
 template <int spacedim, class Value>
 FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spacedim+1> &potential, const Input::AbstractRecord &rec, unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp),
-  inner_field_( FieldBase<spacedim, Value>::function_factory(rec, this->value_.n_rows()) )
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
+  inner_field_( FieldAlgorithmBase<spacedim, Value>::function_factory(rec, this->value_.n_rows()) )
 {
     grad_=potential.subvec(0,spacedim-1);
     zero_level_=potential[spacedim];

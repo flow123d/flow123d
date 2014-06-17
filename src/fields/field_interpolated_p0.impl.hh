@@ -47,7 +47,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 it::Record FieldInterpolatedP0<spacedim, Value>::input_type
-    = FieldInterpolatedP0<spacedim, Value>::get_input_type(FieldBase<spacedim, Value>::input_type, NULL);
+    = FieldInterpolatedP0<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
 
 
 
@@ -57,7 +57,7 @@ Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
         )
 {
     it::Record type=
-        it::Record("FieldInterpolatedP0", FieldBase<spacedim,Value>::template_name()+" Field constant in space.")
+        it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
@@ -72,7 +72,7 @@ Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
-: FieldBase<spacedim, Value>(n_comp)
+: FieldAlgorithmBase<spacedim, Value>(n_comp)
 {}
 
 

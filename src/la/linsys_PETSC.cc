@@ -47,8 +47,8 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
         : LinSys( rows_ds ),
-          matrix_(0),
-          init_guess_nonzero(false)
+          init_guess_nonzero(false),
+          matrix_(0)
 {
     // set type
     //type = LinSys::PETSC;
@@ -68,7 +68,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(solution_precision_)
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -196,7 +196,7 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( on_vec_,  &on_array );
     VecGetArray( off_vec_, &off_array );
 
-    for ( int i=0; i<rows_ds_->lsize(); i++ ) {
+    for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
         on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
         off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
     }
@@ -299,8 +299,6 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 
 int LinSys_PETSC::solve()
 {
-    PetscErrorCode     ierr;
-
     KSP                system;
     KSPConvergedReason reason;
 
@@ -334,18 +332,18 @@ int LinSys_PETSC::solve()
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
     //xfree(petsc_str);
     
-    ierr = MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE ); 
+    MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
-    ierr = KSPCreate( comm_, &system ); 
-    ierr = KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN); 
+    KSPCreate( comm_, &system );
+    KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
     //double solver_accurany = OptGetDbl("Solver","Solver_accurancy","1.0e-7");
     //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
     //if (r_tol < 0) r_tol=solver_accuracy;
     //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
-    ierr = KSPSetFromOptions(system);
+    KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
+    KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
     // unless KSP type is preonly.
     // In such case PETSc fails (version 3.4.1)
@@ -354,25 +352,25 @@ int LinSys_PETSC::solve()
     	KSPType type;
     	KSPGetType(system, &type);
     	if (strcmp(type, KSPPREONLY) != 0)
-    		ierr = KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    		KSPSetInitialGuessNonzero(system, PETSC_TRUE);
     }
 
-    ierr = KSPSolve(system, rhs_, solution_ ); 
-    ierr = KSPGetConvergedReason(system,&reason); 
-    ierr = KSPGetIterationNumber(system,&nits); 
+    KSPSolve(system, rhs_, solution_ );
+    KSPGetConvergedReason(system,&reason);
+    KSPGetIterationNumber(system,&nits);
 
     // substitute by PETSc call for residual
-    ierr = VecNorm(rhs_, NORM_2, &residual_norm_);
+    VecNorm(rhs_, NORM_2, &residual_norm_);
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
 
     // get residual norm
-    ierr = KSPGetResidualNorm(system, &solution_precision_);
+    KSPGetResidualNorm(system, &solution_precision_);
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    ierr = KSPDestroy(&system); 
+    KSPDestroy(&system);
 
     return static_cast<int>(reason);
 
@@ -450,7 +448,7 @@ void LinSys_PETSC::gatherSolution_( )
 
     //reorder solution
     globalSolution_.resize( globalSize );
-    for ( int i = 0; i < globalSize; i++ ) {
+    for ( unsigned int i = 0; i < globalSize; i++ ) {
         globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
     }
 

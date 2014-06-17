@@ -47,7 +47,10 @@ const std::string & StorageBase::get_string() const {
     //cout << "Fatal Error at:" << std::endl;
     //print(cout,0);
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("string") << EI_StoredType( typeid(*this).name()) );
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-local-addr"
     return 0;   // Return reference to temporary, but we throw anyway.
+#pragma GCC diagnostic pop
 }
 
 

@@ -170,8 +170,6 @@ Partitioning *Mesh::get_part() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    F_ENTRY;
-
     FOR_ELEMENTS(this, elm)
     switch (elm->dim()) {
         case 1:
@@ -199,8 +197,6 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 
 void Mesh::init_from_input() {
-    F_ENTRY;
-
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
@@ -226,8 +222,6 @@ void Mesh::init_from_input() {
 
 
 void Mesh::setup_topology() {
-    F_ENTRY;
-
     START_TIMER("MESH - setup topology");
     
     count_element_types();
@@ -751,7 +745,7 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         bulk_elements_id_.resize(n_elements());
         map_it = bulk_elements_id_.begin();
         last_id = -1;
-        for(int idx=0; idx < element.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
         	int id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
@@ -761,7 +755,7 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         boundary_elements_id_.resize(bc_elements.size());
         map_it = boundary_elements_id_.begin();
         last_id = -1;
-        for(int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
         	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id_

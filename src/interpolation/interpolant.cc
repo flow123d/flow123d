@@ -586,6 +586,7 @@ int InterpolantImplicit::interpolate()
   DBGMSG("seg\n");
   error_ = explicit_interpolant->error();
   */
+  return 0;
 }
 
 void InterpolantImplicit::interpolate_p1()

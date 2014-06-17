@@ -474,7 +474,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing
-    for ( unsigned i = 0; i < lsub_diagonal; i++ ){
+    for ( int i = 0; i < lsub_diagonal; i++ ){
         indRowLoc    = i_diag_sparse[i];
         double value = diag_sparse[i];
         sub_diagonal[indRowLoc] = value;
