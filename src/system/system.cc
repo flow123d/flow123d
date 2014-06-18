@@ -489,23 +489,3 @@ char *xgetcwd( void )
 }
 
 
-
-/*!
- *  @brief Skip to the first line match  @p pattern up to surrounding spaces and case.
- *  @param[in,out]  in          Input stream to search.
- *  @param[in]      pattern     String to look for.
- *  @return                     true - if we have found the section, false otherwise
- */
-bool skip_to( istream &in, const string &pattern )
-{
-    if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
-
-    for(std::string line; ! in.eof() ; std::getline(in, line) ) {
-        boost::trim(line);
-        if ( boost::iequals( line, pattern ) ) return true;
-    }
-
-    return false;
-}
-
-
