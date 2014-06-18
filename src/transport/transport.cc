@@ -607,6 +607,7 @@ void ConvectionTransport::update_solution() {
 
     if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed()) {
         create_transport_matrix_mpi();
+        is_convection_matrix_scaled=false;
 
         // need new fixation of the time step
 
@@ -623,10 +624,11 @@ void ConvectionTransport::update_solution() {
         if (data_.bc_conc.changed() ) {
             set_boundary_conditions();
             // scale boundary sources
-            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->dt());
         }
     }
 
+    //DBGMSG("Convection estimate dt: %f  dt: %f\n", time_->estimate_dt(), time_->dt());
     if (need_time_rescaling) {
         if ( is_convection_matrix_scaled ) {
             // rescale matrix
