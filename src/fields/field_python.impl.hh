@@ -41,9 +41,9 @@ Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
 }
 
 
-/*template <int spacedim, class Value>
-const Input::Registrar< FieldPython<spacedim, Value> > FieldPython<spacedim, Value>::registrar =
-		Input::Registrar< FieldPython<spacedim, Value> >("FieldPython");*/
+template <int spacedim, class Value>
+const int FieldPython<spacedim, Value>::registrar =
+		Input::Factory<FactoryBaseType, unsigned int>::template register_class< FieldPython<spacedim, Value> >("FieldPython");
 
 
 

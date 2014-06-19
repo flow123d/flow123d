@@ -24,9 +24,9 @@ namespace it = Input::Type;
 
 
 
-/*template <int spacedim, class Value>
-const Input::Registrar< FieldFE<spacedim, Value> > FieldFE<spacedim, Value>::registrar =
-		Input::Registrar< FieldFE<spacedim, Value> >("FieldFE");*/
+template <int spacedim, class Value>
+const int FieldFE<spacedim, Value>::registrar =
+		Input::Factory<FactoryBaseType, unsigned int>::template register_class< FieldFE<spacedim, Value> >("FieldFE");
 
 
 

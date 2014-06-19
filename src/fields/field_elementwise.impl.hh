@@ -41,9 +41,9 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 }
 
 
-/*template <int spacedim, class Value>
-const Input::Registrar< FieldElementwise<spacedim, Value> > FieldElementwise<spacedim, Value>::registrar =
-		Input::Registrar< FieldElementwise<spacedim, Value> >("FieldElementwise");*/
+template <int spacedim, class Value>
+const int FieldElementwise<spacedim, Value>::registrar =
+		Input::Factory<FactoryBaseType, unsigned int>::template register_class< FieldElementwise<spacedim, Value> >("FieldElementwise");
 
 
 

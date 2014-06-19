@@ -118,8 +118,8 @@ private:
     GmshMeshReader *reader_;
     const Mesh *mesh_;
     std::string field_name_;
-    /* /// Registrar of class to factory
-    static const Input::Registrar< FieldElementwise > registrar;*/
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

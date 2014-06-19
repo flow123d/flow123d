@@ -74,8 +74,8 @@ public:
     virtual ~FieldPython();
 
 private:
-    /* /// Registrar of class to factory
-    static const Input::Registrar< FieldPython > registrar;*/
+    /// Registrar of class to factory
+    static const int registrar;
 
     /**
      * Common part of set_python_field_from_* methods
