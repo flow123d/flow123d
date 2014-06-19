@@ -79,10 +79,19 @@ PythonRunning::PythonRunning(const std::string& python_home)
      * This is necessary for release builds.
      */
     if (python_home != "") {
-        static string _python_home_storage = python_home; // permanent non-const storage required
-        //Py_SetPythonHome( &(_python_home_storage[0]) );
-        //Py_SetPythonHome( ".." );
-        Py_SetProgramName( &(_python_home_storage[0]) );
+#if PYTHON_VERSION<3
+		static string _python_home_storage = python_home; // permanent non-const storage required
+		//Py_SetPythonHome( &(_python_home_storage[0]) );
+		//Py_SetPythonHome( ".." );
+		Py_SetProgramName( &(_python_home_storage[0]) );
+#else
+    	wchar_t *buf = new wchar_t[ python_home.size() ];
+		size_t num_chars = mbstowcs( buf, python_home.c_str(), python_home.size() );
+		wstring ws( buf, num_chars );
+		delete[] buf;
+		Py_SetProgramName( &(ws[0]) );
+
+#endif
         std::cout << Py_GetPath() << std::endl;
     }
     Py_Initialize();
