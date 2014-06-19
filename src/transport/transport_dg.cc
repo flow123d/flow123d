@@ -460,7 +460,9 @@ void TransportDG<Model>::update_solution()
 	}
 
 	// assemble stiffness matrix
-    if (stiffness_matrix[0] == NULL || data_.subset(FieldFlag::in_main_matrix).changed() )
+    if (stiffness_matrix[0] == NULL
+    		|| data_.subset(FieldFlag::in_main_matrix).changed()
+    		|| Model::flux_changed)
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
@@ -482,7 +484,9 @@ void TransportDG<Model>::update_solution()
     }
 
     // assemble right hand side (due to sources and boundary conditions)
-    if (rhs[0] == NULL ||  data_.subset(FieldFlag::in_rhs).changed() )
+    if (rhs[0] == NULL
+    		|| data_.subset(FieldFlag::in_rhs).changed()
+    		|| Model::flux_changed)
     {
     	for (int i=0; i<n_subst_; i++)
     	{
