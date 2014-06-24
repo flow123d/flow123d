@@ -71,10 +71,6 @@
         
         reaction_mobile = {
           TYPE="LinearReactions",
-          substances = [
-            "A",
-            "B"
-          ],
           decays = [
             {
               parent = "A",

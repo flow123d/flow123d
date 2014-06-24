@@ -203,7 +203,8 @@ protected:
 
   /** Reaction model that follows the sorption.
    */
-  ReactionTerm* reaction;
+  ReactionTerm* reaction_liquid;
+  ReactionTerm* reaction_solid;
                   
   ///@name members used in output routines
   //@{
