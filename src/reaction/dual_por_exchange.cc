@@ -24,7 +24,7 @@ using namespace std;
 
 
 //it is currently switched of (by "0") until the reference tests are created
-const double DualPorosity::scheme_tolerance_ = 1e-4;
+const double DualPorosity::scheme_tolerance_ = 1e-3;
 
 Selection DualPorosity::EqData::output_selection
 		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
@@ -315,135 +315,91 @@ void DualPorosity::update_solution(void)
 double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
 {
   unsigned int sbi;
-  double conc_avg, cm, pcm, ci, pci, por_m, por_imm, temp_exp;
+  double conc_average, // weighted (by porosity) average of concentration
+         conc_mob, conc_immob,  // new mobile and immobile concentration
+         previous_conc_mob, previous_conc_immob, // mobile and immobile concentration in previous time step
+         conc_max, //difference between concentration and average concentration
+         por_mob, por_immob; // mobile and immobile porosity
    
+  // get data from fields
   ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
-  por_m = data_.porosity.value(ele->centre(),ele->element_accessor());
-  por_imm = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
+  por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
+  por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
   arma::Col<double> diff_vec = data_.diffusion_rate_immobile.value(ele->centre(), ele->element_accessor());
  
-/*  
-    for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
-    {
-        //sbi_loc = substance_id[sbi];    //mapping to global substance index
-        //previous values
-        pcm = concentration_matrix_[sbi][loc_el];
-        pci = conc_immobile[sbi][loc_el];
-
-        // ---compute average concentration------------------------------------------
-        conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
-
-        if ((conc_avg != 0.0) && (por_imm != 0.0)) {
-                temp_exp = exp(-diff_vec[sbi] * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt());
-                // ---compute concentration in mobile area-----------------------------------
-                cm = (pcm - conc_avg) * temp_exp + conc_avg;
-
-                // ---compute concentration in immobile area---------------------------------
-                ci = (pci - conc_avg) * temp_exp + conc_avg;
-                // --------------------------------------------------------------------------
-//                 DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  diff: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
-//                         cm, ci, pcm, pci, conc_avg, diff_vec[sbi], por_m, por_imm, time_->dt());
-                concentration_matrix_[sbi][loc_el] = cm;
-                conc_immobile[sbi][loc_el] = ci;
-        }
-    }
-//*/
-    
-//   if(time_->dt() >= min_dt_)
-//   {
-//       for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
-//       {
+// OLD CODE:  
+//     for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
+//     {
 //         //sbi_loc = substance_id[sbi];    //mapping to global substance index
-//                 //previous values
-//                 pcm = concentration_matrix_[sbi][loc_el];
-//                 pci = conc_immobile[sbi][loc_el];
+//         //previous values
+//         previous_conc_mob = concentration_matrix_[sbi][loc_el];
+//         previous_conc_immob = conc_immobile[sbi][loc_el];
 // 
-//                 // ---compute average concentration------------------------------------------
-//                 conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
+//         // ---compute average concentration------------------------------------------
+//         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) / (por_mob + por_immob);
 // 
-//                 if ((conc_avg != 0.0) && (por_imm != 0.0)) {
-//                         temp_exp = exp(-diff_vec[sbi] * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt());
-//                         // ---compute concentration in mobile area-----------------------------------
-//                         cm = (pcm - conc_avg) * temp_exp + conc_avg;
+//         if ((conc_average != 0.0) && (por_immob != 0.0)) {
+//                 temp_exp = exp(-diff_vec[sbi] * ((por_mob + por_immob) / (por_mob * por_immob)) * time_->dt());
+//                 // ---compute concentration in mobile area-----------------------------------
+//                 conc_mob = (previous_conc_mob - conc_average) * temp_exp + conc_average;
 // 
-//                         // ---compute concentration in immobile area---------------------------------
-//                         ci = (pci - conc_avg) * temp_exp + conc_avg;
-//                         // --------------------------------------------------------------------------
-// //                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  diff: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
-// //                                 cm, ci, pcm, pci, conc_avg, diff_vec[sbi], por_m, por_imm, time_->dt());
-//                         concentration_matrix_[sbi][loc_el] = cm;
-//                         conc_immobile[sbi][loc_el] = ci;
-//                 }
+//                 // ---compute concentration in immobile area---------------------------------
+//                 conc_immob = (previous_conc_immob - conc_average) * temp_exp + conc_average;
+//                 // --------------------------------------------------------------------------
+// //                 DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
+// //                         conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt());
+//                 concentration_matrix_[sbi][loc_el] = conc_mob;
+//                 conc_immobile[sbi][loc_el] = conc_immob;
 //         }
-//   }
-//   else{
-//       
-//       for (sbi = 0; sbi < names_.size(); sbi++) {
-//                 //previous values
-//                 pcm = concentration_matrix_[sbi][loc_el];
-//                 pci = conc_immobile[sbi][loc_el];
-// 
-//                 if (por_imm != 0.0) {
-//                         temp_exp = diff_vec[sbi]*(pci - pcm) * time_->dt();
-//                         // ---compute concentration in mobile area-----------------------------------
-//                         cm = temp_exp / por_m + pcm;
-// 
-//                         // ---compute concentration in immobile area---------------------------------
-//                         ci = -temp_exp / por_imm + pci;
-//                         // --------------------------------------------------------------------------
-// 
-//                         concentration_matrix_[sbi][loc_el] = cm;
-//                         conc_immobile[sbi][loc_el] = ci;
-//                 }
-//         }
-//   }
-  
- 
+//     }
+
+    
     // if porosity_immobile == 0 then mobile concentration stays the same 
     // and immobile concentration cannot change
-    if (por_imm == 0.0) return conc_immobile;
+    if (por_immob == 0.0) return conc_immobile;
     
-    double  c_max, por_d,
-            por = (por_m + por_imm) / (por_m * por_imm) * time_->dt();
+    double exponent,
+           temp_exponent = (por_mob + por_immob) / (por_mob * por_immob) * time_->dt();
   
     for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
     {
-        por_d = diff_vec[sbi] * por;
+        exponent = diff_vec[sbi] * temp_exponent;
         //previous values
-        pcm = concentration_matrix_[sbi][loc_el];
-        pci = conc_immobile[sbi][loc_el];
+        previous_conc_mob = concentration_matrix_[sbi][loc_el];
+        previous_conc_immob = conc_immobile[sbi][loc_el];
         
         // ---compute average concentration------------------------------------------
-        conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
+        conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
+                       / (por_mob + por_immob);
         
-        c_max = std::max(pcm-conc_avg, pci-conc_avg);
+        conc_max = std::max(previous_conc_mob-conc_average, previous_conc_immob-conc_average);
         
-        if( c_max <= (2*scheme_tolerance_/(por_d*por_d)*conc_avg) )               // forward euler
+        if( conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average) )               // forward euler
         {
-            DBGMSG("forward euler\n");
-            temp_exp = diff_vec[sbi]*(pci - pcm) * time_->dt();
+            //DBGMSG("forward euler\n");
+            double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
             // ---compute concentration in mobile area
-            cm = temp_exp / por_m + pcm;
+            conc_mob = temp / por_mob + previous_conc_mob;
 
             // ---compute concentration in immobile area
-            ci = -temp_exp / por_imm + pci;
+            conc_immob = -temp / por_immob + previous_conc_immob;
         }
         else                                                        //analytic solution
         {
-            DBGMSG("analytic\n");
-            temp_exp = exp(-por_d);
+            //DBGMSG("analytic\n");
+            double temp = exp(-exponent);
             // ---compute concentration in mobile area
-            cm = (pcm - conc_avg) * temp_exp + conc_avg;
+            conc_mob = (previous_conc_mob - conc_average) * temp + conc_average;
 
             // ---compute concentration in immobile area
-            ci = (pci - conc_avg) * temp_exp + conc_avg;
+            conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
             
-//          DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  diff: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
-//                  cm, ci, pcm, pci, conc_avg, diff_vec[sbi], por_m, por_imm, time_->dt()); 
+//          DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
+//                  conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt()); 
         }
         
-        concentration_matrix_[sbi][loc_el] = cm;
-        conc_immobile[sbi][loc_el] = ci;
+        concentration_matrix_[sbi][loc_el] = conc_mob;
+        conc_immobile[sbi][loc_el] = conc_immob;
     }
   //*/
   
