@@ -35,7 +35,7 @@ int Factory<Type, Arguments...>::register_class(string class_name) {
 
 
 template<class Type, class... Arguments>
-shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... arguments)
+const shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Arguments... arguments) const
 {
     // find name in the registry and call factory method.
     auto it = factory_registry_.find(name);

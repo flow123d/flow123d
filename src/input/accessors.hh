@@ -482,7 +482,7 @@ public:
      * constructors with same parameters (given by Arguments).
      */
     template<class Type, class... Arguments>
-    std::shared_ptr<Type> factory(Arguments... arguments);
+    const std::shared_ptr<Type> factory(Arguments... arguments) const;
 
 
 private:

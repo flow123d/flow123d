@@ -124,7 +124,7 @@ inline bool Record::opt_val(const string &key, Ret &value) const {
  */
 
 template<class Type, class... Arguments>
-std::shared_ptr<Type> AbstractRecord::factory(Arguments... arguments) {
+const std::shared_ptr<Type> AbstractRecord::factory(Arguments... arguments) const {
 	return Input::Factory<Type, Arguments...>::instance()->create(this->type().type_name(), arguments...);
 }
 

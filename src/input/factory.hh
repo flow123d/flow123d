@@ -113,7 +113,7 @@ public:
 
 
     /// create an instance of a registered class
-    shared_ptr<Type> create(string name, Arguments... arguments);
+    shared_ptr<Type> const create(string name, Arguments... arguments) const;
 
 
 private:
