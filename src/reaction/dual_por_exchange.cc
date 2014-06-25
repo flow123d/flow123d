@@ -23,9 +23,6 @@ using namespace Input::Type;
 using namespace std;
 
 
-//it is currently switched of (by "0") until the reference tests are created
-const double DualPorosity::scheme_tolerance_ = 1e-3;
-
 Selection DualPorosity::EqData::output_selection
 		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
 		.close();
@@ -38,6 +35,9 @@ Record DualPorosity::input_type
     .derive_from(ReactionTerm::input_type)
     .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
+    .declare_key("scheme_tolerance", Double(0.0), Default("1e-3"), 
+                 "Tolerance according to which the explicit Euler scheme is used or not."
+                 "Set 0.0 to use analytic formula only (can be slower).")
     
     .declare_key("reaction_mobile", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
@@ -82,6 +82,8 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
   
   //reads input and creates possibly other reaction terms
   make_reactions();
+  //read value from input
+  scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
 }
 
 DualPorosity::~DualPorosity(void)

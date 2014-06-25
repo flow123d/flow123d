@@ -123,7 +123,7 @@ protected:
   /** According to this tolerance the analytical solution of dual porosity concentrations or
    * simple forward difference approximation of concentrations is chosen for computation.
    */
-  static const double scheme_tolerance_;
+  double scheme_tolerance_;
   
   ///@name members used in output routines
   //@{

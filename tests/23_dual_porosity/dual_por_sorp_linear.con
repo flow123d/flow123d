@@ -68,6 +68,7 @@
             init_conc_immobile = [0.0, 0.0]
           }
         ],
+        scheme_tolerance = 0.0,
         
         reaction_mobile = {
           TYPE = "SorptionMobile",
