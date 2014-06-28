@@ -196,6 +196,20 @@
 #define DBGCOUT(...)
 #define DBGVAR(var)
 
+
+#define CHKERR( call ) do { int ierr = call; if (ierr!=0) THROW( ExcChkErr() << EI_ErrCode(ierr)); } while (0);
+
+#ifdef DEBUG_ASSERTS
+
+#define CHKERR_ASSERT( call ) do { int ierr = call; if (ierr!=0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr)); } while (0);
+
+#else
+
+#define CHKERR_ASSERT( call )
+
+#endif
+
+
 #endif
 
 ///@}

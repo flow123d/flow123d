@@ -31,6 +31,14 @@ DECLARE_EXCEPTION( ExcMessage, << EI_Message::val);
 
 
 
+/**
+ * Test of ierr return codes for MPI and PETSc
+ */
+TYPEDEF_ERR_INFO( EI_ErrCode, int);
+DECLARE_EXCEPTION( ExcChkErr, << "[" << EI_ErrCode::val << "] ");
+DECLARE_EXCEPTION( ExcChkErrAssert, << "[" << EI_ErrCode::val << "] ");
+
+
 
 
 
