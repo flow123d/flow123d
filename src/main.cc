@@ -45,7 +45,6 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
-#include <boost/filesystem.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -277,10 +276,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
-
-    if (!boost::filesystem::is_directory(output_dir)) {
-    	boost::filesystem::create_directory(output_dir);
-    }
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
