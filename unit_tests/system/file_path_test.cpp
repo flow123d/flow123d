@@ -10,6 +10,8 @@
 #include <flow_gtest.hh>
 #include "system/file_path.hh"
 
+#include <boost/filesystem.hpp>
+
 using namespace std;
 
 TEST(FilePath, output_relative) {
@@ -20,34 +22,42 @@ TEST(FilePath, output_relative) {
     //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
-    FilePath::set_io_dirs("/work_dir/xx","/main_root", "variant_input", "../output_root");
+    FilePath::set_io_dirs("./work_dir/xx","/main_root", "variant_input", "../output_root");
 
 
     FilePath fp = FilePath("output.vtk", FilePath::output_file);
     string str_fp = fp;
 
     // relative output substitution; conversion to string
-    EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", str_fp);
+    EXPECT_TRUE(str_fp.find("/work_dir/output_root/output.vtk") != std::string::npos);
+    //EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", str_fp);
 
     // conversion to string
-    EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", string(fp));
+    EXPECT_TRUE(string(fp).find("/work_dir/output_root/output.vtk") != std::string::npos);
+    //EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", string(fp));
 
 }
 
 TEST(FilePath, output_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    FilePath::set_io_dirs("/work_dir/xx","/main_root", "variant_input", "/output_root");
+    string abs_path = boost::filesystem::current_path().string();
+#ifdef BOOST_WINDOWS_API
+    abs_path = abs_path.substr(2);
+    boost::replace_all(abs_path, "\\", "/");
+#endif
+
+    FilePath::set_io_dirs("/work_dir/xx","/main_root", "variant_input", abs_path+"/output_root");
 
     // relative output substitution; conversion to string
     string str = FilePath("output.vtk", FilePath::output_file);
-    EXPECT_EQ("/output_root/output.vtk", str);
+    EXPECT_EQ(abs_path+"/output_root/output.vtk", str);
 }
 
 TEST(FilePath, input) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    FilePath::set_io_dirs("/work_dir/xx","/main_root", "variant_input", "../output_root");
+    FilePath::set_io_dirs("./work_dir/xx","/main_root", "variant_input", "../output_root");
 
     // relative output substitution; conversion to string
     string str = FilePath("subdir/${INPUT}/init.in", FilePath::input_file);
