@@ -99,6 +99,9 @@ protected:
 	/// stored index to last computed element
 	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
+	/// stored flag if last computed element is boundary
+	unsigned int computed_elm_boundary_;
+
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;
 
