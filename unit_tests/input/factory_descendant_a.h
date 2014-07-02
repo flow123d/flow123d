@@ -34,7 +34,7 @@ private:
 
 template <int spacedim>
 const int DescendantA<spacedim>::reg =
-        Input::Factory<FactoryBaseType, int, double>::template register_class< DescendantA<spacedim> >("DescendantA");
+		Input::register_class< DescendantA<spacedim>, int, double >("DescendantA");
 
 
 

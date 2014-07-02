@@ -43,7 +43,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldElementwise<spacedim, Value>::registrar =
-		Input::Factory<FactoryBaseType, unsigned int>::template register_class< FieldElementwise<spacedim, Value> >("FieldElementwise");
+		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise");
 
 
 

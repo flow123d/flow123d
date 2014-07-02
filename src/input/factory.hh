@@ -36,7 +36,8 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
  *
  * All descendants must contain:
  * 1. constructor with parameters given by Arguments
- * 2. private static integer variable what is only for registration class to factory, this variable only allow
+ * 2. declaration of parent class as typedef with name FactoryBaseType
+ * 3. private static integer variable what is only for registration class to factory, this variable only allow
  *    to register class to factory and its implementation must call Factory::register_class what adds constructor
  *    of class to factory
  *
@@ -45,6 +46,8 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
      class SomeDescendant : public SomeBase
      {
      public:
+        /// typedef of parent class
+        typedef SomeBase FactoryBaseType;
 
 		/// constructor
 	    SomeDescendant() {}
@@ -56,7 +59,7 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
 
      /// implementation of registration variable
      const int SomeDescendant::reg =
-		 Input::Factory< SomeBase >::register_class< SomeDescendant >("SomeDescendant");
+		 Input::register_class< SomeDescendant >("SomeDescendant");
  @endcode
  *
  * Factory allow to accept constructor with one or more parameters. In this case Factory is
@@ -76,10 +79,9 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
   	    ...
      }
 
-     /// implementation of registration variable uses disambiguator template keyword
+     /// implementation of registration variable
      const int SomeDescendant::reg =
-		 Input::Factory< SomeBase<dimension>, double >::template
-		     register_class< SomeDescendant<dimension> >("SomeDescendant");
+		 Input::register_class< SomeDescendant<dimension>, double >("SomeDescendant");
  @endcode
  *
  * Factory can be used in two ways:
@@ -125,6 +127,12 @@ private:
 
 };
 
+
+/**
+ * Function allows simplified call of registering class to factory.
+ */
+template <class ChildType, class... Arguments>
+int register_class(string class_name);
 
 
 } // closing namespace Input
