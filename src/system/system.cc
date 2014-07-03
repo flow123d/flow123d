@@ -488,4 +488,3 @@ char *xgetcwd( void )
     return(xstrcpy( tmp ));
 }
 
-
