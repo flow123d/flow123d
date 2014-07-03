@@ -42,8 +42,7 @@ TEST(FilePath, output_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     string abs_path = boost::filesystem::current_path().string();
-#ifdef BOOST_WINDOWS_API
-    abs_path = abs_path.substr(2);
+#ifdef CYGWIN
     boost::replace_all(abs_path, "\\", "/");
 #endif
 

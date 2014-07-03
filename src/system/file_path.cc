@@ -45,13 +45,21 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 
     // relative output dir is relative to working directory
     // this is possibly independent of position of the main input file
-    if (output[0] == DIR_DELIMITER) {
+    if ( FilePath::is_absolute_path(output) ) {
     	vector<string> dirs;
     	boost::split(dirs, output,  boost::is_any_of("/"));
     	output_dir = "";
     	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
     	    if ( !(*it).size() ) continue;
-        	output_dir = output_dir + DIR_DELIMITER + *it;
+    	    if ( !output_dir.size() ) {
+#ifdef CYGWIN
+    	    	output_dir = (*it);
+#else
+    	    	output_dir = DIR_DELIMITER + *it;
+#endif
+    	    } else {
+            	output_dir = output_dir + DIR_DELIMITER + *it;
+    	    }
             if (!boost::filesystem::is_directory(output_dir)) {
             	boost::filesystem::create_directory(output_dir);
             }
@@ -83,7 +91,7 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 
         boost::filesystem::path curr = boost::filesystem::current_path();
     	output_dir = full_path.string();
-#ifdef BOOST_WINDOWS_API
+#ifdef CYGWIN
         boost::replace_all(output_dir, "\\", "/");
 #endif
     }
@@ -107,4 +115,15 @@ void FilePath::substitute_value() {
             abs_file_path.replace(i, it->first.size(), it->second);
         }
     }
+}
+
+
+bool FilePath::is_absolute_path(const string path) {
+	if (path.size() == 0) xprintf(UsrErr, "Path can't be empty!\n");
+#ifdef CYGWIN
+	if (path.size() == 1) return false;
+	return isalpha(path[0]) && (path[1] == ':');
+#else
+	return path[0] == DIR_DELIMITER;
+#endif
 }
