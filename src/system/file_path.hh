@@ -101,6 +101,12 @@ private:
     void substitute_value();
 
 
+    /**
+     * Test if get path is absolute for used operating system.
+     */
+    static bool is_absolute_path(const string path);
+
+
     /// Final absolute path to the file.
     string abs_file_path;
 
