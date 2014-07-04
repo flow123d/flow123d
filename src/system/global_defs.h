@@ -72,6 +72,7 @@
  * Flow123d_DEBUG overrides Flow123d_NODEBUG
  */
 
+
 #ifdef Flow123d_NODEBUG
 
 #undef  DEBUG_MESSAGES
@@ -196,19 +197,16 @@
 #define DBGCOUT(...)
 #define DBGVAR(var)
 
+#endif
 
-#define CHKERR( call ) do { int ierr = call; if (ierr!=0) THROW( ExcChkErr() << EI_ErrCode(ierr)); } while (0);
 
 #ifdef DEBUG_ASSERTS
 
-#define CHKERR_ASSERT( call ) do { int ierr = call; if (ierr!=0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr)); } while (0);
+static const int debug_asserts_view = 1;
 
 #else
 
-#define CHKERR_ASSERT( call )
-
-#endif
-
+static const int debug_asserts_view = 0;
 
 #endif
 
