@@ -463,6 +463,12 @@ endif()
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
         
+        string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
+        string(REGEX MATCH "[0-9.]+" PYTHON_VERSION_NUM ${PYTHON_VERSION})
+        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHON_VERSION_MAJ ${PYTHON_VERSION_NUM})
+        add_definitions(-DPYTHON_VERSION=${PYTHON_VERSION_MAJ})
+        message(STATUS "Python version: ${PYTHON_VERSION_MAJ}\n")
+        
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
             add_definitions(-DPYTHON_HOME="..")
@@ -485,7 +491,6 @@ endif()
             message(STATUS "Python prefix: ${PY_PREFIX} target prefix: ${TARGET_PREFIX}")
             
             # copy python library
-            string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
             set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_VERSION})
             execute_process(
                 COMMAND mkdir -p ${TARGET_PREFIX}/lib 
