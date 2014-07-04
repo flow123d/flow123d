@@ -30,6 +30,7 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "input/storage.hh"
 
 
@@ -471,6 +472,17 @@ public:
      * Get address as string.
      */
     string address_string() const;
+
+
+    /**
+     * Construct classes given by TYPE key of AbstractRecord.
+     *
+     * Method uses Input::Factory class. All constructed classes (representing by descendants
+     * of AbstractRecord) must be registered to factory (see Input::Factory class) and must have
+     * constructors with same parameters (given by Arguments).
+     */
+    template<class Type, class... Arguments>
+    const std::shared_ptr<Type> factory(Arguments... arguments) const;
 
 
 private:

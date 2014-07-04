@@ -36,6 +36,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/ngh_interface.hh"
+#include "input/factory.hh"
 
 
 template <int spacedim, class Value>
@@ -43,6 +44,7 @@ class FieldInterpolatedP0: public FieldAlgorithmBase<spacedim, Value> {
 public:
 
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
 	/**
 	 * Constructor
@@ -110,6 +112,11 @@ protected:
 
 	/// 0D (point) element, used for computing intersection
 	TPoint point_;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
+
 };
 
 

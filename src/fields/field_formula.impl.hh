@@ -44,6 +44,11 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
 
 
 
+template <int spacedim, class Value>
+const int FieldFormula<spacedim, Value>::registrar =
+		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula");
+
+
 
 template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)

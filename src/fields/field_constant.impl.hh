@@ -43,6 +43,9 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
     return type;
 }
 
+template <int spacedim, class Value>
+const int FieldConstant<spacedim, Value>::registrar =
+		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant");
 
 
 template <int spacedim, class Value>

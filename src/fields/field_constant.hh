@@ -11,6 +11,7 @@
 
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "input/factory.hh"
 #include "mesh/point.hh"
 
 
@@ -23,6 +24,7 @@ class FieldConstant : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
@@ -65,6 +67,8 @@ public:
     virtual ~FieldConstant();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 };
 

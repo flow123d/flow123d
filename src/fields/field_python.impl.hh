@@ -41,6 +41,11 @@ Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
 }
 
 
+template <int spacedim, class Value>
+const int FieldPython<spacedim, Value>::registrar =
+		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython");
+
+
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)

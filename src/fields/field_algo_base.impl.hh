@@ -23,6 +23,8 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "input/factory.hh"
+
 
 namespace it = Input::Type;
 
@@ -78,23 +80,7 @@ shared_ptr< FieldAlgorithmBase<spacedim, Value> >
 FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecord &rec, unsigned int n_comp )
 {
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
-
-    if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
-	//xprintf(PrgErr,"TYPE of Field currently not functional.\n");
-	func=make_shared< FieldInterpolatedP0<spacedim,Value> >(n_comp);
-#ifdef HAVE_PYTHON
-    } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
-        func=make_shared< FieldPython<spacedim, Value> >(n_comp);
-#endif
-    } else if (rec.type() == FieldConstant<spacedim, Value>::input_type ) {
-        func=make_shared< FieldConstant<spacedim,Value> >(n_comp);
-    } else if (rec.type() == FieldFormula<spacedim,Value>::input_type ) {
-        func=make_shared< FieldFormula<spacedim,Value> >(n_comp);
-    } else if (rec.type() == FieldElementwise<spacedim,Value>::input_type ) {
-        func=make_shared< FieldElementwise<spacedim,Value> >(n_comp);
-    } else {
-        xprintf(PrgErr,"TYPE of Field is out of set of descendants. SHOULD NOT HAPPEN.\n");
-    }
+    func = rec.factory< FieldAlgorithmBase<spacedim, Value> >(n_comp);
     func->init_from_input(rec);
     return func;
 }

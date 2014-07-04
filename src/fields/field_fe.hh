@@ -15,7 +15,7 @@
 #include "mesh/point.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
-
+#include "input/factory.hh"
 
 
 
@@ -28,6 +28,7 @@ class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
@@ -72,6 +73,9 @@ private:
     Mapping<1,3> *map1_;
     Mapping<2,3> *map2_;
     Mapping<3,3> *map3_;
+
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

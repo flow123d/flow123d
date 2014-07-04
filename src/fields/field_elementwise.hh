@@ -30,6 +30,7 @@
 
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "input/factory.hh"
 
 class GmshMeshReader;
 
@@ -38,6 +39,7 @@ class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldElementwise(unsigned int n_comp=0);
 
@@ -116,6 +118,8 @@ private:
     GmshMeshReader *reader_;
     const Mesh *mesh_;
     std::string field_name_;
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

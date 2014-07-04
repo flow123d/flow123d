@@ -16,6 +16,7 @@
 #include "system/python_loader.hh"
 #include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -37,6 +38,7 @@ class FieldPython : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldPython(unsigned int n_comp=0);
 
@@ -72,6 +74,9 @@ public:
     virtual ~FieldPython();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     /**
      * Common part of set_python_field_from_* methods
      */

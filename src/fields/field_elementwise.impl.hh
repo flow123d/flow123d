@@ -41,6 +41,11 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 }
 
 
+template <int spacedim, class Value>
+const int FieldElementwise<spacedim, Value>::registrar =
+		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise");
+
+
 
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
