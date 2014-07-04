@@ -42,7 +42,7 @@ public:
 
 
 const int SimpleDescendant::reg =
-        Input::Factory<FactoryBaseType, int, double>::register_class< SimpleDescendant >("SimpleDescendant");
+		Input::register_class< SimpleDescendant, int, double >("SimpleDescendant");
 
 SimpleDescendant::SimpleDescendant(int n_comp, double time) {
 	this->infotext_ = "Constructor of SimpleDescendant class with n_comp = "

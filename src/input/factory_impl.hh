@@ -49,6 +49,14 @@ const shared_ptr<Type> Factory<Type, Arguments...>::create(string name, Argument
 }
 
 
+template <class ChildType, class... Arguments>
+int register_class(string class_name)
+{
+	return Input::Factory<typename ChildType::FactoryBaseType, Arguments...>::template register_class< ChildType >(class_name);
+}
+
+
+
 } // namespace Input
 
 #endif /* FACTORY_IMPL_HH_ */
