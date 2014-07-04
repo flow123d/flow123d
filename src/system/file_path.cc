@@ -5,7 +5,6 @@
  *      Author: jb
  */
 
-#include <boost/filesystem.hpp>
 
 #include "file_path.hh"
 #include "system.hh"
@@ -45,10 +44,6 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
     // this is possibly independent of position of the main input file
     if (output[0] == DIR_DELIMITER) output_dir = output;
     else output_dir = working_dir + DIR_DELIMITER + output;
-
-    if (!boost::filesystem::is_directory(output_dir)) {
-    	boost::filesystem::create_directory(output_dir);
-    }
 
     // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);

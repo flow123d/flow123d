@@ -4,14 +4,14 @@
     description = "Test15 - 2D unsteady flow LM", 
 
     mesh = {
-      mesh_file = "./input/test15.msh" 
+      mesh_file = "./input/test15_with_boundary.msh" 
     }, 
 
     primary_equation = {
       TYPE = "Unsteady_LMH", 
 
       input_fields= [
-        { rid = 100,
+        { region = "domain",
           anisotropy = 1,         // default
           cross_section = 1,            // default
           water_source_density = {
@@ -21,8 +21,9 @@
           init_piezo_head = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
-          flow_old_bcd_file = "./input/test15.fbc"
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_pressure = 0
         }
       ],
 
@@ -35,7 +36,8 @@
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07 
+        a_tol = 1e-07
+        r_tol = 1e-07
       }, 
 
       time = {
@@ -44,21 +46,23 @@
     }, 
 
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
       
       input_fields= [
-        { rid = 100,
+        { region = "domain",
           init_conc = 0
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          region = ".left",
+          bc_type = "dirichlet",
           bc_conc = 10,
           time = 0.0
         },
         {
-          region = "IMPLICIT BOUNDARY",
+          region = ".left",
+          bc_type = "dirichlet",
           bc_conc = 0,
-          time = 0.2
+          time = 0.1
         }
       ],
       
@@ -74,9 +78,14 @@
       },
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07 
+        a_tol = 1e-07
+        r_tol = 1e-07
       } 
+      
+      mass_balance = { cumulative = true }
     }, 
+    
+    dg_order = 2
 
     time = {
       end_time = 2.0, 

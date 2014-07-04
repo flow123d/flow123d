@@ -207,6 +207,7 @@ TEST_F(SomeEquation, set_field) {
 
     EXPECT_EQ("init_pressure", data["init_pressure"].name());
     EXPECT_EQ("Pressure head", data["init_pressure"].description());
+    data["init_pressure"].flags(FieldFlag::input_copy);
     data.set_field("init_pressure", other_pressure);
     EXPECT_EQ(nullptr, data.field("other_pressure"));
     EXPECT_EQ("init_pressure", data["init_pressure"].name());
