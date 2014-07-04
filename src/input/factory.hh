@@ -130,6 +130,15 @@ private:
 
 /**
  * Function allows simplified call of registering class to factory.
+ *
+ * It is used for declaration of registration variable.
+ * @see Factory
+ *
+ * Example of usage:
+ @code
+     const int SomeClass::reg =
+		 Input::register_class< SomeClass >("SomeClass");
+ @endcode
  */
 template <class ChildType, class... Arguments>
 int register_class(string class_name);
