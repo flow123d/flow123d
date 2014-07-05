@@ -52,7 +52,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.8.1"
+#define _PROGRAM_VERSION_   "0.0.0"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -123,7 +123,7 @@ void Application::split_path(const string& path, string& directory, string& file
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_PROGRAM_VERSION_);
+    string version(_VERSION_NAME_);
     string revision(_GIT_REVISION_);
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);

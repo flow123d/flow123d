@@ -36,7 +36,7 @@
 # Multijob  project - release
 - project:
     name: "Multijob project release"
-    platform: [ linux, windows ]
+    platform: [ linux, windows, windows32 ]
     build-type: release
     unit-dir: 
       - $PLACEHOLDER_unit_list$
@@ -88,6 +88,8 @@
           cd flow123d
           make ref-doc
           make doxy-doc
+          bin/md_convert.sh README.md
+          bin/md_convert.sh CHANGES.md
     publishers:
       - cifs: 
           site: 'bacula'
@@ -298,13 +300,14 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
-          wipe-workspace: yes
+#          wipe-workspace: yes
           branches:
             - master
             - 1.8.0_master
+            - 1.8.1_patch
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
-      - pollscm: "H H(0-6) * * *"
+      - pollscm: "H * * * *"
       #- github
     wrappers:
       - build-name:
@@ -340,7 +343,7 @@
             - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
       - multijob:
           name: "Pack and Install"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-packages"
 
