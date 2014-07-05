@@ -9,4 +9,4 @@ set(BDDCML_ROOT "_INSTALL_")
 set(USE_PYTHON "yes")
 set(PYTHON_COPY "yes")
 
-set(PLATFORM_NAME "linux_x86_64")
+set(PLATFORM_NAME "windows_x86_32")
