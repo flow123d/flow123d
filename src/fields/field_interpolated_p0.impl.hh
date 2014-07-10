@@ -115,6 +115,9 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     //TODO: is it possible to check this before calling set_time?
     if (time == numeric_limits< double >::infinity()) return false;
     
+    // value of last computed element must be recalculated if time is changed
+    computed_elm_idx_ = numeric_limits<unsigned int>::max();
+
     GMSH_DataHeader search_header;
     search_header.actual = false;
     search_header.field_name = field_name_;
@@ -136,8 +139,9 @@ template <int spacedim, class Value>
 typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
     ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
-	if (elm.idx() != computed_elm_idx_) {
+	if (elm.idx() != computed_elm_idx_ || elm.is_boundary() != computed_elm_boundary_) {
 		computed_elm_idx_ = elm.idx();
+		computed_elm_boundary_ = elm.is_boundary();
 
 		if (elm.dim() == 3) {
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());

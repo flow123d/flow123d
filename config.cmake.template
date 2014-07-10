@@ -124,7 +124,11 @@ set(FLOW_BUILD_TYPE debug)
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
-
+### Install package platform ###
+# This string is used as part of package name to distinguish 
+# packages for different platforms.
+# e.g. linux_x86_64, windows_x86_64, windows_x86_32
+# set(PLATFORM_NAME linux_x86_64)
 
 ### External Projects directory ##########################################################
 #
