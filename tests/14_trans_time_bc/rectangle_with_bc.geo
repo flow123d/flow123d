@@ -1,4 +1,5 @@
 Ly=0.2;
+Lx=0.4;
 ChL=0.02;
 // Default 2d algo (1) and MeshAdapt (4) produce nonsymetric mesh
 // Delaunay (5) produce symmetric mesh
@@ -6,8 +7,8 @@ ChL=0.02;
 
 Point(1) = {0,0,0,ChL};
 Point(2) = {0,Ly,0,ChL};
-Point(3) = {1,Ly,0,ChL};
-Point(4) = {1,0,0,ChL};
+Point(3) = {Lx,Ly,0,ChL};
+Point(4) = {Lx,0,0,ChL};
 
 Line(5) = {1,2};
 Line(6) = {2,3};

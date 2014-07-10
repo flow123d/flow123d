@@ -86,12 +86,8 @@
             }
           ],
           
-          reaction = {
+          reaction_liquid = {
             TYPE="LinearReactions",
-            substances = [
-              "A",
-              "B"
-            ],
             decays = [
               {
                 parent = "A",
@@ -109,7 +105,7 @@
           molar_mass = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/molar_mass" },
           solubility = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
           input_fields= { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" },
-          reaction = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/reaction" }
+          reaction_liquid = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/reaction_liquid" }
         }
       }
           

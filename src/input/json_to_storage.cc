@@ -691,7 +691,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         throw;
     }
 
-    //return NULL;
+    return NULL;
 }
 
 

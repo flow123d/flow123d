@@ -87,7 +87,7 @@ protected:
 		const BIHNode &node = nodes_[node_index];
 
 		cout << endl;
-		if (depth>1) for (int i=0; i<depth-1; i++) cout << "| ";
+		if (depth>1) for (unsigned int i=0; i<depth-1; i++) cout << "| ";
 		if (node.is_leaf()) {
 			cout << "- leaf node: idx = " << node_index << ", " << node.leaf_size() << " elements, depth " << (unsigned int)node.depth();
 		} else {
@@ -171,7 +171,7 @@ public:
 			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
 
 			ASSERT_EQ(bf_result.size(), result_vec.size());
-			for(int j=0; j< bf_result.size(); j++) {
+			for(unsigned int j=0; j< bf_result.size(); j++) {
 				EXPECT_EQ(bf_result[j], result_vec[j]);
 			}
 		}
@@ -202,7 +202,7 @@ public:
 			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element(i_el).id();
 
 			ASSERT_EQ(bf_point_result.size(), result_point_vec.size());
-			for(int j=0; j< bf_point_result.size(); j++) {
+			for(unsigned int j=0; j< bf_point_result.size(); j++) {
 				EXPECT_EQ(bf_point_result[j], result_point_vec[j]);
 			}
 		}
@@ -210,7 +210,7 @@ public:
 
 
 	BIH_test()
-	: mesh(nullptr), bt(nullptr), r_gen(123)
+	: r_gen(123), mesh(nullptr), bt(nullptr)
 	{
         Profiler::initialize();
 	}

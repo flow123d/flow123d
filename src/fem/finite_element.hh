@@ -287,6 +287,11 @@ public:
      */
     const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
 
+    /**
+     * @brief Destructor.
+     */
+    virtual ~FiniteElement();
+
 protected:
 
     /**

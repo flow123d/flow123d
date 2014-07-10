@@ -70,7 +70,7 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
 template<class Model>
 Selection TransportDG<Model>::EqData::output_selection =
 		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
-		.copy_values(EqData().output_fields.make_output_field_selection("").close())
+		.copy_values(EqData().make_output_field_selection("").close())
 		.close();
 
 template<class Model>
@@ -124,6 +124,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 
 	default:
+	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in TransportDG ", fe_order);
 		break;
 	}
@@ -193,24 +194,46 @@ DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
-	ADD_FIELD(fracture_sigma, "Coefficient of diffusive transfer through fractures (for each substance).", "1.0");
-	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
-			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
+    *this+=fracture_sigma
+            .name("fracture_sigma")
+            .description(
+            "Coefficient of diffusive transfer through fractures (for each substance).")
+            .input_default("1.0")
+            .flags_add(FieldFlag::in_main_matrix);
 
-    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "\"inflow\"" );
-    	bc_type.input_selection(&bc_type_selection);
+    *this+=dg_penalty
+            .name("dg_penalty")
+            .description(
+            "Penalty parameter influencing the discontinuity of the solution (for each substance). "
+            "Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.")
+            .input_default("1.0")
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            .input_default("\"inflow\"")
+            .input_selection( &bc_type_selection)
+            .flags_add(FieldFlag::in_rhs);
 
 //    std::vector<FieldEnum> list; list.push_back(neumann);
-    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", "0.0");
+    *this+=bc_flux
+            .name("bc_flux")
+            .description("Flux in Neumann boundary condition.")
+            .input_default("0.0")
+            .flags_add(FieldFlag::in_rhs);
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
+    *this+=bc_robin_sigma
+            .name("bc_robin_sigma")
+            .description("Conductivity coefficient in Robin boundary condition.")
+            .input_default("0.0")
+            .flags_add(FieldFlag::in_rhs);
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
 
     // add all input fields to the output list
-    this->output_fields += *this;
+
 }
-
-
 
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
@@ -236,12 +259,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.bc_type.n_comp(n_subst_);
-    data_.bc_flux.n_comp(n_subst_);
-    data_.bc_robin_sigma.n_comp(n_subst_);
-    data_.fracture_sigma.n_comp(n_subst_);
-    data_.dg_penalty.n_comp(n_subst_);
-    Model::init_data(n_subst_);
+    data_.set_n_components(n_subst_);
+    //Model::init_data(n_subst_);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
 
@@ -296,7 +315,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	}
 	data_.output_field.init(subst_names_);
 	data_.output_field.set_mesh(*mesh_);
-	data_.output_fields.output_type(OutputTime::CORNER_DATA);
+    data_.output_type(OutputTime::CORNER_DATA);
 
 	for (int sbi=0; sbi<n_subst_; sbi++)
 	{
@@ -305,7 +324,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
 		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	data_.output_fields.set_limit_side(LimitSide::left);
+    data_.set_limit_side(LimitSide::left);
 	output_stream = OutputTime::create_output_stream(output_rec);
 	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
@@ -431,19 +450,19 @@ void TransportDG<Model>::update_solution()
     }
 
 	// assemble mass matrix
-	if (mass_matrix == NULL ||
-		mass_matrix_changed())
+    if (mass_matrix == NULL || data_.subset(FieldFlag::in_time_term).changed() )
 	{
 		ls_dt->start_add_assembly();
 		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
-		mass_matrix = ls_dt->get_matrix();
+		mass_matrix = *(ls_dt->get_matrix());
 	}
 
 	// assemble stiffness matrix
-    if (stiffness_matrix[0] == NULL ||
-    	stiffness_matrix_changed())
+    if (stiffness_matrix[0] == NULL
+    		|| data_.subset(FieldFlag::in_main_matrix).changed()
+    		|| Model::flux_changed)
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
@@ -458,15 +477,16 @@ void TransportDG<Model>::update_solution()
         	ls[i]->finish_assembly();
 
         	if (stiffness_matrix[i] == NULL)
-        		MatConvert(ls[i]->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
+        		MatConvert(*( ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
         	else
-        		MatCopy(ls[i]->get_matrix(), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
+        		MatCopy(*( ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble right hand side (due to sources and boundary conditions)
-    if (rhs[0] == NULL ||
-    	rhs_changed())
+    if (rhs[0] == NULL
+    		|| data_.subset(FieldFlag::in_rhs).changed()
+    		|| Model::flux_changed)
     {
     	for (int i=0; i<n_subst_; i++)
     	{
@@ -479,8 +499,8 @@ void TransportDG<Model>::update_solution()
     	{
     		ls[i]->finish_assembly();
 
-    		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
-    		VecCopy(ls[i]->get_rhs(), rhs[i]);
+    		VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
+    		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }
 
@@ -547,17 +567,14 @@ void TransportDG<Model>::set_velocity_field(const MH_DofHandler &dh)
 template<class Model>
 void TransportDG<Model>::output_data()
 {
-    double *solution;
-    unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-
     if (!time_->is_current( time_->marks().type_output() )) return;
 
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
     output_vector_gather();
-	data_.output_fields.set_time(*time_);
-	data_.output_fields.output(output_stream);
+    data_.subset(FieldFlag::allow_output).set_time( *time_);
+    data_.output(output_stream);
 	output_stream->write_time_frame();
 
 	if (mass_balance() != NULL)

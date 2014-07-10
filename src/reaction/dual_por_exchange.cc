@@ -49,26 +49,26 @@ DualPorosity::EqData::EqData()
 {
   *this += diffusion_rate_immobile
            .name("diffusion_rate_immobile")
-           .desc("Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.")
+           .description("Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.")
            .input_default("0")
            .units("");
   
   *this += porosity_immobile
           .name("porosity_immobile")
-          .desc("Porosity of the immobile zone.")
+          .description("Porosity of the immobile zone.")
           .input_default("0")
           .units("1");
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
-          .desc("Initial concentration of substances in the immobile zone.")
+          .description("Initial concentration of substances in the immobile zone.")
           .units("M/L^3");
 
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
         .units("1")
-        .just_copy();
+        .flags( FieldFlag::input_copy );
 
   output_fields += *this;
   output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
@@ -209,8 +209,7 @@ void DualPorosity::initialize()
 void DualPorosity::initialize_fields()
 {
   //setting fields in data
-  data_.diffusion_rate_immobile.n_comp(names_.size());
-  data_.init_conc_immobile.n_comp(names_.size());
+  data_.set_n_components(names_.size());
 
   //setting fields that are set from input file
   input_data_set_+=data_;
@@ -227,7 +226,7 @@ void DualPorosity::initialize_fields()
   data_.conc_immobile.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
-  for (int sbi=0; sbi<names_.size(); sbi++)
+  for (unsigned int sbi=0; sbi<names_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
     std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
@@ -251,18 +250,14 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-          reaction_mobile->data().get_field("porosity")
-            .copy_from(data_.get_field("porosity"));
-          reaction_mobile->data().get_field("porosity_immobile")
-            .copy_from(data_.get_field("porosity_immobile"));
+          reaction_mobile->data().set_field("porosity", data_["porosity"]);
+          reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-          reaction_immobile->data().get_field("porosity")
-            .copy_from(data_.get_field("porosity"));
-          reaction_immobile->data().get_field("porosity_immobile")
-            .copy_from(data_.get_field("porosity_immobile"));
+      reaction_immobile->data().set_field("porosity", data_["porosity"]);
+      reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
   data_.set_time(*time_);
@@ -290,7 +285,7 @@ void DualPorosity::set_initial_condition()
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
     arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
-    for (int sbi=0; sbi < names_.size(); sbi++)
+    for (unsigned int sbi=0; sbi < names_.size(); sbi++)
     {
       conc_immobile[sbi][loc_el] = value(sbi);
     }

@@ -102,7 +102,7 @@ public:
 	/**
      * \brief Constructor of templated OutputData
      */
-	OutputData(const FieldCommonBase &field,
+	OutputData(const FieldCommon &field,
 	        unsigned int size)
 	: val_aux(aux)
 	{

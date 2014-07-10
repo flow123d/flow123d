@@ -32,12 +32,13 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
-#include "io/output.h"
+//#include "io/output.h"
 
 #include <iostream>
 #include <fstream>
@@ -51,7 +52,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.8.0"
+#define _PROGRAM_VERSION_   "0.0.0"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -65,7 +66,7 @@
     #define _COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
 
-static void main_convert_to_output();
+//static void main_convert_to_output();
 
 
 namespace it = Input::Type;
@@ -92,14 +93,37 @@ Application::Application( int argc,  char ** argv)
   passed_argc_(0),
   passed_argv_(0),
   use_profiler(true)
-{}
+{
+    // initialize python stuff if we have
+    // nonstandard python home (release builds)
+    std::cout << "Application constructor" << std::endl;
+#ifdef HAVE_PYTHON
+#ifdef PYTHON_HOME
+    PythonLoader::initialize(argv[0]);
+#endif
+#endif
+
+}
 
 
+void Application::split_path(const string& path, string& directory, string& file_name) {
+
+    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
+    if (delim_pos < string::npos) {
+
+        // It seems, that there is some path in fname ... separate it
+        directory =path.substr(0,delim_pos);
+        file_name =path.substr(delim_pos+1); // till the end
+    } else {
+        directory = ".";
+        file_name = path;
+    }
+}
 
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_PROGRAM_VERSION_);
+    string version(_VERSION_NAME_);
     string revision(_GIT_REVISION_);
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);
@@ -235,19 +259,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "solve" option
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
-
-
-        // Try to find absolute or relative path in fname
-        size_t delim_pos=input_filename.find_last_of(DIR_DELIMITER);
-        if (delim_pos < input_filename.npos) {
-
-            // It seems, that there is some path in fname ... separate it
-            main_input_dir_ =input_filename.substr(0,delim_pos);
-            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
-        } else {
-            main_input_dir_ = ".";
-            main_input_filename_ = input_filename;
-        }
+        split_path(input_filename, main_input_dir_, main_input_filename_);
     } 
 
     // possibly turn off profilling
@@ -293,7 +305,6 @@ void Application::run() {
 
     {
         using namespace Input;
-        int i;
 
         // get main input record handle
 
@@ -344,13 +355,16 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    using namespace Input;
-    std::string ini_fname;
-
-    F_ENTRY;
-    Application app(argc, argv);
-
-    app.init(argc, argv);
+    try {
+        Application app(argc, argv);
+        app.init(argc, argv);
+    } catch (std::exception & e) {
+        std::cerr << e.what();
+        return ApplicationBase::exit_failure;
+    } catch (...) {
+        std::cerr << "Unknown exception" << endl;
+        return ApplicationBase::exit_failure;
+    }
 
     // Say Goodbye
     return ApplicationBase::exit_success;
@@ -388,7 +402,7 @@ int main(int argc, char **argv) {
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
-void main_convert_to_output() {
+/*void main_convert_to_output() {
     // TODO: implement output of input data fields
     // Fields to output:
     // 1) volume data (simple)
@@ -397,7 +411,7 @@ void main_convert_to_output() {
     //    flow and transport bcd
 
     xprintf(Err, "Not implemented yet in this version\n");
-}
+}*/
 #if 0
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM

@@ -55,7 +55,8 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
-        FieldSet output_fields;
+        //FieldSet output_fields;
+
 
 		ModelEqData();
 
@@ -88,17 +89,17 @@ public:
 
 	ConcentrationTransportModel();
 
-	void init_data(unsigned int n_subst_) override;
+	//void init_data(unsigned int n_subst_) override;
 
 	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) override;
 
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
 
-	bool mass_matrix_changed() override;
+	//bool mass_matrix_changed() override;
 
-	bool stiffness_matrix_changed() override;
+	//bool stiffness_matrix_changed() override;
 
-	bool rhs_changed() override;
+	//bool rhs_changed() override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,

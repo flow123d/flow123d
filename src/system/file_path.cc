@@ -5,6 +5,10 @@
  *      Author: jb
  */
 
+
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include "file_path.hh"
 #include "system.hh"
 
@@ -41,8 +45,48 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 
     // relative output dir is relative to working directory
     // this is possibly independent of position of the main input file
-    if (output[0] == DIR_DELIMITER) output_dir = output;
-    else output_dir = working_dir + DIR_DELIMITER + output;
+    if (output[0] == DIR_DELIMITER) {
+    	vector<string> dirs;
+    	boost::split(dirs, output,  boost::is_any_of("/"));
+    	output_dir = "";
+    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
+    	    if ( !(*it).size() ) continue;
+        	output_dir = output_dir + DIR_DELIMITER + *it;
+            if (!boost::filesystem::is_directory(output_dir)) {
+            	boost::filesystem::create_directory(output_dir);
+            }
+        }
+    } else {
+    	vector<string> dirs;
+    	string full_output = working_dir + DIR_DELIMITER + output;
+    	boost::split(dirs, full_output, boost::is_any_of("/"));
+    	output_dir = "";
+    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
+    	    if ( !(*it).size() ) continue;
+    	    if ( !output_dir.size() ) output_dir = *it;
+    	    else output_dir = output_dir + DIR_DELIMITER + *it;
+            if (!boost::filesystem::is_directory(output_dir)) {
+            	boost::filesystem::create_directory(output_dir);
+            }
+        }
+
+        boost::filesystem::path working_path = boost::filesystem::path(working_dir);
+        boost::filesystem::path output_path = boost::filesystem::path(output);
+
+        if (working_dir[0] != DIR_DELIMITER)
+        {
+        	boost::filesystem::path curr = boost::filesystem::current_path();
+        	working_path = boost::filesystem::canonical( curr / working_path );
+        }
+
+        boost::filesystem::path full_path = boost::filesystem::canonical( working_path / output_path );
+
+        boost::filesystem::path curr = boost::filesystem::current_path();
+    	output_dir = full_path.string();
+#ifdef BOOST_WINDOWS_API
+        boost::replace_all(output_dir, "\\", "/");
+#endif
+    }
 
     // the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);

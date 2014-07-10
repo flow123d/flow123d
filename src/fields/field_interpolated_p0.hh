@@ -29,7 +29,7 @@
 #ifndef FIELD_INTERPOLATED_P0_HH_
 #define FIELD_INTERPOLATED_P0_HH_
 
-#include "field_base.hh"
+#include "field_algo_base.hh"
 #include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 #include "system/system.hh"
@@ -39,10 +39,10 @@
 
 
 template <int spacedim, class Value>
-class FieldInterpolatedP0: public FieldBase<spacedim, Value> {
+class FieldInterpolatedP0: public FieldAlgorithmBase<spacedim, Value> {
 public:
 
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
 	/**
 	 * Constructor
@@ -98,6 +98,9 @@ protected:
 
 	/// stored index to last computed element
 	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
+
+	/// stored flag if last computed element is boundary
+	unsigned int computed_elm_boundary_;
 
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;

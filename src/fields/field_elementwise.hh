@@ -29,15 +29,15 @@
  */
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 
 class GmshMeshReader;
 
 template <int spacedim, class Value>
-class FieldElementwise : public FieldBase<spacedim, Value>
+class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     FieldElementwise(unsigned int n_comp=0);
 

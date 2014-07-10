@@ -60,14 +60,14 @@ public:
         return rows_ds_; 
     }
 
-    const Mat &get_matrix()
+    const Mat *get_matrix()
     { 
-        return matrix_; 
+        return &matrix_;
     }
 
-    const Vec &get_rhs()
+    const Vec *get_rhs()
     { 
-        return rhs_; 
+        return &rhs_;
     }
 
     PetscErrorCode set_matrix(Mat &matrix, MatStructure str)

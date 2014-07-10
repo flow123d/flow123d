@@ -40,7 +40,7 @@
 #include "mesh/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
-#include "fields/field_interpolated_p0_impl.hh"
+#include "fields/field_interpolated_p0.impl.hh"
 
 
 
@@ -146,6 +146,8 @@ public:
         Input::JSONToStorage reader( input, rec_type );
         rec=reader.get_root_interface<Input::Record>();
 
+        test_time[0] = 0.0;
+        test_time[1] = 1.0;
     }
     virtual void TearDown() {
 
@@ -154,6 +156,7 @@ public:
     Mesh *mesh;
     Input::Record rec;
     Space<3>::Point point;
+    double test_time[2];
 
 };
 
@@ -161,15 +164,18 @@ public:
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"));
-    field.set_time(0.0);
 
-    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );
-    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(1)) );
-    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(2)) );
-    EXPECT_DOUBLE_EQ( 0.700, field.value(point, mesh->element_accessor(3)) );
-    EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(4)) );
-    EXPECT_DOUBLE_EQ( 0.675, field.value(point, mesh->element_accessor(5)) );
-    EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0, true)) );
+    for (unsigned int j=1; j<3; j++) {
+    	field.set_time(test_time[j-1]);
+
+    	EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(1)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(2)) );
+        EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0, true)) );
+    }
 
 }
 

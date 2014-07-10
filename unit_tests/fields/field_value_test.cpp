@@ -53,8 +53,8 @@ TEST(FieldValue_, speed_test_interface) {
    for(int step=0;step < STEPS; step++) {
        T val(r_val);
 
-       for(int row=0;row< val.n_cols(); ++row)
-           for(int col=0;col< val.n_rows(); ++col)
+       for(unsigned int row=0;row< val.n_cols(); ++row)
+           for(unsigned int col=0;col< val.n_rows(); ++col)
                val(row,col)+=step;
    }
    cout << r_val << endl;

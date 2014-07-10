@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
 #include "reaction/reaction.hh"
 
@@ -203,7 +203,8 @@ protected:
 
   /** Reaction model that follows the sorption.
    */
-  ReactionTerm* reaction;
+  ReactionTerm* reaction_liquid;
+  ReactionTerm* reaction_solid;
                   
   ///@name members used in output routines
   //@{

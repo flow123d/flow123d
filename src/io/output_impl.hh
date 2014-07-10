@@ -57,7 +57,7 @@ void OutputTime::register_data(const Input::Record &in_rec,
     int node_index = 0;
     int ele_index = 0;
 
-    output_data = output_time->output_data_by_field((FieldCommonBase*)field,
+    output_data = output_time->output_data_by_field((FieldCommon*)field,
             ref_type);
 
     switch(ref_type) {

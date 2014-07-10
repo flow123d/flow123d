@@ -17,7 +17,7 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_constant.hh"
 
 
@@ -220,7 +220,7 @@ public:
 		// make field init it form the init string
 		F field("test_field", false); // bulk field
 		field.input_default(init);
-		field.n_comp(3);
+		field.set_n_components(3);
 		field.input_selection(&test_selection);
 
 		field.set_mesh(*my_mesh);

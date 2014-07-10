@@ -147,11 +147,11 @@ TEST(Region, read_sets_from_input) {
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
-	Region r0=region_db.add_region(0, "label_0", 1, false);
-	Region r1=region_db.add_region(1, "label_1", 1, false);
-	Region r2=region_db.add_region(2, "label_2", 2, false);
-	Region r3=region_db.add_region(3, "label_3", 2, true);
-	Region r4=region_db.add_region(4, "label_4", 3, false);
+	region_db.add_region(0, "label_0", 1, false);
+	region_db.add_region(1, "label_1", 1, false);
+	region_db.add_region(2, "label_2", 2, false);
+	region_db.add_region(3, "label_3", 2, true);
+	region_db.add_region(4, "label_4", 3, false);
 
 	region_db.read_sets_from_input(i_arr);
 
@@ -234,7 +234,7 @@ struct Item {
     unsigned int dim;
 };
 
-void init_map(std::map<unsigned int, Item> &map,int size) {
+void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
 
     for(unsigned int i=0; i<size; i++) {
         Item xx={i, "xyz", 1};

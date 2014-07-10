@@ -10,7 +10,7 @@
 #include "semchem/semchem_interface.hh"
 //#include "transport/transport.h"
 #include "mesh/mesh.h"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 
 #define MOBILE 0
@@ -77,7 +77,7 @@ it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_m
 
 
 Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpecies, bool dualPorosity)
-	:semchem_on(false), dual_porosity_on(false), fw_chem(NULL), mesh_(NULL), cross_section(cross_section)
+	:semchem_on(false), dual_porosity_on(false), fw_chem(NULL), mesh_(NULL), cross_section(NULL)
 {
 
   //temporary semchem output file name
@@ -129,7 +129,7 @@ void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
 	{
-		for (int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
+		for (unsigned int loc_el = 0; loc_el < distribution->lsize(); loc_el++)
 		{
 			START_TIMER("semchem-one step");
 	   	   this->compute_reaction(dual_porosity_on, mesh_->element(el_4_loc[loc_el]), loc_el, concentration_matrix);
@@ -152,7 +152,7 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
    char *vystupni_soubor; //[] = "./output/semchem_output.txt";
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
-   double pomoc, n;
+   double pomoc;
    double el_por_m = por_m->value(ppelm->centre(), ppelm->element_accessor());
    double el_por_imm = por_imm->value(ppelm->centre(), ppelm->element_accessor());
    double el_phi = phi->value(ppelm->centre(), ppelm->element_accessor());
@@ -167,8 +167,6 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
   //==================================================================
    // ----------------- NEJPRVE PRO MOBILNI PORY ----------------------
    //==================================================================
-   n = (el_por_m) / (1 - el_por_m); //asi S/V jako zze splocha
-
    switch (ppelm->dim()) { //objem se snad na nic nepouzzi:va:
 	  case 1 :
 	  case 2 :

@@ -16,6 +16,8 @@ ApplicationBase::ApplicationBase(int argc,  char ** argv)
 : log_filename_("")
 { }
 
+bool ApplicationBase::petsc_initialized = false;
+
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     int ierr;
@@ -54,8 +56,8 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 
 FILE *ApplicationBase::petsc_output_ =NULL;
 
-PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
 #ifdef HAVE_PETSC
+PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
@@ -71,20 +73,18 @@ PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_
     fwrite(buff, sizeof(char), length, petsc_output_);
   }
   PetscFunctionReturn(0);
-#endif
 }
-
+#endif
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 #ifdef HAVE_PETSC
-    PetscErrorCode ierr;
     if (petsc_redirect_file_ != "") {
         petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
         PetscVFPrintf = this->petscvfprintf;
     }
 
 
-    ierr = PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
     int mpi_size;
     MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
@@ -123,12 +123,8 @@ void ApplicationBase::init(int argc, char ** argv) {
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 
-	//try {
-		this->run();
-	//} catch (std::exception & e) {
-	//	std::cerr << e.what();
-	//	exit( exit_failure );
-	//}
+
+    this->run();
 
 	this->after_run();
 }

@@ -182,7 +182,7 @@ void MPI_PrettyUnitTestResultPrinter::OnTestStart(const TestInfo& test_info) {
 // Called after a failed assertion or a SUCCEED() invocation.
 void MPI_PrettyUnitTestResultPrinter::OnTestPartResult(const TestPartResult& result) {
     // let print one process after other
-    for(unsigned int i=0; i < np; i++) {
+    for(int i=0; i < np; i++) {
         if (rank == i && (result.type() != TestPartResult::kSuccess)) {
             printf("[%d] ", rank);
             PrintTestPartResult(result);

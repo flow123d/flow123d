@@ -176,7 +176,6 @@ TEST_F(InputJSONToStorageTest, String) {
     Type::String str_type;
 
     {
-        F_ENTRY;
         stringstream ss("\"Important message\"");
         read_stream(ss, str_type);
 

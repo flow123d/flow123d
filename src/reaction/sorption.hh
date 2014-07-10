@@ -12,7 +12,7 @@
 #ifndef SORPTION_H
 #define SORPTION_H
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "reaction/sorption_base.hh"
 
 class Mesh;
@@ -46,7 +46,9 @@ class SorptionDual:  public SorptionBase
 {
 public:
     /// Constructor.
-    SorptionDual(Mesh &init_mesh, Input::Record in_rec);
+    SorptionDual(Mesh &init_mesh, Input::Record in_rec,
+                const string &output_conc_name,
+                const string &output_selection_name);
 
     /// Destructor.
     ~SorptionDual(void);
@@ -54,9 +56,7 @@ public:
     /// Sets the immobile porosity field.
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
       { 
-        immob_porosity_.just_copy();
         immob_porosity_.copy_from(por_imm); 
-        *data_+=(immob_porosity_);
       }
 
 protected:

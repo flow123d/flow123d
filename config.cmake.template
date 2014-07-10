@@ -51,6 +51,10 @@
 #
 # set(USE_PYTHON "yes")
 
+# PYTHON_COPY - make copy of python files, necessary for release builds
+# set(PYTHON_COPY "yes")
+
+
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
 #
@@ -73,7 +77,7 @@
 # e.g.
 # make VERBOSE=1 all
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+#set(CMAKE_VERBOSE_MAKEFILE true)
 
 
 ### set compiler ###
@@ -115,13 +119,16 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
-# DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
-
+### Install package platform ###
+# This string is used as part of package name to distinguish 
+# packages for different platforms.
+# e.g. linux_x86_64, windows_x86_64, windows_x86_32
+# set(PLATFORM_NAME linux_x86_64)
 
 ### External Projects directory ##########################################################
 #

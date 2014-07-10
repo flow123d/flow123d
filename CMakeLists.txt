@@ -10,8 +10,10 @@
 #
 
 # check build_tree link,
-# this do not duplicate similar call in main makefile, since CMakeList.txt can be called by generated makefiles.
+# this do not duplicate of the similar call in main makefile,
+# since CMakeList.txt can be called by generated makefiles.
 execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 
 
 # Include settings given by user first
@@ -46,6 +48,8 @@ if (${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   cmake_policy(VERSION 2.8.4)
   cmake_policy(SET CMP0017 NEW)
 endif()
+
+
 
 # allow duplicate custom targets for makefiles
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
@@ -114,6 +118,7 @@ endif(FLOW_CC_FLAGS)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
 	    execute_process(
 	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
 	    if (CYGWIN)
 	        if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
 	          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
@@ -239,7 +244,7 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization regex)
+set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
  
 #set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
@@ -448,21 +453,61 @@ IF (PETSC_FOUND)
       ) 
 endif()
 
+####################################################################################
+# PYTHON
+#
 # optionaly we use Python interface
-# We disallow python under cygwin since we are not able to extract correct libraries to make it work ther.
-if (CYGWIN)
-else (CYGWIN) 
-  if (USE_PYTHON)
+if (USE_PYTHON)
+    message(STATUS "\n ======================================================= ")
     find_package(PythonLibs)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
+        
+        string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
+        string(REGEX MATCH "[0-9.]+" PYTHON_VERSION_NUM ${PYTHON_VERSION})
+        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHON_VERSION_MAJ ${PYTHON_VERSION_NUM})
+        add_definitions(-DPYTHON_VERSION=${PYTHON_VERSION_MAJ})
+        message(STATUS "Python version: ${PYTHON_VERSION_MAJ}\n")
+        
+        if (PYTHON_COPY)
+            set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
+            add_definitions(-DPYTHON_HOME="..")
+            
+            # copy python files to build tree 
+            # first get prefix (we support just one prefix)
+            execute_process(
+                COMMAND python -c "import sys; print sys.prefix"
+                OUTPUT_VARIABLE PY_PREFIX
+                OUTPUT_STRIP_TRAILING_WHITESPACE)        
+            execute_process(
+                COMMAND python -c "import sys; print sys.exec_prefix"
+                OUTPUT_VARIABLE PY_EXEC_PREFIX
+                OUTPUT_STRIP_TRAILING_WHITESPACE)        
+            message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
+            message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+            if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
+                message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
+            endif()
+            message(STATUS "Python prefix: ${PY_PREFIX} target prefix: ${TARGET_PREFIX}")
+            
+            # copy python library
+            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_VERSION})
+            execute_process(
+                COMMAND mkdir -p ${TARGET_PREFIX}/lib 
+                )             
+            # recursive copy, not overwrite existing files
+            # we copy all and exclute some paths and files during install    
+            execute_process(
+                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
+                )
+                
+        endif()
     else()
-	set(PYTHON_INCLUDE_DIRS "")
-	set(PYTHON_LIBRARIES "")
+        set(PYTHON_INCLUDE_DIRS "")
+        set(PYTHON_LIBRARIES "")
     endif()
-  endif()  
-endif(CYGWIN)
+endif()  
 
 message(STATUS "\n ======================================================= ")
 
@@ -501,16 +546,23 @@ add_custom_target(update_source_tree
 # a custom target - is always built -> call cmake script to generate rev_num.h
 # Get the current working branch
 
-#message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+# This command is run from build dir and cmake set CMAKE_SOURCE_DIR to the build dir; thus we have to 
+# pass different variable with source dir, namely FLOW123D_SOURCE_DIR
 add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
 )
 # rev_num.h is a generated file
 set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 
-    
+# get git information also through configure phase
+set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
+include(Flow123d_git_info)
+
+# version in reference manual
+STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/doc/reference_manual/flow_version.tex)    
     
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
@@ -593,12 +645,18 @@ endif()
 
 
 if( PETSC_FOUND )
+  ########################
+# Setting for RPATH
+
+ 
+  SET (CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/../lib" )
+  
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
-
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h ) 
 else()
@@ -618,15 +676,23 @@ message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "===========================================")
 
+
+#include(EchoTargets)
+#message(STATUS "Lib sufix: ${CMAKE_FIND_LIBRARY_SUFFIX}")
+#echo_targets("bin/flow123d")
+
 ####################################################################################
 # Install and Packaging
 
+# Cache PLATFORM_NAME
+set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
+
 if (UNIX)
-  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/Flow123d")
+  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
 
 
-# mpiexec, hope this will work
+# install bin directory
 install(DIRECTORY bin/config 			DESTINATION bin/)
 install(DIRECTORY bin/ndiff 			DESTINATION bin/)
 install(DIRECTORY bin/paraview 			DESTINATION bin/)
@@ -637,16 +703,35 @@ install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
 install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
 install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
 
-# install cygwin libraries
+# install shared libraries
 if (CYGWIN)
-    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/cygwin_copy_dll.sh\"  WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" cygwin WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
     install(DIRECTORY build_tree/bin/            
         DESTINATION bin/
         PATTERN mpiexec EXCLUDE)
+
+else()
+    install(CODE "execute_process(COMMAND \"${CMAKE_SOURCE_DIR}/bin/copy_shared_libs.sh\" linux WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\")")
+    install(DIRECTORY build_tree/lib/            
+        DESTINATION lib/
+        PATTERN lib/python* EXCLUDE
+        PATTERN *.a EXCLUDE
+        )
+endif()        
+
+# install python modules
+if (PYTHON_COPY)
+    install(DIRECTORY build_tree/${PYTHON_COPY_LIB_TARGET} 
+            DESTINATION lib
+            PATTERN *.dll EXCLUDE
+            PATTERN *.a EXCLUDE
+            PATTERN *.so EXCLUDE
+            PATTERN */dist-packages EXCLUDE
+            PATTERN *.py EXCLUDE)
 endif()
 
 install(TARGETS    bin/flow123d  
-	RUNTIME DESTINATION bin/)
+	RUNTIME DESTINATION bin)
 install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
@@ -659,11 +744,16 @@ install(FILES doc/LICENSE                       DESTINATION doc/)
 install(FILES doc/GPL3                          DESTINATION doc/)
 install(FILES doc/README                        DESTINATION doc/)
 
+
 # clean tests directory before install
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
 install(DIRECTORY tests DESTINATION .)
+
+
+# copy base directory
 install(FILES README.md DESTINATION .)
+install(FILES CHANGES.md DESTINATION .)
 
 # To install MSVC runtime libraries ... ?
 INCLUDE(InstallRequiredSystemLibraries)
@@ -673,9 +763,9 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport 
 SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
-SET(CPACK_PACKAGE_VERSION_MAJOR "1")
-SET(CPACK_PACKAGE_VERSION_MINOR "8")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 

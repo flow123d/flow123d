@@ -153,8 +153,6 @@ void LSView(LinSystem *ls)
     const PetscScalar *vals;
     MatInfo info;
 
-    F_ENTRY;
-
     // output matrix
     MatGetInfo(ls->A,MAT_GLOBAL_SUM,&info);
     MPI_Barrier(PETSC_COMM_WORLD);
@@ -215,7 +213,6 @@ int i,n;
 double *array;
 
 
-    F_ENTRY;
     Distribution ds(v); // get distribution of the vector
 
 
@@ -261,8 +258,6 @@ void LSSetCSR( LinSystem *mtx )
     const PetscInt *cols;
     const PetscScalar *vals;
     MatInfo info;
-
-    F_ENTRY;
 
     MatGetInfo(mtx->A,MAT_LOCAL,&info);
     nnz=(int)(info.nz_used)+1; // allocate one more to be sure

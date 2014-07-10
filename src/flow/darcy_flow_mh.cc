@@ -71,7 +71,7 @@
 
 #include "coupling/time_governor.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
@@ -114,8 +114,8 @@ it::Record DarcyFlowMH_Steady::input_type
     .derive_from(DarcyFlowMH::input_type)
     .declare_key("input_fields", it::Array(
                 DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
+                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
+                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
                 ), it::Default::obligatory(), ""  );
 
@@ -261,8 +261,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 //=============================================================================
 void DarcyFlowMH_Steady::update_solution() {
     START_TIMER("Solving MH system");
-    F_ENTRY;
-
 
 
     if (time_->is_end()) return;
@@ -289,9 +287,7 @@ void DarcyFlowMH_Steady::update_solution() {
 void DarcyFlowMH_Steady::postprocess() 
 {
     START_TIMER("postprocess");
-    int side_rows[4];
-    double values[4];
-    ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
@@ -420,15 +416,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
-    // diagonal of the matrix for uploading weights to BDDCML 
-    // S = -C - B*inv(A)*B'
-    // diag(S) ~ - diag(C) - 1./diag(A)
-    // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-    // to a continuous one
-    // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-    // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-    std::map<int,double> subdomain_diagonal_map; 
-    F_ENTRY;
 
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
@@ -481,18 +468,21 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
 
-            // update matrix for weights in BDDCML
+            // assemble matrix for weights in BDDCML
+            // approximation to diagonal of 
+            // S = -C - B*inv(A)*B'
+            // as 
+            // diag(S) ~ - diag(C) - 1./diag(A)
+            // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+            // to a continuous one
+            // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+            // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                double val_side =  (fe_values.local_matrix())[i*nsides+i];
                double val_edge =  -1./ (fe_values.local_matrix())[i*nsides+i];
-               subdomain_diagonal_map.insert( std::make_pair( side_row, val_side ) );
 
-               double new_val= val_edge;
-               std::map<int,double>::iterator it = subdomain_diagonal_map.find( edge_row );
-               if ( it != subdomain_diagonal_map.end() ) {
-                  new_val = new_val + it->second;
-               }
-               subdomain_diagonal_map.insert( std::make_pair( edge_row, new_val ) );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_row, val_side );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_row, val_edge );
             }
         }
 
@@ -524,6 +514,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         // D block: non-compatible conections and diagonal: element-element
 
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
+
+        if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
+           double val_ele =  1.;
+           static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( el_row, val_ele );
+        }
 
         // D, E',E block: compatible connections: element-edge
         
@@ -569,14 +564,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
             // update matrix for weights in BDDCML
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
-               // there is -value on diagonal
+               // there is -value on diagonal in block C!
                double new_val = - value;
-               std::map<int,double>::iterator it = subdomain_diagonal_map.find( ind );
-               //ASSERT( it != subdomain_diagonal_map.end(), "Diagonal index not found.");
-               if ( it != subdomain_diagonal_map.end() ) {
-                  new_val = new_val + it->second;
-               }
-               subdomain_diagonal_map.insert( std::make_pair( ind, new_val ) );
+               static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ind, new_val );
             }
 
             if (n_schur_compls == 2) {
@@ -611,10 +601,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         }
     }
 
-    if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-       static_cast<LinSys_BDDC*>(ls)->load_diagonal( subdomain_diagonal_map );
-    }
-
     //if (! mtx->ins_mod == ALLOCATE ) {
     //    MatAssemblyBegin(mtx->A,MAT_FINAL_ASSEMBLY);
     //    MatAssemblyEnd(mtx->A,MAT_FINAL_ASSEMBLY);
@@ -644,7 +630,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 	const Element *ele;
 
-	if (i_ele == ml_it_->size() ) { // master element .. 1D
+	if (i_ele == (int)(ml_it_->size()) ) { // master element .. 1D
 		ele_type = 0;
 		delta = -delta_0;
 		ele=master_;
@@ -882,12 +868,6 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 void DarcyFlowMH_Steady::create_linear_system() {
   
     START_TIMER("preallocation");
-    int i_loc, el_row;
-    Element *ele;
-    Vec aux;
-    PetscErrorCode err;
-
-    F_ENTRY;
 
     //xprintf(Msg,"****************** problem statistics \n");
     //xprintf(Msg,"edges: %d \n",mesh_->n_edges());
@@ -943,8 +923,8 @@ void DarcyFlowMH_Steady::create_linear_system() {
                 schur0=ls;
             } else {
                 IS is;
-                err = ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
-                ASSERT(err == 0,"Error in ISCreateStride.");
+                ISCreateStride(PETSC_COMM_WORLD, side_ds->lsize(), rows_ds->begin(), 1, &is);
+                //ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
@@ -957,8 +937,8 @@ void DarcyFlowMH_Steady::create_linear_system() {
                     schur1 = new LinSys_PETSC(ds);
                 } else {
                     IS is;
-                    err = ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
-                    ASSERT(err == 0,"Error in ISCreateStride.");
+                    ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    //ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1062,7 +1042,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // maximal and minimal dimension of elements
     int elDimMax = 1;
     int elDimMin = 3;
-    for ( int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
+    for ( unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++ ) {
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
         ElementFullIter el = mesh_->element(el_4_loc[i_loc]);
         int e_idx = el.index();
@@ -1092,7 +1072,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         nne++;
 
         FOR_ELEMENT_SIDES(el,si) {
-            Edge *edg=el->side(si)->edge();
+            //Edge *edg=el->side(si)->edge();
 
             // insert local edge dof
             int edge_row = row_4_edge[ el->side(si)->edge_idx() ];
@@ -1104,7 +1084,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         }
 
         // insert dofs related to compatible connections
-        for ( int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+        for ( unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
             int edge_row = row_4_edge[ el->neigh_vb[i_neigh]->edge_idx()  ];
             arma::vec3 coord = el->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
@@ -1119,7 +1099,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // trace computation
         arma::vec3 centre = el->centre();
         double conduct = data_.conductivity.value( centre , el->element_accessor() );
-        double cs = data_.cross_section.value( centre, el->element_accessor() );
+        //double cs = data_.cross_section.value( centre, el->element_accessor() );
         arma::mat33 aniso = data_.anisotropy.value( centre, el->element_accessor() );
 
         // compute mean on the diagonal
@@ -1137,7 +1117,7 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    ASSERT_EQUAL( numNodeSub, global_row_4_sub_row->size() );
+    ASSERT_EQUAL( (unsigned int)numNodeSub, global_row_4_sub_row->size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1183,9 +1163,9 @@ void DarcyFlowMH_Steady::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
     // renumber nodes in the inet array to locals
     int indInet = 0;
-    for ( int iEle = 0; iEle < isegn.size(); iEle++ ) {
+    for ( unsigned int iEle = 0; iEle < isegn.size(); iEle++ ) {
         int nne = nnet[ iEle ];
-        for ( unsigned ien = 0; ien < nne; ien++ ) {
+        for ( int ien = 0; ien < nne; ien++ ) {
 
             int indGlob = inet[indInet];
             // map it to local node
@@ -1269,7 +1249,6 @@ void make_edge_conection_graph(Mesh *mesh, SparseGraph * &graph) {
     int e_weight;
 
     int edge_dim_weights[3] = { 100, 10, 1 };
-    F_ENTRY;
 
     i_edg=0;
     FOR_EDGES(mesh, edg) {
@@ -1316,7 +1295,6 @@ void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph, bool neigh_
     Edge *edg;
     int li, e_idx, i_neigh;
     int i_s, n_s;
-    F_ENTRY;
 
     //int elDimMax = 1;
     //int elDimMin = 3;
@@ -1479,8 +1457,6 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     int e_idx;
 
     
-    F_ENTRY;
-
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
     //ASSERT(ierr == 0, "Error in MPI_Barrier.");
 
@@ -1591,8 +1567,8 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
             unsigned int nsides = el->n_sides();
             for (unsigned int i = 0; i < nsides; i++) {
-                int side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
-		        int edge_row = row_4_edge[el->side(i)->edge_idx()];
+                side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
+		        edge_row = row_4_edge[el->side(i)->edge_idx()];
 
 		        global_row_4_sub_row->insert( side_row );
 		        global_row_4_sub_row->insert( edge_row );
@@ -1605,7 +1581,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
             for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
                 // mark this edge
-                int edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
+                edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
                 global_row_4_sub_row->insert( edge_row );
             }
         }
@@ -1628,7 +1604,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     FOR_EDGES(mesh_, edg) {
         solver_indices_.push_back( row_4_edge[i_edg++] );
     }
-    ASSERT( solver_indices_.size() == size, "Size of array does not match number of fills.\n" );
+    ASSERT( solver_indices_.size() == (unsigned int)size, "Size of array does not match number of fills.\n" );
     //std::cout << "Solve rindices:" << std::endl;
     //std::copy( solver_indices_.begin(), solver_indices_.end(), std::ostream_iterator<int>( std::cout, " " ) );
 }
@@ -1690,14 +1666,14 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
-    VecDuplicate(schur0->get_rhs(), &steady_rhs);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
     assembly_linear_system();
 	read_init_condition();
 
 
 /*
-    VecDuplicate(schur0->get_rhs(), &time_term);
+    VecDuplicate(*( schur0->get_rhs()), &time_term);
   */
     //setup_time_term();
     output_data();
@@ -1729,9 +1705,9 @@ void DarcyFlowMH_Unsteady::read_init_condition()
 
 void DarcyFlowMH_Unsteady::setup_time_term() {
     // save diagonal of steady matrix
-    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
-    VecCopy(schur0->get_rhs(), steady_rhs);
+    VecCopy(*( schur0->get_rhs()), steady_rhs);
 
 
     PetscScalar *local_diagonal;
@@ -1748,7 +1724,7 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
                                   ele->measure() / time_->dt();
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
-    MatDiagonalSet(schur0->get_matrix(), new_diagonal, ADD_VALUES);
+    MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
 
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
@@ -1758,16 +1734,16 @@ void DarcyFlowMH_Unsteady::modify_system() {
 	START_TIMER("modify system");
 	if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
 		// if time step has changed and setup_time_term not called
-		MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
+		MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
 
 		VecScale(new_diagonal, time_->last_dt()/time_->dt());
-		MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+		MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
 		schur0->set_matrix_changed();
 	}
 
     // modify RHS - add previous solution
-    VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
-    VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
     // swap solutions
@@ -1794,7 +1770,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 	VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
-    VecDuplicate(schur0->get_rhs(), &steady_rhs);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
     assembly_linear_system();
 	read_init_condition();
@@ -1832,21 +1808,20 @@ void DarcyFlowLMH_Unsteady::read_init_condition()
 void DarcyFlowLMH_Unsteady::setup_time_term()
 {
     // save diagonal of steady matrix
-    MatGetDiagonal(schur0->get_matrix(), steady_diagonal);
+    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
     // save RHS
-    VecCopy(schur0->get_rhs(),steady_rhs);
+    VecCopy(*( schur0->get_rhs()),steady_rhs);
 
 	VecZeroEntries(new_diagonal);
 
 	// modify matrix diagonal
 	// cycle over local element rows
 	ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-	double init_value;
 
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 		ele = mesh_->element(el_4_loc[i_loc_el]);
 
-		init_value = data_.init_pressure.value(ele->centre(), ele->element_accessor());
+		data_.init_pressure.value(ele->centre(), ele->element_accessor());
 
 		FOR_ELEMENT_SIDES(ele,i) {
 			int edge_row = row_4_edge[ele->side(i)->edge_idx()];
@@ -1860,7 +1835,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	VecAssemblyBegin(new_diagonal);
 	VecAssemblyEnd(new_diagonal);
 
-	MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+	MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
 
 	solution_changed_for_scatter=true;
 	schur0->set_matrix_changed();
@@ -1871,15 +1846,15 @@ void DarcyFlowLMH_Unsteady::modify_system() {
     if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
     	// if time step has changed and setup_time_term not called
 
-        MatDiagonalSet(schur0->get_matrix(),steady_diagonal, INSERT_VALUES);
+        MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
         VecScale(new_diagonal, time_->last_dt()/time_->dt());
-        MatDiagonalSet(schur0->get_matrix(),new_diagonal, ADD_VALUES);
+        MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
         schur0->set_matrix_changed();
     }
 
     // modify RHS - add previous solution
-    VecPointwiseMult(schur0->get_rhs(), new_diagonal, schur0->get_solution());
-    VecAXPY(schur0->get_rhs(), 1.0, steady_rhs);
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
     // swap solutions
@@ -1889,7 +1864,7 @@ void DarcyFlowLMH_Unsteady::modify_system() {
 
 
 void DarcyFlowLMH_Unsteady::postprocess() {
-    int i_loc, side_row, loc_edge_row, i;
+    int side_row, loc_edge_row, i;
     Edge* edg;
     ElementIter ele;
     double new_pressure, old_pressure, time_coef;
@@ -1899,7 +1874,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
 
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
-    for (i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
+    for (unsigned int i_loc = 0; i_loc < edge_ds->lsize(); i_loc++) {
 
         edg = &( mesh_->edges[ edge_4_loc[i_loc] ] );
         loc_edge_row = side_ds->lsize() + el_ds->lsize() + i_loc;

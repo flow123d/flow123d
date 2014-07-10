@@ -17,7 +17,7 @@
 namespace it = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldPython<spacedim, Value>::input_type= get_input_type( FieldBase<spacedim, Value>::input_type, NULL);
+it::Record FieldPython<spacedim, Value>::input_type= get_input_type( FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
 
 
 
@@ -27,7 +27,7 @@ Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
         )
 {
     it::Record type
-    = it::Record("FieldPython", FieldBase<spacedim,Value>::template_name()+" Field given by a Python script.")
+    = it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
     .derive_from(a_type)
     .declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
             "Python script given as in place string")
@@ -44,7 +44,7 @@ Input::Type::Record FieldPython<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
-: FieldBase<spacedim, Value>( n_comp)
+: FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
 #ifdef HAVE_PYTHON
     p_func_=NULL;

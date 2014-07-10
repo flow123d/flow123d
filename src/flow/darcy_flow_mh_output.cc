@@ -100,9 +100,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
   raw_output_file(NULL)
 {
     
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
-    ASSERT(ierr == 0, "Error in MPI test of rank.");
     
 
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
@@ -150,6 +147,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_stream->mark_output_times(darcy_flow->time());
 	//DBGMSG("output stream: %p\n", output_stream);
 
+    int rank;
+    // int ierr
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	if (rank == 0) {
         // temporary solution for balance output
@@ -217,9 +217,6 @@ void DarcyFlowMHOutput::output()
       water_balance();
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
-
-      double time  = darcy_flow->solved_time();
-
 
 	  output_fields.fields_for_output.set_time(darcy_flow->time());
 	  output_fields.fields_for_output.output(output_stream);
@@ -289,7 +286,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
 	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
-	int i_node;
+	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
 		dh->get_dof_indices(ele, indices);
@@ -565,7 +562,6 @@ void DarcyFlowMHOutput::make_neighbour_flux() {
 //=============================================================================
 
 void DarcyFlowMHOutput::water_balance() {
-    F_ENTRY;
     const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
     if (balance_output_file == NULL) return;
 

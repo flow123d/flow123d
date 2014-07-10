@@ -147,7 +147,6 @@ void ctiich_latkyvefazi( void )
    int   j;
    char  nazev[30], *pom_buf; //, nazev1[30]
    const char *separators = " ,\t";
-   char *pString;
 
 // Alokace seznamu latek
    P_lat = (TS_lat *)malloc( (G_prm.pocet_latek)*sizeof( TS_lat ) );
@@ -166,7 +165,7 @@ void ctiich_latkyvefazi( void )
        }
     }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -189,7 +188,7 @@ void ctiich_latkyvefazi( void )
       exit(133);
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -215,7 +214,7 @@ void ctiich_latkyvefazi( void )
       exit(133);
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -237,7 +236,7 @@ void ctiich_latkyvefazi( void )
          exit(133);
       }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"El_charge","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"El_charge","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -272,7 +271,6 @@ void ctiich_dalsilatky( void )
    int   j;
    char  nazev[30], *pom_buf;
    const char* separators = " ,\t";
-   char *pString = NULL;
 
    if (G_prm.pocet_latekvefazi == 0)
    {
@@ -280,7 +278,7 @@ void ctiich_dalsilatky( void )
    }
 // Nacteni obsahu seznamu latek
    sprintf( nazev, "Further_species" );
-   pString = strcpy(buffer,OptGetStr(nazev,"Specie_name","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"Specie_name","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -308,7 +306,7 @@ void ctiich_dalsilatky( void )
       }
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"dGf","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -330,7 +328,7 @@ void ctiich_dalsilatky( void )
       exit(133);
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"dHf","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -356,7 +354,7 @@ void ctiich_dalsilatky( void )
       exit(133);
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"Molar_mass","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {
@@ -378,7 +376,7 @@ void ctiich_dalsilatky( void )
       exit(133);
    }
 /*-----------------------------------------------*/
-   pString = strcpy(buffer,OptGetStr(nazev,"Activity","<NeplatnyNazev>"));
+   strcpy(buffer,OptGetStr(nazev,"Activity","<NeplatnyNazev>"));
    pom_buf = strtok( buffer, separators );
    if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 )
    {

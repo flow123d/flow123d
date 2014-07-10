@@ -1,5 +1,5 @@
 /*
- * field_impl.hh
+ * field.impl.hh
  *
  *  Created on: Feb 13, 2014
  *      Author: jb
@@ -21,8 +21,8 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>()),
-  read_field_descriptor_hook( &read_field_descriptor )
+: read_field_descriptor_hook( &read_field_descriptor ),
+  data_(std::make_shared<SharedData>())
 
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -33,8 +33,9 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>()),
-  read_field_descriptor_hook( &read_field_descriptor )
+: read_field_descriptor_hook( &read_field_descriptor ),
+  data_(std::make_shared<SharedData>())
+
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -47,9 +48,9 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
-: FieldCommonBase(other),
-  data_(other.data_),
-  read_field_descriptor_hook( other.read_field_descriptor_hook )
+: FieldCommon(other),
+  read_field_descriptor_hook( other.read_field_descriptor_hook ),
+  data_(other.data_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -64,8 +65,10 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	ASSERT(this->is_copy_, "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
+	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
+	        "Assignment between fields with different meshes.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -73,7 +76,6 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	shared_ = other.shared_;
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
-	limit_side_ = other.limit_side_;
 
 	read_field_descriptor_hook = other.read_field_descriptor_hook;
 	data_ = other.data_;
@@ -136,7 +138,9 @@ template<int spacedim, class Value>
 it::AbstractRecord Field<spacedim,Value>::make_input_tree() {
 	ASSERT(is_enum_valued,
 			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
-    return get_input_type_resolution<FieldBaseType>( shared_->element_selection_ ,boost::is_same<typename Value::element_type, FieldEnum>());
+    return get_input_type_resolution<FieldBaseType>(
+            shared_->input_element_selection_ ,
+            boost::is_same<typename Value::element_type, FieldEnum>());
 }
 
 
@@ -238,10 +242,10 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
-auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommonBase &field) -> FieldBasePtr
+auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommon &field) -> FieldBasePtr
 {
 	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.name(), field_record))
+	if (rec.opt_val(field.input_name(), field_record))
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
@@ -317,8 +321,9 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::copy_from(const FieldCommonBase & other) {
-	ASSERT(this->is_copy_, "Try to call copy from the field '%s' to the non-copy field '%s'.", other.name().c_str(), this->name().c_str());
+void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
+	ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
+	        other.name().c_str(), this->name().c_str());
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);
@@ -380,7 +385,6 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
           xprintf(Warn, "Unknown region with id: '%d'\n", id);
 			} else {
 				THROW(ExcMissingDomain()
-						<< EI_Field(this->name())
 						<< shared_->list_it_->ei_address() );
 			}
 		    
@@ -429,18 +433,19 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                              != shared_->no_check_values_.end() )
                         continue;                  // the field is not needed on this region
                 }
-                if (shared_->default_ != "") {    // try to use default
+                if (shared_->input_default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
-                	xprintf(UsrErr, "Missing value of the field '%s' on region ID: %d label: %s.\n",
-                			name().c_str(), reg.id(), reg.label().c_str() );
+                	xprintf(UsrErr, "Missing value of the input field '%s' ('%s') on region ID: %d label: %s.\n",
+                			input_name().c_str(), name().c_str(), reg.id(), reg.label().c_str() );
                 }
             }
         }
 
     // possibly set from default value
     if ( regions_to_init.size() ) {
-    	xprintf(Warn, "Using default value '%s' for part of field '%s'.\n", input_default().c_str(), name().c_str());
+    	xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n",
+    	        input_default().c_str(), input_name().c_str(), name().c_str());
 
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
@@ -473,7 +478,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
-: FieldCommonBase()
+: FieldCommon()
 {}
 
 
@@ -495,9 +500,12 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
 
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
 template<int spacedim, class Value>
 it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 }
+#pragma GCC diagnostic pop
 
 
 template<int spacedim, class Value>
@@ -531,7 +539,7 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::copy_from(const FieldCommonBase & other) {
+void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
 		this->operator=(other_field);

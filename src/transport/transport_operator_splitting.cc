@@ -79,7 +79,7 @@ TransportBase::TransportEqData::TransportEqData()
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
 	ADD_FIELD(cross_section, "");
-	cross_section.just_copy();
+	cross_section.flags( FieldFlag::input_copy );
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
@@ -109,8 +109,8 @@ TransportBase::~TransportBase()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec),
-  reaction(nullptr),
   convection(NULL),
+  reaction(nullptr),
   Semchem_reactions(NULL)
 {
 	Distribution *el_distribution;
@@ -173,8 +173,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
       typeid(*reaction) == typeid(DualPorosity)
     )
   {
-    reaction->data().get_field("porosity")
-      .copy_from(convection->get_data()->get_field("porosity"));
+    reaction->data().set_field("porosity", convection->data()["porosity"]);
   }
 }
 

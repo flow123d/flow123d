@@ -11,7 +11,7 @@
 
 #include "petscmat.h"
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
@@ -24,10 +24,10 @@
  *
  */
 template <int spacedim, class Value>
-class FieldFE : public FieldBase<spacedim, Value>
+class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.

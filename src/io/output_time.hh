@@ -20,7 +20,7 @@
 
 
 class OutputDataBase;
-class FieldCommonBase; // in fact not necessary, output_data_by_field() can use directly name as parameter
+class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
 template <int spacedim, class Value>

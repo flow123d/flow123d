@@ -52,7 +52,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("/json_root_dir","/json_root_dir","variant_input","/output_root");
+        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
@@ -221,7 +221,9 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
+    EXPECT_TRUE(((string) record.val<FilePath>("file_output"))
+    		.find("/output_root/output_subdir/output.vtk") != std::string::npos);
+    //EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
     // read enum from selection
@@ -336,9 +338,9 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
 
 
 
