@@ -90,17 +90,17 @@
           make doxy-doc
           bin/md_convert.sh README.md
           bin/md_convert.sh CHANGES.md
-    publishers:
-      - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_doc'
-          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
-          remove-prefix: 'build-master/doc/reference_manual/'
-      - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
-          source: 'build-master/doc/online-doc/flow123d/*'
-          remove-prefix: 'build-master/doc/online-doc/flow123d'
+#    publishers:
+#      - cifs: 
+#          site: 'bacula'
+#          target: 'jan.brezina/public_html/flow123d_doc'
+#          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
+#          remove-prefix: 'build-master/doc/reference_manual/'
+#      - cifs: 
+#          site: 'bacula'
+#          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
+#          source: 'build-master/doc/online-doc/flow123d/*'
+#          remove-prefix: 'build-master/doc/online-doc/flow123d'
             
 
 
@@ -201,13 +201,15 @@
           rm -rf _CPack_Packages         
           make package_source
           rm -rf _CPack_Packages
+      - shell: |
+          bin/prepare_to_publish.sh
           
     publishers:
       - cifs: 
           site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_packages/master_night_build'
-          source: 'flow123d/build_tree/Flow123d-*'
-          remove-prefix: 'flow123d/build_tree/'
+          target: 'jan.brezina/public_html/flow123d_packages'
+          source: 'flow123d/build_tree/publish_dir/**/*'
+          remove-prefix: 'flow123d/build_tree/publish_dir'
 
 
 
