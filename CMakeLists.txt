@@ -496,10 +496,22 @@ endif()
                 COMMAND mkdir -p ${TARGET_PREFIX}/lib 
                 )             
             # recursive copy, not overwrite existing files
-            # we copy all and exclute some paths and files during install    
+            # we copy all and exclude some paths and files during install    
             execute_process(
                 COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
                 )
+            
+            # copy python include
+            set(PYTHON_COPY_INCLUDE_TARGET  include/${PYTHON_VERSION})
+            execute_process(
+                COMMAND mkdir -p ${TARGET_PREFIX}/include 
+                )             
+            # recursive copy, not overwrite existing files
+            # we copy all and exclude some paths and files during install    
+            execute_process(
+                COMMAND cp -rn ${PY_PREFIX}/include/${PYTHON_VERSION} ${TARGET_PREFIX}/include 
+                )
+            
                 
         endif()
     else()
@@ -724,6 +736,8 @@ if (PYTHON_COPY)
             PATTERN *.so EXCLUDE
             PATTERN */dist-packages EXCLUDE
             PATTERN *.py EXCLUDE)
+    install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
+            DESTINATION include)
 endif()
 
 install(TARGETS    bin/flow123d  
