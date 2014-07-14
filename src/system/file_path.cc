@@ -45,47 +45,35 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
 
     // relative output dir is relative to working directory
     // this is possibly independent of position of the main input file
-    if (output[0] == DIR_DELIMITER) {
+	output_dir = "";
+    if ( FilePath::is_absolute_path(output) ) {
     	vector<string> dirs;
     	boost::split(dirs, output,  boost::is_any_of("/"));
-    	output_dir = "";
     	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
     	    if ( !(*it).size() ) continue;
-        	output_dir = output_dir + DIR_DELIMITER + *it;
-            if (!boost::filesystem::is_directory(output_dir)) {
-            	boost::filesystem::create_directory(output_dir);
-            }
+    	    if ( !output_dir.size() ) {
+#ifdef CYGWIN
+    	    	output_dir = (*it);
+#else
+    	    	output_dir = DIR_DELIMITER + *it;
+#endif
+    	    } else {
+            	output_dir = output_dir + DIR_DELIMITER + *it;
+    	    }
+    	    FilePath::create_output_dir();
         }
     } else {
     	vector<string> dirs;
     	string full_output = working_dir + DIR_DELIMITER + output;
     	boost::split(dirs, full_output, boost::is_any_of("/"));
-    	output_dir = "";
     	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
     	    if ( !(*it).size() ) continue;
     	    if ( !output_dir.size() ) output_dir = *it;
     	    else output_dir = output_dir + DIR_DELIMITER + *it;
-            if (!boost::filesystem::is_directory(output_dir)) {
-            	boost::filesystem::create_directory(output_dir);
-            }
+    	    FilePath::create_output_dir();
         }
 
-        boost::filesystem::path working_path = boost::filesystem::path(working_dir);
-        boost::filesystem::path output_path = boost::filesystem::path(output);
-
-        if (working_dir[0] != DIR_DELIMITER)
-        {
-        	boost::filesystem::path curr = boost::filesystem::current_path();
-        	working_path = boost::filesystem::canonical( curr / working_path );
-        }
-
-        boost::filesystem::path full_path = boost::filesystem::canonical( working_path / output_path );
-
-        boost::filesystem::path curr = boost::filesystem::current_path();
-    	output_dir = full_path.string();
-#ifdef BOOST_WINDOWS_API
-        boost::replace_all(output_dir, "\\", "/");
-#endif
+    	FilePath::create_canonical_path(working_dir, output);
     }
 
     // the relative input is relative to the directory of the main input file
@@ -107,4 +95,53 @@ void FilePath::substitute_value() {
             abs_file_path.replace(i, it->first.size(), it->second);
         }
     }
+}
+
+
+bool FilePath::is_absolute_path(const string path) {
+	if (path.size() == 0) xprintf(UsrErr, "Path can't be empty!\n");
+#ifdef CYGWIN
+	if (path.size() == 1) return false;
+	return isalpha(path[0]) && (path[1] == ':');
+#else
+	return path[0] == DIR_DELIMITER;
+#endif
+}
+
+
+const string FilePath::get_absolute_working_dir() {
+    string abs_path = boost::filesystem::current_path().string();
+#ifdef CYGWIN
+    boost::replace_all(abs_path, "\\", "/");
+#endif
+	return abs_path;
+}
+
+
+bool FilePath::create_output_dir() {
+    if (!boost::filesystem::is_directory(output_dir)) {
+    	boost::filesystem::create_directory(output_dir);
+    	return true;
+    }
+	return false;
+}
+
+
+void FilePath::create_canonical_path(const string working_dir, const string output) {
+    boost::filesystem::path working_path = boost::filesystem::path(working_dir);
+    boost::filesystem::path output_path = boost::filesystem::path(output);
+
+    if (working_dir[0] != DIR_DELIMITER)
+    {
+    	boost::filesystem::path curr = boost::filesystem::current_path();
+    	working_path = boost::filesystem::canonical( curr / working_path );
+    }
+
+    boost::filesystem::path full_path = boost::filesystem::canonical( working_path / output_path );
+
+    boost::filesystem::path curr = boost::filesystem::current_path();
+	output_dir = full_path.string();
+#ifdef CYGWIN
+    boost::replace_all(output_dir, "\\", "/");
+#endif
 }

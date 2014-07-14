@@ -29,23 +29,17 @@ TEST(FilePath, output_relative) {
     string str_fp = fp;
 
     // relative output substitution; conversion to string
-    EXPECT_TRUE(str_fp.find("/work_dir/output_root/output.vtk") != std::string::npos);
-    //EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", str_fp);
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/work_dir/output_root/output.vtk", str_fp);
 
     // conversion to string
-    EXPECT_TRUE(string(fp).find("/work_dir/output_root/output.vtk") != std::string::npos);
-    //EXPECT_EQ("/work_dir/xx/../output_root/output.vtk", string(fp));
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/work_dir/output_root/output.vtk", string(fp));
 
 }
 
 TEST(FilePath, output_absolute) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    string abs_path = boost::filesystem::current_path().string();
-#ifdef BOOST_WINDOWS_API
-    abs_path = abs_path.substr(2);
-    boost::replace_all(abs_path, "\\", "/");
-#endif
+    string abs_path = FilePath::get_absolute_working_dir();
 
     FilePath::set_io_dirs("/work_dir/xx","/main_root", "variant_input", abs_path+"/output_root");
 
