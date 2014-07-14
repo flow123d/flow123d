@@ -302,7 +302,7 @@
           basedir: flow123d     # workspace/flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
-#          wipe-workspace: yes
+          wipe-workspace: yes
           branches:
             - master
             - 1.8.0_master
@@ -316,7 +316,8 @@
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
       # escaping quotas and double braces are due to YAML format
-      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+#      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
