@@ -578,6 +578,13 @@ else()
         message(WARNING "Missing any mpiexec.")
       endif()
 endif()
+# verify that mpiexec exists (on CYGWIN we have to consider .exe suffix)
+if( CYGWIN AND NOT EXISTS ${MPIEXEC_PATH})
+    if( EXISTS "${MPIEXEC_PATH}.exe")
+        set(MPIEXEC_PATH "${MPIEXEC_PATH}.exe")
+    endif()
+endif()
+
 configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
 
 
