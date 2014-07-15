@@ -463,15 +463,18 @@ endif()
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
         
-        string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
-        string(REGEX MATCH "[0-9.]+" PYTHON_VERSION_NUM ${PYTHON_VERSION})
-        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHON_VERSION_MAJ ${PYTHON_VERSION_NUM})
-        add_definitions(-DPYTHON_VERSION=${PYTHON_VERSION_MAJ})
-        message(STATUS "Python version: ${PYTHON_VERSION_MAJ}\n")
+        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
+        add_definitions(-DPYTHON_VERSION=${PYTHONLIBS_VERSION_MAJOR})
+        message(STATUS "Python major version: ${PYTHONLIBS_VERSION_MAJOR}\n")
+        message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
+        message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
             add_definitions(-DPYTHON_HOME="..")
+
+            string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
+            string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
             
             # copy python files to build tree 
             # first get prefix (we support just one prefix)
@@ -483,36 +486,33 @@ endif()
                 COMMAND python -c "import sys; print sys.exec_prefix"
                 OUTPUT_VARIABLE PY_EXEC_PREFIX
                 OUTPUT_STRIP_TRAILING_WHITESPACE)        
-            message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
-            message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
             if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
                 message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
             endif()
-            message(STATUS "Python prefix: ${PY_PREFIX} target prefix: ${TARGET_PREFIX}")
+            message(STATUS "Python prefix: ${PY_PREFIX}")
+            message(STATUS "Python target prefix: ${TARGET_PREFIX}")
             
             # copy python library
-            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_VERSION})
+            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
             execute_process(
                 COMMAND mkdir -p ${TARGET_PREFIX}/lib 
                 )             
             # recursive copy, not overwrite existing files
             # we copy all and exclude some paths and files during install    
             execute_process(
-                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
+                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
                 )
             
-            # copy python include
-            set(PYTHON_COPY_INCLUDE_TARGET  include/${PYTHON_VERSION})
-            execute_process(
+            # copy python include            
+            set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
+            execute_process(          
                 COMMAND mkdir -p ${TARGET_PREFIX}/include 
                 )             
             # recursive copy, not overwrite existing files
             # we copy all and exclude some paths and files during install    
             execute_process(
-                COMMAND cp -rn ${PY_PREFIX}/include/${PYTHON_VERSION} ${TARGET_PREFIX}/include 
-                )
-            
-                
+                COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${TARGET_PREFIX}/include 
+                )                           
         endif()
     else()
 	   set(PYTHON_INCLUDE_DIRS "")
