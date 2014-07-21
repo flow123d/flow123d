@@ -22,62 +22,21 @@
 #include "mesh/msh_gmshreader.h"
 
 
-string input = R"INPUT(
-{   
-    scalar_value=[1.1, 2.2, 3.3],
-    vector_fixed_value=[1.2, 2.3, 3.4],
-    vector_value=[4.5, 5.6, 6.7],
-    tensor_fixed_value=[ [1.2, 2.3], [3.4, 4.5]],
-
-    scalar_data=[
-	  { rid=37,
-		init_pressure={
-			TYPE="FieldConstant",
-			value=1.1
-		  }
-	  },
-	  { rid=101,
-		init_pressure={
-			TYPE="FieldConstant",
-			value=2.2
-		  }
-	  },
-	  { rid=102,
-		init_pressure={
-			TYPE="FieldConstant",
-			value=3.3
-		  }
-	  }
-    ],
-    vector_fixed={
-        TYPE="FieldConstant",
-        value=[1.2, 2.3, 3.4]
-    },
-    vector={
-        TYPE="FieldConstant",
-        value=[4.5, 5.6, 6.7]
-    },
-    tensor_fixed={
-        TYPE="FieldConstant",
-        value=[ 1.2, 2.3, 3.4, 4.5 ]
-    }
-}
-)INPUT";
+using namespace std;
 
 
 class FieldSpeed : public testing::Test {
 public:
-	typedef FieldConstant<3, FieldValue<3>::Scalar > ScalarField;
-    typedef FieldConstant<3, FieldValue<3>::VectorFixed > VecFixField;
-    typedef FieldConstant<3, FieldValue<3>::Vector > VecField;
-    typedef FieldConstant<3, FieldValue<2>::TensorFixed > TensorField;
+	typedef typename Space<3>::Point Point;
+    typedef double(FieldSpeed::*FceType)(Point&, ElementAccessor<3>&);
 
-	//Field<3, ScalarField > scalar_field;
+    double fce1(Point &p, ElementAccessor<3> &elm) {
+    	return data1_;
+    }
 
-    /*class EqData : public FieldSet {
-        EqData() : FieldSet()
-        {}
-    };*/
+    double fce2(Point &p, ElementAccessor<3> &elm) {
+    	return data2_;
+    }
 
 	void SetUp() {
 	    Profiler::initialize();
@@ -88,65 +47,79 @@ public:
         mesh_ = new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh_->read_gmsh_from_stream(in);
+
+    	fce_ = new FceType[mesh_->region_db().size()];
+    	data_ = new double[mesh_->region_db().size()];
+
+        data1_ = 1.1;
+    	data2_ = 2.2;
+
+    	data_[0] = data1_;
+    	data_[1] = data2_;
+    	data_[2] = data2_;
+    	data_[3] = data1_;
+    	data_[4] = data2_;
+    	data_[5] = data1_;
+    	data_[6] = data1_;
+    	data_[7] = data2_;
+
+    	fce_[0] = (&FieldSpeed::fce1);
+        fce_[1] = (&FieldSpeed::fce2);
+        fce_[2] = (&FieldSpeed::fce2);
+        fce_[3] = (&FieldSpeed::fce1);
+        fce_[4] = (&FieldSpeed::fce2);
+        fce_[5] = (&FieldSpeed::fce1);
+        fce_[6] = (&FieldSpeed::fce1);
+        fce_[7] = (&FieldSpeed::fce2);
 	}
 
 	void TearDown() {
+		Profiler::uninitialize();
+
 		delete mesh_;
 	}
 
-	template<class Type>
-	void read_input_field(string type_name) {
-        Input::Type::Record region_rec("Region", "Definition of region of elements.");
-        region_rec.declare_key("rid", Input::Type::Integer(), Input::Type::Default::obligatory(),"" );
-        region_rec.declare_key("init_pressure", Type::input_type, Input::Type::Default::obligatory(),"" );
-        region_rec.finish();
 
-        Input::Type::Record rec_type("Test","");
-        rec_type.declare_key(type_name, IT::Array(region_rec), Input::Type::Default::obligatory(),"" );
-        rec_type.finish();
-
-        Input::JSONToStorage reader( input, rec_type );
-        rec_ = reader.get_root_interface<Input::Record>();
-	}
-
-	Input::Record rec_;
+    FceType *fce_;
+    double *data_;
+    double data1_;
+    double data2_;
 	Mesh *mesh_;
-    Space<3>::Point point;
+	Point point;
 
-    FieldSet data_;
-
-	/*double (Point&, ElAccessor&) *fce_;
-
-	double value(Point &p, ElAccessor &elm) {
-        return fce_[elm.region_idx()].fce_(p,elm);
-    }*/
+    inline double value(Point &p, ElementAccessor<3> &elm) {
+    	return (this->*fce_[elm.region_idx().idx()])(p,elm);
+    }
 
 };
 
 
 TEST_F(FieldSpeed, scalar) {
-	this->read_input_field<ScalarField>("scalar_data");
+	double sum_func=0.0, sum_array=0.0;
 
-	Input::Array regions = rec_.val<Input::Array>("scalar_data");
+	START_TIMER("Speed test");
 
-    data_.set_mesh(*mesh_);
-    data_.set_input_list( regions );
+	START_TIMER("function");
+	for (int i=0; i<10000; i++)
+		FOR_ELEMENTS(mesh_, ele) {
+			ElementAccessor<3> elm = (*ele).element_accessor();
+			sum_func += this->value( point, elm);
+		}
+	END_TIMER("function");
 
-    /*data_+=scalar_field
-                .name("scalar_field")
-                .description("Scalar field.")
-                .input_default("0.0");*/
+	START_TIMER("array");
+	for (int i=0; i<10000; i++)
+		FOR_ELEMENTS(mesh_, ele) {
+			ElementAccessor<3> elm = (*ele).element_accessor();
+			sum_array += this->data_[elm.region_idx().idx()];
+		}
+	END_TIMER("array");
 
-    FOR_ELEMENTS(mesh_, elm) {
-    	ElementAccessor<3> ele = (*elm).element_accessor();
-        //data_[ele.region_idx().idx()]->value( point, ElementAccessor<3>(mesh_, ele.index(), ele.is_boundary() ));
-    }
+	END_TIMER("Speed test");
 
-    /*ScalarField field_ele_pressure;
-	vector<double> ele_pressure;
-	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=make_shared< ScalarField >(ele_pressure, 1);
-	field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);*/
+	EXPECT_DOUBLE_EQ(sum_func, sum_array);
+
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 }
 
