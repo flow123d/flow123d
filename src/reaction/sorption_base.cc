@@ -130,6 +130,7 @@ SorptionBase::~SorptionBase(void)
   if(reaction_solid != nullptr) delete reaction_solid;
   if (data_ != nullptr) delete data_;
 
+  VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_solid);
   VecDestroy(vconc_solid_out);
 
@@ -151,11 +152,11 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_liquid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction_liquid =  new Linear_reaction(*mesh_, *reactions_it);
+    if (reactions_it->type() == LinearReaction::input_type ) {
+        reaction_liquid =  new LinearReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction_liquid = new Pade_approximant(*mesh_, *reactions_it);
+    if (reactions_it->type() == PadeApproximant::input_type) {
+        reaction_liquid = new PadeApproximant(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
@@ -178,11 +179,11 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_solid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == Linear_reaction::input_type ) {
-        reaction_solid =  new Linear_reaction(*mesh_, *reactions_it);
+    if (reactions_it->type() == LinearReaction::input_type ) {
+        reaction_solid =  new LinearReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == Pade_approximant::input_type) {
-        reaction_solid = new Pade_approximant(*mesh_, *reactions_it);
+    if (reactions_it->type() == PadeApproximant::input_type) {
+        reaction_solid = new PadeApproximant(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
@@ -247,12 +248,14 @@ void SorptionBase::initialize()
     reaction_liquid->names(names_)
       .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
       .set_time_governor(*time_);
+    reaction_liquid->initialize();
   }
   if(reaction_solid != nullptr)
   {
     reaction_solid->names(names_)
       .concentration_matrix(conc_solid, distribution_, el_4_loc_, row_4_el_)
       .set_time_governor(*time_);
+    reaction_solid->initialize();
   }
 }
 
@@ -500,40 +503,40 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
 void SorptionBase::allocate_output_mpi(void )
 {
-    int sbi, n_subst;
+    int sbi, n_subst, ierr;
     n_subst = names_.size();
 
     vconc_solid = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vconc_solid_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
                 &vconc_solid[sbi]);
         VecZeroEntries(vconc_solid[sbi]);
 
-        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
+        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_solid_out[sbi], &vconc_solid_out[sbi]);
         VecZeroEntries(vconc_solid_out[sbi]);
     }
+    
+    // creating output vector scatter
+    IS is;
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
+    VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
+    ISDestroy(&(is));
 }
 
 
 void SorptionBase::output_vector_gather() 
 {
-    unsigned int sbi/*, rank, np*/;
-    IS is;
-    VecScatter vconc_out_scatter;
+    unsigned int sbi;
     //PetscViewer inviewer;
 
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_solid[0], is, vconc_solid_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], vconc_solid_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
 }
 
 

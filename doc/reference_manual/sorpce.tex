@@ -73,17 +73,19 @@ where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration 
 \hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
 $\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from transport equation \eqref{e:ADE}.
 
-The analytical solution of the system of differential equations at time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
+The analytic solution of the system of differential equations at time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
 \begin{align}
-     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0), \\
+     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0), 
+     \label{eqn:dual_porosity_anal1}\\
      c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0),
+     \label{eqn:dual_porosity_anal2}
 \end{align}
 where $c_a$ is the weighted average
 \[
   c_a = \frac{\vartheta_m c_m + \vartheta_i c_i}{\vartheta_m + \vartheta_i}.
 \]
 
-If the time step is large we use the analytical solution to compute new values of concentrations. 
+If the time step is large we use the analytic solution to compute new values of concentrations. 
 Otherwise we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
 by first order forward differences and we get the classical Euler scheme
 \begin{align}
@@ -91,6 +93,24 @@ by first order forward differences and we get the classical Euler scheme
   c_i(t^+) = \frac{D_{dp} \Delta t}{\vartheta_i}(c_m(t) - c_i(t)) + c_i(t), \\
 \end{align}
 where $\Delta t = t^+ - t$ is the time step. 
+
+The condition on the size of the time step is derived from the Taylor exapansion of 
+\eqref{eqn:dual_porosity_anal1} or \eqref{eqn:dual_porosity_anal2}, respectively. We neglect the higher order 
+terms and we want the second order term smaller than given scheme tolerance 
+\hyperA{DualPorosity::scheme-tolerance}{$tol$} relatively to $c_a$
+\begin{equation}
+  (c_m(0) - c_a(0))
+  \frac{ D_{dp}^2 (\Delta t)^2 \left(\frac{\vartheta_m + \vartheta_i}{\vartheta_m \vartheta_i}\right)^2}{2}
+  \frac{1}{c_a} \leq tol. \\
+\end{equation}
+Then we transform the above inequation into the following condition which is tested in the program
+\begin{equation} \label{eqn:euler_scheme_condition}
+  \max(|c_m(0) - c_a(0)|, |c_i(0) - c_a(0)|) \leq 
+  2 c_a \left(\frac{\vartheta_m \vartheta_i}{D_{dp} \Delta t (\vartheta_m + \vartheta_i)}\right)^2 tol. \\
+\end{equation}
+If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied then the analytic 
+solution is used.
+ 
 
 \subsection{Equilibrial adsorption}
 \label{sec:sorp_math}
