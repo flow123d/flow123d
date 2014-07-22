@@ -105,57 +105,12 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)
 {}
 
-/*
-void ConcentrationTransportModel::init_data(unsigned int n_subst_)
-{
-	data().init_conc.n_comp(n_subst_);
-	data().bc_conc.n_comp(n_subst_);
-    data().sources_density.n_comp(n_subst_);
-    data().sources_sigma.n_comp(n_subst_);
-    data().sources_conc.n_comp(n_subst_);
-	data().diff_m.n_comp(n_subst_);
-	data().disp_l.n_comp(n_subst_);
-	data().disp_t.n_comp(n_subst_);
-}
-*/
-
-/*
-void ConcentrationTransportModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar >& cross_section)
-{
-  data().cross_section.copy_from(cross_section);
-}
-*/
 
 void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	in_rec.val<Input::Array>("substances").copy_to(names);
 }
 
-/*
-bool ConcentrationTransportModel::mass_matrix_changed()
-{
-	return (data().cross_section.changed() || data().porosity.changed());
-}
-
-
-bool ConcentrationTransportModel::stiffness_matrix_changed()
-{
-	return (flux_changed ||
-
-			data().porosity.changed() ||
-			data().cross_section.changed());
-}
-
-
-bool ConcentrationTransportModel::rhs_changed()
-{
-	return (flux_changed ||
-			data().bc_conc.changed() ||
-			data().sources_conc.changed() ||
-			data().sources_density.changed() ||
-			data().sources_sigma.changed());
-}
-*/
 
 void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 		const ElementAccessor<3> &ele_acc,

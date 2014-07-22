@@ -21,7 +21,7 @@ function get_cmake_var {
 get_cmake_var GIT_VERSION_FULL
 get_cmake_var PLATFORM_NAME
 
-PUBLISH_DIR="${BUILD_TREE}/${GIT_VERSION_FULL}"
+PUBLISH_DIR="${BUILD_TREE}/publish_dir/${GIT_VERSION_FULL}"
 FLOW_BIN="${BUILD_TREE}/bin/flow123d"
 
 function safe_copy {
