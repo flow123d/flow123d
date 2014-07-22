@@ -28,13 +28,14 @@ using namespace std;
 class FieldSpeed : public testing::Test {
 public:
 	typedef typename Space<3>::Point Point;
-    typedef double(FieldSpeed::*FceType)(Point&, ElementAccessor<3>&);
+	typedef FieldValue<3>::Scalar::return_type ReturnType;
+    typedef ReturnType(FieldSpeed::*FceType)(Point&, ElementAccessor<3>&);
 
-    double fce1(Point &p, ElementAccessor<3> &elm) {
+    ReturnType fce1(Point &p, ElementAccessor<3> &elm) {
     	return data1_;
     }
 
-    double fce2(Point &p, ElementAccessor<3> &elm) {
+    ReturnType fce2(Point &p, ElementAccessor<3> &elm) {
     	return data2_;
     }
 
@@ -48,8 +49,10 @@ public:
         ifstream in(string( mesh_file ).c_str());
         mesh_->read_gmsh_from_stream(in);
 
+        point = Point("1 2 3");
+
     	fce_ = new FceType[mesh_->region_db().size()];
-    	data_ = new double[mesh_->region_db().size()];
+    	data_ = new ReturnType[mesh_->region_db().size()];
 
         data1_ = 1.1;
     	data2_ = 2.2;
@@ -80,14 +83,16 @@ public:
 	}
 
 
+	static const int loop_call_count = 100000;
     FceType *fce_;
-    double *data_;
-    double data1_;
-    double data2_;
+    ReturnType *data_;
+    ReturnType data1_;
+    ReturnType data2_;
+    FieldAlgorithmBase<3, FieldValue<3>::Scalar > *field_;
 	Mesh *mesh_;
 	Point point;
 
-    inline double value(Point &p, ElementAccessor<3> &elm) {
+    inline ReturnType value(Point &p, ElementAccessor<3> &elm) {
     	return (this->*fce_[elm.region_idx().idx()])(p,elm);
     }
 
@@ -95,12 +100,12 @@ public:
 
 
 TEST_F(FieldSpeed, scalar) {
-	double sum_func=0.0, sum_array=0.0;
+	double sum_func=0.0, sum_array=0.0, sum_const=0.0;
 
 	START_TIMER("Speed test");
 
 	START_TIMER("function");
-	for (int i=0; i<10000; i++)
+	for (int i=0; i<loop_call_count; i++)
 		FOR_ELEMENTS(mesh_, ele) {
 			ElementAccessor<3> elm = (*ele).element_accessor();
 			sum_func += this->value( point, elm);
@@ -108,16 +113,27 @@ TEST_F(FieldSpeed, scalar) {
 	END_TIMER("function");
 
 	START_TIMER("array");
-	for (int i=0; i<10000; i++)
+	for (int i=0; i<loop_call_count; i++)
 		FOR_ELEMENTS(mesh_, ele) {
 			ElementAccessor<3> elm = (*ele).element_accessor();
 			sum_array += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("array");
 
+	START_TIMER("field_const");
+	field_ = new FieldConstant<3, FieldValue<3>::Scalar>();
+	((FieldConstant<3, FieldValue<3>::Scalar> *)field_)->set_value(1.5);
+	for (int i=0; i<loop_call_count; i++)
+		FOR_ELEMENTS(mesh_, ele) {
+			ElementAccessor<3> elm = (*ele).element_accessor();
+			sum_const += field_->value( point, elm);
+		}
+	END_TIMER("field_const");
+
 	END_TIMER("Speed test");
 
-	EXPECT_DOUBLE_EQ(sum_func, sum_array);
+	EXPECT_DOUBLE_EQ( sum_func, sum_array );
+	EXPECT_DOUBLE_EQ( sum_const, (1.5 * mesh_->n_elements() * loop_call_count) );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
