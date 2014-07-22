@@ -285,18 +285,16 @@ void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_
 }
 //*/
 
-int PadeApproximant::factorial(int k)
+unsigned int PadeApproximant::factorial(unsigned int k)
 {
-    int fact = 1;
-
-    if(k < 0)
-        xprintf(UsrErr, "Cannot compute factorial of negative number '%d'.\n",k);
+    ASSERT(k >= 0, "Cannot compute factorial of negative number.");
+    
+    unsigned int fact = 1;
 
     while(k > 1)
     {
             fact *= k;
             k--;
     }
-
     return fact;
 }

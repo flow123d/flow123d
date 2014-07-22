@@ -56,7 +56,7 @@ protected:
     //void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
     
     /// Computes factorial of @p k.
-    int factorial(int k);
+    unsigned int factorial(unsigned int k);
             
 	/**
 	*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
