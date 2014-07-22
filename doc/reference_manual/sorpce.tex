@@ -43,7 +43,9 @@ Up to now we can have \emph{dual porosity}, \emph{adsorption} (these two are mor
   \label{fig:reaction_term}
 \end{figure}
 
-The \emph{reaction} model acts only on the specified substances. It does not have its own output.
+The \emph{reaction} model acts only on the specified substances and computes exchange of concentration 
+among them. It does not have its own output because it only changes the concentration of substances 
+in the specified zone where the reaction takes place. See \ref{sec:linear_reactions} for thorough description.
 
 The \emph{adsorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
 followed by another \emph{reaction} that can run in both phases. The concentration in solid is an additional output 

@@ -226,7 +226,11 @@ void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_
 
 	for(int i = den_pol_deg; i >= 0; i--)
 		{
+            //Performs Matrix-Matrix Multiplication C=A*B.
+            //PetscErrorCode  MatMatMult(Mat A,Mat B,MatReuse scall,PetscReal fill,Mat *C)
 			MatMatMult(*Polynomial, *Reaction_matrix, MAT_INITIAL_MATRIX, PETSC_DEFAULT, Polynomial);
+            //Computes Y = a*X + Y.
+            //PetscErrorCode  MatAXPY(Mat Y,PetscScalar a,Mat X,MatStructure str)
 			MatAXPY(*Polynomial, coef[i], Identity, DIFFERENT_NONZERO_PATTERN);
 		}
 
