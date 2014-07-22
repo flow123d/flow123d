@@ -131,7 +131,7 @@ protected:
   ///Reads and sets initial condition for concentration in solid.
   void set_initial_condition();
     
-    /// Allocates petsc vectors and prepares them for output.
+    /// Allocates petsc vectors, prepares them for output and creates vector scatter.
   void allocate_output_mpi(void);
   
   /// Gathers all the parallel vectors to enable them to be output.
@@ -208,6 +208,7 @@ protected:
                   
   ///@name members used in output routines
   //@{
+  VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
   Vec *vconc_solid_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
   double **conc_solid_out; ///< sorbed concentration array output (gathered - sequential)  
