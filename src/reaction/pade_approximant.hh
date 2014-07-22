@@ -9,7 +9,8 @@
 #define PADE_APPROXIMANT_H_
 
 #include <input/input_type.hh>
-
+#include "armadillo"
+using namespace arma;
 // #include "petscvec.h"
 // #include "petscmat.h"
 // #include "petscksp.h"
@@ -44,7 +45,7 @@ protected:
     *   Evaluates Pade approximant from Reaction_matrix.
     */
     void modify_reaction_matrix(void) override;
-    void modify_reaction_matrix2(void);
+    //void modify_reaction_matrix2(void);
     
     // Evaluate nominator and denominator coeficients of PadeApproximant for exponencial function.
     void compute_exp_coefs(unsigned int nominator_degree, unsigned int denominator_degree,
@@ -55,8 +56,14 @@ protected:
     */
     //void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
     
+    /** Evaluates matrix polynomial by Horner scheme.
+     */
+    void evaluate_matrix_polynomial(mat &polynomial_matrix, 
+                                    const mat &reaction_matrix, 
+                                    const std::vector<double> &coefs);
+    
     /// Computes factorial of @p k.
-    unsigned int factorial(unsigned int k);
+    unsigned int factorial(int k);
             
 	/**
 	*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.

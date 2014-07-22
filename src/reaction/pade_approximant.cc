@@ -62,9 +62,26 @@ void PadeApproximant::zero_time_step()
     LinearReaction::zero_time_step();
 }
 
-void PadeApproximant::modify_reaction_matrix2(void )
+void PadeApproximant::modify_reaction_matrix(void )
 {
+    // create decay matrix
+    mat r_reaction_matrix_ = zeros(n_substances_, n_substances_);
+    unsigned int reactant_index, product_index; //global indices of the substances
+    double exponent;    //temporary variable
+    for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
+        reactant_index = substance_ids_[i_decay][0];
+        exponent = log(2) * time_->dt() / half_lives_[i_decay];
+        r_reaction_matrix_(reactant_index, reactant_index) = -exponent;
+        
+        for (unsigned int i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product){
+            product_index = substance_ids_[i_decay][i_product];
+            r_reaction_matrix_(reactant_index, product_index) = exponent * bifurcation_[i_decay][i_product-1];
+        }
+    }
+    //DBGMSG("reactions_matrix_created\n");
+    //r_reaction_matrix_.print();
     
+    //compute Pade Approximant
     mat nominator_matrix(n_substances_, n_substances_),
         denominator_matrix(n_substances_, n_substances_),
         pade_approximant_matrix(n_substances_, n_substances_);
@@ -73,11 +90,28 @@ void PadeApproximant::modify_reaction_matrix2(void )
     denominator_matrix.fill(0);
     pade_approximant_matrix.fill(0);
 
-    std::vector<double> nominator_coefs(nom_pol_deg),
-                        denominator_coefs(den_pol_deg);
+    std::vector<double> nominator_coefs(nom_pol_deg+1),
+                        denominator_coefs(den_pol_deg+1);
     
-    compute_exp_coefs(nom_pol_deg, den_pol_deg, nominator_coefs, denominator_coefs);                    
-           
+    // compute Pade approximant polynomials for the function e^x
+    compute_exp_coefs(nom_pol_deg, den_pol_deg, nominator_coefs, denominator_coefs);  
+    // evaluation of polynomials of Pade approximant where x = -kt = R
+    evaluate_matrix_polynomial(nominator_matrix, r_reaction_matrix_, nominator_coefs);
+    evaluate_matrix_polynomial(denominator_matrix, r_reaction_matrix_, denominator_coefs);
+    // compute P(R(t)) / Q(R(t))
+    pade_approximant_matrix = nominator_matrix * inv(denominator_matrix);
+    //pade_approximant_matrix.print();
+    
+    // write matrix to reaction matrix
+    unsigned int rows, cols;
+    for(rows = 0; rows < n_substances_; rows++)
+    {
+        for(cols = 0; cols < n_substances_ ; cols++)
+        {
+            reaction_matrix_[rows][cols] = pade_approximant_matrix(cols,rows);
+        }
+    }
+    //print_reaction_matrix();
 }
 
 void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree, 
@@ -85,28 +119,46 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
                                         std::vector< double >& nominator_coefs, 
                                         std::vector< double >& denominator_coefs)
 {
-    //precompute some of the factorials
-    unsigned int nom_fact = factorial(nom_pol_deg),
-                 den_fact = factorial(den_pol_deg),
-                 nom_den_fact = factorial(nom_pol_deg + den_pol_deg);
+    //compute some of the factorials forward
+    unsigned int nom_fact = factorial(nominator_degree),
+                 den_fact = factorial(denominator_degree),
+                 nom_den_fact = factorial(nominator_degree + denominator_degree);
     int sign;   // variable for denominator sign alternation
     
-    for(unsigned int j = nom_pol_deg; j >= 0; j--)
+    for(int j = nominator_degree; j >= 0; j--)
     {
         nominator_coefs[j] = (double)(factorial(nom_pol_deg + den_pol_deg - j) * nom_fact) 
                              / (nom_den_fact * factorial(j) * factorial(nom_pol_deg - j));
+        //DBGMSG("p(%d)=%f\n",j,nominator_coefs[j]);
     }
-    for(unsigned int i = den_pol_deg; i >= 0; i--)
+
+    for(int i = denominator_degree; i >= 0; i--)
     {
         if(i % 2 == 0) sign = 1; else sign = -1;
         denominator_coefs[i] = sign * (double)(factorial(nom_pol_deg + den_pol_deg - i) * den_fact)
                                / (nom_den_fact * factorial(i) * factorial(den_pol_deg - i));
+        //DBGMSG("q(%d)=%f\n",i,denominator_coefs[i]);
     } 
 }
 
+void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix, 
+                                                 const mat& reaction_matrix, 
+                                                 const std::vector< double >& coefs)
+{
+    //DBGMSG("evaluate_matrix_polynomial\n");
+    mat identity = eye(n_substances_, n_substances_);
+
+    ///Horner scheme for evaluating polynomial a0 + R(t)[a1 + R(t)[a2 + R(t)[a3 +...]]]
+    for(int i = coefs.size()-1; i >= 0; i--)
+    {
+        polynomial_matrix = coefs[i] * identity + (polynomial_matrix * reaction_matrix);
+    }
+    //polynomial_matrix.print();
+}
+
+/*
 void PadeApproximant::modify_reaction_matrix(void)
 {   
-    /*
 	Mat Denominator;
 	Mat Nominator;
 	Mat Pade_approximant;
@@ -252,9 +304,8 @@ void PadeApproximant::modify_reaction_matrix(void)
 	MatDestroy(&Denominator);
 	MatDestroy(&Nominator);
 	MatDestroy(&Pade_approximant);
-    //*/
 }
-
+    //*/
  /*
 void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef)
 {
@@ -285,12 +336,11 @@ void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_
 }
 //*/
 
-unsigned int PadeApproximant::factorial(unsigned int k)
+unsigned int PadeApproximant::factorial(int k)
 {
     ASSERT(k >= 0, "Cannot compute factorial of negative number.");
     
     unsigned int fact = 1;
-
     while(k > 1)
     {
             fact *= k;
