@@ -10,10 +10,9 @@
 
 #include <input/input_type.hh>
 
-#include "petscvec.h"
-#include "petscmat.h"
-#include "petscksp.h"
-
+// #include "petscvec.h"
+// #include "petscmat.h"
+// #include "petscksp.h"
 
 class Mesh;
 class Distribution;
@@ -45,10 +44,16 @@ protected:
     *   Evaluates Pade approximant from Reaction_matrix.
     */
     void modify_reaction_matrix(void) override;
+    void modify_reaction_matrix2(void);
+    
+    // Evaluate nominator and denominator coeficients of PadeApproximant for exponencial function.
+    void compute_exp_coefs(unsigned int nominator_degree, unsigned int denominator_degree,
+                           std::vector<double> &nominator_coefs, std::vector<double> &denominator_coefs);
+    
     /**
     * It enables to evaluate matrix nominator and denominator present in Pade approximant.
     */
-    void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
+    //void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
     
     /// Computes factorial of @p k.
     int factorial(int k);
@@ -65,7 +70,7 @@ protected:
 	/**
 	* PETSC format of a matrix describing linear chemical reaction.
 	*/
-	Mat Reaction_matrix;
+// 	//Mat Reaction_matrix;
 };
 
 #endif // PADE_APPROXIMANT_H_

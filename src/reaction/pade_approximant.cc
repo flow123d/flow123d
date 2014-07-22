@@ -3,9 +3,11 @@
 #include "reaction/pade_approximant.hh"
 #include "system/global_defs.h"
 
-#include "la/distribution.hh"
-#include "mesh/mesh.h"
+// #include "la/distribution.hh"
+// #include "mesh/mesh.h"
+#include "armadillo"
 
+using namespace arma;
 using namespace std;
 using namespace Input::Type;
 
@@ -60,9 +62,51 @@ void PadeApproximant::zero_time_step()
     LinearReaction::zero_time_step();
 }
 
+void PadeApproximant::modify_reaction_matrix2(void )
+{
+    
+    mat nominator_matrix(n_substances_, n_substances_),
+        denominator_matrix(n_substances_, n_substances_),
+        pade_approximant_matrix(n_substances_, n_substances_);
+        
+    nominator_matrix.fill(0);
+    denominator_matrix.fill(0);
+    pade_approximant_matrix.fill(0);
+
+    std::vector<double> nominator_coefs(nom_pol_deg),
+                        denominator_coefs(den_pol_deg);
+    
+    compute_exp_coefs(nom_pol_deg, den_pol_deg, nominator_coefs, denominator_coefs);                    
+           
+}
+
+void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree, 
+                                        unsigned int denominator_degree, 
+                                        std::vector< double >& nominator_coefs, 
+                                        std::vector< double >& denominator_coefs)
+{
+    //precompute some of the factorials
+    unsigned int nom_fact = factorial(nom_pol_deg),
+                 den_fact = factorial(den_pol_deg),
+                 nom_den_fact = factorial(nom_pol_deg + den_pol_deg);
+    int sign;   // variable for denominator sign alternation
+    
+    for(unsigned int j = nom_pol_deg; j >= 0; j--)
+    {
+        nominator_coefs[j] = (double)(factorial(nom_pol_deg + den_pol_deg - j) * nom_fact) 
+                             / (nom_den_fact * factorial(j) * factorial(nom_pol_deg - j));
+    }
+    for(unsigned int i = den_pol_deg; i >= 0; i--)
+    {
+        if(i % 2 == 0) sign = 1; else sign = -1;
+        denominator_coefs[i] = sign * (double)(factorial(nom_pol_deg + den_pol_deg - i) * den_fact)
+                               / (nom_den_fact * factorial(i) * factorial(den_pol_deg - i));
+    } 
+}
 
 void PadeApproximant::modify_reaction_matrix(void)
-{
+{   
+    /*
 	Mat Denominator;
 	Mat Nominator;
 	Mat Pade_approximant;
@@ -208,10 +252,13 @@ void PadeApproximant::modify_reaction_matrix(void)
 	MatDestroy(&Denominator);
 	MatDestroy(&Nominator);
 	MatDestroy(&Pade_approximant);
+    //*/
 }
 
+ /*
 void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef)
 {
+   
 	Mat Identity;
 
 	//create Identity matrix
@@ -236,7 +283,7 @@ void PadeApproximant::evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_
 
 	MatDestroy(&Identity);
 }
-
+//*/
 
 int PadeApproximant::factorial(int k)
 {
