@@ -10,53 +10,52 @@
 
 #include <input/input_type.hh>
 #include "armadillo"
+
 using namespace arma;
-// #include "petscvec.h"
-// #include "petscmat.h"
-// #include "petscksp.h"
 
 class Mesh;
-class Distribution;
 class LinearReaction;
 
 class PadeApproximant: public LinearReaction
 {
 public:
-	/*
-	* Static variable for new input data types input
-	*/
-	static Input::Type::Record input_type;
-	/*
- 	* Static variable gets information about particular decay step
-	*/
-	static Input::Type::Record input_type_one_decay_substep;
+    /**
+     * Input record for class PadeApproximant.
+     */
+    static Input::Type::Record input_type;
+    /**
+     * Input record which defines particular decay step.
+     */
+    static Input::Type::Record input_type_one_decay_substep;
    
     /// Constructor.
-	PadeApproximant(Mesh &mesh, Input::Record in_rec);
+    PadeApproximant(Mesh &mesh, Input::Record in_rec);
 
-	/// Destructor.
-	~PadeApproximant(void);
+    /// Destructor.
+    ~PadeApproximant(void);
 
     void initialize() override;
-	void zero_time_step() override;
+    void zero_time_step() override;
 
 protected:
     /**
     *   Evaluates Pade approximant from Reaction_matrix.
     */
     void modify_reaction_matrix(void) override;
-    //void modify_reaction_matrix2(void);
     
-    // Evaluate nominator and denominator coeficients of PadeApproximant for exponencial function.
+    /// Evaluates nominator and denominator coeficients of PadeApproximant for exponencial function.
+    /** @param nominator_degree is the degree of polynomial in the nominator
+     * @param denominator_degree is the degree of polynomial in the denominator
+     * @param nominator_coefs is the vector of coeficients of the polynomial in the nominator
+     * @param denominator_coefs is the vector of coeficients of the polynomial in the denominator
+     */
     void compute_exp_coefs(unsigned int nominator_degree, unsigned int denominator_degree,
                            std::vector<double> &nominator_coefs, std::vector<double> &denominator_coefs);
     
-    /**
-    * It enables to evaluate matrix nominator and denominator present in Pade approximant.
-    */
-    //void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
-    
-    /** Evaluates matrix polynomial by Horner scheme.
+    /// Evaluates the matrix polynomial by Horner scheme.
+    /** @param polynomial_matrix is the output matrix
+     * @param reaction_matrix is the reaction matrix (with elements -kt)
+     * @param coefs is the vector of coeficients of the polynomial
      */
     void evaluate_matrix_polynomial(mat &polynomial_matrix, 
                                     const mat &reaction_matrix, 
@@ -65,19 +64,8 @@ protected:
     /// Computes factorial of @p k.
     unsigned int factorial(int k);
             
-	/**
-	*	Integer which informs about the order of a polynomial term in nominator of Pade approximant rational term.
-	*/
-	int nom_pol_deg;
-	/**
-	*	Integer which informs about the order of a polynomial term in denominator of Pade approximant rational term.
-	*/
-	int den_pol_deg;
-
-	/**
-	* PETSC format of a matrix describing linear chemical reaction.
-	*/
-// 	//Mat Reaction_matrix;
+    int nominator_degree_;      ///< Degree of the polynomial in the nominator.
+    int denominator_degree_;    ///< Degree of the polynomial in the denominator.
 };
 
 #endif // PADE_APPROXIMANT_H_
