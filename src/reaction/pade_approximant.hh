@@ -62,7 +62,7 @@ protected:
                                     const std::vector<double> &coefs);
     
     /// Computes factorial of @p k.
-    unsigned int factorial(int k);
+    //unsigned int factorial(int k);
             
     int nominator_degree_;      ///< Degree of the polynomial in the nominator.
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.

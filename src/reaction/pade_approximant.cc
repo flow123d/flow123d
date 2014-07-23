@@ -118,24 +118,28 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
                                         std::vector< double >& nominator_coefs, 
                                         std::vector< double >& denominator_coefs)
 {
-    //compute some of the factorials forward
-    unsigned int nom_fact = factorial(nominator_degree),
-                 den_fact = factorial(denominator_degree),
-                 nom_den_fact = factorial(nominator_degree + denominator_degree);
+    // compute factorials in forward
+    std::vector<unsigned int> factorials(nominator_degree+denominator_degree+1);
+    factorials[0] = 1;
+    for(unsigned int i = 1; i < factorials.size(); i++)
+        factorials[i] = factorials[i-1]*i;
+    
     int sign;   // variable for denominator sign alternation
     
     for(int j = nominator_degree; j >= 0; j--)
     {
-        nominator_coefs[j] = (double)(factorial(nominator_degree + denominator_degree - j) * nom_fact) 
-                             / (nom_den_fact * factorial(j) * factorial(nominator_degree - j));
+        nominator_coefs[j] = 
+            (double)(factorials[nominator_degree + denominator_degree - j] * factorials[nominator_degree]) 
+            / (factorials[nominator_degree + denominator_degree] * factorials[j] * factorials[nominator_degree - j]);
         //DBGMSG("p(%d)=%f\n",j,nominator_coefs[j]);
     }
 
     for(int i = denominator_degree; i >= 0; i--)
     {
         if(i % 2 == 0) sign = 1; else sign = -1;
-        denominator_coefs[i] = sign * (double)(factorial(nominator_degree + denominator_degree - i) * den_fact)
-                               / (nom_den_fact * factorial(i) * factorial(denominator_degree - i));
+        denominator_coefs[i] = sign * 
+            (double)(factorials[nominator_degree + denominator_degree - i] * factorials[denominator_degree])
+            / (factorials[nominator_degree + denominator_degree] * factorials[i] * factorials[denominator_degree - i]);
         //DBGMSG("q(%d)=%f\n",i,denominator_coefs[i]);
     } 
 }
@@ -155,15 +159,15 @@ void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix,
     //polynomial_matrix.print();
 }
 
-unsigned int PadeApproximant::factorial(int k)
-{
-    ASSERT(k >= 0, "Cannot compute factorial of negative number.");
-    
-    unsigned int fact = 1;
-    while(k > 1)
-    {
-            fact *= k;
-            k--;
-    }
-    return fact;
-}
+// unsigned int PadeApproximant::factorial(int k)
+// {
+//     ASSERT(k >= 0, "Cannot compute factorial of negative number.");
+//     
+//     unsigned int fact = 1;
+//     while(k > 1)
+//     {
+//             fact *= k;
+//             k--;
+//     }
+//     return fact;
+// }
