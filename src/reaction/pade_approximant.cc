@@ -74,7 +74,7 @@ void PadeApproximant::modify_reaction_matrix(void )
         
         for (unsigned int i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product){
             product_index = substance_ids_[i_decay][i_product];
-            r_reaction_matrix_(reactant_index, product_index) = exponent * bifurcation_[i_decay][i_product-1];
+            r_reaction_matrix_(product_index, reactant_index) = exponent * bifurcation_[i_decay][i_product-1];
         }
     }
     //DBGMSG("reactions_matrix_created\n");
@@ -107,7 +107,7 @@ void PadeApproximant::modify_reaction_matrix(void )
     {
         for(cols = 0; cols < n_substances_ ; cols++)
         {
-            reaction_matrix_[rows][cols] = pade_approximant_matrix(cols,rows);
+            reaction_matrix_[rows][cols] = pade_approximant_matrix(rows,cols);
         }
     }
     //print_reaction_matrix();
@@ -135,7 +135,7 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
     {
         if(i % 2 == 0) sign = 1; else sign = -1;
         denominator_coefs[i] = sign * (double)(factorial(nominator_degree + denominator_degree - i) * den_fact)
-                               / (nom_den_fact * factorial(i) * factorial(denominator_degree_ - i));
+                               / (nom_den_fact * factorial(i) * factorial(denominator_degree - i));
         //DBGMSG("q(%d)=%f\n",i,denominator_coefs[i]);
     } 
 }
