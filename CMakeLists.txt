@@ -464,14 +464,18 @@ endif()
         add_definitions(-DHAVE_PYTHON)
         
         string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
-        add_definitions(-DPYTHON_VERSION=${PYTHONLIBS_VERSION_MAJOR})
+        string(REGEX REPLACE "[0-9]+.([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_STRING})
+        add_definitions(-DPYTHONLIBS_VERSION_MAJOR=${PYTHONLIBS_VERSION_MAJOR})
+        add_definitions(-DPYTHONLIBS_VERSION_MINOR=${PYTHONLIBS_VERSION_MINOR})
+        add_definitions(-DPYTHONLIBS_VERSION_STRING=${PYTHONLIBS_VERSION_STRING})
+        message(STATUS "Python version: ${PYTHONLIBS_VERSION_STRING}\n")
         message(STATUS "Python major version: ${PYTHONLIBS_VERSION_MAJOR}\n")
+        message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
         message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
         message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
-            add_definitions(-DPYTHON_HOME="..")
 
             string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
             string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
@@ -491,6 +495,7 @@ endif()
             endif()
             message(STATUS "Python prefix: ${PY_PREFIX}")
             message(STATUS "Python target prefix: ${TARGET_PREFIX}")
+            add_definitions(-DPYTHON_PREFIX=${PY_PREFIX})
             
             # copy python library
             set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
