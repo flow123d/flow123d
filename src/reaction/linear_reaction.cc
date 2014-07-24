@@ -76,9 +76,9 @@ void LinearReaction::reset_reaction_matrix()
     unsigned int rows, cols;
     for(rows = 0; rows < n_substances_;rows++){
         for(cols = 0; cols < n_substances_; cols++){
-         if(rows == cols)   reaction_matrix_[rows][cols] = 1.0;
-         else               reaction_matrix_[rows][cols] = 0.0;
-     }
+            if(rows == cols)   reaction_matrix_[rows][cols] = 1.0;
+            else               reaction_matrix_[rows][cols] = 0.0;
+        }
     }
 }
 
@@ -87,17 +87,25 @@ void LinearReaction::modify_reaction_matrix(void) //All the parameters are suppo
 {
     ASSERT(reaction_matrix_.size() > 0, "Reaction matrix is not allocated.\n");
     
-    unsigned int index_par, i_decay, i_product;
-    double rel_step;    
-
+    unsigned int parent_idx, product_idx,   // global indices of substances
+                 i_decay, i_product;        // local indices of substances
+    double relative_timestep,   // exponent of 0.5
+           temp_power;          // temporary power of 0.5
+    
+    // cycle over reactions/over rows/over parents
     for (i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
-        index_par = substance_ids_[i_decay][0];
-        rel_step = time_->dt() / half_lives_[i_decay];
-        reaction_matrix_[index_par][index_par] = pow(0.5, rel_step);
+        // setting diagonal elements
+        parent_idx = substance_ids_[i_decay][0];
+        relative_timestep = time_->dt() / half_lives_[i_decay];
+        temp_power = pow(0.5, relative_timestep);
+        reaction_matrix_[parent_idx][parent_idx] = temp_power;
 
-        for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product)
-            reaction_matrix_[ substance_ids_[i_decay][i_product] ][index_par]
-                                       = (1 - pow(0.5, rel_step))* bifurcation_[i_decay][i_product-1];
+        // cycle over products of specific reaction/row/parent
+        for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product) {
+            product_idx = substance_ids_[i_decay][i_product];
+            reaction_matrix_[product_idx][parent_idx]
+                                       = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
+        }
     }
     
     //print_half_lives();
@@ -108,11 +116,14 @@ double **LinearReaction::compute_reaction(double **concentrations, int loc_el) /
 {
     unsigned int cols, rows;
 
-    for(rows = 0; rows < names_.size(); rows++){
+    // row vector of previous concentrations = column vector of **concentrations (c_p = c')
+    for(rows = 0; rows < n_substances_; rows++){
         prev_conc_[rows] = concentrations[rows][loc_el];
         concentrations[rows][loc_el] = 0.0;
     }
     
+    // row vector of previous concentrations * reaction matrix = row vector of new concentrations 
+    // row vector of new concentrations is written as column vector to **concentrations (c' = c_p*R)
     for(rows = 0; rows < n_substances_; rows++){
         for(cols = 0; cols < n_substances_; cols++){
             concentrations[rows][loc_el] += reaction_matrix_[rows][cols]*prev_conc_[cols];
