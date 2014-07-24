@@ -88,8 +88,6 @@
           cd flow123d
           make ref-doc
           make doxy-doc
-          bin/md_convert.sh README.md
-          bin/md_convert.sh CHANGES.md
 #    publishers:
 #      - cifs: 
 #          site: 'bacula'
@@ -189,7 +187,7 @@
           make -C flow123d/tests/{test-dir} test-all
         
 #################################################################
-# Packaging
+# Packaging and publish
 - job-template:
     name: "Flow123d-{platform}-packages"
     display-name: "{platform} / make packages"
@@ -202,14 +200,17 @@
           make package_source
           rm -rf _CPack_Packages
       - shell: |
+          cd flow123d
           bin/prepare_to_publish.sh
+      - inject:
+          properties-file: prop.file
           
     publishers:
       - cifs: 
           site: 'bacula'
           target: 'jan.brezina/public_html/flow123d_packages'
-          source: 'flow123d/build_tree/publish_dir/**/*'
-          remove-prefix: 'flow123d/build_tree/publish_dir'
+          source: build-${{GIT_BRANCH}}/publish_dir/**/*
+          remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
 
 
@@ -317,7 +318,13 @@
     builders:
       # escaping quotas and double braces are due to YAML format
 #      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
-      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+#      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+      - shell: |
+          echo "BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}" >prop.file
+          echo "GIT_BRANCH=${{GIT_BRANCH##origin/}}" >>prop.file
+          rm -rf build-*
+          cd flow123d
+          git checkout ${{GIT_BRANCH##origin/}}
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
