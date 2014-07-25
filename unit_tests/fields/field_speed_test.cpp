@@ -52,6 +52,47 @@ public:
         ifstream in(string( mesh_file ).c_str());
         mesh_->read_gmsh_from_stream(in);
 
+        set_values();
+	}
+
+	void TearDown() {
+		Profiler::uninitialize();
+
+		delete mesh_;
+	}
+
+	ReturnType call_test() {
+		std::vector<ReturnType> value_list(10);
+
+		START_TIMER("single_value");
+		for (int i=0; i<10*loop_call_count; i++)
+			FOR_ELEMENTS(this->mesh_, ele) {
+				ElementAccessor<3> elm = (*ele).element_accessor();
+				test_result_sum_ += this->field_->value( this->point_, elm);
+			}
+		END_TIMER("single_value");
+
+		START_TIMER("all_values");
+		for (int i=0; i<loop_call_count; i++)
+			for (int j=0; j<10; j++)
+				FOR_ELEMENTS(this->mesh_, ele) {
+					ElementAccessor<3> elm = (*ele).element_accessor();
+					test_result_sum_ += this->field_->value( this->point_list_[j], elm);
+				}
+		END_TIMER("all_values");
+
+		START_TIMER("value_list");
+		for (int i=0; i<loop_call_count; i++)
+			FOR_ELEMENTS(this->mesh_, ele) {
+				ElementAccessor<3> elm = (*ele).element_accessor();
+				this->field_->value_list( this->point_list_, elm, value_list);
+				test_result_sum_ += value_list[0];
+			}
+		END_TIMER("value_list");
+		return test_result_sum_;
+	}
+
+	void set_values() {
         point_ = Point("1 2 3");
         point_list_.reserve(10);
         for (int i=0; i<10; i++) point_list_.push_back( Point("1 2 3") );
@@ -59,8 +100,7 @@ public:
     	fce_ = new FceType[mesh_->region_db().size()];
     	data_ = new ReturnType[mesh_->region_db().size()];
 
-        data1_ = 1.1;
-    	data2_ = 2.2;
+    	set_data(data1_);
 
     	data_[0] = data1_;
     	data_[1] = data2_;
@@ -81,42 +121,41 @@ public:
         fce_[7] = (&FieldSpeed::fce2);
 	}
 
-	void TearDown() {
-		Profiler::uninitialize();
-
-		delete mesh_;
+	void set_data(FieldValue<3>::Scalar::return_type val) {
+        data1_ = 1.25;
+    	data2_ = 2.50;
+    	field_val_ = 1.25;
+    	test_result_sum_ = 0.0;
 	}
 
-	double call_test() {
-		double sum = 0.0;
-		std::vector<ReturnType> value_list(10);
+	void set_data(FieldValue<3>::Vector::return_type val) {
+		data1_ = arma::vec("1.25 2.25 3.25");
+		data2_ = arma::vec("2.50 4.50 6.50");
+    	field_val_ = arma::vec("1.75 2.75 3.75");
+		test_result_sum_ = arma::vec("0.0 0.0 0.0");
+	}
 
-		START_TIMER("single_value");
-		for (int i=0; i<10*loop_call_count; i++)
-			FOR_ELEMENTS(this->mesh_, ele) {
-				ElementAccessor<3> elm = (*ele).element_accessor();
-				sum += this->field_->value( this->point_, elm);
-			}
-		END_TIMER("single_value");
+	void set_data(FieldValue<3>::VectorFixed::return_type val) {
+		data1_ = arma::vec3("1.25 3.75 6.25");
+		data2_ = arma::vec3("2.50 7.50 12.50");
+    	field_val_ = arma::vec3("1.75 3.75 5.75");
+		test_result_sum_ = arma::vec3("0.0 0.0 0.0");
+	}
 
-		START_TIMER("all_values");
-		for (int i=0; i<loop_call_count; i++)
-			for (int j=0; j<10; j++)
-				FOR_ELEMENTS(this->mesh_, ele) {
-					ElementAccessor<3> elm = (*ele).element_accessor();
-					sum += this->field_->value( this->point_list_[j], elm);
-				}
-		END_TIMER("all_values");
+	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
+		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
+	}
 
-		START_TIMER("value_list");
-		for (int i=0; i<loop_call_count; i++)
-			FOR_ELEMENTS(this->mesh_, ele) {
-				ElementAccessor<3> elm = (*ele).element_accessor();
-				this->field_->value_list( this->point_list_, elm, value_list);
-				sum += value_list[0];
-			}
-		END_TIMER("value_list");
-		return sum;
+	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
+		for (int i=0; i<3; i++) {
+			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
+		}
+	}
+
+	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
+		for (int i=0; i<3; i++) {
+			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
+		}
 	}
 
 
@@ -124,7 +163,9 @@ public:
     ReturnType *data_;
     ReturnType data1_;
     ReturnType data2_;
-    FieldAlgorithmBase<3, FieldValue<3>::Scalar > *field_;
+    ReturnType test_result_sum_;
+    ReturnType field_val_;
+    FieldAlgorithmBase<3, T> *field_;
 	Mesh *mesh_;
 	Point point_;
 	std::vector< Point > point_list_;
@@ -136,47 +177,54 @@ public:
 };
 
 
-typedef ::testing::Types< FieldValue<3>::Scalar > TestedTypes;
+typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::Vector, FieldValue<3>::VectorFixed > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 
-TYPED_TEST(FieldSpeed, scalar) {
-	double sum_func=0.0, sum_array=0.0;
-
-
-	START_TIMER("Speed test");
-
-	START_TIMER("function");
+TYPED_TEST(FieldSpeed, array) {
+	START_TIMER("single_value");
 	for (int i=0; i<10*loop_call_count; i++)
 		FOR_ELEMENTS(this->mesh_, ele) {
 			ElementAccessor<3> elm = (*ele).element_accessor();
-			sum_func += this->value( this->point_, elm);
+			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
-	END_TIMER("function");
+	END_TIMER("single_value");
 
-	START_TIMER("array");
+	this->test_result(this->data1_, 130);
+
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
+}
+
+TYPED_TEST(FieldSpeed, virtual_function) {
+	START_TIMER("single_value");
 	for (int i=0; i<10*loop_call_count; i++)
 		FOR_ELEMENTS(this->mesh_, ele) {
 			ElementAccessor<3> elm = (*ele).element_accessor();
-			sum_array += this->data_[elm.region_idx().idx()];
+			this->test_result_sum_ += this->value( this->point_, elm);
 		}
-	END_TIMER("array");
+	END_TIMER("single_value");
 
-	END_TIMER("Speed test");
+	START_TIMER("all_values");
+	for (int i=0; i<loop_call_count; i++)
+		for (int j=0; j<10; j++)
+			FOR_ELEMENTS(this->mesh_, ele) {
+				ElementAccessor<3> elm = (*ele).element_accessor();
+				this->test_result_sum_ += this->value( this->point_list_[j], elm);
+			}
+	END_TIMER("all_values");
 
-	EXPECT_DOUBLE_EQ( sum_func, sum_array );
+	this->test_result(this->data1_, 2 * 130);
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 }
 
 TYPED_TEST(FieldSpeed, field_constant) {
-	this->field_ = new FieldConstant<3, FieldValue<3>::Scalar>();
-	((FieldConstant<3, FieldValue<3>::Scalar> *)this->field_)->set_value(1.5);
+	this->field_ = new FieldConstant<3, TypeParam>();
+	((FieldConstant<3, TypeParam> *)this->field_)->set_value(this->field_val_);
 
-	double sum_const = this->call_test();
-
-	EXPECT_DOUBLE_EQ( sum_const, (21 * 1.5 * this->mesh_->n_elements() * loop_call_count) );
+	this->call_test();
+	this->test_result( this->field_val_, (21 * this->mesh_->n_elements()) );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
