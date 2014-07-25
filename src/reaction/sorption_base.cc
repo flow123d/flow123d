@@ -2,7 +2,8 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
+// #include "reaction/pade_approximant.hh"
+#include "reaction/decay_chain.hh"
 #include "reaction/dual_por_exchange.hh"
 #include "semchem/semchem_interface.hh"
 #include "reaction/isotherm.hh"
@@ -155,8 +156,8 @@ void SorptionBase::make_reactions()
     if (reactions_it->type() == LinearReaction::input_type ) {
         reaction_liquid =  new LinearReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == PadeApproximant::input_type) {
-        reaction_liquid = new PadeApproximant(*mesh_, *reactions_it);
+    if (reactions_it->type() == DecayChain::input_type) {
+        reaction_liquid = new DecayChain(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
@@ -182,8 +183,8 @@ void SorptionBase::make_reactions()
     if (reactions_it->type() == LinearReaction::input_type ) {
         reaction_solid =  new LinearReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == PadeApproximant::input_type) {
-        reaction_solid = new PadeApproximant(*mesh_, *reactions_it);
+    if (reactions_it->type() == DecayChain::input_type) {
+        reaction_solid = new DecayChain(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");

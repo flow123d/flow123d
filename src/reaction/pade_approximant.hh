@@ -1,47 +1,61 @@
 /*
  * pade_approximant.h
  *
- *  Created on: Apr 2, 2012
- *      Author: lukas
+ * Author: PavelExner
  */
 
 #ifndef PADE_APPROXIMANT_H_
 #define PADE_APPROXIMANT_H_
 
-#include <input/input_type.hh>
+#include "input/accessors.hh"
 #include "armadillo"
 
 using namespace arma;
 
-class Mesh;
-class LinearReaction;
+/// Base class for the numerical method used in reaction.
+class NumericalMethod
+{
+public:
+    /**
+     * Abstract record for numerical method.
+     */
+    static Input::Type::AbstractRecord input_type;
+    
+    /// Type of numerical method.
+    typedef enum { analytic,            ///< Analytic solution is computed.
+                   pade_approximant,    ///< Pade approximation.
+    } Type;
+};
 
-class PadeApproximant: public LinearReaction
+/** @brief This class implements the Pade approximation of exponential function. 
+ *
+ * The exponential function is considered in the form \f$ e^{At} \f$ where \f$ A \f$ is a constant matrix.
+ * It is then approximated by a fraction of polynomials
+ * \f[ e^{At} = \frac{P(t)}{Q(t)},\f]
+ * where the degrees of polynomials in nominator and denominator, \f$ P(t) \f$ and \f$ Q(t) \f$, are
+ * set from the input record.
+ * 
+ */
+class PadeApproximant : NumericalMethod
 {
 public:
     /**
      * Input record for class PadeApproximant.
      */
     static Input::Type::Record input_type;
-    /**
-     * Input record which defines particular decay step.
-     */
-    static Input::Type::Record input_type_one_decay_substep;
-   
+    
     /// Constructor.
-    PadeApproximant(Mesh &mesh, Input::Record in_rec);
+    PadeApproximant(Input::Record in_rec);
 
     /// Destructor.
     ~PadeApproximant(void);
-
-    void initialize() override;
-    void zero_time_step() override;
-
-protected:
+    
     /**
     *   Evaluates Pade approximant from Reaction_matrix.
     */
-    void modify_reaction_matrix(void) override;
+    void approximate_matrix(mat &matrix);
+    
+protected:
     
     /// Evaluates nominator and denominator coeficients of PadeApproximant for exponencial function.
     /** @param nominator_degree is the degree of polynomial in the nominator
@@ -63,7 +77,7 @@ protected:
     
     /// Computes factorial of @p k.
     //unsigned int factorial(int k);
-            
+    
     int nominator_degree_;      ///< Degree of the polynomial in the nominator.
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
 };

@@ -23,7 +23,8 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
+// #include "reaction/pade_approximant.hh"
+#include "reaction/decay_chain.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_por_exchange.hh"
 
@@ -129,8 +130,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == LinearReaction::input_type ) {
                 reaction =  new LinearReaction(init_mesh, *reactions_it);
             } else
-            if (reactions_it->type() == PadeApproximant::input_type) {
-                reaction = new PadeApproximant(init_mesh, *reactions_it);
+            if (reactions_it->type() == DecayChain::input_type) {
+                reaction = new DecayChain(init_mesh, *reactions_it);
             } else
             if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it);

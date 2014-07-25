@@ -60,10 +60,12 @@
       },
       
       reaction_term = {
-        TYPE="PadeApproximant",
-        matrix_exp_on = true,
-        nom_pol_deg = 3,
-        den_pol_deg = 3,
+        TYPE="DecayChain",
+        numerical_method = { 
+          TYPE = "PadeApproximant",
+          nom_pol_deg = 3,
+          den_pol_deg = 3
+        },
 
         decays = [
           {
