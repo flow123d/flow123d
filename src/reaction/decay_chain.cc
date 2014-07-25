@@ -118,7 +118,35 @@ void DecayChain::prepare_reaction_matrix(void )
         }
     }
     //DBGMSG("reactions_matrix_created\n");
-    reaction_matrix_.print();
+    //reaction_matrix_.print();
 }
 
 
+void DecayChain::prepare_reaction_matrix_analytic(void)
+{
+    reaction_matrix_ = eye(n_substances_, n_substances_);
+    
+    unsigned int parent_idx, product_idx,   // global indices of substances
+                 i_decay, i_product;        // local indices of substances
+    double relative_timestep,   // exponent of 0.5
+           temp_power;          // temporary power of 0.5
+    
+    // cycle over reactions/over rows/over parents
+    for (i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
+        // setting diagonal elements
+        parent_idx = substance_ids_[i_decay][0];
+        relative_timestep = time_->dt() / half_lives_[i_decay];
+        temp_power = pow(0.5, relative_timestep);
+        reaction_matrix_(parent_idx,parent_idx) = temp_power;
+
+        // cycle over products of specific reaction/row/parent
+        for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product) {
+            product_idx = substance_ids_[i_decay][i_product];
+            reaction_matrix_(product_idx,parent_idx)
+                                       = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
+        }
+    }
+    
+    //print_half_lives();
+    //print_reaction_matrix(); //just for control print
+}

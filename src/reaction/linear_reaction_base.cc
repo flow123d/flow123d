@@ -62,13 +62,20 @@ void LinearReactionBase::zero_time_step()
 
 void LinearReactionBase::compute_reaction_matrix(void )
 {
-    prepare_reaction_matrix();
+    if(numerical_method_ == NumericalMethod::analytic)
+    {
+        prepare_reaction_matrix_analytic();
+        return;
+    }
+    else
+        prepare_reaction_matrix();
+    
     switch(numerical_method_)
     {
         case NumericalMethod::pade_approximant: 
             pade_approximant_->approximate_matrix(reaction_matrix_);
             break;
-        //default:
+        default: prepare_reaction_matrix_analytic();
     }
 }
 
@@ -156,7 +163,7 @@ void LinearReactionBase::update_solution(void)
     if(time_->is_changed_dt())
     {
         compute_reaction_matrix();
-        reaction_matrix_.print();
+        //reaction_matrix_.print();
     }
 
     START_TIMER("linear reaction step");

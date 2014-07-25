@@ -1,6 +1,8 @@
 #ifndef DECAY_CHAIN_H_
 #define DECAY_CHAIN_H_
 
+#include <vector>
+
 #include "reaction/linear_reaction_base.hh"
 #include "input/accessors.hh"
 
@@ -38,10 +40,11 @@ protected:
     /// Initializes private members of sorption from the input record.
     void initialize_from_input() override;
     
-    /**
-    *   Evaluates Pade approximant from Reaction_matrix.
-    */
+    /// Implements reaction matrix initialization and preparation.
     void prepare_reaction_matrix(void) override;
+    
+    /// Implements reaction matrix analytical computation.
+    void prepare_reaction_matrix_analytic(void) override;
     
     std::vector<double> half_lives_;    ///< Half-lives of the substances.
 };

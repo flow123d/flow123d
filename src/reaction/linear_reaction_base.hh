@@ -19,8 +19,11 @@ class PadeApproximant;
 /** @brief Base class for linear reactions and decay chain.
  *
  * The class implements common interface for linear reactions and decay chains.
- * It uses armadillo to compute the reaction matrix which is then applied to concetration vector.
- * This class also resolve the choice of the numerical method which is used to compute the reaction matrix.
+ * One step of the linear reaction or the decay is represented as a product of a reaction matrix and
+ * a vector of concentrations of transported substances on a single element.
+ * 
+ * It uses armadillo to compute the reaction matrix which then multiplies to concetration vector.
+ * This class also resolves the choice of the numerical method which is used to compute the reaction matrix.
  */
 class LinearReactionBase: public ReactionTerm
 {
@@ -51,6 +54,13 @@ protected:
      * It is pure virtual and must be implemented in descendants.
      */
     virtual void prepare_reaction_matrix(void) = 0;
+    
+    /// Computes the reaction matrix analyticaly.
+    /**
+     * Evaluation can be expensive.
+     * It is pure virtual and must be implemented in descendants.
+     */
+    virtual void prepare_reaction_matrix_analytic(void) = 0;
     
     /// Chooses the numerical method and computes the reaction matrix.
     void compute_reaction_matrix(void);
