@@ -64,7 +64,7 @@
       reaction_term = {
         TYPE="LinearReactions",
 
-        decays = [
+        reactions = [
           {
             parent = "D",
             kinetic = 0.277258872,

@@ -63,8 +63,8 @@
         TYPE="DecayChain",
         numerical_method = { 
           TYPE = "PadeApproximant",
-          nom_pol_deg = 3,
-          den_pol_deg = 3
+          nominator_degree = 3,
+          denominator_degree = 3
         },
 
         decays = [
