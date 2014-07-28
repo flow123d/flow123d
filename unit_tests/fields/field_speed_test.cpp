@@ -227,6 +227,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 }
 
 TYPED_TEST(FieldSpeed, field_constant) {
+    // TODO: set number of components, parameter of constructor
 	this->field_ = new FieldConstant<3, TypeParam>();
 	((FieldConstant<3, TypeParam> *)this->field_)->set_value(this->field_val_);
 
@@ -254,7 +255,8 @@ string formula_input = R"INPUT(
 }
 )INPUT";
 
-/*TYPED_TEST(FieldSpeed, field_formula) {
+/*
+TYPED_TEST(FieldSpeed, field_formula) {
 	typedef FieldAlgorithmBase<3, TypeParam > FieldBaseType;
 
     Input::Type::Record rec_type("FieldFormulaTest","");
@@ -275,12 +277,15 @@ string formula_input = R"INPUT(
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
-}*/
+}
+*/
 
-/*#ifdef HAVE_PYTHON
+
+//TODO: move into set_data, different number of components of returned tuple
+#ifdef HAVE_PYTHON
 string python_input = R"CODE(
-def func_const():
-    return ( 1.5 , )     # one value tuple
+def func_const(x,y,z):
+    return ( 1.5, )     # one value tuple
 
 )CODE";
 
