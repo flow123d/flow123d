@@ -122,12 +122,15 @@ public:
         fce_[5] = (&FieldSpeed::fce1);
         fce_[6] = (&FieldSpeed::fce1);
         fce_[7] = (&FieldSpeed::fce2);
+
+        n_comp_ = 3;
 	}
 
 	void set_data(FieldValue<3>::Scalar::return_type val) {
         data1_ = 1.25;
     	data2_ = 2.50;
-    	field_val_ = 1.25;
+    	field_const_val_ = 1.25;
+    	field_elementwise_val_ = 4.5;
     	test_result_sum_ = 0.0;
     	input_type_name_ = "scalar";
 	}
@@ -135,7 +138,8 @@ public:
 	void set_data(FieldValue<3>::Vector::return_type val) {
 		data1_ = arma::vec("1.25 2.25 3.25");
 		data2_ = arma::vec("2.50 4.50 6.50");
-    	field_val_ = arma::vec("1.75 2.75 3.75");
+		field_const_val_ = arma::vec("1.75 2.75 3.75");
+		field_elementwise_val_ = arma::vec("9 18 27");
 		test_result_sum_ = arma::vec("0.0 0.0 0.0");
 		input_type_name_ = "vector";
 	}
@@ -143,22 +147,29 @@ public:
 	void set_data(FieldValue<3>::VectorFixed::return_type val) {
 		data1_ = arma::vec3("1.25 3.75 6.25");
 		data2_ = arma::vec3("2.50 7.50 12.50");
-    	field_val_ = arma::vec3("1.75 3.75 5.75");
+		field_const_val_ = arma::vec3("1.75 3.75 5.75");
+		field_elementwise_val_ = arma::vec3("9 18 27");
 		test_result_sum_ = arma::vec3("0.0 0.0 0.0");
 		input_type_name_ = "vector_fixed";
 	}
 
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
+		cout << "Test result: " << this->test_result_sum_ << endl;
+		cout << "Expected:    " << multiplicator * expected << endl;
 		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
 	}
 
 	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
+		cout << "Test result: " << this->test_result_sum_ << endl;
+		cout << "Expected:    " << multiplicator * expected << endl;
 		for (int i=0; i<3; i++) {
 			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
 		}
 	}
 
 	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
+		cout << "Test result: " << this->test_result_sum_ << endl;
+		cout << "Expected:    " << multiplicator * expected << endl;
 		for (int i=0; i<3; i++) {
 			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
 		}
@@ -170,12 +181,14 @@ public:
     ReturnType data1_;
     ReturnType data2_;
     ReturnType test_result_sum_;
-    ReturnType field_val_;
+    ReturnType field_const_val_;
+    ReturnType field_elementwise_val_;
     FieldAlgorithmBase<3, T> *field_;
 	Mesh *mesh_;
 	Point point_;
 	std::vector< Point > point_list_;
 	string input_type_name_;
+	unsigned int n_comp_;
 
     inline ReturnType value(Point &p, ElementAccessor<3> &elm) {
     	return (this->*fce_[elm.region_idx().idx()])(p,elm);
@@ -189,6 +202,7 @@ TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 
 TYPED_TEST(FieldSpeed, array) {
+    START_TIMER("array");
 	START_TIMER("single_value");
 	for (int i=0; i<10*loop_call_count; i++)
 		FOR_ELEMENTS(this->mesh_, ele) {
@@ -196,13 +210,16 @@ TYPED_TEST(FieldSpeed, array) {
 			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("single_value");
+	END_TIMER("array");
 
 	this->test_result(this->data1_, 130);
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 }
 
+
 TYPED_TEST(FieldSpeed, virtual_function) {
+	START_TIMER("virtual_function");
 	START_TIMER("single_value");
 	for (int i=0; i<10*loop_call_count; i++)
 		FOR_ELEMENTS(this->mesh_, ele) {
@@ -219,6 +236,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 				this->test_result_sum_ += this->value( this->point_list_[j], elm);
 			}
 	END_TIMER("all_values");
+	END_TIMER("virtual_function");
 
 	this->test_result(this->data1_, 2 * 130);
 
@@ -226,23 +244,35 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 
 }
 
-TYPED_TEST(FieldSpeed, field_constant) {
-    // TODO: set number of components, parameter of constructor
-	this->field_ = new FieldConstant<3, TypeParam>();
-	((FieldConstant<3, TypeParam> *)this->field_)->set_value(this->field_val_);
 
+TYPED_TEST(FieldSpeed, field_constant) {
+	this->field_ = new FieldConstant<3, TypeParam>(this->n_comp_);
+	((FieldConstant<3, TypeParam> *)this->field_)->set_value(this->field_const_val_);
+
+	START_TIMER("field_constant");
 	this->call_test();
-	this->test_result( this->field_val_, (21 * this->mesh_->n_elements()) );
+	END_TIMER("field_constant");
+
+	this->test_result( this->field_const_val_, (21 * this->mesh_->n_elements()) );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 }
 
+
 string formula_input = R"INPUT(
 {   
-   constant_expr={ 
+   constant_expr_scalar={ 
        TYPE="FieldFormula",
-       value="1.5"
+       value="1.25"
+   },
+   constant_expr_vector={ 
+       TYPE="FieldFormula",
+       value=["1.75", "2.75", "3.75"]
+   },
+   constant_expr_vector_fixed={ 
+       TYPE="FieldFormula",
+       value=["1.75", "3.75", "5.75"]
    },
    simple_expr={ 
        TYPE="FieldFormula",
@@ -255,53 +285,63 @@ string formula_input = R"INPUT(
 }
 )INPUT";
 
-/*
-TYPED_TEST(FieldSpeed, field_formula) {
+/*TYPED_TEST(FieldSpeed, field_formula) {
 	typedef FieldAlgorithmBase<3, TypeParam > FieldBaseType;
+	string key_name = "constant_expr_" + this->input_type_name_;
 
     Input::Type::Record rec_type("FieldFormulaTest","");
-    rec_type.declare_key("constant_expr", FieldBaseType::input_type, Input::Type::Default::obligatory(), "" );
+    rec_type.declare_key(key_name, FieldBaseType::input_type, Input::Type::Default::obligatory(), "" );
     rec_type.finish();
 
     // read input string
     Input::JSONToStorage reader( formula_input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-	this->field_ = new FieldFormula<3, TypeParam>();
-	this->field_->init_from_input(in_rec.val<Input::AbstractRecord>("constant_expr"));
+	this->field_ = new FieldFormula<3, TypeParam>(this->n_comp_);
+	this->field_->init_from_input(in_rec.val<Input::AbstractRecord>(key_name));
+	this->field_->set_time(0.0);
 
+	START_TIMER("field_formula");
 	this->call_test();
-	//error: addition: incompatible matrix dimensions: 3x1 and 0x1
+	END_TIMER("field_formula");
+
 	cout << "Test result: " << this->test_result_sum_ << endl;
-	//this->test_result( this->field_val_, (1.5 * 21 * this->mesh_->n_elements()) );
+	//this->test_result( this->field_const_val_, (9 * 21) );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
-}
-*/
+}*/
 
 
-//TODO: move into set_data, different number of components of returned tuple
 #ifdef HAVE_PYTHON
 string python_input = R"CODE(
-def func_const(x,y,z):
-    return ( 1.5, )     # one value tuple
+def func_scalar(x,y,z):
+    return ( 1.25, )     # one value tuple
+
+def func_vector(x,y,z):
+    return ( 1.75, 2.75, 3.75 )     # one value tuple
+
+def func_vector_fixed(x,y,z):
+    return ( 1.75, 3.75, 5.75 )     # one value tuple
 
 )CODE";
 
 TYPED_TEST(FieldSpeed, field_python) {
-    this->field_ = new FieldPython<3, TypeParam>();
-    ((FieldPython<3, TypeParam> *)this->field_)->set_python_field_from_string(python_input, "func_const");
+    this->field_ = new FieldPython<3, TypeParam>(this->n_comp_);
+    ((FieldPython<3, TypeParam> *)this->field_)->set_python_field_from_string(python_input, "func_" + this->input_type_name_);
+    this->field_->set_time(0.0);
 
+	START_TIMER("field_python");
 	this->call_test();
-	//field_python.impl.hh 133 - Failed to call field 'func_const' from the python module: python_field_func_const
+	END_TIMER("field_python");
+
 	//cout << "Test result: " << this->test_result_sum_ << endl;
-	//this->test_result( this->field_val_, (1.5 * 21 * this->mesh_->n_elements()) );
+	this->test_result( this->field_const_val_, (9 * 21) );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 }
-#endif // HAVE_PYTHON*/
+#endif // HAVE_PYTHON
 
 string elementwise_input = R"INPUT(
 {   
@@ -323,7 +363,7 @@ string elementwise_input = R"INPUT(
 }
 )INPUT";
 
-/*TYPED_TEST(FieldSpeed, field_elementwise) {
+TYPED_TEST(FieldSpeed, field_elementwise) {
 	Input::Type::Record  rec_type("Test","");
     rec_type.declare_key("scalar", FieldElementwise<3, FieldValue<3>::Scalar >::input_type, Input::Type::Default::obligatory(),"" );
     rec_type.declare_key("vector_fixed", FieldElementwise<3, FieldValue<3>::VectorFixed >::input_type, Input::Type::Default::obligatory(),"" );
@@ -333,15 +373,18 @@ string elementwise_input = R"INPUT(
     Input::JSONToStorage reader( elementwise_input, rec_type );
     Input::Record rec=reader.get_root_interface<Input::Record>();
 
-    this->field_ = new FieldElementwise<3, TypeParam>();
+    this->field_ = new FieldElementwise<3, TypeParam>(this->n_comp_);
     this->field_->init_from_input( rec.val<Input::Record>(this->input_type_name_) );
     this->field_->set_mesh(this->mesh_,false);
     this->field_->set_time(0.0);
 
+    START_TIMER("field_elementwise");
 	this->call_test();
-	cout << "Test result: " << this->test_result_sum_ << endl;
-	//this->test_result( this->field_val_, (21 * this->mesh_->n_elements()) );
+	END_TIMER("field_elementwise");
+
+	this->test_result( this->field_elementwise_val_, 21 );
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
-}*/
+}
+
