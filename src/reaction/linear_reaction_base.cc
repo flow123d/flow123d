@@ -10,6 +10,8 @@
 #include "la/distribution.hh"
 
 using namespace Input::Type;
+using namespace arma;
+
 
 LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
@@ -40,14 +42,25 @@ void LinearReactionBase::initialize()
 {
     ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
     ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, names_.size());
+    ASSERT_LESS(0, substances_.size());
     
-    n_substances_ = names_.size();
+    n_substances_ = substances_.size();
     initialize_from_input();
 
     // allocation
     prev_conc_.resize(n_substances_);
     reaction_matrix_.resize(n_substances_, n_substances_);
+    molar_matrix_.resize(n_substances_, n_substances_);
+    molar_mat_inverse_.resize(n_substances_, n_substances_);
+
+    // initialize diagonal matrices with molar masses
+    molar_matrix_.zeros();
+    molar_mat_inverse_.zeros();
+    for (unsigned int i=0; i<n_substances_; ++i)
+    {
+    	molar_matrix_(i,i) = substances_[i].molar_mass();
+    	molar_mat_inverse_(i,i) = 1./substances_[i].molar_mass();
+    }
 }
 
 
@@ -55,28 +68,30 @@ void LinearReactionBase::zero_time_step()
 {
     ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
     ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-    ASSERT_LESS(0, names_.size());
+    ASSERT_LESS(0, substances_.size());
 
     //nothing is to be computed at zero_time_step
 }
 
 void LinearReactionBase::compute_reaction_matrix(void )
 {
-    if(numerical_method_ == NumericalMethod::analytic)
-    {
-        prepare_reaction_matrix_analytic();
-        return;
-    }
-    else
-        prepare_reaction_matrix();
-    
     switch(numerical_method_)
     {
-        case NumericalMethod::pade_approximant: 
-            pade_approximant_->approximate_matrix(reaction_matrix_);
-            break;
-        default: prepare_reaction_matrix_analytic();
+    case NumericalMethod::analytic:
+    	prepare_reaction_matrix_analytic();
+    	break;
+
+    case NumericalMethod::pade_approximant:
+    	prepare_reaction_matrix();
+    	pade_approximant_->approximate_matrix(reaction_matrix_);
+    	break;
+
+    default:
+    	prepare_reaction_matrix_analytic();
     }
+    
+    // make scaling that takes into account different molar masses of substances
+    reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
 }
 
 
@@ -178,8 +193,8 @@ void LinearReactionBase::update_solution(void)
 unsigned int LinearReactionBase::find_subst_name(const string &name)
 {
     unsigned int k=0;
-        for(; k < names_.size(); k++)
-                if (name == names_[k]) return k;
+        for(; k < n_substances_; k++)
+                if (name == substances_[k].name()) return k;
 
         return k;
 }

@@ -10,7 +10,6 @@
 
 #include "armadillo"
 
-using namespace arma;
 
 class Mesh;
 class ReactionTerm;
@@ -90,9 +89,12 @@ protected:
     /// Number of all transported substances. It is the dimension of the reaction matrix.
     unsigned int n_substances_;
     
-    mat reaction_matrix_;   ///< Reaction matrix.
-    colvec prev_conc_;      ///< Column vector storing previous concetrations on an element.
+    arma::mat reaction_matrix_;   ///< Reaction matrix.
+    arma::colvec prev_conc_;      ///< Column vector storing previous concetrations on an element.
     
+    arma::mat molar_matrix_;      ///< Diagonal matrix with molar masses of substances.
+    arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.
+
     NumericalMethod::Type numerical_method_;    ///< Numerical method selection.
     PadeApproximant *pade_approximant_;         ///< Pade approximant object.
 };

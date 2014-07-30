@@ -130,7 +130,7 @@ void LinearReaction::initialize_from_input()
 
 		// set parent index
 		idx = find_subst_name(parent_name);
-		if (idx < names_.size())	substance_ids_[i_decay][0] = idx;
+		if (idx < substances_.size())	substance_ids_[i_decay][0] = idx;
 		else                		xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
 
 		// set products
@@ -138,7 +138,7 @@ void LinearReaction::initialize_from_input()
 		for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
 		{
 			idx = find_subst_name(*product_it);
-			if (idx < names_.size())   substance_ids_[i_decay][i_product] = idx;
+			if (idx < substances_.size())   substance_ids_[i_decay][i_product] = idx;
 			else                    	xprintf(Warn,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
 		}
 
