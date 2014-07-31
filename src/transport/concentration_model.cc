@@ -106,9 +106,11 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 {}
 
 
-void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
+void ConcentrationTransportModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
+	std::vector<std::string> names;
 	in_rec.val<Input::Array>("substances").copy_to(names);
+	substances.initialize(names);
 }
 
 

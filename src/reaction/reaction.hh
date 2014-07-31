@@ -7,6 +7,7 @@
 #define REACTION_TERM_H
 
 #include "coupling/equation.hh"
+#include "transport/substance.hh"
 
 class Mesh;
 class Element;
@@ -43,8 +44,8 @@ public:
   ///@name Setters
   //@{
   ///Sets the names of substances considered in transport.
-  ReactionTerm &names(const std::vector<string> &names)
-  {names_=names; return *this;}
+  ReactionTerm &substances(SubstanceList &substances)
+  {substances_.initialize(substances); return *this;}
 
   ///Sets the output stream which is given from transport class.
   ReactionTerm &output_stream(OutputTime &ostream)
@@ -106,7 +107,7 @@ protected:
   /**  
    * Must be same as in the transport.
    */
-  vector<string> names_;
+  SubstanceList substances_;
 
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;

@@ -31,12 +31,7 @@ ReactionTerm::~ReactionTerm()
 }
 
 
-double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)
-{
-  ASSERT(0,"double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)" 
-           "needs to be re-implemented in ancestors.\n");
-  return concentrations;
-}
+
 
 void ReactionTerm::choose_next_time(void)
 {

@@ -63,9 +63,15 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
-
-        decays = [
+        TYPE="LinearReactions", 
+        /*
+        numerical_method = {
+          TYPE = "PadeApproximant",
+          nominator_degree = 3,
+          denominator_degree = 3
+        },*/
+        
+        reactions = [
           {
             parent = "E",
             kinetic = 1.3836,

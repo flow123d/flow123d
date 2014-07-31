@@ -73,7 +73,7 @@
         
         reaction_mobile = {
           TYPE="LinearReactions",
-          decays = [
+          reactions = [
             {
               parent = "A",
               half_life = 2.5,

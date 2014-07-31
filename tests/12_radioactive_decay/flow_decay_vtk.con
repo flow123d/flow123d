@@ -63,7 +63,7 @@
       reaction_term = {
         TYPE="LinearReactions",
 
-        decays = [
+        reactions = [
           {
             parent = "D",
             half_life = 2.5,

@@ -180,10 +180,9 @@ HeatTransferModel::HeatTransferModel() :
 {}
 
 
-void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
+void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
-	names.clear();
-	names.push_back("");
+	substances.initialize({""});
 }
 
 

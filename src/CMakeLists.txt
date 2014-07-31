@@ -162,6 +162,8 @@ set(sources_lib_non_system
     
     reaction/reaction.cc
     reaction/linear_reaction.cc
+    reaction/linear_reaction_base.cc
+    reaction/decay_chain.cc
     reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
@@ -175,6 +177,7 @@ set(sources_lib_non_system
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
     transport/mass_balance.cc
+    transport/substance.cc
 
     coupling/hc_explicit_sequential.cc
 )

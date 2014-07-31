@@ -71,9 +71,12 @@
         scheme_tolerance = 0.0,
         
         reaction_mobile = {
-          TYPE="PadeApproximant",
-          nom_pol_deg = 3,
-          den_pol_deg = 3,
+          TYPE="DecayChain",
+          numerical_method = {
+            TYPE="PadeApproximant",
+            nom_pol_deg = 3,
+            den_pol_deg = 3
+          },
       
           decays = [
             {
