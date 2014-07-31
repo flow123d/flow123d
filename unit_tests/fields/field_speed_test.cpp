@@ -28,7 +28,9 @@
 using namespace std;
 
 
-static const int loop_call_count = 10000;
+static const int loop_call_count = 1;
+static const int list_size = 10;
+
 
 template <typename T>
 class FieldSpeed : public testing::Test {
@@ -65,10 +67,10 @@ public:
 	}
 
 	ReturnType call_test() {
-		std::vector<ReturnType> value_list(10);
+
 
 		START_TIMER("single_value");
-		for (int i=0; i<10*loop_call_count; i++)
+		for (int i=0; i<list_size*loop_call_count; i++)
 			FOR_ELEMENTS(this->mesh_, ele) {
 				ElementAccessor<3> elm = (*ele).element_accessor();
 				test_result_sum_ += this->field_->value( this->point_, elm);
@@ -77,7 +79,7 @@ public:
 
 		START_TIMER("all_values");
 		for (int i=0; i<loop_call_count; i++)
-			for (int j=0; j<10; j++)
+			for (int j=0; j<list_size; j++)
 				FOR_ELEMENTS(this->mesh_, ele) {
 					ElementAccessor<3> elm = (*ele).element_accessor();
 					test_result_sum_ += this->field_->value( this->point_list_[j], elm);
@@ -96,6 +98,8 @@ public:
 	}
 
 	void set_values() {
+        n_comp_ = 3;
+
         point_ = Point("1 2 3");
         point_list_.reserve(10);
         for (int i=0; i<10; i++) point_list_.push_back( Point("1 2 3") );
@@ -122,8 +126,6 @@ public:
         fce_[5] = (&FieldSpeed::fce1);
         fce_[6] = (&FieldSpeed::fce1);
         fce_[7] = (&FieldSpeed::fce2);
-
-        n_comp_ = 3;
 	}
 
 	void set_data(FieldValue<3>::Scalar::return_type val) {
@@ -133,6 +135,7 @@ public:
     	field_elementwise_val_ = 4.5;
     	test_result_sum_ = 0.0;
     	input_type_name_ = "scalar";
+    	value_list= std::vector<ReturnType>(list_size);
 	}
 
 	void set_data(FieldValue<3>::Vector::return_type val) {
@@ -142,6 +145,7 @@ public:
 		field_elementwise_val_ = arma::vec("9 18 27");
 		test_result_sum_ = arma::vec("0.0 0.0 0.0");
 		input_type_name_ = "vector";
+		value_list= std::vector<ReturnType>(list_size, ReturnType(n_comp_,1));
 	}
 
 	void set_data(FieldValue<3>::VectorFixed::return_type val) {
@@ -151,6 +155,7 @@ public:
 		field_elementwise_val_ = arma::vec3("9 18 27");
 		test_result_sum_ = arma::vec3("0.0 0.0 0.0");
 		input_type_name_ = "vector_fixed";
+		value_list= std::vector<ReturnType>(list_size);
 	}
 
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
@@ -183,6 +188,7 @@ public:
     ReturnType test_result_sum_;
     ReturnType field_const_val_;
     ReturnType field_elementwise_val_;
+    std::vector<ReturnType> value_list;
     FieldAlgorithmBase<3, T> *field_;
 	Mesh *mesh_;
 	Point point_;
@@ -198,8 +204,8 @@ public:
 
 
 typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::Vector, FieldValue<3>::VectorFixed > TestedTypes;
+//typedef ::testing::Types< FieldValue<3>::Vector > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
-
 
 TYPED_TEST(FieldSpeed, array) {
     START_TIMER("array");
@@ -285,7 +291,7 @@ string formula_input = R"INPUT(
 }
 )INPUT";
 
-/*TYPED_TEST(FieldSpeed, field_formula) {
+TYPED_TEST(FieldSpeed, field_formula) {
 	typedef FieldAlgorithmBase<3, TypeParam > FieldBaseType;
 	string key_name = "constant_expr_" + this->input_type_name_;
 
@@ -310,7 +316,7 @@ string formula_input = R"INPUT(
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
-}*/
+}
 
 
 #ifdef HAVE_PYTHON
@@ -387,4 +393,3 @@ TYPED_TEST(FieldSpeed, field_elementwise) {
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 }
-
