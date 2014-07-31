@@ -256,8 +256,7 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
                        std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
-    xprintf(Err, "Not implemented.");
-	// not supported yet
+    FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
 }
 
 
