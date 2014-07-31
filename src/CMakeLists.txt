@@ -162,6 +162,8 @@ set(sources_lib_non_system
     
     reaction/reaction.cc
     reaction/linear_reaction.cc
+    reaction/linear_reaction_base.cc
+    reaction/decay_chain.cc
     reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
