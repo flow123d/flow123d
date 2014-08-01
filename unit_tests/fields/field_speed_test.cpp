@@ -180,6 +180,12 @@ public:
 		}
 	}
 
+	void profiler_output() {
+		static ofstream os( FilePath("speed_test_profiler.log", FilePath::output_file) );
+		Profiler::instance()->output(MPI_COMM_WORLD, os);
+		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
+	}
+
 
     FceType *fce_;
     ReturnType *data_;
@@ -219,8 +225,7 @@ TYPED_TEST(FieldSpeed, array) {
 	END_TIMER("array");
 
 	this->test_result(this->data1_, 130);
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
+	this->profiler_output();
 }
 
 
@@ -245,9 +250,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	END_TIMER("virtual_function");
 
 	this->test_result(this->data1_, 2 * 130);
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
+	this->profiler_output();
 }
 
 
@@ -260,9 +263,7 @@ TYPED_TEST(FieldSpeed, field_constant) {
 	END_TIMER("field_constant");
 
 	this->test_result( this->field_const_val_, (21 * this->mesh_->n_elements()) );
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
+	this->profiler_output();
 }
 
 
@@ -313,9 +314,7 @@ TYPED_TEST(FieldSpeed, field_formula) {
 
 	cout << "Test result: " << this->test_result_sum_ << endl;
 	//this->test_result( this->field_const_val_, (9 * 21) );
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
+	this->profiler_output();
 }
 
 
@@ -341,11 +340,8 @@ TYPED_TEST(FieldSpeed, field_python) {
 	this->call_test();
 	END_TIMER("field_python");
 
-	//cout << "Test result: " << this->test_result_sum_ << endl;
 	this->test_result( this->field_const_val_, (9 * 21) );
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
+	this->profiler_output();
 }
 #endif // HAVE_PYTHON
 
@@ -389,7 +385,5 @@ TYPED_TEST(FieldSpeed, field_elementwise) {
 	END_TIMER("field_elementwise");
 
 	this->test_result( this->field_elementwise_val_, 21 );
-
-	Profiler::instance()->output(MPI_COMM_WORLD, cout);
-
+	this->profiler_output();
 }
