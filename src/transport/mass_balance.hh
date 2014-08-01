@@ -2,7 +2,9 @@
 #define MASS_BALANCE_HH_
 
 
+#include "la/distribution.hh"
 #include "transport/substance.hh"
+#include "petscmat.h"
 
 /**
  * Interface class for equation which implements methods required for mass balance.
@@ -142,6 +144,228 @@ protected:
 
 
 
+
+
+/**
+ * New design of balance class - serves as storage and writer.
+ * Equations themselves call methods of Balance that add/modify mass, source and flux
+ * of various quantities and generate output.
+ *
+ * Another new feature is that quantities can have more components,
+ * e.g. velocity.{x,y,z} or concentration.{mobile,immobile}.
+ * Each quantity has an implicit component "default".
+ *
+ *
+ * Output values (if not relevant, zero is supplied):
+ *
+ * #time 	bulk_region     	quantity 	component 	0    	0       	0        	mass 	source 	0               	0                 	0
+ * #time 	boundary_region 	quantity 	component 	flux 	flux_in 	flux_out 	0    	0      	0               	0                 	0
+ * #time 	ALL             	quantity 	component 	flux 	flux_in 	flux_out 	mass 	source 	integrated_flux 	integrated_source 	error
+ *
+ * error = current_mass - (initial_mass + integrated_source - integrated_flux)
+ *
+ */
+class Balance {
+public:
+
+	enum OutputFormat
+	{
+		legacy,
+		csv,
+		gnuplot
+	};
+
+	static Input::Type::Selection format_selection_input_type;
+
+	Balance(const std::vector<std::string> &quantities,
+			const std::vector<std::string> &components,
+			const RegionDB *region_db,
+			const bool cumulative,
+			const std::string file);
+
+	~Balance();
+
+	inline bool cumulative() const
+	{
+		return cumulative_;
+	}
+
+	void allocate_matrices(unsigned int lsize);
+
+	void start_mass_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatZeroEntries(region_mass_matrix_[quantity_idx*components_.size()+component_idx]);
+	}
+
+	void start_flux_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatZeroEntries(region_flux_matrix_[quantity_idx*components_.size()+component_idx]);
+		MatZeroEntries(region_flux_rhs_[quantity_idx*components_.size()+component_idx]);
+		VecZeroEntries(region_flux_vec_[quantity_idx*components_.size()+component_idx]);
+	}
+
+	void start_source_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatZeroEntries(region_source_matrix_[quantity_idx*components_.size()+component_idx]);
+		MatZeroEntries(region_source_rhs_[quantity_idx*components_.size()+component_idx]);
+		VecZeroEntries(region_source_vec_[quantity_idx*components_.size()+component_idx]);
+	}
+
+
+	void set_mass_matrix_values(unsigned int quantity_idx,
+			unsigned int component_idx,
+			unsigned int region_idx,
+			int n_dofs,
+			int *dof_indices,
+			double *values);
+
+	void set_flux_matrix_values(unsigned int quantity_idx,
+			unsigned int component_idx,
+			unsigned int region_idx,
+			int n_dofs,
+			int *dof_indices,
+			double *values);
+
+	void set_source_matrix_values(unsigned int quantity_idx,
+			unsigned int component_idx,
+			unsigned int region_idx,
+			int n_dofs,
+			int *dof_indices,
+			double *values);
+
+	void set_flux_rhs_values(unsigned int quantity_idx,
+			unsigned int component_idx,
+			unsigned int region_idx,
+			int n_dofs,
+			int *dof_indices,
+			double *values);
+
+	void set_source_rhs_values(unsigned int quantity_idx,
+			unsigned int component_idx,
+			unsigned int region_idx,
+			int n_dofs,
+			int *dof_values,
+			double *values);
+
+	void finish_mass_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatAssemblyBegin(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	}
+
+	void finish_flux_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatAssemblyBegin(region_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(region_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyBegin(region_flux_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(region_flux_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatMultTranspose(region_flux_rhs_[quantity_idx*components_.size()+component_idx], ones_, region_flux_vec_[quantity_idx*components_.size()+component_idx]);
+	}
+
+	void finish_source_assembly(unsigned int quantity_idx,
+			unsigned int component_idx)
+	{
+		MatAssemblyBegin(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyBegin(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+		MatMultTranspose(region_source_rhs_[quantity_idx*components_.size()+component_idx], ones_, region_source_vec_[quantity_idx*components_.size()+component_idx]);
+	}
+
+
+	void calculate_cumulative(unsigned int quantity_idx,
+			unsigned int component_idx,
+			const Vec &solution,
+			double dt);
+
+	void calculate_mass(unsigned int quantity_idx,
+			unsigned int component_idx,
+			const Vec &solution);
+
+	void calculate_flux(unsigned int quantity_idx,
+			unsigned int component_idx,
+			const Vec &solution);
+
+	void calculate_source(unsigned int quantity_idx,
+			unsigned int component_idx,
+			const Vec &solution);
+
+	void output(double time);
+
+private:
+
+
+	void output_legacy(double time);
+
+
+    /// Handle for file for output of balance and total fluxes over individual regions and region sets.
+    ofstream output_;
+
+    OutputFormat output_format_;
+
+    const std::vector<std::string> quantities_;
+
+    const std::vector<std::string> components_;
+
+    const RegionDB &regions_;
+
+    Mat *region_mass_matrix_;
+    Mat *region_flux_matrix_;
+    Mat *region_flux_rhs_;
+    Mat *region_source_matrix_;
+    Mat *region_source_rhs_;
+
+    /// auxiliary vector for summation of matrix columns
+    Vec ones_;
+    Vec *region_flux_vec_;
+    Vec *region_source_vec_;
+
+
+    // Vectors storing mass and balances of fluxes and volumes.
+    // substance, phase, region
+    std::vector<std::vector<std::vector<double> > > fluxes_;
+    std::vector<std::vector<std::vector<double> > > fluxes_in_;
+    std::vector<std::vector<std::vector<double> > > fluxes_out_;
+    std::vector<std::vector<std::vector<double> > > masses_;
+    std::vector<std::vector<std::vector<double> > > sources_;
+    std::vector<std::vector<std::vector<double> > > sources_in_;
+    std::vector<std::vector<std::vector<double> > > sources_out_;
+
+    // Sums of the above vectors over phases and regions
+    std::vector<double> sum_fluxes_;
+    std::vector<double> sum_fluxes_in_;
+    std::vector<double> sum_fluxes_out_;
+    std::vector<double> sum_masses_;
+    std::vector<double> sum_sources_;
+    std::vector<double> sum_sources_in_;
+    std::vector<double> sum_sources_out_;
+
+    std::vector<double> initial_mass_;
+
+	// time integrated quantities
+    std::vector<double> integrated_sources_;
+    std::vector<double> integrated_fluxes_;
+
+	/// initial time
+	double initial_time_;
+
+	/// time of last calculated balance
+	double last_time_;
+
+	/// true before calculating the mass at initial time, otherwise false
+	bool initial_;
+
+	/// if true then cumulative balance is computed
+	bool cumulative_;
+
+	int rank_;
+
+};
 
 
 

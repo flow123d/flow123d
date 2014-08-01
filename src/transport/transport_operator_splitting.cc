@@ -96,7 +96,8 @@ TransportBase::TransportEqData::TransportEqData()
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : AdvectionProcessBase(mesh, in_rec ),
   mh_dh(nullptr),
-  mass_balance_(nullptr)
+  mass_balance_(nullptr),
+  balance_(nullptr)
 {
 }
 
@@ -179,11 +180,23 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   {
     reaction->data().set_field("porosity", convection->data()["porosity"]);
   }
+
+  // initialization of balance object
+  Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+  if (it)
+  {
+	  balance_ = new Balance(substances_.names(),
+			  {"concentration"},
+			  region_db(),
+			  it->val<bool>("cumulative"),
+			  it->val<FilePath>("file"));
+  }
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     //delete field_output;
+	if (balance_) delete balance_;
     delete convection;
     if (reaction) delete reaction;
     if (Semchem_reactions) delete Semchem_reactions;
