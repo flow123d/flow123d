@@ -27,7 +27,16 @@ else()
         # create from template
         MESSAGE(FATAL_ERROR "Need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
     endif()
-endif ()
+endif()
+
+# by default reuse number of cpus for make from environment
+if (NOT MAKE_NUMCPUS)
+    set(MAKE_NUMCPUS $ENV{MAKE_NUMCPUS})
+endif()
+
+if (MAKE_NUMCPUS)
+    set(MAKE_NUMCPUS_FLAG "-j ${MAKE_NUMCPUS}")
+endif()    
 
 
 
@@ -270,7 +279,7 @@ endif()
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
-
+  message("NCPU: ${MAKE_NUMCPUS}")
   include(InstallBoost)  
   
   # we try to erease from the cache everything that can cause failure of the second find_package
