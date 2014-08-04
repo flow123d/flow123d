@@ -36,6 +36,7 @@ template <typename T>
 class FieldSpeed : public testing::Test {
 public:
 	typedef typename Space<3>::Point Point;
+	typedef FieldAlgorithmBase<3, T > FieldBaseType;
 	typedef typename T::return_type ReturnType;
     typedef ReturnType(FieldSpeed::*FceType)(Point&, ElementAccessor<3>&);
 
@@ -186,6 +187,23 @@ public:
 		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
 	}
 
+	void read_input(const string &input, const string &field_name) {
+	    /*Input::Type::Record  rec_type("FieldSpeedTest","");
+	    rec_type.declare_key(field_name, Input::Type::Array(FieldBaseType::input_type), Input::Type::Default::obligatory(),"" );
+	    rec_type.finish();
+
+	    //Input::Type::Array array_type = Input::Type::Array(FieldBaseType::input_type);
+
+	    Input::JSONToStorage reader( input, rec_type );
+	    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+	    this->field_.name("data");
+	    this->field_.set_mesh(*(this->mesh_));
+	    this->field_.set_input_list( in_rec.val<Input::Array>(field_name) );
+	    TimeGovernor tg(0.0, 1.0);
+	    this->field_.set_time(tg);*/
+	}
+
 
     FceType *fce_;
     ReturnType *data_;
@@ -196,6 +214,7 @@ public:
     ReturnType field_elementwise_val_;
     std::vector<ReturnType> value_list;
     FieldAlgorithmBase<3, T> *field_;
+    //Field<3, T> field_;
 	Mesh *mesh_;
 	Point point_;
 	std::vector< Point > point_list_;
@@ -254,8 +273,26 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 }
 
 
+
+string constant_input = R"JSON(
+{   
+    constant_expr_scalar=[
+        { TYPE="FieldConstant", value=1.25 }
+    ],
+    constant_expr_vector=[
+        { TYPE="FieldConstant", value=[1.75, 2.75, 3.75] }
+    ],
+    constant_expr_vector_fixed=[
+        { TYPE="FieldConstant", value=[1.75, 3.75, 5.75] }
+    ]
+}
+)JSON";
+
 TYPED_TEST(FieldSpeed, field_constant) {
-	this->field_ = new FieldConstant<3, TypeParam>(this->n_comp_);
+	//string key_name = "constant_expr_" + this->input_type_name_;
+	//this->read_input(constant_input, key_name);
+
+    this->field_ = new FieldConstant<3, TypeParam>(this->n_comp_);
 	((FieldConstant<3, TypeParam> *)this->field_)->set_value(this->field_const_val_);
 
 	START_TIMER("field_constant");
