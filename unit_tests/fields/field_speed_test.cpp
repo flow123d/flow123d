@@ -110,6 +110,19 @@ public:
 
     	set_data(data1_);
 
+    	vector<unsigned int> regions_1={0,3,5,6};
+    	vector<unsigned int> regions_2={1,2,4,7};
+
+    	RegionSet set_1,set_2;
+    	for( auto i_reg : regions_1) {
+    	    set_1.push_back(mesh_->region_db().get_id(i_reg));
+    	    data_[i_reg]=data1_;
+    	}
+    	for( auto i_reg : regions_1) set_2.push_back(mesh_->region_db().get_id(i_reg));
+    	mesh_->region_db().add_set("set_1", set_1);
+    	mesh_->region_db().add_set("set_2", set_2);
+
+    	/*
     	data_[0] = data1_;
     	data_[1] = data2_;
     	data_[2] = data2_;
@@ -127,6 +140,7 @@ public:
         fce_[5] = (&FieldSpeed::fce1);
         fce_[6] = (&FieldSpeed::fce1);
         fce_[7] = (&FieldSpeed::fce2);
+        */
 	}
 
 	void set_data(FieldValue<3>::Scalar::return_type val) {
@@ -188,20 +202,26 @@ public:
 	}
 
 	void read_input(const string &input, const string &field_name) {
-	    /*Input::Type::Record  rec_type("FieldSpeedTest","");
-	    rec_type.declare_key(field_name, Input::Type::Array(FieldBaseType::input_type), Input::Type::Default::obligatory(),"" );
-	    rec_type.finish();
-
-	    //Input::Type::Array array_type = Input::Type::Array(FieldBaseType::input_type);
-
-	    Input::JSONToStorage reader( input, rec_type );
-	    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-
 	    this->field_.name("data");
+	    //field_->description("xyz");
+	    //field_->description("xyz");
+	    set_of_field_ += field_;
+
+
+	    Input::Type::Record  field_descriptor = set_of_field_.make_field_descriptor_type("FieldSpeedTest");
+	    //rec_type.declare_key(field_name, Input::Type::Array(FieldBaseType::input_type), Input::Type::Default::obligatory(),"" );
+	    //rec_type.finish();
+
+	    Input::Type::Array array_type = Input::Type::Array(FieldBaseType::input_type);
+
+	    Input::JSONToStorage reader( input, Input::Type::Array(field_descriptor ) );
+	    Input::Array in_list=reader.get_root_interface<Input::Array>();
+
+
 	    this->field_.set_mesh(*(this->mesh_));
-	    this->field_.set_input_list( in_rec.val<Input::Array>(field_name) );
+	    this->field_.set_input_list( in_list );
 	    TimeGovernor tg(0.0, 1.0);
-	    this->field_.set_time(tg);*/
+	    this->field_.set_time(tg);
 	}
 
 
@@ -213,8 +233,9 @@ public:
     ReturnType field_const_val_;
     ReturnType field_elementwise_val_;
     std::vector<ReturnType> value_list;
-    FieldAlgorithmBase<3, T> *field_;
-    //Field<3, T> field_;
+    //FieldAlgorithmBase<3, T> *field_;
+    FieldSet set_of_field_;
+    Field<3, T> field_;
 	Mesh *mesh_;
 	Point point_;
 	std::vector< Point > point_list_;
