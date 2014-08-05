@@ -468,7 +468,7 @@ endif()
 # optionaly we use Python interface
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
-    find_package(PythonLibs)
+    find_package(PythonLibs 2.7)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
