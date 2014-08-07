@@ -797,21 +797,153 @@ INCLUDE(InstallRequiredSystemLibraries)
 
 
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
-SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
+SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
+macro(MAKE_WIN_PATH VAR)
+    execute_process(
+        COMMAND cygpath -aw "${${VAR}}"
+        OUTPUT_VARIABLE CYGPATH_${VAR}
+        OUTPUT_STRIP_TRAILING_WHITESPACE)        
+    string(REGEX REPLACE "\\\\" "\\\\\\\\" WIN_${VAR} ${CYGPATH_${VAR}}) 
+endmacro()
+
 if (CYGWIN) 
+    ## Try to use NSIS packager ##
+    # We need Windows style paths.
+    MAKE_WIN_PATH(CMAKE_CURRENT_SOURCE_DIR)
+    MAKE_WIN_PATH(CMAKE_CURRENT_BINARY_DIR)      
+    #execute_process(
+    #    COMMAND cygpath -aw "${CMAKE_INSTALL_PREFIX}"
+    #    OUTPUT_VARIABLE WIN_CMAKE_INSTALL_PREFIX
+    #    OUTPUT_STRIP_TRAILING_WHITESPACE)        
     #set(CPACK_CYGWIN_BUILD_SCRIPT "") 
     #set(CPACK_CYGWIN_PATCH_FILE "")
-    set(CPACK_GENERATOR "ZIP")
+    
+    message("WIN_SOURCE:" ${WIN_CMAKE_CURRENT_SOURCE_DIR})
+    message("WIN_BINARY:" ${WIN_CMAKE_CURRENT_BINARY_DIR})
+    message("CPACK_TOPLEVEL_DIRECTORY: " ${CPACK_TOPLEVEL_DIRECTORY})
+    message("CPACK_TEMPORARY_DIRECTORY: " ${CPACK_TEMPORARY_DIRECTORY})
+    
+    # 1. Page
+    # Displayed name of the software, and target subdirectory of installation prefix.
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    
+    # 2. Page
+    # Software banner in installer.
+    SET(CPACK_PACKAGE_ICON "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\bin\\\\graphics\\\\flow123d.ico")
+    # Displayed license  agreement.
+    SET(CPACK_RESOURCE_FILE_LICENSE "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\doc\\\\LICENSE")
+    SET(CPACK_PACKAGE_DESCRIPTION_FILE "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\README.md")
+    
+    # 3. Page
+    # Modify PATH toggle. If this is set to "ON", then an extra page
+    # will appear in the installer that will allow the user to choose
+    # whether the program directory should be added to the system PATH variable.
+    set(CPACK_NSIS_MODIFY_PATH "ON")
+    set(CPACK_CREATE_DESKTOP_LINKS flow123d)
+    set(CPACK_PACKAGE_EXECUTABLES "flow123d" "Flow123d")
+    # Specify links in [application] menu. This should contain a list of pair 
+    # "link" "link name". The link may be an URL or a path relative to installation 
+    # prefix. Like:
+    #               set(CPACK_NSIS_MENU_LINKS
+    #                   "doc/cmake-@CMake_VERSION_MAJOR@.@CMake_VERSION_MINOR@/cmake.html" "CMake Help"
+    #                   "http://www.cmake.org" "CMake Web Site")
+    set(CPACK_NSIS_MENU_LINKS 
+        "flow123d" "Flow123d"
+        "http://flow123d.github.io" "Flow123d web page")
+    
+    
+    
+    # 4. Page
+    # The default installation directory presented
+    # to the end user by the NSIS installer is under this root dir. The full
+    # directory presented to the end user is:
+    # ${CPACK_NSIS_INSTALL_ROOT}/${CPACK_PACKAGE_INSTALL_DIRECTORY}
+    #set(CPACK_NSIS_INSTALL_ROOT "")
+    
+    
+    
+    # An icon filename. The name of a *.ico file used as the main icon for the generated
+    # install program.
+    #set(CPACK_NSIS_MUI_ICON "")
+
+    # An icon filename. The name of a *.ico file used as the main icon for the generated
+    # uninstall program.
+    #set(CPACK_NSIS_MUI_UNIICON "")
+
+    # Extra NSIS commands that will be added to the beginning of the install Section,
+    # before your install tree is available on the target system.
+    #set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS "")
+
+    # Extra NSIS commands that will be added to the end of the install Section, 
+    # after your install tree is available on the target system.
+    
+    # File association for CON files."
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+        WriteRegStr HKCR '.con' '' 'Flow123dFile'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
+        ")
+
+    # Extra NSIS commands that will be added to the uninstall Section,
+    # before your install tree is removed from the target system.
+    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+        DeleteRegKey HKCR '.con'
+        DeleteRegKey HKCR 'Flow123dFile'
+        ")
+
+    # The arguments that will be passed to the NSIS SetCompressor command.
+    #set(CPACK_NSIS_COMPRESSOR "")
+
+    # Ask about uninstalling previous versions first.
+    # If this is set to "ON", then an installer will look for previous
+    # installed versions and if one is found, ask the user whether to
+    # uninstall it before proceeding with the install.
+    #set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "")
+
+    
+    # A path to the executable that contains the installer icon.
+    #set(CPACK_NSIS_INSTALLED_ICON_NAME "")
+
+    # URL to a web site providing assistance in installing your application.
+    set(CPACK_NSIS_HELP_LINK "http://flow123d.github.io")
+
+    # URL to a web site providing more information about your application.
+    set(CPACK_NSIS_URL_INFO_ABOUT "http://flow123d.github.io")
+
+    # Contact information for questions and comments about the installation process.
+    set(CPACK_NSIS_CONTACT "jan.brezin@tul.cz")
+
+    # Additional NSIS commands for creating start menu shortcuts.
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA "")
+
+    # Additional NSIS commands to uninstall start menu shortcuts.
+    #set(CPACK_NSIS_DELETE_ICONS_EXTRA "")
+
+    # Creating NSIS start menu links assumes that they are in 'bin' unless this 
+    # variable is set. For example, you would set this to 'exec' if your executables 
+    # are in an exec directory.
+    #set(CPACK_NSIS_EXECUTABLES_DIRECTORY "")
+
+    # Specify an executable to add an option to run on the finish page 
+    # of the NSIS installer.
+    #set(CPACK_NSIS_MUI_FINISHPAGE_RUN "")
+    
+
+    #SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}\\\\bin\\\\graphics\\\\flow123d.ico")
+    #SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} Flow123d")
+
+
+    set(CPACK_GENERATOR "NSIS")
     set(CPACK_SOURCE_GENERATOR "ZIP")
 elseif (UNIX)
+    SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
     set(CPACK_GENERATOR "TGZ")
     set(CPACK_SOURCE_GENERATOR "TGZ")
 endif()
