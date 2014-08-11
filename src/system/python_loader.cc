@@ -55,8 +55,12 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     // for unknown reason module name is non-const, so we have to make char * copy
     char * tmp_name = new char[ module_name.size() + 2 ];
     strcpy( tmp_name, module_name.c_str() );
-    PyObject * result = PyImport_ExecCodeModule(tmp_name,
-            Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input ) );
+    PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
+    if (! compiled_string) {
+        PyErr_Print();
+        std::cerr << "Error: Can not compile python string:\n'" << source_string << std::endl;
+    }
+    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
 
     if (result == NULL) {
         PyErr_Print();

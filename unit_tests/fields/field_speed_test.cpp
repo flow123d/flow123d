@@ -53,9 +53,9 @@ string field_input = R"JSON(
         formula_full_vector={ TYPE="FieldFormula", value=["x+z+x^2+y^2+z^2", "x+y+x^2+y^2+z^2", "y+z+x^2+y^2+z^2"] },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^2+y^2+z^2", "y+z+x^2+y^2+z^2", "x+z+x^2+y^2+z^2"] },
 
-        python_scalar={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.75, )" },
-        python_vector={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.75, 2.75, 3.75 )" },
-        python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
+        python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
+        python_vector={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 2.75, 3.75 )" },
+        python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
         elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
         elementwise_vector={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" },
@@ -80,9 +80,9 @@ string field_input = R"JSON(
         formula_full_vector={ TYPE="FieldFormula", value=["x+z+x^3+y^3+z^3", "x+y+x^3+y^3+z^3", "y+z+x^3+y^3+z^3"] },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^3+y^3+z^3", "y+z+x^3+y^3+z^3", "x+z+x^3+y^3+z^3"] },
 
-        python_scalar={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.25, )" },
-        python_vector={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.25, 2.25, 3.25 )" },
-        python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
+        python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
+        python_vector={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 2.25, 3.25 )" },
+        python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
         elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
         elementwise_vector={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" },
@@ -399,7 +399,7 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 }
 
 
-/*#ifdef HAVE_PYTHON
+#ifdef HAVE_PYTHON
 string python_input = R"CODE(
 def func_scalar(x,y,z):
     return ( 1.25, )     # one value tuple
@@ -429,7 +429,7 @@ TYPED_TEST(FieldSpeed, field_python) {
 	//this->test_result( this->expect_const_val_, (9 * 21) );
 	this->profiler_output();
 }
-#endif // HAVE_PYTHON */
+#endif // HAVE_PYTHON
 
 
 TYPED_TEST(FieldSpeed, field_elementwise) {
