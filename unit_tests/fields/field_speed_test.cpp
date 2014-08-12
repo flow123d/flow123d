@@ -28,7 +28,7 @@
 using namespace std;
 
 
-static const int loop_call_count = 1;
+static const int loop_call_count = 100000;
 static const int list_size = 10;
 
 
@@ -230,22 +230,16 @@ public:
 	}
 
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
-		cout << "Test result: " << this->test_result_sum_ << endl;
-		cout << "Expected:    " << multiplicator * expected << endl;
 		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
 	}
 
 	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
-		cout << "Test result: " << this->test_result_sum_ << endl;
-		cout << "Expected:    " << multiplicator * expected << endl;
 		for (int i=0; i<3; i++) {
 			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
 		}
 	}
 
 	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
-		cout << "Test result: " << this->test_result_sum_ << endl;
-		cout << "Expected:    " << multiplicator * expected << endl;
 		for (int i=0; i<3; i++) {
 			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
 		}
@@ -285,7 +279,6 @@ public:
     ReturnType expect_formula_full_val_;
     ReturnType expect_elementwise_val_;
     std::vector<ReturnType> value_list;
-    //FieldAlgorithmBase<3, T> *field_;
     FieldSet set_of_field_;
     Field<3, T> field_;
 	Mesh *mesh_;
@@ -302,7 +295,6 @@ public:
 
 
 typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::Vector, FieldValue<3>::VectorFixed > TestedTypes;
-//typedef ::testing::Types< FieldValue<3>::Vector > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 TYPED_TEST(FieldSpeed, array) {
@@ -400,33 +392,15 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 
 
 #ifdef HAVE_PYTHON
-string python_input = R"CODE(
-def func_scalar(x,y,z):
-    return ( 1.25, )     # one value tuple
-
-def func_vector(x,y,z):
-    return ( 1.75, 2.75, 3.75 )     # one value tuple
-
-def func_vector_fixed(x,y,z):
-    return ( 1.75, 3.75, 5.75 )     # one value tuple
-
-)CODE";
-
 TYPED_TEST(FieldSpeed, field_python) {
 	string key_name = "python_" + this->input_type_name_;
 	this->read_input(key_name);
-
-	//this->field_ = new FieldPython<3, TypeParam>(this->n_comp_);
-    //((FieldPython<3, TypeParam>)this->field_).set_python_field_from_string(python_input, "func_" + this->input_type_name_);
-    //this->field_->set_time(0.0);
 
 	START_TIMER("field_python");
 	this->call_test();
 	END_TIMER("field_python");
 
-	cout << "Test result: " << this->test_result_sum_ << endl;
-	cout << "Expected:    " << 21 * this->expect_const_val_ << endl;
-	//this->test_result( this->expect_const_val_, (9 * 21) );
+	this->test_result( this->expect_const_val_, 21 );
 	this->profiler_output();
 }
 #endif // HAVE_PYTHON
