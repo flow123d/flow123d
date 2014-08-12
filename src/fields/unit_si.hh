@@ -19,13 +19,13 @@ public:
 	static const std::vector<std::string> unit_symbols;
 
 	/// Methods set values of exponents for SI units with similar name
-	UnitSI & m(int val);
-	UnitSI & kg(int val);
-	UnitSI & s(int val);
-	UnitSI & A(int val);
-	UnitSI & K(int val);
-	UnitSI & mol(int val);
-	UnitSI & cd(int val);
+	UnitSI & m(int exp = 1);
+	UnitSI & kg(int exp = 1);
+	UnitSI & s(int exp = 1);
+	UnitSI & A(int exp = 1);
+	UnitSI & K(int exp = 1);
+	UnitSI & mol(int exp = 1);
+	UnitSI & cd(int exp = 1);
 
 	/**
 	 * Printout units in format: m.kg^2.s^-2
