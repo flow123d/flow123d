@@ -42,7 +42,7 @@ if(CMAKE_HAVE_CXX11)
     define_mpi_test(field_elementwise 1)   
     define_mpi_test(field_interpolated_p0 1)
     define_mpi_test(field_fe 1)
-    define_test(units)
+    define_test(unit_si)
        
 endif()
 

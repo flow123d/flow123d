@@ -139,7 +139,7 @@ set (sources_lib_coupling
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
-    fields/unit.cc
+    fields/unit_si.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc
