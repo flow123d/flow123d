@@ -1,5 +1,5 @@
 /*
- * unit.hh
+ * unit_si.hh
  *
  *  Created on: Aug 30, 2012
  *      Author: jb
@@ -10,22 +10,22 @@
 #include <string>
 
 
-class Unit {
+class UnitSI {
 public:
 	/// Constructor
-	Unit();
+	UnitSI();
 
 	/// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
 	static const std::vector<std::string> unit_symbols;
 
 	/// Methods set values of exponents for SI units with similar name
-	Unit & m(int val);
-	Unit & kg(int val);
-	Unit & s(int val);
-	Unit & A(int val);
-	Unit & K(int val);
-	Unit & mol(int val);
-	Unit & cd(int val);
+	UnitSI & m(int val);
+	UnitSI & kg(int val);
+	UnitSI & s(int val);
+	UnitSI & A(int val);
+	UnitSI & K(int val);
+	UnitSI & mol(int val);
+	UnitSI & cd(int val);
 
 	/**
 	 * Printout units in format: m.kg^2.s^-2

@@ -1,5 +1,5 @@
 /*
- * unit.cc
+ * unit_si.cc
  *
  *  Created on: Aug 30, 2012
  *      Author: jb
@@ -8,55 +8,55 @@
 
 #include <sstream>
 
-#include "fields/unit.hh"
+#include "fields/unit_si.hh"
 
 
 using namespace std;
 
 
-Unit::Unit() {
+UnitSI::UnitSI() {
 	exponents_.resize(7);
 	std::fill(exponents_.begin(), exponents_.end(), 0);
 }
 
-const std::vector<std::string> Unit::unit_symbols={"m","kg","s","A","K","mol","cd" };
+const std::vector<std::string> UnitSI::unit_symbols={"m","kg","s","A","K","mol","cd" };
 
-Unit & Unit::m(int val) {
+UnitSI & UnitSI::m(int val) {
 	exponents_[0] = val;
 	return *this;
 }
 
-Unit & Unit::kg(int val) {
+UnitSI & UnitSI::kg(int val) {
 	exponents_[1] = val;
 	return *this;
 }
 
-Unit & Unit::s(int val) {
+UnitSI & UnitSI::s(int val) {
 	exponents_[2] = val;
 	return *this;
 }
 
-Unit & Unit::A(int val) {
+UnitSI & UnitSI::A(int val) {
 	exponents_[3] = val;
 	return *this;
 }
 
-Unit & Unit::K(int val) {
+UnitSI & UnitSI::K(int val) {
 	exponents_[4] = val;
 	return *this;
 }
 
-Unit & Unit::mol(int val)  {
+UnitSI & UnitSI::mol(int val)  {
 	exponents_[5] = val;
 	return *this;
 }
 
-Unit & Unit::cd(int val) {
+UnitSI & UnitSI::cd(int val) {
 	exponents_[6] = val;
 	return *this;
 }
 
-std::string Unit::print() {
+std::string UnitSI::print() {
 	std::stringstream output;
 	for (unsigned int i=0; i<exponents_.size(); i++)
 		if (exponents_[i]) {
