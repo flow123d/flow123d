@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "fields/unit_si.hh"
+#include "system/xio.h"
 
 
 using namespace std;
@@ -17,46 +18,55 @@ using namespace std;
 UnitSI::UnitSI() {
 	exponents_.resize(7);
 	std::fill(exponents_.begin(), exponents_.end(), 0);
+	undef_ = true;
 }
 
 const std::vector<std::string> UnitSI::unit_symbols={"m","kg","s","A","K","mol","cd" };
 
 UnitSI & UnitSI::m(int exp) {
 	exponents_[0] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::kg(int exp) {
 	exponents_[1] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::s(int exp) {
 	exponents_[2] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::A(int exp) {
 	exponents_[3] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::K(int exp) {
 	exponents_[4] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::mol(int exp)  {
 	exponents_[5] = exp;
+	undef_ = false;
 	return *this;
 }
 
 UnitSI & UnitSI::cd(int exp) {
 	exponents_[6] = exp;
+	undef_ = false;
 	return *this;
 }
 
 std::string UnitSI::print() {
+	ASSERT(is_def(), "UnitSI object must be defined!");
 	std::stringstream output;
 	output << "$[";
 	for (unsigned int i=0; i<exponents_.size(); i++)
@@ -74,4 +84,12 @@ std::string UnitSI::print() {
 	output << "]$";
 
 	return output.str();
+}
+
+void UnitSI::undef(bool val) {
+	undef_ = val;
+}
+
+bool UnitSI::is_def() {
+	return !undef_;
 }

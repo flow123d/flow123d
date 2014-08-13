@@ -21,7 +21,7 @@ TEST(UnitSI, printout) {
 	std::cout << unit_2.print() << std::endl;
 	EXPECT_STREQ(std::string("$[ms^{-2}]$").c_str(), unit_2.print().c_str());
 
-	UnitSI unit_3 = UnitSI(); // dimensionless quantity
+	UnitSI unit_3 = UnitSI().m(0); // dimensionless quantity
 	std::cout << unit_3.print() << std::endl;
 	EXPECT_STREQ(std::string("$[-]$").c_str(), unit_3.print().c_str());
 }

@@ -28,9 +28,15 @@ public:
 	UnitSI & cd(int exp = 1);
 
 	/**
-	 * Printout units in format: m.kg^2.s^-2
+	 * Printout units in format: $[m.kg^{2}.s^{-2}]$
 	 */
 	std::string print();
+
+	/// Set flag that object is undefined.
+	void undef(bool val = true);
+
+	// Return value of defined_ parameter.
+	bool is_def();
 
 private:
 	/**
@@ -38,5 +44,12 @@ private:
 	 * [m, kg, s, A, K, mol, cd]
 	 */
 	std::vector<int> exponents_;
+
+	/**
+	 * Flag if object is undefined.
+	 *
+	 * Value is set on true in constructor, when any exponent is changed, false value is set.
+	 */
+	bool undef_;
 
 };
