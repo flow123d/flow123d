@@ -25,3 +25,13 @@ TEST(UnitSI, printout) {
 	std::cout << unit_3.print() << std::endl;
 	EXPECT_STREQ(std::string("$[-]$").c_str(), unit_3.print().c_str());
 }
+
+TEST(UnitSI, multiplicative_operator) {
+	UnitSI pressure = UnitSI().m(-1).kg().s(-2);
+	UnitSI area = UnitSI().m(2);
+	UnitSI force = pressure * area;
+	EXPECT_STREQ(std::string("$[mkgs^{-2}]$").c_str(), force.print().c_str());
+
+	UnitSI force2 = area * UnitSI::Pa;
+	EXPECT_STREQ( UnitSI::N.print().c_str(), force2.print().c_str() );
+}

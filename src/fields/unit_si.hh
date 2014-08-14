@@ -15,6 +15,12 @@ public:
 	/// Constructor
 	UnitSI();
 
+	/// Definitions of frequently used derived units (Newton, Joule, Watt, Pascal)
+	static const UnitSI N;
+	static const UnitSI J;
+	static const UnitSI W;
+	static const UnitSI Pa;
+
 	/// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
 	static const std::vector<std::string> unit_symbols;
 
@@ -30,13 +36,13 @@ public:
 	/**
 	 * Printout units in format: $[m.kg^{2}.s^{-2}]$
 	 */
-	std::string print();
+	std::string print() const;
 
 	/// Set flag that object is undefined.
 	void undef(bool val = true);
 
 	// Return value of defined_ parameter.
-	bool is_def();
+	bool is_def() const;
 
 private:
 	/**
@@ -52,4 +58,8 @@ private:
 	 */
 	bool undef_;
 
+friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
 };
+
+
+UnitSI operator *(const UnitSI &a, const UnitSI &b);
