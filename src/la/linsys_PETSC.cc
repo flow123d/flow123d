@@ -376,13 +376,6 @@ int LinSys_PETSC::solve()
 
 }
 
-void LinSys_PETSC::get_whole_solution( std::vector<double> & globalSolution )
-{
-    this -> gatherSolution_( );
-    globalSolution.resize( globalSolution_.size( ) );
-    std::copy( globalSolution_.begin(), globalSolution_.end(), globalSolution.begin() );
-}
-
 void LinSys_PETSC::view( )
 {
     std::string matFileName = "flow123d_matrix.m";
@@ -418,48 +411,6 @@ LinSys_PETSC::~LinSys_PETSC( )
 
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
-
-void LinSys_PETSC::gatherSolution_( )
-{
-    // unsigned
-    unsigned globalSize = rows_ds_->size( );
-
-    // create a large local solution vector for gathering 
-    PetscErrorCode ierr;
-    Vec solutionGathered;              //!< large vector of global solution stored locally
-    //ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr );
-
-    // prepare gathering scatter
-    VecScatter VSdistToLarge;          //!< scatter for gathering local parts into large vector
-    ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr );
-    //ierr = VecScatterCreate( solution_, PETSC_NULL, solutionGathered, PETSC_NULL, &VSdistToLarge ); CHKERRV( ierr ); 
-
-    // get global solution vector at each process
-    ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
-    ierr = VecScatterEnd(   VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
-
-    // extract array of global solution for copy
-    PetscScalar *solutionGatheredArray;
-    ierr = VecGetArray( solutionGathered, &solutionGatheredArray );
-
-    // copy the result to calling routine
-    //std::transform( &(solutionGatheredArray[0]), &(solutionGatheredArray[ globalSize ]), sol_disordered.begin( ), 
-    //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
-
-    //reorder solution
-    globalSolution_.resize( globalSize );
-    for ( unsigned int i = 0; i < globalSize; i++ ) {
-        globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
-    }
-
-    // release array
-    ierr = VecRestoreArray( solutionGathered, &solutionGatheredArray );
-
-    // destroy PETSc objects
-    ierr = VecDestroy( &solutionGathered );     CHKERRV( ierr );
-    ierr = VecScatterDestroy( &VSdistToLarge ); CHKERRV( ierr );
-}
-
 
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {

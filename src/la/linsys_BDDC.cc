@@ -269,10 +269,9 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 
 
     double * locSolVecArray;
-    PetscErrorCode ierr;
-    ierr = VecGetArray( locSolVec_, &locSolVecArray ); 
+    VecGetArray( locSolVec_, &locSolVecArray ); 
     std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );
-    ierr = VecRestoreArray( locSolVec_, &locSolVecArray ); 
+    VecRestoreArray( locSolVec_, &locSolVecArray ); 
 
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
@@ -286,23 +285,6 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 	return 0;
 #endif // HAVE_BDDCML
 
-}
-
-void LinSys_BDDC::get_whole_solution( std::vector<double> & globalSolution )
-{
-#ifdef HAVE_BDDCML
-    this -> gatherSolution_( );
-    globalSolution.resize( globalSolution_.size( ) );
-    std::copy( globalSolution_.begin(), globalSolution_.end(), globalSolution.begin() );
-#endif // HAVE_BDDCML
-}
-
-void LinSys_BDDC::set_whole_solution( std::vector<double> & globalSolution )
-{
-#ifdef HAVE_BDDCML
-    globalSolution_.resize( globalSolution.size( ) );
-    std::copy( globalSolution.begin(), globalSolution.end(), globalSolution_.begin() );
-#endif // HAVE_BDDCML
 }
 
 void LinSys_BDDC::set_from_input(const Input::Record in_rec)
@@ -334,57 +316,57 @@ LinSys_BDDC::~LinSys_BDDC()
 };
 
 // construct global solution
-void LinSys_BDDC::gatherSolution_( )
-{
-#ifdef HAVE_BDDCML
-    int ierr;
-
-    // merge solution on root
-    int rank;
-    MPI_Comm_rank( comm_, &rank );
-    int nProc;
-    MPI_Comm_size( comm_, &nProc );
-
-    globalSolution_.resize( size_ );
-    std::vector<double> locSolutionNeib;
-    if ( rank == 0 ) {
-        // merge my own data
-        for ( unsigned int i = 0; i < isngn_.size(); i++ ) {
-            int ind = isngn_[i];
-            globalSolution_[ind] = locSolution_[i];
-        }
-        for ( int iProc = 1; iProc < nProc; iProc++ ) {
-            // receive length
-            int length;
-            MPI_Status status;
-            ierr = MPI_Recv( &length, 1, MPI_INT, iProc, iProc, comm_, &status ); 
-
-            // receive indices
-            std::vector<int> inds( length );
-            ierr = MPI_Recv( &(inds[0]), length, MPI_INT, iProc, iProc, comm_, &status ); 
-
-            // receive local solution
-            locSolutionNeib.resize( length );
-            ierr = MPI_Recv( &(locSolutionNeib[0]), length, MPI_DOUBLE, iProc, iProc, comm_, &status ); 
-
-            // merge data
-            for ( int i = 0; i < length; i++ ) {
-                int ind = inds[i];
-                globalSolution_[ind] = locSolutionNeib[i];
-            }
-        }
-    }
-    else {
-        // send my solution to root
-        int length = isngn_.size();
-        ierr = MPI_Send( &length,                1, MPI_INT,    0, rank, comm_ ); 
-        ierr = MPI_Send( &(isngn_[0]),      length, MPI_INT,    0, rank, comm_ ); 
-        ierr = MPI_Send( &(locSolution_[0]), length, MPI_DOUBLE, 0, rank, comm_ ); 
-    }
-    // broadcast global solution from root
-    ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
-#endif // HAVE_BDDCML
-}
+//void LinSys_BDDC::gatherSolution_( )
+//{
+//#ifdef HAVE_BDDCML
+//    int ierr;
+//
+//    // merge solution on root
+//    int rank;
+//    MPI_Comm_rank( comm_, &rank );
+//    int nProc;
+//    MPI_Comm_size( comm_, &nProc );
+//
+//    globalSolution_.resize( size_ );
+//    std::vector<double> locSolutionNeib;
+//    if ( rank == 0 ) {
+//        // merge my own data
+//        for ( unsigned int i = 0; i < isngn_.size(); i++ ) {
+//            int ind = isngn_[i];
+//            globalSolution_[ind] = locSolution_[i];
+//        }
+//        for ( int iProc = 1; iProc < nProc; iProc++ ) {
+//            // receive length
+//            int length;
+//            MPI_Status status;
+//            ierr = MPI_Recv( &length, 1, MPI_INT, iProc, iProc, comm_, &status ); 
+//
+//            // receive indices
+//            std::vector<int> inds( length );
+//            ierr = MPI_Recv( &(inds[0]), length, MPI_INT, iProc, iProc, comm_, &status ); 
+//
+//            // receive local solution
+//            locSolutionNeib.resize( length );
+//            ierr = MPI_Recv( &(locSolutionNeib[0]), length, MPI_DOUBLE, iProc, iProc, comm_, &status ); 
+//
+//            // merge data
+//            for ( int i = 0; i < length; i++ ) {
+//                int ind = inds[i];
+//                globalSolution_[ind] = locSolutionNeib[i];
+//            }
+//        }
+//    }
+//    else {
+//        // send my solution to root
+//        int length = isngn_.size();
+//        ierr = MPI_Send( &length,                1, MPI_INT,    0, rank, comm_ ); 
+//        ierr = MPI_Send( &(isngn_[0]),      length, MPI_INT,    0, rank, comm_ ); 
+//        ierr = MPI_Send( &(locSolution_[0]), length, MPI_DOUBLE, 0, rank, comm_ ); 
+//    }
+//    // broadcast global solution from root
+//    ierr = MPI_Bcast( &(globalSolution_[0]), globalSolution_.size(), MPI_DOUBLE, 0, comm_ );
+//#endif // HAVE_BDDCML
+//}
 
 double LinSys_BDDC::get_solution_precision()
 {

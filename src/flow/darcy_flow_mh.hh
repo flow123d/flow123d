@@ -358,8 +358,6 @@ protected:
 	int	*row_4_edge;		//< edge index to matrix row
 
 	// MATIS related arrays
-        std::vector<double>   solution_;                 //< sequantial scattered solution vector
-        std::vector<unsigned> solver_indices_;           //< renumbering of unknowns in the global vector
         boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
