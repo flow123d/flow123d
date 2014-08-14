@@ -246,7 +246,7 @@ public:
 	}
 
 	void profiler_output() {
-		static ofstream os( FilePath("speed_test_profiler.log", FilePath::output_file) );
+		static ofstream os( FilePath("speed_test_" + this->input_type_name_ + ".log", FilePath::output_file) );
 		Profiler::instance()->output(MPI_COMM_WORLD, os);
 		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
 	}
