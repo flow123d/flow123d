@@ -84,10 +84,8 @@ string from_py_string(const wstring &wstr) {
     return string( buff, str_size );
 }  
 
-#ifndef PYTHONLIBS_VERSION_MAJOR
-
-#endif
-
+// currently we support only Python 2.7
+//
 #if PYTHONLIBS_VERSION_MAJOR<3
     #define to_py_string      string
     #define from_py_string    string
