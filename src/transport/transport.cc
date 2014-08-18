@@ -85,7 +85,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
     bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units("M/L^3");
+    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
 }
 
 

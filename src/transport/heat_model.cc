@@ -152,7 +152,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=output_field
             .name("temperature")
-            .units("M/L^3")
+            .units( UnitSI().kg().m(-3) )
             .flags(equation_result);
 }
 

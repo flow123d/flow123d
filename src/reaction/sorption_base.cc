@@ -67,8 +67,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     ADD_FIELD(init_conc_solid, "Initial solid concentration of substances."
             " Vector, one value for every substance.", "0");
     
-    rock_density.units("");
-    init_conc_solid.units("M/L^3");
+    rock_density.units( UnitSI().m(0) );
+    init_conc_solid.units( UnitSI().kg().m(-3) );
 
     input_data_set_ += *this;
 
@@ -76,11 +76,11 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     // hence we do not add it to the input_data_set_
     *this += porosity
             .name("porosity")
-            .units("1")
+            .units( UnitSI().m(0) )
             .flags(FieldFlag::input_copy);
     
     output_fields += *this;
-    output_fields += conc_solid.name(output_field_name).units("M/L^3");
+    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) );
 }
 
 Record SorptionBase::record_factory(SorptionBase::SorptionRecord::Type fact)

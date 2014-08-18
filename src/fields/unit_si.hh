@@ -6,6 +6,9 @@
  */
 
 
+#ifndef UNIT_SI_HH_
+#define UNIT_SI_HH_
+
 #include <vector>
 #include <string>
 
@@ -63,3 +66,6 @@ friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
 
 
 UnitSI operator *(const UnitSI &a, const UnitSI &b);
+
+
+#endif /* UNIT_SI_HH_ */

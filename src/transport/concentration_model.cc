@@ -75,7 +75,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 	*this+=output_field
 	        .name("conc")
-	        .units("M/L^3")
+	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 }
 
