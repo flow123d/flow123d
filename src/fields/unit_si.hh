@@ -37,14 +37,16 @@ public:
 	UnitSI & cd(int exp = 1);
 
 	/**
-	 * Printout units in format: $[m.kg^{2}.s^{-2}]$
+	 * Makes unit description string in Latex format, e.g. "$[m.kg^{2}.s^{-2}]$"
+	 *
+	 * Have assert for undefined units.
 	 */
 	std::string print() const;
 
-	/// Set flag that object is undefined.
+	/// Set flag that unit is undefined.
 	void undef(bool val = true);
 
-	// Return value of defined_ parameter.
+	/// Return true if the unit is defined.
 	bool is_def() const;
 
 private:
@@ -61,10 +63,12 @@ private:
 	 */
 	bool undef_;
 
-friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
+	/// Product of two units.
+	friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
 };
 
 
+/// Product of two units.
 UnitSI operator *(const UnitSI &a, const UnitSI &b);
 
 
