@@ -188,6 +188,7 @@
         
 #################################################################
 # Packaging and publish
+# Use -i option for make to ignore errors comming from NSIS call.
 - job-template:
     name: "Flow123d-{platform}-packages"
     display-name: "{platform} / make packages"
@@ -195,7 +196,7 @@
     builders:
       - shell: |
           cd flow123d/build_tree
-          make package
+          make -i package
           make post_package
           rm -rf _CPack_Packages         
           make package_source
