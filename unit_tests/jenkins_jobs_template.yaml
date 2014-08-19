@@ -8,7 +8,7 @@
     name: flow123d-build
     # default template fields
     node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    workspace: "F123-{platform}-{build-type}"
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -309,7 +309,7 @@
             - master
             - 1.8.0_master
             - 1.8.1_patch
-            - 1.8.2_release
+            - 1.8.2_rc
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H * * * *"
