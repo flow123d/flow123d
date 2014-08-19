@@ -247,7 +247,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     	create_linear_system();
 
-        make_serial_scatter();
     }
 
 
@@ -955,6 +954,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 
     END_TIMER("preallocation");
+
+    make_serial_scatter();
+
 }
 
 
