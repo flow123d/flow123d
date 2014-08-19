@@ -179,17 +179,6 @@ HeatTransferModel::HeatTransferModel() :
 		flux_changed(true)
 {}
 
-/*
-void HeatTransferModel::init_data(unsigned int n_subst_)
-{}
-*/
-
-/*
-void HeatTransferModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
-{
-	data().cross_section.copy_from(cross_section);
-}*/
-
 
 void HeatTransferModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {

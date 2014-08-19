@@ -69,12 +69,10 @@
           }
         ],
         
+        scheme_tolerance = 0.0,
+        
         reaction_mobile = {
           TYPE="LinearReactions",
-          substances = [
-            "A",
-            "B"
-          ],
           decays = [
             {
               parent = "A",

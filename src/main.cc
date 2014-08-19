@@ -45,7 +45,6 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
-#include <boost/filesystem.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -53,7 +52,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.8.1"
+#define _PROGRAM_VERSION_   "0.0.0"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -124,7 +123,7 @@ void Application::split_path(const string& path, string& directory, string& file
 void Application::display_version() {
     // Say Hello
     // make strings from macros in order to check type
-    string version(_PROGRAM_VERSION_);
+    string version(_VERSION_NAME_);
     string revision(_GIT_REVISION_);
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);
@@ -277,10 +276,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
-
-    if (!boost::filesystem::is_directory(output_dir)) {
-    	boost::filesystem::create_directory(output_dir);
-    }
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
