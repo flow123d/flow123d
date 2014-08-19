@@ -18,11 +18,17 @@ public:
 	/// Constructor
 	UnitSI();
 
-	/// Definitions of frequently used derived units (Newton, Joule, Watt, Pascal)
+	/// Definitions of frequently used derived units
+	/// Definition of Newton
 	static const UnitSI N;
+	/// Definition of Joule
 	static const UnitSI J;
+	/// Definition of Watt
 	static const UnitSI W;
+	/// Definition of Pascal
 	static const UnitSI Pa;
+	/// Definition of dimensionless unit
+	static const UnitSI dimensionless;
 
 	/// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
 	static const std::vector<std::string> unit_symbols;
@@ -41,7 +47,7 @@ public:
 	 *
 	 * Have assert for undefined units.
 	 */
-	std::string print() const;
+	std::string format() const;
 
 	/// Set flag that unit is undefined.
 	void undef(bool val = true);
@@ -65,11 +71,16 @@ private:
 
 	/// Product of two units.
 	friend UnitSI operator *(const UnitSI &a, const UnitSI &b);
+	/// Proportion of two units.
+	friend UnitSI operator /(const UnitSI &a, const UnitSI &b);
 };
 
 
 /// Product of two units.
 UnitSI operator *(const UnitSI &a, const UnitSI &b);
+
+/// Proportion of two units.
+UnitSI operator /(const UnitSI &a, const UnitSI &b);
 
 
 #endif /* UNIT_SI_HH_ */

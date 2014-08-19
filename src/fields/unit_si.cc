@@ -21,10 +21,11 @@ UnitSI::UnitSI() {
 	undef_ = true;
 }
 
-const UnitSI UnitSI::N = UnitSI().m().kg().s(-2);;
-const UnitSI UnitSI::J = UnitSI().m(2).kg().s(-2);;
-const UnitSI UnitSI::W = UnitSI().m(2).kg().s(-3);;
-const UnitSI UnitSI::Pa = UnitSI().m(-1).kg().s(-2);;
+const UnitSI UnitSI::N = UnitSI().m().kg().s(-2);
+const UnitSI UnitSI::J = UnitSI().m(2).kg().s(-2);
+const UnitSI UnitSI::W = UnitSI().m(2).kg().s(-3);
+const UnitSI UnitSI::Pa = UnitSI().m(-1).kg().s(-2);
+const UnitSI UnitSI::dimensionless = UnitSI().m(0);
 
 const std::vector<std::string> UnitSI::unit_symbols={"m","kg","s","A","K","mol","cd" };
 
@@ -70,7 +71,7 @@ UnitSI & UnitSI::cd(int exp) {
 	return *this;
 }
 
-std::string UnitSI::print() const {
+std::string UnitSI::format() const {
 	ASSERT(is_def(), "UnitSI object must be defined!");
 	std::stringstream output;
 	output << "$[";
@@ -107,6 +108,19 @@ UnitSI operator *(const UnitSI &a, const UnitSI &b) {
 		tmp.undef_ = false;
 		for (unsigned int i=0; i<7; i++) {
 			tmp.exponents_[i] = a.exponents_[i] + b.exponents_[i];
+		}
+	}
+
+	return tmp;
+}
+
+UnitSI operator /(const UnitSI &a, const UnitSI &b) {
+	UnitSI tmp;
+
+	if (a.is_def() && b.is_def()) {
+		tmp.undef_ = false;
+		for (unsigned int i=0; i<7; i++) {
+			tmp.exponents_[i] = a.exponents_[i] - b.exponents_[i];
 		}
 	}
 
