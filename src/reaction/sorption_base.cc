@@ -67,8 +67,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     ADD_FIELD(init_conc_solid, "Initial solid concentration of substances."
             " Vector, one value for every substance.", "0");
     
-    rock_density.units( UnitSI().m(0) );
-    init_conc_solid.units( UnitSI().kg().m(-3) );
+    rock_density.units( UnitSI().kg().m(-3) );
+    init_conc_solid.units( UnitSI().mol().m(-3) );
 
     input_data_set_ += *this;
 

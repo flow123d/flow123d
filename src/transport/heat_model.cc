@@ -152,7 +152,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=output_field
             .name("temperature")
-            .units( UnitSI().kg().m(-3) )
+            .units( UnitSI().K() )
             .flags(equation_result);
 }
 

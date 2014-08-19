@@ -85,9 +85,9 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 
 	fields_for_output += *this;
 
-	*this += pressure_diff.name("pressure_diff").units(UnitSI().m(0));
-	*this += velocity_diff.name("velocity_diff").units(UnitSI().m(0));
-	*this += div_diff.name("div_diff").units(UnitSI().m(0));
+	*this += pressure_diff.name("pressure_diff").units(UnitSI().m());
+	*this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
+	*this += div_diff.name("div_diff").units(UnitSI().s(-1));
 
 }
 
