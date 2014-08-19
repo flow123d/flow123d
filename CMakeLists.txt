@@ -497,10 +497,22 @@ if (USE_PYTHON)
                 COMMAND mkdir -p ${TARGET_PREFIX}/lib 
                 )             
             # recursive copy, not overwrite existing files
-            # we copy all and exclute some paths and files during install    
+            # we copy all and exclude some paths and files during install    
             execute_process(
                 COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
                 )
+            
+            # copy python include
+            set(PYTHON_COPY_INCLUDE_TARGET  include/${PYTHON_VERSION})
+            execute_process(
+                COMMAND mkdir -p ${TARGET_PREFIX}/include 
+                )             
+            # recursive copy, not overwrite existing files
+            # we copy all and exclude some paths and files during install    
+            execute_process(
+                COMMAND cp -rn ${PY_PREFIX}/include/${PYTHON_VERSION} ${TARGET_PREFIX}/include 
+                )
+            
                 
         endif()
     else()
@@ -546,16 +558,23 @@ add_custom_target(update_source_tree
 # a custom target - is always built -> call cmake script to generate rev_num.h
 # Get the current working branch
 
-#message("SOURCEDIR: ${CMAKE_SOURCE_DIR}")
+# This command is run from build dir and cmake set CMAKE_SOURCE_DIR to the build dir; thus we have to 
+# pass different variable with source dir, namely FLOW123D_SOURCE_DIR
 add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DSOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
 )
 # rev_num.h is a generated file
 set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 
-    
+# get git information also through configure phase
+set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
+include(Flow123d_git_info)
+
+# version in reference manual
+STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/doc/reference_manual/flow_version.tex)    
     
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
@@ -677,6 +696,9 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
+# Cache PLATFORM_NAME
+set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
+
 if (UNIX)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
 endif()
@@ -718,6 +740,8 @@ if (PYTHON_COPY)
             PATTERN *.so EXCLUDE
             PATTERN */dist-packages EXCLUDE
             PATTERN *.py EXCLUDE)
+    install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
+            DESTINATION include)
 endif()
 
 install(TARGETS    bin/flow123d  
@@ -753,9 +777,9 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport 
 SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
-SET(CPACK_PACKAGE_VERSION_MAJOR "1")
-SET(CPACK_PACKAGE_VERSION_MINOR "8")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
+SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
+SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 

@@ -36,7 +36,7 @@
 # Multijob  project - release
 - project:
     name: "Multijob project release"
-    platform: [ linux, windows ]
+    platform: [ linux, windows, windows32 ]
     build-type: release
     unit-dir: 
       - $PLACEHOLDER_unit_list$
@@ -88,17 +88,17 @@
           cd flow123d
           make ref-doc
           make doxy-doc
-    publishers:
-      - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_doc'
-          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
-          remove-prefix: 'build-master/doc/reference_manual/'
-      - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
-          source: 'build-master/doc/online-doc/flow123d/*'
-          remove-prefix: 'build-master/doc/online-doc/flow123d'
+#    publishers:
+#      - cifs: 
+#          site: 'bacula'
+#          target: 'jan.brezina/public_html/flow123d_doc'
+#          source: 'build-master/doc/reference_manual/flow123d_doc.pdf'
+#          remove-prefix: 'build-master/doc/reference_manual/'
+#      - cifs: 
+#          site: 'bacula'
+#          target: 'jan.brezina/public_html/flow123d_doc/source_doc'
+#          source: 'build-master/doc/online-doc/flow123d/*'
+#          remove-prefix: 'build-master/doc/online-doc/flow123d'
             
 
 
@@ -187,7 +187,7 @@
           make -C flow123d/tests/{test-dir} test-all
         
 #################################################################
-# Packaging
+# Packaging and publish
 - job-template:
     name: "Flow123d-{platform}-packages"
     display-name: "{platform} / make packages"
@@ -199,13 +199,18 @@
           rm -rf _CPack_Packages         
           make package_source
           rm -rf _CPack_Packages
+      - shell: |
+          cd flow123d
+          bin/prepare_to_publish.sh
+      - inject:
+          properties-file: prop.file
           
     publishers:
       - cifs: 
           site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_packages/master_night_build'
-          source: 'flow123d/build_tree/Flow123d-*'
-          remove-prefix: 'flow123d/build_tree/'
+          target: 'jan.brezina/public_html/flow123d_packages'
+          source: build-${{GIT_BRANCH}}/publish_dir/**/*
+          remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
 
 
@@ -302,16 +307,24 @@
           branches:
             - master
             - 1.8.0_master
+            - 1.8.1_patch
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
-      - pollscm: "H H(0-6) * * *"
+      - pollscm: "H * * * *"
       #- github
     wrappers:
       - build-name:
           name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
     builders:
       # escaping quotas and double braces are due to YAML format
-      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+#      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+#      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+      - shell: |
+          echo "BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}" >prop.file
+          echo "GIT_BRANCH=${{GIT_BRANCH##origin/}}" >>prop.file
+          rm -rf build-*
+          cd flow123d
+          git checkout ${{GIT_BRANCH##origin/}}
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL
@@ -340,7 +353,7 @@
             - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
       - multijob:
           name: "Pack and Install"
-          condition: SUCCESSFUL
+          condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-packages"
 
