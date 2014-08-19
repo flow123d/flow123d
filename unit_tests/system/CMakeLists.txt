@@ -36,6 +36,7 @@ add_test_directory("${libs}")
     define_test(xprintf)
     define_test(application_base)
     define_test(flag_array)
+    define_test(check_error)
     
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  
