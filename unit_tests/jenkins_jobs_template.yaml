@@ -119,10 +119,11 @@
     defaults: flow123d-build
     builders:
       - shell: |
-          # configure
+          # build all common sources for unit tests
           cd flow123d
           make -j 4 all
-          make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+          make -j 4 -C build_tree/unit_tests gtest_mpi_obj         
+
 #    publishers:
 #      -github-notifier       
 
