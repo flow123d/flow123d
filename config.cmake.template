@@ -71,6 +71,11 @@
 
 ### Build setting ####################################################################
 
+#### parallel builds ####
+# Set number of threads to use when performing automatic build of necessary libraries.
+# If the variable is not set we try to get it from system environment, i.e. default value is
+# set(MAKE_NUMCPUS $ENV{MAKE_NUMCPUS})
+
 ### verbose mode ####
 # option to produce more verbose compiling
 # for the same result you can call make with VERBOSE=1

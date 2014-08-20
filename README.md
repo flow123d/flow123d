@@ -41,18 +41,22 @@ Requested packages are:
 Recommended packages for development: 
 * libboost                        General purpose C++ library 
 
-Namely you need development version of the Boost sub-libraries: "Program Options", "Serialize", and "Regex".
-In KUbuntu, these are in separate packages:
+Namely you need development version of the Boost sub-libraries: "Program Options", "Serialize", "Regex", and "Filesystem".
+In Debian/Ubuntu distributions, these are in separate packages:
 
 * libboost-program-options-dev 
 * libboost-serialize-dev
 * libboost-regex-dev
+* libboost-filesystem-dev 
 
 Flow123d downloads and installs Boost during configuration if it is not found in the system, but it may
-take long. Optionally you may use
+take long. Optionally you may need
 
-* doxygen, graphviz     source generated documentation and its support tool for diagrams 
-* tetex                 or other Latex package to build reference manual
+* doxygen, graphviz     for source generated documentation and its dependency diagrams 
+* texlive-latex         or other Latex package to build reference manual, we use also some extra packages:
+                        on RedHat type distributions you may need texlive-cooltooltips, on Debian/Ubuntu 
+			texlive-latex-extra
+* imagemagick		tool is used to generate some graphics for the reference manual	
 
 Flow123d depends also on PETSc library. It can be installed automatically during configuration,
 but for good parallel performance it has to be configured manually see appropriate section later on.

@@ -25,7 +25,7 @@
 
       output = {
         output_stream =  {
-          file = "test3.pvd", 
+          file = "flow.pvd", 
           format = { TYPE = "vtk", variant = "ascii" }
         },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "conductivity", "anisotropy" ]
@@ -98,7 +98,7 @@
       
       output_fields = ["conc", "porosity"],
       output_stream = {
-        file = "test3-transport.pvd", 
+        file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
         time_step = 0.1        
       },

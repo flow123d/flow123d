@@ -47,7 +47,7 @@ public:
      *
      * The method with no parameters is called at the beginning of every function of this class, so an explicit call
      * to it has only sense if one would like to provide alternative python home directories.
-     * The string has form <prafix>[:<exec_prefix>] where <prefix> is prefix for platform independent libraries
+     * The string has form <prefix>[:<exec_prefix>] where <prefix> is prefix for platform independent libraries
      * (namely sources of python standard libraries) and <exec_prefix> is prefix for platform dependent libraries namely
      * for the python executable.
      */

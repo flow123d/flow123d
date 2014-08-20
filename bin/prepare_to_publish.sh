@@ -53,4 +53,6 @@ safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-Source.tar.gz" \
           "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_source.tar.gz"
 safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-CYGWIN.zip" \
           "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_${PLATFORM_NAME}.zip"
+safe_copy "${BUILD_TREE}/_CPack_Packages/CYGWIN/NSIS/Flow123d-${GIT_VERSION_FULL}-CYGWIN.exe" \
+          "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_${PLATFORM_NAME}.exe"
 
