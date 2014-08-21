@@ -11,6 +11,7 @@ set -x
 
 BIN_DIR="${0%/*}"
 BUILD_TREE="${BIN_DIR}/../build_tree" 
+SOURCE_DIR="${BIN_DIR}/.."
 
 function get_cmake_var {
   VAR_NAME=$1
@@ -41,10 +42,12 @@ rm -rf "${PUBLISH_DIR}"
 mkdir -p "${PUBLISH_DIR}"
 
 
-${BIN_DIR}/md_convert.sh ${BIN_DIR}/../README.md
-${BIN_DIR}/md_convert.sh ${BIN_DIR}/../CHANGES.md
-safe_copy "${BUILD_TREE}/README.html"
-safe_copy "${BUILD_TREE}/CHANGES.html"
+#${BIN_DIR}/md_convert.sh ${BIN_DIR}/../README.md
+#${BIN_DIR}/md_convert.sh ${BIN_DIR}/../CHANGES.md
+#safe_copy "${BUILD_TREE}/README.html"
+#safe_copy "${BUILD_TREE}/CHANGES.html"
+safe_copy "${SOURCE_DIR}/CHANGES.md"
+safe_copy "${SOURCE_DIR}/README.md"
 safe_copy "${BUILD_TREE}/doc/reference_manual/flow123d_doc.pdf"
 safe_copy "${BUILD_TREE}/doc/online-doc/flow123d" "${PUBLISH_DIR}/source_doc"
 safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-Linux.tar.gz" \

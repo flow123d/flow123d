@@ -197,11 +197,11 @@
     builders:
       - shell: |
           cd flow123d/build_tree
+          rm -rf _CPack_Packages         
           make package_source
           rm -rf _CPack_Packages
           make -i package
           make post_package
-          rm -rf _CPack_Packages         
       - shell: |
           cd flow123d
           bin/prepare_to_publish.sh
