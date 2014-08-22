@@ -190,6 +190,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("fracture_sigma")
             .description(
             "Coefficient of diffusive transfer through fractures (for each substance).")
+            .units( UnitSI::dimensionless )
             .input_default("1.0")
             .flags_add(FieldFlag::in_main_matrix);
 
@@ -198,6 +199,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .description(
             "Penalty parameter influencing the discontinuity of the solution (for each substance). "
             "Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.")
+            .units( UnitSI::dimensionless )
             .input_default("1.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
@@ -205,6 +207,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("bc_type")
             .description(
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            .units( UnitSI().m().s(-1) )
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
             .flags_add(FieldFlag::in_rhs);
@@ -213,12 +216,14 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     *this+=bc_flux
             .name("bc_flux")
             .description("Flux in Neumann boundary condition.")
+            .units( UnitSI::dimensionless )
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     *this+=bc_robin_sigma
             .name("bc_robin_sigma")
             .description("Conductivity coefficient in Robin boundary condition.")
+            .units( UnitSI::dimensionless )
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});

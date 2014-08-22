@@ -68,6 +68,9 @@ SorptionBase::EqData::EqData(const string &output_field_name)
             " Vector, one value for every substance.", "0");
     
     rock_density.units( UnitSI().kg().m(-3) );
+    sorption_type.units( UnitSI::dimensionless );
+    isotherm_mult.units( UnitSI::dimensionless );
+    isotherm_other.units( UnitSI::dimensionless );
     init_conc_solid.units( UnitSI().mol().m(-3) );
 
     input_data_set_ += *this;
@@ -76,7 +79,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     // hence we do not add it to the input_data_set_
     *this += porosity
             .name("porosity")
-            .units( UnitSI().m(0) )
+            .units( UnitSI::dimensionless )
             .flags(FieldFlag::input_copy);
     
     output_fields += *this;

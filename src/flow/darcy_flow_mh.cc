@@ -176,6 +176,20 @@ DarcyFlowMH::EqData::EqData()
     main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
 
+    anisotropy.units( UnitSI::dimensionless );
+    cross_section.units( UnitSI::dimensionless );
+    conductivity.units( UnitSI::dimensionless );
+    sigma.units( UnitSI::dimensionless );
+    water_source_density.units( UnitSI().kg().m(-3) );
+
+    bc_type.units( UnitSI::dimensionless );
+    bc_pressure.units( UnitSI().m() );
+    bc_flux.units( UnitSI().m().s(-1) );
+    bc_robin_sigma.units( UnitSI::dimensionless );
+
+    init_pressure.units( UnitSI().m() );
+    storativity.units( UnitSI::dimensionless );
+
 }
 
 

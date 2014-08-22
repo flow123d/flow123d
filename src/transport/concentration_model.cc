@@ -50,26 +50,31 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 {
     *this+=bc_conc
             .name("bc_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
     *this+=init_conc
             .name("init_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Initial concentrations.")
             .input_default("0.0");
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal dispersivity (for each substance).")
+            .units( UnitSI::dimensionless )
             .input_default("0.0")
             .flags_add( in_main_matrix );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
+            .units( UnitSI::dimensionless )
             .input_default("0.0")
             .flags_add( in_main_matrix );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
+            .units( UnitSI::dimensionless )
             .input_default("0.0")
             .flags_add( in_main_matrix );
 
