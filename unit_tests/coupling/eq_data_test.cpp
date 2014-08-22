@@ -35,6 +35,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
+#include "fields/unit_si.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -145,6 +146,13 @@ protected:
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+
+            anisotropy.units( UnitSI::dimensionless );
+            bc_type.units( UnitSI::dimensionless );
+            bc_pressure.units( UnitSI::dimensionless );
+            bc_flux.units( UnitSI::dimensionless );
+            bc_robin_sigma.units( UnitSI::dimensionless );
+            bc_conc.units( UnitSI::dimensionless );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
