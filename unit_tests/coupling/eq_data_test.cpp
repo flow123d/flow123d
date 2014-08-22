@@ -189,6 +189,10 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
+
+            init_pressure.units( UnitSI::dimensionless );
+            init_conc.units( UnitSI::dimensionless );
+            bulk_set_field.units( UnitSI::dimensionless );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
