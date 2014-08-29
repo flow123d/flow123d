@@ -69,9 +69,9 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     
     rock_density.units( UnitSI().kg().m(-3) );
     sorption_type.units( UnitSI::dimensionless );
-    isotherm_mult.units( UnitSI::dimensionless );
+    isotherm_mult.units( UnitSI().mol().kg(-1) );
     isotherm_other.units( UnitSI::dimensionless );
-    init_conc_solid.units( UnitSI().mol().m(-3) );
+    init_conc_solid.units( UnitSI().mol().kg(-1) );
 
     input_data_set_ += *this;
 

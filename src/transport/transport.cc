@@ -83,8 +83,8 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
 
     bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
-    bc_conc.units( UnitSI().mol().m(-3) );
-    init_conc.units( UnitSI().mol().m(-3) );
+    bc_conc.units( UnitSI().kg().m(-3) );
+    init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );

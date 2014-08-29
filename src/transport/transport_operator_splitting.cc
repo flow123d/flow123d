@@ -86,8 +86,8 @@ TransportBase::TransportEqData::TransportEqData()
 
 	porosity.units( UnitSI::dimensionless );
 	sources_density.units( UnitSI().kg().m(-3) );
-	sources_sigma.units( UnitSI::dimensionless );
-	sources_conc.units( UnitSI().mol().m(-3) );
+	sources_sigma.units( UnitSI().s(-1) );
+	sources_conc.units( UnitSI().kg().m(-3) );
 }
 
 

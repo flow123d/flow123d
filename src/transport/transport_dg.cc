@@ -207,7 +207,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("bc_type")
             .description(
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
-            .units( UnitSI().m().s(-1) )
+            .units( UnitSI::dimensionless )
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
             .flags_add(FieldFlag::in_rhs);
@@ -216,14 +216,14 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     *this+=bc_flux
             .name("bc_flux")
             .description("Flux in Neumann boundary condition.")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI().kg().m().s(-1) ) //m(1-d)
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     *this+=bc_robin_sigma
             .name("bc_robin_sigma")
             .description("Conductivity coefficient in Robin boundary condition.")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI().m(4).s(-1) ) //m(4-d)
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
