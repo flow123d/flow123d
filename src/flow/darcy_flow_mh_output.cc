@@ -48,7 +48,7 @@
 #include "fem/dofhandler.hh"
 #include "fields/field_fe.hh"
 
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "mesh/partitioning.hh"
 
 

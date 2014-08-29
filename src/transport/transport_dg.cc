@@ -38,7 +38,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "fields/field_fe.hh"
 #include "mesh/boundaries.h"
 #include "la/distribution.hh"

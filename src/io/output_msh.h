@@ -30,7 +30,7 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "io/output.h"
+#include "io/output_data.hh"
 
 /**
  * \brief This class is used for output data to VTK file format

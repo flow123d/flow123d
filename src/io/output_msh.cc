@@ -27,7 +27,7 @@
  *
  */
 
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "io/output_msh.h"
 #include "system/xio.h"
 #include "mesh/mesh.h"

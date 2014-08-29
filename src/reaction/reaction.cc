@@ -3,7 +3,7 @@
 #include "reaction/reaction.hh"
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
-#include "io/output.h"
+#include "io/output_data.hh"
 
 using namespace Input::Type;
 using namespace std;

@@ -35,7 +35,7 @@
 #include "mesh/mesh.h"
 #include <string>
 #include <vector>
-#include "io/output.h"
+#include "io/output_data.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"

@@ -34,7 +34,7 @@
 #include <assert.h>
 
 #include "system/xio.h"
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "io/output_vtk.h"
 #include "io/output_msh.h"
 #include "mesh/mesh.h"

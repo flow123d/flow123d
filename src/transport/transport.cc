@@ -40,7 +40,7 @@
 #include "mesh/partitioning.hh"
 #include "transport/transport.h"
 
-#include "io/output.h"
+#include "io/output_data.hh"
 
 //#include "ppfcs.h"
 //#include "btc.h" XX

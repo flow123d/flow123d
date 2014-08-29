@@ -31,7 +31,7 @@
 #include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
-#include "io/output.h"
+#include "io/output_data.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
