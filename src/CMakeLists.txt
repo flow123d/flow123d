@@ -129,7 +129,7 @@ set(sources_lib_interpolation
 set (sources_lib_coupling
    # unfortunatelly field sources depends on output sources
    # and viceversa
-    io/output.cc
+    io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
     
