@@ -384,6 +384,7 @@ void MassBalance::output(double time)
 
 Balance::Balance(const std::vector<std::string> &quantities,
 		const std::vector<std::string> &components,
+		const std::vector<unsigned int> &elem_regions,
 		const RegionDB *region_db,
 		const bool cumulative,
 		const std::string file)
@@ -392,6 +393,7 @@ Balance::Balance(const std::vector<std::string> &quantities,
 	  	  quantities_(quantities),
 	  	  components_(components),
 	  	  regions_(*region_db),
+	  	  be_regions_(elem_regions),
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
@@ -422,9 +424,8 @@ Balance::Balance(const std::vector<std::string> &quantities,
 
 	if (cumulative_)
 	{
-		initial_mass_.resize(n_quant, 0);
-
-		integrated_fluxes_. resize(n_quant, 0);
+		initial_mass_      .resize(n_quant, 0);
+		integrated_fluxes_ .resize(n_quant, 0);
 		integrated_sources_.resize(n_quant, 0);
 	}
 
@@ -438,34 +439,47 @@ Balance::Balance(const std::vector<std::string> &quantities,
 Balance::~Balance()
 {
 	if (rank_ == 0) output_.close();
+	for (unsigned int c=0; c<quantities_.size()*components_.size(); ++c)
+	{
+		MatDestroy(&(region_mass_matrix_[c]));
+		MatDestroy(&(be_flux_matrix_[c]));
+		MatDestroy(&(region_source_matrix_[c]));
+		MatDestroy(&(region_source_rhs_[c]));
+		VecDestroy(&(be_flux_vec_[c]));
+		VecDestroy(&(region_source_vec_[c]));
+	}
 	delete[] region_mass_matrix_;
-	delete[] region_flux_matrix_;
-	delete[] region_flux_rhs_;
-	delete[] region_flux_vec_;
+	delete[] be_flux_matrix_;
+	delete[] be_flux_vec_;
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
+
+	MatDestroy(&region_be_matrix_);
+	VecDestroy(&ones_);
+	VecDestroy(&ones_be_);
 }
 
 
-void Balance::allocate_matrices(unsigned int lsize)
+void Balance::allocate_matrices(unsigned int n_loc_dofs,
+		unsigned int max_dofs_per_boundary)
 {
+	// Max. number of regions to which a single dof can contribute.
+	// TODO: estimate or compute this number directly (from mesh or dof handler).
 	const int n_bulk_regs_per_dof = min(10, (int)regions_.bulk_size());
-	const int n_boundary_regs_per_dof = min(10, (int)regions_.boundary_size());
 	const unsigned int n_comp = quantities_.size()*components_.size();
 
 	region_mass_matrix_ = new Mat[n_comp];
-	region_flux_matrix_ = new Mat[n_comp];
+	be_flux_matrix_ = new Mat[n_comp];
 	region_source_matrix_ = new Mat[n_comp];
-	region_flux_rhs_ = new Mat[n_comp];
 	region_source_rhs_ = new Mat[n_comp];
-	region_flux_vec_ = new Vec[n_comp];
+	be_flux_vec_ = new Vec[n_comp];
 	region_source_vec_ = new Vec[n_comp];
 
 	for (unsigned int c=0; c<n_comp; ++c)
 	{
 		MatCreateAIJ(PETSC_COMM_WORLD,
-				lsize,
+				n_loc_dofs,
 				(rank_==0)?regions_.bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -476,18 +490,18 @@ void Balance::allocate_matrices(unsigned int lsize)
 				&(region_mass_matrix_[c]));
 
 		MatCreateAIJ(PETSC_COMM_WORLD,
-				lsize,
-				(rank_==0)?regions_.boundary_size():0,
+				be_regions_.size(),
+				n_loc_dofs,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
-				(rank_==0)?n_boundary_regs_per_dof:0,
+				max_dofs_per_boundary,
 				0,
-				(rank_==0)?0:n_boundary_regs_per_dof,
 				0,
-				&(region_flux_matrix_[c]));
+				0,
+				&(be_flux_matrix_[c]));
 
 		MatCreateAIJ(PETSC_COMM_WORLD,
-				lsize,
+				n_loc_dofs,
 				(rank_==0)?regions_.bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -498,18 +512,7 @@ void Balance::allocate_matrices(unsigned int lsize)
 				&(region_source_matrix_[c]));
 
 		MatCreateAIJ(PETSC_COMM_WORLD,
-				lsize,
-				(rank_==0)?regions_.boundary_size():0,
-				PETSC_DECIDE,
-				PETSC_DECIDE,
-				(rank_==0)?n_boundary_regs_per_dof:0,
-				0,
-				(rank_==0)?0:n_boundary_regs_per_dof,
-				0,
-				&(region_flux_rhs_[c]));
-
-		MatCreateAIJ(PETSC_COMM_WORLD,
-				lsize,
+				n_loc_dofs,
 				(rank_==0)?regions_.bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -520,9 +523,9 @@ void Balance::allocate_matrices(unsigned int lsize)
 				&(region_source_rhs_[c]));
 
 		VecCreateMPI(PETSC_COMM_WORLD,
-				(rank_==0)?regions_.boundary_size():0,
+				be_regions_.size(),
 				PETSC_DECIDE,
-				&(region_flux_vec_[c]));
+				&(be_flux_vec_[c]));
 
 		VecCreateMPI(PETSC_COMM_WORLD,
 				(rank_==0)?regions_.bulk_size():0,
@@ -530,17 +533,98 @@ void Balance::allocate_matrices(unsigned int lsize)
 				&(region_source_vec_[c]));
 	}
 
-	double *ones_array = new double[lsize];
-	fill_n(ones_array, lsize, 1);
-	VecCreateMPIWithArray(PETSC_COMM_WORLD,
-			1,
-			lsize,
+	MatCreateAIJ(PETSC_COMM_WORLD,
+			be_regions_.size(),
+			(rank_==0)?regions_.boundary_size():0,
 			PETSC_DECIDE,
-			ones_array,
+			PETSC_DECIDE,
+			(rank_==0)?1:0,
+			0,
+			(rank_==0)?0:1,
+			0,
+			&region_be_matrix_
+			);
+	VecGetOwnershipRange(be_flux_vec_[0], &be_offset_, NULL);
+	for (unsigned int loc_el=0; loc_el<be_regions_.size(); ++loc_el)
+	{
+		MatSetValue(region_be_matrix_,
+				be_offset_+loc_el,
+				be_regions_[loc_el],
+				1,
+				INSERT_VALUES);
+	}
+	MatAssemblyBegin(region_be_matrix_, MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY);
+
+	double *ones_array;
+	VecCreateMPI(PETSC_COMM_WORLD,
+			n_loc_dofs,
+			PETSC_DECIDE,
 			&ones_);
-	VecAssemblyBegin(ones_);
-	VecAssemblyEnd(ones_);
+	VecGetArray(ones_, &ones_array);
+	fill_n(ones_array, n_loc_dofs, 1);
+	VecRestoreArray(ones_, &ones_array);
+
+	VecCreateMPI(PETSC_COMM_WORLD,
+			be_regions_.size(),
+			PETSC_DECIDE,
+			&ones_be_);
+	VecGetArray(ones_be_, &ones_array);
+	fill_n(ones_array, be_regions_.size(), 1);
+	VecRestoreArray(ones_be_, &ones_array);
 }
+
+
+void Balance::start_mass_assembly(unsigned int quantity_idx, unsigned int component_idx)
+{
+	MatZeroEntries(region_mass_matrix_[quantity_idx*components_.size()+component_idx]);
+}
+
+
+void Balance::start_flux_assembly(unsigned int quantity_idx,
+		unsigned int component_idx)
+{
+	MatZeroEntries(be_flux_matrix_[quantity_idx*components_.size()+component_idx]);
+	VecZeroEntries(be_flux_vec_[quantity_idx*components_.size()+component_idx]);
+}
+
+
+void Balance::start_source_assembly(unsigned int quantity_idx,
+		unsigned int component_idx)
+{
+	MatZeroEntries(region_source_matrix_[quantity_idx*components_.size()+component_idx]);
+	MatZeroEntries(region_source_rhs_[quantity_idx*components_.size()+component_idx]);
+	VecZeroEntries(region_source_vec_[quantity_idx*components_.size()+component_idx]);
+}
+
+
+void Balance::finish_mass_assembly(unsigned int quantity_idx,
+		unsigned int component_idx)
+{
+	MatAssemblyBegin(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+}
+
+void Balance::finish_flux_assembly(unsigned int quantity_idx,
+		unsigned int component_idx)
+{
+	MatAssemblyBegin(be_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(be_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	VecAssemblyBegin(be_flux_vec_[quantity_idx*components_.size()+component_idx]);
+	VecAssemblyEnd(be_flux_vec_[quantity_idx*components_.size()+component_idx]);
+}
+
+void Balance::finish_source_assembly(unsigned int quantity_idx,
+		unsigned int component_idx)
+{
+	MatAssemblyBegin(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatAssemblyBegin(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
+	MatMultTranspose(region_source_rhs_[quantity_idx*components_.size()+component_idx], ones_, region_source_vec_[quantity_idx*components_.size()+component_idx]);
+}
+
+
 
 
 void Balance::set_mass_matrix_values(unsigned int quantity_idx,
@@ -564,18 +648,18 @@ void Balance::set_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::set_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int component_idx,
-		unsigned int region_idx,
+		unsigned int elem_idx,
 		int n_dofs,
 		int *dof_indices,
 		double *values)
 {
-	PetscInt reg_array[1] = { (int)region_idx };
+	PetscInt elem_array[1] = { int(be_offset_+elem_idx) };
 
-	MatSetValues(region_flux_matrix_[quantity_idx*components_.size()+component_idx],
+	MatSetValues(be_flux_matrix_[quantity_idx*components_.size()+component_idx],
+			1,
+			elem_array,
 			n_dofs,
 			dof_indices,
-			1,
-			reg_array,
 			values,
 			ADD_VALUES);
 
@@ -601,21 +685,14 @@ void Balance::set_source_matrix_values(unsigned int quantity_idx,
 }
 
 
-void Balance::set_flux_rhs_values(unsigned int quantity_idx,
+void Balance::set_flux_vec_value(unsigned int quantity_idx,
 		unsigned int component_idx,
-		unsigned int region_idx,
-		int n_dofs,
-		int *dof_indices,
-		double *values)
+		unsigned int elem_idx,
+		double value)
 {
-	PetscInt reg_array[1] = { (int)region_idx };
-
-	MatSetValues(region_flux_rhs_[quantity_idx*components_.size()+component_idx],
-			n_dofs,
-			dof_indices,
-			1,
-			reg_array,
-			values,
+	VecSetValue(be_flux_vec_[quantity_idx*components_.size()+component_idx],
+			be_offset_+elem_idx,
+			value,
 			ADD_VALUES);
 }
 
@@ -667,37 +744,25 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 	VecZeroEntries(bulk_vec);
 	MatMultTransposeAdd(region_source_matrix_[quantity_idx*n_comp+component_idx], solution, region_source_vec_[quantity_idx*n_comp+component_idx], bulk_vec);
 
-	// compute fluxes on boundary regions: F'.u + f
+	// compute fluxes on boundary regions: R'.(F.u + f)
 	VecZeroEntries(boundary_vec);
-	MatMultTransposeAdd(region_flux_matrix_[quantity_idx*n_comp+component_idx], solution, region_flux_vec_[quantity_idx*n_comp+component_idx], boundary_vec);
+	Vec temp;
+	VecDuplicate(ones_be_, &temp);
+	MatMultAdd(be_flux_matrix_[quantity_idx*n_comp+component_idx], solution, be_flux_vec_[quantity_idx*n_comp+component_idx], temp);
+	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
+	VecDestroy(&temp);
+
+	double sum_fluxes, sum_sources;
+	VecSum(bulk_vec, &sum_sources);
+	VecSum(boundary_vec, &sum_fluxes);
+	VecDestroy(&bulk_vec);
+	VecDestroy(&boundary_vec);
 
 	if (rank_ == 0)
 	{
-		const unsigned int n_quant = quantities_.size();
-
-		for (unsigned int qi=0; qi<n_quant; qi++)
-		{
-			sum_fluxes_[qi] = 0;
-			sum_sources_[qi] = 0;
-		}
-
-		// sum all boundary fluxes
-		const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
-		for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
-			for (unsigned int qi=0; qi<n_quant; qi++)
-				for (unsigned int ci=0; ci<n_comp; ci++)
-					sum_fluxes_[qi] += fluxes_[qi][ci][reg->boundary_idx()];
-
-		// sum all volume sources
-		const RegionSet & bulk_set = regions_.get_region_set("BULK");
-		for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
-			for (unsigned int qi=0; qi<n_quant; qi++)
-				for (unsigned int ci=0; ci<n_comp; ci++)
-					sum_sources_[qi] += sources_[qi][ci][reg->bulk_idx()];
-
 		// sum sources and fluxes in time interval
-		integrated_sources_[quantity_idx] += sum_sources_[quantity_idx]*dt;
-		integrated_fluxes_[quantity_idx] += sum_fluxes_[quantity_idx]*dt;
+		integrated_sources_[quantity_idx] += sum_sources*dt;
+		integrated_fluxes_[quantity_idx] += sum_fluxes*dt;
 	}
 
 }
@@ -720,6 +785,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 	// compute mass on regions: M'.u
 	VecZeroEntries(bulk_vec);
 	MatMultTranspose(region_mass_matrix_[quantity_idx*n_comp+component_idx], solution, bulk_vec);
+	VecDestroy(&bulk_vec);
 }
 
 
@@ -768,12 +834,64 @@ void Balance::calculate_source(unsigned int quantity_idx,
 			if (f > 0) sources_out_[quantity_idx][component_idx][r] += f;
 			else sources_in_[quantity_idx][component_idx][r] += f;
 		}
-	}
 
+		VecRestoreArrayRead(mat_r, &mat_array);
+		VecRestoreArrayRead(rhs_r, &rhs_array);
+	}
+	VecRestoreArrayRead(solution, &sol_array);
+	VecDestroy(&rhs_r);
+	VecDestroy(&mat_r);
+	VecDestroy(&bulk_vec);
+}
+
+
+void Balance::calculate_flux(unsigned int quantity_idx,
+		unsigned int component_idx,
+		const Vec &solution)
+{
+	const unsigned int n_comp = components_.size();
+	Vec boundary_vec;
+
+	VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, (rank_==0)?regions_.boundary_size():0, PETSC_DECIDE, &(fluxes_[quantity_idx][component_idx][0]), &boundary_vec);
+
+	// compute fluxes on boundary regions: R'.(F.u + f)
+	VecZeroEntries(boundary_vec);
+	Vec temp;
+	VecDuplicate(ones_be_, &temp);
+	MatMultAdd(be_flux_matrix_[quantity_idx*n_comp+component_idx], solution, be_flux_vec_[quantity_idx*n_comp+component_idx], temp);
+	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
+
+	// compute positive/negative fluxes
+	fluxes_in_[quantity_idx][component_idx].assign(regions_.boundary_size(), 0);
+	fluxes_out_[quantity_idx][component_idx].assign(regions_.boundary_size(), 0);
+	const double *flux_array;
+	int lsize;
+	VecGetArrayRead(temp, &flux_array);
+	VecGetLocalSize(temp, &lsize);
+	for (int e=0; e<lsize; ++e)
+	{
+		if (flux_array[e] > 0)
+			fluxes_out_[quantity_idx][component_idx][be_regions_[e]] += flux_array[e];
+		else
+			fluxes_in_[quantity_idx][component_idx][be_regions_[e]] += flux_array[e];
+	}
+	VecRestoreArrayRead(temp, &flux_array);
+	VecDestroy(&temp);
+	VecDestroy(&boundary_vec);
+}
+
+
+
+
+
+void Balance::output(double time)
+{
 	// gather results from processes and sum them up
+	const unsigned int n_comp = components_.size();
 	const unsigned int n_quant = quantities_.size();
 	const unsigned int n_blk_reg = regions_.bulk_size();
-	const int buf_size = n_quant*n_comp*2*n_blk_reg;
+	const unsigned int n_bdr_reg = regions_.boundary_size();
+	const int buf_size = n_quant*n_comp*2*n_blk_reg + n_quant*n_comp*2*n_bdr_reg;
 	double sendbuffer[buf_size], recvbuffer[buf_size];
 	for (unsigned int qi=0; qi<n_quant; qi++)
 	{
@@ -784,10 +902,14 @@ void Balance::calculate_source(unsigned int quantity_idx,
 				sendbuffer[(qi*n_comp+ci)*2*n_blk_reg +           + ri] = sources_in_[qi][ci][ri];
 				sendbuffer[(qi*n_comp+ci)*2*n_blk_reg + n_blk_reg + ri] = sources_out_[qi][ci][ri];
 			}
+			for (unsigned int ri=0; ri<n_bdr_reg; ri++)
+			{
+				sendbuffer[n_quant*n_comp*2*n_blk_reg + (qi*n_comp+ci)*2*n_bdr_reg +           + ri] = fluxes_in_[qi][ci][ri];
+				sendbuffer[n_quant*n_comp*2*n_blk_reg + (qi*n_comp+ci)*2*n_bdr_reg + n_bdr_reg + ri] = fluxes_out_[qi][ci][ri];
+			}
 		}
 	}
 	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
-
 	// for other than 0th process update last_time and finish,
 	// on process #0 sum balances over all regions and calculate
 	// cumulative balance over time.
@@ -803,112 +925,25 @@ void Balance::calculate_source(unsigned int quantity_idx,
 					sources_in_[qi][ci][ri]  = recvbuffer[(qi*n_comp+ci)*2*n_blk_reg +           + ri];
 					sources_out_[qi][ci][ri] = recvbuffer[(qi*n_comp+ci)*2*n_blk_reg + n_blk_reg + ri];
 				}
-			}
-		}
-
-	}
-}
-
-
-void Balance::calculate_flux(unsigned int quantity_idx,
-		unsigned int component_idx,
-		const Vec &solution)
-{
-	const unsigned int n_comp = components_.size();
-	Vec boundary_vec;
-
-	VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, (rank_==0)?regions_.boundary_size():0, PETSC_DECIDE, &(fluxes_[quantity_idx][component_idx][0]), &boundary_vec);
-
-	// compute fluxes on boundary regions: F'.u + f
-	VecZeroEntries(boundary_vec);
-	MatMultTransposeAdd(region_flux_matrix_[quantity_idx*n_comp+component_idx], solution, region_flux_vec_[quantity_idx*n_comp+component_idx], boundary_vec);
-
-	// compute positive/negative fluxes
-	int lsize;
-	Vec mat_r, rhs_r;
-	const double *sol_array, *mat_array, *rhs_array;
-	VecGetLocalSize(solution, &lsize);
-	VecDuplicate(solution, &mat_r);
-	VecDuplicate(solution, &rhs_r);
-	VecGetArrayRead(solution, &sol_array);
-	for (unsigned int r=0; r<regions_.boundary_size(); ++r)
-	{
-		MatGetColumnVector(region_flux_matrix_[quantity_idx*n_comp+component_idx], mat_r, r);
-		MatGetColumnVector(region_flux_rhs_[quantity_idx*n_comp+component_idx], rhs_r, r);
-
-		VecGetArrayRead(mat_r, &mat_array);
-		VecGetArrayRead(rhs_r, &rhs_array);
-
-		fluxes_in_[quantity_idx][component_idx][r] = 0;
-		fluxes_out_[quantity_idx][component_idx][r] = 0;
-		for (int i=0; i<lsize; ++i)
-		{
-			double f = mat_array[i]*sol_array[i] + rhs_array[i];
-			if (f > 0) fluxes_out_[quantity_idx][component_idx][r] += f;
-			else fluxes_in_[quantity_idx][component_idx][r] += f;
-		}
-	}
-
-	// gather results from processes and sum them up
-	const unsigned int n_quant = quantities_.size();
-	const unsigned int n_bdr_reg = regions_.boundary_size();
-	const int buf_size = n_quant*n_comp*2*n_bdr_reg;
-	double sendbuffer[buf_size], recvbuffer[buf_size];
-	for (unsigned int qi=0; qi<n_quant; qi++)
-	{
-		for (unsigned int ci=0; ci<n_comp; ci++)
-		{
-			for (unsigned int ri=0; ri<n_bdr_reg; ri++)
-			{
-				sendbuffer[(qi*n_comp+ci)*2*n_bdr_reg +           + ri] = fluxes_in_[qi][ci][ri];
-				sendbuffer[(qi*n_comp+ci)*2*n_bdr_reg + n_bdr_reg + ri] = fluxes_out_[qi][ci][ri];
-			}
-		}
-	}
-	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
-
-	// for other than 0th process update last_time and finish,
-	// on process #0 sum balances over all regions and calculate
-	// cumulative balance over time.
-	if (rank_ == 0)
-	{
-		// update balance vectors
-		for (unsigned int qi=0; qi<n_quant; qi++)
-		{
-			for (unsigned int ci=0; ci<n_comp; ci++)
-			{
 				for (unsigned int ri=0; ri<n_bdr_reg; ri++)
 				{
-					fluxes_in_[qi][ci][ri]  = recvbuffer[(qi*n_comp+ci)*2*n_bdr_reg +           + ri];
-					fluxes_out_[qi][ci][ri] = recvbuffer[(qi*n_comp+ci)*2*n_bdr_reg + n_bdr_reg + ri];
+					fluxes_in_[qi][ci][ri]  = recvbuffer[n_quant*n_comp*2*n_blk_reg + (qi*n_comp+ci)*2*n_bdr_reg +           + ri];
+					fluxes_out_[qi][ci][ri] = recvbuffer[n_quant*n_comp*2*n_blk_reg + (qi*n_comp+ci)*2*n_bdr_reg + n_bdr_reg + ri];
 				}
 			}
 		}
-
 	}
-}
 
 
-
-
-
-void Balance::output(double time)
-{
 	if (rank_ == 0)
 	{
-		const unsigned int n_comp = components_.size();
-		const unsigned int n_quant = quantities_.size();
-
-		for (unsigned int qi=0; qi<n_quant; qi++)
-		{
-			sum_fluxes_[qi] = 0;
-			sum_fluxes_in_[qi] = 0;
-			sum_fluxes_out_[qi] = 0;
-			sum_masses_[qi] = 0;
-			sum_sources_[qi] = 0;
-			sum_sources_in_[qi] = 0;
-			sum_sources_out_[qi] = 0;
-		}
+		sum_fluxes_.assign(n_quant, 0);
+		sum_fluxes_in_.assign(n_quant, 0);
+		sum_fluxes_out_.assign(n_quant, 0);
+		sum_masses_.assign(n_quant, 0);
+		sum_sources_.assign(n_quant, 0);
+		sum_sources_in_.assign(n_quant, 0);
+		sum_sources_out_.assign(n_quant, 0);
 
 		// sum all boundary fluxes
 		const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
@@ -953,19 +988,10 @@ void Balance::output(double time)
 					initial_mass_[qi] = sum_masses_[qi];
 				initial_ = false;
 			}
-
-
-//			// sum sources and fluxes in time interval
-//			for (unsigned int qi=0; qi<n_quant; qi++)
-//			{
-//				integrated_sources_[qi] += sum_sources_[qi]*(time-last_time_);
-//				integrated_fluxes_[qi] += sum_fluxes_[qi]*(time-last_time_);
-//			}
 		}
 	}
 
 	last_time_ = time;
-
 
 
 	// perform actual output
@@ -976,6 +1002,12 @@ void Balance::output(double time)
 	case legacy:
 		output_legacy(time);
 		break;
+	}
+
+	if (rank_ == 0)
+	{
+		sum_fluxes_.assign(n_quant, 0);
+		sum_sources_.assign(n_quant, 0);
 	}
 }
 

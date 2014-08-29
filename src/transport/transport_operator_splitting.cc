@@ -185,11 +185,29 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
   if (it)
   {
+	  int *el_4_loc;
+	  Distribution *el_ds;
+	  convection->get_par_info(el_4_loc, el_ds);
+	  vector<unsigned int> edg_regions;
+      for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+          Element *elm = mesh_->element(el_4_loc[loc_el]);
+          if (elm->boundary_idx_ != NULL) {
+              FOR_ELEMENT_SIDES(elm,si) {
+                  Boundary *b = elm->side(si)->cond();
+                  if (b != NULL)
+                  	edg_regions.push_back(b->region().boundary_idx());
+              }
+          }
+      }
+
 	  balance_ = new Balance(substances_.names(),
 			  {"concentration"},
+			  edg_regions,
 			  region_db(),
 			  it->val<bool>("cumulative"),
 			  it->val<FilePath>("file"));
+
+	  convection->set_balance_object(balance_);
   }
 }
 
@@ -216,6 +234,12 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream_->write_time_frame();
 
+        if (balance_ != nullptr && time_->is_current( time_->marks().type_output() ))
+        {
+        	convection->calculate_instant_balance();
+        	balance_->output(time_->t());
+        }
+
 }
 
 
@@ -225,6 +249,8 @@ void TransportOperatorSplitting::zero_time_step()
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream_->write_time_frame();
+    if (balance_ != nullptr)
+    	balance_->output(time_->t());
 
 }
 
@@ -249,10 +275,12 @@ void TransportOperatorSplitting::update_solution() {
 	    convection->update_solution();
             if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
-	    if (convection->mass_balance() != NULL)
-	    	convection->mass_balance()->calculate(convection->time().t());
-
+//	    if (convection->mass_balance() != NULL)
+//	    	convection->mass_balance()->calculate(convection->time().t());
+	    if (balance_ != nullptr && balance_->cumulative())
+	    	convection->calculate_cumulative_balance();
 	}
+
     END_TIMER("TOS-one step");
 
 

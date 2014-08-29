@@ -145,6 +145,17 @@ public:
      */
     void set_target_time(double target_time);
 
+    void set_balance_object(Balance *balance)
+    {
+    	if (balance_ != nullptr) delete balance_;
+    	balance_ = balance;
+    	balance_->allocate_matrices(el_ds->lsize(), 1);
+    }
+
+    void calculate_cumulative_balance();
+
+    void calculate_instant_balance();
+
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */

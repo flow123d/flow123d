@@ -155,6 +155,47 @@ protected:
  * e.g. velocity.{x,y,z} or concentration.{mobile,immobile}.
  * Each quantity has an implicit component "default".
  *
+ * The mass, flux and source are calculated as follows:
+ *
+ * 	m(q,c,r) = ( M'(q,c) * solution )[r]
+ * 	f(q,c,r) = ( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
+ * 	s(q,c,r) = ( S'(q,c) * solution + sv(q,c) )[r]
+ *
+ * where
+ *
+ * 	m(q,c,r)...mass of q-th substance's c-th component in region r
+ * 	f(q,c,r)...flux of q-th substance's c-th component in region r
+ * 	s(q,c,r)...source of q-th substance's c-th component in region r
+ *
+ * and
+ *
+ * 	M(q,c)...region_mass_matrix_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
+ * 	F(q,c)...be_flux_matrix_[q*quantities_.size() + c]			n_boundary_edges x n_dofs
+ * 	S(q,c)...region_source_matrix_[q*quantities_.size() + c]	n_dofs x n_bulk_regions
+ * 	SV(q,c)..region_source_rhs_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
+ * 	fv(q,c)..be_flux_vec_[q*quantities_.size() + c]				n_boundary_edges
+ * 	sv(q,c)..region_source_vec_[q*quantities_.size() + c]    	n_bulk_regions
+ * 	R........region_be_matrix_									n_boundary_edges x n_boundary_regions
+ *
+ * Note that it holds:
+ *
+ * 	sv(q,c) = column sum of SV(q,c)
+ *
+ * Except for that, we also provide information on positive/negative flux and source:
+ *
+ * 	fp(q,c,r) = ( R' * EFP(q,c) )[r],	EFP(q,c)[e] = max{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
+ * 	fn(q,c,r) = ( R' * EFN(q,c) )[r],	EFN(q,c)[e] = min{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
+ * 	sp(q,c,r) = sum_{i in DOFS } max{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
+ * 	sn(q,c,r) = sum_{i in DOFS } min{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
+ *
+ * where
+ *
+ * 	fp(q,c,r)...positive (outward) flux of q-th quantity's c-th component in region r
+ * 	fn(q,c,r)...negative (inward) flux of q-th quantity's c-th component in region r
+ * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
+ * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
+ *
+ *
  *
  * Output values (if not relevant, zero is supplied):
  *
@@ -177,44 +218,61 @@ public:
 
 	static Input::Type::Selection format_selection_input_type;
 
+	/**
+	 * Constructor.
+	 * @param quantities   Names of conserved quantities.
+	 * @param components   Names of components of each quantity.
+	 * @param elem_regions Vector of region numbers for each boundary edge.
+	 * @param region_db    Region database.
+	 * @param cumulative   If true, cumulative sums will be calculated.
+	 * @param file         Name of output file.
+	 */
 	Balance(const std::vector<std::string> &quantities,
 			const std::vector<std::string> &components,
+			const std::vector<unsigned int> &elem_regions,
 			const RegionDB *region_db,
 			const bool cumulative,
 			const std::string file);
 
 	~Balance();
 
-	inline bool cumulative() const
-	{
-		return cumulative_;
-	}
+	/// Getter for cumulative_.
+	inline bool cumulative() const { return cumulative_; }
 
-	void allocate_matrices(unsigned int lsize);
+	/**
+	 * Allocates matrices and vectors for balance.
+	 * @param n_loc_dofs            Number of solution dofs on the local process.
+	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
+	 */
+	void allocate_matrices(unsigned int n_loc_dofs, unsigned int max_dofs_per_boundary);
 
-	void start_mass_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatZeroEntries(region_mass_matrix_[quantity_idx*components_.size()+component_idx]);
-	}
+	/**
+	 * This method must be called before assembling the matrix for computing mass.
+	 * It actually erases the matrix.
+	 */
+	void start_mass_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-	void start_flux_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatZeroEntries(region_flux_matrix_[quantity_idx*components_.size()+component_idx]);
-		MatZeroEntries(region_flux_rhs_[quantity_idx*components_.size()+component_idx]);
-		VecZeroEntries(region_flux_vec_[quantity_idx*components_.size()+component_idx]);
-	}
+	/**
+	 * This method must be called before assembling the matrix and vector for fluxes.
+	 * It actually erases the matrix and vector.
+	 */
+	void start_flux_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-	void start_source_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatZeroEntries(region_source_matrix_[quantity_idx*components_.size()+component_idx]);
-		MatZeroEntries(region_source_rhs_[quantity_idx*components_.size()+component_idx]);
-		VecZeroEntries(region_source_vec_[quantity_idx*components_.size()+component_idx]);
-	}
+	/**
+	 * This method must be called before assembling the matrix and vectors for sources.
+	 * It actually erases the matrix and vectors.
+	 */
+	void start_source_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-
+	/**
+	 * Adds elements into matrix for computing mass.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param region_idx    Index of bulk region.
+	 * @param n_dofs        Number of dofs to be added.
+	 * @param dof_indices   Dof indices to be added.
+	 * @param values        Values to be added.
+	 */
 	void set_mass_matrix_values(unsigned int quantity_idx,
 			unsigned int component_idx,
 			unsigned int region_idx,
@@ -222,13 +280,31 @@ public:
 			int *dof_indices,
 			double *values);
 
+	/**
+	 * Adds elements into matrix for computing flux.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param elem_idx      Local index of boundary edge.
+	 * @param n_dofs        Number of dofs to be added.
+	 * @param dof_indices   Dof indices to be added.
+	 * @param values        Values to be added.
+	 */
 	void set_flux_matrix_values(unsigned int quantity_idx,
 			unsigned int component_idx,
-			unsigned int region_idx,
+			unsigned int elem_idx,
 			int n_dofs,
 			int *dof_indices,
 			double *values);
 
+	/**
+	 * Adds elements into matrix for computing source.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param region_idx    Index of bulk region.
+	 * @param n_dofs        Number of dofs to be added.
+	 * @param dof_indices   Dof indices to be added.
+	 * @param values        Values to be added.
+	 */
 	void set_source_matrix_values(unsigned int quantity_idx,
 			unsigned int component_idx,
 			unsigned int region_idx,
@@ -236,13 +312,27 @@ public:
 			int *dof_indices,
 			double *values);
 
-	void set_flux_rhs_values(unsigned int quantity_idx,
+	/**
+	 * Adds element into vector for computing flux.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param elem_idx      Local index of boundary edge.
+	 * @param value         Value to be added.
+	 */
+	void set_flux_vec_value(unsigned int quantity_idx,
 			unsigned int component_idx,
-			unsigned int region_idx,
-			int n_dofs,
-			int *dof_indices,
-			double *values);
+			unsigned int elem_idx,
+			double value);
 
+	/**
+	 * Adds elements into vector for computing source.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param region_idx    Index of bulk region.
+	 * @param n_dofs        Number of dofs to be added.
+	 * @param dof_indices   Dof indices to be added.
+	 * @param values        Values to be added.
+	 */
 	void set_source_rhs_values(unsigned int quantity_idx,
 			unsigned int component_idx,
 			unsigned int region_idx,
@@ -250,80 +340,116 @@ public:
 			int *dof_values,
 			double *values);
 
-	void finish_mass_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatAssemblyBegin(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(region_mass_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-	}
+	/// This method must be called after assembling the matrix for computing mass.
+	void finish_mass_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-	void finish_flux_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatAssemblyBegin(region_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(region_flux_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyBegin(region_flux_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(region_flux_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatMultTranspose(region_flux_rhs_[quantity_idx*components_.size()+component_idx], ones_, region_flux_vec_[quantity_idx*components_.size()+component_idx]);
-	}
+	/// This method must be called after assembling the matrix and vector for computing flux.
+	void finish_flux_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-	void finish_source_assembly(unsigned int quantity_idx,
-			unsigned int component_idx)
-	{
-		MatAssemblyBegin(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(region_source_matrix_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyBegin(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(region_source_rhs_[quantity_idx*components_.size()+component_idx], MAT_FINAL_ASSEMBLY);
-		MatMultTranspose(region_source_rhs_[quantity_idx*components_.size()+component_idx], ones_, region_source_vec_[quantity_idx*components_.size()+component_idx]);
-	}
+	/// This method must be called after assembling the matrix and vectors for computing source.
+	void finish_source_assembly(unsigned int quantity_idx, unsigned int component_idx);
 
-
+	/**
+	 * Updates cumulative quantities for balance.
+	 * This method can be called in substeps even if no output is generated.
+	 * It calculates the sum of flux and source over time interval.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param solution      Solution vector.
+	 * @param dt            Actual time step.
+	 */
 	void calculate_cumulative(unsigned int quantity_idx,
 			unsigned int component_idx,
 			const Vec &solution,
 			double dt);
 
+	/**
+	 * Calculates actual mass.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param solution      Solution vector.
+	 */
 	void calculate_mass(unsigned int quantity_idx,
 			unsigned int component_idx,
 			const Vec &solution);
 
+	/**
+	 * Calculates actual flux.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param solution      Solution vector.
+	 */
 	void calculate_flux(unsigned int quantity_idx,
 			unsigned int component_idx,
 			const Vec &solution);
 
+	/**
+	 * Calculates actual source.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param solution      Solution vector.
+	 */
 	void calculate_source(unsigned int quantity_idx,
 			unsigned int component_idx,
 			const Vec &solution);
 
+	/// Perform output to file for given time instant.
 	void output(double time);
 
 private:
 
-
+	/// Perform output in old format (for compatibility)
 	void output_legacy(double time);
 
 
     /// Handle for file for output of balance and total fluxes over individual regions and region sets.
     ofstream output_;
 
+    /// Format of output file.
     OutputFormat output_format_;
 
+    /// Names of conserved quantities.
     const std::vector<std::string> quantities_;
 
+    /// Names of components.
     const std::vector<std::string> components_;
 
+    /// Database of bulk and boundary regions.
     const RegionDB &regions_;
 
+
+    /// Matrices for calculation of mass (n_dofs x n_bulk_regions).
     Mat *region_mass_matrix_;
-    Mat *region_flux_matrix_;
-    Mat *region_flux_rhs_;
+
+    /// Matrices for calculation of flux (n_boundary_edges x n_dofs).
+    Mat *be_flux_matrix_;
+
+    /// Matrices for calculation of source (n_dofs x n_bulk_regions).
     Mat *region_source_matrix_;
+
+    /// Matrices for calculation of signed source (n_dofs x n_bulk_regions).
     Mat *region_source_rhs_;
 
-    /// auxiliary vector for summation of matrix columns
-    Vec ones_;
-    Vec *region_flux_vec_;
+    /// Vectors for calculation of flux (n_boundary_edges).
+    Vec *be_flux_vec_;
+
+    /// Vectors for calculation of source (n_bulk_regions).
     Vec *region_source_vec_;
+
+    /**
+     * Auxiliary matrix for transfer of quantities between boundary edges and regions
+     * (n_boundary_edges x n_boundary_regions).
+     */
+    Mat region_be_matrix_;
+
+    /// auxiliary vectors for summation of matrix columns
+    Vec ones_, ones_be_;
+
+    /// Number of boundary region for each local boundary edge.
+    const std::vector<unsigned int> be_regions_;
+
+    /// Offset for local part of vector of boundary edges.
+    int be_offset_;
 
 
     // Vectors storing mass and balances of fluxes and volumes.
@@ -344,7 +470,6 @@ private:
     std::vector<double> sum_sources_;
     std::vector<double> sum_sources_in_;
     std::vector<double> sum_sources_out_;
-
     std::vector<double> initial_mass_;
 
 	// time integrated quantities

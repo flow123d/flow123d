@@ -235,6 +235,8 @@ private:
 
 	void output_vector_gather();
 
+	void preallocate();
+
 	/**
 	 * @brief Assembles the mass matrix.
 	 *
