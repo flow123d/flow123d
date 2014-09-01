@@ -236,8 +236,10 @@ void TransportOperatorSplitting::output_data(){
 
         if (balance_ != nullptr && time_->is_current( time_->marks().type_output() ))
         {
+        	START_TIMER("TOS-balance");
         	convection->calculate_instant_balance();
         	balance_->output(time_->t());
+        	END_TIMER("TOS-balance");
         }
 
 }
@@ -278,7 +280,11 @@ void TransportOperatorSplitting::update_solution() {
 //	    if (convection->mass_balance() != NULL)
 //	    	convection->mass_balance()->calculate(convection->time().t());
 	    if (balance_ != nullptr && balance_->cumulative())
+	    {
+	    	START_TIMER("TOS-balance");
 	    	convection->calculate_cumulative_balance();
+	    	END_TIMER("TOS-balance");
+	    }
 	}
 
     END_TIMER("TOS-one step");
