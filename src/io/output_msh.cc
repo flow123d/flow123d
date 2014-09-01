@@ -27,7 +27,7 @@
  *
  */
 
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "io/output_msh.h"
 #include "system/xio.h"
 #include "mesh/mesh.h"
@@ -60,7 +60,7 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file <<  mesh->node_vector.size() << endl;
     FOR_NODES(mesh, nod) {
-        file << NODE_FULL_ITER(mesh, nod).index() + 1 << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
+        file << NODE_FULL_ITER(mesh, nod).id() << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
     }
     file << "$EndNodes" << endl;
 }
@@ -77,19 +77,20 @@ void OutputMSH::write_msh_topology(void)
     file << mesh->n_elements() << endl;
     FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
-        file << ELEM_FULL_ITER(mesh, elm).index() + 1
+        file << ELEM_FULL_ITER(mesh, elm).id()
              << " " << gmsh_simplex_types_[ elm->dim() ]
              << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
-            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;
+            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).id();
         file << endl;
     }
     file << "$EndElements" << endl;
 }
 
 
-void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
+template<class element>
+void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
 {
     ofstream &file = this->get_base_file();
 
@@ -99,7 +100,7 @@ void OutputMSH::write_msh_ascii_cont_data(OutputDataBase* output_data)
 
 
     for(unsigned int i=0; i < output_data->n_values; i ++) {
-    	file << i+1 << " ";
+    	file << vec(i).id() << " ";
         output_data->print(file, i);
         file << std::endl;
     }
@@ -120,7 +121,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
     unsigned int i_node;
 	unsigned int i_corner=0;
     FOR_ELEMENTS(mesh, ele) {
-        file << ele.index() + 1 << " " << ele->n_nodes() << " ";
+        file << ele.id() << " " << ele->n_nodes() << " ";
 
         FOR_ELEMENT_NODES(ele, i_node) {
             output_data->print(file, i_corner++);
@@ -159,7 +160,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
             file << output_data->n_elem_ << endl;   // number of components
             file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(output_data);
+            this->write_msh_ascii_cont_data(mesh->node_vector, output_data);
 
             file << "$EndNodeData" << endl;
         }
@@ -216,7 +217,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
             file << output_data->n_elem_ << endl;   // number of components
             file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(output_data);
+            this->write_msh_ascii_cont_data(this->get_mesh()->element, output_data);
 
             file << "$EndElementData" << endl;
         }

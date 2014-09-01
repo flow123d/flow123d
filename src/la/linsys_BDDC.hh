@@ -70,11 +70,15 @@ public:
                     const std::vector<double> & element_permeability,
                     const int meshDim );
 
-    void load_diagonal( std::map<int,double> & diag );
-
     void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );
 
     void rhs_set_values( int nrow, int *rows, double *vals );
+
+    void diagonal_weights_set_value( int global_index, double value );
+
+    PetscErrorCode mat_zero_entries() override;
+
+    PetscErrorCode rhs_zero_entries() override;
 
     void finish_assembly( );
 

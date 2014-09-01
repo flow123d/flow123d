@@ -19,7 +19,6 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
 class Linear_reaction;
 
 class Pade_approximant: public Linear_reaction
@@ -37,12 +36,14 @@ class Pade_approximant: public Linear_reaction
          *  Constructor with parameter for initialization of a new declared class member
          *  TODO: parameter description
          */
-		Pade_approximant(Mesh &mesh, Input::Record in_rec, vector<string> &names);
+		Pade_approximant(Mesh &mesh, Input::Record in_rec);
 
 		/**
 		*	Destructor.
 		*/
 		~Pade_approximant(void);
+
+		void zero_time_step() override;
 
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
@@ -59,15 +60,11 @@ class Pade_approximant: public Linear_reaction
 		void evaluate_matrix_polynomial(Mat *Polynomial, Mat *Reaction_matrix, PetscScalar *coef);
 		
 	protected:
-                /**
-                *       Enables to compute factorial k!.
-                */
-                int factorial(int k);
+        /**
+        *       Enables to compute factorial k!.
+        */
+        int factorial(int k);
                 
-                /**
-                 * Initialize from input interface.
-                 */
-                void init_from_input(Input::Record in_rec) override;
                 
 		/**
 		*	This method reads a sequence of numbers defining an order of substances in decay chain. The string section defines where too look for indices inside of ini-file, whereas n_subst is a number of isotopes in described decay chain.

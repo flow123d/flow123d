@@ -9,7 +9,7 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      data = [
+      input_fields= [
         { region = "rectangle", 
           conductivity = 0.125
         },
@@ -23,9 +23,7 @@
         output_stream = {
           REF = "/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
       solver = { 
@@ -39,43 +37,40 @@
    
       substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
       
-      data = [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 0,
-          por_m = 0.25 
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
         }
       ],
       
-      output = {
-        conc_mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/output_streams/1"
       }, 
       time = {
         end_time = 15.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "Sorption",
-        solvent_dens = 1.0,
+        solvent_density= 1.0,
         substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
-        molar_masses = [1.0, 1.0, 1.0, 1.0],
+        molar_mass= [1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0],
-        data = [
+        input_fields= [
           {
             r_set="ALL",
             rock_density = 1.0,
-            sorption_types = "langmuir",
-            mult_coefs = 0.4, 
-            //mult_coefs = { TYPE="FieldFormula", value="0.4"},
-            second_params = 0.6
+            sorption_type= "langmuir",
+            isotherm_mult= 0.4, 
+            //isotherm_mult= { TYPE="FieldFormula", value="0.4"},
+            isotherm_other= 0.6
           }
-        ]
+        ],
+        output_fields = []
       }
           
     } 
@@ -96,6 +91,7 @@
           TYPE = "vtk", 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

@@ -9,9 +9,9 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      data= [
+      input_fields= [
       ],
-      data= [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/sit_decay.fbc"
         }
@@ -20,9 +20,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-	velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -33,7 +31,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
       
-      data= [
+      input_fields= [
         { rid = 1,
           init_conc =
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.060000000, 0.07000000, 0.080000000]
@@ -48,10 +46,8 @@
         { region = "IMPLICIT BOUNDARY",
           old_boundary_file = "./input/sit_decay_long.tbc"
         }
-      ]
+      ],
 
-      dual_porosity = false,
-      sorption_enable = false, 
       substances = [
         "A", 
         "B", 
@@ -66,18 +62,9 @@
         end_time = 10.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE="LinearReactions",
-        substances = [
-	  "A", 
-	  "B", 
-	  "C", 
-	  "D", 
-	  "E", 
-	  "F", 
-	  "G", 
-	  "H"
-        ],
+
         decays = [
           {
             parent = "E",
@@ -137,12 +124,8 @@
           }
         ]
       },
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/system/output_streams/1"
       }
     }
   }, 
@@ -165,6 +148,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

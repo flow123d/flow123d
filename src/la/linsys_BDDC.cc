@@ -41,6 +41,7 @@
 #include "la/linsys_BDDC.hh"
 
 
+
 namespace it = Input::Type;
 
 
@@ -87,6 +88,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
             matrixType = la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL;
             break;
         default:
+            matrixType = la::BddcmlWrapper::GENERAL;
             ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
     }
 
@@ -168,14 +170,6 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 #endif // HAVE_BDDCML
 }
 
-void LinSys_BDDC::load_diagonal( std::map<int,double> & diag )
-{
-#ifdef HAVE_BDDCML
-    // simply pass the data to BDDCML solver
-    bddcml_ -> loadDiagonal( diag );
-#endif // HAVE_BDDCML
-}
-
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
 #ifdef HAVE_BDDCML
@@ -188,8 +182,8 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
     std::copy( &(rows[0]), &(rows[nrow]), myRows.begin() );
     std::copy( &(cols[0]), &(cols[ncol]), myCols.begin() );
 
-    for ( unsigned i = 0; i < nrow; i++ ) {
-        for ( unsigned j = 0; j < ncol; j++ ) {
+    for ( int i = 0; i < nrow; i++ ) {
+        for ( int j = 0; j < ncol; j++ ) {
             mat( i, j ) = vals[i*ncol + j];
         }
     }
@@ -204,14 +198,14 @@ void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, doub
 void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
 {
 #ifdef HAVE_BDDCML
-	namespace ublas = boost::numeric::ublas;
+    namespace ublas = boost::numeric::ublas;
 
     std::vector< unsigned >  myRows( nrow ); 
     ublas::vector< double >  vec( nrow ); 
 
     std::copy( &(rows[0]), &(rows[nrow]), myRows.begin() );
 
-    for ( unsigned i = 0; i < nrow; i++ ) {
+    for ( int i = 0; i < nrow; i++ ) {
         vec( i ) = vals[i];
     }
     if (swap_sign_) {
@@ -220,6 +214,29 @@ void LinSys_BDDC::rhs_set_values( int nrow, int *rows, double *vals)
 
     bddcml_ -> insertToRhs( vec, myRows );
 #endif // HAVE_BDDCML
+}
+
+void LinSys_BDDC::diagonal_weights_set_value( int global_index, double value )
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> insertToDiagonalWeights( global_index, value );
+#endif // HAVE_BDDCML
+}
+
+PetscErrorCode LinSys_BDDC::mat_zero_entries()
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> clearMatrix( );
+#endif // HAVE_BDDCML
+    return 0;
+}
+
+PetscErrorCode LinSys_BDDC::rhs_zero_entries()
+{
+#ifdef HAVE_BDDCML
+    bddcml_ -> clearRhs( );
+#endif // HAVE_BDDCML
+    return 0;
 }
 
 void LinSys_BDDC::finish_assembly( )
@@ -332,7 +349,7 @@ void LinSys_BDDC::gatherSolution_( )
     std::vector<double> locSolutionNeib;
     if ( rank == 0 ) {
         // merge my own data
-        for ( int i = 0; i < isngn_.size(); i++ ) {
+        for ( unsigned int i = 0; i < isngn_.size(); i++ ) {
             int ind = isngn_[i];
             globalSolution_[ind] = locSolution_[i];
         }

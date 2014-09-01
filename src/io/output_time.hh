@@ -20,7 +20,7 @@
 
 
 class OutputDataBase;
-class FieldCommonBase; // in fact not necessary, output_data_by_field() can use directly name as parameter
+class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
 template <int spacedim, class Value>
@@ -37,6 +37,9 @@ class MultiField;
 class OutputTime {
 
 public:
+	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+	DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
+			<< " returning variable size vectors. Try convert to MultiField.\n");
     /**
      * Types of reference data
      */
@@ -61,7 +64,12 @@ public:
     /**
      * \brief Try to find output stream from a key in record.
      */
-    static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+    //static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+
+    /**
+     * \brief Try to find output stream with this name
+     */
+    //static OutputTime *output_stream_by_name(string name);
 
     /**
      * \brief Does OutputStream with same name and filename exist?
@@ -73,7 +81,7 @@ public:
      *
      * \param[in] in_rec  The reference at the input record
      */
-    static OutputTime *output_stream(const Input::Record &in_rec);
+    //static OutputTime *output_stream(const Input::Record &in_rec);
 
     /**
      * \brief This method delete all object instances of class OutputTime stored
@@ -84,32 +92,14 @@ public:
     /**
      * \brief This method write all registered data to output streams
      */
-    static void write_all_data(void);
+    //static void write_all_data(void);
 
-
-    /**
-     * \brief Generic method for registering output data stored in MultiField
-     */
-    template<int spacedim, class Value>
-    static void register_data(const Input::Record &in_rec,
-            const DiscreteSpace type,
-            MultiField<spacedim, Value> &multi_field);
 
 
     /**
-     * \brief Generic method for registering of output data stored in Field
      *
-     * This
      */
-    template<int spacedim, class Value>
-    static void register_data(const Input::Record &in_rec,
-            const DiscreteSpace ref_type,
-            Field<spacedim, Value> &field);
-
-    /**
-     * \brief Method for clearing all registered data
-     */
-    static void clear_data(void);
+    static OutputTime* create_output_stream(const Input::Record &in_rec);
 
     /**
      * Declaration of exceptions
@@ -130,20 +120,50 @@ public:
      */
     virtual ~OutputTime();
 
-
-
     /**
+     * \brief Generic method for registering output data stored in MultiField
      *
-     */
-    static OutputTime* create_output_stream(const Input::Record &in_rec);
-
-
-    /**
-     * Interpolate given @p field into output discrete @p space and store the values
-     * into private storage for postponed output.
+     * @param ref_type    Type of output (element, node, corner data).
+     * @param multi_field The actual field for output.
      */
     template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field, std::string multi_field_name = "");
+    void register_data(const DiscreteSpace type,
+            MultiField<spacedim, Value> &multi_field);
+
+
+    /**
+     * \brief Generic method for registering of output data stored in Field
+     *
+     * @param ref_type  Type of output (element, node, corner data).
+     * @param field     The actual field for output.
+     */
+    template<int spacedim, class Value>
+    void register_data(const DiscreteSpace ref_type,
+            Field<spacedim, Value> &field);
+
+    /**
+     * Write all data registered as a new time frame.
+     */
+    void write_time_frame();
+
+    /**
+     * \brief Registers names of output fields that can be written using this stream.
+     * @param in_array Array of admissible fields (array of selections).
+     * @param in_sel   Temporary - selection with field names.
+     */
+    void add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel);
+
+    /**
+     * \brief Clear data for output computed by method @p compute_field_data.
+     */
+    void clear_data(void);
+
+    /**
+     *  Add time marks matching given @p tgoutput_mark_type as well as general output type
+     *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
+     *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
+     */
+    void mark_output_times(const TimeGovernor &tg);
 
 
 private:
@@ -154,6 +174,8 @@ private:
     Mesh      *mesh;
 
 protected:
+
+
     /**
      * Enumeration of file formats supported by Flow123d
      */
@@ -163,14 +185,19 @@ protected:
         VTK     = 2,
     } OutFileFormat;
 
+    /**
+     * Interpolate given @p field into output discrete @p space and store the values
+     * into private storage for postponed output.
+     */
+    template<int spacedim, class Value>
+    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
+
 
     /**
      * \brief This method returns pointer at existing data, when corresponding
      * output data exists or it creates new one.
      */
-    OutputDataBase *output_data_by_field_name(const std::string &multi_field_name,const string &field_name, DiscreteSpace ref_type);
-
-
+    OutputDataBase *output_data_by_field_name(const string &field_name, DiscreteSpace ref_type);
 
     /**
      * \brief This method set current time for registered data array/vector
@@ -216,10 +243,6 @@ protected:
     void set_data_file(ofstream *_data_file) { data_file = _data_file; };
 
 
-    /**
-     * \brief Try to find output stream with this name
-     */
-    static OutputTime *output_stream_by_name(string name);
 
     // Protected setters for descendant
     void set_mesh(Mesh *_mesh) { mesh = _mesh; };
@@ -239,7 +262,7 @@ protected:
 
     OutFileFormat   file_format;
     //OutputFormat    *output_format;
-    string          *name;              ///< Name of output stream
+    //string          name;              ///< Name of output stream
 
     vector<OutputDataBase*>    node_data;
     vector<OutputDataBase*>    corner_data;
@@ -252,6 +275,9 @@ protected:
 
     double          write_time;         ///< The last time, when data was wrote to this stream
 
+    map<string,bool> output_names; ///< Map of names of output fields. True means that field will be saved.
+
+    Input::Record input_record_;
 };
 
 

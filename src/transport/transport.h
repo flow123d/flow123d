@@ -43,7 +43,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "transport/transport_operator_splitting.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 
 
@@ -86,6 +86,8 @@ public:
     public:
         static Input::Type::Selection sorption_type_selection;
 
+        static Input::Type::Selection output_selection;
+
         EqData();
         virtual ~EqData() {};
 
@@ -100,12 +102,13 @@ public:
 
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
-        Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
-        Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
-        Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
+//DELETE
+//         Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
+//         Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
+//         Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
+//         Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
+//         Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
+//         Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
@@ -123,9 +126,13 @@ public:
 	virtual ~ConvectionTransport();
 
 	/**
+	 * Initialize solution at zero time.
+	 */
+    void zero_time_step() override;
+	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void compute_one_step();
+	void update_solution() override;
 
 	/**
 	 * Use new flow field vector for construction of convection matrix.
@@ -139,7 +146,7 @@ public:
 	 *
 	 * TODO: Make this and previous part of Transport interface in TransportBase.
 	 */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
+	//oid set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section);
 
 
     /**
@@ -176,13 +183,12 @@ public:
 	 */
 	inline EqData *get_data() { return &data_; }
 
+	inline OutputTime *output_stream() { return output_stream_; }
+
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-	bool get_dual_porosity();
 	int *get_el_4_loc();
 	int *get_row_4_el();
-	virtual void get_parallel_solution_vector(Vec &vc);
-	virtual void get_solution_vector(double* &vector, unsigned int &size);
 
 	TimeIntegrationScheme time_scheme() { return explicit_euler; }
 
@@ -216,10 +222,11 @@ private:
 	 */
 	void transport_matrix_step_mpi(double time_step); //
 
-	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
-	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
-			double *concx, double *concx_sorb, double Nv, double N); //
+        //DELETE
+// 	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
+// 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
+// 	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
+// 			double *concx, double *concx_sorb, double Nv, double N); //
 
 
     void alloc_transport_vectors();
@@ -245,8 +252,7 @@ private:
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
 
-    bool              sorption;     // Include sorption  YES/NO
-    bool              dual_porosity;   // Include dual porosity YES/NO
+    //TODO: remove this and make concentration_matrix only two-dimensional
     int sub_problem;    // 0-only transport,1-transport+dual porosity,
                         // 2-transport+sorption
                         // 3-transport+dual porosity+sorption
@@ -292,6 +298,8 @@ private:
 
 	/// Record with output specification.
 	Input::Record output_rec;
+
+	OutputTime *output_stream_;
 
 
             int *row_4_el;

@@ -31,9 +31,9 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 
-#include "io/output.h"
+#include "io/output_data.hh"
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -172,11 +172,6 @@ private:
      * This method is used, when discontinuous data are saved to the .vtu file
      */
     void write_vtk_discont_topology(void);
-
-    /**
-     *
-     */
-    void write_vtk_ascii_data(OutputDataBase *output_data);
 
     /**
      *

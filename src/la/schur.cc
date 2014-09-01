@@ -71,8 +71,6 @@
 SchurComplement::SchurComplement(IS ia, Distribution *ds)
 : LinSys_PETSC(ds), IsA(ia), state(created)
 {
-        xprintf(Msg, "Constructor SchurComplement\n");
-
         // check index set
         ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
 
@@ -203,13 +201,13 @@ void SchurComplement::form_schur()
 		//MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
 
 		// get C block, loc_size_B removed
-		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( &(Compl->get_matrix()) ) );
+		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
 		if ( is_negative_definite() ) {
-			ierr+=MatAXPY(Compl->get_matrix(), -1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
 		} else {
-			ierr+=MatScale(Compl->get_matrix(),-1.0);
-			ierr+=MatAXPY(Compl->get_matrix(), 1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatScale(*( Compl->get_matrix() ),-1.0);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
 		}
 		Compl->set_matrix_changed();
 		//DBGMSG("C block:\n");
@@ -248,10 +246,10 @@ void SchurComplement::form_schur()
 void SchurComplement::form_rhs()
 {
 	if (rhs_changed_ || matrix_changed_) {
-	    MatMultTranspose(IAB,RHS1,Compl->get_rhs());
-	    VecAXPY(Compl->get_rhs(),-1,RHS2);
+	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
+	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
 	    if ( is_negative_definite() ) {
-	    	VecScale(Compl->get_rhs(), -1.0);
+	    	VecScale(*( Compl->get_rhs() ), -1.0);
 	    }
 	    Compl->set_rhs_changed();
 	    rhs_changed_ = false;
@@ -291,7 +289,6 @@ Distribution *SchurComplement::make_complement_distribution()
 
 void SchurComplement::create_inversion_matrix()
 {
-    PetscErrorCode ierr;
     PetscInt ncols, pos_start, pos_start_IA;
 
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
@@ -313,9 +310,9 @@ void SchurComplement::create_inversion_matrix()
         if (processed_rows[loc_row] != 0) continue;
 
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
-        unsigned int b_vals = 0; // count of values stored in B-block of Orig system
+        PetscInt b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        ierr = MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -331,19 +328,19 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
-        ierr = MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
             processed_rows[ loc_row + i ] = mat_block;
             submat_rows.push_back( i + loc_row + pos_start_IA );
-            ierr = MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
             for (PetscInt j=0; j<ncols; j++) {
                 if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
                     submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
                 }
             }
-            ierr = MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
         // test output
 //            xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);

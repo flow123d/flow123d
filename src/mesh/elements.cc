@@ -34,7 +34,6 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "elements.h"
 #include "element_impls.hh"
 
 // following deps. should be removed
@@ -178,7 +177,7 @@ Region Element::region() const {
 
 
 unsigned int Element::id() const {
-	mesh_->element.get_id(this);
+	return mesh_->element.get_id(this);
 }
 
 double Element::quality_measure_smooth() {

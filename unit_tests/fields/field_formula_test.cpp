@@ -30,8 +30,8 @@ string input = R"INPUT(
 
 
 TEST(FieldFormula, read_from_input) {
-    typedef FieldBase<3, FieldValue<3>::TensorFixed > TensorField;
-    typedef FieldBase<3, FieldValue<3>::Vector > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -122,7 +122,7 @@ string set_time_input = R"INPUT(
 
 
 TEST(FieldFormula, set_time) {
-    typedef FieldBase<2, FieldValue<3>::Vector > VectorField;
+    typedef FieldAlgorithmBase<2, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

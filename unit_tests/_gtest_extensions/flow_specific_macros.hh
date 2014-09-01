@@ -44,7 +44,10 @@
 #define ASSERT_DEATH(statement, pattern)
 #endif
 
-
+/**
+ * Macro to inform later code and prevent macro clash with ASSERT_* macros in global_defs.h
+ */
+#define FLOW123D_INCLUDES_GTEST
 
 
 #endif /* FLOW_SPECIFIC_MACROS_HH_ */

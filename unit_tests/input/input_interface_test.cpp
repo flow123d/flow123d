@@ -18,6 +18,10 @@
 
 #include "system/file_path.hh"
 
+#include "factory_base.h"
+#include "factory_descendant_a.h"
+#include "factory_descendant_b.h"
+
 
 
 
@@ -336,9 +340,9 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
 
 
 
@@ -409,4 +413,29 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     }
 }
 
+
+template class Base<3>;
+template class DescendantA<3>;
+template class DescendantB<3>;
+
+
+TEST_F(InputInterfaceTest, AbstractFromFactory) {
+    using namespace Input;
+
+    Address addr(storage, main);
+    Record record(addr, *main);
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
+    	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 3, time = 0.25",
+    			( a_rec.factory< Base<3> >(3, 0.25) )->get_infotext().c_str() );
+    }
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_2");
+    	EXPECT_STREQ("Constructor of DescendantB class with spacedim = 3",
+    			a_rec.factory< Base<3> >()->get_infotext().c_str());
+    }
+
+}
 

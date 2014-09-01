@@ -27,7 +27,7 @@ add_test_directory("${libs}")
     
     define_test(gmsh_reader)
     define_test(intersection)
-    define_test(bih_tree)
+    define_mpi_test(bih_tree 1)
     define_test(bounding_box)
     #define_test(intersection_1_3)
     

@@ -87,8 +87,6 @@ MassBalance::~MassBalance()
 
 
 void MassBalance::calculate(double time) {
-    F_ENTRY;
-
     // return if we already calculated at the given time
     if (last_time == time) return;
 

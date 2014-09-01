@@ -78,7 +78,7 @@ public:
     static OldBcdInput * instance();
 
     // hooks
-    static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommonBase &field) {
+    static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommon &field) {
     	OldBcdInput *old_bcd = OldBcdInput::instance();
     	auto field_ptr=Field_Enum::read_field_descriptor(rec, field);
     	if (field_ptr) return field_ptr;
@@ -87,7 +87,7 @@ public:
     		return old_bcd->flow_type;
     	}
     }
-    static FieldBaseScalar flow_pressure_hook(Input::Record rec, const FieldCommonBase &field) {
+    static FieldBaseScalar flow_pressure_hook(Input::Record rec, const FieldCommon &field) {
     	OldBcdInput *old_bcd = OldBcdInput::instance();
     	auto field_ptr= Field_Scalar::read_field_descriptor(rec, field);
     	if (field_ptr) return field_ptr;
@@ -96,7 +96,7 @@ public:
     		return old_bcd->flow_pressure;
     	}
     }
-    static FieldBaseScalar flow_flux_hook(Input::Record rec, const FieldCommonBase &field) {
+    static FieldBaseScalar flow_flux_hook(Input::Record rec, const FieldCommon &field) {
     	OldBcdInput *old_bcd = OldBcdInput::instance();
     	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
     	if (field_ptr) return field_ptr;
@@ -105,7 +105,7 @@ public:
     		return old_bcd->flow_flux;
     	}
     }
-    static FieldBaseScalar flow_sigma_hook(Input::Record rec, const FieldCommonBase &field)  {
+    static FieldBaseScalar flow_sigma_hook(Input::Record rec, const FieldCommon &field)  {
     	OldBcdInput *old_bcd = OldBcdInput::instance();
     	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
     	if (field_ptr) return field_ptr;
@@ -114,7 +114,7 @@ public:
     		return old_bcd->flow_sigma;
     	}
     }
-    static FieldBaseVector trans_conc_hook(Input::Record rec, const FieldCommonBase &field)  {
+    static FieldBaseVector trans_conc_hook(Input::Record rec, const FieldCommon &field)  {
     	OldBcdInput *old_bcd = OldBcdInput::instance();
     	auto field_ptr = Field_Vector::read_field_descriptor(rec,field);
     	if (field_ptr) return field_ptr;
@@ -124,7 +124,7 @@ public:
     	}
     }
 
-    void read_flow_record(Input::Record rec, const FieldCommonBase &field) {
+    void read_flow_record(Input::Record rec, const FieldCommon &field) {
     	FilePath bcd_file;
     	if (rec.opt_val(flow_old_bcd_file_key(), bcd_file)
     			&& string(bcd_file) != flow_input_file_) {
@@ -135,7 +135,7 @@ public:
     }
 
 
-    inline void read_transport_record(Input::Record rec, const FieldCommonBase &field);
+    inline void read_transport_record(Input::Record rec, const FieldCommon &field);
 
 
     /**
@@ -170,7 +170,7 @@ private:
 
 
 
-void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommonBase &field) {
+void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommon &field) {
 	FilePath bcd_file;
 	if (rec.opt_val(transport_old_bcd_file_key(), bcd_file)
 			&& string(bcd_file) != transport_input_file_) {

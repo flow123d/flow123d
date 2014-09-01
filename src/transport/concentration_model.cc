@@ -45,16 +45,38 @@ using namespace Input::Type;
 
 
 
-ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::TransportEqData()
+ConcentrationTransportModel::ModelEqData::ModelEqData()
+: TransportBase::TransportEqData()
 {
-	ADD_FIELD(bc_conc, "Dirichlet boundary condition (for each substance).", "0.0");
+    *this+=bc_conc
+            .name("bc_conc")
+            .description("Dirichlet boundary condition (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_rhs );
+    *this+=init_conc
+            .name("init_conc")
+            .description("Initial concentrations.")
+            .input_default("0.0");
+    *this+=disp_l
+            .name("disp_l")
+            .description("Longitudal dispersivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_t
+            .name("disp_t")
+            .description("Transversal dispersivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
+    *this+=diff_m
+            .name("diff_m")
+            .description("Molecular diffusivity (for each substance).")
+            .input_default("0.0")
+            .flags_add( in_main_matrix );
 
-	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
-	ADD_FIELD(disp_l, "Longitudal dispersivity (for each substance).", "0.0");
-	ADD_FIELD(disp_t, "Transversal dispersivity (for each substance).", "0.0");
-	ADD_FIELD(diff_m, "Molecular diffusivity (for each substance).", "0.0");
-
-	output_fields += output_field.name("mobile_p0").units("M/L^3");
+	*this+=output_field
+	        .name("conc")
+	        .units("M/L^3")
+	        .flags( equation_result );
 }
 
 
@@ -63,25 +85,19 @@ ConcentrationTransportModel::ModelEqData::ModelEqData() : TransportBase::Transpo
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation, description + " for solute transport.")
+	static IT::Record rec = IT::Record(ModelEqData::name() + "_" + implementation, description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
-					"Names of transported substances.")
-					// input data
-			.declare_key("sorption_enable", IT::Bool(), IT::Default("false"),
-					"Model of sorption.")
-			.declare_key("dual_porosity", IT::Bool(), IT::Default("false"),
-					"Dual porosity model.");
+					"Names of transported substances.");
 
 	return rec;
 }
 
-IT::Record &ConcentrationTransportModel::get_output_record_input_type(const string &implementation, const string &description)
+IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record("ConcentrationTransport_" + implementation + "_Output", "Output record for " + description + " for solute transport.")
-			.copy_keys(TransportBase::input_type_output_record);
+	static IT::Selection sel = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Output record for " + description + " for solute transport.");
 
-	return rec;
+	return sel;
 }
 
 
@@ -89,7 +105,7 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)
 {}
 
-
+/*
 void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 {
 	data().init_conc.n_comp(n_subst_);
@@ -101,34 +117,33 @@ void ConcentrationTransportModel::init_data(unsigned int n_subst_)
 	data().disp_l.n_comp(n_subst_);
 	data().disp_t.n_comp(n_subst_);
 }
+*/
 
-
-void ConcentrationTransportModel::set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section)
+/*
+void ConcentrationTransportModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar >& cross_section)
 {
-  data().cross_section = cross_section;
+  data().cross_section.copy_from(cross_section);
 }
-
+*/
 
 void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	in_rec.val<Input::Array>("substances").copy_to(names);
 }
 
-
+/*
 bool ConcentrationTransportModel::mass_matrix_changed()
 {
-	return (data().cross_section->changed() || data().por_m.changed());
+	return (data().cross_section.changed() || data().porosity.changed());
 }
 
 
 bool ConcentrationTransportModel::stiffness_matrix_changed()
 {
 	return (flux_changed ||
-			data().disp_l.changed() ||
-			data().disp_t.changed() ||
-			data().diff_m.changed() ||
-			data().por_m.changed() ||
-			data().cross_section->changed());
+
+			data().porosity.changed() ||
+			data().cross_section.changed());
 }
 
 
@@ -140,6 +155,7 @@ bool ConcentrationTransportModel::rhs_changed()
 			data().sources_density.changed() ||
 			data().sources_sigma.changed());
 }
+*/
 
 void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 		const ElementAccessor<3> &ele_acc,
@@ -147,8 +163,8 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 {
 	vector<double> elem_csec(point_list.size()), por_m(point_list.size());
 
-	data().cross_section->value_list(point_list, ele_acc, elem_csec);
-	data().por_m.value_list(point_list, ele_acc, por_m);
+	data().cross_section.value_list(point_list, ele_acc, elem_csec);
+	data().porosity.value_list(point_list, ele_acc, por_m);
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*por_m[i];
@@ -167,7 +183,9 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 	else
 		K.zeros();
 
-	K = ((vnorm*porosity*cross_cut)*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
+	// Note that the velocity vector is in fact the Darcian flux,
+	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
+	K = (vnorm*K + (Dm*pow(porosity, 1./3)*porosity*cross_cut)*arma::eye(3,3));
 }
 
 
@@ -185,11 +203,11 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	data().diff_m.value_list(point_list, ele_acc, Dm);
 	data().disp_l.value_list(point_list, ele_acc, alphaL);
 	data().disp_t.value_list(point_list, ele_acc, alphaT);
-	data().por_m.value_list(point_list, ele_acc, por_m);
-	data().cross_section->value_list(point_list, ele_acc, csection);
+	data().porosity.value_list(point_list, ele_acc, por_m);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 
 	for (unsigned int i=0; i<qsize; i++) {
-		for (int sbi=0; sbi<n_subst; sbi++) {
+		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
 			calculate_dispersivity_tensor(velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i], dif_coef[sbi][i]);
 		}
@@ -215,13 +233,22 @@ void ConcentrationTransportModel::compute_dirichlet_bc(const std::vector<arma::v
 
 void ConcentrationTransportModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_conc,
+			std::vector<arma::vec> &sources_value,
 			std::vector<arma::vec> &sources_density,
 			std::vector<arma::vec> &sources_sigma)
 {
-	data().sources_conc.value_list(point_list, ele_acc, sources_conc);
+	const unsigned int qsize = point_list.size();
+	vector<double> csection(qsize);
+	data().cross_section.value_list(point_list, ele_acc, csection);
+	data().sources_conc.value_list(point_list, ele_acc, sources_value);
 	data().sources_density.value_list(point_list, ele_acc, sources_density);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+
+	for (unsigned int k=0; k<qsize; k++)
+	{
+		sources_density[k] *= csection[k];
+		sources_sigma[k] *= csection[k];
+	}
 }
 
 
@@ -229,7 +256,13 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 			const ElementAccessor<3> &ele_acc,
 			std::vector<arma::vec> &sources_sigma)
 {
+	const unsigned int qsize = point_list.size();
+	vector<double> csection(qsize);
+	data().cross_section.value_list(point_list, ele_acc, csection);
 	data().sources_sigma.value_list(point_list, ele_acc, sources_sigma);
+
+	for (unsigned int k=0; k<qsize; k++)
+		sources_sigma[k] *= csection[k];
 }
 
 

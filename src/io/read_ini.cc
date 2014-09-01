@@ -279,7 +279,7 @@ double OptGetDbl( const char *section,const  char *key,const  char *defval )
 bool OptGetBool( const char *section,const  char *key,const  char *defval )
 {
 	char *str;
-	char res;
+	char res=false;
 	str = OptGetStr(section, key, defval);
 
 	if ( boost::iequals(str, "yes") || boost::iequals(str, "true") || boost::iequals(str, "1") ) res=true;

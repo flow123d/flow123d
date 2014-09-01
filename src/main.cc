@@ -32,18 +32,19 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
-#include "io/output.h"
 
 #include <iostream>
 #include <fstream>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
+#include <boost/filesystem.hpp>
 
 #include "main.h"
 //#include "io/read_ini.h"
@@ -51,7 +52,7 @@
 #include "rev_num.h"
 
 /// named version of the program
-#define _PROGRAM_VERSION_   "1.7.0_dev"
+#define _PROGRAM_VERSION_   "1.8.1"
 
 #ifndef _PROGRAM_REVISION_
     #define _PROGRAM_REVISION_ "(unknown revision)"
@@ -65,7 +66,7 @@
     #define _COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
 
-static void main_convert_to_output();
+//static void main_convert_to_output();
 
 
 namespace it = Input::Type;
@@ -92,9 +93,32 @@ Application::Application( int argc,  char ** argv)
   passed_argc_(0),
   passed_argv_(0),
   use_profiler(true)
-{}
+{
+    // initialize python stuff if we have
+    // nonstandard python home (release builds)
+    std::cout << "Application constructor" << std::endl;
+#ifdef HAVE_PYTHON
+#ifdef PYTHON_HOME
+    PythonLoader::initialize(argv[0]);
+#endif
+#endif
+
+}
 
 
+void Application::split_path(const string& path, string& directory, string& file_name) {
+
+    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
+    if (delim_pos < string::npos) {
+
+        // It seems, that there is some path in fname ... separate it
+        directory =path.substr(0,delim_pos);
+        file_name =path.substr(delim_pos+1); // till the end
+    } else {
+        directory = ".";
+        file_name = path;
+    }
+}
 
 void Application::display_version() {
     // Say Hello
@@ -105,10 +129,13 @@ void Application::display_version() {
     string url(_GIT_URL_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
     
-    int mpi_size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &mpi_size);
+
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
-    xprintf(Msg, "Branch: %s   %s\nBuild: %s \nMPI size: %d\n", branch.c_str(), url.c_str(), build.c_str() , mpi_size);
+    xprintf(Msg,
+    	 "Branch: %s\n"
+		 "Build: %s\n"
+		 "Fetch URL: %s\n",
+		 branch.c_str(), build.c_str() , url.c_str() );
     Profiler::instance()->set_program_info("Flow123d", version, branch, revision, build);
 }
 
@@ -123,7 +150,6 @@ Input::Record Application::read_input() {
     
     // read main input file
     string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    DBGMSG("Reading main input file %s.\n", fname.c_str() );
     std::ifstream in_stream(fname.c_str());
     if (! in_stream) {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
@@ -152,16 +178,18 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("solve,s", po::value< string >(), "Main input file to solve.")
-        ("input_dir,i", po::value< string >(), "Directory for the ${INPUT} placeholder in the main input file.")
-        ("output_dir,o", po::value< string >(), "Directory for all produced output files.")
-        ("log,l", po::value< string >(), "Set base name for log files.")
+        ("input_dir,i", po::value< string >()->default_value("input"), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("output_dir,o", po::value< string >()->default_value("output"), "Directory for all produced output files.")
+        ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
         ("JSON_template", "Prints description of the main input file as a valid CON file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.");
+    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+
     ;
 
     // parse the command line
@@ -188,6 +216,11 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("help")) {
         cout << desc << "\n";
         exit( exit_output );
+    }
+
+    if (vm.count("version")) {
+    	display_version();
+    	exit( exit_output );
     }
 
     // if there is "full_doc" option
@@ -219,22 +252,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         exit( exit_output );
     }
 
+    if (vm.count("petsc_redirect")) {
+        this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
+    }
+
     // if there is "solve" option
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
-
-
-        // Try to find absolute or relative path in fname
-        size_t delim_pos=input_filename.find_last_of(DIR_DELIMITER);
-        if (delim_pos < input_filename.npos) {
-
-            // It seems, that there is some path in fname ... separate it
-            main_input_dir_ =input_filename.substr(0,delim_pos);
-            main_input_filename_ =input_filename.substr(delim_pos+1); // till the end
-        } else {
-            main_input_dir_ = ".";
-            main_input_filename_ = input_filename;
-        }
+        split_path(input_filename, main_input_dir_, main_input_filename_);
     } 
 
     // possibly turn off profilling
@@ -252,14 +277,16 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // assumes working directory "."
     FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
 
+    if (!boost::filesystem::is_directory(output_dir)) {
+    	boost::filesystem::create_directory(output_dir);
+    }
+
+    if (vm.count("log")) {
+        this->log_filename_ = vm["log"].as<string>();
+    }
+
     if (vm.count("no_log")) {
-        log_filename_="\n";     // do not open log files
-    } else {
-        if (vm.count("log_filename")) {
-            log_filename_ = vm["log"].as<string>();
-        } else {
-            log_filename_ = ""; // use default
-        }
+        this->log_filename_="//";     // override; do not open log files
     }
 
     ostringstream tmp_stream(program_arguments_desc_);
@@ -273,7 +300,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::run() {
     //use_profiler=true;
-    Profiler::initialize();
+
 
     display_version();
 
@@ -282,7 +309,6 @@ void Application::run() {
 
     {
         using namespace Input;
-        int i;
 
         // get main input record handle
 
@@ -293,35 +319,10 @@ void Application::run() {
 
         if (i_problem.type() == HC_ExplicitSequential::input_type ) {
 
-//            // try to find "output_streams" record
-//            Input::Iterator<Input::Array> output_streams = Input::Record(i_rec).find<Input::Array>("output_streams");
-//
-            int rank=0;
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-//            if (rank == 0) {
-//                // Go through all configuration of "root" output streams and create them.
-//                // Other output streams can be created on the fly and added to the array
-//                // of output streams
-//                if(output_streams) {
-//                    for (Input::Iterator<Input::Record> output_stream_rec = (*output_streams).begin<Input::Record>();
-//                            output_stream_rec != (*output_streams).end();
-//                            i++, ++output_stream_rec)
-//                    {
-//                        OutputTime::output_stream(*output_stream_rec);
-//                    }
-//                }
-//            }
-
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
             // run simulation
             problem->run_simulation();
-
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-            if (rank == 0) {
-                // free all output streams
-                OutputTime::destroy_all();
-            }
 
             delete problem;
         } else {
@@ -358,13 +359,16 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    using namespace Input;
-    std::string ini_fname;
-
-    F_ENTRY;
-    Application app(argc, argv);
-
-    app.init(argc, argv);
+    try {
+        Application app(argc, argv);
+        app.init(argc, argv);
+    } catch (std::exception & e) {
+        std::cerr << e.what();
+        return ApplicationBase::exit_failure;
+    } catch (...) {
+        std::cerr << "Unknown exception" << endl;
+        return ApplicationBase::exit_failure;
+    }
 
     // Say Goodbye
     return ApplicationBase::exit_success;
@@ -402,7 +406,7 @@ int main(int argc, char **argv) {
 /**
  * FUNCTION "MAIN" FOR CONVERTING FILES TO POS
  */
-void main_convert_to_output() {
+/*void main_convert_to_output() {
     // TODO: implement output of input data fields
     // Fields to output:
     // 1) volume data (simple)
@@ -411,7 +415,7 @@ void main_convert_to_output() {
     //    flow and transport bcd
 
     xprintf(Err, "Not implemented yet in this version\n");
-}
+}*/
 #if 0
 /**
  * FUNCTION "MAIN" FOR COMPUTING MIXED-HYBRID PROBLEM

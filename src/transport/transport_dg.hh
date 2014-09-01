@@ -150,6 +150,8 @@ public:
         };
         static Input::Type::Selection bc_type_selection;
 
+        static Input::Type::Selection output_selection;
+
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
@@ -192,22 +194,14 @@ public:
     static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
+     * @brief Initialize solution in the zero time.
+     */
+	void zero_time_step() override;
+
+    /**
      * @brief Computes the solution in one time instant.
      */
-	void update_solution();
-
-	/**
-	 * @brief Returns the serialized solution array.
-	 * @param vector the solution
-	 * @param size   size of the array
-	 */
-	void get_solution_vector(double * &vector, unsigned int &size);
-
-	/**
-	 * @brief Returns the (possibly) parallel solution vector.
-	 * @param vector
-	 */
-	void get_parallel_solution_vector(Vec &vector);
+	void update_solution() override;
 
 	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
@@ -229,7 +223,7 @@ public:
      * TODO: there should be also passed the sigma parameter between dimensions
      * @param cross_section is pointer to cross_section data of Darcy flow equation
      */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) { Model::set_cross_section_field(cross_section); }
+	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) { Model::set_cross_section_field(cross_section); }
 
 	/**
 	 * @brief Getter for field data.
@@ -249,19 +243,20 @@ private:
 
 	void output_vector_gather();
 
+	/*
     bool stiffness_matrix_changed() {
     	return Model::stiffness_matrix_changed() ||
-    			data_.fracture_sigma.changed() ||
-				data_.dg_penalty.changed();
+
+
     }
 
     bool mass_matrix_changed() { return Model::mass_matrix_changed(); }
 
     bool rhs_changed() {
     	return Model::rhs_changed() ||
-    		data_.dg_penalty.changed();
-    }
 
+    }
+*/
 	/**
 	 * @brief Assembles the mass matrix.
 	 *
@@ -526,6 +521,8 @@ private:
 
 	/// Record with output specification.
 	Input::Record output_rec;
+
+	OutputTime *output_stream;
 
 
 	// @}

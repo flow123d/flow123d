@@ -9,13 +9,13 @@
     primary_equation = {
       TYPE = "Steady_MH",
       
-      data = [
-        { region = "volume", 
-          conductivity = 1e-20
+      input_fields= [
+        { r_set = "ALL", 
+          conductivity = 1e-15
         },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
-          bc_pressure = { TYPE="FieldFormula", value = "1"}
+          bc_pressure = 0
         }
       ],
        
@@ -23,9 +23,7 @@
         output_stream = {
           REF = "/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
       solver = { 
@@ -37,10 +35,10 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting",
  
-      data = [
+      input_fields= [
         { r_set = "ALL",
-          init_conc = 1.0,
-          por_m = 0.25 
+          init_conc = [1.0,0.0],
+          porosity= 0.25 
         },
         { r_set = "BOUNDARY",
           bc_conc = 0
@@ -52,34 +50,26 @@
         "B"
         ],
       
-      output = {
-        conc_mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/output_streams/1"
       }, 
       time = {
         end_time = 5.0
       },
       
-      reactions = {
+      reaction_term = {
         TYPE = "DualPorosity",
         
-        substances = {
-          REF = "/problem/secondary_equation/substances"
-        },
-        
-        data = [
+        input_fields= [
           {
             r_set="ALL",
-            alpha = [0.01,0.01],
-            immob_porosity = 0.25,
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
             init_conc_immobile = [0.0, 0.0]
           }
         ],
         
-        reactions_mob = {
+        reaction_mobile = {
           TYPE="LinearReactions",
           substances = [
             "A",
@@ -94,8 +84,8 @@
           ]
         },
         
-        reactions_immob = {
-          REF = "/problem/secondary_equation/reactions/reactions_mob"
+        reaction_immobile = {
+          REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
       }
           
@@ -117,6 +107,7 @@
           TYPE = "vtk", 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

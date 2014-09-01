@@ -15,9 +15,9 @@
 
 class Mesh;
 class Distribution;
-class Reaction;
+class ReactionTerm;
 
-class Linear_reaction: public Reaction
+class Linear_reaction: public ReactionTerm
 {
 	public:
 		/*
@@ -33,13 +33,13 @@ class Linear_reaction: public Reaction
          *  TODO: parameter description
          */
 		//Linear_reaction(TimeMarks &marks, Mesh &init_mesh, MaterialDatabase &material_database, Input::Record in_rec, vector<string> &names);
-		Linear_reaction(Mesh &init_mesh, Input::Record in_rec, vector<string> &names);
+		Linear_reaction(Mesh &init_mesh, Input::Record in_rec);
 		/**
 		*	Destructor.
 		*/
 		~Linear_reaction(void);
                 
-                void initialize(void) override;
+        void zero_time_step() override;
                 
 		/**
 		*	For simulation of chemical reaction in just one element either inside of MOBILE or IMMOBILE pores.
@@ -63,7 +63,7 @@ class Linear_reaction: public Reaction
 		*/
 		Linear_reaction();
                 
-                virtual void init_from_input(Input::Record in_rec) override;
+        void init_from_input();
 		/**
 		*	For control printing of a matrix describing simple chemical raections.
 		*/
