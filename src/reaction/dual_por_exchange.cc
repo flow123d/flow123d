@@ -57,7 +57,7 @@ DualPorosity::EqData::EqData()
           .name("porosity_immobile")
           .description("Porosity of the immobile zone.")
           .input_default("0")
-          .units( UnitSI::dimensionless );
+          .units( UnitSI::dimensionless() );
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
@@ -67,7 +67,7 @@ DualPorosity::EqData::EqData()
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
-        .units( UnitSI::dimensionless )
+        .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy );
 
   output_fields += *this;

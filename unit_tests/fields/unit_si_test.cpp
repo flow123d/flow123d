@@ -24,11 +24,11 @@ TEST(UnitSI, format) {
 }
 
 TEST(UnitSI, static_defined_units) {
-	EXPECT_STREQ( std::string("$[mkgs^{-2}]$").c_str(), UnitSI::N.format().c_str() );
-	EXPECT_STREQ( std::string("$[m^{2}kgs^{-2}]$").c_str(), UnitSI::J.format().c_str() );
-	EXPECT_STREQ( std::string("$[m^{2}kgs^{-3}]$").c_str(), UnitSI::W.format().c_str() );
-	EXPECT_STREQ( std::string("$[m^{-1}kgs^{-2}]$").c_str(), UnitSI::Pa.format().c_str() );
-	EXPECT_STREQ( std::string("$[-]$").c_str(), UnitSI::dimensionless.format().c_str() );
+	EXPECT_STREQ( std::string("$[mkgs^{-2}]$").c_str(), UnitSI::N().format().c_str() );
+	EXPECT_STREQ( std::string("$[m^{2}kgs^{-2}]$").c_str(), UnitSI::J().format().c_str() );
+	EXPECT_STREQ( std::string("$[m^{2}kgs^{-3}]$").c_str(), UnitSI::W().format().c_str() );
+	EXPECT_STREQ( std::string("$[m^{-1}kgs^{-2}]$").c_str(), UnitSI::Pa().format().c_str() );
+	EXPECT_STREQ( std::string("$[-]$").c_str(), UnitSI::dimensionless().format().c_str() );
 }
 
 TEST(UnitSI, multiplicative_operator) {
@@ -37,8 +37,8 @@ TEST(UnitSI, multiplicative_operator) {
 	UnitSI force = pressure * area;
 	EXPECT_STREQ(std::string("$[mkgs^{-2}]$").c_str(), force.format().c_str());
 
-	UnitSI force2 = area * UnitSI::Pa;
-	EXPECT_STREQ( UnitSI::N.format().c_str(), force2.format().c_str() );
+	UnitSI force2 = area * UnitSI::Pa();
+	EXPECT_STREQ( UnitSI::N().format().c_str(), force2.format().c_str() );
 }
 
 TEST(UnitSI, division_operator) {
@@ -47,6 +47,6 @@ TEST(UnitSI, division_operator) {
 	UnitSI pressure = force / area;
 	EXPECT_STREQ(std::string("$[m^{-1}kgs^{-2}]$").c_str(), pressure.format().c_str());
 
-	UnitSI pressure2 = UnitSI::N / area;
-	EXPECT_STREQ( UnitSI::Pa.format().c_str(), pressure2.format().c_str() );
+	UnitSI pressure2 = UnitSI::N() / area;
+	EXPECT_STREQ( UnitSI::Pa().format().c_str(), pressure2.format().c_str() );
 }

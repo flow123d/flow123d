@@ -21,13 +21,30 @@ UnitSI::UnitSI() {
 	undef_ = true;
 }
 
-const UnitSI UnitSI::N = UnitSI().m().kg().s(-2);
-const UnitSI UnitSI::J = UnitSI().m(2).kg().s(-2);
-const UnitSI UnitSI::W = UnitSI().m(2).kg().s(-3);
-const UnitSI UnitSI::Pa = UnitSI().m(-1).kg().s(-2);
-const UnitSI UnitSI::dimensionless = UnitSI().m(0);
+UnitSI & UnitSI::N() {
+	static UnitSI unit = UnitSI().m().kg().s(-2);
+	return unit;
+}
 
-const std::vector<std::string> UnitSI::unit_symbols={"m","kg","s","A","K","mol","cd" };
+UnitSI & UnitSI::J() {
+	static UnitSI unit = UnitSI().m(2).kg().s(-2);
+	return unit;
+}
+
+UnitSI & UnitSI::W() {
+	static UnitSI unit = UnitSI().m(2).kg().s(-3);
+	return unit;
+}
+
+UnitSI & UnitSI::Pa() {
+	static UnitSI unit = UnitSI().m(-1).kg().s(-2);
+	return unit;
+}
+
+UnitSI & UnitSI::dimensionless() {
+	static UnitSI unit = UnitSI().m(0);
+	return unit;
+}
 
 UnitSI & UnitSI::m(int exp) {
 	exponents_[0] = exp;
@@ -72,6 +89,9 @@ UnitSI & UnitSI::cd(int exp) {
 }
 
 std::string UnitSI::format() const {
+	// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
+	static std::vector<std::string> unit_symbols={"m","kg","s","A","K","mol","cd" };
+
 	ASSERT(is_def(), "UnitSI object must be defined!");
 	std::stringstream output;
 	output << "$[";

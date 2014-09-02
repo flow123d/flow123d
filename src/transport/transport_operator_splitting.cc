@@ -84,7 +84,7 @@ TransportBase::TransportEqData::TransportEqData()
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
 	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
 
-	porosity.units( UnitSI::dimensionless );
+	porosity.units( UnitSI::dimensionless() );
 	sources_density.units( UnitSI().kg().m(-3) );
 	sources_sigma.units( UnitSI().s(-1) );
 	sources_conc.units( UnitSI().kg().m(-3) );

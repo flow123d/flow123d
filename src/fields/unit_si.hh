@@ -18,20 +18,17 @@ public:
 	/// Constructor
 	UnitSI();
 
-	/// Definitions of frequently used derived units
-	/// Definition of Newton
-	static const UnitSI N;
-	/// Definition of Joule
-	static const UnitSI J;
-	/// Definition of Watt
-	static const UnitSI W;
-	/// Definition of Pascal
-	static const UnitSI Pa;
-	/// Definition of dimensionless unit
-	static const UnitSI dimensionless;
-
-	/// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
-	static const std::vector<std::string> unit_symbols;
+	/// Methods return frequently used derived units
+	/// Returns Newton
+	static UnitSI & N();
+	/// Returns Joule
+	static UnitSI & J();
+	/// Returns Watt
+	static UnitSI & W();
+	/// Returns Pascal
+	static UnitSI & Pa();
+	/// Returns dimensionless unit
+	static UnitSI & dimensionless();
 
 	/// Methods set values of exponents for SI units with similar name
 	UnitSI & m(int exp = 1);

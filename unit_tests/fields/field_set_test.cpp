@@ -72,7 +72,7 @@ public:
 			*this += type
 						.name("reaction_type")
 						.description("")
-						.units( UnitSI::dimensionless )
+						.units( UnitSI::dimensionless() )
 						.flags_add(in_main_matrix)
 						.input_selection(&reaction_type_sel);
 		}

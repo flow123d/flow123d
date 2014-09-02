@@ -147,12 +147,12 @@ protected:
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
 
-            anisotropy.units( UnitSI::dimensionless );
-            bc_type.units( UnitSI::dimensionless );
-            bc_pressure.units( UnitSI::dimensionless );
-            bc_flux.units( UnitSI::dimensionless );
-            bc_robin_sigma.units( UnitSI::dimensionless );
-            bc_conc.units( UnitSI::dimensionless );
+            anisotropy.units( UnitSI::dimensionless() );
+            bc_type.units( UnitSI::dimensionless() );
+            bc_pressure.units( UnitSI::dimensionless() );
+            bc_flux.units( UnitSI::dimensionless() );
+            bc_robin_sigma.units( UnitSI::dimensionless() );
+            bc_conc.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -190,9 +190,9 @@ public:
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
 
-            init_pressure.units( UnitSI::dimensionless );
-            init_conc.units( UnitSI::dimensionless );
-            bulk_set_field.units( UnitSI::dimensionless );
+            init_pressure.units( UnitSI::dimensionless() );
+            init_conc.units( UnitSI::dimensionless() );
+            bulk_set_field.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;

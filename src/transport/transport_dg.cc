@@ -190,7 +190,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("fracture_sigma")
             .description(
             "Coefficient of diffusive transfer through fractures (for each substance).")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(FieldFlag::in_main_matrix);
 
@@ -199,7 +199,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .description(
             "Penalty parameter influencing the discontinuity of the solution (for each substance). "
             "Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
@@ -207,7 +207,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("bc_type")
             .description(
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
             .flags_add(FieldFlag::in_rhs);

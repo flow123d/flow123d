@@ -66,7 +66,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=porosity
             .name("porosity")
             .description("Porosity.")
-            .units( UnitSI::dimensionless )
+            .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
 
@@ -79,13 +79,13 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=fluid_heat_capacity
             .name("fluid_heat_capacity")
             .description("Heat capacity of fluid.")
-            .units( UnitSI::J * UnitSI().kg(-1).K(-1) )
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_conductivity
             .name("fluid_heat_conductivity")
             .description("Heat conductivity of fluid.")
-            .units( UnitSI::W * UnitSI().m(-1).K(-1) )
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
 
@@ -98,13 +98,13 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=solid_heat_capacity
             .name("solid_heat_capacity")
             .description("Heat capacity of solid (rock).")
-            .units( UnitSI::J * UnitSI().kg(-1).K(-1) )
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_time_term);
 
     *this+=solid_heat_conductivity
             .name("solid_heat_conductivity")
             .description("Heat conductivity of solid (rock).")
-            .units( UnitSI::W * UnitSI().m(-1).K(-1) )
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
     *this+=disp_l
@@ -124,14 +124,14 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=fluid_thermal_source
             .name("fluid_thermal_source")
             .description("Thermal source density in fluid.")
-            .units( UnitSI::W * UnitSI().m(-3) )
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_thermal_source
             .name("solid_thermal_source")
             .description("Thermal source density in solid.")
-            .units( UnitSI::W * UnitSI().m(-3) )
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
