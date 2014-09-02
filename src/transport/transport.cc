@@ -452,16 +452,43 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
           //if(data_.sources_sigma.changed_during_set_time)
           sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi)*csection;
         }
+
+        int dof_array[1];
+        double mat_array[1], val_array[1];
+        Element *ele;
+        if (balance_ != nullptr)
+        {
+        	START_TIMER("Balance start source assembly");
+        	balance_->start_source_assembly(sbi, 0);
+        }
+
+        //now computing source concentrations: density - sigma (source_conc - actual_conc)
+        for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+            {
+              START_TIMER("update balance");
+              if (balance_ != nullptr)
+              {
+            	  dof_array[0] = row_4_el[el_4_loc[loc_el]];
+            	  ele = mesh_->element(el_4_loc[loc_el]);
+            	  mat_array[0] = sources_sigma[sbi][loc_el]*ele->measure();
+            	  val_array[0] = sources_density[sbi][loc_el]*ele->measure();
+
+            	  balance_->set_source_matrix_values(sbi, 0, ele->region().bulk_idx(), 1, dof_array, mat_array);
+            	  balance_->set_source_rhs_values(sbi, 0, ele->region().bulk_idx(), 1, dof_array, val_array);
+              }
+              END_TIMER("update balance");
+            }
+
+        if (balance_ != nullptr)
+        {
+        	START_TIMER("Balance finish source assembly");
+        	balance_->finish_source_assembly(sbi, 0);
+        }
       }
 
 
-    int dof_array[1];
-    double val_array[1];
-    Element *ele;
-    if (balance_ != nullptr)
-    	balance_->start_source_assembly(sbi, 0);
-
     //now computing source concentrations: density - sigma (source_conc - actual_conc)
+    START_TIMER("calculate sources_corr");
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
         {
           conc_diff = sources_conc[sbi][loc_el] - conc[MOBILE][sbi][loc_el];
@@ -471,24 +498,8 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
                                    * time_->dt();
           else
             sources_corr[loc_el] = sources_density[sbi][loc_el] * time_->dt();
-
-
-          if (balance_ != nullptr)
-          {
-        	  dof_array[0] = row_4_el[el_4_loc[loc_el]];
-        	  ele = mesh_->element(el_4_loc[loc_el]);
-//        	  conc_diff = sources_conc[sbi][loc_el] - conc[MOBILE][sbi][loc_el];
-        	  if ( conc_diff > 0.0)
-        		  val_array[0] = (sources_density[sbi][loc_el] + conc_diff * sources_sigma[sbi][loc_el])*ele->measure();
-        	  else
-        		  val_array[0] = sources_density[sbi][loc_el]*ele->measure();
-
-        	  balance_->set_source_rhs_values(sbi, 0, ele->region().bulk_idx(), 1, dof_array, val_array);
-          }
         }
-
-    if (balance_ != nullptr)
-    	balance_->finish_source_assembly(sbi, 0);
+    END_TIMER("calculate sources_corr");
 }
 
 void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigned int sbi) {
@@ -552,13 +563,13 @@ void ConvectionTransport::zero_time_step()
 
     if (balance_ != nullptr)
     {
+    	START_TIMER("Convection balance zero time step");
     	create_transport_matrix_mpi();
     	set_boundary_conditions();
     	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
     		compute_concentration_sources(sbi);
 
     	calculate_instant_balance();
-//    	calculate_cumulative_balance();
     }
 
     // write initial condition
@@ -909,18 +920,59 @@ void ConvectionTransport::calc_elem_sources(vector<vector<double> > &mass, vecto
 
 void ConvectionTransport::calculate_cumulative_balance()
 {
+	Vec vpconc_diff;
+	const double *pconc;
+	double *pconc_diff;
+
 	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
-		balance_->calculate_cumulative(sbi, 0, vpconc[sbi], time_->dt());
+	{
+		VecDuplicate(vpconc[sbi], &vpconc_diff);
+		VecGetArrayRead(vpconc[sbi], &pconc);
+		VecGetArray(vpconc_diff, &pconc_diff);
+		for (unsigned int loc_el=0; loc_el<el_ds->lsize(); ++loc_el)
+		{
+			if (pconc[loc_el] < sources_conc[sbi][loc_el])
+				pconc_diff[loc_el] = sources_conc[sbi][loc_el] - pconc[loc_el];
+			else
+				pconc_diff[loc_el] = 0;
+		}
+
+		balance_->calculate_cumulative_sources(sbi, 0, vpconc_diff, time_->dt());
+		balance_->calculate_cumulative_fluxes(sbi, 0, vpconc[sbi], time_->dt());
+
+		VecRestoreArray(vpconc_diff, &pconc_diff);
+		VecRestoreArrayRead(vpconc[sbi], &pconc);
+		VecDestroy(&vpconc_diff);
+	}
 }
 
 
 void ConvectionTransport::calculate_instant_balance()
 {
+	Vec vpconc_diff;
+	const double *pconc;
+	double *pconc_diff;
+
 	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
 	{
+		VecDuplicate(vpconc[sbi], &vpconc_diff);
+		VecGetArrayRead(vpconc[sbi], &pconc);
+		VecGetArray(vpconc_diff, &pconc_diff);
+		for (unsigned int loc_el=0; loc_el<el_ds->lsize(); ++loc_el)
+		{
+			if (pconc[loc_el] < sources_conc[sbi][loc_el])
+				pconc_diff[loc_el] = sources_conc[sbi][loc_el] - pconc[loc_el];
+			else
+				pconc_diff[loc_el] = 0;
+		}
+
 		balance_->calculate_mass(sbi, 0, vconc[sbi]);
-		balance_->calculate_source(sbi, 0, vpconc[sbi]);
+		balance_->calculate_source(sbi, 0, vpconc_diff);
 		balance_->calculate_flux(sbi, 0, vpconc[sbi]);
+
+		VecRestoreArray(vpconc_diff, &pconc_diff);
+		VecRestoreArrayRead(vpconc[sbi], &pconc);
+		VecDestroy(&vpconc_diff);
 	}
 }
 

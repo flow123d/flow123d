@@ -242,6 +242,7 @@ void TransportOperatorSplitting::output_data(){
         	END_TIMER("TOS-balance");
         }
 
+        END_TIMER("TOS-output data");
 }
 
 
@@ -287,7 +288,6 @@ void TransportOperatorSplitting::update_solution() {
 	    }
 	}
 
-    END_TIMER("TOS-one step");
 
 
     

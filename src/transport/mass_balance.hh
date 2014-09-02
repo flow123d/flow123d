@@ -358,7 +358,21 @@ public:
 	 * @param solution      Solution vector.
 	 * @param dt            Actual time step.
 	 */
-	void calculate_cumulative(unsigned int quantity_idx,
+	void calculate_cumulative_sources(unsigned int quantity_idx,
+			unsigned int component_idx,
+			const Vec &solution,
+			double dt);
+
+	/**
+	 * Updates cumulative quantities for balance.
+	 * This method can be called in substeps even if no output is generated.
+	 * It calculates the sum of flux and source over time interval.
+	 * @param quantity_idx  Index of quantity.
+	 * @param component_idx Index of component.
+	 * @param solution      Solution vector.
+	 * @param dt            Actual time step.
+	 */
+	void calculate_cumulative_fluxes(unsigned int quantity_idx,
 			unsigned int component_idx,
 			const Vec &solution,
 			double dt);

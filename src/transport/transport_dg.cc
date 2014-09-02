@@ -590,7 +590,10 @@ void TransportDG<Model>::update_solution()
 			balance_->calculate_source(sbi, 0, ls[sbi]->get_solution());
 			balance_->calculate_flux(sbi, 0, ls[sbi]->get_solution());
     		if (balance_->cumulative())
-    			balance_->calculate_cumulative(sbi, 0, ls[sbi]->get_solution(), time_->dt());
+    		{
+    			balance_->calculate_cumulative_sources(sbi, 0, ls[sbi]->get_solution(), time_->dt());
+    			balance_->calculate_cumulative_fluxes(sbi, 0, ls[sbi]->get_solution(), time_->dt());
+    		}
     	}
     }
 

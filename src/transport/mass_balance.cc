@@ -662,7 +662,6 @@ void Balance::set_flux_matrix_values(unsigned int quantity_idx,
 			dof_indices,
 			values,
 			ADD_VALUES);
-
 }
 
 
@@ -716,7 +715,7 @@ void Balance::set_source_rhs_values(unsigned int quantity_idx,
 }
 
 
-void Balance::calculate_cumulative(unsigned int quantity_idx,
+void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 		unsigned int component_idx,
 		const Vec &solution,
 		double dt)
@@ -724,7 +723,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 	if (!cumulative_) return;
 
 	const unsigned int n_comp = components_.size();
-	Vec bulk_vec, boundary_vec;
+	Vec bulk_vec;
 
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
@@ -733,16 +732,36 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 			&(sources_[quantity_idx][component_idx][0]),
 			&bulk_vec);
 
+	// compute sources on bulk regions: S'.u + s
+	VecZeroEntries(bulk_vec);
+	MatMultTransposeAdd(region_source_matrix_[quantity_idx*n_comp+component_idx], solution, region_source_vec_[quantity_idx*n_comp+component_idx], bulk_vec);
+
+	double sum_sources;
+	VecSum(bulk_vec, &sum_sources);
+	VecDestroy(&bulk_vec);
+
+	if (rank_ == 0)
+		// sum sources in time interval
+		integrated_sources_[quantity_idx] += sum_sources*dt;
+}
+
+
+void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
+		unsigned int component_idx,
+		const Vec &solution,
+		double dt)
+{
+	if (!cumulative_) return;
+
+	const unsigned int n_comp = components_.size();
+	Vec boundary_vec;
+
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
 			(rank_==0)?regions_.boundary_size():0,
 			PETSC_DECIDE,
 			&(fluxes_[quantity_idx][component_idx][0]),
 			&boundary_vec);
-
-	// compute sources on bulk regions: S'.u + s
-	VecZeroEntries(bulk_vec);
-	MatMultTransposeAdd(region_source_matrix_[quantity_idx*n_comp+component_idx], solution, region_source_vec_[quantity_idx*n_comp+component_idx], bulk_vec);
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
 	VecZeroEntries(boundary_vec);
@@ -752,19 +771,13 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
 	VecDestroy(&temp);
 
-	double sum_fluxes, sum_sources;
-	VecSum(bulk_vec, &sum_sources);
+	double sum_fluxes;
 	VecSum(boundary_vec, &sum_fluxes);
-	VecDestroy(&bulk_vec);
 	VecDestroy(&boundary_vec);
 
 	if (rank_ == 0)
-	{
-		// sum sources and fluxes in time interval
-		integrated_sources_[quantity_idx] += sum_sources*dt;
+		// sum fluxes in time interval
 		integrated_fluxes_[quantity_idx] += sum_fluxes*dt;
-	}
-
 }
 
 
