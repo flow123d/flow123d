@@ -165,7 +165,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=cross_section
             .name("cross_section")
-            .units( UnitSI().m(3) ) //m(3-dim)
+            .units( UnitSI().m(3).md() )
             .flags(input_copy & in_time_term & in_main_matrix);
 
     *this+=output_field

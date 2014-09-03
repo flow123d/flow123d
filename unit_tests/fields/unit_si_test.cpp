@@ -21,6 +21,15 @@ TEST(UnitSI, format) {
 
 	UnitSI unit_3 = UnitSI().m(0); // dimensionless quantity
 	EXPECT_STREQ(std::string("$[-]$").c_str(), unit_3.format().c_str());
+
+	UnitSI unit_4 = UnitSI().m(4).md();
+	EXPECT_STREQ(std::string("$[m^{4-d}]$").c_str(), unit_4.format().c_str());
+
+	UnitSI unit_5 = UnitSI().m().md(1);
+	EXPECT_STREQ(std::string("$[m^{1+d}]$").c_str(), unit_5.format().c_str());
+
+	UnitSI unit_6 = UnitSI().kg().md(1);
+	EXPECT_STREQ(std::string("$[m^{d}kg]$").c_str(), unit_6.format().c_str());
 }
 
 TEST(UnitSI, static_defined_units) {

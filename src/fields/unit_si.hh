@@ -38,6 +38,8 @@ public:
 	UnitSI & K(int exp = 1);
 	UnitSI & mol(int exp = 1);
 	UnitSI & cd(int exp = 1);
+	/// Method sets value of exponent for m^{-d}, where d is dimension of region
+	UnitSI & md(int exp = -1);
 
 	/**
 	 * Makes unit description string in Latex format, e.g. "$[m.kg^{2}.s^{-2}]$"
@@ -53,9 +55,21 @@ public:
 	bool is_def() const;
 
 private:
+	/// Values determine positions of exponents in exponents_ vector
+	static const unsigned int order_m   = 0;
+	static const unsigned int order_kg  = 1;
+	static const unsigned int order_s   = 2;
+	static const unsigned int order_A   = 3;
+	static const unsigned int order_K   = 4;
+	static const unsigned int order_mol = 5;
+	static const unsigned int order_cd  = 6;
+	static const unsigned int order_md  = 7;
+
 	/**
 	 * Stores exponents of base SI units in this order:
-	 * [m, kg, s, A, K, mol, cd]
+	 * [m, kg, s, A, K, mol, cd, md]
+	 *
+	 * where md represents value of exponent depended on dimension (m^{-d})
 	 */
 	std::vector<int> exponents_;
 
