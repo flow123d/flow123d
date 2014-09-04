@@ -104,7 +104,8 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
     // identify it with PETSc vector
     PetscErrorCode ierr;
     PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
-    ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
+    //ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
+    ierr = VecCreateSeqWithArray( PETSC_COMM_SELF, 1, numDofsSub, &(locSolution_[0]), &locSolVec_ ); 
     CHKERRV( ierr );
 #else
     xprintf(UsrErr, "Compiled without support for BDDCML solver.\n");  
@@ -159,10 +160,10 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 
     //VecScatterView(VSpetscToSubScatter_,PETSC_VIEWER_STDOUT_SELF);
     
-    double * locSolVecArray;
-    ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
-    std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );
-    ierr = VecRestoreArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
+    //double * locSolVecArray;
+    //ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
+    //std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );
+    //ierr = VecRestoreArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
 
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
