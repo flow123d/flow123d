@@ -96,11 +96,8 @@ Application::Application( int argc,  char ** argv)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-    std::cout << "Application constructor" << std::endl;
 #ifdef HAVE_PYTHON
-#ifdef PYTHON_HOME
     PythonLoader::initialize(argv[0]);
-#endif
 #endif
 
 }

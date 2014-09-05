@@ -16,7 +16,37 @@
 
 \normalsize
 
-\section{Radioactive Decay and First Order Reactions}
+\subsection{Linear reactions}
+\label{sec:linear_reactions}
+The software suppports linear chemical reactions in the transport operator splitting method. 
+The linear chemical reactions (we will recall them only as 'reactions' in this section) can desribe
+\begin{itemize}
+  \item first order kinetic chemical reactions
+  \item radioactive decays, their chains and also complex chains with branches.
+\end{itemize}
+In the first case, the kinetics of a reaction is determined by a kinetic constant \hyperA{Substep::kinetic}{$k$}. 
+In the second case, the radioactive decay is determined by the half life of the reactant 
+\hyperA{Substep::half-life}{$t_{1/2}$}. Both notations
+%
+\[ A\xrightarrow{k} B, \qquad A\xrightarrow{t_{1/2}} B \]
+%
+express the same reaction and are governed by the same first order differential equation 
+%
+\[ \frac{\d c_A}{\d\tau} = -kc_A = - \frac{\ln 2}{t_{1/2}}\, c_A. \]
+%
+The relation between $k$ and $t_{1/2}$ is derived below
+\begin{eqnarray*}
+    \frac{\d c_A}{\d\tau} &=& -k c_A\\
+    \frac{\d c_A}{c_A} &=& -k \d\tau\\
+    \int\limits_{c_A^0}^{c_A^0/2}\frac{\d c_A}{c_A} &=& -k\int\limits_{0}^{t_{1/2}} 1\d\tau\\
+    \big[ \ln c_A\big]^{c_A^0/2}_{c_A^0} &=& -\big[k\tau\big]^{t_{1/2}}_{0}\\
+    \ln\frac{c_A^0}{2} - \ln c_A^0 &=& - k t_{1/2}\\
+    \ln 2 &=& k t_{1/2}\\
+    k &=& \frac{\ln 2}{t_{1/2}}.
+\end{eqnarray*}
+
+
+
 Lets consider to have a narrow decay chain without branches. This kind of decay chain can be described by following equation
 \[
  A\xrightarrow{t_{1/2,A}}B\xrightarrow{t_{1/2,B}}C\xrightarrow{t_{1/2,C}}D\xrightarrow{t_{1/2,D}}E,
@@ -59,7 +89,7 @@ It is also possible to simulate decay chains with branches as picture \ref{pic:d
 
 \begin{figure}[htb]
  \centering
- \includegraphics[width = 8cm]{./decay_chain}
+ \includegraphics[width = 8cm]{\fig /decay_chain.png}
  \caption{Decay chain with branches.}
  \label{pic:dec_branches}
 \end{figure}

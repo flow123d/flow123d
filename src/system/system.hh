@@ -34,6 +34,10 @@
 #include <mpi.h>
 #include <iostream>
 
+#include "system/global_defs.h"
+#include "system/exc_common.hh"
+
+
 //instead of #include "mpi.h"
 //typedef int MPI_Comm;
 
@@ -149,6 +153,22 @@ char * xstrcpy(const char*);
 char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
+
+
+inline void chkerr(unsigned int ierr) {
+	do {
+		if (ierr != 0) THROW( ExcChkErr() << EI_ErrCode(ierr));
+	} while (0);
+}
+
+inline void chkerr_assert(unsigned int ierr) {
+	if (debug_asserts_view) {
+		do {
+			if (ierr != 0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr));
+		} while (0);
+	}
+}
+
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:
