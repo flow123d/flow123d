@@ -8,7 +8,7 @@
     name: flow123d-build
     # default template fields
     node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    workspace: "F123-{platform}-{build-type}"
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -119,10 +119,11 @@
     defaults: flow123d-build
     builders:
       - shell: |
-          # configure
+          # build all common sources for unit tests
           cd flow123d
           make -j 4 all
-          make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+          make -j 4 -C build_tree/unit_tests gtest_mpi_obj         
+
 #    publishers:
 #      -github-notifier       
 
@@ -188,6 +189,7 @@
         
 #################################################################
 # Packaging and publish
+# Use -i option for make to ignore errors comming from NSIS call.
 - job-template:
     name: "Flow123d-{platform}-packages"
     display-name: "{platform} / make packages"
@@ -195,10 +197,11 @@
     builders:
       - shell: |
           cd flow123d/build_tree
-          make package
           rm -rf _CPack_Packages         
           make package_source
           rm -rf _CPack_Packages
+          make -i package
+          make post_package
       - shell: |
           cd flow123d
           bin/prepare_to_publish.sh
@@ -308,6 +311,7 @@
             - master
             - 1.8.0_master
             - 1.8.1_patch
+            - 1.8.2_rc
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H * * * *"
