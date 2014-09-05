@@ -65,7 +65,7 @@ private:
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("/root","/root","variant", "/output");
+    FilePath::set_io_dirs("./root","/root","variant", "./output");
 
     Array eq_arr = input().val<Array>("equations");
 

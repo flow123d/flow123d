@@ -81,7 +81,7 @@
   system = {
     output_streams = [
       {
-        file = "test3.pvd", 
+        file = "flow.pvd", 
         format = {
           TYPE = "vtk", 
           variant = "ascii"
@@ -89,7 +89,7 @@
         name = "flow_output_stream"
       }, 
       {
-        file = "test3-transport-implicit.pvd", 
+        file = "transport.pvd", 
         format = {
           TYPE = {
             REF = "/system/output_streams/0/format/TYPE"

@@ -15,9 +15,6 @@
 #include "fields/field_elementwise.hh" 
 
 #include "reaction/sorption.hh"
-// #include "reaction/sorption_dual.hh"
-// #include "reaction/sorption_immob.hh"
-// #include "reaction/sorption_mob.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "semchem/semchem_interface.hh"
@@ -25,9 +22,6 @@
 using namespace Input::Type;
 using namespace std;
 
-
-//it is currently switched of (by "0") until the reference tests are created
-const double DualPorosity::min_dt_ = 0;
 
 Selection DualPorosity::EqData::output_selection
 		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
@@ -41,6 +35,9 @@ Record DualPorosity::input_type
     .derive_from(ReactionTerm::input_type)
     .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
                     "Containes region specific data necessary to construct dual porosity model.")
+    .declare_key("scheme_tolerance", Double(0.0), Default("1e-3"), 
+                 "Tolerance according to which the explicit Euler scheme is used or not."
+                 "Set 0.0 to use analytic formula only (can be slower).")
     
     .declare_key("reaction_mobile", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
@@ -85,6 +82,8 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
   
   //reads input and creates possibly other reaction terms
   make_reactions();
+  //read value from input
+  scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
 }
 
 DualPorosity::~DualPorosity(void)
@@ -92,6 +91,7 @@ DualPorosity::~DualPorosity(void)
   if(reaction_mobile != nullptr) delete reaction_mobile;
   if(reaction_immobile != nullptr) delete reaction_immobile;
 
+  VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_immobile);
   VecDestroy(vconc_immobile_out);
 
@@ -106,23 +106,17 @@ DualPorosity::~DualPorosity(void)
   xfree(conc_immobile_out);
 }
 
-/*
-void DualPorosity::set_porosity(Field<3, FieldValue<3>::Scalar > &por_m)
-{
-	data_.set_field(data_.porosity.name(),por_m);
-}
-*/
 
 void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == Linear_reaction::input_type ) {
-          reaction_mobile =  new Linear_reaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == LinearReaction::input_type ) {
+          reaction_mobile =  new LinearReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == Pade_approximant::input_type) {
-          reaction_mobile = new Pade_approximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == PadeApproximant::input_type) {
+          reaction_mobile = new PadeApproximant(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionMob::input_type ) {
           reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
@@ -145,12 +139,12 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == Linear_reaction::input_type ) {
-          reaction_immobile =  new Linear_reaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == LinearReaction::input_type ) {
+          reaction_immobile =  new LinearReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == Pade_approximant::input_type) {
-          reaction_immobile = new Pade_approximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == PadeApproximant::input_type) {
+          reaction_immobile = new PadeApproximant(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionImmob::input_type ) {
           reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);
@@ -317,73 +311,103 @@ void DualPorosity::update_solution(void)
 
 double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
 {
-  double conc_avg = 0.0;
   unsigned int sbi;
-  double cm, pcm, ci, pci, por_m, por_imm, temp_exp;
+  double conc_average, // weighted (by porosity) average of concentration
+         conc_mob, conc_immob,  // new mobile and immobile concentration
+         previous_conc_mob, previous_conc_immob, // mobile and immobile concentration in previous time step
+         conc_max, //difference between concentration and average concentration
+         por_mob, por_immob; // mobile and immobile porosity
    
+  // get data from fields
   ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
-  por_m = data_.porosity.value(ele->centre(),ele->element_accessor());
-  por_imm = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
+  por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
+  por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
   arma::Col<double> diff_vec = data_.diffusion_rate_immobile.value(ele->centre(), ele->element_accessor());
+ 
+// OLD CODE:  
+//     for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
+//     {
+//         //sbi_loc = substance_id[sbi];    //mapping to global substance index
+//         //previous values
+//         previous_conc_mob = concentration_matrix_[sbi][loc_el];
+//         previous_conc_immob = conc_immobile[sbi][loc_el];
+// 
+//         // ---compute average concentration------------------------------------------
+//         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) / (por_mob + por_immob);
+// 
+//         if ((conc_average != 0.0) && (por_immob != 0.0)) {
+//                 temp_exp = exp(-diff_vec[sbi] * ((por_mob + por_immob) / (por_mob * por_immob)) * time_->dt());
+//                 // ---compute concentration in mobile area-----------------------------------
+//                 conc_mob = (previous_conc_mob - conc_average) * temp_exp + conc_average;
+// 
+//                 // ---compute concentration in immobile area---------------------------------
+//                 conc_immob = (previous_conc_immob - conc_average) * temp_exp + conc_average;
+//                 // --------------------------------------------------------------------------
+// //                 DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
+// //                         conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt());
+//                 concentration_matrix_[sbi][loc_el] = conc_mob;
+//                 conc_immobile[sbi][loc_el] = conc_immob;
+//         }
+//     }
+
+    
+    // if porosity_immobile == 0 then mobile concentration stays the same 
+    // and immobile concentration cannot change
+    if (por_immob == 0.0) return conc_immobile;
+    
+    double exponent,
+           temp_exponent = (por_mob + por_immob) / (por_mob * por_immob) * time_->dt();
   
-  if(time_->dt() >= min_dt_)
-  {
-      //TODO:
-      //for (sbi = 0; sbi < n_substances_; sbi++) //over substances involved in dual porosity model
-      for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
-      {
-        //sbi_loc = substance_id[sbi];    //mapping to global substance index
-                //previous values
-                pcm = concentration_matrix_[sbi][loc_el];
-                pci = conc_immobile[sbi][loc_el];
+    for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
+    {
+        exponent = diff_vec[sbi] * temp_exponent;
+        //previous values
+        previous_conc_mob = concentration_matrix_[sbi][loc_el];
+        previous_conc_immob = conc_immobile[sbi][loc_el];
+        
+        // ---compute average concentration------------------------------------------
+        conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
+                       / (por_mob + por_immob);
+        
+        conc_max = std::max(previous_conc_mob-conc_average, previous_conc_immob-conc_average);
+        
+        if( conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average) )               // forward euler
+        {
+            //DBGMSG("forward euler\n");
+            double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
+            // ---compute concentration in mobile area
+            conc_mob = temp / por_mob + previous_conc_mob;
 
-                // ---compute average concentration------------------------------------------
-                conc_avg = ((por_m * pcm) + (por_imm * pci)) / (por_m + por_imm);
-
-                if ((conc_avg != 0.0) && (por_imm != 0.0)) {
-                        temp_exp = exp(-diff_vec[sbi] * ((por_m + por_imm) / (por_m * por_imm)) * time_->dt());
-                        // ---compute concentration in mobile area-----------------------------------
-                        cm = (pcm - conc_avg) * temp_exp + conc_avg;
-
-                        // ---compute concentration in immobile area---------------------------------
-                        ci = (pci - conc_avg) * temp_exp + conc_avg;
-                        // --------------------------------------------------------------------------
-//                         DBGMSG("cm: %f  ci: %f  pcm: %f  pci: %f  conc_avg: %f  diff: %f  por_m: %f  por_imm: %f  time_dt: %f\n",
-//                                 cm, ci, pcm, pci, conc_avg, diff_vec[sbi], por_m, por_imm, time_->dt());
-                        concentration_matrix_[sbi][loc_el] = cm;
-                        conc_immobile[sbi][loc_el] = ci;
-                }
+            // ---compute concentration in immobile area
+            conc_immob = -temp / por_immob + previous_conc_immob;
         }
-  }
-  else{
-      
-      for (sbi = 0; sbi < names_.size(); sbi++) {
-                //previous values
-                pcm = concentration_matrix_[sbi][loc_el];
-                pci = conc_immobile[sbi][loc_el];
+        else                                                        //analytic solution
+        {
+            //DBGMSG("analytic\n");
+            double temp = exp(-exponent);
+            // ---compute concentration in mobile area
+            conc_mob = (previous_conc_mob - conc_average) * temp + conc_average;
 
-                if (por_imm != 0.0) {
-                        temp_exp = diff_vec[sbi]*(pci - pcm) * time_->dt();
-                        // ---compute concentration in mobile area-----------------------------------
-                        cm = temp_exp / por_m + pcm;
-
-                        // ---compute concentration in immobile area---------------------------------
-                        ci = -temp_exp / por_imm + pci;
-                        // --------------------------------------------------------------------------
-
-                        concentration_matrix_[sbi][loc_el] = cm;
-                        conc_immobile[sbi][loc_el] = ci;
-                }
+            // ---compute concentration in immobile area
+            conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
+            
+//          DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
+//                  conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt()); 
         }
-  }
+        
+        concentration_matrix_[sbi][loc_el] = conc_mob;
+        conc_immobile[sbi][loc_el] = conc_immob;
+    }
+  //*/
+  
   return conc_immobile;
 }
 
 
 void DualPorosity::allocate_output_mpi(void )
 {
-  //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst;
+    //DBGMSG("DualPorosity - allocate_output_mpi.\n");
+    int sbi, n_subst, ierr;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -391,41 +415,36 @@ void DualPorosity::allocate_output_mpi(void )
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
+        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
                 &vconc_immobile[sbi]);
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
+        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
         VecZeroEntries(vconc_immobile_out[sbi]);
     }
+    
+    // create output vector scatter
+    IS is;
+    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
+    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
+    ISDestroy(&(is));
 }
 
 
 void DualPorosity::output_vector_gather() 
 {
-  //DBGMSG("DualPorosity - output_vector_gather.\n");
-    unsigned int sbi/*, rank, np*/;
-    IS is;
-    VecScatter vconc_out_scatter;
+    //DBGMSG("DualPorosity - output_vector_gather.\n");
+    unsigned int sbi;
+
     //PetscViewer inviewer;
 
-//     MPI_Barrier(PETSC_COMM_WORLD);
-//     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-//     MPI_Comm_size(PETSC_COMM_WORLD, &np);
-
-    
-    //ISCreateStride(PETSC_COMM_SELF,mesh_->n_elements(),0,1,&is);
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
     //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
     //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
 }
 
 

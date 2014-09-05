@@ -9,3 +9,4 @@ set(PETSC_INSTALL_CONFIG "bddcml")
 set(BDDCML_ROOT "_INSTALL_")
 set(USE_PYTHON "yes")
 
+set(PLATFORM_NAME "linux_x86_64")

@@ -24,7 +24,6 @@
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction.hh"
 #include "reaction/pade_approximant.hh"
-//#include "reaction/sorption_base.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_por_exchange.hh"
 
@@ -116,25 +115,22 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Distribution *el_distribution;
 	int *el_4_loc;
 
-    // double problem_save_step = OptGetDbl("Global", "Save_step", "1.0");
-
     in_rec.val<Input::Array>("substances").copy_to(subst_names_);
     n_subst_ = subst_names_.size();
 	convection = new ConvectionTransport(*mesh_, in_rec);
 	this->eq_data_ = &(convection->data());
 
-	//output_mark_type = convection->mark_type() | TimeGovernor::marks().type_fixed_time() | TimeGovernor::marks().type_output();
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type() );
 
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
         if ( reactions_it ) {
-            if (reactions_it->type() == Linear_reaction::input_type ) {
-                reaction =  new Linear_reaction(init_mesh, *reactions_it);
+            if (reactions_it->type() == LinearReaction::input_type ) {
+                reaction =  new LinearReaction(init_mesh, *reactions_it);
             } else
-            if (reactions_it->type() == Pade_approximant::input_type) {
-                reaction = new Pade_approximant(init_mesh, *reactions_it);
+            if (reactions_it->type() == PadeApproximant::input_type) {
+                reaction = new PadeApproximant(init_mesh, *reactions_it);
             } else
             if (reactions_it->type() == SorptionSimple::input_type ) {
                 reaction =  new SorptionSimple(init_mesh, *reactions_it);
@@ -223,10 +219,6 @@ void TransportOperatorSplitting::update_solution() {
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
         
-    //xprintf( Msg, "TOS: time: %f        CONVECTION: time: %f      dt_estimate: %f\n",
-    //         time_->t(), convection->time().t(), convection->time().estimate_dt() );
-    
-
     START_TIMER("TOS-one step");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
@@ -256,27 +248,6 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
     mh_dh = &dh;
 	convection->set_velocity_field( dh );
 };
-
-
-//DELETE
-// void TransportOperatorSplitting::get_parallel_solution_vector(Vec &vec){
-// 	convection->update_solution();
-// };
-// 
-// 
-// 
-// void TransportOperatorSplitting::get_solution_vector(double * &x, unsigned int &a){
-// 	convection->update_solution();
-// };
-
-
-/*
-void TransportOperatorSplitting::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section)
-{
-    convection->set_cross_section_field(cross_section);
-
- }
-*/
 
 
 void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
