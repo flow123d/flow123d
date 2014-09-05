@@ -285,7 +285,7 @@
           name: "Integration tests"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
+            - { name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$", kill-phase-on: NEVER }
             
 
 
