@@ -936,7 +936,7 @@ public:
         std::streamsize n_out = 0;
         while (n != 0) {
             --n;
-            if (s[0] == '_' || s[0] == '$') {
+            if (s[0] == '_') {
                 boost::iostreams::put(snk,'\\');
             }
             boost::iostreams::put(snk, *s++); ++n_out;
