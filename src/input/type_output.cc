@@ -219,7 +219,10 @@ void OutputBase::write_default_value(std::ostream& stream, Default dft) {
 
 void OutputBase::write_description(std::ostream& stream, const string& str,
         unsigned int padding, unsigned int hash_count) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
+	string s = str;
+	boost::replace_all(s, "\\$", "$");
+
+    boost::tokenizer<boost::char_separator<char> > line_tokenizer(s, boost::char_separator<char>("\n"));
     boost::tokenizer<boost::char_separator<char> >::iterator it;
 
     // For every \n add padding at beginning of the next line.
