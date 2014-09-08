@@ -32,6 +32,7 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace BMI=::boost::multi_index;
 
@@ -384,6 +385,12 @@ public:
 
     /**
      * Returns a @p Region with given @p id. If it is not found it returns @p undefined Region.
+     * Gmsh ID numbers are unique only over one dimension, so dimension @p dim must be provided as well.
+     */
+    Region find_id(unsigned int id, unsigned int dim) const;
+
+    /**
+     * Slower version that tries to find region for given ID. If it is not unique it throws.
      */
     Region find_id(unsigned int id) const;
 
@@ -513,18 +520,22 @@ public:
 private:
 
 
+    typedef std::pair<unsigned int, unsigned int> DimID;
 
     /// One item in region database
     struct RegionItem {
         RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
-            : index(index), id(id), label(label), dim_(dim) {}
+            : index(index), id(dim, id), label(label) {}
+
+        unsigned int get_id() const {return id.first;}
+        unsigned int dim() const {return id.second;}
 
         // unique identifiers
         unsigned int index;
-        unsigned int id;
+        DimID id;
         std::string label;
         // data
-        unsigned int dim_;
+        //unsigned int dim_;
     };
 
     // tags
@@ -544,7 +555,9 @@ private:
                 //BMI::random_access< BMI::tag<RandomIndex > >,
                 BMI::ordered_unique< BMI::tag<Index>, BMI::member<RegionItem, unsigned int, &RegionItem::index > >,
                 // use hashing for IDs, to get O(1) find complexity .. necessary for large meshes
-                BMI::hashed_unique< BMI::tag<ID>,    BMI::member<RegionItem, unsigned int, &RegionItem::id> >,
+                BMI::hashed_unique< BMI::tag<ID>,    BMI::member<RegionItem, DimID, &RegionItem::id> >,
+                // non unique index for sole ID
+                //BMI::hashed_non_unique< BMI::tag<OnlyID>,    BMI::const_mem_func<RegionItem, unsigned int, RegionItem::get_id> >,
                 // ordered access (like stl::map) by label
                 BMI::ordered_unique< BMI::tag<Label>, BMI::member<RegionItem, std::string, &RegionItem::label> >
             >
