@@ -48,7 +48,13 @@ public:
 	 */
 	std::string format() const;
 
-	/// Set flag that unit is undefined.
+	/**
+	 * Set flag that unit is undefined.
+	 *
+	 * Default value is true (set in constructor).
+	 * If any exponent is set, @p undef_ flag is unset.
+	 * In all fields unit must be defined by user.
+	 */
 	void undef(bool val = true);
 
 	/// Return true if the unit is defined.
@@ -56,14 +62,16 @@ public:
 
 private:
 	/// Values determine positions of exponents in exponents_ vector
-	static const unsigned int order_m   = 0;
-	static const unsigned int order_kg  = 1;
-	static const unsigned int order_s   = 2;
-	static const unsigned int order_A   = 3;
-	static const unsigned int order_K   = 4;
-	static const unsigned int order_mol = 5;
-	static const unsigned int order_cd  = 6;
-	static const unsigned int order_md  = 7;
+	enum UnitOrder {
+		order_m=0,
+		order_kg=1,
+		order_s=2,
+		order_A=3,
+		order_K=4,
+		order_mol=5,
+		order_cd=6,
+		order_md=7
+	};
 
 	/**
 	 * Stores exponents of base SI units in this order:
