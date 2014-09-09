@@ -207,7 +207,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
-            .flags_add(FieldFlag::in_rhs);
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
 //    std::vector<FieldEnum> list; list.push_back(neumann);
     *this+=bc_flux
@@ -220,7 +220,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .name("bc_robin_sigma")
             .description("Conductivity coefficient in Robin boundary condition.")
             .input_default("0.0")
-            .flags_add(FieldFlag::in_rhs);
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
 
     // add all input fields to the output list
