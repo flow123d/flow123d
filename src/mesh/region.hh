@@ -32,6 +32,7 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <boost/functional/hash.hpp>
 
 namespace BMI=::boost::multi_index;
@@ -329,10 +330,14 @@ public:
 
     DECLARE_EXCEPTION( ExcUnknownSet, << "Operation with unknown region set: " << EI_Label::qval );
 
+    DECLARE_EXCEPTION( ExcUniqueRegionId, << "Id of region must be unique, id: " << EI_ID::val );
+
     DECLARE_INPUT_EXCEPTION( ExcUnknownSetOperand, << "Operation with unknown region set: " << EI_Label::qval);
 
     TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
     DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
+
+    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionMessage, << "Non-unique region ID! ");
 
     /// Default constructor
     RegionDB();
@@ -527,8 +532,8 @@ private:
         RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
             : index(index), id(dim, id), label(label) {}
 
-        unsigned int get_id() const {return id.first;}
-        unsigned int dim() const {return id.second;}
+        unsigned int get_id() const {return id.second;}
+        unsigned int dim() const {return id.first;}
 
         // unique identifiers
         unsigned int index;
@@ -539,7 +544,8 @@ private:
     };
 
     // tags
-    struct ID {};
+    struct DimId {};
+    struct OnlyID {};
     struct Label {};
     struct Index {};
 
@@ -555,21 +561,22 @@ private:
                 //BMI::random_access< BMI::tag<RandomIndex > >,
                 BMI::ordered_unique< BMI::tag<Index>, BMI::member<RegionItem, unsigned int, &RegionItem::index > >,
                 // use hashing for IDs, to get O(1) find complexity .. necessary for large meshes
-                BMI::hashed_unique< BMI::tag<ID>,    BMI::member<RegionItem, DimID, &RegionItem::id> >,
+                BMI::hashed_unique< BMI::tag<DimId>,    BMI::member<RegionItem, DimID, &RegionItem::id> >,
                 // non unique index for sole ID
-                //BMI::hashed_non_unique< BMI::tag<OnlyID>,    BMI::const_mem_func<RegionItem, unsigned int, RegionItem::get_id> >,
+                BMI::hashed_non_unique< BMI::tag<OnlyID>,    BMI::const_mem_fun<RegionItem, unsigned int, &RegionItem::get_id> >,
                 // ordered access (like stl::map) by label
                 BMI::ordered_unique< BMI::tag<Label>, BMI::member<RegionItem, std::string, &RegionItem::label> >
             >
     > RegionTable;
 
-    // ID and Label index iterators
-    typedef RegionTable::index<Label>::type::iterator   LabelIter;
-    typedef RegionTable::index<ID>::type::iterator IDIter;
+    // DimID and Label index iterators
+    typedef RegionTable::index<Label>::type::iterator  LabelIter;
+    typedef RegionTable::index<DimId>::type::iterator  DimIDIter;
+    typedef RegionTable::index<OnlyID>::type::iterator OnlyIDIter;
 
 
     /// Consistency check in common use by various add_region methods.
-    void check_dim_consistency(IDIter it_id, unsigned int dim);
+    void check_dim_consistency(DimIDIter it_id, unsigned int dim);
 
 
     /// Database of all regions (both boundary and bulk).

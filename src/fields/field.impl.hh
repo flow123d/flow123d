@@ -377,12 +377,16 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
           xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (shared_->list_it_->opt_val("rid", id)) {
-        // try find region by ID
-        Region region = mesh()->region_db().find_id(id);
-				if(region.is_valid())
-          domain.push_back(region);         
-        else
-          xprintf(Warn, "Unknown region with id: '%d'\n", id);
+				try {
+					cout << "Field::update_history" << endl;
+					Region region = mesh()->region_db().find_id(id); //TODO try-catch
+					if(region.is_valid())
+					    domain.push_back(region);
+					else
+					    xprintf(Warn, "Unknown region with id: '%d'\n", id);
+				} catch (RegionDB::ExcUniqueRegionId &e) {
+					THROW(RegionDB::ExcUniqueRegionMessage() << shared_->input_list_.ei_address());
+				}
 			} else {
 				THROW(ExcMissingDomain()
 						<< shared_->list_it_->ei_address() );
