@@ -147,13 +147,12 @@ protected:
 
 
 /**
- * New design of balance class - serves as storage and writer.
+ * Design of balance class - serves as storage and writer.
  * Equations themselves call methods of Balance that add/modify mass, source and flux
  * of various quantities and generate output.
  *
- * Another new feature is that quantities can have more components,
- * e.g. velocity.{x,y,z} or concentration.{mobile,immobile}.
- * Each quantity has an implicit component "default".
+ * One instance of Balance can handle several conservative quantities of the same type
+ * (e.g. mass of several substances or their phases).
  *
  * The mass, flux and source are calculated as follows:
  *
@@ -161,7 +160,7 @@ protected:
  * 	f(q,c,r) = ( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
  * 	s(q,c,r) = ( S'(q,c) * solution + sv(q,c) )[r]
  *
- * where
+ * where M' stands for matrix transpose,
  *
  * 	m(q,c,r)...mass of q-th substance's c-th component in region r
  * 	f(q,c,r)...flux of q-th substance's c-th component in region r
@@ -195,6 +194,11 @@ protected:
  * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
  * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
  *
+ * Remark: The matrix R is needed only for calculation of signed fluxes.
+ * The reason is that to determine sign, we decompose flux to sum of local contributions
+ * per each boundary element and check its sign. It is not possible to decompose flux
+ * using shape functions, since their normal derivatives may have any sign.
+ *
  *
  *
  * Output values (if not relevant, zero is supplied):
@@ -209,30 +213,51 @@ protected:
 class Balance {
 public:
 
-	enum OutputFormat
-	{
-		legacy,
-		csv,
-		gnuplot
+	/**
+	 * Class for storing internal data about conservative quantities handled by the Balance object.
+	 * In the future we may store additional data or support definition of derived quantities
+	 * (e.g. linear combinations of quantities).
+	 */
+	class Quantity {
+	public:
+
+		Quantity(const unsigned int index, const string &name)
+			: name_(name),
+			  index_(index)
+		{}
+
+		/// Name of quantity (for output).
+		string name_;
+
+		/// Internal index within list of quantities.
+		const unsigned int index_;
+
 	};
 
+	/**
+	 * Possible formats of output file.
+	 */
+	enum OutputFormat
+	{
+		legacy,//!< legacy
+		csv,   //!< csv
+		gnuplot//!< gnuplot
+	};
+
+	/// Input selection for file format.
 	static Input::Type::Selection format_selection_input_type;
 
 	/**
 	 * Constructor.
 	 * @param quantities   Names of conserved quantities.
-	 * @param components   Names of components of each quantity.
 	 * @param elem_regions Vector of region numbers for each boundary edge.
 	 * @param region_db    Region database.
 	 * @param cumulative   If true, cumulative sums will be calculated.
 	 * @param file         Name of output file.
 	 */
-	Balance(const std::vector<std::string> &quantities,
-			const std::vector<std::string> &components,
-			const std::vector<unsigned int> &elem_regions,
+	Balance(const std::vector<unsigned int> &elem_regions,
 			const RegionDB *region_db,
-			const bool cumulative,
-			const std::string file);
+			const Input::Record &in_rec);
 
 	~Balance();
 
@@ -240,126 +265,166 @@ public:
 	inline bool cumulative() const { return cumulative_; }
 
 	/**
+	 * Define a single conservative quantity.
+	 * @param name Name of the quantity.
+	 * @return     Quantity's internal index.
+	 */
+	unsigned int add_quantity(const string &name);
+
+	/**
+	 * Define a set of conservative quantities.
+	 * @param names List of quantities' names.
+	 * @return      List of quantities' indices.
+	 */
+	std::vector<unsigned int> add_quantities(const std::vector<string> &names);
+
+	/**
 	 * Allocates matrices and vectors for balance.
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
-	void allocate_matrices(unsigned int n_loc_dofs, unsigned int max_dofs_per_boundary);
+	void allocate(unsigned int n_loc_dofs, unsigned int max_dofs_per_boundary);
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
 	 * It actually erases the matrix.
 	 */
-	void start_mass_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void start_mass_assembly(unsigned int quantity_idx);
+
+	/// Variant of the start_mass_assembly() method for a set of quantities.
+	inline void start_mass_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			start_mass_assembly(idx);
+	}
 
 	/**
 	 * This method must be called before assembling the matrix and vector for fluxes.
 	 * It actually erases the matrix and vector.
 	 */
-	void start_flux_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void start_flux_assembly(unsigned int quantity_idx);
+
+	/// Variant of the start_flux_assembly() method for a set of quantities.
+	inline void start_flux_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			start_flux_assembly(idx);
+	}
 
 	/**
 	 * This method must be called before assembling the matrix and vectors for sources.
 	 * It actually erases the matrix and vectors.
 	 */
-	void start_source_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void start_source_assembly(unsigned int quantity_idx);
+
+	/// Variant of the start_source_assembly() method for a set of quantities.
+	inline void start_source_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			start_source_assembly(idx);
+	}
 
 	/**
 	 * Adds elements into matrix for computing mass.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param region_idx    Index of bulk region.
 	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void set_mass_matrix_values(unsigned int quantity_idx,
-			unsigned int component_idx,
+	void add_mass_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			int n_dofs,
-			int *dof_indices,
-			double *values);
+			const std::vector<int> &dof_indices,
+			const std::vector<double> &values);
 
 	/**
 	 * Adds elements into matrix for computing flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param elem_idx      Local index of boundary edge.
 	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void set_flux_matrix_values(unsigned int quantity_idx,
-			unsigned int component_idx,
+	void add_flux_matrix_values(unsigned int quantity_idx,
 			unsigned int elem_idx,
-			int n_dofs,
-			int *dof_indices,
-			double *values);
+			const std::vector<int> &dof_indices,
+			const std::vector<double> &values);
 
 	/**
 	 * Adds elements into matrix for computing source.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param region_idx    Index of bulk region.
 	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void set_source_matrix_values(unsigned int quantity_idx,
-			unsigned int component_idx,
+	void add_source_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			int n_dofs,
-			int *dof_indices,
-			double *values);
+			const std::vector<int> &dof_indices,
+			const std::vector<double> &values);
 
 	/**
 	 * Adds element into vector for computing flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param elem_idx      Local index of boundary edge.
 	 * @param value         Value to be added.
 	 */
-	void set_flux_vec_value(unsigned int quantity_idx,
-			unsigned int component_idx,
+	void add_flux_vec_value(unsigned int quantity_idx,
 			unsigned int elem_idx,
 			double value);
 
 	/**
 	 * Adds elements into vector for computing source.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param region_idx    Index of bulk region.
 	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void set_source_rhs_values(unsigned int quantity_idx,
-			unsigned int component_idx,
+	void add_source_rhs_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			int n_dofs,
-			int *dof_values,
-			double *values);
+			const std::vector<int> &dof_values,
+			const std::vector<double> &values);
 
 	/// This method must be called after assembling the matrix for computing mass.
-	void finish_mass_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void finish_mass_assembly(unsigned int quantity_idx);
+
+	/// Variant of the finish_mass_assembly() method for a set of quantities.
+	inline void finish_mass_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			finish_mass_assembly(idx);
+	}
 
 	/// This method must be called after assembling the matrix and vector for computing flux.
-	void finish_flux_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void finish_flux_assembly(unsigned int quantity_idx);
+
+	/// Variant of the finish_flux_assembly() method for a set of quantities.
+	inline void finish_flux_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			finish_flux_assembly(idx);
+	}
 
 	/// This method must be called after assembling the matrix and vectors for computing source.
-	void finish_source_assembly(unsigned int quantity_idx, unsigned int component_idx);
+	void finish_source_assembly(unsigned int quantity_idx);
+
+	/// Variant of the finish_source_assembly() method for a set of quantities.
+	inline void finish_source_assembly(std::vector<unsigned int> q_idx_vec)
+	{
+		for (auto idx : q_idx_vec)
+			finish_source_assembly(idx);
+	}
 
 	/**
 	 * Updates cumulative quantities for balance.
 	 * This method can be called in substeps even if no output is generated.
 	 * It calculates the sum of flux and source over time interval.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param solution      Solution vector.
 	 * @param dt            Actual time step.
 	 */
 	void calculate_cumulative_sources(unsigned int quantity_idx,
-			unsigned int component_idx,
 			const Vec &solution,
 			double dt);
 
@@ -368,43 +433,35 @@ public:
 	 * This method can be called in substeps even if no output is generated.
 	 * It calculates the sum of flux and source over time interval.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param solution      Solution vector.
 	 * @param dt            Actual time step.
 	 */
 	void calculate_cumulative_fluxes(unsigned int quantity_idx,
-			unsigned int component_idx,
 			const Vec &solution,
 			double dt);
 
 	/**
 	 * Calculates actual mass.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param solution      Solution vector.
 	 */
 	void calculate_mass(unsigned int quantity_idx,
-			unsigned int component_idx,
 			const Vec &solution);
 
 	/**
 	 * Calculates actual flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param solution      Solution vector.
 	 */
 	void calculate_flux(unsigned int quantity_idx,
-			unsigned int component_idx,
 			const Vec &solution);
 
 	/**
 	 * Calculates actual source.
 	 * @param quantity_idx  Index of quantity.
-	 * @param component_idx Index of component.
 	 * @param solution      Solution vector.
 	 */
 	void calculate_source(unsigned int quantity_idx,
-			unsigned int component_idx,
 			const Vec &solution);
 
 	/// Perform output to file for given time instant.
@@ -423,10 +480,7 @@ private:
     OutputFormat output_format_;
 
     /// Names of conserved quantities.
-    const std::vector<std::string> quantities_;
-
-    /// Names of components.
-    const std::vector<std::string> components_;
+    std::vector<Quantity> quantities_;
 
     /// Database of bulk and boundary regions.
     const RegionDB &regions_;
@@ -468,13 +522,13 @@ private:
 
     // Vectors storing mass and balances of fluxes and volumes.
     // substance, phase, region
-    std::vector<std::vector<std::vector<double> > > fluxes_;
-    std::vector<std::vector<std::vector<double> > > fluxes_in_;
-    std::vector<std::vector<std::vector<double> > > fluxes_out_;
-    std::vector<std::vector<std::vector<double> > > masses_;
-    std::vector<std::vector<std::vector<double> > > sources_;
-    std::vector<std::vector<std::vector<double> > > sources_in_;
-    std::vector<std::vector<std::vector<double> > > sources_out_;
+    std::vector<std::vector<double> > fluxes_;
+    std::vector<std::vector<double> > fluxes_in_;
+    std::vector<std::vector<double> > fluxes_out_;
+    std::vector<std::vector<double> > masses_;
+    std::vector<std::vector<double> > sources_;
+    std::vector<std::vector<double> > sources_in_;
+    std::vector<std::vector<double> > sources_out_;
 
     // Sums of the above vectors over phases and regions
     std::vector<double> sum_fluxes_;
@@ -502,6 +556,10 @@ private:
 	/// if true then cumulative balance is computed
 	bool cumulative_;
 
+	/// true before allocating necessary internal structures (Petsc matrices etc.)
+	bool allocation_done_;
+
+	/// MPI rank.
 	int rank_;
 
 };

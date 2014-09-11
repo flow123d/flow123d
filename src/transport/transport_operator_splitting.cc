@@ -96,8 +96,7 @@ TransportBase::TransportEqData::TransportEqData()
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : AdvectionProcessBase(mesh, in_rec ),
   mh_dh(nullptr),
-  mass_balance_(nullptr),
-  balance_(nullptr)
+  mass_balance_(nullptr)
 {
 }
 
@@ -185,11 +184,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
   if (it)
   {
-	  int *el_4_loc;
-	  Distribution *el_ds;
-	  convection->get_par_info(el_4_loc, el_ds);
+	  convection->get_par_info(el_4_loc, el_distribution);
 	  vector<unsigned int> edg_regions;
-      for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+      for (unsigned int loc_el = 0; loc_el < el_distribution->lsize(); loc_el++) {
           Element *elm = mesh_->element(el_4_loc[loc_el]);
           if (elm->boundary_idx_ != NULL) {
               FOR_ELEMENT_SIDES(elm,si) {
@@ -200,21 +197,17 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
           }
       }
 
-	  balance_ = new Balance(substances_.names(),
-			  {"concentration"},
-			  edg_regions,
-			  region_db(),
-			  it->val<bool>("cumulative"),
-			  it->val<FilePath>("file"));
+	  balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
 
 	  convection->set_balance_object(balance_);
+
+	  balance_->allocate(el_distribution->lsize(), 1);
   }
 }
 
 TransportOperatorSplitting::~TransportOperatorSplitting()
 {
     //delete field_output;
-	if (balance_) delete balance_;
     delete convection;
     if (reaction) delete reaction;
     if (Semchem_reactions) delete Semchem_reactions;

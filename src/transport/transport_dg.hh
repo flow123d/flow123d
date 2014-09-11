@@ -521,6 +521,8 @@ private:
 	vector<vector<vector<arma::vec3> > > ad_coef_edg;
 	/// Diffusion coefficients on edges.
 	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
 	// @}
 

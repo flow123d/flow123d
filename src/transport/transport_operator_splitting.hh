@@ -134,7 +134,7 @@ protected:
     MassBalance *mass_balance_;
 
     /// (new) object for calculation and writing the mass balance to file.
-    Balance *balance_;
+    boost::shared_ptr<Balance> balance_;
 };
 
 
