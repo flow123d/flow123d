@@ -36,9 +36,6 @@
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
-//#include "boost/lexical_cast.hpp"
-//#include "system/tokenizer.hh"
-//#include "system/xio.h"
 
 
 namespace it = Input::Type;
@@ -121,9 +118,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.time = time;
     
     bool boundary_domain_ = false;
-    //DBGMSG("reading data for interpolation: name: %s \t time: %f \t n: %d\n", field_name_.c_str(), time, source_mesh_->element.size());
     reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
-    //DBGMSG("end of reading data for interpolation: %s\n", field_name_.c_str());
 
     return search_header.actual;
 }
@@ -146,8 +141,6 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
-			//Point point;
-			//for (unsigned int i=0; i<3; i++) point(i) = elm.element()->node[0]->point()(i);
 			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
 		} else {
@@ -212,15 +205,6 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  ele_data_ptr) );
 					Value tmp_value = Value( ret_type_value );
 
-					/*cout << "n_rows, n_cols = " << tmp_value.n_rows() << ", " << tmp_value.n_cols() << endl;
-					for (unsigned int i=0; i < tmp_value.n_rows(); i++) {
-						for (unsigned int j=0; j < tmp_value.n_cols(); j++) {
-							cout << "(" << i << "," << j << ") = " << tmp_value(i,j) << ", ";
-						}
-						cout << endl;
-					}
-					cout << endl;*/
-
 					for (unsigned int i=0; i < this->value_.n_rows(); i++) {
 						for (unsigned int j=0; j < this->value_.n_cols(); j++) {
 							this->value_(i,j) += tmp_value(i,j) * measure;
@@ -263,4 +247,4 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 
 
 
-#endif
+#endif /* FIELD_INTERPOLATED_P0_IMPL_HH_ */

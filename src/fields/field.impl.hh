@@ -174,17 +174,6 @@ void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
 }
 
 
-/*
-template<int spacedim, class Value>
-boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
-Field<spacedim,Value>::operator[] (Region reg)
-{
-    ASSERT_LESS(reg.idx(), this->region_fields_.size());
-    return this->region_fields_[reg.idx()];
-}
-*/
-
-
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());
@@ -192,14 +181,6 @@ bool Field<spacedim, Value>::is_constant(Region reg) {
     return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
 }
 
-/*
-template<int spacedim, class Value>
-void Field<spacedim, Value>::set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) {
-    boost::shared_ptr<FieldBaseType> field = FieldBaseType::function_factory(rec, this->n_comp_);
-    set_field(domain, field);
-}
-
-*/
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_field(
@@ -208,8 +189,6 @@ void Field<spacedim, Value>::set_field(
 		double time)
 {
 	ASSERT(field, "Null field pointer.\n");
-
-    //DBGMSG("test value: %g\n", pressure);
 
     ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
@@ -308,14 +287,11 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
         		set_time_result_ = TimeStatus::changed;
         	}
         	// let FieldBase implementation set the time
-    		//DBGMSG("Call particular set time, field: %s t: %g\n",this->name().c_str(), time.t());
     		if ( new_ptr->set_time(time.t()) )  set_time_result_ = TimeStatus::changed;
 
         }
     }
 
-//    this->changed_during_set_time = this->changed_from_last_set_time_;
-//    this->changed_from_last_set_time_ = false;
     return changed();
 }
 
@@ -462,11 +438,6 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     }
     shared_->is_fully_initialized_;
 }
-
-
-
-//template<int spacedim, class Value>
-//BCField<spacedim, Value>::BCField() { this->bc_=true; }
 
 
 
