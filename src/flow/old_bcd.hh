@@ -152,13 +152,6 @@ public:
     map<unsigned int, unsigned int> id_2_bcd_;
 
 private:
- /*
-    template <int spacedim, class Value>
-    void set_all( Field<spacedim,Value> &target, const Mesh *mesh);
-
-    template <int spacedim, class Value>
-    void set_field( Field<spacedim,Value> &target, unsigned int bcd_ele_idx, typename Value::return_type &val);
-*/
     const Mesh *mesh_;
     Region  some_bc_region_;
 
