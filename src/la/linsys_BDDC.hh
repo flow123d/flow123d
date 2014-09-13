@@ -40,9 +40,6 @@
 
 #include <vector>
 
-//#include <boost/numeric/ublas/matrix.hpp>
-//#include <boost/numeric/ublas/vector.hpp>
-
 namespace la {
     class BddcmlWrapper; 
 };

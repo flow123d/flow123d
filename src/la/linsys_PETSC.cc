@@ -50,9 +50,6 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
           init_guess_nonzero(false),
           matrix_(0)
 {
-    // set type
-    //type = LinSys::PETSC;
-
     // create PETSC vectors:
     PetscErrorCode ierr;
     // rhs
@@ -303,7 +300,6 @@ int LinSys_PETSC::solve()
     KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
-    //const char *petsc_str;
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
@@ -327,10 +323,8 @@ int LinSys_PETSC::solve()
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
-    //petsc_str = params.c_str();
     xprintf(MsgLog,"inserting petsc options: %s\n",params_.c_str());
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
-    //xfree(petsc_str);
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
@@ -338,10 +332,6 @@ int LinSys_PETSC::solve()
     KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    //double solver_accurany = OptGetDbl("Solver","Solver_accurancy","1.0e-7");
-    //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
-    //if (r_tol < 0) r_tol=solver_accuracy;
-    //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
     KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
@@ -427,12 +417,10 @@ void LinSys_PETSC::gatherSolution_( )
     // create a large local solution vector for gathering 
     PetscErrorCode ierr;
     Vec solutionGathered;              //!< large vector of global solution stored locally
-    //ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr );
 
     // prepare gathering scatter
     VecScatter VSdistToLarge;          //!< scatter for gathering local parts into large vector
     ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr );
-    //ierr = VecScatterCreate( solution_, PETSC_NULL, solutionGathered, PETSC_NULL, &VSdistToLarge ); CHKERRV( ierr ); 
 
     // get global solution vector at each process
     ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
@@ -441,10 +429,6 @@ void LinSys_PETSC::gatherSolution_( )
     // extract array of global solution for copy
     PetscScalar *solutionGatheredArray;
     ierr = VecGetArray( solutionGathered, &solutionGatheredArray );
-
-    // copy the result to calling routine
-    //std::transform( &(solutionGatheredArray[0]), &(solutionGatheredArray[ globalSize ]), sol_disordered.begin( ), 
-    //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
 
     //reorder solution
     globalSolution_.resize( globalSize );

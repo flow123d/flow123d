@@ -80,8 +80,6 @@
 
 // PETSc includes
 #include "petscmat.h"
-//#include "petscvec.h"
-//#include "petscksp.h"
 
 
 class LinSys
@@ -98,14 +96,6 @@ public:
         DONE,
         NONE
     } SetValuesMode;
-
-    /*typedef enum {
-        PETSC,
-        BDDC
-        //PETSC_schur_complement   // possibly we can implement Schur as another kind of lin solver
-        //PETSC_MPIAIJ_preallocate_by_assembly,
-        //PETSC_MPIAIJ_assembly_by_triples,
-    } LinSysType;*/
 
 protected:
     typedef std::pair<unsigned,double>       Constraint_;
@@ -558,7 +548,6 @@ public:
      *  Output the system in the Matlab format possibly with given ordering.
      *  Rather we shoud provide output operator <<, since it is more flexible.
      */
-    //virtual void view(std::ostream output_stream, int * output_mapping = NULL)
     virtual void view()
     {
         ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
