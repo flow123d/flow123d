@@ -120,21 +120,6 @@ inline double Interpolant::val(double x)
 
 inline double Interpolant::val_test(double x)
 {
-  /*
-  //increase calls
-  stats.total_calls++;
- 
-  if(x < bound_a_)
-  {
-    //std::cout << "test a" << std::endl;
-    return 0;
-  }
-  else if(x > bound_b_)     //right miss
-  {
-    //std::cout << "test b" << std::endl;
-    return 0;
-  }
-  else  //*/
      return val_p1(x);  
 }
 
@@ -207,30 +192,6 @@ inline DiffValue Interpolant::f_diff (double x)
   return d;           // Return function value
 }
 
-/*
-inline unsigned int Interpolant::find_interval(double x)
-{
-  //counts in which interval x is (the last node before x)
-  return floor((x - bound_a_) / step);
-}
-*/
-
-/* //CONSTANT INTERPOLATION
-inline double Interpolant::val_p0(double x)
-{
-  return f_vec[find_interval(x)];
-}
-
-inline DiffValue Interpolant::diff_p0(double x)
-{
-  DiffValue result;
-  unsigned int i = find_interval(x);
-  result.f = f_vec[i];
-  result.dfdx = df_vec[i];
-  return result;
-}
-*/
-  
 inline double Interpolant::val_p1(double x)
 {
   /*
