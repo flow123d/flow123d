@@ -6,7 +6,6 @@
 const double epsilon = std::numeric_limits<double>::epsilon();
 
 
-//#define epsilon 1e-6
 namespace mathfce{
         bool IsZero(double);
         bool IsEqual(double, double);

@@ -4,11 +4,9 @@
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"
 #include <cmath>
-//#include "math.h"
 #include <iostream>
 #include <armadillo>
 #include "mesh/ngh/include/polygon.h"
-//#include "mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -93,32 +91,6 @@ void GetIntersection(const TBisector & B1, const TBisector &B2,
         pos = skew;
     }
 }
-/*
-void GetIntersection(const TBisector & B1, const TBisector &B2,
-        TPosition &pos, TPoint *P) {
-    double t1, t2;
-    GetIntersection(B1, B2, pos, t1, t2);
-    if (pos != intersecting)
-        return;
-    *P = B1.GetPoint(t1);
-    return;
-}
-*/
-/*
-void GetIntersection(const TAbscissa &A1, const TAbscissa &A2,
-        TPosition &pos, TPoint *P) {
-    double t1, t2;
-    if (!QuickIntersectionTest(A1, A2)) {
-        pos = skew;
-        return;
-    }
-    GetIntersection(A1, A2, pos, t1, t2);
-    if (pos != intersecting)
-        return;
-    *P = A1.GetPoint(t1);
-    return;
-}
-*/
 
 //------------------------UPRAVENO---------------------------
 // vraci localni souradnice pruniku, prvni souradnice vzhledem k A1 druha souradnice vzhledem k A2
@@ -236,17 +208,6 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal
     insec = NULL;
 	return;
 }
-/*
-void GetIntersection(const TAbscissa &A, const TBisector &B,
-        TPosition &pos, TPoint *P) {
-    double t1, t2;
-    GetIntersection(A, B, pos, t1, t2);
-    if (pos != intersecting)
-        return;
-    *P = A.GetPoint(t1);
-    return;
-}
-*/
 
 //------------------------UPRAVENO---------------------------
 // vraci localni souradnice pruniku, prvni souradnice vzhledem k A druha souradnice vzhledem k B
@@ -307,13 +268,6 @@ void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal *
     return;
 }
 
-/*
-void GetIntersection(const TBisector &B, const TAbscissa &A,
-        TPosition &pos, TPoint *P) {
-    GetIntersection(A, B, pos, P);
-    return;
-}
-*/
 void GetIntersection(const TBisector &B, const TAbscissa &A, IntersectionLocal * &insec) {
     GetIntersection(A, B, insec); //KONTROLA
     return;
@@ -447,9 +401,6 @@ void GetIntersection(const TPlain &P, const TBisector &B,
     arma::mat aa(3,3);
     arma::vec xx(3);
     arma::vec bb(3);
-    //TMatrix M(3, 3);
-    //TMVector b(3);
-    //TMVector x(3);
 
     int i;
     xx.zeros();
@@ -463,11 +414,6 @@ void GetIntersection(const TPlain &P, const TBisector &B,
         }
     }
     for (i = 1; i <= 3; i++) {
-        /*M.Set(i, 1, B.GetVector().Get(i));
-        M.Set(i, 2, -P.GetU().Get(i));
-        M.Set(i, 3, -P.GetV().Get(i));
-        b.Set(i, P.GetPoint().Get(i) - B.GetPoint().Get(i));*/
-
         aa(i-1,0) = (B.GetVector().Get(i));
         aa(i-1,1) = (-P.GetU().Get(i));
         aa(i-1,2) = (-P.GetV().Get(i));
@@ -708,20 +654,11 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
            }
            //lezi pres vrchol a zaroven protne protilehlou stenu => cit==3
            if (cit == 3) {
-        	   //cout<<"(cit == 3) => REDUKCE insec_point_tmp!" << endl;
-        	   if (*(insec_point_tmp[0]) == *(insec_point_tmp[0])) {
-        		   //cout<<"2 insec_point_tmp[0] jsou stejne" << endl;
-        	   }
-
         	   for (int i = 0; i < cit; i++) {
         		   if (*(insec_point_tmp[i]) == *(insec_point_tmp[(i+1)%3])) {
 
-        			   //cout<<"insec_point_tmp[(i+1)%3] :: el1_coord().size(): " << insec_point_tmp[(i+1)%3]->el1_coord().size() << endl;
-        			   //cout<<"(insec_point_tmp[(i+1)%3]) :: el2_coord().size(): " << (insec_point_tmp[(i+1)%3])->el2_coord().size() << endl;
-
         			   delete insec_point_tmp[(i+1)%3];
         			   cit--;
-        			   //cout<<"PO REDUKCI cit= " << cit << endl;
 
         			   //nutno posunout zbyle prvky pole insec_point_tmp
         			   IntersectionPoint* tmp = insec_point_tmp[(i+2)%3];
@@ -744,8 +681,6 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         		   insec = new IntersectionLocal(IntersectionLocal::line);
         		   insec->add_local_point(insec_point_tmp[0]);
         		   insec->add_local_point(insec_point_tmp[1]);
-        		   //cout<<"(IntersectionType=line) - point_1->el1_coord().size()= " << insec->get_point(0)->el1_coord().size()<< endl;
-        		   //cout<<"(IntersectionType=line) - point_2->el1_coord().size()= " << insec->get_point(1)->el1_coord().size()<< endl;
         	   }
         	   return;
            }
@@ -814,8 +749,6 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     			insec = NULL;
     	    } else {
 				insec = new IntersectionLocal(IntersectionLocal::line);
-				//cout << "A1_t: " << A1_t << endl;
-				//cout << "A2_t: " << A2_t << endl;
 				insec->add_local_point(interpolate(*A1, *A2, A1_t));
 				insec->add_local_point(interpolate(*A1, *A2, A2_t));
 				delete insec_tmp;
@@ -824,102 +757,6 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     return;
     }
     return;
-
-//-------------------------------------------------------------------
-/*    		IntersectionPoint* insec_point_tmp[2];
-    		vector<double> loc_tria_tmp(2);
-    		double A1_ = insec_tmp->get_point(0)->el1_coord()[0];
-    		double A2_ = insec_tmp->get_point(1)->el1_coord()[0]; //test != NULL (lezi pres vrchol!)
-    		double *A1 = &A1_;
-    		double *A2 = &A2_;
-    		bool invert = false;
-    		//TEST VZAJEMNE ORIENTACE A1, A2:
-    		if (A1_ > A2_) {
-    			A1 = &A2_;
-    			A2 = &A1_;
-    			invert = true;
-    		}
-    		// pripady:
-    		// 1) prusecik uvnitr usecky -> predat nezmenene
-    		// 2) prusecik mimo usecku -> delete a vratit NULL
-    		// 3) else a) A1 < 0 - zkratit zleva
-    		//         b) A2 > 1  - zkratit zprava
-
-    		//PRUSECIK UVNITR USECKY
-    		if ((*A1 > 0 - epsilon) && (*A1 < 1 + epsilon) && (*A2 > 0 - epsilon) && (*A2 < 1 + epsilon)) {
-    			insec = insec_tmp;
-    		}
-    		//PRUSECIK MIMO USECKU
-    		if (((*A1 < 0 - epsilon) && (*A2 < 0 - epsilon)) || ((*A1 > 1 + epsilon) && (*A2 > 1 + epsilon))) {
-    			delete insec_tmp;
-    			insec = NULL;
-    		} else {
-    			//1.possibility (A1 < 0) - zkratit zleva
-    			if ((*A1 < 0 - epsilon) && (*A2 > 0 - epsilon) && (*A2 < 1 + epsilon)) {
-    				if(invert == true) {
-    					//loc. coord. r:
-    					loc_tria_tmp[0] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(1)->el2_coord()[0] - insec_tmp->get_point(0)->el2_coord()[0]) + insec_tmp->get_point(0)->el2_coord()[0];
-    					//loc. coord. s:
-    					loc_tria_tmp[1] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(1)->el2_coord()[1] - insec_tmp->get_point(0)->el2_coord()[1]) + insec_tmp->get_point(0)->el2_coord()[1];
-    				} else {
-    					//loc. coord. r:
-    					loc_tria_tmp[0] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(0)->el2_coord()[0] - insec_tmp->get_point(1)->el2_coord()[0]) + insec_tmp->get_point(1)->el2_coord()[0];
-    					//loc. coord. s:
-    					loc_tria_tmp[1] = ((1 - *A2)/(*A1 - *A2))*(insec_tmp->get_point(0)->el2_coord()[1] - insec_tmp->get_point(1)->el2_coord()[1]) + insec_tmp->get_point(1)->el2_coord()[1];
-    				}
-    				vector<double> loc_A1(1, 0);
-    				vector<double> loc_A2(1, *A2);
-    				if(invert == true) {
-    					insec_point_tmp[0] = new IntersectionPoint(loc_A2, insec_tmp->get_point(1)->el2_coord());
-    					insec_point_tmp[1] = new IntersectionPoint(loc_A1, loc_tria_tmp);
-    				} else {
-    					insec_point_tmp[0] = new IntersectionPoint(loc_A2, insec_tmp->get_point(0)->el2_coord());
-    					insec_point_tmp[1] = new IntersectionPoint(loc_A1, loc_tria_tmp);
-    				}
-    				insec = new IntersectionLocal(IntersectionLocal::line);
-    				insec->add_local_point(insec_point_tmp[0]);
-    				insec->add_local_point(insec_point_tmp[1]);
-    				delete insec_tmp;
-    			}
-    			//2.possibility (A2 > 1) - zkratit zprava
-    			if ((*A1 > 0 - epsilon) && (*A1 < 1 + epsilon) && (*A2 > 1 + epsilon)) {
-    				if(invert == true) {
-    					//loc. coord. r:
-    				    loc_tria_tmp[0] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(0)->el2_coord()[0] - insec_tmp->get_point(1)->el2_coord()[0]) + insec_tmp->get_point(1)->el2_coord()[0];
-    				    //loc. coord. s:
-    				    loc_tria_tmp[1] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(0)->el2_coord()[1] - insec_tmp->get_point(1)->el2_coord()[1]) + insec_tmp->get_point(1)->el2_coord()[1];
-    				} else {
-    				    //loc. coord. r:
-    				    loc_tria_tmp[0] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(1)->el2_coord()[0] - insec_tmp->get_point(0)->el2_coord()[0]) + insec_tmp->get_point(0)->el2_coord()[0];
-    				    //loc. coord. s:
-    				    loc_tria_tmp[1] = ((1 - *A1)/(*A2 - *A1))*(insec_tmp->get_point(1)->el2_coord()[1] - insec_tmp->get_point(0)->el2_coord()[1]) + insec_tmp->get_point(0)->el2_coord()[1];
-    				}
-    				vector<double> loc_A1(1, *A1);
-    				vector<double> loc_A2(1, 1);
-    				if(invert == true) {
-    					insec_point_tmp[0] = new IntersectionPoint(loc_A1, insec_tmp->get_point(1)->el2_coord());
-    					insec_point_tmp[1] = new IntersectionPoint(loc_A2, loc_tria_tmp);
-    				} else {
-    					insec_point_tmp[0] = new IntersectionPoint(loc_A1, insec_tmp->get_point(0)->el2_coord());
-    					insec_point_tmp[1] = new IntersectionPoint(loc_A2, loc_tria_tmp);
-    				}
-    				insec = new IntersectionLocal(IntersectionLocal::line);
-    				insec->add_local_point(insec_point_tmp[0]);
-    				insec->add_local_point(insec_point_tmp[1]);
-    				delete insec_tmp;
-    			}
-
-    			//3.possibility - zkratit z obou stran
-    			//if ((*A1 < 0 - epsilon) && (*A2 > 1 + epsilon)) {
-    			//	vector<double> loc_A1(1, 0);
-    			//	vector<double> loc_A2(1, 1);
-    			//}
-    		}
-    	}
-    return;
-    }
-    return;
-*/
 }
 
 void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
@@ -1012,7 +849,7 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
         return;
     }
 
-    TPolygon P;// = new TPolygon();
+    TPolygon P;
     for (int i = 1; i <= 3; i++) {
         if (Te.IsInner(Tr.GetPoint(i))) {
         	P.Add(Tr.GetPoint(i));
@@ -1037,7 +874,6 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 							break;
 						}
 						default:
-							//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
 							break;
 					}
 				}
@@ -1055,7 +891,6 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 						P.Add(Te.GetAbscissa(i).GetPoint(insec->get_point(1)->el1_coord()[0]));
 						break;
 					default:
-						//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
 						break;
 				}
 			}
@@ -1078,7 +913,6 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 
 template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b) {
     for (int i = 1; i <= 3; i++) {
-    	//cout << "i: " << i << "; a: " << a.GetMin(i) << "  "<< a.GetMax(i)<< "; b: " << b.GetMin(i) << "  "<< b.GetMax(i) << endl;
         if (a.GetMin(i) > b.GetMax(i) + epsilon || a.GetMax(i) < b.GetMin(i) - epsilon) {
             return false;
         }
