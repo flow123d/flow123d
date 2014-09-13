@@ -244,8 +244,6 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    //ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
-    //        "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
     ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
 }

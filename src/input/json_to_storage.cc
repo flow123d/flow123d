@@ -117,7 +117,6 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
 
     while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
         tmp_str = address.substr(pos, new_pos - pos);
-        // DBGMSG("adr: '%s' tstr '%s' pos:%d npos:%d\n", address.c_str(), tmp_str.c_str(), pos, new_pos  );
         if (pos==0 && tmp_str == "") {
             // absolute path
             ref_path.go_to_root();
@@ -187,10 +186,6 @@ string JSONPath::str() {
 
 void JSONPath::put_address() {
 	previous_references_.insert(str());
-	/*cout << "PUT ADDRESS: " << previous_references_.size() << " " << str() << endl;
-	for (std::set<string>::iterator it = previous_references_.begin(); it!=previous_references_.end(); ++it)
-		cout << (*it) << " - ";
-	cout << endl << endl; */
 }
 
 
@@ -297,7 +292,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         JSONPath ref_path = p.find_ref_node(ref_address);
         return make_storage( ref_path, type );
     }
-    //p.put_address();
 
     // return Null storage if there is null on the current location
     if (p.head()->type() == json_spirit::null_type)
@@ -388,10 +382,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
         if ( auto_key_it != record->end() ) {
             // try auto conversion
-            //stringstream ss;
-            //ss << p;
-            //xprintf(Warn, "Automatic conversion to record at address: %s\n", ss.str().c_str() );
-
             StorageArray *storage_array = new StorageArray(record->size());
             for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
                 if ( it == auto_key_it ) {
@@ -451,10 +441,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
     }
 
     // perform automatic conversion
-    //stringstream ss;
-    //ss << p;
-    // xprintf(Warn, "Automatic conversion to abstract record at address: %s\n", ss.str().c_str() );
-
     const Type::Record *default_child = abstr_rec->get_default_descendant();
     if (! default_child) THROW(ExcInputError()
     		<< EI_Specification("Auto conversion of AbstractRecord not allowed.\n")
@@ -607,12 +593,6 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
-    	/*
-    	// Possible simplification of this method (need default strings to be valid JSON)
-    	JSONToStorage  tmp_storage(dflt_str, *type);
-    	return tmp_storage.storage_;
-		*/
-
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {
