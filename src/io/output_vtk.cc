@@ -121,7 +121,6 @@ void OutputVTK::write_vtk_topology(void)
     ofstream &file = this->get_data_file();
 
     Node* node;
-    //ElementIter ele;
     unsigned int li;
     int tmp;
 
@@ -217,8 +216,6 @@ void OutputVTK::write_vtk_discont_topology(void)
     Mesh *mesh = this->get_mesh();
     ofstream &file = this->get_data_file();
 
-    //Node* node;
-    //ElementIter ele;
     unsigned int li, tmp;
 
     /* Write Cells begin*/
@@ -447,7 +444,6 @@ void OutputVTK::write_vtk_vtu(void)
 
 int OutputVTK::write_data(void)
 {
-    //Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
     char base_file_name[PATH_MAX];
