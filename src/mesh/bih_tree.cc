@@ -85,14 +85,12 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	while (left != right) {
 		if  ( elements_[ *left ].projection_center(axis) < median) {
 			left_bound = std::max( left_bound, elements_[ *left ].max(axis) );
-			//DBGMSG("left_bound: %g\n", left_bound);
 			++left;
 		}
 		else {
 			while ( left != right
 					&&  elements_[ *right ].projection_center(axis) >= median ) {
 				right_bound = std::min( right_bound, elements_[ *right ].min(axis) );
-				//DBGMSG("right_bound: %g\n", right_bound);
 				--right;
 			}
 			std::swap( *left, *right);
@@ -102,12 +100,10 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 
 	if ( elements_[ *left ].projection_center(axis) < median) {
 		left_bound = std::max( left_bound, elements_[ *left ].max(axis) );
-		//DBGMSG("left_bound: %g\n", left_bound);
 		++left;
 		++right;
 	} else {
 		right_bound = std::min( right_bound, elements_[ *right ].min(axis) );
-		//DBGMSG("right_bound: %g\n", right_bound);
 	}
 
 	unsigned int left_begin = node.leaf_begin();
@@ -133,7 +129,6 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 	{
 		BIHNode &node = nodes_[node_idx];
 		BIHNode &child = nodes_[ node.child(0) ];
-//		DBGMSG("Node: %d\n",node.child(0));
 		BoundingBox node_box(box);
 		node_box.set_max(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
@@ -149,7 +144,6 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 	{
 		BIHNode &node = nodes_[node_idx];
 		BIHNode &child = nodes_[ node.child(1) ];
-//		DBGMSG("Node: %d\n",node.child(1));
 		BoundingBox node_box(box);
 		node_box.set_min(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
@@ -177,7 +171,6 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 			median_idx = distribution(this->r_gen);
 
 			coors_[i] = elements_[ in_leaves_[ median_idx ] ].projection_center(axis);
-			//DBGMSG(" random idx: %d, coor: %g\n", median_idx, coors_[i]);
 		}
 
 	} else {
@@ -193,7 +186,6 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 	unsigned int median_position = (unsigned int)(coors_.size() / 2);
 	std::nth_element(coors_.begin(), coors_.begin()+median_position, coors_.end());
 
-	//DBGMSG("median pos:  %d %g\n", median_position, coors_[median_position]);
 	return coors_[median_position];
 }
 
@@ -222,28 +214,21 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 		if (node.is_leaf()) {
 
-			//DBGMSG( "leaf-size %d\n", node.leaf_size() );
 			//START_TIMER("leaf");
 			for (unsigned int i=node.leaf_begin(); i<node.leaf_end(); i++) {
-				//DBGMSG("check i: %d i_ele: %d id: %d\n", i, in_leaves_[i], mesh_->element( in_leaves_[i] ).id());
-				//DBGCOUT( << "in leaf: " << elements_[ in_leaves_[i] ] <<endl );
 				if (elements_[ in_leaves_[i] ].intersect(box)) {
 
-					//DBGMSG("el_id: %d\n" , mesh_->element(in_leaves_[i]).id() );
 					result_list.push_back(in_leaves_[i]);
 				}
 			}
 			//END_TIMER("leaf");
 		} else {
-			//DBGMSG("axis: %d bound left: %g right: %g\n",node.axis(),nodes_[node.child(0)].bound(), nodes_[node.child(1)].bound());
 			//START_TIMER("recursion");
 			if ( ! box.projection_gt( node.axis(), nodes_[node.child(0)].bound() ) ) {
-				//DBGMSG("push:%d\n", node.child(0));
 				// box intersects left group
 				node_stack.push( node.child(0) );
 			}
 			if ( ! box.projection_lt( node.axis(), nodes_[node.child(1)].bound() ) ) {
-				//DBGMSG("push:%d\n", node.child(1));
 				// box intersects right group
 				node_stack.push( node.child(1) );
 			}

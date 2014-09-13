@@ -83,7 +83,6 @@ set(sources_mesh_lib
     mesh/elements.cc
     mesh/mesh.cc
     mesh/neighbours.cc
-    mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
     mesh/ref_element.cc

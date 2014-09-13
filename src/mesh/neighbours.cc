@@ -32,15 +32,6 @@
 #include "system/system.hh"
 #include "neighbours.h"
 #include "mesh/mesh.h"
-/*
-static void parse_neighbour_line(struct Neighbour*,char*);
-static char supported_neighbour_type(int);
-static void neighbour_type_specific(struct Neighbour* , char * line );
-//static void neighbour_specs_bb_e(struct Neighbour*);
-static void neighbour_specs_bb_el(struct Neighbour*, char * line );
-static void neighbour_specs_vb_es(struct Neighbour*, char * line );
-static void neighbour_specs_vv_2e(struct Neighbour*);
-*/
 
 //=============================================================================
 // READ DATA OF ALL NEIGHBOURS
@@ -49,21 +40,6 @@ void read_neighbour_list(Mesh* mesh)
 {
 
 }
-
-//=============================================================================
-// INIT DATA OF NEIGHBOUR
-//=============================================================================
-/*
-Neighbour_both::Neighbour_both()
-{
-	type        = NDEF;
-	n_sides     = NDEF;
-	sid  	     = NULL;
-	eid         = NULL;
-
-	sigma        = 0.0;
-}
-*/
 
 Neighbour::Neighbour()
 : edge_idx_(-1)
@@ -76,52 +52,5 @@ void Neighbour::reinit(ElementIter ele, unsigned int edg_idx)
 }
 
 
-
-/**
- *  boundary - boundary neigbouring, given by list of neigbouring elements,
- *             sides are given implicitely by shared nodes
- */
-/*
-void neighbour_specs_bb_e( struct Neighbour *ngh )
-{
-	int ei;
-
-	xstrtok( ngh->line);
-	xstrtok( NULL);
-	ngh->n_elements = atoi( xstrtok( NULL) );
-	INPUT_CHECK(!( ngh->n_elements < 2 ),"Neighbour %d has bad number of elements: %d\n", ngh->id, ngh->n_elements );
-	ngh->n_sides = ngh->n_elements;
-	ngh->eid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
-	ngh->element = (ElementIter *) xmalloc( ngh->n_elements * sizeof( ElementIter  ) );
-	ngh->side = (struct Side**) xmalloc( ngh->n_elements * sizeof( struct Side* ) );
-	FOR_NEIGH_ELEMENTS( ngh, ei ) {
-		ngh->element[ ei ] = NULL;
-		ngh->side[ ei ] = NULL;
-	}
-	FOR_NEIGH_ELEMENTS( ngh, ei )
-		ngh->eid[ ei ] = atoi( xstrtok( NULL) );
-	xfree( ngh->line );
-	ngh->line = NULL;
-}*/
-/**
- * volume - volume neighbouring of different dimensions (non-compatible)
- */
-/*
-void neighbour_specs_vv_2e( struct Neighbour *ngh )
-{
-	xstrtok( ngh->line);
-	xstrtok( NULL);
-	ngh->n_elements = 2;
-	ngh->element = (ElementIter *) xmalloc( ngh->n_elements * sizeof( ElementIter  ) );
-	ngh->eid = (int*) xmalloc( ngh->n_elements * sizeof( int ) );
-	ngh->eid[ 0 ] = atoi( xstrtok( NULL) );
-	ngh->eid[ 1 ] = atoi( xstrtok( NULL) );
-	ngh->geom_factor = atof( xstrtok( NULL) ); // fraction of lower dim. element measure
-    ngh->sigma= atof( xstrtok( NULL) ); // transition coefficient
-	ngh->element[ 0 ] = NULL;
-	ngh->element[ 1 ] = NULL;
-	xfree( ngh->line );
-	ngh->line = NULL;
-}*/
 //-----------------------------------------------------------------------------
 // vim: set cindent:
