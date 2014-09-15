@@ -77,8 +77,6 @@ void PadeApproximant::modify_reaction_matrix(void )
             r_reaction_matrix_(product_index, reactant_index) = exponent * bifurcation_[i_decay][i_product-1];
         }
     }
-    //DBGMSG("reactions_matrix_created\n");
-    //r_reaction_matrix_.print();
     
     //compute Pade Approximant
     mat nominator_matrix(n_substances_, n_substances_),
@@ -110,7 +108,6 @@ void PadeApproximant::modify_reaction_matrix(void )
             reaction_matrix_[rows][cols] = pade_approximant_matrix(rows,cols);
         }
     }
-    //print_reaction_matrix();
 }
 
 void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree, 
@@ -131,7 +128,6 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
         nominator_coefs[j] = 
             (double)(factorials[nominator_degree + denominator_degree - j] * factorials[nominator_degree]) 
             / (factorials[nominator_degree + denominator_degree] * factorials[j] * factorials[nominator_degree - j]);
-        //DBGMSG("p(%d)=%f\n",j,nominator_coefs[j]);
     }
 
     for(int i = denominator_degree; i >= 0; i--)
@@ -140,7 +136,6 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
         denominator_coefs[i] = sign * 
             (double)(factorials[nominator_degree + denominator_degree - i] * factorials[denominator_degree])
             / (factorials[nominator_degree + denominator_degree] * factorials[i] * factorials[denominator_degree - i]);
-        //DBGMSG("q(%d)=%f\n",i,denominator_coefs[i]);
     } 
 }
 
@@ -148,7 +143,6 @@ void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix,
                                                  const mat& reaction_matrix, 
                                                  const std::vector< double >& coefs)
 {
-    //DBGMSG("evaluate_matrix_polynomial\n");
     mat identity = eye(n_substances_, n_substances_);
 
     ///Horner scheme for evaluating polynomial a0 + [a1 + [a2 + [a3 +...]*R(t)]*R(t)]*R(t)
@@ -156,18 +150,4 @@ void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix,
     {
         polynomial_matrix = coefs[i] * identity + (polynomial_matrix * reaction_matrix);
     }
-    //polynomial_matrix.print();
 }
-
-// unsigned int PadeApproximant::factorial(int k)
-// {
-//     ASSERT(k >= 0, "Cannot compute factorial of negative number.");
-//     
-//     unsigned int fact = 1;
-//     while(k > 1)
-//     {
-//             fact *= k;
-//             k--;
-//     }
-//     return fact;
-// }
