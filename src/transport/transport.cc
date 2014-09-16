@@ -390,13 +390,10 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
           
           csection = data_.cross_section.value(p, ele_acc);
 
-          //if(data_.sources_density.changed_during_set_time) 
           sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
       
-          //if(data_.sources_conc.changed_during_set_time)
           sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
         
-          //if(data_.sources_sigma.changed_during_set_time)
           sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi)*csection;
         }
       }
@@ -441,13 +438,10 @@ void ConvectionTransport::compute_concentration_sources_for_mass_balance(unsigne
 
 			csection = data_.cross_section.value(p, ele_acc);
 
-			//if(data_.sources_density.changed_during_set_time)
 			sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
 
-			//if(data_.sources_conc.changed_during_set_time)
 			sources_conc[sbi][loc_el] = data_.sources_conc.value(p, ele_acc)(sbi);
 
-			//if(data_.sources_sigma.changed_during_set_time)
 			sources_sigma[sbi][loc_el] = data_.sources_sigma.value(p, ele_acc)(sbi)*csection;
 		}
 	}
