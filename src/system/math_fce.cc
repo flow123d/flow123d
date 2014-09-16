@@ -36,7 +36,6 @@
 #include "system/math_fce.h"
 
 
-//static double Det2( SmallMtx2 a);
 static double Inverse2(SmallMtx2 a,SmallMtx2 b);
 static double Inverse3(SmallMtx3 a,SmallMtx3 b);
 static double Inverse4(SmallMtx4 a,SmallMtx4 b);
@@ -100,13 +99,6 @@ void vector_difference( double u[], double v[], double x[] )
 /*************************************************
  *  SMALL MATRIX OPERATIONS
  *************************************************/
-
-//=============================================================================
-// DETERMINANT OF MATRIX 2x2
-//=============================================================================
-/*double Det2( SmallMtx2 a) {
-	return SUBDET2(0,1,0,1);
-}*/
 
 /**************************************************
  * determinant 3x3
@@ -336,7 +328,6 @@ int gauss(double *A, double *B,int s,double *R)
       koef=koef+R[j]*M[i*size+j];
     }
     if (!(DBL_EQ(M[i*size+i],0)))
-//    if (M[i*size+i] != 0)
       R[i]=(M[i*size + size-1]-koef)/M[i*size+i];
     else
     {

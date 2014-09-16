@@ -41,7 +41,6 @@
 #include "mpi.h"
 
 #include "system/system.hh"
-//#include "io/read_ini.h"
 #include "system/xio.h"
 #include "system/file_path.hh"
 
@@ -52,13 +51,6 @@
 
 
 SystemInfo sys_info;
-
-
-void system_set_from_options()
-{
-    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
-
-}
 
 
 /// @brief INTERNAL DEFINITIONS FOR XPRINTF
@@ -220,7 +212,6 @@ void *xmalloc( size_t size )
 
 
 	if (size == 0 ) size++;
-	//ASSERT( size != 0 ,"Bad requested size (%u bytes) for memory allocation\n", size );
 	rc = malloc( size );
 	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
@@ -258,26 +249,6 @@ void * xrealloc( void * ptr, size_t size )
 
     return(rc);
 }
-
-/*
-void *operator new (std::size_t size, const my_new_t &) throw() {
-    return xmalloc(size);
-}
-
-void *operator new[] (std::size_t size, const my_new_t &) throw() {
-    return xmalloc(size);
-}
-
-void operator delete( void *p,  const my_new_t &) throw ()
-{
-    xfree(p);
-}
-
-void operator delete[]( void *p,  const my_new_t &) throw ()
-{
-    xfree(p);
-}
-*/
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
