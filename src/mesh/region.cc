@@ -402,8 +402,7 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 					it_ids != region_ids.end();
 			        ++it_ids) {
 				try {
-					cout << "id: " << (*it_ids) << endl;
-					Region reg = find_id(*it_ids); //TODO try-catch
+					Region reg = find_id(*it_ids);
 					if (reg.is_valid()) {
 						if ( std::find(region_set.begin(), region_set.end(), reg)==region_set.end() ) {
 							region_set.push_back(reg); // add region if doesn't exist
@@ -412,7 +411,8 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 						xprintf(Warn, "Region with id %d doesn't exist. Skipping\n", (*it_ids));
 					}
 				} catch(ExcUniqueRegionId &e) {
-					THROW(ExcUniqueRegionMessage() /*<< std::string(e.what()) */<< region_ids.ei_address());
+					e << region_ids.ei_address();
+					throw;
 				}
 			}
 		}
