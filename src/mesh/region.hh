@@ -348,7 +348,7 @@ public:
 
     /// Undefined dimension for regions introduced from mesh input record.
     /// Dimensions 0,1,2,3 are valid.
-    static const unsigned int undefined_dim = 10;
+    static const unsigned int undefined_dim;
 
 
     /**
@@ -571,10 +571,6 @@ private:
     typedef RegionTable::index<Label>::type::iterator  LabelIter;
     typedef RegionTable::index<DimId>::type::iterator  DimIDIter;
     typedef RegionTable::index<OnlyID>::type::iterator OnlyIDIter;
-
-
-    /// Consistency check in common use by various add_region methods.
-    void check_dim_consistency(DimIDIter it_id, unsigned int dim);
 
 
     /// Database of all regions (both boundary and bulk).

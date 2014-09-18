@@ -68,6 +68,8 @@ IT::Record RegionDB::region_set_input_type =
                 "Defines region set as a difference of given pair of sets. Overrides previous keys.")
         .close();
 
+const unsigned int RegionDB::undefined_dim = 10;
+
 
 /// Default constructor
 RegionDB::RegionDB()
@@ -87,36 +89,34 @@ Region RegionDB::implicit_boundary_region() {
 }
 
 
-void RegionDB::check_dim_consistency(DimIDIter it_id, unsigned int dim) {
-    // check dimension
-    if (it_id->dim() != dim) {
-        // User can introduce regions through the mesh input record, however without dim
-        // specification. Here we allow overwriting dimension in this case
-        if (it_id->dim() == undefined_dim) {
-            RegionItem item(it_id->index, it_id->get_id(), it_id->label, dim);
-            region_set_.replace(
-                    region_set_.get<Index>().find( it_id->index ),
-                    item);
-        }
-        else THROW(ExcInconsistentDimension() << EI_Label(it_id->label) << EI_ID(it_id->get_id()) );
-    }
-
-}
-
-
 Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
     if (closed_) xprintf(PrgErr, "Can not add to closed region DB.\n");
 
     DimIDIter it_id = region_set_.get<DimId>().find(DimID(dim,id));
+    DimIDIter it_undef_dim = region_set_.get<DimId>().find(DimID(undefined_dim,id));
     LabelIter it_label = region_set_.get<Label>().find(label);
 
     if (it_id != region_set_.get<DimId>().end() ) {
         unsigned int index = it_id->index;
         if (it_id->dim() != undefined_dim  && index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
 
-        check_dim_consistency(it_id, dim); // possibly update DB
-
         Region r_id=Region(index, *this);
+        // check boundary
+        if ( r_id.is_boundary() != boundary )
+            THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(id) );
+
+        return r_id;
+    } else
+	if (it_undef_dim != region_set_.get<DimId>().end() ) {
+		unsigned int index = it_undef_dim->index;
+		if (index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
+
+		RegionItem item(it_undef_dim->index, it_undef_dim->get_id(), it_undef_dim->label, dim);
+		region_set_.replace(
+                region_set_.get<Index>().find( it_undef_dim->index ),
+                item);
+
+		Region r_id=Region(index, *this);
         // check boundary
         if ( r_id.is_boundary() != boundary )
             THROW(ExcInconsistentBoundary() << EI_Label(label) << EI_ID(id) );
@@ -164,8 +164,6 @@ Region RegionDB::add_region(unsigned int id, const std::string &label, unsigned 
 Region RegionDB::add_region(unsigned int id, unsigned int dim) {
     RegionTable::index<DimId>::type::iterator it_id = region_set_.get<DimId>().find(DimID(dim,id));
     if ( it_id!=region_set_.get<DimId>().end() ) {
-        // just check dimension
-        check_dim_consistency(it_id, dim);
         return Region(it_id->index, *this);
     }
     // else
