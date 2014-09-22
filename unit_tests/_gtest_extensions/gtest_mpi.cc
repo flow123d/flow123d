@@ -106,39 +106,6 @@ void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, cons
 // (not yet MPI friendly)
 
 void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
-/*
-    if (GTEST_FLAG(repeat) != 1)
-    printf("\nRepeating all tests (iteration %d) . . .\n\n", iteration + 1);
-
-  const char* const filter = GTEST_FLAG(filter).c_str();
-
-  // Prints the filter if it's not *.  This reminds the user that some
-  // tests may be skipped.
-  if (! internal::String::CStringEquals(filter, kUniversalFilter)) {
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: %s filter = %s\n", GTEST_NAME_, filter);
-  }
-
-  if (internal::ShouldShard(kTestTotalShards, kTestShardIndex, false)) {
-    const Int32 shard_index = Int32FromEnvOrDie(kTestShardIndex, -1);
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: This is test shard %d of %s.\n",
-                  static_cast<int>(shard_index) + 1,
-                  internal::posix::GetEnv(kTestTotalShards));
-  }
-
-  if (GTEST_FLAG(shuffle)) {
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: Randomizing tests' orders with a seed of %d .\n",
-                  unit_test.random_seed());
-  }
-
-  ColoredPrintf(COLOR_GREEN,  "[==========] ");
-  printf("Running %s from %s.\n",
-         FormatTestCount(unit_test.test_to_run_count()).c_str(),
-         FormatTestCaseCount(unit_test.test_case_to_run_count()).c_str());
-  fflush(stdout);
-*/
 }
 
 
@@ -153,7 +120,6 @@ void MPI_PrettyUnitTestResultPrinter::OnEnvironmentsSetUpStart(const UnitTest& /
 
 void MPI_PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case) {
   if (rank==0) {
-      //test_case_name_ = test_case.name();
       const std::string counts =
               FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
 
@@ -188,7 +154,6 @@ void MPI_PrettyUnitTestResultPrinter::OnTestPartResult(const TestPartResult& res
             PrintTestPartResult(result);
             fflush(stdout);
         }
-      //  MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 
