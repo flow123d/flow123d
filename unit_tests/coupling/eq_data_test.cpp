@@ -257,7 +257,6 @@ IT::Record SomeEquation::input_type=
 
 TEST_F(SomeEquation, values) {
     read_input(eq_data_input);
-    // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
 
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;

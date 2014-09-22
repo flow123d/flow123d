@@ -169,7 +169,6 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        //delete storage; // deleted by ~AddressData
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
@@ -213,9 +212,6 @@ TEST_F(InputInterfaceTest, RecordVal) {
            EXPECT_EQ(4.56, d);
            d = record.val<float>("some_double");
            EXPECT_EQ((float)4.56, d);
-
-    //EXPECT_EQ(true, record.has_key("some_double", d));
-    //EXPECT_EQ(4.56, d);
 
     EXPECT_FALSE( record.val<bool>("some_bool") );
 
@@ -308,7 +304,6 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -351,14 +346,6 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     int idx=0;
     for(Iterator<Record> it = array.begin<Record>(); it != array.end(); ++it, ++idx ) {
         data_array[idx].b = it->val<bool>("some_bool");
-
-//        if (it->has_key("some_int", data_array[idx].i) ) {
-//            EXPECT_EQ(123,data_array[idx].i);
- //       }
- //       it->has_key("some_double", data_array[idx].d);
- //       EXPECT_EQ(1.23, data_array[idx].d);
- //       it->has_key("some_string", data_array[idx].s);
- //       EXPECT_EQ("123", data_array[idx].s);
     }
 
     // check creation of empty accessor and defautl iterator
@@ -372,7 +359,6 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);

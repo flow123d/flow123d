@@ -17,8 +17,6 @@
 
 #include <limits>
 
-//#define EXPECT_EQ(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
-
 
 /**
  * In place input file.
@@ -209,15 +207,12 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //upper time step constraint fot next change of time_step
     EXPECT_EQ( tm_tg->set_upper_constraint(0.5), 0);
     
-    //cout << "Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     //fixing time_step until next fixed mark_type (in time 5.0)
     tm_tg->fix_dt_until_mark();
-    //xprintf(MsgDbg, "Dt fixed. Estimated time (t+dt): %f", tm_tg->estimate_time() );
     
     
     //-----------------testing TimeGovernor's time stepping
     tm_tg->next_time();
-    //tm_tg->view();
    
     EXPECT_EQ( tm_tg->t(), 0.5 );
     EXPECT_EQ( tm_tg->tlevel(), 1 );
@@ -227,7 +222,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //no time mark is in interval (0;0.5]
     
     tm_tg->next_time();
-    //tm_tg->view();
 
     EXPECT_EQ( tm_tg->t(), 1.0 );
     EXPECT_EQ( tm_tg->tlevel(), 2 );
@@ -238,7 +232,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     // time mark 0x8 in time 0.8 in interval (0.5;1.0] is skipped
     
     tm_tg->next_time();
-    //tm_tg->view();
 
     EXPECT_EQ( tm_tg->t(), 1.5 );
     EXPECT_EQ( tm_tg->tlevel(), 3 );
@@ -248,7 +241,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //no time mark is in interval (1.0;1.5]
     
     tm_tg->next_time();
-    //tm_tg->view();
 
     EXPECT_EQ( tm_tg->t(), 2.0 );
     EXPECT_EQ( tm_tg->tlevel(), 4 );
@@ -264,7 +256,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     cout << "Dt fixed. Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     
     tm_tg->next_time();
-    //tm_tg->view();
 
     EXPECT_EQ( tm_tg->t(), 4.0 );
     EXPECT_EQ( tm_tg->tlevel(), 5 );
@@ -277,7 +268,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     // time mark 0x18 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
     
     tm_tg->next_time();
-    //tm_tg->view();
 
     EXPECT_EQ( tm_tg->t(), 6.0 );
     EXPECT_EQ( tm_tg->tlevel(), 6 );
@@ -306,8 +296,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
     it = tm_tg->last(tm.type_fixed_time());	//is included
     EXPECT_EQ( (it)->time(), 5.0 );
-    
-    //is_end()?
     
     delete tm_tg;
 }
@@ -364,9 +352,6 @@ TEST (TimeGovernor, steady_time_governor)
     
     //CONSTRUCTOR with INITIAL TIME
     TimeGovernor *steady_tg_2 = new TimeGovernor(555.0);
-    //steady_tg_2->view("second_steady");
-    
-    //cout << steady_tg_2->marks();
     
     EXPECT_EQ( steady_tg_2->t(), 555.0 );
     EXPECT_EQ( steady_tg_2->end_time(), inf_time );

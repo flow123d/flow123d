@@ -73,8 +73,6 @@ public:
 		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
 		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
-
-		//input_list("[]");
 	}
 
 	void TearDown() {
@@ -169,7 +167,6 @@ public:
  *
  * Can only use for spacedim==3
  */
-//typedef ::testing::Types< s_list(3)> FieldTypes;
 typedef ::testing::Types<f_list(3)> FieldTypes;
 TYPED_TEST_CASE(FieldFix, FieldTypes);
 
@@ -259,16 +256,6 @@ TYPED_TEST(FieldFix, set_mesh) {
 }
 
 
-
-/*
-
-
-
-TEST_F(FiledFix, get_const_accessor) {
-
-}
-
-*/
 
 TYPED_TEST(FieldFix, set_field) {
 	this->set_mesh(*(this->my_mesh));
@@ -528,16 +515,6 @@ TYPED_TEST(FieldFix, constructors) {
 
 
 
-/*
-TEST_F(FiledFix, check_initialized_region_field) {
-
-}
-
-*/
-
-
-
-
 
 string field_input = R"INPUT(
 {
@@ -552,7 +529,6 @@ string field_input = R"INPUT(
 
 namespace it = Input::Type;
 TEST(Field, init_from_input) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
 
 	Mesh mesh;
@@ -648,8 +624,6 @@ TEST(Field, init_from_input) {
 
 
 TEST(Field, init_from_default) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Profiler::initialize();
@@ -683,7 +657,7 @@ TEST(Field, init_from_default) {
         scalar_field.set_limit_side(LimitSide::right);
         EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the input field");
     }
-    //
+
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
         Input::Type::Selection sel("TestType");
@@ -706,8 +680,6 @@ TEST(Field, init_from_default) {
 
 /// Test optional fields dependent e.g. on BC type
 TEST(Field, disable_where) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
     enum {
         dirichlet,
         neumann,

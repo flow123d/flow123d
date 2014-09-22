@@ -41,12 +41,7 @@ TEST_F(FlagArrayFixture, set_and_test) {
     EXPECT_FALSE( flags_.match(FlagArrayFixture::married_flag) );
     EXPECT_FALSE( flags_.match(this->young_flag) );
 
-    //std::cout << man_flag << std::endl;
-    //std::cout << ~man_flag << std::endl;
-    //std::cout << bachelor << std::endl;
-
     flags_.add(bachelor); // 001
-    //std::cout << flags_ << std::endl;
     EXPECT_TRUE( flags_.match(FlagArrayFixture::man_flag) );
     EXPECT_FALSE( flags_.match(FlagArrayFixture::married_flag) );
     EXPECT_FALSE( flags_.match(this->young_flag) );

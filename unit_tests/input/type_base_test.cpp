@@ -102,7 +102,6 @@ TEST(InputTypeScalar, all_types) {
  */
 TEST(InputTypeArray, all_methods) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     // construction
     Array arr_int(Integer(),1,8);
@@ -165,12 +164,9 @@ enum Colors {
 
 TEST(InputTypeSelection, construction) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Selection *sel1= new Selection("Colors");
     Selection sel2=*sel1;
-    //sel2=*sel1;
-
 
     sel1->add_value(blue, "blue");
     sel2.add_value(white,"white","White color");
@@ -189,9 +185,6 @@ using namespace Input::Type;
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
     EXPECT_EQ("EmptySelection", sel3.type_name());
-//#ifdef DEBUG_ASSERTS
-//    EXPECT_DEATH( {sel3.add_value(1,"one");}, "Empty Selection handle." );
-//#endif
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -277,9 +270,6 @@ Record array_record("RecordOfArrays",
 
      record_record.declare_key("sub_rec_1", other_record, "key desc");
 
-     // recursion
-     //record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
-
      record_record.close();
  }
 
@@ -301,6 +291,4 @@ Record array_record("RecordOfArrays",
  main.declare_key("array_record", array_record, "no commment on array_record");
  main.close();
 
-
-// main.documentation(cout, TypeBase::full_after_record);
 }

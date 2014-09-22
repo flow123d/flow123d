@@ -15,7 +15,6 @@
 #include <boost/lexical_cast.hpp>
 
 TEST(Region, all) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     RegionDB    region_db;
     region_db.add_region(0,"nothing_bc", 0, true);
@@ -73,7 +72,6 @@ TEST(Region, all) {
     }
 
     region_db.add_region(1005,"side", 2, true);
-    //EXPECT_THROW( region_db.add_region(1005,"new", 3, false) , RegionDB::ExcInconsistentAdd);
     EXPECT_THROW( region_db.add_region(1001,"bottom", 2, true) , RegionDB::ExcNonuniqueID);
     EXPECT_THROW( region_db.add_region(1101,"top", 2, true) , RegionDB::ExcNonuniqueLabel);
     EXPECT_THROW( region_db.add_region(1001,"top", 3, true) , RegionDB::ExcInconsistentDimension);

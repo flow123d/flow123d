@@ -351,7 +351,6 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     EXPECT_EQ(b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ(true, a_rec.get_descendant("EqDarcy").is_finished());
     EXPECT_EQ(Type::Double() , *( c_rec.key_iterator("a_val")->type_));
-    //cout << a_rec;
 
 
     {   // Try one correct type
@@ -498,7 +497,6 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
     JSONToStorage json_reader(ss, one_rec);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
-    //json_reader.get_storage()->print(cout);
 
 }
 
