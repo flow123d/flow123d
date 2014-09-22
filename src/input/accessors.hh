@@ -148,6 +148,16 @@ private:
     int val_;
 };
 
+class FullEnum {
+public:
+    FullEnum() : val_(0) {}
+    FullEnum(int v, Input::Type::Selection sel) :val_(v) { this->sel_ = sel; }
+    operator int() const {return val_;}
+    operator unsigned int() const {return val_;}
+private:
+    int val_;
+    Input::Type::Selection sel_;
+};
 
 // Forward declaration
 class IteratorBase;
@@ -821,6 +831,22 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
+
+template<>
+struct TypeDispatch<Enum> {
+    typedef Enum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_string() ); }
+};
+
+template<>
+struct TypeDispatch<FullEnum> {
+    typedef FullEnum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+};
 
 template<>
 struct TypeDispatch<int> {

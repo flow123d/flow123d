@@ -288,8 +288,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
 
     // TODO: remove const_cast after resolving problems with const Mesh.
-    mesh = const_cast<Mesh *>(field.mesh());
-    ASSERT(mesh, "Null mesh pointer.\n");
+    this->_mesh = const_cast<Mesh *>(field.mesh());
+    ASSERT(this->_mesh, "Null mesh pointer.\n");
 
     // get possibly existing data for the same field, check both name and type
     OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
@@ -298,19 +298,19 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     if (!output_data) {
         switch(space_type) {
         case NODE_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_nodes());
+        	output_data = new OutputData<Value>(field, this->_mesh->n_nodes());
             node_data.push_back(output_data);
             break;
         case CORNER_DATA: {
             unsigned int n_corners = 0;
-            FOR_ELEMENTS(mesh, ele)
+            FOR_ELEMENTS(this->_mesh, ele)
                 n_corners += ele->n_nodes();
         	output_data = new OutputData<Value>(field, n_corners );
             corner_data.push_back(output_data);
         }
         break;
         case ELEM_DATA:
-        	output_data = new OutputData<Value>(field, mesh->n_elements() );
+        	output_data = new OutputData<Value>(field, this->_mesh->n_elements() );
             elem_data.push_back(output_data);
             break;
         }
@@ -327,15 +327,16 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     		output_data->zero(idx);
 
     	// sum values
-        FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENTS(this->_mesh, ele) {
             FOR_ELEMENT_NODES(ele, i_node) {
                 Node * node = ele->node[i_node];
                 unsigned int ele_index = ele.index();
-                unsigned int node_index = mesh->node_vector.index(ele->node[i_node]);
+                unsigned int node_index = this->_mesh->node_vector.index(ele->node[i_node]);
 
 				const Value &node_value =
 						Value( const_cast<typename Value::return_type &>(
-								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+								field.value(node->point(),
+								        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
 				output_data->add(node_index, node_value);
 				count[node_index]++;
 
@@ -349,14 +350,15 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     break;
     case CORNER_DATA: {
     	unsigned int corner_index=0;
-        FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENTS(this->_mesh, ele) {
             FOR_ELEMENT_NODES(ele, i_node) {
                 Node * node = ele->node[i_node];
                 unsigned int ele_index = ele.index();
 
 				const Value &node_value =
 						Value( const_cast<typename Value::return_type &>(
-								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+								field.value(node->point(),
+								        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
                 output_data->store_value(corner_index,  node_value);
                 corner_index++;
             }
@@ -364,11 +366,12 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     }
     break;
     case ELEM_DATA: {
-        FOR_ELEMENTS(mesh, ele) {
+        FOR_ELEMENTS(this->_mesh, ele) {
             unsigned int ele_index = ele.index();
 			const Value &ele_value =
 					Value( const_cast<typename Value::return_type &>(
-							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+							field.value(ele->centre(),
+							        ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
 			//std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
             output_data->store_value(ele_index,  ele_value);
         }

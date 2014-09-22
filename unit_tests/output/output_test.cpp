@@ -7,7 +7,7 @@
 #define TEST_USE_MPI
 #include <flow_gtest_mpi.hh>
 
-#include "io/output.h"
+#include "io/output_data.hh"
 
 #include "mesh/mesh.h"
 

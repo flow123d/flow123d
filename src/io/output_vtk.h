@@ -204,6 +204,11 @@ private:
     * to the VTK file (.vtu)
     */
    void write_vtk_vtu(void);
+
+   /**
+    * \brief This method add right suffix to .pvd VTK file
+    */
+   void fix_base_file_name(void);
 };
 
 #endif /* OUTPUT_VTK_HH_ */
