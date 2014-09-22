@@ -140,6 +140,11 @@ private:
      * \param[in]   step        The number of steps from start
      */
     void write_msh_elem_data(double time, int step);
+
+    /**
+     * \brief This method add right suffix to .msh GMSH file
+     */
+    void fix_base_file_name(void);
 };
 
 #endif /* OUTPUT_MSH_HH_ */

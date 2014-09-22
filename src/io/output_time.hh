@@ -165,16 +165,13 @@ public:
      */
     void mark_output_times(const TimeGovernor &tg);
 
-
-private:
-    ofstream        *base_file;         ///< Base output stream
-    string          *_base_filename;     ///< Name of base output file
-    string          *data_filename;     ///< Name of data output file
-    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    Mesh      *mesh;
-
 protected:
 
+    ofstream        *_base_file;        ///< Base output stream
+    string          *_base_filename;    ///< Name of base output file
+    ofstream        *_data_file;        ///< Data output stream (could be same as base_file)
+    string          *_data_filename;     ///< Name of data output file
+    Mesh            *_mesh;
 
     /**
      * Enumeration of file formats supported by Flow123d
@@ -220,37 +217,15 @@ protected:
      */
     virtual int write_tail(void) = 0;
 
-    string *base_filename() { return this->_base_filename; };
-
-    ofstream& get_base_file(void) { return *base_file; };
-
-    ofstream& get_data_file(void) { return *data_file; };
-
-    string& get_data_filename(void) { return *data_filename; };
-
-    Mesh *get_mesh(void) { return mesh; };
-
     unsigned int get_corner_count(void) {
         unsigned int li, count = 0;
-        FOR_ELEMENTS(this->mesh, ele) {
+        FOR_ELEMENTS(this->_mesh, ele) {
             FOR_ELEMENT_NODES(ele, li) {
                 count++;
             }
         }
         return count;
     }
-
-    void set_data_file(ofstream *_data_file) { data_file = _data_file; };
-
-
-
-    // Protected setters for descendant
-    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
-
-    void set_base_file(ofstream *_base_file) { this->base_file = _base_file; };
-
-
-
 
     /**
      * \brief Vector of pointers at OutputTime
@@ -269,13 +244,13 @@ protected:
     vector<OutputDataBase*>    elem_data;
 
 
-    int              current_step;      ///< Current step
+    int             current_step;      ///< Current step
 
     double          time;               ///< The newest time of registered data
 
     double          write_time;         ///< The last time, when data was wrote to this stream
 
-    map<string,bool> output_names; ///< Map of names of output fields. True means that field will be saved.
+    map<string, bool> output_names; ///< Map of names of output fields. True means that field will be saved.
 
     Input::Record input_record_;
 };

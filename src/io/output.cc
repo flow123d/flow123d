@@ -65,31 +65,6 @@ AbstractRecord OutputTime::input_format_type
     = AbstractRecord("OutputTime",
             "Format of output stream and possible parameters.");
 
-/**
- * \brief This method add right suffix to .pvd VTK file
- */
-static inline void fix_VTK_file_name(string *fname)
-{
-    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-    if(fname->compare(fname->size()-4, 4, ".pvd") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n", fname->c_str(), fname->c_str());
-        *fname = *fname + ".pvd";
-    }
-}
-
-/**
- * \brief This method add right suffix to .msh GMSH file
- */
-static inline void fix_GMSH_file_name(string *fname)
-{
-    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
-    if(fname->compare(fname->size()-4, 4, ".msh") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n", fname->c_str(), fname->c_str());
-        *fname = *fname + ".msh";
-    }
-}
-
-
 OutputDataBase *OutputTime::output_data_by_field_name
 		(const std::string &field_name, DiscreteSpace ref_type)
 {
@@ -230,77 +205,49 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 
 void OutputTime::add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel)
 {
-	vector<Input::Enum> field_ids;
-	in_array.copy_to(field_ids);
+    vector<Input::Enum> field_ids;
+    in_array.copy_to(field_ids);
 
-	// first copy all possible field names from selection
-	for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
-		//output_names.emplace(it->key_, false);        //introduced in gcc4.8 (C++11) - does not work with gcc4.7
-                output_names.insert(std::pair<std::string, bool>(it->key_,false));
+    // first copy all possible field names from selection
+    for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
+        //output_names.emplace(it->key_, false); //introduced in gcc4.8 (C++11) - does not work with gcc4.7
+        output_names.insert(std::pair<std::string, bool>(it->key_,false));
 
-	// then mark those fields that will be saved
-	for (auto it: field_ids)
-		if (in_sel.has_value(it))
-			output_names[in_sel.int_to_name(it)] = true;
+    // then mark those fields that will be saved
+    for (auto it: field_ids)
+        if (in_sel.has_value(it))
+            output_names[in_sel.int_to_name(it)] = true;
+
+#if 0
+	for (auto it = in_array.begin<string>(); it != in_array.end(); ++it) {
+	    std::cout << *it << std::endl;
+	    this->output_names.insert(std::pair<std::string, bool>(*it, true));
+	}
+#endif
 }
 
 
 OutputTime::OutputTime(const Input::Record &in_rec)
 : input_record_(in_rec)
 {
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-    
-    /* It's possible now to do output to the file only in the first process */
-    //if(rank!=0) {
-    //    /* TODO: do something, when support for Parallel VTK is added */
-    //    return;
-    //}
-
-    Mesh *mesh = NULL;  // This is set, when first register_* method is called
-
     ofstream *base_file;
-    string *base_filename;
 
     string fname = in_rec.val<FilePath>("file");
-    //string stream_name = in_rec.val<string>("name");
-
-    Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
-
-    // TODO: move this part to OutputVTK.cc and OutputMSH.cc
-    // Check if file suffix is suffix of specified file format
-    if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            // This should be pvd file format
-            fix_VTK_file_name(&fname);
-        } else if((*format).type() == OutputMSH::input_type) {
-            // This should be msh file format
-            fix_GMSH_file_name(&fname);
-        } else {
-            // Unsuported file format
-            fix_VTK_file_name(&fname);
-        }
-    } else {
-        // Default file format is VTK
-        fix_VTK_file_name(&fname);
-    }
 
     base_file = new ofstream;
 
-    if (rank==0) {
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if(rank == 0) {
     	base_file->open(fname.c_str());
     	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
     }
 
-    base_filename = new string(fname);
-
-   //this->name = stream_name;
     this->current_step = 0;
 
-    set_base_file(base_file);
-    this->_base_filename = base_filename;
-    set_mesh(mesh);
+    this->_base_file = base_file;
+    this->_base_filename = new string(fname);
+    this->_mesh = NULL;
 
     this->time = -1.0;
     this->write_time = -1.0;
@@ -319,9 +266,9 @@ OutputTime::~OutputTime(void)
          delete this->_base_filename;
      }
 
-     if(base_file != NULL) {
-         base_file->close();
-         delete base_file;
+     if(this->_base_file != NULL) {
+         this->_base_file->close();
+         delete this->_base_file;
      }
 
      xprintf(MsgLog, "O.K.\n");
