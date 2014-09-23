@@ -109,7 +109,6 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
     } else
 	if (it_undef_dim != region_set_.get<DimId>().end() ) {
 		unsigned int index = it_undef_dim->index;
-		if (index != it_label->index) THROW(ExcNonuniqueID() << EI_Label(label) << EI_ID(id) << EI_LabelOfOtherID(it_id->label) );
 
 		RegionItem item(it_undef_dim->index, it_undef_dim->get_id(), it_undef_dim->label, dim);
 		region_set_.replace(

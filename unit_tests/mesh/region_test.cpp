@@ -76,7 +76,7 @@ TEST(Region, all) {
     //EXPECT_THROW( region_db.add_region(1005,"new", 3, false) , RegionDB::ExcInconsistentAdd);
     EXPECT_THROW( region_db.add_region(1001,"bottom", 2, true) , RegionDB::ExcNonuniqueID);
     EXPECT_THROW( region_db.add_region(1101,"top", 2, true) , RegionDB::ExcNonuniqueLabel);
-    EXPECT_THROW( region_db.add_region(1001,"top", 3, true) , RegionDB::ExcInconsistentDimension);
+    EXPECT_THROW( region_db.add_region(1001,"top", 3, true) , RegionDB::ExcNonuniqueLabel);
     EXPECT_THROW( region_db.add_region(1001,"top", 2, false) , RegionDB::ExcInconsistentBoundary);
 
     region_db.close(); // close should be called automatically at first call to any size method.
@@ -92,6 +92,44 @@ TEST(Region, all) {
     EXPECT_EQ(1003, bulk[2].id());
 
     EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, ExcXprintfMsg, "Can not add to closed region DB.");
+
+}
+
+TEST(Region, add_nonunique_id_region) {
+	RegionDB region_db;
+
+	{
+		Region r=region_db.add_region(1, "user_defined_name", RegionDB::undefined_dim);
+	    EXPECT_EQ(1, r.idx() );
+	    EXPECT_FALSE( r.is_boundary() );
+	    EXPECT_EQ(0, r.bulk_idx() );
+	    EXPECT_TRUE( r.is_valid() );
+	    EXPECT_EQ(1, r.id());
+	    EXPECT_EQ("user_defined_name", r.label());
+	    EXPECT_EQ(RegionDB::undefined_dim, r.dim());
+	}
+
+	{
+		Region r=region_db.add_region(1, "region_name", 3, false);
+	    EXPECT_EQ(1, r.idx() );
+	    EXPECT_FALSE( r.is_boundary() );
+	    EXPECT_EQ(0, r.bulk_idx() );
+	    EXPECT_TRUE( r.is_valid() );
+	    EXPECT_EQ(1, r.id());
+	    EXPECT_EQ("user_defined_name", r.label());
+	    EXPECT_EQ(3, r.dim());
+	}
+
+	{
+		Region r=region_db.add_region(2, "other_dim", 2, false);
+	    EXPECT_EQ(3, r.idx() );
+	    EXPECT_FALSE( r.is_boundary() );
+	    EXPECT_EQ(1, r.bulk_idx() );
+	    EXPECT_TRUE( r.is_valid() );
+	    EXPECT_EQ(2, r.id());
+	    EXPECT_EQ("other_dim", r.label());
+	    EXPECT_EQ(2, r.dim());
+	}
 
 }
 
