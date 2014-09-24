@@ -66,6 +66,7 @@ struct Ini_item
 	void	OptGetDblArray(const char *section, const char *key, const char *defval, std::vector<double> &array);
 
 	void	OptGetIntArray(const char *section, const char *key, const char *defval, int Arrsize, int *Array);
+	//char * OptGetStrArray();
 
 #endif
 

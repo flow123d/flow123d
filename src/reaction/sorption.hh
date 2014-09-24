@@ -64,6 +64,8 @@ protected:
     virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
+
+    //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
 
@@ -84,6 +86,8 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
+
+    //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
 
 
@@ -104,6 +108,8 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
+
+    //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
 
 

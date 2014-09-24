@@ -203,8 +203,6 @@ public:
        return mh_dh;
     }
     
-    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
-
     virtual void set_concentration_vector(Vec &vc){};
 
 
@@ -272,7 +270,6 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
-    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
     /// postprocess velocity field (add sources)
     virtual void postprocess();

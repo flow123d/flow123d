@@ -100,6 +100,14 @@ SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
 SorptionMob::~SorptionMob(void)
 {}
 
+/*
+double SorptionMob::compute_sorbing_scale(double por_m, double por_imm)
+{
+  double phi = por_m/(por_m + por_imm);
+  return phi;
+}
+*/
+
 void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {
         START_TIMER("SorptionMob::isotherm_reinit");
@@ -158,6 +166,14 @@ SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 
 SorptionImmob::~SorptionImmob(void)
 {}
+
+/*
+double SorptionImmob::compute_sorbing_scale(double por_m, double por_imm)
+{
+  double phi = por_imm / (por_m + por_imm);
+  return phi;
+}
+*/
 
 void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
 {

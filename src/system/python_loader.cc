@@ -43,6 +43,8 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
     else
         module_name = fname;
 
+    // cout << "python module: " << module_name <<endl;
+    // DBGMSG("%s\n", buffer.str().c_str());
     // TODO: use exceptions and catch it here to produce shorter and more precise error message
     return load_module_from_string(module_name, buffer.str() );
 }
@@ -120,6 +122,23 @@ PythonRunning::PythonRunning(const std::string& program_name)
         static PY_STRING our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
         
+        /*
+        Py_GetPath();
+
+        static PY_STRING our_py_path;
+        string python_subdir("/lib/python" + STR(PYTHONLIBS_VERSION_MAJOR) + "." + STR(PYTHONLIBS_VERSION_MINOR));
+        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/:");
+        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/plat-cygwin:");
+        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/lib-dynload:");
+        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
+        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
+        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
+
+        Py_SetPath(our_py_path);
+        //our_py_path+=full_flow_prefix + to_py_string( python_subdir);
+
+//        string prefix = ;
+        */
         cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
         cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
         cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
@@ -131,6 +150,44 @@ PythonRunning::PythonRunning(const std::string& program_name)
         // 4. extract prefix from the full path
         // 5. substitute the prefix in python path
         // 6. set python path (suppress its computation during Py_Initialize)
+        /*
+        wchar_t wbuf[ python_home.size() ];
+        size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
+	static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
+
+        std::wcout << "new python home: " << _python_home_storage << std::endl;
+
+	Py_SetProgramName( &(_python_home_storage[0]) );
+
+        char buff[ 1024 ];
+        num_chars = wcstombs(buff, Py_GetPath(), 256);
+        buff[1024]=0;
+        string str(buff, num_chars);
+        std::cout << "Python path: " << str << std::endl;
+
+
+
+                wchar_t wbuf[ python_home.size() ];
+        size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
+        static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
+
+        std::wcout << "new python home: " << _python_home_storage << std::endl;
+
+        Py_SetProgramName( &(_python_home_storage[0]) );
+
+        char buff[ 1024 ];
+        num_chars = wcstombs(buff, Py_GetPath(), 1024);
+        //std::cout << "num chars: " << num_chars << std::endl;
+        std::cout << "Python path: " << buff << std::endl;
+        //num_chars = wcstombs(buff, Py_GetPythonHome(), 1024);
+        //std::cout << "Python home: " << buff << std::endl;
+        num_chars = wcstombs(buff, Py_GetProgramName(), 1024);
+        std::cout << "Python prog. name: " << buff << std::endl;
+        num_chars = wcstombs(buff, Py_GetPrefix(), 1024);
+        std::cout << "Python prefix: " << buff << std::endl;
+        num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
+        std::cout << "Python full: " << buff << std::endl;
+*/
 #endif
     Py_Initialize();
 }

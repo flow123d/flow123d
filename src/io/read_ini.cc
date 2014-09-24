@@ -59,6 +59,8 @@ static char *section_test(char *section);
 static char *strip_spaces(char *string);
 static struct Ini_item *new_item(struct Ini_item *prev,char *section, char *key, char *value);
 
+//#define	xOptGetStr(s,k)	(ini.GetValue(s,k,NULL))
+
 //=============================================================================
 // MAKE INI KEYS LIST
 //=============================================================================
@@ -124,6 +126,12 @@ void make_ini_item_list(const char *fname)
 		}
 		else
 			value = xstrcpy(tmp);
+
+/*
+		printf("%s\n",section);
+		printf("%s\n",key);
+		printf("%s\n\n",value);
+*/
 
 		prev = new_item(prev,section,key,value);
 		xfree(key);
@@ -292,7 +300,26 @@ bool OptGetBool( const char *section,const  char *key,const  char *defval )
  */
 void OptionsInit(const char *fname )
 {
+	//char *path;
+	//int len;
+
 	ASSERT( fname,"NULL file name\n");
+
+	// take absolute path to the file
+	// this is completly wrong in the case the absolute path is alredy given
+	// since we should remain in the workdir when calling this it is not critical
+	// to hava correct function for path manipulation (see BOOST)
+	/*
+	path=xgetcwd();
+	len=strlen(path)+strlen(fname)+1;
+	if ( len > PATH_MAX )
+	{
+	    xprintf(UsrErr, "Path too long\n");
+	}
+	strcpy( options_fname, path ); xfree(path);
+	strcat( options_fname, PATH_SEP );
+	strcat( options_fname, fname );
+*/
 
 	// initialization of the INI reader
 	make_ini_item_list(fname);
@@ -349,3 +376,38 @@ void OptGetIntArray( const char *section,const  char *key,const  char *defval, i
 	free( str );
 	return;
 }
+
+//=============================================================================
+// GET string ARRAY VARIABLE FROM INI FILE
+//=============================================================================
+/*char *OptGetStrArray(const char *section,const char *key, int sb_count, struct TS_lat *dest)
+{
+	const char **rc = NULL;
+	struct Ini_item *ini_item;
+	int i;
+
+	FOR_INI_ITEMS(ini_item)
+		if( (!strcmp(ini_item->section,section)) && (!strcmp(ini_item->key,key)) ){
+			for(i=0; i < sb_count; i++)
+			{
+			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL)
+			  {
+				printf("\nerror during required %d-th parameter initialization occured\n",i);
+			  }else{
+			  	printf("\nthe name of %d-th substance is %s\n",i,dest[i].nazev);
+			  }
+			}
+			//
+			*rc = ini_item->value;
+			break;
+		}
+
+	if (rc == NULL) {
+		if (defval == NULL)
+			xprintf(UsrErr,"Required parameter: [%s] %s is not given.\n",section,key);
+		else
+			*rc = defval;
+	}
+	return xstrcpy(*rc);
+}*/
+

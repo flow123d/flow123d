@@ -84,6 +84,9 @@
 
 #include "io/output_data_base.hh"
 
+//class OutputVTK;
+//class OutputMSH;
+
 
 
 /**
@@ -366,6 +369,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 			const Value &ele_value =
 					Value( const_cast<typename Value::return_type &>(
 							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+			//std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
             output_data->store_value(ele_index,  ele_value);
         }
     }

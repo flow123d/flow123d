@@ -215,6 +215,12 @@ void MassBalance::calculate(double time) {
 	switch (equation_->time_scheme())
 	{
 	case EquationForMassBalance::explicit_euler:
+//		for (int i=0; i<n_subst; i++)
+//		{
+//			integrated_sources[i] += last_sources[i]*(time-last_time);
+//			integrated_fluxes[i] += last_fluxes[i]*(time-last_time);
+//		}
+//		break;
 	case EquationForMassBalance::implicit_euler:
 		for (int i=0; i<n_subst; i++)
 		{

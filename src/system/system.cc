@@ -250,6 +250,26 @@ void * xrealloc( void * ptr, size_t size )
     return(rc);
 }
 
+/*
+void *operator new (std::size_t size, const my_new_t &) throw() {
+    return xmalloc(size);
+}
+
+void *operator new[] (std::size_t size, const my_new_t &) throw() {
+    return xmalloc(size);
+}
+
+void operator delete( void *p,  const my_new_t &) throw ()
+{
+    xfree(p);
+}
+
+void operator delete[]( void *p,  const my_new_t &) throw ()
+{
+    xfree(p);
+}
+*/
+
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }

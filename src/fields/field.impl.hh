@@ -174,6 +174,17 @@ void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
 }
 
 
+/*
+template<int spacedim, class Value>
+boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
+Field<spacedim,Value>::operator[] (Region reg)
+{
+    ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    return this->region_fields_[reg.idx()];
+}
+*/
+
+
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
 	ASSERT_LESS(reg.idx(), this->region_fields_.size());

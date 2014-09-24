@@ -95,6 +95,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
     ofstream &file = this->get_base_file();
 
     /* Set precision to max */
+    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
 
@@ -113,6 +114,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
     ofstream &file = this->get_base_file();
 
     /* Set precision to max */
+    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
     /* Write ascii data */

@@ -12,6 +12,8 @@
 #include <string>
 #include <fstream>
 
+//#include <mpi.h>
+
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
 
@@ -60,10 +62,37 @@ public:
     static Input::Type::AbstractRecord input_format_type;
 
     /**
+     * \brief Try to find output stream from a key in record.
+     */
+    //static OutputTime *output_stream_by_key_name(const Input::Record &in_rec, const string key_name);
+
+    /**
+     * \brief Try to find output stream with this name
+     */
+    //static OutputTime *output_stream_by_name(string name);
+
+    /**
+     * \brief Does OutputStream with same name and filename exist?
+     *
+     * When this record is already created, then it returns pointer at
+     * corresponding OutputTime. When this record doesn't exist, then
+     * it create new OutputTime object and it puts this object to the
+     * array of OutputTime pointers
+     *
+     * \param[in] in_rec  The reference at the input record
+     */
+    //static OutputTime *output_stream(const Input::Record &in_rec);
+
+    /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
      */
     static void destroy_all(void);
+
+    /**
+     * \brief This method write all registered data to output streams
+     */
+    //static void write_all_data(void);
 
 
 
@@ -71,6 +100,12 @@ public:
      *
      */
     static OutputTime* create_output_stream(const Input::Record &in_rec);
+
+    /**
+     * Declaration of exceptions
+     */
+    //TYPEDEF_ERR_INFO(EI_StreamName, const string);
+    //DECLARE_INPUT_EXCEPTION( ExcStreamName, << "Not valid stream name " << EI_StreamName::qval << "\n");
 
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
@@ -226,6 +261,8 @@ protected:
     int             rank;
 
     OutFileFormat   file_format;
+    //OutputFormat    *output_format;
+    //string          name;              ///< Name of output stream
 
     vector<OutputDataBase*>    node_data;
     vector<OutputDataBase*>    corner_data;

@@ -120,6 +120,11 @@ public:
 
 
     /**
+     * Direct read access to the table of Field pointers on regions.
+     */
+    //boost::shared_ptr< FieldBaseType > operator[] (Region reg);
+
+    /**
      * Implementation of @p FieldCommonBase::is_constant().
      */
     bool is_constant(Region reg) override;
@@ -170,6 +175,12 @@ public:
      * Implementation of FieldCommonBase::output().
      */
     void output(OutputTime *stream) override;
+
+
+    /**
+     * Returns true, if field is currently set to a time in which it is discontinuous.
+     */
+    //bool is_jump_time();
 
 
     /**

@@ -593,6 +593,12 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *strin
 
 StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
+    	/*
+    	// Possible simplification of this method (need default strings to be valid JSON)
+    	JSONToStorage  tmp_storage(dflt_str, *type);
+    	return tmp_storage.storage_;
+		*/
+
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {

@@ -3,6 +3,7 @@
 #include "adaptivesimpson.hh"
 
 #include "system/xio.h"
+//#include "system/sys_profiler.hh"
 
 #include <limits>
 #include <iomanip>
@@ -41,6 +42,8 @@ void InterpolantBase::set_interval(double bound_a, double bound_b)
   
   //used to be use to collect the minimum and maximum "x" through all the evaluations (not only outside interval)
   //are given oposite to be able to response to all calls
+  //stats.min = std::numeric_limits<double>::max();
+  //stats.max = -std::numeric_limits<double>::max();
   stats.min = bound_a;
   stats.max = bound_b;
 }
@@ -83,8 +86,12 @@ void InterpolantBase::reset_stat()
   stats.interval_miss_a = 0;
   stats.interval_miss_b = 0;
   stats.total_calls = 0;
+  //stats.min = std::numeric_limits<double>::max();
+  //stats.max = -std::numeric_limits<double>::max();
   stats.min = bound_a_;
   stats.max = bound_b_;
+  //switch statistics on
+  //use_statistics = true;
 }
 
 void InterpolantBase::check_stats_and_reinterpolate(double percentage)
@@ -257,6 +264,60 @@ int Interpolant::interpolate()
   return result;
 }
 
+/*
+  // CONSTANT INTERPOLATION
+  void Interpolant::interpolate_p0()
+  {
+    create_nodes();
+
+    Functor<double>* norm = new NormW21(this);
+    compute_error(norm);      //sets error_
+    delete norm;
+  }
+
+  // LINEAR INTERPOLATION WITH SAVED COEFICIENTS
+  void Interpolant::interpolate_p1()
+  {
+    p1_vec.resize(size_);    //linear coeficients
+
+    if(interpolate_derivative)
+    {
+      double delta = 0;
+      p1d_vec.resize(size_);    //linear coeficients for derivative
+      for(unsigned int i = 0; i != p1_vec.size(); i++)
+      {
+        delta = x_vec[i+1] - x_vec[i];
+        p1_vec[i] = (f_vec[i+1] - f_vec[i]) / delta;
+        p1d_vec[i] = (df_vec[i+1] - df_vec[i]) / delta;
+      }
+    }
+    else
+    {
+      for(unsigned int i = 0; i != p1_vec.size(); i++)
+      {
+        p1_vec[i] = (f_vec[i+1] - f_vec[i]) / (x_vec[i+1] - x_vec[i]);
+      }
+    }
+
+    //Writes the interpolation table.
+
+    unsigned int p = 10,
+                 pp = 5;
+    for(unsigned int i=0; i != size_-1; i++)
+    {
+      std::cout << "x: " << setw(p) << x_vec[i] << setw(pp) << "f:" << setw(p) << f_vec[i] << setw(pp) << "p1:" << setw(p) << p1_vec[i];
+      if(interpolate_derivative)
+        std::cout << setw(pp) << "df:" << setw(p) << df_vec[i] << setw(pp) << "p1d:" << setw(p) << p1d_vec[i] << std::endl;
+      else
+        std::cout << std::endl;
+    }
+      std::cout << "x: " << setw(p) << x_vec[x_vec.size()-1] << setw(pp) << "f:" << setw(p) << f_vec[f_vec.size()-1] << setw(pp) << "p1:" << setw(p) << "-";
+      if(interpolate_derivative)
+        std::cout << setw(pp) << "df:" << setw(p) << df_vec[df_vec.size()-1] << setw(pp) <<  "p1d:" << setw(p) << "-" << std::endl;
+      else
+        std::cout << std::endl;
+  }
+//*/
 
 void Interpolant::compute_values()
 { 
@@ -383,6 +444,38 @@ void Interpolant::compute_error(double tol, std::vector<double>& f, std::vector<
   
   error_ = tot_err;
   
+  /* PRIORITY QUEUE FOR ADAPTIVE INTERVAL DIVIDING
+  for(unsigned long i = 0; i < g->get_count(); i++ )
+  {
+    LP_Norm norm(f,g->get_polynomial(i),2);
+    p_err.i = i;
+
+    //absolute polynomial error
+    p_err.err = sqrt(Interpolation::AdaptiveSimpson::AdaptSimpson( norm,
+                                              g->get_polynomial(i)->get_a(),
+                                              g->get_polynomial(i)->get_b(),
+                                              SIMPSON_TOLERANCE) );
+
+    //increase the absolute total error
+    tot_err += p_err.err;
+
+    //writes absolute error on a single polynomial
+    if(DEB) std::cout << "\t abs. p_err=" << p_err.err;
+
+    //p_err convertion absolute -> relative (p_err/(xi+1 - xi))
+    p_err.err /= (g->get_polynomial(i)->get_b()-g->get_polynomial(i)->get_a());
+
+    //writes relative error on a single polynomial
+    if(DEB) std::cout << "\t rel. p_err=" << p_err.err << std::endl;
+
+    pq.push(p_err); //puts in priority queue
+  }
+
+  // writes relative and absolute total error
+  //std::cout << "\trelative err = "
+  //  << tot_err/(g->GetA()-g->GetB())
+  //  << "\tabsolute err = " << tot_err << std::endl;
+  //*/
 }
 
 void Interpolant::compute_error(double tol, double p, ErrorNorm::Type norm_type)
@@ -469,6 +562,30 @@ double InterpolantImplicit::f_val(double u)
 
 int InterpolantImplicit::interpolate()
 {
+  //BUG: FuncExplicit cannot be copied in interpolant constructor with its members !!!
+  /*
+  ASSERT(fix_ != IFixVariable::no_fix,"Cannot do interpolation. No varible was fixed.");
+  check_all();
+  DBGMSG("seg %f\n",func_u);
+  explicit_interpolant = new Interpolant(func_u, interpolate_derivative);
+  //explicit_interpolant->set_functor(func_u, interpolate_derivative);
+  DBGMSG("seg\n");
+  explicit_interpolant->set_interval(bound_a_,bound_b_);
+  DBGMSG("seg\n");
+  if(automatic_size)
+  {
+    explicit_interpolant->set_size_automatic(user_tol, size_, max_size);
+  }
+  else
+  {
+    explicit_interpolant->set_size(size_);
+  }
+
+  DBGMSG("seg\n");
+  explicit_interpolant->interpolate();
+  DBGMSG("seg\n");
+  error_ = explicit_interpolant->error();
+  */
   return 0;
 }
 
