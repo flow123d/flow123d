@@ -141,6 +141,7 @@ public:
 		Profiler::instance()->output(MPI_COMM_WORLD, cout);
 
 		bt->test_tree_params();
+		//bt->BIH_output();
 		cout << endl;
 	}
 
@@ -148,6 +149,9 @@ public:
 	void test_insec_elements() {
 		for(int i=0; i < n_test_trials; i++) {
 			BoundingBox box( vector<BoundingBox::Point>({r_point(), r_point()}) );
+
+			//cout << "\n-------------------------" << endl;
+			//cout << "box: " << box <<endl;
 
 			vector<unsigned int> bf_result;
 			FOR_ELEMENTS(mesh, ele) {
@@ -161,6 +165,11 @@ public:
 			END_TIMER("find bounding box");
 			std::sort(result_vec.begin(), result_vec.end());
 
+			//cout << endl << "full search: " << endl;
+			//for(unsigned int i_el : bf_result) cout << " " << this->mesh->element(i_el).id();
+			//cout << endl << "bih search: " << endl;
+			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
+
 			ASSERT_EQ(bf_result.size(), result_vec.size());
 			for(unsigned int j=0; j< bf_result.size(); j++) {
 				EXPECT_EQ(bf_result[j], result_vec[j]);
@@ -173,6 +182,9 @@ public:
 		for(int i=0; i < n_test_trials; i++) {
 			BoundingBox::Point point( r_point() );
 
+			//cout << "\n-------------------------" << endl;
+			//cout << "point: " << point << endl;
+
 			vector<unsigned int> bf_point_result;
 			FOR_ELEMENTS(mesh, ele) {
 				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back(ele.index());
@@ -183,6 +195,11 @@ public:
 			bt->find_point(point, result_point_vec);
 			END_TIMER("find point");
 			std::sort(result_point_vec.begin(), result_point_vec.end());
+
+			//cout << endl << "full search: " << endl;
+			//for(unsigned int i_el : bf_point_result) cout << " " << this->mesh->element(i_el).id();
+			//cout << endl << "bih search: " << endl;
+			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element(i_el).id();
 
 			ASSERT_EQ(bf_point_result.size(), result_point_vec.size());
 			for(unsigned int j=0; j< bf_point_result.size(); j++) {

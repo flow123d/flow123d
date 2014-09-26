@@ -17,6 +17,8 @@
  */
 TEST(InputTypeRecord, declare_key_scalars) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 
    // make auxiliary record and test declare_key for
    // - various Scalar types (excluding Selection): Integer, Bool, Double, String, FilePath
@@ -74,6 +76,43 @@ using namespace Input::Type;
    EXPECT_THROW_WHAT( {rec.size();}, ExcAssertMsg , "Asking for information of unfinished Record type");
 #endif
 
+/*
+   // test documentation of default_at_read_time
+   {
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::read_time("Default value provided at read time."), "");
+       rec.close();
+
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = \"Default value provided at read time.\" is Integer in [-2147483648, 2147483647]\n---------- Rec\n\n",
+                 out.str());
+   }
+
+   {
+       // test documentation of OPTIONAL keys
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::optional(), "Doc");
+       rec.close();
+
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = <OPTIONAL> is Integer in [-2147483648, 2147483647]\n              # Doc\n---------- Rec\n\n",
+                 out.str());
+   }
+
+   {
+       // test documentation of OPTIONAL keys
+       Record rec("Rec", "");
+       rec.declare_key("int_key", Integer(), Default::obligatory(), "Doc");
+       rec.close();
+
+       stringstream out;
+       out << rec;
+       EXPECT_EQ("\nRecord 'Rec' (1 keys).\n# \n----------\n    int_key = <OBLIGATORY>\n *is Integer in [-2147483648, 2147483647]\n              # Doc\n---------- Rec\n\n",
+                 out.str());
+   }
+*/
 }
 
 TEST(InputTypeRecord, declare_key_arrays) {
@@ -105,6 +144,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, allow_convertible) {
 using namespace Input::Type;
+//::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     {
     Record sub_rec = Record( "SubRecord", "")
@@ -138,9 +178,15 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record record_record("RecordOfRecords", "");
     Record record_record2("RecordOfRecords2", "");
+
+    // Test that Record has to be passed as shared_ptr
+    //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
+    //              "Complex type .* shared_ptr."
+    //              );
 
     Record other_record("OtherRecord","desc");
     other_record.close();
@@ -155,9 +201,14 @@ using namespace Input::Type;
     EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.close(); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
 
+    DBGMSG("here\n");
     record_record2.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
+    DBGMSG("here\n");
     EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.close(); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
+
+    // recursion  -  forbidden
+    //record_record->declare_key("sub_rec_2", record_record, "desc.");
 
 }
 
@@ -208,6 +259,7 @@ TEST(InputTypeRecord, iterating) {
 
 TEST(InputTypeRecord, check_key_validity) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord",
             "Information about one file for field data.");
@@ -225,6 +277,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, RecordCopy) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord", "");
     output_record.declare_key("file", FileName::output(), "");
@@ -278,6 +331,7 @@ using namespace Input::Type;
 
 TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
@@ -318,6 +372,10 @@ using namespace Input::Type;
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
     EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
     EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
+
+    // TYPE should be derived as optional
+    //EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
+    //EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
 
     // inherited keys
     EXPECT_TRUE( b_rec.has_key("mesh") );
@@ -388,6 +446,7 @@ IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
 
 TEST(InputTypeAdHocAbstractRecord, inheritance) {
 using namespace Input::Type;
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	AdHocDataTest::in_rec1.finish();
 	AdHocDataTest::in_rec2.finish();
 	AdHocDataTest::adhoc_1.finish();

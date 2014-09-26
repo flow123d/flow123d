@@ -67,6 +67,9 @@ TEST(OutputTypeTypeBase, record_output_test) {
 
         record_record.declare_key("sub_rec_1", other_record, "key desc");
 
+        // recursion
+        //record_record->declare_key("sub_rec_2", record_record, "Recursive key.");
+
         record_record.close();
     }
 
@@ -262,6 +265,9 @@ TEST(OutputTypeArray, array_of_array_test) {
 
 #include <boost/regex.hpp>
 TEST(OutputTypeRegEx, regex_filter_test) {
+    //static const boost::regex e("(\\d{4}[- ]){3}\\d{4}");
+    //regex_match("", e);
+
     using namespace Input::Type;
 
     Record a_rec("FieldConstant:Field:R3 -> Real", "");

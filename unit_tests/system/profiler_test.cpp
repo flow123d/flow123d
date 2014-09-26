@@ -32,6 +32,7 @@ unsigned int random_string(char *str){
         str[i] = rand()%(128-32)+32; // random character from 32 (space) till the and of ASCII
     }
     str[i]=0;
+    //printf("str: '%s'\n", str);
     return length;
 }
 
@@ -61,6 +62,7 @@ TEST(Profiler, CodePoint) {
     EXPECT_EQ("my_tag", cp.tag_);
     EXPECT_EQ( str_hash("my_tag"), cp.hash_);
     EXPECT_EQ( line_save, cp.line_ );
+    //EXPECT_EQ(string("(profiler_test.cpp, xxx(), 130)"), string(CODE_POINT) );
 }
 
 
@@ -72,6 +74,7 @@ TEST(Profiler, CodePoint) {
 
 // wait given amount of time (in ms) and return it in ms
 double wait( double time) {
+//    cout << "wait function\n" <<endl;
     clock_t t1,t2;
     clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
     t2=t1=clock();
@@ -85,6 +88,7 @@ double wait( double time) {
 
 // return smallest amount of time resoluted by clock() function
 double clock_resolution() {
+//    cout << "wait function\n" <<endl;
     clock_t t1,t2;
 
     t2=t1=clock();
@@ -135,6 +139,57 @@ TEST(Profiler, one_timer) {
 }
 
 
+
+
+/*
+  // This is efficiency test of START_TIMER macro.
+  // It will pass only with optimalized build (not debug).
+
+
+TEST(Profiler, efficiency) {
+    Profiler::initialize();
+    unsigned int cycles = 500000;
+
+    double min_time_period = clock_resolution();
+    cout << "Minimum timer resolution: " << min_time_period << " ms" << endl;
+    EXPECT_LT( min_time_period, 20 ); // resolution better then 20ms
+
+    double t_clock, t_timer;
+    // measure the clock() function
+    {
+        START_TIMER("clock");
+        for(int i=0;i<cycles;i++) {
+            clock(); clock();  // two measurements are necessary for one frame
+        }
+    }
+
+    // measure Timer overhead
+    {
+        START_TIMER("timer");
+        for(int i=0;i<cycles;i++) {
+            START_TIMER("tag");
+            END_TIMER("tag");
+        }
+
+    }
+
+    // get both cumulative times
+    { START_TIMER("clock");
+      t_clock = ACT;
+    }
+
+    { START_TIMER("timer");
+      t_timer = ACT;
+    }
+
+    cout << "ticks per 2*10^6 times clock(): " << t_clock << endl;
+    cout << "ticks per timer frame: " << t_timer << endl;
+    EXPECT_LT( t_timer , 2*t_clock); // we allow timer to run two times slower compared to clock() function itself.
+
+    Profiler::uninitialize();
+}
+
+*/
 
 
 TEST(Profiler, structure) {

@@ -170,6 +170,7 @@ TEST (Functors, make_interpolation)
   Interpolant interpolant2;
   interpolant2.set_functor(&my_func2, false);
   interpolant2.set_interval(0, 10);
+  //interpolant2.set_size(10);
   interpolant2.set_size_automatic(0.01, 10, 1e5);
   EQUAL(interpolant2.f_diff(2).first, 10);
   EQUAL(interpolant2.f_diff(2).second, 12);
@@ -202,8 +203,11 @@ TEST (Functors, make_interpolation)
   
   interpolant->set_interval(-5,11);
   interpolant->set_size(8);
+  //interpolant->set_size_automatic(0.1,10,1e5);
   interpolant->interpolate();
   
+  //DBGMSG("Error of interpolation: %f\n", interpolant->error());
+
   EQUAL(interpolant->val(-7), -343);    //out of interval
   EQUAL(interpolant->statistics().min, -7.0);
   EQUAL(interpolant->statistics().max, 11);
@@ -252,13 +256,18 @@ TEST (Functors, make_interpolation)
   //this should remake the table
   for(unsigned int i=0; i < 100; i++)
   {
+    //DBGMSG("i: %d\n",i);
     interpolant->val(-20);
     interpolant->val(15);
   }
   
   interpolant->check_stats_and_reinterpolate();
+  //interpolant->check_stats_and_reinterpolate(0.5);
   
   //statistics
+  //DBGMSG("bound_a: %f\n",interpolant->bound_a());
+  //DBGMSG("bound_b: %f\n",interpolant->bound_b());
+  //DBGMSG("total: %d\n",interpolant->statistics().total_calls);
   EQUAL(interpolant->bound_a(),-20);
   EQUAL(interpolant->bound_b(),15);
   
@@ -284,6 +293,7 @@ TEST(Functors, make_implicit)
   
   interpolant.set_interval(-4,4);
   interpolant.set_size(10);
+  //interpolant.interpolate();
 }
 
 
@@ -302,8 +312,12 @@ TEST (Functors, interpolation_error)
   
   EQUAL(interpolant->error(), -1);      //error not computed yet
   
+  //interpolant->set_functor<Linear, double>(&lin_func);
   interpolant->interpolate();
   //linear function is interpolated by linear aproximation accurately
+  //DBGMSG("Error of interpolation: %.64f\n", interpolant->error());
+  //cout << "Error of interpolation: " << interpolant->error() << endl;
+  //EQUAL(interpolant->error(), 0);
   EXPECT_TRUE(interpolant->error() < 1e-15);
   
   interpolant->set_functor<Quadratic, double>(&quad_func);
@@ -666,6 +680,7 @@ protected:
   
   FK<double> fk;
   FQ<double> fq;
+  //virtual void TearDown() {}
   double a, b, step;
   unsigned int n;
   Interpolant interpolant_fk;

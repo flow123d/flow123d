@@ -100,6 +100,11 @@ TEST(schur, complement) {
     Distribution ds(block_size, MPI_COMM_WORLD);
     Distribution block_ds(block_count, MPI_COMM_WORLD);
     Distribution all_ds(block_size + block_count, MPI_COMM_WORLD);
+    /*if (rank == 0) {
+        cout << all_ds;
+        cout << ds;
+        cout << block_ds;
+    }*/
 
 	ISCreateStride(PETSC_COMM_WORLD, ds.lsize(), all_ds.begin(), 1, &set);
 	ISView(set, PETSC_VIEWER_STDOUT_WORLD);
