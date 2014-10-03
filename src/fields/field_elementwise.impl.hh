@@ -166,7 +166,13 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
         unsigned int idx = n_components_*elm.idx();
 
         typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
-        for(unsigned int i=0; i< value_list.size(); i++) value_list[i] = ref;
+        for(unsigned int i=0; i< value_list.size(); i++) {
+            ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
+                    "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
+                    i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+
+            value_list[i] = ref;
+        }
     } else {
         xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
     }
