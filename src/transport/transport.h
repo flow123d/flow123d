@@ -43,10 +43,11 @@
 #include "flow/mh_dofhandler.hh"
 #include "transport/transport_operator_splitting.hh"
 
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 
 
+class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
@@ -85,6 +86,8 @@ public:
     public:
         static Input::Type::Selection sorption_type_selection;
 
+        static Input::Type::Selection output_selection;
+
         EqData();
         virtual ~EqData() {};
 
@@ -99,14 +102,11 @@ public:
 
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
-        Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
-        Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
-        Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
-        Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+
+        /// Fields indended for output, i.e. all input fields plus those representing solution.
+        FieldSet output_fields;
     };
 
     /**
@@ -119,24 +119,13 @@ public:
 	virtual ~ConvectionTransport();
 
 	/**
+	 * Initialize solution at zero time.
+	 */
+    void zero_time_step() override;
+	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void compute_one_step();
-
-	/**
-	 * Use new flow field vector for construction of convection matrix.
-	 * Updates CFL time step constrain.
-	 * TODO: Just set the new velocity, postpone update till compute_one_step
-	 */
-	//void set_flow_field_vector(const MH_DofHandler &dh);
-  
-	/**
-	 * Set cross section of fractures from the Flow equation.
-	 *
-	 * TODO: Make this and previous part of Transport interface in TransportBase.
-	 */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
-
+	void update_solution() override;
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
@@ -159,12 +148,12 @@ public:
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
-	void output_vector_gather(); //
+	void output_vector_gather();
 
     /**
      * @brief Write computed fields.
      */
-    virtual void output_data();
+    virtual void output_data() override;
 
 
 	/**
@@ -172,15 +161,14 @@ public:
 	 */
 	inline EqData *get_data() { return &data_; }
 
+	inline OutputTime *output_stream() { return output_stream_; }
+
 	double ***get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-	bool get_dual_porosity();
 	int *get_el_4_loc();
 	int *get_row_4_el();
-	virtual void get_parallel_solution_vector(Vec &vc);
-	virtual void get_solution_vector(double* &vector, unsigned int &size);
 
-	TimeIntegrationScheme time_scheme() { return explicit_euler; }
+	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
 
 private:
 
@@ -212,12 +200,6 @@ private:
 	 */
 	void transport_matrix_step_mpi(double time_step); //
 
-	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
-	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
-			double *concx, double *concx_sorb, double Nv, double N); //
-
-
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
@@ -235,17 +217,13 @@ private:
      *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
      */
     EqData data_;
-    /**
-     * Class for handling the solution output.
-     */
-    OutputTime *field_output;
+
     /**
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
 
-    bool              sorption;     // Include sorption  YES/NO
-    bool              dual_porosity;   // Include dual porosity YES/NO
+    //TODO: remove this and make concentration_matrix only two-dimensional
     int sub_problem;    // 0-only transport,1-transport+dual porosity,
                         // 2-transport+sorption
                         // 3-transport+dual porosity+sorption
@@ -255,7 +233,7 @@ private:
     Vec v_sources_corr;
     
     ///temporary arrays to store constant values of fields over time interval
-    //(avoiding calling "field.value()" to often)
+    //(avoiding calling "field.value()" too often)
     double **sources_density, 
            **sources_conc,
            **sources_sigma;
@@ -281,13 +259,17 @@ private:
 
     ///
     Vec *vpconc; // previous concentration vector
-    //double ***pconc;
     Vec *bcvcorr; // boundary condition correction vector
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
     Vec *vconc_out; // concentration vector output (gathered)
     double ***out_conc;
+
+	/// Record with output specification.
+	Input::Record output_rec;
+
+	OutputTime *output_stream_;
 
 
             int *row_4_el;

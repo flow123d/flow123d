@@ -76,8 +76,6 @@ private:
 
     /// steady or unsteady water flow simulator based on MH scheme
     DarcyFlowMH *water;
-    /// output object for water flow
-    DarcyFlowMHOutput *water_output;
 
     /// explicit transport with chemistry through operator splitting
     AdvectionProcessBase *transport_reaction;

@@ -27,10 +27,6 @@
  *  @author Jan Stebel
  */
 
-#include "petscmat.h"
-#include <armadillo>
-#include <boost/foreach.hpp>
-#include "system/xio.h"
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -38,13 +34,10 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
-#include "io/output.h"
-#include "mesh/boundaries.h"
-#include "la/distribution.hh"
-#include "input/accessors.hh"
+#include "io/output_data.hh"
+#include "fields/field_fe.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "la/linsys_PETSC.hh"
-#include "mesh/partitioning.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
@@ -67,15 +60,24 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
                .add_value(robin, "robin");
 
 template<class Model>
+Selection TransportDG<Model>::EqData::output_selection =
+		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+		.copy_values(EqData().make_output_field_selection("").close())
+		.close();
+
+template<class Model>
 Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("data", Array(TransportDG<Model>::EqData().make_field_descriptor_type(EqData::name())), IT::Default::obligatory(), "")
+    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).");
+    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+    .declare_key("output_fields", Array(EqData::output_selection),
+    		Default(Model::ModelEqData::default_output_field()),
+       		"List of fields to write to output file.");
 
 
 
@@ -114,6 +116,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 
 	default:
+	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in TransportDG ", fe_order);
 		break;
 	}
@@ -183,20 +186,46 @@ DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
-	ADD_FIELD(fracture_sigma, "Coefficient of diffusive transfer through fractures (for each substance).", "1.0");
-	ADD_FIELD(dg_penalty, "Penalty parameter influencing the discontinuity of the solution (for each substance). "
-			"Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.", "1.0");
+    *this+=fracture_sigma
+            .name("fracture_sigma")
+            .description(
+            "Coefficient of diffusive transfer through fractures (for each substance).")
+            .input_default("1.0")
+            .flags_add(FieldFlag::in_main_matrix);
 
-    ADD_FIELD(bc_type,"Boundary condition type, possible values: inflow, dirichlet, neumann, robin.", "\"inflow\"" );
-    	bc_type.input_selection(&bc_type_selection);
+    *this+=dg_penalty
+            .name("dg_penalty")
+            .description(
+            "Penalty parameter influencing the discontinuity of the solution (for each substance). "
+            "Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.")
+            .input_default("1.0")
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            .input_default("\"inflow\"")
+            .input_selection( &bc_type_selection)
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
 //    std::vector<FieldEnum> list; list.push_back(neumann);
-    ADD_FIELD(bc_flux,"Flux in Neumann boundary condition.", "0.0");
+    *this+=bc_flux
+            .name("bc_flux")
+            .description("Flux in Neumann boundary condition.")
+            .input_default("0.0")
+            .flags_add(FieldFlag::in_rhs);
 //    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.", "0.0");
+    *this+=bc_robin_sigma
+            .name("bc_robin_sigma")
+            .description("Conductivity coefficient in Robin boundary condition.")
+            .input_default("0.0")
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 //    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
-}
 
+    // add all input fields to the output list
+
+}
 
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
@@ -207,7 +236,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), equation_mark_type_);
+	this->eq_data_ = &data_;
+
+    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.
@@ -220,28 +251,21 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.bc_type.n_comp(n_subst_);
-    data_.bc_flux.n_comp(n_subst_);
-    data_.bc_robin_sigma.n_comp(n_subst_);
-    data_.fracture_sigma.n_comp(n_subst_);
-    data_.dg_penalty.n_comp(n_subst_);
-    Model::init_data(n_subst_);
-
-    data_.set_input_list( in_rec.val<Input::Array>("data") );
+    data_.set_n_components(n_subst_);
+    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.set_time(*time_);
 
-    // DG variant
+
+    // DG variant and order
     dg_variant = in_rec.val<DGVariant>("dg_variant");
+    dg_order = in_rec.val<unsigned int>("dg_order");
 
     // DG stabilization parameters on boundary edges
     gamma.resize(n_subst_);
-    for (int sbi=0; sbi<n_subst_; sbi++)
+    for (unsigned int sbi=0; sbi<n_subst_; sbi++)
     	gamma[sbi].resize(mesh_->boundary_.size());
 
-
     // create finite element structures and distribute DOFs
-    dg_order = in_rec.val<unsigned int>("dg_order");
     feo = new FEObjects(mesh_, dg_order);
     DBGMSG("TDG: solution size %d\n", feo->dh()->n_global_dofs());
 
@@ -251,7 +275,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     mm_coef.resize(qsize);
     ad_coef.resize(n_subst_);
     dif_coef.resize(n_subst_);
-    for (int sbi=0; sbi<n_subst_; sbi++)
+    for (unsigned int sbi=0; sbi<n_subst_; sbi++)
     {
       ad_coef[sbi].resize(qsize);
       dif_coef[sbi].resize(qsize);
@@ -262,57 +286,52 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     {
     	ad_coef_edg[sd].resize(n_subst_);
     	dif_coef_edg[sd].resize(n_subst_);
-    	for (int sbi=0; sbi<n_subst_; sbi++)
+    	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
     	{
     		ad_coef_edg[sd][sbi].resize(qsize);
     		dif_coef_edg[sd][sbi].resize(qsize);
     	}
     }
 
-    // set up output class
-    Input::Record output_rec = in_rec.val<Input::Record>("output");
-    transport_output = OutputTime::output_stream(output_rec.val<Input::Record>("output_stream"));
+    // register output fields
+    output_rec = in_rec.val<Input::Record>("output_stream");
+	output_vec.resize(n_subst_);
+	output_solution.resize(n_subst_);
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// for each substance we allocate output array and vector
+		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
+		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
+	}
+	data_.output_field.init(subst_names_);
+	data_.output_field.set_mesh(*mesh_);
+    data_.output_type(OutputTime::CORNER_DATA);
 
-    // allocate output arrays
-    if (feo->dh()->el_ds()->myp() == 0)
-    {
-    	int n_corners = 0;
-    	FOR_ELEMENTS(mesh_, elem)
-    		n_corners += elem->dim()+1;
-    	output_solution.resize(n_subst_);
-    	for (int i=0; i<n_subst_; i++)
-    	{
-			output_solution[i] = new double[n_corners];
-			for(int j=0; j<n_corners; j++)
-				output_solution[i][j] = 0.0;
-			OutputTime::register_corner_data<double>(mesh_, subst_names_[i], "M/L^3",
-					output_rec.val<Input::Record>("output_stream"), output_solution[i], n_corners);
-		}
-    }
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
+		std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
+		output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+		data_.output_field[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	}
+    data_.set_limit_side(LimitSide::left);
+	output_stream = OutputTime::create_output_stream(output_rec);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 
     // set time marks for writing the output
-    output_mark_type = this->mark_type() | time_->marks().type_fixed_time() | time_->marks().type_output();
-    time_->marks().add_time_marks(0.0, output_rec.val<double>("save_step"), time_->end_time(), output_mark_type);
+    output_stream->mark_output_times(*time_);
 
     // allocate matrix and vector structures
-    
     ls    = new LinSys*[n_subst_];
     ls_dt = new LinSys_PETSC(feo->dh()->distr());
     ( (LinSys_PETSC *)ls_dt )->set_from_input( in_rec.val<Input::Record>("solver") );
-//    ( (LinSys_PETSC *)ls_dt )->set_initial_guess_nonzero();
-    for (int sbi = 0; sbi < n_subst_; sbi++) {
+    for (unsigned int sbi = 0; sbi < n_subst_; sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( in_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
-
-
-    // set initial conditions
-    set_initial_condition();
-    for (int sbi = 0; sbi < n_subst_; sbi++)
-    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
 }
 
@@ -324,11 +343,14 @@ TransportDG<Model>::~TransportDG()
 
     if (feo->dh()->el_ds()->myp() == 0)
     {
-		for (int i=0; i<n_subst_; i++)
+		for (unsigned int i=0; i<n_subst_; i++)
+		{
+			VecDestroy(&output_vec[i]);
 			delete[] output_solution[i];
+		}
     }
 
-    for (int i=0; i<n_subst_; i++)
+    for (unsigned int i=0; i<n_subst_; i++)
     {
     	delete ls[i];
     	MatDestroy(&stiffness_matrix[i]);
@@ -342,20 +364,48 @@ TransportDG<Model>::~TransportDG()
 
     gamma.clear();
     subst_names_.clear();
+    delete output_stream;
 }
 
+
+template<class Model>
+void TransportDG<Model>::output_vector_gather()
+{
+    IS is;
+    VecScatter output_scatter;
+    int idx[] = { 0 };
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+	{
+		// gather solution to output_vec[sbi]
+		ISCreateBlock(PETSC_COMM_SELF, ls[sbi]->size(), 1, idx, PETSC_COPY_VALUES, &is);
+		VecScatterCreate(ls[sbi]->get_solution(), is, output_vec[sbi], PETSC_NULL, &output_scatter);
+		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterDestroy(&(output_scatter));
+		ISDestroy(&(is));
+	}
+}
+
+
+
+template<class Model>
+void TransportDG<Model>::zero_time_step()
+{
+    data_.set_time(*time_);
+
+    // set initial conditions
+    set_initial_condition();
+    for (unsigned int sbi = 0; sbi < n_subst_; sbi++)
+    	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
+
+	output_data();
+}
 
 
 template<class Model>
 void TransportDG<Model>::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
-
-	// save solution and calculate mass balance at initial time
-	if (!allocation_done)
-	{
-		output_data();
-	}
 
     time_->next_time();
     time_->view("TDG");
@@ -373,7 +423,7 @@ void TransportDG<Model>::update_solution()
     	mass_matrix = NULL;
 
 		// preallocate system matrix
-		for (int i=0; i<n_subst_; i++)
+		for (unsigned int i=0; i<n_subst_; i++)
 		{
 			ls[i]->start_allocation();
 			stiffness_matrix[i] = NULL;
@@ -387,55 +437,57 @@ void TransportDG<Model>::update_solution()
     }
 
 	// assemble mass matrix
-	if (mass_matrix == NULL ||
-		mass_matrix_changed())
+    if (mass_matrix == NULL || data_.subset(FieldFlag::in_time_term).changed() )
 	{
 		ls_dt->start_add_assembly();
+		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
-		mass_matrix = ls_dt->get_matrix();
+		mass_matrix = *(ls_dt->get_matrix());
 	}
 
 	// assemble stiffness matrix
-    if (stiffness_matrix[0] == NULL ||
-    	stiffness_matrix_changed())
+    if (stiffness_matrix[0] == NULL
+    		|| data_.subset(FieldFlag::in_main_matrix).changed()
+    		|| Model::flux_changed)
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
-    	for (int i=0; i<n_subst_; i++)
+    	for (unsigned int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
     		ls[i]->mat_zero_entries();
     	}
         assemble_stiffness_matrix();
-        for (int i=0; i<n_subst_; i++)
+        for (unsigned int i=0; i<n_subst_; i++)
         {
         	ls[i]->finish_assembly();
 
         	if (stiffness_matrix[i] == NULL)
-        		MatConvert(ls[i]->get_matrix(), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
+        		MatConvert(*( ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
         	else
-        		MatCopy(ls[i]->get_matrix(), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
+        		MatCopy(*( ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble right hand side (due to sources and boundary conditions)
-    if (rhs[0] == NULL ||
-    	rhs_changed())
+    if (rhs[0] == NULL
+    		|| data_.subset(FieldFlag::in_rhs).changed()
+    		|| Model::flux_changed)
     {
-    	for (int i=0; i<n_subst_; i++)
+    	for (unsigned int i=0; i<n_subst_; i++)
     	{
     		ls[i]->start_add_assembly();
     		ls[i]->rhs_zero_entries();
     	}
     	set_sources();
     	set_boundary_conditions();
-    	for (int i=0; i<n_subst_; i++)
+    	for (unsigned int i=0; i<n_subst_; i++)
     	{
     		ls[i]->finish_assembly();
 
-    		VecDuplicate(ls[i]->get_rhs(), &rhs[i]);
-    		VecCopy(ls[i]->get_rhs(), rhs[i]);
+    		VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
+    		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }
 
@@ -460,7 +512,7 @@ void TransportDG<Model>::update_solution()
      */
     Mat m;
     START_TIMER("solve");
-    for (int i=0; i<n_subst_; i++)
+    for (unsigned int i=0; i<n_subst_; i++)
     {
     	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
 		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
@@ -487,17 +539,6 @@ void TransportDG<Model>::update_solution()
 }
 
 
-
-template<class Model>
-void TransportDG<Model>::get_solution_vector(double *& vector, unsigned int & size)
-{}
-
-
-template<class Model>
-void TransportDG<Model>::get_parallel_solution_vector(Vec & vector)
-{}
-
-
 template<class Model>
 void TransportDG<Model>::set_velocity_field(const MH_DofHandler &dh)
 {
@@ -513,106 +554,16 @@ void TransportDG<Model>::set_velocity_field(const MH_DofHandler &dh)
 template<class Model>
 void TransportDG<Model>::output_data()
 {
-    double *solution;
-    unsigned int dof_indices[max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs()))];
-
-    if (!time_->is_current(output_mark_type)) return;
+    if (!time_->is_current( time_->marks().type_output() )) return;
 
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    IS is;
-    VecScatter output_scatter;
-    int row_ids[feo->dh()->n_global_dofs()];
-	Vec solution_vec;
+    output_vector_gather();
+    data_.subset(FieldFlag::allow_output).set_time( *time_);
+    data_.output(output_stream);
+	output_stream->write_time_frame();
 
-	for (int i=0; i<feo->dh()->n_global_dofs(); i++)
-		row_ids[i] = i;
-
-	for (int sbi=0; sbi<n_subst_; sbi++)
-	{
-		VecCreateSeq(PETSC_COMM_SELF, ls[sbi]->size(), &solution_vec);
-
-		ISCreateGeneral(PETSC_COMM_SELF, ls[sbi]->size(), row_ids, PETSC_COPY_VALUES, &is); //WithArray
-		VecScatterCreate(ls[sbi]->get_solution(), is, solution_vec, PETSC_NULL, &output_scatter);
-		VecScatterBegin(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), solution_vec, INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterDestroy(&(output_scatter));
-		ISDestroy(&(is));
-
-		// on the main processor fill the output array and save to file
-		if (feo->dh()->el_ds()->myp() == 0)
-		{
-			int corner_id = 0; //, node_id;
-
-			// The solution is evaluated at vertices of each element.
-			// For this reason we construct quadratures whose quadrature
-			// points are placed at the vertices of the reference element.
-			Quadrature<1> q1(2);
-			Quadrature<2> q2(3);
-			Quadrature<3> q3(4);
-
-			for (int i=0; i<2; i++)
-				q1.set_point(i, RefElement<1>::node_coords(i).subvec(0,0));
-			for (int i=0; i<3; i++)
-				q2.set_point(i, RefElement<2>::node_coords(i).subvec(0,1));
-			for (int i=0; i<4; i++)
-				q3.set_point(i, RefElement<3>::node_coords(i).subvec(0,2));
-
-			FEValues<1,3> fv1(*feo->mapping<1>(), q1, *feo->fe<1>(), update_values);
-			FEValues<2,3> fv2(*feo->mapping<2>(), q2, *feo->fe<2>(), update_values);
-			FEValues<3,3> fv3(*feo->mapping<3>(), q3, *feo->fe<3>(), update_values);
-
-			VecGetArray(solution_vec, &solution);
-			FOR_ELEMENTS(mesh_, elem)
-			{
-				feo->dh()->get_dof_indices(elem, dof_indices);
-				switch (elem->dim())
-				{
-				case 1:
-					fv1.reinit(elem);
-					for (unsigned int k=0; k<q1.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv1.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv1.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 2:
-					fv2.reinit(elem);
-					for (unsigned int k=0; k<q2.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv2.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv2.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				case 3:
-					fv3.reinit(elem);
-					for (unsigned int k=0; k<q3.size(); k++)
-					{
-						output_solution[sbi][corner_id] = 0;
-						for (unsigned int i=0; i<fv3.n_dofs(); i++)
-							output_solution[sbi][corner_id] += solution[dof_indices[i]]*fv3.shape_value(i,k);
-						corner_id++;
-					}
-					break;
-				default:
-					break;
-				}
-
-			}
-		}
-
-		VecDestroy(&solution_vec);
-	}
-
-	if(transport_output) {
-		xprintf(MsgLog, "transport DG: write_data()\n");
-		transport_output->write_data(time_->t());
-	}
 	if (mass_balance() != NULL)
 		mass_balance()->output(time_->t());
 
@@ -640,7 +591,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     PetscScalar local_mass_matrix[ndofs*ndofs];
 
     // assemble integral over elements
-    for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -651,7 +602,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 
         Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
 
-        // assemble the local stiffness and mass matrix
+        // assemble the local mass matrix
         for (unsigned int i=0; i<ndofs; i++)
         {
             for (unsigned int j=0; j<ndofs; j++)
@@ -712,11 +663,11 @@ void TransportDG<Model>::assemble_volume_integrals()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs];
     vector<arma::vec3> velocity(qsize);
-    vector<arma::vec> sources_sigma(qsize);
+    vector<arma::vec> sources_sigma(qsize, arma::vec(n_substances()));
     PetscScalar local_matrix[ndofs*ndofs];
 
 	// assemble integral over elements
-    for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -731,7 +682,7 @@ void TransportDG<Model>::assemble_volume_integrals()
         Model::compute_sources_sigma(fe_values.point_list(), ele_acc, sources_sigma);
 
         // assemble the local stiffness matrix
-        for (int sbi=0; sbi<n_subst_; sbi++)
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++)
         		for (unsigned int j=0; j<ndofs; j++)
@@ -773,13 +724,15 @@ void TransportDG<Model>::set_sources()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
+    vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
+    				  sources_density(qsize, arma::vec(n_substances())),
+    				  sources_sigma(qsize,  arma::vec(n_substances()));
     unsigned int dof_indices[ndofs];
     PetscScalar local_rhs[ndofs];
     double source;
 
 	// assemble integral over elements
-    for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator cell = mesh_->element(feo->dh()->el_index(i_cell));
         if (cell->dim() != dim) continue;
@@ -790,7 +743,7 @@ void TransportDG<Model>::set_sources()
         Model::compute_source_coefficients(fe_values.point_list(), cell->element_accessor(), sources_conc, sources_density, sources_sigma);
 
         // assemble the local stiffness matrix
-        for (int sbi=0; sbi<n_subst_; sbi++)
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++)
         		local_rhs[i] = 0;
@@ -825,7 +778,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     vector<arma::vec> dg_penalty(n_max_sides);
     double gamma_l, omega[2], transport_flux;
 
-    for (int sid=0; sid<n_max_sides; sid++)
+    for (unsigned int sid=0; sid<n_max_sides; sid++)
     {
     	side_dof_indices.push_back(new unsigned int[ndofs]);
     	fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
@@ -833,7 +786,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     }
 
     // assemble integral over sides
-    for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
         if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
@@ -851,10 +804,10 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 		}
 
         // fluxes and penalty
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			vector<double> fluxes(edg->n_sides);
-			for (unsigned int sid=0; sid<edg->n_sides; sid++)
+			for (int sid=0; sid<edg->n_sides; sid++)
 			{
 				fluxes[sid] = 0;
 				for (unsigned int k=0; k<qsize; k++)
@@ -953,12 +906,12 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     unsigned int side_dof_indices[ndofs];
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
-    vector<arma::vec> robin_sigma(qsize);
+    vector<arma::vec> robin_sigma(qsize, arma::vec(n_substances()));
     arma::vec dg_penalty;
     double gamma_l;
 
     // assemble boundary integral
-    for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
     	if (edg->n_sides > 1) continue;
@@ -980,7 +933,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
         data_.bc_robin_sigma.value_list(fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
 
-        for (int sbi=0; sbi<n_subst_; sbi++)
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++)
         		for (unsigned int j=0; j<ndofs; j++)
@@ -1050,7 +1003,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
-	vector<arma::vec> frac_sigma(qsize);
+	vector<arma::vec> frac_sigma(qsize, arma::vec(n_substances()));
 	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
@@ -1061,7 +1014,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
-    for (int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
+    for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
     {
     	Neighbour *nb = &mesh_->vb_neighbours_[feo->dh()->nb_index(inb)];
         // skip neighbours of different dimension
@@ -1090,11 +1043,11 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell_sub->element_accessor(), mm_coef_lower);
 		Model::compute_mass_matrix_coefficient(fe_values_vb.point_list(), cell->element_accessor(), mm_coef_higher);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
-		data_.cross_section->value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
+		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
 
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
 				for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
@@ -1167,17 +1120,19 @@ void TransportDG<Model>::set_boundary_conditions()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     unsigned int side_dof_indices[ndofs];
     double local_rhs[ndofs];
-    vector<arma::vec> bc_values(qsize), bc_fluxes(qsize), bc_sigma(qsize);
+    vector<arma::vec> bc_values(qsize, arma::vec(n_substances())),
+    		bc_fluxes(qsize, arma::vec(n_substances())),
+    		bc_sigma(qsize, arma::vec(n_substances()));
 	vector<arma::vec3> velocity;
-
-    for (int i=0; i<qsize; i++)
+/*
+    for (unsigned int i=0; i<qsize; i++)
     {
     	bc_values[i].resize(n_subst_);
     	bc_fluxes[i].resize(n_subst_);
     	bc_sigma[i].resize(n_subst_);
     }
-
-    for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+*/
+    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
     	if (edg->n_sides > 1) continue;
@@ -1202,7 +1157,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
         feo->dh()->get_dof_indices(cell, side_dof_indices);
 
-        for (int sbi=0; sbi<n_subst_; sbi++)
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
         	for (unsigned int i=0; i<ndofs; i++) local_rhs[i] = 0;
 
@@ -1336,7 +1291,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
 
         // delta is set to the average value of Kn.n on the side
         delta[0] = 0;
-        for (unsigned int k=0; k<K_size; k++)
+        for (int k=0; k<K_size; k++)
             delta[0] += dot(K1[k]*normal_vector,normal_vector);
         delta[0] /= K_size;
 
@@ -1346,7 +1301,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
     {
         delta[0] = 0;
         delta[1] = 0;
-        for (unsigned int k=0; k<K_size; k++)
+        for (int k=0; k<K_size; k++)
         {
             delta[0] += dot(K1[k]*normal_vector,normal_vector);
             delta[1] += dot(K2[k]*normal_vector,normal_vector);
@@ -1396,7 +1351,7 @@ void TransportDG<Model>::set_DG_parameters_boundary(const SideIter side,
     }
 
 	// delta is set to the average value of Kn.n on the side
-	for (unsigned int k=0; k<K_size; k++)
+	for (int k=0; k<K_size; k++)
 		delta += dot(K[k]*normal_vector,normal_vector);
 	delta /= K_size;
 
@@ -1411,19 +1366,19 @@ template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
 	START_TIMER("set_init_cond");
-	for (int sbi=0; sbi<n_subst_; sbi++)
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		ls[sbi]->start_allocation();
 	prepare_initial_condition<1>();
 	prepare_initial_condition<2>();
 	prepare_initial_condition<3>();
 
-	for (int sbi=0; sbi<n_subst_; sbi++)
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		ls[sbi]->start_add_assembly();
 	prepare_initial_condition<1>();
 	prepare_initial_condition<2>();
 	prepare_initial_condition<3>();
 
-	for (int sbi=0; sbi<n_subst_; sbi++)
+	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		ls[sbi]->finish_assembly();
 		ls[sbi]->solve();
@@ -1442,10 +1397,10 @@ void TransportDG<Model>::prepare_initial_condition()
     double matrix[ndofs*ndofs], rhs[ndofs];
     std::vector<arma::vec> init_values(qsize);
 
-    for (int i=0; i<qsize; i++)
-    	init_values[i].resize(n_subst_);
+    for (unsigned int k=0; k<qsize; k++)
+    	init_values[k].resize(n_subst_);
 
-    for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator elem = mesh_->element(feo->dh()->el_index(i_cell));
     	if (elem->dim() != dim) continue;
@@ -1456,7 +1411,7 @@ void TransportDG<Model>::prepare_initial_condition()
 
    		Model::compute_init_cond(fe_values.point_list(), ele_acc, init_values);
 
-    	for (int sbi=0; sbi<n_subst_; sbi++)
+    	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
     	{
     		for (unsigned int i=0; i<ndofs; i++)
     		{
@@ -1505,10 +1460,10 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
     vector<arma::vec> bc_values(qsize);
 	arma::vec3 conc_grad;
 
-    for (int i=0; i<qsize; i++)
-    	bc_values[i].resize(n_subst_);
+    for (unsigned int k=0; k<qsize; k++)
+    	bc_values[k].resize(n_subst_);
 
-    for (int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
     	if (edg->n_sides > 1) continue;
@@ -1531,7 +1486,7 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
 		Model::compute_dirichlet_bc(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
 		arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
 
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			double mass_flux = 0;
 			double water_flux = 0;
@@ -1586,10 +1541,12 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 			update_values | update_JxW_values | update_quadrature_points);
 	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
 	unsigned int dof_indices[ndofs];
-	vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
+    vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
+    				  sources_density(qsize, arma::vec(n_substances())),
+    				  sources_sigma(qsize,  arma::vec(n_substances()));
 	double mass_sum, sources_sum, conc, conc_diff;
 
-    for (int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
+    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
     {
     	typename DOFHandlerBase::CellIterator elem = mesh_->element(feo->dh()->el_index(i_cell));
 		if (elem->dim() != dim) continue;
@@ -1605,7 +1562,7 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 		Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
 		Model::compute_source_coefficients(fe_values.point_list(), ele_acc, sources_conc, sources_density, sources_sigma);
 
-		for (int sbi=0; sbi<n_subst_; sbi++)
+		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 		{
 			mass_sum = 0;
 			sources_sum = 0;

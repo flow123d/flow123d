@@ -59,15 +59,38 @@ public:
 		Field<3, FieldValue<3>::Scalar> solid_heat_capacity;
 		/// Heat conductivity of solid.
 		Field<3, FieldValue<3>::Scalar> solid_heat_conductivity;
-		/// Heat dispersivity.
-		Field<3, FieldValue<3>::Scalar> heat_dispersivity;
+		/// Longitudal heat dispersivity.
+		Field<3, FieldValue<3>::Scalar> disp_l;
+		/// Transversal heat dispersivity.
+		Field<3, FieldValue<3>::Scalar> disp_t;
+		/// Thermal source in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_thermal_source;
+		/// Thermal source in solid.
+		Field<3, FieldValue<3>::Scalar> solid_thermal_source;
+		/// Heat exchange rate in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_heat_exchange_rate;
+		/// Heat exchange rate in solid.
+		Field<3, FieldValue<3>::Scalar> solid_heat_exchange_rate;
+		/// Reference temperature in fluid.
+		Field<3, FieldValue<3>::Scalar> fluid_ref_temperature;
+		/// Reference temperature in solid.
+		Field<3, FieldValue<3>::Scalar> solid_ref_temperature;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
+
+
+		MultiField<3, FieldValue<3>::Scalar> output_field;
+
 
 
 		ModelEqData();
-		static string name() {return "HeatTransfer";}
+
+		static string name() { return "HeatTransfer"; }
+
+		static string default_output_field() { return "temperature"; }
+
+		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
 	};
 
 protected:
@@ -91,17 +114,7 @@ public:
 
 	HeatTransferModel();
 
-	void init_data(unsigned int n_subst_) override;
-
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) override;
-
 	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
-
-	bool mass_matrix_changed() override;
-
-	bool stiffness_matrix_changed() override;
-
-	bool rhs_changed() override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,

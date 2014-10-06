@@ -12,16 +12,14 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc",
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      data=[
+      input_fields=[
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test2.fbc"
@@ -37,17 +35,11 @@
     },
 
     secondary_equation = {
-      TYPE = "ConcentrationTransport_DG", 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.5
+      TYPE = "SoluteTransport_DG", 
+      output_stream = {
+        REF = "/system/output_streams/1"
       },
 
-      dual_porosity = true, 
-      sorption_enable = true, 
       substances = [
         "A", 
         "B"
@@ -62,7 +54,7 @@
         r_tol = 1e-12,
         options="-ksp_type gmres -ksp_monitor"
       },
-      data=[
+      input_fields=[
         {
           region="IMPLICIT BOUNDARY",
           bc_conc={
@@ -76,7 +68,7 @@
             TYPE="FieldFormula",
             value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
-          por_m = 0.25,
+          porosity= 0.25,
           dg_penalty=10
         },
         {
@@ -85,7 +77,7 @@
             TYPE="FieldFormula",
             value=["(1+sin(x)*sin(y))*0.5", "(1+sin(x))*0.5"]
           },
-          por_m = 0.25,
+          porosity= 0.25,
           diff_m = 1e-1,
           dg_penalty=10
         }
@@ -115,6 +107,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

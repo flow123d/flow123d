@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="6" NumberOfCells="3">
+<Points>
+<DataArray type="Float64" NumberOfComponents="3" format="ascii">
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 0.000000000000000e+00 3.000000000000000e+00 3.000000000000000e+00 
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int32" Name="connectivity" format="ascii">
+0 1 2 4 0 2 3 4 2 3 4 5 
+</DataArray>
+<DataArray type="Int32" Name="offsets" format="ascii">
+4 8 12 
+</DataArray>
+<DataArray type="UInt8" Name="types" format="ascii">
+10 10 10 
+</DataArray>
+</Cells>
+<PointData Scalars="pressure_p1," Vectors="" Tensors="">
+<DataArray type="Float64" Name="pressure_p1" format="ascii">
+1.976961133794367e+00 2.292218246853913e+00 1.627471131525773e+00 1.023038866205634e+00 1.372528868474228e+00 7.077817531460873e-01 
+</DataArray>
+</PointData>
+<CellData Scalars="pressure_p0," Vectors="velocity_p0," Tensors="">
+<DataArray type="Float64" Name="pressure_p0" format="ascii">
+2.249999999999999e+00 1.500000000000001e+00 7.500000000000008e-01 
+</DataArray>
+<DataArray type="Float64" Name="velocity_p0" NumberOfComponents="3" format="ascii">
+8.881784197001252e-16 -7.401486830834377e-16 -5.427757009278544e-16 3.083952846180990e-16 -8.635067969306777e-17 3.207310960028229e-16 6.167905692361971e-18 -5.551115123125783e-16 6.599659090827319e-16 
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>

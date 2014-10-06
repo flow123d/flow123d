@@ -87,8 +87,6 @@ MassBalance::~MassBalance()
 
 
 void MassBalance::calculate(double time) {
-    F_ENTRY;
-
     // return if we already calculated at the given time
     if (last_time == time) return;
 
@@ -173,7 +171,6 @@ void MassBalance::calculate(double time) {
 	// sum all boundary fluxes
 	const RegionSet & b_set = equation_->region_db()->get_region_set("BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
-		//DBGMSG("writing reg->idx() and id() and boundary_idx(): %d\t%d\t%d\n", reg->idx(), reg->id(), reg->boundary_idx());
 		for (int sbi=0; sbi<n_subst; sbi++) {
 			bcd_total_balance[sbi] += bcd_balance[sbi][reg->boundary_idx()];
 			bcd_total_outflow[sbi] += bcd_plus_balance[sbi][reg->boundary_idx()];

@@ -44,23 +44,8 @@ namespace IT = Input::Type;
 class AdvectionDiffusionModel {
 public:
 
-	/// Initialize model data. E.g. set vector field dimensions.
-	virtual void init_data(unsigned int n_subst_) = 0;
-
-	/// Temporary solution for sharing data from other equations.
-	virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
-
 	/// Read or set names of solution components.
 	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;
-
-	/// Check if mass matrix coefficients have changed.
-	virtual bool mass_matrix_changed() = 0;
-
-	/// Check if stiffness matrix coefficients have changed.
-	virtual bool stiffness_matrix_changed() = 0;
-
-	/// Check if right hand side coefficients have changed.
-	virtual bool rhs_changed() = 0;
 
 	/**
 	 * Compute coefficients of mass matrix.

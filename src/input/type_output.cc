@@ -438,8 +438,6 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
 
 void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
-	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
-
 	if (doc_type_ == key_record) {
 		stream << "AdHocAbstractRecord" << endl;
 		stream << setw(padding_size + size_setw_) << "";
@@ -587,7 +585,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Record *type, unsigne
 					write_description(stream, OutputBase::get_record_description(type), padding_size*size_setw_, 2);
 				}
 				for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-					if (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord)
+					if ( (typeid(*(it->type_.get())) == typeid(Type::AbstractRecord))
 							| (typeid(*(it->type_.get())) == typeid(Type::AdHocAbstractRecord)) ) {
 						reference_ = doc_flags_.get_reference(data_ptr) + "/" + "#" + it->key_;
 					} else if ( (typeid(*(it->type_.get())) == typeid(Type::Record))
@@ -1167,8 +1165,6 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
 void OutputLatex::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
 	// Print documentation of adhoc abstract record
-	const void * data_ptr = get_abstract_record_data( static_cast<const AbstractRecord *>(type) );
-
 	if (doc_type_ == key_record) {
         stream << "adhoc abstract type}";
         stream << "\\Ancestor{" << internal::hyper_link( "IT", get_adhoc_parent_name(type) ) << "}";

@@ -43,13 +43,17 @@
 # if you set PETSC_CONFIG=bddcml.
 #
 # example:
-# set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+# set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
 ### Python setting ###############################################################
 # USE_PYTHON - only use python if this is set to "yes"
 # We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
 #
 # set(USE_PYTHON "yes")
+
+# PYTHON_COPY - make copy of python files, necessary for release builds
+# set(PYTHON_COPY "yes")
+
 
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
@@ -67,13 +71,18 @@
 
 ### Build setting ####################################################################
 
+#### parallel builds ####
+# Set number of threads to use when performing automatic build of necessary libraries.
+# If the variable is not set we try to get it from system environment, i.e. default value is
+# set(MAKE_NUMCPUS $ENV{MAKE_NUMCPUS})
+
 ### verbose mode ####
 # option to produce more verbose compiling
 # for the same result you can call make with VERBOSE=1
 # e.g.
 # make VERBOSE=1 all
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+#set(CMAKE_VERBOSE_MAKEFILE true)
 
 
 ### set compiler ###
@@ -115,13 +124,16 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
-# DEBUG_FUNCTION_STACK
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
-
+### Install package platform ###
+# This string is used as part of package name to distinguish 
+# packages for different platforms.
+# e.g. linux_x86_64, windows_x86_64, windows_x86_32
+# set(PLATFORM_NAME linux_x86_64)
 
 ### External Projects directory ##########################################################
 #

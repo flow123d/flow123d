@@ -123,9 +123,9 @@ public:
      * in the constructor instead of the method set_solution().
      */
     LinSys(const  Distribution *rows_ds)
-      : lsize_( rows_ds->lsize() ), rows_ds_(rows_ds), comm_( rows_ds->get_comm() ), solution_(NULL), v_solution_(NULL),
-        positive_definite_( false ), negative_definite_( false ), symmetric_( false ),
-        spd_via_symmetric_general_( false ), status_( NONE )
+      : comm_( rows_ds->get_comm() ), status_( NONE ), lsize_( rows_ds->lsize() ), rows_ds_(rows_ds),
+        symmetric_( false ), positive_definite_( false ), negative_definite_( false ),
+        spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL)
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
@@ -141,34 +141,14 @@ public:
     : r_tol_(other.r_tol_), a_tol_(other.a_tol_), max_it_(other.max_it_), comm_(other.comm_), status_(other.status_),
       lsize_( other.rows_ds_->lsize() ), size_(other.size_), rows_ds_(other.rows_ds_), symmetric_(other.symmetric_),
       positive_definite_(other.positive_definite_), negative_definite_( other.negative_definite_ ),
-      spd_via_symmetric_general_(other.spd_via_symmetric_general_), globalSolution_(other.globalSolution_),
-      constraints_(other.constraints_), residual_norm_(other.residual_norm_), in_rec_(other.in_rec_)
+      spd_via_symmetric_general_(other.spd_via_symmetric_general_), matrix_changed_(other.matrix_changed_),
+	  rhs_changed_(other.rhs_changed_), residual_norm_(other.residual_norm_), constraints_(other.constraints_),
+      globalSolution_(other.globalSolution_), in_rec_(other.in_rec_)
+
     {
     	ASSERT( false, "Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
-
-    // Particular type of the linear system.
-    //LinSysType type;  //!< anyone can inquire my type
-
-    virtual void load_mesh( const int nDim, const int numNodes, const int numDofs,
-                            const std::vector<int> & inet, 
-                            const std::vector<int> & nnet, 
-                            const std::vector<int> & nndf, 
-                            const std::vector<int> & isegn, 
-                            const std::vector<int> & isngn, 
-                            const std::vector<int> & isvgvn,
-                            const std::vector<double> & xyz,
-                            const std::vector<double> & element_permeability,
-                            const int meshDim )
-    {
-        ASSERT( false, "Function load_mesh is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-
-    virtual void load_diagonal( std::map<int,double> & diag )
-    {
-        ASSERT( false, "Function load_diagonal is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
 
     /**
      *  Returns global system size.
@@ -197,9 +177,10 @@ public:
 	 *   schur->set_matrix_changed();
 	 * @ENDCODE
      */
-    virtual const Mat &get_matrix()
+    virtual const Mat *get_matrix()
     {
         ASSERT( false, "Function get_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return NULL;
     }
 
     /**
@@ -212,26 +193,36 @@ public:
 	 *   schur->set_rhs_changed();
 	 * @ENDCODE
      */
-    virtual const Vec &get_rhs()
+    virtual const Vec *get_rhs()
     {
         ASSERT( false, "Function get_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return NULL;
     }
     
     /**
-     * Sets matrix changed flag  (only for PETSC solvers)
+     * Sets matrix changed flag.
      */
-    virtual void set_matrix_changed()
-    {
-        ASSERT( false, "Function set_matrix_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
+    void set_matrix_changed()
+    { matrix_changed_ = true;}
 
     /**
      * Sets rhs changed flag  (only for PETSC solvers)
      */
-    virtual void set_rhs_changed()
-    {
-        ASSERT( false, "Function set_rhs_changed is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
+    void set_rhs_changed()
+    { rhs_changed_ = true; }
+
+    /**
+     * Returns true if the system matrix has changed since the last solve.
+     */
+    bool is_matrix_changed()
+    { return matrix_changed_;}
+
+    /**
+     * Returns true if the system RHS has changed since the last solve.
+     */
+    bool is_rhs_changed()
+    { return rhs_changed_;}
+
 
     /**
      * Sets PETSC matrix (only for PETSC solvers)
@@ -239,6 +230,7 @@ public:
     virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
         ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return 0;
     }
 
     /**
@@ -247,16 +239,25 @@ public:
     virtual PetscErrorCode set_rhs(Vec &rhs)
     {
         ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
+        return 0;
     }
 
+    /**
+     * Clears entries of the matrix 
+     */
     virtual PetscErrorCode mat_zero_entries()
     {
     	ASSERT( false, "Function mat_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	return 0;
     }
 
+    /**
+     * Clears entries of the right-hand side 
+     */
     virtual PetscErrorCode rhs_zero_entries()
     {
     	ASSERT( false, "Function vec_zero_entries is not implemented for linsys type %s \n.", typeid(*this).name() );
+    	return 0;
     }
 
     /**
@@ -413,11 +414,12 @@ public:
         	    	for(unsigned int l_col = 0; l_col < col_dofs.size(); l_col++)
         	    		if (col_dofs[l_col] < 0 && row_dofs[l_row] == col_dofs[l_col]) {
         	    			double new_diagonal = fabs(matrix.at(l_row,l_col));
-        	    			if (new_diagonal == 0.0)
+        	    			if (new_diagonal == 0.0) {
         	    				if (matrix.is_square()) {
         	    					new_diagonal = arma::sum( abs(matrix.diag())) / matrix.n_rows;
         	    				} else {
         	    					new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
+        	    				}
         	    			}
         	    			tmp.at(l_row, l_col) = new_diagonal;
         	    			tmp_rhs(l_row) = new_diagonal * row_solution[l_row];
@@ -478,6 +480,7 @@ public:
      * Returns information on absolute solver accuracy
      */
     virtual double get_absolute_accuracy(){
+    	return 0.0;
     };
 
     /**
@@ -603,6 +606,9 @@ protected:
     bool             positive_definite_;
     bool             negative_definite_;
     bool             spd_via_symmetric_general_;
+
+    bool    matrix_changed_;     //!< true if the matrix was changed since the last solve
+    bool    rhs_changed_;        //!< true if the right hand side was changed since the last solve
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
     double  *v_solution_;        //!< local solution array pointing into Vec solution_

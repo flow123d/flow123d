@@ -29,15 +29,17 @@
  */
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
+#include "input/factory.hh"
 
 class GmshMeshReader;
 
 template <int spacedim, class Value>
-class FieldElementwise : public FieldBase<spacedim, Value>
+class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldElementwise(unsigned int n_comp=0);
 
@@ -46,6 +48,13 @@ public:
      * build FiledElementwise on an existing array of values on elements.
      */
     FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
+
+    /**
+     * Alternative to previous constructor.
+     */
+    FieldElementwise(vector<double> &data, unsigned int n_components)
+    : FieldElementwise(&(data[0]), n_components, data.size() )
+    {}
 
     static Input::Type::Record input_type;
 
@@ -87,8 +96,9 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// If the data vector is provided at construction, we disallow initialization form input.
-    bool allow_init_from_input;
+    /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
+    /// and do not delete data pointer in destructor.
+    bool internal_raw_data;
     /**
      * Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
      * TODO: temporary solution until we have separate mesh for the boundary part
@@ -108,6 +118,8 @@ private:
     GmshMeshReader *reader_;
     const Mesh *mesh_;
     std::string field_name_;
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

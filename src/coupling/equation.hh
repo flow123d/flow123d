@@ -41,6 +41,7 @@
 
 class Mesh;
 class Region;
+class FieldSet;
 typedef std::vector<Region> RegionSet;
 
 
@@ -70,7 +71,7 @@ class EquationBase {
 public:
 
     /**
-     * Default constructor. Necessary to make tests fixtures for equations.
+     * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
      * TODO:
      * Replace setting all in constructor with appropriate getters and setters.
      * Make appropriate checks if key ingredients are initialized.
@@ -88,13 +89,33 @@ public:
     virtual ~EquationBase() {};
 
     /**
-     *  Child class have to implement computation of solution in actual time.
+     *  Initialization of the solution in the zero time.
+     *  There is lot of things that can not be done in the constructor
+     *  since we have not fully initialized fields yet. Fields coming from coupling
+     *  has to be set after the constructor and before zero_time_step.
      */
-    virtual void update_solution() {
-        // solve equation here ...
-        time_->next_time();
+    virtual void zero_time_step() {
+      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
+    /**
+     *  Calculation of the next time step and its output.
+     */
+    virtual void update_solution() {
+      if (equation_empty_) DBGMSG("Calling 'update_solution' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'update_solution' of '%s' is not implemented.\n",typeid(*this).name());
+    }
+
+    ///Initialize fields.
+    /** 
+     * All members that are needed to set fields must be set at this moment (e.g. number of components).
+     */
+    virtual void initialize() {
+      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());      
+    }
+    
     /**
      *  Computation of one time step is split into update_solution() and choose_next_time() in order to allow dependency of the next time step
      *  on other coupled models.
@@ -135,6 +156,13 @@ public:
     }
 
     /**
+     * Set time governor.
+     *
+     * Used to set pointer to common time governor (e.g. in Transport Operator Splitting, Reaction).
+     */
+    virtual void set_time_governor(TimeGovernor &time);
+
+    /**
      * Most actual planned time for solution.
      */
     inline double planned_time()
@@ -158,47 +186,81 @@ public:
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
-        {return equation_mark_type_;}
+    {
+    	return time().equation_mark_type();
+    }
+
+    /**
+     * Return reference to the equation data object containing all fields
+     * that the equation needs or produce.
+     */
+    FieldSet &data()
+    {
+    	ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
+    	return *eq_data_;
+    }
 
     /**
      * Child class have to implement getter for sequential solution vector.
+     * DEPRECATED
      */
-    virtual void get_solution_vector(double * &vector, unsigned int &size) =0;
+    virtual void get_solution_vector(double * &vector, unsigned int &size)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * Child class have to implement getter for parallel solution vector.
+     * DEPRECATED
      */
-    virtual void get_parallel_solution_vector(Vec &vector) =0;
+    virtual void get_parallel_solution_vector(Vec &vector)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
-protected:
-    Mesh * mesh_;
-    TimeGovernor *time_;
-    TimeMark::Type equation_mark_type_;
-    Input::Record input_record_;
-};
-
-
-
-
-
-
-/**
- * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
- */
-class EquationNothing : public EquationBase {
-
-public:
-    EquationNothing(Mesh &mesh);
-
-    virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        vector = NULL;
-        size = 0;
+    /**
+     * @brief Write computed fields.
+     */
+    virtual void output_data() {
+      if (equation_empty_) DBGMSG("Calling 'output_data' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'output_data' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
-    virtual void get_parallel_solution_vector(Vec &vector) {};
-
-    virtual ~EquationNothing() {};
+protected:
+    bool equation_empty_;       ///< flag is true if only default constructor was called
+    Mesh * mesh_;
+    TimeGovernor *time_;
+    //TimeMark::Type equation_mark_type_;
+    Input::Record input_record_;
+    
+    /**
+     * Pointer to the equation data object. Every particular equation is responsible
+     * to set the pointer in its constructor. This is used by the general method
+     * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
+     */
+    FieldSet *eq_data_;
 };
+
+
+
+
+
+
+/** OBSOLETE
+ * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
+ */
+// class EquationNothing : public EquationBase {
+// 
+// public:
+//     EquationNothing(Mesh &mesh);
+// 
+//     void get_solution_vector(double * &vector, unsigned int &size) override
+//     {
+//         vector = NULL;
+//         size = 0;
+//     }
+// 
+//     void get_parallel_solution_vector(Vec &vector) override {};
+// 
+//     virtual ~EquationNothing() {};
+// 
+// };
 
 
 #endif /* EQUATION_HH_ */

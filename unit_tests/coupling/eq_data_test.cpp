@@ -111,8 +111,8 @@ protected:
 
         static IT::Selection bc_type_selection;
 
-        inline static std::shared_ptr< FieldBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommonBase &field)
+        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
+        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
         {
         		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
 
@@ -158,6 +158,7 @@ protected:
         BCField<3, FieldValue<3>::Vector > bc_conc;
     };
 
+    void output_data() override {}
 };
 
 IT::Selection SomeEquationBase::EqData::bc_type_selection =
@@ -187,10 +188,6 @@ public:
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
     };
 
-public:
-
-    void get_solution_vector(double*&, unsigned int&) {}
-    void get_parallel_solution_vector(_p_Vec*&) {}
 protected:
     static Input::Type::Record input_type;
     EqData data;
@@ -214,8 +211,8 @@ protected:
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.n_comp(4);        // set number of substances posibly read from elsewhere
-        data.bc_conc.n_comp(4);
+        data.init_conc.set_n_components(4);        // set number of substances posibly read from elsewhere
+        data.bc_conc.set_n_components(4);
 
         /* Regions in the test mesh:
          * $PhysicalNames
@@ -250,10 +247,10 @@ IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
         .declare_key("data", IT::Array(
                 SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
-                .declare_key("bc_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
+                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
                 .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key("init_piezo_head", FieldBase< 3, FieldValue<3>::Scalar >::input_type, "" )
+                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
                 ), IT::Default::obligatory(), ""  );
 
 

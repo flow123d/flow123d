@@ -54,9 +54,9 @@ using namespace std;
 
 //! @brief basic definitions
 /// @{
-static XFILE xstdin  = {"stdin","r",0};
-static XFILE xstdout = {"stdout","w",0};
-static XFILE xstderr = {"stderr","w",0};
+static XFILE xstdin  = {&std::string("stdin")[0], &std::string("r")[0], 0};
+static XFILE xstdout = {&std::string("stdout")[0], &std::string("w")[0], 0};
+static XFILE xstderr = {&std::string("stderr")[0], &std::string("w")[0], 0};
 //! @}
 
 static XFILE * xio_getfptr( FILE * f );
@@ -260,8 +260,6 @@ FILE *xfopen( const char *fname, const char *mode )
     XFILE * xf;
     FILE *rc;
 
-    F_ENTRY;
-
     ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
     xprintf(MsgLog,"Opening file: '%s'\n", fname);
     rc = fopen( fname, mode );
@@ -313,8 +311,6 @@ int xfclose( FILE *stream )
     XFILE * xf;
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( stream == NULL ),"NULL pointer as argument of function xfclose()\n");
 
     XIO_DEBUG( stream );
@@ -354,7 +350,6 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
     XFILE * xf;
     FILE *rc;
 
-    F_ENTRY;
     ASSERT(!( (mode == NULL) || (stream == NULL)),"Wrong arguments\n");
 
     rc = freopen( filename, mode, stream );
@@ -402,8 +397,6 @@ int xfprintf( FILE *out, const char *fmt, ... )
     va_list argptr;
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( (out == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfprintf()\n");
     va_start( argptr, fmt );
     rc = vfprintf( out, fmt, argptr );
@@ -420,8 +413,6 @@ int xfscanf( FILE *in, const char *fmt, ... )
 {
     va_list  argptr;
     int rc;
-
-    F_ENTRY;
 
     ASSERT(!( (in == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfscanf()\n");
     va_start( argptr , fmt );
@@ -441,7 +432,6 @@ int xgetc( FILE * f )
 {
     int rc;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = xfgetc( f );
@@ -460,7 +450,6 @@ int xfgetc( FILE * f )
     int rc;
     XFILE * xf;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = fgetc( f );
@@ -495,7 +484,6 @@ int xungetc( int c, FILE * f )
     int rc;
     XFILE * xf;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = ungetc( c, f );
@@ -528,7 +516,6 @@ int xrename ( const char * oldname, const char * newname )
 {
     int rc;
 
-    F_ENTRY;
     ASSERT(!(( oldname == NULL) || (newname == NULL)), "NULL file name\n");
 
     rc = rename( oldname, newname );
@@ -549,7 +536,6 @@ size_t xfread( void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    F_ENTRY;
     ASSERT(!( (ptr == NULL) || ( stream == NULL) ),"Incorrect arguments\n");
 
     rc = fread( ptr, size, count, stream );
@@ -573,7 +559,6 @@ size_t xfwrite( const void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    F_ENTRY;
     ASSERT(!( (ptr == NULL) || (stream == NULL) ),"Incorrect arguments\n");
 
     rc = fwrite( ptr, size, count, stream );
@@ -596,8 +581,6 @@ char *xfgets( char *s, int n, FILE *in )
 {
     XFILE * xf;
     char *rc = NULL;
-
-    F_ENTRY;
 
     ASSERT(!( (s == NULL) || (in == NULL) ),"Incorrect arguments of function xfgets()\n");
     rc = fgets( s, n, in );

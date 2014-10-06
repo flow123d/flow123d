@@ -4,29 +4,21 @@
 #include "coupling/equation.hh"
 
 #include <limits>
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "transport/mass_balance.hh"
 
 
 /// external types:
-//class LinSys;
-//struct Solver;
 class Mesh;
-//class SchurComplement;
-//class Distribution;
-//class SparseGraph;
-
-class Reaction;
-class Linear_reaction;
-//class Pade_approximant;
-class Sorption;
-//class Dual_por_exchange;
-class Semchem_interface;
+class ReactionTerm;
 class ConvectionTransport;
+class Semchem_interface;
+
+
 
 
 
@@ -44,13 +36,6 @@ public:
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
-
-    /**
-     * @brief Write computed fields.
-     */
-    virtual void output_data() =0;
-
-    virtual void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) = 0;
 
     virtual unsigned int n_substances() = 0;
 
@@ -82,17 +67,12 @@ public:
 
 		TransportEqData();
 		inline virtual ~TransportEqData() {};
-/*
-		Input::Type::Record boundary_input_type() {
-			return EqDataBase::boundary_input_type()
-				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "Input file with boundary conditions (obsolete).");
-		}
-*/
+
 		/// Mobile porosity
-		Field<3, FieldValue<3>::Scalar> por_m;
+		Field<3, FieldValue<3>::Scalar> porosity;
 
 		/// Pointer to DarcyFlow field cross_section
-		Field<3, FieldValue<3>::Scalar > *cross_section;
+		Field<3, FieldValue<3>::Scalar > cross_section;
 
 		/// Concentration sources - density of substance source, only positive part is used.
 		Field<3, FieldValue<3>::Vector> sources_density;
@@ -111,18 +91,9 @@ public:
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
 
-    virtual void set_velocity_field(const MH_DofHandler &dh) {
+    virtual void set_velocity_field(const MH_DofHandler &dh) override {
     	mh_dh=&dh;
     }
-
-
-
-    /**
-     * @brief Sets pointer to data of other equations.
-     * TODO: there should be also passed the sigma parameter between dimensions
-     * @param cross_section is pointer to cross_section data of Darcy flow equation
-     */
-    //virtual void set_cross_section_field(Field<3, FieldValue<3>::Scalar > *cross_section) =0;
 
     /**
      * Getter for mass balance class
@@ -130,10 +101,12 @@ public:
     MassBalance *mass_balance() { return mass_balance_; }
 
     /// Returns number of trnasported substances.
-    inline unsigned int n_substances() { return n_subst_; }
+    inline unsigned int n_substances() override { return n_subst_; }
 
     /// Returns reference to the vector of substnace names.
-    inline vector<string> &substance_names() { return subst_names_; }
+    inline vector<string> &substance_names() override { return subst_names_; }
+
+    virtual void set_concentration_vector(Vec &vec){};
 
 
 protected:
@@ -153,12 +126,6 @@ protected:
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
     const MH_DofHandler *mh_dh;
-
-    /**
-     * Mark type mask that is true for time marks of output points of the transport model.
-     * E.g. for TransportOperatorSplitting this is same as the output points of its transport sub-model.
-     */
-    TimeMark::Type output_mark_type;
 
     /// object for calculation and writing the mass balance to file.
     MassBalance *mass_balance_;
@@ -182,24 +149,14 @@ public:
     inline virtual ~TransportNothing()
     {}
 
-    inline virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    }
+    inline virtual void output_data() override {};
 
-    virtual void get_parallel_solution_vector(Vec &vector) {
-        ASSERT( 0 , "Empty transport class do not provide solution!");
-    };
-
-    inline virtual void output_data() {};
-
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) {};
-
-    TimeIntegrationScheme time_scheme() { return none; }
+    TimeIntegrationScheme time_scheme() override { return none; }
 
 private:
 
-    inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) {};
-    inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) {};
+    inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override {};
+    inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override {};
 
 };
 
@@ -233,47 +190,33 @@ public:
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 
+    virtual void set_velocity_field(const MH_DofHandler &dh) override;
 
-    virtual void set_velocity_field(const MH_DofHandler &dh);
-    virtual void update_solution();
-    //virtual void compute_one_step();
-    //virtual void compute_until();
-    virtual void get_parallel_solution_vector(Vec &vc);
-    virtual void get_solution_vector(double* &vector, unsigned int &size);
+    void zero_time_step() override;
+    void update_solution() override;
 
     void compute_until_save_time();
     void compute_internal_step();
-    void output_data();
+    void output_data() override ;
 
    
-    /**
-     * @brief Sets pointer to data of other equations.
-     * TODO: there should be also passed the sigma parameter between dimensions
-     * @param cross_section is pointer to cross_section data of Darcy flow equation
-     */
-    void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section);
-
-    TimeIntegrationScheme time_scheme() { return none; }
+    TimeIntegrationScheme time_scheme() override { return none; }
 
 
 private:
     /**
      * Implements the virtual method EquationForMassBalance::calc_fluxes().
      */
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
+    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override;
     /**
      * Implements the virtual method EquationForMassBalance::calc_elem_sources().
      */
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
+    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override;
 
     ConvectionTransport *convection;
-    Reaction *decayRad; //Linear_reaction *decayRad; //Reaction *decayRad;
-    Sorption *sorptions;
-    Sorption *sorptions_immob;
-    //Dual_por_exchange *dual_por_exchange;
-    Semchem_interface *Semchem_reactions;
-    //int steps;
+    ReactionTerm *reaction;
 
+    Semchem_interface *Semchem_reactions;
 
 };
 

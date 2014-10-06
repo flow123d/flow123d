@@ -31,8 +31,12 @@
 #define SYSTEM_H
 
 
-#include "system/sys_function_stack.hh"
 #include <mpi.h>
+#include <iostream>
+
+#include "system/global_defs.h"
+#include "system/exc_common.hh"
+
 
 //instead of #include "mpi.h"
 //typedef int MPI_Comm;
@@ -115,7 +119,6 @@ void * xrealloc( void * ptr, size_t size );
               } \
     } while (0) /// test & free memory
 #endif
-/*        F_STACK_SHOW( stdout ); \ */
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
@@ -145,16 +148,27 @@ int     xrename( const char * oldname, const char * newname ); ///< Rename file 
 //#define tmpfile xtmpfile  NOT_USED    ///< Open a temporary file (function)
 //! @}
 
-//! @brief auxiliary
-/// @{
-bool skip_to( istream &in, const string &pattern );
-//! @}
-
 // string operations
 char * xstrcpy(const char*);
 char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
+
+
+inline void chkerr(unsigned int ierr) {
+	do {
+		if (ierr != 0) THROW( ExcChkErr() << EI_ErrCode(ierr));
+	} while (0);
+}
+
+inline void chkerr_assert(unsigned int ierr) {
+	if (debug_asserts_view) {
+		do {
+			if (ierr != 0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr));
+		} while (0);
+	}
+}
+
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

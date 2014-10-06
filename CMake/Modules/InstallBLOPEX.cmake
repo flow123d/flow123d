@@ -36,7 +36,7 @@ file (WRITE "${cmakelists_fname}"
     SOURCE_DIR ${EXTERNAL_BLOPEX_DIR}/src
     BINARY_DIR ${EXTERNAL_BLOPEX_DIR}/src
     CONFIGURE_COMMAND cp ${MAKE_INC} ${EXTERNAL_BLOPEX_DIR}/src/makefile.inc
-    BUILD_COMMAND make
+    BUILD_COMMAND make ${MAKE_NUMCPUS_FLAG}
     INSTALL_COMMAND \"\"
   )
 ")

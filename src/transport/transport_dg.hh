@@ -35,7 +35,7 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
-class DOFHandlerBase;
+class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -149,14 +149,16 @@ public:
         };
         static Input::Type::Selection bc_type_selection;
 
+        static Input::Type::Selection output_selection;
+
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+		Field<3, FieldValue<3>::Vector> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
-        BCField<3, FieldValue<3>::EnumVector > bc_type;
-        BCField<3, FieldValue<3>::Vector > bc_flux;
-        BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+        BCField<3, FieldValue<3>::EnumVector > bc_type;    ///< Type of boundary condition (see also BC_Type)
+        BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
+        BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
 	};
 
@@ -191,22 +193,14 @@ public:
     static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
+     * @brief Initialize solution in the zero time.
+     */
+	void zero_time_step() override;
+
+    /**
      * @brief Computes the solution in one time instant.
      */
-	void update_solution();
-
-	/**
-	 * @brief Returns the serialized solution array.
-	 * @param vector the solution
-	 * @param size   size of the array
-	 */
-	void get_solution_vector(double * &vector, unsigned int &size);
-
-	/**
-	 * @brief Returns the (possibly) parallel solution vector.
-	 * @param vector
-	 */
-	void get_parallel_solution_vector(Vec &vector);
+	void update_solution() override;
 
 	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
@@ -223,13 +217,6 @@ public:
 	 */
 	void output_data();
 
-    /**
-     * @brief Sets pointer to data of other equations.
-     * TODO: there should be also passed the sigma parameter between dimensions
-     * @param cross_section is pointer to cross_section data of Darcy flow equation
-     */
-	void set_cross_section_field(Field< 3, FieldValue<3>::Scalar >* cross_section) { Model::set_cross_section_field(cross_section); }
-
 	/**
 	 * @brief Getter for field data.
 	 */
@@ -244,20 +231,9 @@ public:
 
 private:
 
-	typename Model::ModelEqData &data() { return data_; }
+	inline typename Model::ModelEqData &data() { return data_; }
 
-    bool stiffness_matrix_changed() {
-    	return Model::stiffness_matrix_changed() ||
-    			data_.fracture_sigma.changed() ||
-				data_.dg_penalty.changed();
-    }
-
-    bool mass_matrix_changed() { return Model::mass_matrix_changed(); }
-
-    bool rhs_changed() {
-    	return Model::rhs_changed() ||
-    		data_.dg_penalty.changed();
-    }
+	void output_vector_gather();
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -518,8 +494,14 @@ private:
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
-	/// Class for handling the solution output.
-	OutputTime *transport_output;
+	/// Vector of solution data.
+	vector<Vec> output_vec;
+
+	/// Record with output specification.
+	Input::Record output_rec;
+
+	OutputTime *output_stream;
+
 
 	// @}
 

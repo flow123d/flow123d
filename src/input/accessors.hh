@@ -30,30 +30,12 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "input/storage.hh"
 
 
 
-/**
- * @brief Macro for simple definition of input exceptions.
- *
- * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
- * @p InputException. Meant to be used for exceptions due to wrong input from user.
- *
- * @ingroup exceptions
- */
-#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
-struct ExcName : public virtual ::Input::Exception {                          \
-     virtual void print_info(std::ostringstream &out) const {                 \
-         using namespace internal;                                            \
-         ::internal::ExcStream estream(out, *this);                           \
-         estream Format														  \
-      	  	  	  << "\nAt input address: " 			   					\
-      	  	  	  << Input::EI_Address::val; 								\
-      	 out << std::endl;													\
-     }                                                                      \
-     virtual ~ExcName() throw () {}                                         \
-}
+
 
 
 
@@ -78,6 +60,41 @@ public:
 };
 
 
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ *
+ *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
+ *  see also ei_address methods.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const std::string);
+
+
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << ::Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+/**
+ * Simple input exception that accepts just string message.
+ */
+DECLARE_INPUT_EXCEPTION(ExcInputMessage, << EI_Message::val );
 
 
 
@@ -245,11 +262,7 @@ protected:
 
 };
 
-/**
- *  Declaration of error info class for passing Input::Address through exceptions.
- *  Is returned by input accessors : Input::Record, Input::Array, etc.
- */
-TYPEDEF_ERR_INFO( EI_Address, const Address);
+
 
 /**
  * Address output operator.
@@ -461,6 +474,17 @@ public:
     string address_string() const;
 
 
+    /**
+     * Construct classes given by TYPE key of AbstractRecord.
+     *
+     * Method uses Input::Factory class. All constructed classes (representing by descendants
+     * of AbstractRecord) must be registered to factory (see Input::Factory class) and must have
+     * constructors with same parameters (given by Arguments).
+     */
+    template<class Type, class... Arguments>
+    const std::shared_ptr<Type> factory(Arguments... arguments) const;
+
+
 private:
     /// Corresponding Type::AbstractRecord object.
     Input::Type::AbstractRecord record_type_ ;
@@ -553,6 +577,13 @@ public:
     */
    template <class Container>
    void copy_to(Container &out) const;
+
+   /**
+    * Returns true if the accessor is empty (after default constructor).
+    * TODO: have something similar for other accessors.
+    */
+   inline bool is_empty() const
+   { return (address_.storage_head() == Address().storage_head()); }
 
    /**
     * Returns address error info.

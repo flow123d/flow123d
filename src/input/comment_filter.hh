@@ -72,6 +72,8 @@ struct uncommenting_fsm : public io::finite_state_machine<uncommenting_fsm> {
                 row<multi_line_comment, is_any,       multi_line_comment,  &self::skip>,
 
                 row<star_in_comment, is<'/'>,         no_comment, &self::skip>,
+	              row<star_in_comment, is<'\n'>,        multi_line_comment, &self::push>,    // preserve line numbers
+	              row<star_in_comment, is<'\r'>,        multi_line_comment, &self::push>,
                 row<star_in_comment, is_any,          multi_line_comment, &self::skip>,
 
                 row<in_quote,     is<'"'>,      no_comment,     &self::push>,

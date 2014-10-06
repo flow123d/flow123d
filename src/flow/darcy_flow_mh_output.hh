@@ -35,14 +35,18 @@
 #include "mesh/mesh.h"
 #include <string>
 #include <vector>
-#include "io/output.h"
+#include "io/output_data.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
+#include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
 
-class DarcyFlowMH;
+
+class DarcyFlowMH_Steady;
 class OutputTime;
+class DOFHandlerMultiDim;
 
 
 /**
@@ -62,12 +66,35 @@ class OutputTime;
  */
 class DarcyFlowMHOutput {
 public:
-    DarcyFlowMHOutput(DarcyFlowMH *flow, Input::Record in_rec) ;
+
+	class OutputFields : public FieldSet {
+	public:
+
+		OutputFields();
+
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
+	    Field<3, FieldValue<3>::Integer> subdomain;
+
+	    Field<3, FieldValue<3>::Scalar> velocity_diff;
+	    Field<3, FieldValue<3>::Scalar> pressure_diff;
+	    Field<3, FieldValue<3>::Scalar> div_diff;
+
+	    // List fields, we have initialized for output
+	    // In case of error fields, we have to add them to the main field set
+	    // but perform output only if user set compute_errors flag.
+	    FieldSet fields_for_output;
+
+	    static Input::Type::Selection output_selection;
+	};
+
+    DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
     static Input::Type::Record input_type;
 
-    void postprocess();
 
     /** \brief Calculate values for output.  **/
     void output();
@@ -87,8 +114,9 @@ private:
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(std::vector<double> &scalars);
+    void make_node_scalar_param();
     void make_node_scalar();
+    void make_corner_scalar(vector<double> &node_scalar);
     void make_neighbour_flux();
     //void make_previous_scalar();
     void output_internal_flow_data();
@@ -121,10 +149,10 @@ private:
     void water_balance();
     double calc_water_balance();
 
-    DarcyFlowMH *darcy_flow;
+    DarcyFlowMH_Steady *darcy_flow;
     Mesh *mesh_;
-    OutputTime *output_writer;
-    TimeMark::Type output_mark_type;
+
+    //TimeMark::Type output_mark_type;
 
     /// Accessor to the input record for the DarcyFlow output.
     Input::Record   in_rec_;
@@ -133,22 +161,40 @@ private:
     /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
      *  more general scheme, where you can switch every output field on or off.
      */
-    bool output_piezo_head;
+    //bool output_piezo_head;
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
-    std::vector<double> node_pressure;
+    //vector<double> node_pressure;
+    /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
+    vector<double> corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    std::vector<double> ele_pressure;
+    vector<double> ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    std::vector<double> ele_piezo_head;
+    vector<double> ele_piezo_head;
+    /// have to copy vector<int> provided by Mesh, in order to use FieldElementwise
+    /// TEMPORARY SOLUTION
+    vector<double> subdomains;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    std::vector< std::vector<double>  > ele_flux;
+    vector<double> ele_flux;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
+
+    Vec vec_corner_pressure;
+    DOFHandlerMultiDim *dh;
+    MappingP1<1,3> map1;
+    MappingP1<2,3> map2;
+    MappingP1<3,3> map3;
+    FE_P_disc<1,1,3> fe1;
+    FE_P_disc<1,2,3> fe2;
+    FE_P_disc<1,3,3> fe3;
+
+    OutputFields output_fields;
+
+    OutputTime *output_stream;
 
     /// Temporary solution for writing balance into separate file.
     FILE *balance_output_file;

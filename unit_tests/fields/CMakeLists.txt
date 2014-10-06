@@ -31,8 +31,8 @@ if(CMAKE_HAVE_CXX11)
 
     define_test(field_value)
     
-    define_mpi_test(field_base 1)
-    define_mpi_test(field_base 2)
+    define_mpi_test(field_algo_base 1)
+    define_mpi_test(field_algo_base 2)
     
     define_mpi_test(field_set 1)
 
@@ -42,6 +42,7 @@ if(CMAKE_HAVE_CXX11)
     define_mpi_test(field_elementwise 1)   
     define_mpi_test(field_interpolated_p0 1)
     define_mpi_test(field_fe 1)
+    define_mpi_test(field_speed 1)
        
 endif()
 

@@ -82,9 +82,9 @@ public:
 		// set B columns
 		int n_cols_B=block_ds.size();
 		std::vector<PetscInt> b_cols(n_cols_B);
-		for( int p=0;p<block_ds.np();p++)
+		for( unsigned int p=0;p<block_ds.np();p++)
 			for (unsigned int j=block_ds.begin(p); j<block_ds.end(p); j++) {
-				int proc=block_ds.get_proc(j);
+				//int proc=block_ds.get_proc(j);
 				b_cols[j]=ds.end(p)+j;
 			}
 
@@ -106,12 +106,12 @@ public:
 
 			// set B values
 			std::vector<PetscScalar> b_vals(block_size*n_cols_B);
-			for (unsigned int j=0; j<block_size*n_cols_B; j++)
+			for (int j=0; j<block_size*n_cols_B; j++)
 				b_vals[j] = 1;
 
 			// set C values
 			std::vector<PetscScalar> c_vals(n_cols_B);
-			for (unsigned int j=0; j<n_cols_B; j++)
+			for (int j=0; j<n_cols_B; j++)
 				c_vals[j] = 0;
 
 			// must iterate per rows to get correct transpose
@@ -163,7 +163,7 @@ TEST(schur, complement) {
 	schurComplement->start_add_assembly();
 	schurComplement->fill_matrix( rank, ds, block_ds); // fill matrix
 	schurComplement->finish_assembly();
-	MatView(schurComplement->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
+	MatView(*(schurComplement->get_matrix()),PETSC_VIEWER_STDOUT_WORLD);
 
 	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
@@ -179,9 +179,9 @@ TEST(schur, complement) {
 			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
 			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
 		}
-		MatGetRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+		MatGetRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);
 		EXPECT_FLOAT_EQ( ((double)block_size / (double)(rank + 2)), vals[0] );
-		MatRestoreRow(schurComplement->get_system()->get_matrix(), rank, &ncols, &cols, &vals);
+		MatRestoreRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);
 	}
 }
 

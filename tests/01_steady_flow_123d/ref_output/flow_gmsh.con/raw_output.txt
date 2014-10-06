@@ -1,7 +1,7 @@
 // fields:
 //ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]
 $FlowField
-T=inf 
+T=0 
 831
 43 -0.37499981 0 0 1.3621108e-05  2 -0.5 -0.24999966 1.7921195e-05 -9.3210221e-06 
 44 -0.12499962 0 0 2.537637e-07  2 -0.24999966 3.4687042e-07 9.3211229e-06 8.8135955e-06 

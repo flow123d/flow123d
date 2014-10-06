@@ -18,6 +18,10 @@
 
 #include "system/file_path.hh"
 
+#include "factory_base.h"
+#include "factory_descendant_a.h"
+#include "factory_descendant_b.h"
+
 
 
 
@@ -52,7 +56,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("/json_root_dir","/json_root_dir","variant_input","/output_root");
+        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
@@ -221,7 +225,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/json_root_dir/output_root/output_subdir/output.vtk",
+    			(string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
     // read enum from selection
@@ -336,9 +341,9 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     ++it;
     EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
     ++it;
-    EXPECT_THROW_WHAT( {int ii = *it;}, ExcXprintfMsg, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
 
 
 
@@ -409,4 +414,29 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     }
 }
 
+
+template class Base<3>;
+template class DescendantA<3>;
+template class DescendantB<3>;
+
+
+TEST_F(InputInterfaceTest, AbstractFromFactory) {
+    using namespace Input;
+
+    Address addr(storage, main);
+    Record record(addr, *main);
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
+    	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 3, time = 0.25",
+    			( a_rec.factory< Base<3> >(3, 0.25) )->get_infotext().c_str() );
+    }
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_2");
+    	EXPECT_STREQ("Constructor of DescendantB class with spacedim = 3",
+    			a_rec.factory< Base<3> >()->get_infotext().c_str());
+    }
+
+}
 

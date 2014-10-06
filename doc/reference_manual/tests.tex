@@ -780,6 +780,54 @@ compute \verb'flow_large_vtk.con' and then add results when opening Paraview wit
 verification of interpolation of boundary condition for piezohead
 
 
+\section{Analytical solution for transport equation}
+Lokking for $u(t,x)$ satisfying
+\[
+   \prtl_t u - d \prtl^2_x u + b \prtl_x u =0
+\]
+on domain $[0,\infty)\times [0,L]$. Using separation of variables $u(t,x) = T(t)X(x)$, have equations
+\[
+    T' - kd T =0,\qquad X''-\alpha X' - k X=0
+\]
+with $\alpha=\frac{b}{d}$ The first equation has solution
+\[
+   T(t) = c e^{kt}.
+\]
+Since, we are looking only for stable solutions, we assume $k\ge0$. The second equation, has solution
+\[
+   X(x)=c_1e^{\lambda_1 x}+c_2e^{\lambda_2 x},\quad \lambda_{1,2} = \frac{\alpha \pm \sqrt{\alpha^2 + 4k}}{2}.
+\]
+
+We consider Dirichlet boundary conditions $u(t,0)=1$ and $u(t,L)=0$. For these, we get particular steady solution
+\[
+  u_p(x) = \frac{e^{\alpha x} - e^{\alpha L}}{1-e^{\alpha L}}.
+\]
+
+Next, we shall solve problem with homogeneous boundary conditions. We consider only discrete part of the spectrum, that is 
+$\alpha^2 +4k = -\alpha^2\omega^2$. From homogeneous boundary conditions, we obtain solutions
+
+\[
+   u_n(t,x) = e^{k_n t} e^{\frac{\alpha}{2} x} \sin\big( \frac{\pi n}{L} x \big),\quad k_n = -\frac{\alpha^2}{4}\big(\frac{4\pi^2n^2}{L^2\alpha^2} +1 \big)
+\]
+
+Then the whole solution is
+\[
+  u(t,x) = u_p(t,x) + \sum_{n=1}^{\infty} a_n u_n(t,x)
+\]
+where $a_n$ are Fourier coefficients (just sinus part) of the function $u_0(x) - u_p(x)$.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % ===================  PREPARING  ==================
 % \section{Test 20 -- Dirichlet boundary condition}

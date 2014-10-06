@@ -35,6 +35,7 @@
 #include "equation.hh"
 #include "system/system.hh"
 #include "input/accessors.hh"
+#include "fields/field_set.hh"
 
 #include <boost/foreach.hpp>
 
@@ -58,19 +59,28 @@ namespace std {
  */
 
 EquationBase::EquationBase()
-: mesh_(NULL), time_(NULL),
-  equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
-  input_record_()
+: equation_empty_(true),
+  mesh_(NULL),
+  time_(NULL),
+  input_record_(),
+  eq_data_(nullptr)
 {}
 
 
 
 EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
-: mesh_(&mesh),
+: equation_empty_(false),
+  mesh_(&mesh),
   time_(NULL),
-  equation_mark_type_(TimeGovernor::marks().new_mark_type()), //creating mark type for new equation
-  input_record_(in_rec)
+  input_record_(in_rec),
+  eq_data_(nullptr)
 {}
+
+
+void EquationBase::set_time_governor(TimeGovernor &time)
+{
+  time_ = &time;
+}
 
 
 
@@ -78,6 +88,6 @@ EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
  * Implementation of EquationNothing
  */
 
-EquationNothing::EquationNothing(Mesh &mesh)
-: EquationBase(mesh, Input::Record() )
-{}
+// EquationNothing::EquationNothing(Mesh &mesh)
+// : EquationBase(mesh, Input::Record() )
+// {}
