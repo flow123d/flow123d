@@ -74,6 +74,7 @@ public:
     	std::vector<IntersectionPoint<2,3>> new_points;
     	unsigned int start = -1;
     	unsigned int end = -1;
+    	bool vrchol = false;
 
     	for(unsigned int i = 0; i < 7; i++){
     		if(tracing_table(i,0) != -1){
@@ -81,27 +82,30 @@ public:
     			start = tracing_table(i,0);
     			if(tracing_table(i,1) != -1){
     				new_points.push_back(i_points[tracing_table(i,1)]);
+    				if(i > 3){vrchol = true;}
     			}
-    			if(tracing_table(i,2) != -1){
+    			if(!vrchol && tracing_table(i,2) != -1){
     				new_points.push_back(i_points[tracing_table(i,2)]);
     			}
     			break;
     		}
     	}
 
+
+
     	while(start != end){
+    		vrchol = false;
     		if(tracing_table(start,1) != -1){
 				new_points.push_back(i_points[tracing_table(start,1)]);
 				// Vrcholy brát pouze jednou:
-				// if(start > 3) continue;
+				if(start > 3){vrchol = true;}
 			}
-			if(tracing_table(start,2) != -1){
+			if(!vrchol && tracing_table(start,2) != -1){
 				new_points.push_back(i_points[tracing_table(start,2)]);
 			}
 			start = tracing_table(start, 0);
 			//if(start == -1){return;}
     	}
-
     	i_points = new_points;
     };
 

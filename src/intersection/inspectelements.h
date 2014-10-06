@@ -47,6 +47,13 @@ public:
 	void UpdateTetrahedron(const ElementFullIter &el);
 
 	void print(unsigned int vyber);
+	inline void polygonArea(){
+		for(unsigned int i = 0; i < all_intersections.size();i++){
+			IntersectionLocal il = all_intersections[i];
+
+		}
+	}
+
 };
 
 } // END namespace

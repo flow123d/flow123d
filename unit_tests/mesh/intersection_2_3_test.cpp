@@ -8,6 +8,8 @@
 //#include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 //#include "mesh/bih_tree.hh"
+//#include "mesh/ngh/include/point.h"
+//#include "mesh/ngh/include/intersection.h"
 
 
 //#include "intersection/computeintersection.h"
@@ -21,7 +23,7 @@ TEST(intersections, all) {
 
 
 
-	cout << "================== Testy objektů a potřebných metod ==================" << endl;
+	/*cout << "================== Testy objektů a potřebných metod ==================" << endl;
 	cout << "========== Includované objekty: =============" << endl;
 	arma::vec3 vectorA, vectorB, vectorC, vectorD;
 	vectorA[0] = 1;vectorA[1] = 2;vectorA[2] = 3;
@@ -57,7 +59,7 @@ TEST(intersections, all) {
 	cout << "=========================================" << endl;
 	cout << "=========================================" << endl;
 
-	IntersectionLocal il2;
+	IntersectionLocal il2;*/
 	/* ctyrsten uvnitr celeho trojuhelniku
 	arma::vec3 bodA; bodA[0] = -5; bodA[1] = 1; bodA[2] = -5;
 	arma::vec3 bodB; bodB[0] = 10; bodB[1] = 2; bodB[2] = -4;
@@ -108,7 +110,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/mesh/triangle_tetrahedron.msh", FilePath::input_file);
+	FilePath mesh_file("/mesh/site/triangle_tetrahedron11.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
@@ -118,14 +120,16 @@ TEST(intersections, all) {
 	reader.read_mesh(&mesh);
 	cout << "Síť načtena!" << endl;
 	cout << "Probíhá výpočet průniku" << endl;
+
+	Profiler::initialize();
+
 	InspectElements ie(&mesh);
-	cout << "Výpočet průniku hotov!!" << endl;
-	cout << "Zapisování do souboru" << endl;
 	ie.print(0);
 	ie.print(1);
-	cout << "Zapsáno do souboru!" << endl;
-	cout << "==================================================================" << endl;
+	//Profiler::instance()->output(0,cout);//MPI_COMM_WORLD,cout);
+	Profiler::uninitialize();
 
+	xprintf(Msg, "Test complete!");
 }
 
 
