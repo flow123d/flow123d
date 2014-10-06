@@ -203,9 +203,9 @@ protected:
  *
  * Output values (if not relevant, zero is supplied):
  *
- * #time 	bulk_region     	quantity 	component 	0    	0       	0        	mass 	source 	0               	0                 	0
- * #time 	boundary_region 	quantity 	component 	flux 	flux_in 	flux_out 	0    	0      	0               	0                 	0
- * #time 	ALL             	quantity 	component 	flux 	flux_in 	flux_out 	mass 	source 	integrated_flux 	integrated_source 	error
+ * #time 	bulk_region     quantity 0    0       0        mass source source_in source_out 0               0                 0
+ * #time 	boundary_region quantity flux flux_in flux_out 0    0      0         0          0               0                 0
+ * #time 	ALL             quantity flux flux_in flux_out mass source source_in source_out integrated_flux integrated_source error
  *
  * error = current_mass - (initial_mass + integrated_source - integrated_flux)
  *
