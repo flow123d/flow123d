@@ -282,23 +282,6 @@ public:
         return v_solution_; 
     }
 
-    
-    /**
-     * Returns whole solution vector.
-     */
-    virtual void get_whole_solution( std::vector<double> & globalSolution )
-    {
-        ASSERT( false, "Function get_whole_solution is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-
-    /**
-     * Inserts solution vector.
-     */
-    virtual void set_whole_solution( std::vector<double> & globalSolution )
-    {
-        ASSERT( false, "Function set_whole_solution is not implemented for linsys type %s \n.", typeid(*this).name() );
-    }
-    
     /**
      * Switch linear system into allocating assembly. (only for PETSC_MPIAIJ_preallocate_by_assembly)
      */

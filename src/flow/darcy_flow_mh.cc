@@ -322,18 +322,15 @@ void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_s
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
     // and use its mechanism to manage dependency between vectors
     if (solution_changed_for_scatter) {
-        std::vector<double> sol_disordered(this->size);
-        schur0 -> get_whole_solution( sol_disordered );
 
-        // reorder solution to application ordering
-        if ( solution_.empty() ) solution_.resize( this->size, 0. );
-        for ( int i = 0; i < this->size; i++ ) {
-            solution_[i] = sol_disordered[solver_indices_[i]];
-        }
+        // scatter solution to all procs
+        VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(  par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
+        solution_changed_for_scatter=false;
     }
 
-    vec=&(solution_[0]);
-    vec_size = solution_.size();
+    vec = solution;
+    vec_size = this->size;
     ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
@@ -891,6 +888,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 
     END_TIMER("preallocation");
+
+    make_serial_scatter();
+
 }
 
 
@@ -1113,6 +1113,7 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 
 	delete output_object;
 
+	VecScatterDestroy(&par_to_all);
 }
 
 
@@ -1206,7 +1207,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
             ISDestroy(&(is_loc));
-        }
+    }
     solution_changed_for_scatter=true;
 
     END_TIMER("prepare scatter");
@@ -1331,22 +1332,6 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     }
 #endif // HAVE_BDDCML
 
-    // common to both solvers - create renumbering of unknowns
-    solver_indices_.reserve(size);
-    FOR_ELEMENTS(mesh_, ele) {
-        FOR_ELEMENT_SIDES(ele,si) {
-            solver_indices_.push_back( side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ] );
-        }
-    }
-    FOR_ELEMENTS(mesh_, ele) {
-        solver_indices_.push_back( row_4_el[ele.index()] );
-    }
-
-    unsigned int i_edg=0;
-    FOR_EDGES(mesh_, edg) {
-        solver_indices_.push_back( row_4_edge[i_edg++] );
-    }
-    ASSERT( solver_indices_.size() == (unsigned int)size, "Size of array does not match number of fills.\n" );
 }
 
 
