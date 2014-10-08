@@ -348,7 +348,7 @@ public:
 
     /// Undefined dimension for regions introduced from mesh input record.
     /// Dimensions 0,1,2,3 are valid.
-    static const unsigned int undefined_dim;
+    static const unsigned int undefined_dim = 10;
 
 
     /**
@@ -373,7 +373,7 @@ public:
      * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
      * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
+    Region add_region(unsigned int id, const std::string &label);
 
     /**
      * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.
@@ -537,8 +537,6 @@ private:
         unsigned int index;
         DimID id;
         std::string label;
-        // data
-        //unsigned int dim_;
     };
 
     // tags
@@ -607,6 +605,28 @@ private:
      * are existing sets. Return pair of checked set names.
      */
     pair<string,string> get_and_check_operands(const Input::Array & operands);
+
+    /**
+     * Create label of region in format: "region_"+id
+     *
+     * Use if label is not set.
+     */
+    void create_label_from_id(const string & label, unsigned int id);
+
+    /**
+     * Insert new region into database.
+     */
+    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+
+    /**
+     * Replace dimension of existing region with undefined_dim.
+     */
+    Region replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary);
+
+    /**
+     * Find existing region given by pair (dim, id).
+     */
+    Region find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary);
 
 };
 

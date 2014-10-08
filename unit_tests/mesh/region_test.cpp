@@ -91,7 +91,7 @@ TEST(Region, all) {
     EXPECT_EQ(1002, bulk[1].id());
     EXPECT_EQ(1003, bulk[2].id());
 
-    EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, ExcXprintfMsg, "Can not add to closed region DB.");
+    EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, RegionDB::ExcAddingIntoClosed, "Can not add label='side_'");
 
 }
 
@@ -99,14 +99,13 @@ TEST(Region, add_nonunique_id_region) {
 	RegionDB region_db;
 
 	{
-		Region r=region_db.add_region(1, "user_defined_name", RegionDB::undefined_dim);
+		Region r=region_db.add_region(1, "user_defined_name");
 	    EXPECT_EQ(1, r.idx() );
 	    EXPECT_FALSE( r.is_boundary() );
 	    EXPECT_EQ(0, r.bulk_idx() );
 	    EXPECT_TRUE( r.is_valid() );
 	    EXPECT_EQ(1, r.id());
 	    EXPECT_EQ("user_defined_name", r.label());
-	    EXPECT_EQ(RegionDB::undefined_dim, r.dim());
 	}
 
 	{
