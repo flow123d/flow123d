@@ -13,6 +13,21 @@
 #include <string>
 
 
+/**
+ * @brief Class for representation SI units of Fields.
+ *
+ * Units are set through exponents of basic SI units. These exponents are set in methods with same
+ * name as unit symbols (e.g. kg(), K() etc).
+ *
+ * Class contains method that provides formated string representing full unit symbol (usable in
+ * LaTeX output).
+ *
+ * UnitSI object contains flag that says if it is defined
+ * - undefined object can't be formated
+ * - if any exponent is set, flag is set to defined
+ *
+ * Class contains static methods that return frequently used derived units (Watt, Pascal etc).
+ */
 class UnitSI {
 public:
 	/// Constructor
