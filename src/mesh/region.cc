@@ -68,6 +68,8 @@ IT::Record RegionDB::region_set_input_type =
                 "Defines region set as a difference of given pair of sets. Overrides previous keys.")
         .close();
 
+const unsigned int RegionDB::undefined_dim = 10;
+
 
 /// Default constructor
 RegionDB::RegionDB()

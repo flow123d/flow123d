@@ -348,7 +348,7 @@ public:
 
     /// Undefined dimension for regions introduced from mesh input record.
     /// Dimensions 0,1,2,3 are valid.
-    static const unsigned int undefined_dim = 10;
+    static const unsigned int undefined_dim;
 
 
     /**
