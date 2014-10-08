@@ -57,21 +57,21 @@ Record SorptionBase::input_type
 SorptionBase::EqData::EqData(const string &output_field_name)
 {
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
+    	rock_density.units( UnitSI().kg().m(-3) );
 
     ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm."); //
-              sorption_type.input_selection(&sorption_type_selection);
+        sorption_type.input_selection(&sorption_type_selection);
+        sorption_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
+    	isotherm_mult.units( UnitSI().mol().kg(-1) );
 
     ADD_FIELD(isotherm_other,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
+    	isotherm_other.units( UnitSI::dimensionless() );
+
     ADD_FIELD(init_conc_solid, "Initial solid concentration of substances."
             " Vector, one value for every substance.", "0");
-    
-    rock_density.units( UnitSI().kg().m(-3) );
-    sorption_type.units( UnitSI::dimensionless() );
-    isotherm_mult.units( UnitSI().mol().kg(-1) );
-    isotherm_other.units( UnitSI::dimensionless() );
-    init_conc_solid.units( UnitSI().mol().kg(-1) );
+    	init_conc_solid.units( UnitSI().mol().kg(-1) );
 
     input_data_set_ += *this;
 

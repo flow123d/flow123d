@@ -128,30 +128,30 @@ protected:
 
         EqData()  {
             ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
+            anisotropy.units( UnitSI::dimensionless() );
+
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
             bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+            bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
         	bc_pressure.read_field_descriptor_hook = bc_piezo_head_hook;
+            bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
         	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+            bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
         	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+            bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
-
-            anisotropy.units( UnitSI::dimensionless() );
-            bc_type.units( UnitSI::dimensionless() );
-            bc_pressure.units( UnitSI::dimensionless() );
-            bc_flux.units( UnitSI::dimensionless() );
-            bc_robin_sigma.units( UnitSI::dimensionless() );
             bc_conc.units( UnitSI::dimensionless() );
         }
 

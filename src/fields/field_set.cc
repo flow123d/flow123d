@@ -50,7 +50,6 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
     Input::Type::Record rec = FieldCommon::field_descriptor_record(equation_name + "_Data");
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
-            //UnitSI units = field->units();
             string description =  field->description() + " " + field->units().format();
 
             // Adding units is not so simple.

@@ -146,49 +146,50 @@ DarcyFlowMH::EqData::EqData()
     gravity_ = arma::vec4("0 0 -1 0");
 
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
+    	anisotropy.units( UnitSI::dimensionless() );
+
     ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", "1.0" );
+    	cross_section.units( UnitSI().m(3).md() );
+
     ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
+    	conductivity.units( UnitSI().m().s(-1) );
+
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
+    	sigma.units( UnitSI::dimensionless() );
+
     ADD_FIELD(water_source_density, "Water source density.", "0.0");
+    	water_source_density.units( UnitSI().s(-1) );
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
         bc_type.input_selection(&bc_type_selection);
         bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+        bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
     	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
-
+        bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
     	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+        bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
     	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+        bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
     ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
+    	init_pressure.units( UnitSI().m() );
+
     ADD_FIELD(storativity,"Storativity.", "1.0" );
+    	storativity.units( UnitSI().m(-1) );
 
     time_term_fields = this->subset({"storativity"});
     main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
-
-    anisotropy.units( UnitSI::dimensionless() );
-    cross_section.units( UnitSI().m(3).md() );
-    conductivity.units( UnitSI().m().s(-1) );
-    sigma.units( UnitSI::dimensionless() );
-    water_source_density.units( UnitSI().s(-1) );
-
-    bc_type.units( UnitSI::dimensionless() );
-    bc_pressure.units( UnitSI().m() );
-    bc_flux.units( UnitSI().m(4).s(-1).md() );
-    bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
-
-    init_pressure.units( UnitSI().m() );
-    storativity.units( UnitSI().m(-1) );
 
 }
 
