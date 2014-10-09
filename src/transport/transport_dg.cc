@@ -1299,9 +1299,8 @@ void TransportDG<Model>::set_boundary_conditions()
 						local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 						if ((bc_type[sbi] == EqData::dirichlet) || (bc_type[sbi] == EqData::inflow && mh_dh->side_flux( *side ) < -mh_dh->precision()))
 						{
-							// temporal workaround with tlevel - to achieve comparable results with old balance (should be removed)
 							local_flux_balance_vector[i] -= arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.JxW(k)
-								- (time_->tlevel() == 0?0:1)*gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
+								- gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k)*fe_values_side.JxW(k);
 							local_flux_balance_rhs -= (time_->tlevel() == 0?0:1)*bc_term*fe_values_side.shape_value(i,k);
 						}
 					}
