@@ -468,9 +468,17 @@ public:
 	void output(double time);
 
 private:
+	/// Delimiter of values in csv file
+	static const char csv_data_delimiter = ',';
 
 	/// Perform output in old format (for compatibility)
 	void output_legacy(double time);
+
+	/// Perform output in csv format
+	void output_csv(double time);
+
+	/// Return part of output represented by zero values. Count of zero values is given by cnt parameter.
+	std::string csv_zero_vals(unsigned int cnt);
 
 
     /// Handle for file for output of balance and total fluxes over individual regions and region sets.

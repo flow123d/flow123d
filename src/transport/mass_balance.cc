@@ -1013,6 +1013,8 @@ void Balance::output(double time)
 	switch (output_format_)
 	{
 	case csv:
+		output_csv(time);
+		break;
 	case gnuplot:
 	case legacy:
 		output_legacy(time);
@@ -1171,6 +1173,91 @@ void Balance::output_legacy(double time)
 	output_ << endl << endl;
 }
 
+
+std::string Balance::csv_zero_vals(unsigned int cnt) {
+	std::stringstream ss;
+	for (unsigned int i=0; i<cnt; i++) ss << csv_data_delimiter << 0;
+	return ss.str();
+}
+
+
+void Balance::output_csv(double time) {
+	// write output only on process #0
+	if (rank_ != 0) return;
+
+	const unsigned int n_quant = quantities_.size();
+
+	// print data header
+	output_ << "\"#time\""
+			<< csv_data_delimiter << "\"region\""
+			<< csv_data_delimiter << "\"quantity\""
+			<< csv_data_delimiter << "\"flux\""
+			<< csv_data_delimiter << "\"flux_in\""
+			<< csv_data_delimiter << "\"flux_out\""
+			<< csv_data_delimiter << "\"mass\""
+			<< csv_data_delimiter << "\"source\""
+			<< csv_data_delimiter << "\"source_in\""
+			<< csv_data_delimiter << "\"source_out\""
+			<< csv_data_delimiter << "\"integrated_flux\""
+			<< csv_data_delimiter << "\"integrated_source\""
+			<< csv_data_delimiter << "\"error\"";
+
+	// print sources and masses over bulk regions
+	const RegionSet & bulk_set = regions_.get_region_set("BULK");
+	for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			output_ << time
+					<< csv_data_delimiter << "\"" << reg->label().c_str() << "\""
+					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< csv_zero_vals(3)
+					<< csv_data_delimiter << masses_[qi][reg->bulk_idx()]
+					<< csv_data_delimiter << sources_[qi][reg->bulk_idx()]
+					<< csv_data_delimiter << sources_in_[qi][reg->bulk_idx()]
+					<< csv_data_delimiter << sources_out_[qi][reg->bulk_idx()]
+					<< csv_zero_vals(3) << endl;
+		}
+	}
+
+	// print mass fluxes over boundaries
+	const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
+	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++) {
+			output_ << time
+					<< csv_data_delimiter << "\"" << reg->label().c_str() << "\""
+					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< csv_data_delimiter << fluxes_[qi][reg->boundary_idx()]
+					<< csv_data_delimiter << fluxes_in_[qi][reg->boundary_idx()]
+					<< csv_data_delimiter << fluxes_out_[qi][reg->boundary_idx()]
+					<< csv_zero_vals(7) << endl;
+		}
+	}
+
+	if (cumulative_)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
+			output_ << time
+					<< csv_data_delimiter << "\"ALL\""
+					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< csv_data_delimiter << sum_fluxes_[qi]
+					<< csv_data_delimiter << sum_fluxes_in_[qi]
+					<< csv_data_delimiter << sum_fluxes_out_[qi]
+					<< csv_data_delimiter << sum_masses_[qi]
+					<< csv_data_delimiter << sum_sources_[qi]
+					<< csv_data_delimiter << sum_sources_in_[qi]
+					<< csv_data_delimiter << sum_sources_out_[qi]
+					<< csv_data_delimiter << integrated_fluxes_[qi]
+					<< csv_data_delimiter << integrated_sources_[qi]
+					<< csv_data_delimiter << error << endl;
+		}
+	}
+
+	output_ << endl << endl;
+}
 
 
 
