@@ -41,6 +41,13 @@ public:
     }
     inline unsigned int idx_2D(){return element_2D_idx;}
     inline unsigned int idx_3D(){return element_3D_idx;}
+
+    /**
+     * method compute local polygon area from barycentric coordinates
+     * @return double computed local area
+     */
+    double getArea();
+
     inline void print(){
     	xprintf(Msg, "Metoda nebyla zatím implementována!\n");
     }

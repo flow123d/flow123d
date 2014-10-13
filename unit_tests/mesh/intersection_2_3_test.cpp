@@ -1,4 +1,3 @@
-
 #include <flow_gtest.hh>
 //#define Flow123d_DEBUG
 #include "system/system.hh"
@@ -109,23 +108,29 @@ TEST(intersections, all) {
 
 
 	cout << "===============" << endl;
-	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/mesh/site/triangle_tetrahedron11.msh", FilePath::input_file);
+	//FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	FilePath mesh_file("/home/viktor/diplomka/flow123d/unit_tests/mesh/site/triangle_tetrahedron11.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
 
 	Mesh mesh;
+
 	GmshMeshReader reader(mesh_file);
+
 	reader.read_mesh(&mesh);
-	cout << "Síť načtena!" << endl;
+
+
+	 cout << "Síť načtena!" << endl;
 	cout << "Probíhá výpočet průniku" << endl;
 
-	Profiler::initialize();
+	//Profiler::initialize();
 
 	InspectElements ie(&mesh);
 	ie.print(0);
 	ie.print(1);
+	double obsah = ie.polygonArea();
+	xprintf(Msg,"Obsah polygonu: %f\n", obsah);
 	//Profiler::instance()->output(0,cout);//MPI_COMM_WORLD,cout);
 	Profiler::uninitialize();
 

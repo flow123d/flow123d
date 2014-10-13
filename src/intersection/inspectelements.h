@@ -47,11 +47,16 @@ public:
 	void UpdateTetrahedron(const ElementFullIter &el);
 
 	void print(unsigned int vyber);
-	inline void polygonArea(){
+	inline double polygonArea(){
+		double subtotal = 0.0;
 		for(unsigned int i = 0; i < all_intersections.size();i++){
-			IntersectionLocal il = all_intersections[i];
-
+			 Element efi = *mesh->element(all_intersections[i].idx_2D());
+			 TTriangle t2d(efi);
+			 double t2dArea = t2d.GetArea();
+			 double localArea = all_intersections[i].getArea();//il.getArea();
+			 subtotal += 2*localArea*t2dArea;
 		}
+		return subtotal;
 	}
 
 };

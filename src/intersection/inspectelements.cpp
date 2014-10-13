@@ -102,6 +102,8 @@ void InspectElements::ComputeIntersections23(){
 			        	il.tracePolygon();
 			        	all_intersections.push_back(il);
 
+			        	// Stará metoda pro výpočet obsahu polygonu
+
 			        }
 			    }
 			}
