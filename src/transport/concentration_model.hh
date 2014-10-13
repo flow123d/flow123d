@@ -97,20 +97,8 @@ protected:
 			double cross_cut,
 			arma::mat33 &K);
 
-	/**
-	 * Resize auxiliary vectors for value lists.
-	 * @param qsize   Size of quadrature, size of the value list.
-	 * @param n_subst Size of vector valued fields.
-	 */
-	//void init_values_vectors(unsigned int qsize, unsigned int n_subst);
-
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
-
-	/// Auxiliary vectors for evaluated fields
-	//std::vector<double> values_cross_section_(qsize);
-	//std::vector<arma::vec> values_Dm_(qsize, arma::vec(n_subst) ), values_alphaL_(qsize, arma::vec(n_subst) ), values_alphaT_(qsize, arma::vec(n_subst) );
-	//std::vector<double> values_por_m_(qsize);
 
 
 public:

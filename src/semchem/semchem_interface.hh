@@ -6,7 +6,6 @@
 #include <string.h>
 #include <./input/input_type.hh>
 #include "fields/field.hh"
-//#include "fields/field_values.hh"
 
 class Distribution;
 
@@ -15,7 +14,7 @@ enum type_of_reaction{kinetics = 1, slow_kinetics, equilibrium};
 
 class Specie
 {
-	public:
+public:
 	/*
 	* Static variable for new input data types input
 	*/
@@ -24,7 +23,7 @@ class Specie
 	* Constructor.
 	*/
 	Specie();
-	private:
+private:
 	/*
 	* Identifier.
 	*/
@@ -53,7 +52,7 @@ class Specie
 
 class General_reaction
 {
-	public:
+public:
 	/*
 	* Static variable for new input data types input
 	*/
@@ -62,7 +61,7 @@ class General_reaction
 	 * Constructor.
 	 */
 	General_reaction();
-	private:
+private:
 	/*
 	* Specification of type of reaction.
 	*/

@@ -127,9 +127,6 @@ void Record::make_copy_keys(Record &origin) {
 			// use values form the child record
 			Key *k = &(data_->keys[kit->second+n_inserted]); // indices in key_to_index are not yet updated
 
-			//does not work with intel c++ compiler
-			//tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
-
 			tmp_key.key_ = k->key_;
 			tmp_key.description_ = k->description_;
 			tmp_key.type_ = k->type_;
@@ -243,7 +240,6 @@ bool Record::finish()
         // make our own copy of type object allocated at heap (could be expensive, but we don't care)
         if (it->p_type != 0) {
             if (! was_constructed(it->p_type)) return ( data_->finished=false );
-            //if (! it->p_type->finish()) return false;
 
             if ( dynamic_cast<const AbstractRecord *>(it->p_type) != 0 ) {
                 const AbstractRecord *ar = dynamic_cast<const AbstractRecord *>(it->p_type);

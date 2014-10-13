@@ -124,6 +124,7 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
+# RUN_UNIT_BENCHMARKS       - build benchmark unit tests
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:

@@ -125,8 +125,6 @@ public:
        return a_tol_;
     };
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
     void view( );
 
     /**
@@ -155,8 +153,6 @@ private:
             return static_cast<double>( arg );
         }
     };
-
-    void gatherSolution_( );
 
 protected:
 

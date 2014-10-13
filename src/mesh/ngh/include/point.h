@@ -2,7 +2,6 @@
 #define pointH
 
 #include <iostream>
-//#include "system.h"
 
 #include "myvector.h"
 

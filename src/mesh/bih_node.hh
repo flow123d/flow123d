@@ -121,14 +121,6 @@ public:
 private:
 
 
-    /**
-	 * Constructor
-	 *
-	 * Set class members
-	 * @param depth Depth of node in tree.
-	 */
-	//BIHNode(unsigned int depth);
-
 	/**
 	 * Set depth of node to axes_ class members
 	 *

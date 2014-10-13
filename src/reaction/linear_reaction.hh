@@ -89,12 +89,10 @@ protected:
 	/**
 	*	Small (nr_of_species x nr_of_species) square matrix for realization of radioactive decay and first order reactions simulation.
 	*/
-	//double **reaction_matrix;
 	std::vector<std::vector<double> > reaction_matrix_;
     /**
      *       Pointer to reference previous concentration array used in compute_reaction().
      */
-    //double *prev_conc;
     std::vector<double> prev_conc_;
 	/**
 	*	Sequence of (nr_of_isotopes - 1) doubles containing half-lives belonging to particular isotopes.
