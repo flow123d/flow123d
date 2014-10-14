@@ -46,14 +46,16 @@ using namespace Input::Type;
 
 Selection Balance::format_selection_input_type
 	= Selection("Balance_output_format", "Format of output file for balance.")
-	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.");
+	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
+	.add_value(Balance::csv, "csv", "Excel format with semicolon delimiter.")
+	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fix column width.");
 
 Record MassBalance::input_type
 	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
-	.declare_key("format", Balance::format_selection_input_type, Default("legacy"), "Format of output file.")
+	.declare_key("format", Balance::format_selection_input_type, Default("csv"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
-	.declare_key("file", FileName::output(), Default("mass_balance.txt"), "File name for output of mass balance.")
+	.declare_key("file", FileName::output(), Default::read_time("FileName mass_balance.*"), "File name for output of mass balance.")
 ;
 
 
@@ -398,9 +400,26 @@ Balance::Balance(const std::vector<unsigned int> &elem_regions,
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
 
 	cumulative_ = in_rec.val<bool>("cumulative");
+	output_format_ = in_rec.val<OutputFormat>("format");
 
-	if (rank_ == 0)
-		output_.open(string(in_rec.val<FilePath>("file")).c_str());
+	if (rank_ == 0) {
+		// set default value by output_format_
+		std::string default_file_name;
+		switch (output_format_)
+		{
+		case csv:
+			default_file_name = "mass_balance.csv";
+			break;
+		case gnuplot:
+			default_file_name = "mass_balance.dat";
+			break;
+		case legacy:
+			default_file_name = "mass_balance.txt";
+			break;
+		}
+
+		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
+	}
 }
 
 
@@ -1013,9 +1032,11 @@ void Balance::output(double time)
 	switch (output_format_)
 	{
 	case csv:
-		output_csv(time);
+		output_csv(time, ';', "");
 		break;
 	case gnuplot:
+		output_csv(time, ' ', "#", 30);
+		break;
 	case legacy:
 		output_legacy(time);
 		break;
@@ -1174,14 +1195,14 @@ void Balance::output_legacy(double time)
 }
 
 
-std::string Balance::csv_zero_vals(unsigned int cnt) {
+std::string Balance::csv_zero_vals(unsigned int cnt, char delimiter) {
 	std::stringstream ss;
-	for (unsigned int i=0; i<cnt; i++) ss << csv_data_delimiter << 0;
+	for (unsigned int i=0; i<cnt; i++) ss << delimiter << 0;
 	return ss.str();
 }
 
 
-void Balance::output_csv(double time) {
+void Balance::output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat) {
 	// write output only on process #0
 	if (rank_ != 0) return;
 
@@ -1189,18 +1210,19 @@ void Balance::output_csv(double time) {
 
 	// print data header
 	output_ << "\"#time\""
-			<< csv_data_delimiter << "\"region\""
-			<< csv_data_delimiter << "\"quantity\""
-			<< csv_data_delimiter << "\"flux\""
-			<< csv_data_delimiter << "\"flux_in\""
-			<< csv_data_delimiter << "\"flux_out\""
-			<< csv_data_delimiter << "\"mass\""
-			<< csv_data_delimiter << "\"source\""
-			<< csv_data_delimiter << "\"source_in\""
-			<< csv_data_delimiter << "\"source_out\""
-			<< csv_data_delimiter << "\"integrated_flux\""
-			<< csv_data_delimiter << "\"integrated_source\""
-			<< csv_data_delimiter << "\"error\"";
+			<< delimiter << "\"region\""
+			<< delimiter << "\"quantity\""
+			<< delimiter << "\"flux\""
+			<< delimiter << "\"flux_in\""
+			<< delimiter << "\"flux_out\""
+			<< delimiter << "\"mass\""
+			<< delimiter << "\"source\""
+			<< delimiter << "\"source_in\""
+			<< delimiter << "\"source_out\""
+			<< delimiter << "\"integrated_flux\""
+			<< delimiter << "\"integrated_source\""
+			<< delimiter << "\"error\""
+			<< endl;
 
 	// print sources and masses over bulk regions
 	const RegionSet & bulk_set = regions_.get_region_set("BULK");
@@ -1209,14 +1231,14 @@ void Balance::output_csv(double time) {
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
 			output_ << time
-					<< csv_data_delimiter << "\"" << reg->label().c_str() << "\""
-					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
-					<< csv_zero_vals(3)
-					<< csv_data_delimiter << masses_[qi][reg->bulk_idx()]
-					<< csv_data_delimiter << sources_[qi][reg->bulk_idx()]
-					<< csv_data_delimiter << sources_in_[qi][reg->bulk_idx()]
-					<< csv_data_delimiter << sources_out_[qi][reg->bulk_idx()]
-					<< csv_zero_vals(3) << endl;
+					<< delimiter << "\"" << reg->label().c_str() << "\""
+					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< csv_zero_vals(3, delimiter)
+					<< delimiter << masses_[qi][reg->bulk_idx()]
+					<< delimiter << sources_[qi][reg->bulk_idx()]
+					<< delimiter << sources_in_[qi][reg->bulk_idx()]
+					<< delimiter << sources_out_[qi][reg->bulk_idx()]
+					<< csv_zero_vals(3, delimiter) << endl;
 		}
 	}
 
@@ -1226,12 +1248,12 @@ void Balance::output_csv(double time) {
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
 			output_ << time
-					<< csv_data_delimiter << "\"" << reg->label().c_str() << "\""
-					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
-					<< csv_data_delimiter << fluxes_[qi][reg->boundary_idx()]
-					<< csv_data_delimiter << fluxes_in_[qi][reg->boundary_idx()]
-					<< csv_data_delimiter << fluxes_out_[qi][reg->boundary_idx()]
-					<< csv_zero_vals(7) << endl;
+					<< delimiter << "\"" << reg->label().c_str() << "\""
+					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< delimiter << fluxes_[qi][reg->boundary_idx()]
+					<< delimiter << fluxes_in_[qi][reg->boundary_idx()]
+					<< delimiter << fluxes_out_[qi][reg->boundary_idx()]
+					<< csv_zero_vals(7, delimiter) << endl;
 		}
 	}
 
@@ -1241,18 +1263,18 @@ void Balance::output_csv(double time) {
 		{
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
 			output_ << time
-					<< csv_data_delimiter << "\"ALL\""
-					<< csv_data_delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
-					<< csv_data_delimiter << sum_fluxes_[qi]
-					<< csv_data_delimiter << sum_fluxes_in_[qi]
-					<< csv_data_delimiter << sum_fluxes_out_[qi]
-					<< csv_data_delimiter << sum_masses_[qi]
-					<< csv_data_delimiter << sum_sources_[qi]
-					<< csv_data_delimiter << sum_sources_in_[qi]
-					<< csv_data_delimiter << sum_sources_out_[qi]
-					<< csv_data_delimiter << integrated_fluxes_[qi]
-					<< csv_data_delimiter << integrated_sources_[qi]
-					<< csv_data_delimiter << error << endl;
+					<< delimiter << "\"ALL\""
+					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+					<< delimiter << sum_fluxes_[qi]
+					<< delimiter << sum_fluxes_in_[qi]
+					<< delimiter << sum_fluxes_out_[qi]
+					<< delimiter << sum_masses_[qi]
+					<< delimiter << sum_sources_[qi]
+					<< delimiter << sum_sources_in_[qi]
+					<< delimiter << sum_sources_out_[qi]
+					<< delimiter << integrated_fluxes_[qi]
+					<< delimiter << integrated_sources_[qi]
+					<< delimiter << error << endl;
 		}
 	}
 
