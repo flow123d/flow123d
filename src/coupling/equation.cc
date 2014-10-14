@@ -82,12 +82,3 @@ void EquationBase::set_time_governor(TimeGovernor &time)
   time_ = &time;
 }
 
-
-
-/*****************************************************************************************
- * Implementation of EquationNothing
- */
-
-// EquationNothing::EquationNothing(Mesh &mesh)
-// : EquationBase(mesh, Input::Record() )
-// {}

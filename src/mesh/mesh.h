@@ -226,7 +226,6 @@ public:
      * Vector of compatible neighbourings.
      */
     vector<Neighbour> vb_neighbours_;
-    //int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
@@ -303,7 +302,6 @@ protected:
 
 
     void element_to_neigh_vb();
-    void create_external_boundary();
 
     void count_element_types();
     void count_side_types();
@@ -413,8 +411,6 @@ for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
 
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
-
-//int *max_entry();
 
 
 #endif

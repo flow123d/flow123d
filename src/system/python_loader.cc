@@ -136,7 +136,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
         Py_SetPath(our_py_path);
         //our_py_path+=full_flow_prefix + to_py_string( python_subdir);
-        
+
 //        string prefix = ;
         */
         cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
@@ -154,38 +154,38 @@ PythonRunning::PythonRunning(const std::string& program_name)
         wchar_t wbuf[ python_home.size() ];
         size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
 	static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
-	
+
         std::wcout << "new python home: " << _python_home_storage << std::endl;
-        
+
 	Py_SetProgramName( &(_python_home_storage[0]) );
-        
+
         char buff[ 1024 ];
         num_chars = wcstombs(buff, Py_GetPath(), 256);
         buff[1024]=0;
-        string str(buff, num_chars);  
+        string str(buff, num_chars);
         std::cout << "Python path: " << str << std::endl;
-        
-        
-        
+
+
+
                 wchar_t wbuf[ python_home.size() ];
         size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
         static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
-        
+
         std::wcout << "new python home: " << _python_home_storage << std::endl;
-        
+
         Py_SetProgramName( &(_python_home_storage[0]) );
-        
+
         char buff[ 1024 ];
-        num_chars = wcstombs(buff, Py_GetPath(), 1024);   
+        num_chars = wcstombs(buff, Py_GetPath(), 1024);
         //std::cout << "num chars: " << num_chars << std::endl;
         std::cout << "Python path: " << buff << std::endl;
-        //num_chars = wcstombs(buff, Py_GetPythonHome(), 1024);   
+        //num_chars = wcstombs(buff, Py_GetPythonHome(), 1024);
         //std::cout << "Python home: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetProgramName(), 1024);   
+        num_chars = wcstombs(buff, Py_GetProgramName(), 1024);
         std::cout << "Python prog. name: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetPrefix(), 1024);   
+        num_chars = wcstombs(buff, Py_GetPrefix(), 1024);
         std::cout << "Python prefix: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);   
+        num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
         std::cout << "Python full: " << buff << std::endl;
 */
 #endif

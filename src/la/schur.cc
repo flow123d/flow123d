@@ -89,12 +89,10 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
-        //ISView(IsA, PETSC_VIEWER_STDOUT_WORLD);
 
         // create B block index set
         loc_size_B = rows_ds_->lsize() - loc_size_A;
         ISCreateStride(PETSC_COMM_WORLD,loc_size_B,rows_ds_->begin()+loc_size_A,1,&IsB);
-        //ISView(IsB, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 
@@ -171,10 +169,6 @@ void SchurComplement::form_schur()
 
     }
 
-    //DBGMSG("Compute Schur complement of\n");
-    //MatView(matrix_,PETSC_VIEWER_STDOUT_WORLD);
-    //DBGMSG("inverse IA:\n");
-    //MatView(Schur->IA,PETSC_VIEWER_STDOUT_WORLD);
     // compose Schur complement
     // Petsc need some fill estimate for results of multiplication in form nnz(A*B)/(nnz(A)+nnz(B))
     // for the first Schur compl: IA*B is bounded by ( d*(d+1) )/( d*d+2*d ) <= 5/6 for d<=4
@@ -189,16 +183,10 @@ void SchurComplement::form_schur()
 
        	// compute IAB=IA*B, loc_size_B removed
 		ierr+=MatGetSubMatrix(matrix_, IsA, IsB, mat_reuse, &B);
-		//DBGMSG(" B:\n");
-		//MatView(B,PETSC_VIEWER_STDOUT_WORLD);
 		ierr+=MatMatMult(IA, B, mat_reuse, 1.0 ,&(IAB)); // 6/7 - fill estimate
-		//DBGMSG(" IAB:\n");
-		//MatView(IAB,PETSC_VIEWER_STDOUT_WORLD);
 		// compute xA=Bt* IAB = Bt * IA * B, locSizeA removed
 		ierr+=MatGetSubMatrix(matrix_, IsB, IsA, mat_reuse, &(Bt));
 		ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
-		//DBGMSG("xA:\n");
-		//MatView(xA,PETSC_VIEWER_STDOUT_WORLD);
 
 		// get C block, loc_size_B removed
 		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
@@ -210,31 +198,10 @@ void SchurComplement::form_schur()
 			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
 		}
 		Compl->set_matrix_changed();
-		//DBGMSG("C block:\n");
-
-		//MatView(Compl->get_matrix(),PETSC_VIEWER_STDOUT_WORLD);
-		//DBGMSG("C block:\n");
-		//MatView(Schur->Compl->A,PETSC_VIEWER_STDOUT_WORLD);
-		//
-		//TODO: MatAXPY - umoznuje nasobit -1, t.j. bylo by lepe vytvorit konvencni Schuruv doplnek zde,
-		// a ve funkci schur1 (a ne v schur2) uzit metodu "scale" z tohoto objektu - kvuli negativni definitnosti
-		// usetri se tim jeden MatScale
 
 		ASSERT( ierr == 0, "PETSC Error during calculation of Schur complement.\n");
 
     }
-
-	/*
-	PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matAinv.output",&myViewer);
-	PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-	MatView( IA, myViewer );
-	PetscViewerDestroy(myViewer);
-
-	PetscViewerASCIIOpen(PETSC_COMM_WORLD,"matSchur.output",&myViewer);
-	PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-	MatView( Compl->get_matrix( ), myViewer );
-	PetscViewerDestroy(myViewer);
-*/
 
     form_rhs();
 
@@ -295,7 +262,6 @@ void SchurComplement::create_inversion_matrix()
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
     MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
-    //MatView(IA,PETSC_VIEWER_STDOUT_WORLD);
     MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
@@ -342,15 +308,6 @@ void SchurComplement::create_inversion_matrix()
             }
             MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
-        // test output
-//            xprintf(Msg, "__ Get submat: rank %d, MIN-MAX %d %d, size %d\n", rank, min, max, size_submat);
-//            for (int i=0; i<size_submat; i++) {
-//                for (int j=0; j<size_submat; j++) {
-//                    xprintf(Msg, "%2.0f ", submat2(i,j));
-//                }
-//                xprintf(Msg, "\n");
-//            }
-//            xprintf(Msg, "\n");
         // get inversion matrix
         arma::mat invmat = submat2.i();
         // stored to inversion IA matrix

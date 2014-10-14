@@ -13,6 +13,8 @@
 #include <ostream>
 #include <string>
 
+#include "fields/unit_si.hh"
+
 /**
  * \brief Common parent class for templated OutputData.
  *
@@ -39,7 +41,7 @@ public:
      */
     std::string output_field_name;
     std::string field_name;
-    std::string field_units;
+    UnitSI field_units;
     /**
      * Number of data values.
      */

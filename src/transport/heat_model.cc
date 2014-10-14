@@ -53,106 +53,124 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=bc_temperature
             .name("bc_temperature")
             .description("Boundary value of temperature.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=init_temperature
             .name("init_temperature")
             .description("Initial temperature.")
+            .units( UnitSI().K() )
             .input_default("0.0");
 
     *this+=porosity
             .name("porosity")
             .description("Porosity.")
+            .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_density
             .name("fluid_density")
             .description("Density of fluid.")
+            .units( UnitSI().kg().m(-3) )
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_capacity
             .name("fluid_heat_capacity")
             .description("Heat capacity of fluid.")
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_conductivity
             .name("fluid_heat_conductivity")
             .description("Heat conductivity of fluid.")
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
 
     *this+=solid_density
             .name("solid_density")
             .description("Density of solid (rock).")
+            .units( UnitSI().kg().m(-3) )
             .flags_add(in_time_term);
 
     *this+=solid_heat_capacity
             .name("solid_heat_capacity")
             .description("Heat capacity of solid (rock).")
+            .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
             .flags_add(in_time_term);
 
     *this+=solid_heat_conductivity
             .name("solid_heat_conductivity")
             .description("Heat conductivity of solid (rock).")
+            .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
             .flags_add(in_main_matrix);
 
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal heat dispersivity in fluid.")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=disp_t
             .name("disp_t")
             .description("Transversal heat dispersivity in fluid.")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=fluid_thermal_source
             .name("fluid_thermal_source")
             .description("Thermal source density in fluid.")
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_thermal_source
             .name("solid_thermal_source")
             .description("Thermal source density in solid.")
+            .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_heat_exchange_rate
             .name("fluid_heat_exchange_rate")
             .description("Heat exchange rate in fluid.")
+            .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_heat_exchange_rate
             .name("solid_heat_exchange_rate")
             .description("Heat exchange rate of source in solid.")
+            .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_ref_temperature
             .name("fluid_ref_temperature")
             .description("Reference temperature of source in fluid.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_ref_temperature
             .name("solid_ref_temperature")
             .description("Reference temperature in solid.")
+            .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=cross_section
             .name("cross_section")
+            .units( UnitSI().m(3).md() )
             .flags(input_copy & in_time_term & in_main_matrix);
 
     *this+=output_field
             .name("temperature")
-            .units("M/L^3")
+            .units( UnitSI().K() )
             .flags(equation_result);
 }
 

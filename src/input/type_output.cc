@@ -219,7 +219,10 @@ void OutputBase::write_default_value(std::ostream& stream, Default dft) {
 
 void OutputBase::write_description(std::ostream& stream, const string& str,
         unsigned int padding, unsigned int hash_count) {
-    boost::tokenizer<boost::char_separator<char> > line_tokenizer(str, boost::char_separator<char>("\n"));
+	string s = str;
+	boost::replace_all(s, "\\$", "$");
+
+    boost::tokenizer<boost::char_separator<char> > line_tokenizer(s, boost::char_separator<char>("\n"));
     boost::tokenizer<boost::char_separator<char> >::iterator it;
 
     // For every \n add padding at beginning of the next line.
@@ -257,8 +260,6 @@ void OutputBase::ProcessedTypes::clear() {
 unsigned int OutputBase::ProcessedTypes::type_index(const void * type_data) const {
     ProcessedTypes::key_to_index_const_iter it = key_to_index.find(type_data);
     if (it != key_to_index.end()) return it->second;
-
-    //THROW( ExcRecordKeyNotFound() << EI_KeyName(key) << EI_Record(*this) );
 
     return keys.size();
 }
@@ -682,12 +683,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 					| (typeid( *(array_type.get()) ) == typeid(Type::FileName)) ) ) {
 				print(stream, array_type.get(), depth+1);
 			}
-			//if (lower_size > 1) {
-			//	stream << "," << endl;
-			//	stream << setw((depth + 1) * padding_size) << "" << "< ";
-			//	if (lower_size == 2) stream << "1 more entry >";
-			//	else stream << (lower_size-1) << " more entries >";
-			//}
 
 			stream << endl;
 			stream << setw(depth * padding_size) << "" << "]";
@@ -759,7 +754,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Selection *type, unsi
 			stream << "# Selection of " << type->size() << " values";
 
 			if (OutputBase::get_selection_description(type).size()) {
-				//size_setw_ = depth+1;
 				write_description(stream, OutputBase::get_selection_description(type), padding_size*depth, 2);
 			}
 
@@ -784,11 +778,6 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Selection *type, unsi
 		}
 		case full_record:
 			print_default_value(stream, depth, "\"\"", false, true);
-			//if (value_.is_optional()) {
-			//	stream << setw(depth * padding_size) << "" << "OPT_" << key_name_ << " = \"\"" ;
-			//} else {
-			//	stream << setw(depth * padding_size) << "" << key_name_ << " = \"" << value_.value()<< "\"" ;
-			//}
 			break;
 	}
 
@@ -936,7 +925,7 @@ public:
         std::streamsize n_out = 0;
         while (n != 0) {
             --n;
-            if (s[0] == '_' || s[0] == '$') {
+            if (s[0] == '_') {
                 boost::iostreams::put(snk,'\\');
             }
             boost::iostreams::put(snk, *s++); ++n_out;

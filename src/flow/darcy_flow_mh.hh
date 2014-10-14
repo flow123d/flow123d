@@ -203,8 +203,6 @@ public:
        return mh_dh;
     }
     
-    virtual void get_partitioning_vector(int * &elem_part, unsigned &lelem_part){};
-
     virtual void set_concentration_vector(Vec &vc){};
 
 
@@ -218,14 +216,8 @@ protected:
 
     }
 
-    //virtual void postprocess() =0;
-
     virtual double solution_precision() const = 0;
 
-    //virtual void balance();
-    //virtual void integrate_sources();
-
-    
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
@@ -278,7 +270,6 @@ public:
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
-    void get_partitioning_vector(int * &elem_part, unsigned &lelem_part);
     
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -295,7 +286,6 @@ protected:
     { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
 
 
-    //void set_R() {};
     void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
 
@@ -340,9 +330,6 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
-	//LinSys_PETSC *schur1;  	//< first schur compl.
-	//LinSys_PETSC *schur2;  	//< second ..
-
 
 	// parallel
 	Distribution *edge_ds;          //< optimal distribution of edges
@@ -442,9 +429,6 @@ private:
 
 
 
-//void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
-//void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
-//        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
 void mat_count_off_proc_values(Mat m, Vec v);
 
 
@@ -461,23 +445,9 @@ class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    //returns reference to equation data
-    //virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
-    //{return data;}
-    
     static Input::Type::Record input_type;
 protected:
     void read_init_condition() override;
@@ -509,17 +479,6 @@ class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
     

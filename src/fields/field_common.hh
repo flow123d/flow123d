@@ -8,7 +8,6 @@
 #ifndef FIELD_COMMON_HH_
 #define FIELD_COMMON_HH_
 
-//#include <memory>
 #include <vector>
 using namespace std;
 
@@ -19,6 +18,7 @@ using namespace std;
 #include "coupling/time_governor.hh"
 
 #include "fields/field_flag.hh"
+#include "fields/unit_si.hh"
 #include "io/output_time.hh"
 
 
@@ -73,11 +73,6 @@ public:
       return *this;
     }
     /**
-     * Mark field to be used only as a copy of other field (do not produce key in record, do not set input list).
-     */
-    //FieldCommonBase &just_copy()
-    //{is_copy_=true; return *this;}
-    /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
     FieldCommon & description(const string & description)
@@ -105,7 +100,7 @@ public:
      * Possibly this allow using Boost::Units library, however, it seems to introduce lot of boilerplate code.
      * But can increase correctness of the calculations.
      */
-    FieldCommon & units(const string & units)
+    FieldCommon & units(const UnitSI & units)
     { shared_->units_ = units; return *this;}
 
     /**
@@ -189,7 +184,7 @@ public:
     const std::string &input_default() const
     { return shared_->input_default_;}
 
-    const std::string &units() const
+    const UnitSI &units() const
     { return shared_->units_;}
 
     OutputTime::DiscreteSpace output_type() const
@@ -209,9 +204,6 @@ public:
 
     FieldFlag::Flags &flags()
     { return flags_; }
-
-    //bool is_just_copy() const
-    //{ return is_copy_;}
 
     /**
      * Returns time set by last call of set_time method.
@@ -233,11 +225,6 @@ public:
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
     virtual IT::AbstractRecord &get_input_type() =0;
-
-    /**
-     * Abstract method for initialization of the field on one region.
-     */
-    //virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -317,8 +304,6 @@ protected:
      */
     FieldCommon(const FieldCommon & other);
 
-    //FieldCommonBase &FieldCommonBase::operator=(const FieldCommonBase &other) delete;
-
     /**
      * Invalidate last time in order to force set_time method
      * update region_fields_.
@@ -357,7 +342,7 @@ protected:
         /**
          * Units of the field values. Currently just a string description.
          */
-        std::string units_;
+        UnitSI units_;
         /**
          * For Enum valued fields this is the input type selection that should be used
          * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).
@@ -443,9 +428,6 @@ protected:
      * Maximum number of FieldBase objects we store per one region.
      */
     static const unsigned int history_length_limit_=3;
-
-    /// Flag field that has to be set as a copy of other field using copy_from method.
-    //bool is_copy_=false;
 
     /// Field flags. Default setting is "an equation input field, that can read from user input, and can be written to output"
     FieldFlag::Flags   flags_ = FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output;

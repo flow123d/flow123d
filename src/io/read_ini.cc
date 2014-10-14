@@ -307,7 +307,7 @@ void OptionsInit(const char *fname )
 
 	// take absolute path to the file
 	// this is completly wrong in the case the absolute path is alredy given
-	// since we should remain in the workdir when calling this it is not critical 
+	// since we should remain in the workdir when calling this it is not critical
 	// to hava correct function for path manipulation (see BOOST)
 	/*
 	path=xgetcwd();
@@ -390,7 +390,7 @@ void OptGetIntArray( const char *section,const  char *key,const  char *defval, i
 		if( (!strcmp(ini_item->section,section)) && (!strcmp(ini_item->key,key)) ){
 			for(i=0; i < sb_count; i++)
 			{
-			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL) 
+			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL)
 			  {
 				printf("\nerror during required %d-th parameter initialization occured\n",i);
 			  }else{

@@ -102,8 +102,6 @@ private:
      * TODO: temporary solution until we have separate mesh for the boundary part
      */
     bool boundary_domain_;
-    /// number of bulk data lines in the buffer
-    //unsigned int bulk_size_;
     /// Allocated size of data_ buffer
     unsigned int data_size_;
     /// Raw buffer of n_entities rows each containing Value::size() doubles.

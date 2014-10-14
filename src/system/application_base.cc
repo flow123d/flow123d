@@ -22,7 +22,6 @@ bool ApplicationBase::petsc_initialized = false;
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     int ierr;
 
-    //for(int i=0;i<argc;i++) xprintf(Msg,"%s,",argv[i]);
     petsc_initialized = true;
     sys_info.comm=comm;
 

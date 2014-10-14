@@ -368,13 +368,13 @@ protected:
   std::vector<double> df_vec;   ///< Vector of function derivatives values at nodes.
   //std::vector<double> p1_vec;   ///< Vector of linear coeficients of P1 interpolation.
   //std::vector<double> p1d_vec;  ///< Vector of linear coeficients of P1 interpolation.
-  
+
   //Creates piecewise constant interpolation.
   //void interpolate_p0();
   
   ///Creates piecewise linear interpolation.
   //void interpolate_p1();
-  
+
   ///Computes estimate of interpolation error in maximum norm.
   void compute_error(double tol, std::vector<double>& f, std::vector<double>& df);
   
@@ -391,8 +391,8 @@ protected:
 
   ///Finds interval on which @p x lies.
   //unsigned int find_interval(double x);
-  
-  
+
+
   ///Function that evaluates the derivative of P1 interpolant at @p x.
   DiffValue diff_p1(double x);
 };
