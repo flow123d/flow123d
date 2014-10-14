@@ -17,8 +17,6 @@
 
 #include <limits>
 
-//#define EXPECT_EQ(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
-
 
 /**
  * In place input file.
@@ -307,8 +305,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     it = tm_tg->last(tm.type_fixed_time());	//is included
     EXPECT_EQ( (it)->time(), 5.0 );
     
-    //is_end()?
-    
     delete tm_tg;
 }
 
@@ -365,7 +361,7 @@ TEST (TimeGovernor, steady_time_governor)
     //CONSTRUCTOR with INITIAL TIME
     TimeGovernor *steady_tg_2 = new TimeGovernor(555.0);
     //steady_tg_2->view("second_steady");
-    
+
     //cout << steady_tg_2->marks();
     
     EXPECT_EQ( steady_tg_2->t(), 555.0 );

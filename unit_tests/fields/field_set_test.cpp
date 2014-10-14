@@ -9,6 +9,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "fields/field_set.hh"
+#include "fields/unit_si.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -61,16 +62,17 @@ public:
 						.description("Velocity vector.")
 						.input_default("0.0")
 						.flags_add(in_main_matrix)
-						.units("LM^{-1}");
+						.units( UnitSI().kg(3).m() );
 			*this += init_pressure
 						.disable_where(type, {r_first, r_second })
 						.name("init_pressure")
 						.description("Pressure head")
-						.units("L");
+						.units( UnitSI().m() );
 
 			*this += type
 						.name("reaction_type")
 						.description("")
+						.units( UnitSI::dimensionless() )
 						.flags_add(in_main_matrix)
 						.input_selection(&reaction_type_sel);
 		}
@@ -102,7 +104,7 @@ TEST_F(SomeEquation, add_operator_death) {
     auto data = EqData();
     Field<3, FieldValue<3>::Scalar > pressure;
     EXPECT_ASSERT_DEATH({
-        data+=data.pressure
+        data+=pressure
              .name("init_pressure");},
           "Another field of the same name exists");
 

@@ -293,7 +293,6 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
 template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::~FESideValues()
 {
-    //DBGMSG(" FESideValues, mapping: %p\n",this->mapping_data);
 	for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
 	{
 		for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)

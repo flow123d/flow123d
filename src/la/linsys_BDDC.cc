@@ -67,9 +67,6 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
           swap_sign_(swap_sign)
 {
 #ifdef HAVE_BDDCML
-    // set type
-    //type = LinSys::BDDC;
-
     // from the point of view of assembly, BDDC linsys is in the ADD state
     status_ = LinSys::ADD;
 
@@ -138,9 +135,6 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     PetscInt numDofsSubInt = static_cast<int>( isngn_.size( ) );
     std::vector<PetscInt> idx( isngn_ );
 
-    //std::cout << "IDX: \n";
-    //std::copy( idx.begin(), idx.end(), std::ostream_iterator<PetscInt>( std::cout, " " ) );
-    
     ISLocalToGlobalMapping subdomainMapping;
     ierr = ISLocalToGlobalMappingCreate( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
     
@@ -149,17 +143,12 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     ierr = ISCreateStride( PETSC_COMM_SELF, numDofsSubInt, 0, 1, &subdomainIndexSet ); 
     ierr = ISLocalToGlobalMappingApplyIS( subdomainMapping, subdomainIndexSet, &from ); 
 
-    //ierr = ISCreateGeneral( comm_, numDofsSubInt, &(idx[0]), PETSC_COPY_VALUES, &subdomainMapping ); CHKERRV( ierr );
-    //ISView( subdomainIndexSet, PETSC_VIEWER_STDOUT_WORLD);
-    
 
     // create scatter from parallel PETSc vector to local indices of subdomain
     ierr = VecScatterCreate( solution_, from, locSolVec_, subdomainIndexSet, &VSpetscToSubScatter_ ); CHKERRV( ierr );
     ierr = ISDestroy( &subdomainIndexSet ); CHKERRV( ierr );
     ierr = ISDestroy( &from ); CHKERRV( ierr );
 
-    //VecScatterView(VSpetscToSubScatter_,PETSC_VIEWER_STDOUT_SELF);
-    
     //double * locSolVecArray;
     //ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
     //std::copy( locSolution_.begin(), locSolution_.end(), locSolVecArray );

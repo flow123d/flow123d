@@ -123,7 +123,7 @@ inline double Interpolant::val_test(double x)
   /*
   //increase calls
   stats.total_calls++;
- 
+
   if(x < bound_a_)
   {
     //std::cout << "test a" << std::endl;
@@ -230,7 +230,7 @@ inline DiffValue Interpolant::diff_p0(double x)
   return result;
 }
 */
-  
+
 inline double Interpolant::val_p1(double x)
 {
   /*

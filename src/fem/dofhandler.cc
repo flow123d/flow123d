@@ -40,9 +40,6 @@
 
 
 
-
-
-
 //template<unsigned int dim, unsigned int spacedim> inline
 //DOFHandler<dim,spacedim>::DOFHandler(Mesh & _mesh)
 //: DOFHandlerBase(_mesh),
@@ -453,8 +450,8 @@ template<> FiniteElement<1,3> *DOFHandlerMultiDim::fe<1>() const { return fe1d_;
 template<> FiniteElement<2,3> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
 template<> FiniteElement<3,3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }
 
+
 //template class DOFHandler<0,3>;
 //template class DOFHandler<1,3>;
 //template class DOFHandler<2,3>;
 //template class DOFHandler<3,3>;
-

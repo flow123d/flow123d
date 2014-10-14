@@ -95,7 +95,6 @@ TEST(JSONReference, valid_reference_rec_test) {
 	using namespace Input;
 
 	JSONToStorage json_reader( valid_record_json, get_type_record());
-	// Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 }
 
 TEST(JSONReference, cyclic_reference_rec_test) {

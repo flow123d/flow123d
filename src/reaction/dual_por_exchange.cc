@@ -51,27 +51,27 @@ DualPorosity::EqData::EqData()
            .name("diffusion_rate_immobile")
            .description("Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.")
            .input_default("0")
-           .units("");
+           .units( UnitSI().s(-1) );
   
   *this += porosity_immobile
           .name("porosity_immobile")
           .description("Porosity of the immobile zone.")
           .input_default("0")
-          .units("1");
+          .units( UnitSI::dimensionless() );
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
           .description("Initial concentration of substances in the immobile zone.")
-          .units("M/L^3");
+          .units( UnitSI().kg().m(-3) );
 
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
-        .units("1")
+        .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy );
 
   output_fields += *this;
-  output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
+  output_fields += conc_immobile.name("conc_immobile").units( UnitSI().kg().m(-3) );
 }
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
@@ -168,7 +168,6 @@ void DualPorosity::make_reactions() {
 
 void DualPorosity::initialize()
 {
-  //DBGMSG("DualPorosity - initialize.\n");
   ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
@@ -240,7 +239,6 @@ void DualPorosity::initialize_fields()
 
 void DualPorosity::zero_time_step()
 {
-  //DBGMSG("DualPorosity - zero_time_step.\n");
   ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
@@ -277,7 +275,6 @@ void DualPorosity::zero_time_step()
 
 void DualPorosity::set_initial_condition()
 {
-  //DBGMSG("DualPorosity - init_conc_immobile.\n");
   //setting initial condition for immobile concentration matrix
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
   {
@@ -294,7 +291,6 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  //DBGMSG("DualPorosity - update solution\n");
   data_.set_time(*time_);
  
   START_TIMER("dual_por_exchange_step");
@@ -324,33 +320,6 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
   por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
   arma::Col<double> diff_vec = data_.diffusion_rate_immobile.value(ele->centre(), ele->element_accessor());
  
-// OLD CODE:  
-//     for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
-//     {
-//         //sbi_loc = substance_id[sbi];    //mapping to global substance index
-//         //previous values
-//         previous_conc_mob = concentration_matrix_[sbi][loc_el];
-//         previous_conc_immob = conc_immobile[sbi][loc_el];
-// 
-//         // ---compute average concentration------------------------------------------
-//         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) / (por_mob + por_immob);
-// 
-//         if ((conc_average != 0.0) && (por_immob != 0.0)) {
-//                 temp_exp = exp(-diff_vec[sbi] * ((por_mob + por_immob) / (por_mob * por_immob)) * time_->dt());
-//                 // ---compute concentration in mobile area-----------------------------------
-//                 conc_mob = (previous_conc_mob - conc_average) * temp_exp + conc_average;
-// 
-//                 // ---compute concentration in immobile area---------------------------------
-//                 conc_immob = (previous_conc_immob - conc_average) * temp_exp + conc_average;
-//                 // --------------------------------------------------------------------------
-// //                 DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
-// //                         conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt());
-//                 concentration_matrix_[sbi][loc_el] = conc_mob;
-//                 conc_immobile[sbi][loc_el] = conc_immob;
-//         }
-//     }
-
-    
     // if porosity_immobile == 0 then mobile concentration stays the same 
     // and immobile concentration cannot change
     if (por_immob == 0.0) return conc_immobile;
@@ -373,7 +342,6 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
         
         if( conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average) )               // forward euler
         {
-            //DBGMSG("forward euler\n");
             double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
             // ---compute concentration in mobile area
             conc_mob = temp / por_mob + previous_conc_mob;
@@ -383,22 +351,17 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
         }
         else                                                        //analytic solution
         {
-            //DBGMSG("analytic\n");
             double temp = exp(-exponent);
             // ---compute concentration in mobile area
             conc_mob = (previous_conc_mob - conc_average) * temp + conc_average;
 
             // ---compute concentration in immobile area
             conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
-            
-//          DBGMSG("conc_mob: %f  conc_immob: %f  previous_conc_mob: %f  previous_conc_immob: %f  conc_average: %f  diff: %f  por_mob: %f  por_immob: %f  time_dt: %f\n",
-//                  conc_mob, conc_immob, previous_conc_mob, previous_conc_immob, conc_average, diff_vec[sbi], por_mob, por_immob, time_->dt()); 
         }
         
         concentration_matrix_[sbi][loc_el] = conc_mob;
         conc_immobile[sbi][loc_el] = conc_immob;
     }
-  //*/
   
   return conc_immobile;
 }
@@ -406,8 +369,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 
 void DualPorosity::allocate_output_mpi(void )
 {
-    //DBGMSG("DualPorosity - allocate_output_mpi.\n");
-    int sbi, n_subst, ierr;
+    int sbi, n_subst;
     n_subst = names_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
@@ -415,12 +377,12 @@ void DualPorosity::allocate_output_mpi(void )
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        ierr = VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
                 &vconc_immobile[sbi]);
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        ierr = VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
+        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
         VecZeroEntries(vconc_immobile_out[sbi]);
     }
     
@@ -434,23 +396,17 @@ void DualPorosity::allocate_output_mpi(void )
 
 void DualPorosity::output_vector_gather() 
 {
-    //DBGMSG("DualPorosity - output_vector_gather.\n");
     unsigned int sbi;
-
-    //PetscViewer inviewer;
 
     for (sbi = 0; sbi < names_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }
-    //VecView(transport->vconc[0],PETSC_VIEWER_STDOUT_WORLD);
-    //VecView(transport->vconc_out[0],PETSC_VIEWER_STDOUT_WORLD);
 }
 
 
 void DualPorosity::output_data(void )
 {
-    //DBGMSG("DualPorosity output\n");
     output_vector_gather();
 
     // Register fresh output data

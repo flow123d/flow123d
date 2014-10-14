@@ -80,7 +80,6 @@ FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecor
     shared_ptr< FieldAlgorithmBase<spacedim, Value> > func;
 
     if (rec.type() == FieldInterpolatedP0<spacedim,Value>::input_type ) {
-	//xprintf(PrgErr,"TYPE of Field currently not functional.\n");
 	func=make_shared< FieldInterpolatedP0<spacedim,Value> >(n_comp);
 #ifdef HAVE_PYTHON
     } else if (rec.type() == FieldPython<spacedim,Value>::input_type ) {
@@ -169,12 +168,6 @@ template class field<dim_from, FieldValue<0>::Vector >;                         
 INSTANCE_DIM_DEP_VALUES( field, dim_from, 2) \
 INSTANCE_DIM_DEP_VALUES( field, dim_from, 3) \
 
-/*#define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL(field, 0) \
-INSTANCE_TO_ALL( field, 1) \
-INSTANCE_TO_ALL( field, 2) \
-INSTANCE_TO_ALL( field, 3) */
-
 // All instances of one field class template @p field.
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server
@@ -182,7 +175,6 @@ INSTANCE_TO_ALL( field, 3) */
 INSTANCE_TO_ALL( field, 3) \
 INSTANCE_TO_ALL( field, 2)
 // currently we use only 3D ambient space
-// INSTANCE_TO_ALL( field, 2)
 
 
 

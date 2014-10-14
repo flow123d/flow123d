@@ -156,12 +156,6 @@ public:
        virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm)=0;
 
        /**
-        * Pure virtual method. At least this has to be implemented by descendants.
-        * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-        */
-       //virtual FieldResult value(const Space<spacedim>::Point &p, ElementAccessor<spacedim> &elm, typename Value::return_type &value) =0;
-
-       /**
         * Returns std::vector of scalar values in several points at once. The base class implements
         * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
         * but this overhead can be negligible for more complex fields as Python of Formula.

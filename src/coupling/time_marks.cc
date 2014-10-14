@@ -48,10 +48,6 @@ const TimeMark::Type TimeMark::every_type =  ~0x0;
 const TimeMark::Type TimeMark::none_type =  0x0;
 
 
-//This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks //OBSOLETE
-//const TimeMark::Type TimeMark::strict =  0x1;
-
-
 // ------------------------------------------------------
 // implementation of members of class TimeMarks
 // ------------------------------------------------------
@@ -77,10 +73,6 @@ TimeMark::Type TimeMarks::new_mark_type() {
     next_mark_type_ <<= 1;
     return current_type;
 }
-
-//TimeMark::Type TimeMarks::new_strict_mark_type() {
-//    return new_mark_type() | TimeMark::strict;
-//}
 
 void TimeMarks::add(const TimeMark &mark) {
     // find first mark with time greater or equal to the new mark
@@ -108,20 +100,10 @@ void TimeMarks::add(const TimeMark &mark) {
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
 	ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
 	ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
-    //if (end_time == TimeGovernor::inf_time) {
-    //    if (time == TimeGovernor::inf_time) return;
-    //    else add(TimeMark(time, type));
-    //} else
-    //if (dt == 0) {
-    	// prevent infinite loop - add only initial time
-    //	add(TimeMark(time, type));
-    //}
-    //else {
-        for (double t = time; t <= end_time*1.001; t += dt) {
-        	auto mark = TimeMark(t, type);
-            add(mark);
-        }
-   // }
+	for (double t = time; t <= end_time*1.001; t += dt) {
+		auto mark = TimeMark(t, type);
+		add(mark);
+	}
 }
 
 bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const

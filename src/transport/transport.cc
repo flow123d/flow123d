@@ -80,12 +80,13 @@ IT::Selection ConvectionTransport::EqData::output_selection =
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
+    	bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+    	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
-
-    bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+    	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
-    output_fields += conc_mobile.name("conc").units("M/L^3");
+    output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
 }
 
 
@@ -390,7 +391,7 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
           
           csection = data_.cross_section.value(p, ele_acc);
 
-          //if(data_.sources_density.changed_during_set_time) 
+          //if(data_.sources_density.changed_during_set_time)
           sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
       
           //if(data_.sources_conc.changed_during_set_time)
