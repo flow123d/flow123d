@@ -42,15 +42,6 @@ class Mesh;
 
 class Side {
 public:
-    // Basic data
-    //struct Boundary *cond; // Boundary condition  - if prescribed
-
-    // Results
-    //double flux; // Flux through side
-    //double scalar; // Scalar quantity (piez. head or pressure)
-    //double pscalar; // As scalar but in previous time step
-    //struct Edge *edge_; // Edge to which belonged
-
     Side()
     : element_(NULL), el_idx_(0)
     {}

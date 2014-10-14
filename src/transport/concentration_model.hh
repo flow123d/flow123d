@@ -79,20 +79,6 @@ protected:
 	 */
 	static IT::Record &get_input_type(const string &implementation, const string &description);
 
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
-
-
-public:
-
-	ConcentrationTransportModel();
-
-	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
-
-	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
-
 	/**
 	 * Formula to calculate the dispersivity tensor.
 	 * @param velocity  Fluid velocity.
@@ -110,6 +96,22 @@ public:
 			double porosity,
 			double cross_cut,
 			arma::mat33 &K);
+
+	/// Indicator of change in advection vector field.
+	bool flux_changed;
+
+
+public:
+
+	ConcentrationTransportModel();
+
+	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
+
+	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<double> &mm_coef) override;
+
+
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,

@@ -1,17 +1,13 @@
 # Flow123d #
 
-[![Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
-
-[Source documentation](http://bacula.nti.tul.cz/~jan.brezina/flow123d_doc/source_doc/) generated from development sources
-
-[Reference manual](http://bacula.nti.tul.cz/~jan.brezina/flow123d_doc/flow123d_doc.pdf) for current development version
-
 Flow123d is a simulator of underground water flow and transport processes in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
-we can combine continuum models and discrete fracture network models. For details see:
-[Features](https://dev.nti.tul.cz/trac/flow123d/wiki/Features) page.
+we can combine continuum models and discrete fracture network models.
+For more information see project pages:
+[flow123d.github.com](http://flow123d.github.com).
   
+[![CI Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
 
 ## License ##
 

@@ -64,19 +64,19 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Longitudal dispersivity (for each substance).")
             .units( UnitSI().m() )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
             .units( UnitSI().m() )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
             .units( UnitSI().m(2).s(-1) )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
 
 	*this+=output_field
 	        .name("conc")
@@ -149,6 +149,8 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 }
 
 
+
+
 void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
@@ -157,7 +159,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 {
 	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
-	std::vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize);
+	std::vector<arma::vec> Dm(qsize, arma::vec(n_subst) ), alphaL(qsize, arma::vec(n_subst) ), alphaT(qsize, arma::vec(n_subst) );
 	std::vector<double> por_m(qsize), csection(qsize);
 
 	data().diff_m.value_list(point_list, ele_acc, Dm);
@@ -169,7 +171,9 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	for (unsigned int i=0; i<qsize; i++) {
 		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
-			calculate_dispersivity_tensor(velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i], dif_coef[sbi][i]);
+			calculate_dispersivity_tensor(velocity[i],
+					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i],
+					dif_coef[sbi][i]);
 		}
 	}
 }

@@ -45,25 +45,3 @@ void Isotherm::make_table(int nr_of_points)
 	return;
 }
 
-
-
-/*
-SorptionType Isotherm::get_sorption_type(void)
-{
-	return adsorption_type_;
-}
-
-void Isotherm::set_iso_params(SorptionType sorp_type, double mult_coef, double second_coef)
-{
-	adsorption_type_ = sorp_type;
-	mult_coef_ = mult_coef;
-	second_coef_ = second_coef;
-	return;
-}
-
-void Isotherm::set_kind_of_pores(int kind_of_pores)
-{
-	kind_of_pores_ = kind_of_pores;
-	return;
-}
-*/

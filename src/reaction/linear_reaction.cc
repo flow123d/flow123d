@@ -107,9 +107,6 @@ void LinearReaction::modify_reaction_matrix(void) //All the parameters are suppo
                                        = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
         }
     }
-    
-    //print_half_lives();
-    //print_reaction_matrix(); //just for control print
 }
 
 double **LinearReaction::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
@@ -194,7 +191,6 @@ void LinearReaction::initialize_from_input()
 
 void LinearReaction::update_solution(void)
 {
-    //DBGMSG("LinearReactions - update solution\n");
     if(time_->is_changed_dt())
     {
         reset_reaction_matrix();
@@ -214,7 +210,6 @@ void LinearReaction::print_reaction_matrix(void)
 {
 	unsigned int cols,rows;
 
-	//DBGMSG("r mat: %p\n", reaction_matrix);
 	if(reaction_matrix_.size() == n_substances_){
                 if(time_ != NULL)
                   xprintf(Msg,"\ntime_step %f,Reaction matrix looks as follows:\n",time_->dt());

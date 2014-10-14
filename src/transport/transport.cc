@@ -391,7 +391,7 @@ void ConvectionTransport::compute_concentration_sources(unsigned int sbi) {
           
           csection = data_.cross_section.value(p, ele_acc);
 
-          //if(data_.sources_density.changed_during_set_time) 
+          //if(data_.sources_density.changed_during_set_time)
           sources_density[sbi][loc_el] = data_.sources_density.value(p, ele_acc)(sbi)*csection;
       
           //if(data_.sources_conc.changed_during_set_time)

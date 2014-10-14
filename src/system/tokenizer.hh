@@ -48,7 +48,6 @@ public:
      * Shortcut for boost tokenizer.
      */
     typedef boost::escaped_list_separator<char> Separator;
-    //typedef boost::tokenizer<boost::char_separator<char> > BT;
     typedef boost::tokenizer<Separator> BT;
 
     /**

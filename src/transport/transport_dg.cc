@@ -210,23 +210,20 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
-            .flags_add(FieldFlag::in_rhs);
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-//    std::vector<FieldEnum> list; list.push_back(neumann);
     *this+=bc_flux
             .name("bc_flux")
             .description("Flux in Neumann boundary condition.")
             .units( UnitSI().kg().m().s(-1).md() )
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
-//    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     *this+=bc_robin_sigma
             .name("bc_robin_sigma")
             .description("Conductivity coefficient in Robin boundary condition.")
             .units( UnitSI().m(4).s(-1).md() )
             .input_default("0.0")
-            .flags_add(FieldFlag::in_rhs);
-//    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     // add all input fields to the output list
 
@@ -668,7 +665,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     unsigned int dof_indices[ndofs];
     vector<arma::vec3> velocity(qsize);
-    vector<arma::vec> sources_sigma(qsize);
+    vector<arma::vec> sources_sigma(qsize, arma::vec(n_substances()));
     PetscScalar local_matrix[ndofs*ndofs];
 
 	// assemble integral over elements
@@ -729,7 +726,9 @@ void TransportDG<Model>::set_sources()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
+    vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
+    				  sources_density(qsize, arma::vec(n_substances())),
+    				  sources_sigma(qsize,  arma::vec(n_substances()));
     unsigned int dof_indices[ndofs];
     PetscScalar local_rhs[ndofs];
     double source;
@@ -909,7 +908,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     unsigned int side_dof_indices[ndofs];
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
-    vector<arma::vec> robin_sigma(qsize);
+    vector<arma::vec> robin_sigma(qsize, arma::vec(n_substances()));
     arma::vec dg_penalty;
     double gamma_l;
 
@@ -1006,7 +1005,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
-	vector<arma::vec> frac_sigma(qsize);
+	vector<arma::vec> frac_sigma(qsize, arma::vec(n_substances()));
 	vector<double> csection_lower(qsize), csection_higher(qsize), mm_coef_lower(qsize), mm_coef_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
@@ -1123,16 +1122,10 @@ void TransportDG<Model>::set_boundary_conditions()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     unsigned int side_dof_indices[ndofs];
     double local_rhs[ndofs];
-    vector<arma::vec> bc_values(qsize), bc_fluxes(qsize), bc_sigma(qsize);
+    vector<arma::vec> bc_values(qsize, arma::vec(n_substances())),
+    		bc_fluxes(qsize, arma::vec(n_substances())),
+    		bc_sigma(qsize, arma::vec(n_substances()));
 	vector<arma::vec3> velocity;
-
-    for (unsigned int i=0; i<qsize; i++)
-    {
-    	bc_values[i].resize(n_subst_);
-    	bc_fluxes[i].resize(n_subst_);
-    	bc_sigma[i].resize(n_subst_);
-    }
-
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
@@ -1542,7 +1535,9 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 			update_values | update_JxW_values | update_quadrature_points);
 	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
 	unsigned int dof_indices[ndofs];
-	vector<arma::vec> sources_conc(qsize), sources_density(qsize), sources_sigma(qsize);
+    vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
+    				  sources_density(qsize, arma::vec(n_substances())),
+    				  sources_sigma(qsize,  arma::vec(n_substances()));
 	double mass_sum, sources_sum, conc, conc_diff;
 
     for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)

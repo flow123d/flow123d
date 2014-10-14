@@ -2,7 +2,6 @@
 #include "system/system.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
-//#include "mesh/ngh/include/point.h"
 
 
 TEST(intersection, triangle_tetrahedron) {

@@ -8,7 +8,6 @@
 #ifndef FIELD_COMMON_HH_
 #define FIELD_COMMON_HH_
 
-//#include <memory>
 #include <vector>
 using namespace std;
 
@@ -73,11 +72,6 @@ public:
     { name_=shared_->input_name_ = name;
       return *this;
     }
-    /**
-     * Mark field to be used only as a copy of other field (do not produce key in record, do not set input list).
-     */
-    //FieldCommonBase &just_copy()
-    //{is_copy_=true; return *this;}
     /**
      * Set description of the field, used for description of corresponding key in documentation.
      */
@@ -211,9 +205,6 @@ public:
     FieldFlag::Flags &flags()
     { return flags_; }
 
-    //bool is_just_copy() const
-    //{ return is_copy_;}
-
     /**
      * Returns time set by last call of set_time method.
      * Can be different for different field copies.
@@ -234,11 +225,6 @@ public:
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
     virtual IT::AbstractRecord &get_input_type() =0;
-
-    /**
-     * Abstract method for initialization of the field on one region.
-     */
-    //virtual void set_from_input(const RegionSet &domain, const Input::AbstractRecord &rec) =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -317,8 +303,6 @@ protected:
      * Field<...>
      */
     FieldCommon(const FieldCommon & other);
-
-    //FieldCommonBase &FieldCommonBase::operator=(const FieldCommonBase &other) delete;
 
     /**
      * Invalidate last time in order to force set_time method
@@ -444,9 +428,6 @@ protected:
      * Maximum number of FieldBase objects we store per one region.
      */
     static const unsigned int history_length_limit_=3;
-
-    /// Flag field that has to be set as a copy of other field using copy_from method.
-    //bool is_copy_=false;
 
     /// Field flags. Default setting is "an equation input field, that can read from user input, and can be written to output"
     FieldFlag::Flags   flags_ = FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output;

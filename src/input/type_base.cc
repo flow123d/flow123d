@@ -173,12 +173,6 @@ bool Array::ArrayData::finish()
 		}
 		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
 		    xprintf(PrgErr, "Should not happen!\n");
-		    /*
-			Array *a = (Array *)dynamic_cast<const Array *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Array>(*a);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;*/
-
 	}
 
 	return (finished = true);
@@ -230,8 +224,6 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     if ( (boost::is_base_of<Record, ValueType>::value ||
           boost::is_base_of<Selection, ValueType>::value)
          && ! TypeBase::was_constructed(&type) ) {
-        //xprintf(Warn,"In construction of Array of Lazy type %s with copy declaration. Potential problem with order of static initializations.\n",
-        //        type.type_name().c_str());
         data_->p_type_of_values = &type;
         TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
     } else {
@@ -373,27 +365,6 @@ string Double::type_name() const {
 /**********************************************************************************
  * implementation of Type::FileName
  */
-
-/*
-std::ostream& FileName::documentation(std::ostream& stream,DocType extensive, unsigned int pad)  const {
-    if (extensive == full_after_record) return stream;
-
-    stream << "FileName of ";
-    switch (type_) {
-    case ::FilePath::input_file:
-        stream << "input file";
-        break;
-    case ::FilePath::output_file:
-        stream << "output file";
-        break;
-    default:
-        stream << "file with unknown type";
-        break;
-    }
-    return stream;
-}
-*/
-
 
 string FileName::type_name() const {
     switch (type_) {
