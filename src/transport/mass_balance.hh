@@ -468,6 +468,9 @@ public:
 	void output(double time);
 
 private:
+	/// Size of column in output (used if delimiter is space)
+	static const unsigned int output_column_width = 20;
+
 	/// Perform output in old format (for compatibility)
 	void output_legacy(double time);
 
@@ -476,6 +479,15 @@ private:
 
 	/// Return part of output represented by zero values. Count of zero values is given by cnt parameter.
 	std::string csv_zero_vals(unsigned int cnt, char delimiter);
+
+	/// Print output header
+	void format_csv_output_header(char delimiter, const std::string& comment_string);
+
+	/// Format string value of csv output. Wrap string into quotes and if delimiter is space, align text to column.
+	std::string format_csv_val(std::string val, char delimiter);
+
+	/// Format double value of csv output. If delimiter is space, align text to column.
+	std::string format_csv_val(double val, char delimiter);
 
 
     /// Handle for file for output of balance and total fluxes over individual regions and region sets.
@@ -566,6 +578,9 @@ private:
 
 	/// MPI rank.
 	int rank_;
+
+	/// hold count of line printed into output_
+	unsigned int output_line_counter_;
 
 };
 

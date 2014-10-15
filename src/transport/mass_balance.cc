@@ -394,7 +394,8 @@ Balance::Balance(const std::vector<unsigned int> &elem_regions,
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
-	  	  allocation_done_(false)
+	  	  allocation_done_(false),
+	  	  output_line_counter_(0)
 
 {
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
@@ -1195,34 +1196,23 @@ void Balance::output_legacy(double time)
 }
 
 
-std::string Balance::csv_zero_vals(unsigned int cnt, char delimiter) {
+std::string Balance::csv_zero_vals(unsigned int cnt, char delimiter)
+{
 	std::stringstream ss;
-	for (unsigned int i=0; i<cnt; i++) ss << delimiter << 0;
+	for (unsigned int i=0; i<cnt; i++) ss << format_csv_val(0, delimiter);
 	return ss.str();
 }
 
 
-void Balance::output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat) {
+void Balance::output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat)
+{
 	// write output only on process #0
 	if (rank_ != 0) return;
 
 	const unsigned int n_quant = quantities_.size();
 
-	// print data header
-	output_ << "\"#time\""
-			<< delimiter << "\"region\""
-			<< delimiter << "\"quantity\""
-			<< delimiter << "\"flux\""
-			<< delimiter << "\"flux_in\""
-			<< delimiter << "\"flux_out\""
-			<< delimiter << "\"mass\""
-			<< delimiter << "\"source\""
-			<< delimiter << "\"source_in\""
-			<< delimiter << "\"source_out\""
-			<< delimiter << "\"integrated_flux\""
-			<< delimiter << "\"integrated_source\""
-			<< delimiter << "\"error\""
-			<< endl;
+	// print data header only on first line
+	if (repeat==0 && output_line_counter_==0) format_csv_output_header(delimiter, comment_string);
 
 	// print sources and masses over bulk regions
 	const RegionSet & bulk_set = regions_.get_region_set("BULK");
@@ -1230,15 +1220,19 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
-			output_ << time
-					<< delimiter << "\"" << reg->label().c_str() << "\""
-					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val(reg->label(), delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< csv_zero_vals(3, delimiter)
-					<< delimiter << masses_[qi][reg->bulk_idx()]
-					<< delimiter << sources_[qi][reg->bulk_idx()]
-					<< delimiter << sources_in_[qi][reg->bulk_idx()]
-					<< delimiter << sources_out_[qi][reg->bulk_idx()]
+					<< format_csv_val(masses_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_in_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_out_[qi][reg->bulk_idx()], delimiter)
 					<< csv_zero_vals(3, delimiter) << endl;
+			++output_line_counter_;
 		}
 	}
 
@@ -1247,13 +1241,17 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
-			output_ << time
-					<< delimiter << "\"" << reg->label().c_str() << "\""
-					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
-					<< delimiter << fluxes_[qi][reg->boundary_idx()]
-					<< delimiter << fluxes_in_[qi][reg->boundary_idx()]
-					<< delimiter << fluxes_out_[qi][reg->boundary_idx()]
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val(reg->label(), delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
+					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
 					<< csv_zero_vals(7, delimiter) << endl;
+			++output_line_counter_;
 		}
 	}
 
@@ -1261,24 +1259,78 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
-			output_ << time
-					<< delimiter << "\"ALL\""
-					<< delimiter << "\"" << quantities_[qi].name_.c_str() << "\""
-					<< delimiter << sum_fluxes_[qi]
-					<< delimiter << sum_fluxes_in_[qi]
-					<< delimiter << sum_fluxes_out_[qi]
-					<< delimiter << sum_masses_[qi]
-					<< delimiter << sum_sources_[qi]
-					<< delimiter << sum_sources_in_[qi]
-					<< delimiter << sum_sources_out_[qi]
-					<< delimiter << integrated_fluxes_[qi]
-					<< delimiter << integrated_sources_[qi]
-					<< delimiter << error << endl;
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val("ALL", delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
+					<< format_csv_val(sum_fluxes_[qi], delimiter)
+					<< format_csv_val(sum_fluxes_in_[qi], delimiter)
+					<< format_csv_val(sum_fluxes_out_[qi], delimiter)
+					<< format_csv_val(sum_masses_[qi], delimiter)
+					<< format_csv_val(sum_sources_[qi], delimiter)
+					<< format_csv_val(sum_sources_in_[qi], delimiter)
+					<< format_csv_val(sum_sources_out_[qi], delimiter)
+					<< format_csv_val(integrated_fluxes_[qi], delimiter)
+					<< format_csv_val(integrated_sources_[qi], delimiter)
+					<< format_csv_val(error, delimiter) << endl;
+			++output_line_counter_;
 		}
 	}
 
-	output_ << endl << endl;
+}
+
+
+void Balance::format_csv_output_header(char delimiter, const std::string& comment_string)
+{
+	std::stringstream ss;
+	if (delimiter == ' ') {
+		ss << setw(output_column_width-comment_string.size()) << "\"time\"";
+	} else {
+		ss << delimiter << "\"time\"";
+	}
+
+	output_ << comment_string << ss.str()
+			<< format_csv_val("region", delimiter)
+			<< format_csv_val("quantity", delimiter)
+			<< format_csv_val("flux", delimiter)
+			<< format_csv_val("flux_in", delimiter)
+			<< format_csv_val("flux_out", delimiter)
+			<< format_csv_val("mass", delimiter)
+			<< format_csv_val("source", delimiter)
+			<< format_csv_val("source_in", delimiter)
+			<< format_csv_val("source_out", delimiter)
+			<< format_csv_val("integrated_flux", delimiter)
+			<< format_csv_val("integrated_source", delimiter)
+			<< format_csv_val("error", delimiter)
+			<< endl;
+}
+
+std::string Balance::format_csv_val(std::string val, char delimiter)
+{
+	std::stringstream ss;
+	if (delimiter == ' ') {
+		std::stringstream sval;
+		sval << "\"" << val << "\"";
+		ss << " " << setw(output_column_width-1) << sval.str();
+	} else {
+		ss << delimiter << "\"" << val << "\"";
+	}
+
+	return ss.str();
+}
+
+std::string Balance::format_csv_val(double val, char delimiter)
+{
+	std::stringstream ss;
+	if (delimiter == ' ') {
+		ss << " " << setw(output_column_width-1) << val;
+	} else {
+		ss << delimiter << val;
+	}
+	return ss.str();
 }
 
 
