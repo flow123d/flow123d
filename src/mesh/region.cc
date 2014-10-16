@@ -85,6 +85,11 @@ RegionDB::RegionDB()
 
 
 Region RegionDB::implicit_boundary_region() {
+	DimIDIter it_id = region_set_.get<DimId>().find(DimID(undefined_dim, Region::undefined-2));
+    if ( it_id!=region_set_.get<DimId>().end() ) {
+        return Region(it_id->index, *this);
+    }
+
     return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
 }
 
