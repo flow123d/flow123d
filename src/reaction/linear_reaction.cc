@@ -84,9 +84,6 @@ void LinearReaction::prepare_reaction_matrix_analytic(void)
                                        = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
         }
     }
-    
-    //print_half_lives();
-    //print_reaction_matrix(); //just for control print
 }
 
 

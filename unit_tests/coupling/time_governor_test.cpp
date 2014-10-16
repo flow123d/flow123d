@@ -17,8 +17,6 @@
 
 #include <limits>
 
-//#define EXPECT_EQ(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
-
 
 /**
  * In place input file.
@@ -35,7 +33,37 @@ time = {
 )JSON";
 
 
-static const double inf_time = numeric_limits<double>::infinity();
+const string json_with_init_dt = R"JSON(
+{
+time = { 
+    start_time = 10.0, 
+    end_time   = 30.0,
+    init_dt    = 15
+  }
+}
+)JSON";
+
+
+const double inf_time = TimeGovernor::inf_time;
+
+
+
+Input::Record read_input(const string &json_input)
+{
+	static Input::Type::Record in_rec("RootInput", "Root record.");
+
+	if (! in_rec.is_finished()) {
+	in_rec.declare_key("time", TimeGovernor::input_type, Input::Type::Default::obligatory(), "");
+	in_rec.finish();
+	}
+
+	//json reading according to keys defined in in_rec
+	Input::JSONToStorage json_reader(json_input, in_rec);
+
+	//getting root record
+	return json_reader.get_root_interface<Input::Record>().val<Input::Record>("time");
+}
+
 
 
 /**
@@ -50,7 +78,7 @@ TEST (TimeMark, time_mark)
     
     //checking time values
     EXPECT_EQ(tm1.time(), -1.0);
-    EXPECT_EQ(tm2.mark_type(), ~0x0);
+    EXPECT_EQ(tm2.mark_type(), TimeMark::Type(~0x0));
     
     //checking type values - comparing masks
     EXPECT_TRUE(tm1.match_mask(0x01));
@@ -113,8 +141,6 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
     cout << tm;
     
-    //xprintf(MsgDbg, "\nTimeGovernor:\n\tstart_time: %f\n\tend_time: %f\n\tend_of_fixed_dt: %f\n\t time_step: %f\n\t last_time_step: %f\n",
-	//    tm_tg->t(), tm_tg->end_time(),tm_tg->end_of_fixed_dt(), tm_tg->dt(), tm_tg->last_dt() );
 	 
     //testing if TimeGovernor was correctly constructed
     EXPECT_EQ( tm_tg->t(), 0.0 );
@@ -279,9 +305,24 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     it = tm_tg->last(tm.type_fixed_time());	//is included
     EXPECT_EQ( (it)->time(), 5.0 );
     
-    //is_end()?
-    
     delete tm_tg;
+}
+
+
+TEST (TimeGovernor, simple_constructor)
+{
+	// Test of constructor without JSON input
+	TimeGovernor tg(10, 0.5);
+
+	EXPECT_EQ(tg.t(), 10);
+	EXPECT_EQ(tg.dt(), 0.5);
+	EXPECT_EQ(tg.end_time(), inf_time);
+	EXPECT_EQ(tg.end_of_fixed_dt(), inf_time);
+
+	tg.next_time();
+
+	EXPECT_EQ(tg.t(), 10.5);
+
 }
 
 
@@ -320,7 +361,7 @@ TEST (TimeGovernor, steady_time_governor)
     //CONSTRUCTOR with INITIAL TIME
     TimeGovernor *steady_tg_2 = new TimeGovernor(555.0);
     //steady_tg_2->view("second_steady");
-    
+
     //cout << steady_tg_2->marks();
     
     EXPECT_EQ( steady_tg_2->t(), 555.0 );

@@ -27,7 +27,16 @@ else()
         # create from template
         MESSAGE(FATAL_ERROR "Need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
     endif()
-endif ()
+endif()
+
+# by default reuse number of cpus for make from environment
+if (NOT MAKE_NUMCPUS)
+    set(MAKE_NUMCPUS $ENV{MAKE_NUMCPUS})
+endif()
+
+if (MAKE_NUMCPUS)
+    set(MAKE_NUMCPUS_FLAG "-j ${MAKE_NUMCPUS}")
+endif()    
 
 
 
@@ -58,8 +67,7 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS 1) #variable that can be tested
 
 ################################################################################# set CMake Modules
 # Set all module paths
-set(CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules")
-list(APPEND CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
+set(CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules" "${CMAKE_ROOT}/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
@@ -103,6 +111,7 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_C_FLAGS "-O3")
     add_definitions(-DDEBUG_PROFILER)
     add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
+    add_definitions(-DRUN_UNIT_BENCHMARKS)    # build benchmark unit tests
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
@@ -270,7 +279,7 @@ endif()
 
 if (NOT Boost_FOUND) 
   message(STATUS "Try to install our own Boost.")
-
+  message("NCPU: ${MAKE_NUMCPUS}")
   include(InstallBoost)  
   
   # we try to erease from the cache everything that can cause failure of the second find_package
@@ -459,20 +468,27 @@ endif()
 # optionaly we use Python interface
 if (USE_PYTHON)
     message(STATUS "\n ======================================================= ")
-    find_package(PythonLibs)
+    find_package(PythonLibs 2.7)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
         add_definitions(-DHAVE_PYTHON)
         
-        string(REGEX MATCH "python[0-9.]*" PYTHON_VERSION ${PYTHON_INCLUDE_DIRS})
-        string(REGEX MATCH "[0-9.]+" PYTHON_VERSION_NUM ${PYTHON_VERSION})
-        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHON_VERSION_MAJ ${PYTHON_VERSION_NUM})
-        add_definitions(-DPYTHON_VERSION=${PYTHON_VERSION_MAJ})
-        message(STATUS "Python version: ${PYTHON_VERSION_MAJ}\n")
+        string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
+        string(REGEX REPLACE "[0-9]+.([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_STRING})
+        add_definitions(-DPYTHONLIBS_VERSION_MAJOR=${PYTHONLIBS_VERSION_MAJOR})
+        add_definitions(-DPYTHONLIBS_VERSION_MINOR=${PYTHONLIBS_VERSION_MINOR})
+        add_definitions(-DPYTHONLIBS_VERSION_STRING=${PYTHONLIBS_VERSION_STRING})
+        message(STATUS "Python version: ${PYTHONLIBS_VERSION_STRING}\n")
+        message(STATUS "Python major version: ${PYTHONLIBS_VERSION_MAJOR}\n")
+        message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
+        message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
+        message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
-            add_definitions(-DPYTHON_HOME="..")
+
+            string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
+            string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
             
             # copy python files to build tree 
             # first get prefix (we support just one prefix)
@@ -484,34 +500,34 @@ if (USE_PYTHON)
                 COMMAND python -c "import sys; print sys.exec_prefix"
                 OUTPUT_VARIABLE PY_EXEC_PREFIX
                 OUTPUT_STRIP_TRAILING_WHITESPACE)        
-            message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
-            message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
             if (NOT (${PY_PREFIX} STREQUAL ${PY_EXEC_PREFIX}) )
                 message(WARNING "Python exec_prefix (${PY_EXEC_PREFIX}) different then prefix (${PY_PREFIX}). Not supported.")
             endif()
-            message(STATUS "Python prefix: ${PY_PREFIX} target prefix: ${TARGET_PREFIX}")
+            message(STATUS "Python prefix: ${PY_PREFIX}")
+            message(STATUS "Python target prefix: ${TARGET_PREFIX}")
+            add_definitions(-DPYTHON_PREFIX=${PY_PREFIX})
             
             # copy python library
-            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_VERSION})
+            set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
             execute_process(
                 COMMAND mkdir -p ${TARGET_PREFIX}/lib 
                 )             
             # recursive copy, not overwrite existing files
             # we copy all and exclude some paths and files during install    
             execute_process(
-                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_VERSION} ${TARGET_PREFIX}/lib 
+                COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
                 )
             
-            # copy python include
-            set(PYTHON_COPY_INCLUDE_TARGET  include/${PYTHON_VERSION})
-            execute_process(
+            # copy python include            
+            set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
+            execute_process(          
                 COMMAND mkdir -p ${TARGET_PREFIX}/include 
                 )             
             # recursive copy, not overwrite existing files
             # we copy all and exclude some paths and files during install    
             execute_process(
-                COMMAND cp -rn ${PY_PREFIX}/include/${PYTHON_VERSION} ${TARGET_PREFIX}/include 
-                )
+                COMMAND cp -rn ${PYTHON_INCLUDE_DIR} ${TARGET_PREFIX}/include 
+                )                           
             
                 
         endif()
@@ -598,6 +614,13 @@ else()
         message(WARNING "Missing any mpiexec.")
       endif()
 endif()
+# verify that mpiexec exists (on CYGWIN we have to consider .exe suffix)
+if( CYGWIN AND NOT EXISTS ${MPIEXEC_PATH})
+    if( EXISTS "${MPIEXEC_PATH}.exe")
+        set(MPIEXEC_PATH "${MPIEXEC_PATH}.exe")
+    endif()
+endif()
+
 configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
 
 
@@ -774,24 +797,172 @@ INCLUDE(InstallRequiredSystemLibraries)
 
 
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
-SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec, Czech Republic")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
+SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 
+macro(MAKE_WIN_PATH VAR)
+    execute_process(
+        COMMAND cygpath -aw "${${VAR}}"
+        OUTPUT_VARIABLE CYGPATH_${VAR}
+        OUTPUT_STRIP_TRAILING_WHITESPACE)        
+    string(REGEX REPLACE "\\\\" "\\\\\\\\" WIN_${VAR} ${CYGPATH_${VAR}}) 
+endmacro()
+
 if (CYGWIN) 
-    #set(CPACK_CYGWIN_BUILD_SCRIPT "") 
-    #set(CPACK_CYGWIN_PATCH_FILE "")
-    set(CPACK_GENERATOR "ZIP")
+    ## Try to use NSIS packager ##
+    #
+    # Package production runs as follows:
+    # 1) running CMake the file CPackConfig.cmake is created and a target 'package'
+    # 2) make package runs CPack which creates NSIS script file based on template NSIS.template.in in the Module path
+    # 3) CPack run NSIS to compress package and create the installer
+    #
+    # Following hacks are necessary to combine CYGWIN and NSIS packager.
+    # 1) We add modified NSIS.template.in into our modules directory CMake/Modules and 
+    #    set this as the first one CMAKE_MODULE_PATH. 
+    # 2) We have to convert POSIX path to binary directory and use this 
+    #    to set all paths for NSIS installer
+    # 3) We pass converted BINARY_DIR path to CPack, adding it manually to the end of 
+    #    CPackConfig.cmake generated by CMake (must proceed after include(CPack))
+    # 4) The passed variable is used in our NSIS.template.in to set working directory and directory of the result.
+    # 5) CPack call makensis.exe with POSIX path to the script. So this end with error. We add target 'post_package' that calls NSIS with converted path.
+    #    This target has to by run manually.
+    #    
+    # We need Windows style paths.
+    MAKE_WIN_PATH(CMAKE_CURRENT_SOURCE_DIR)
+    MAKE_WIN_PATH(CMAKE_CURRENT_BINARY_DIR)      
+    
+    
+    # 1. Page
+    # Displayed name of the software, and target subdirectory of installation prefix.
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Flow123d ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH}")
+    
+    # 2. Page
+    # Software banner in installer.
+    SET(CPACK_PACKAGE_ICON "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\bin\\\\graphics\\\\flow123d.ico")
+    # Displayed license  agreement.
+    SET(CPACK_RESOURCE_FILE_LICENSE "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\doc\\\\LICENSE")
+    SET(CPACK_PACKAGE_DESCRIPTION_FILE "${WIN_CMAKE_CURRENT_SOURCE_DIR}\\\\README.md")
+    
+    # 3. Page
+    # Modify PATH toggle. If this is set to "ON", then an extra page
+    # will appear in the installer that will allow the user to choose
+    # whether the program directory should be added to the system PATH variable.
+    set(CPACK_NSIS_MODIFY_PATH "ON")
+    set(CPACK_CREATE_DESKTOP_LINKS flow123d)
+    set(CPACK_PACKAGE_EXECUTABLES "flow123d" "Flow123d")
+    # Specify links in [application] menu. This should contain a list of pair 
+    # "link" "link name". The link may be an URL or a path relative to installation 
+    # prefix. Like:
+    #               set(CPACK_NSIS_MENU_LINKS
+    #                   "doc/cmake-@CMake_VERSION_MAJOR@.@CMake_VERSION_MINOR@/cmake.html" "CMake Help"
+    #                   "http://www.cmake.org" "CMake Web Site")
+    set(CPACK_NSIS_MENU_LINKS 
+        "flow123d" "Flow123d"
+        "http://flow123d.github.io" "Flow123d web page")
+    
+    
+    
+    # 4. Page
+    # The default installation directory presented
+    # to the end user by the NSIS installer is under this root dir. The full
+    # directory presented to the end user is:
+    # ${CPACK_NSIS_INSTALL_ROOT}/${CPACK_PACKAGE_INSTALL_DIRECTORY}
+    #set(CPACK_NSIS_INSTALL_ROOT "")
+    
+    
+    
+    # An icon filename. The name of a *.ico file used as the main icon for the generated
+    # install program.
+    #set(CPACK_NSIS_MUI_ICON "")
+
+    # An icon filename. The name of a *.ico file used as the main icon for the generated
+    # uninstall program.
+    #set(CPACK_NSIS_MUI_UNIICON "")
+
+    # Extra NSIS commands that will be added to the beginning of the install Section,
+    # before your install tree is available on the target system.
+    #set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS "")
+
+    # Extra NSIS commands that will be added to the end of the install Section, 
+    # after your install tree is available on the target system.
+    
+    # File association for CON files."
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+        WriteRegStr HKCR '.con' '' 'Flow123dFile'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell' '' 'open'
+        WriteRegStr HKCR 'Flow123dFile\\\\shell\\\\open\\\\command' '' '$INSTDIR\\\\bin\\\\flow123d.exe \\"%1\\"'
+        System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
+        ")
+
+    # Extra NSIS commands that will be added to the uninstall Section,
+    # before your install tree is removed from the target system.
+    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+        DeleteRegKey HKCR '.con'
+        DeleteRegKey HKCR 'Flow123dFile'
+        ")
+
+    # The arguments that will be passed to the NSIS SetCompressor command.
+    #set(CPACK_NSIS_COMPRESSOR "")
+
+    # Ask about uninstalling previous versions first.
+    # If this is set to "ON", then an installer will look for previous
+    # installed versions and if one is found, ask the user whether to
+    # uninstall it before proceeding with the install.
+    #set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "")
+
+    
+    # A path to the executable that contains the installer icon.
+    #set(CPACK_NSIS_INSTALLED_ICON_NAME "")
+
+    # URL to a web site providing assistance in installing your application.
+    set(CPACK_NSIS_HELP_LINK "http://flow123d.github.io")
+
+    # URL to a web site providing more information about your application.
+    set(CPACK_NSIS_URL_INFO_ABOUT "http://flow123d.github.io")
+
+    # Contact information for questions and comments about the installation process.
+    set(CPACK_NSIS_CONTACT "jan.brezin@tul.cz")
+
+    # Additional NSIS commands for creating start menu shortcuts.
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA "")
+
+    # Additional NSIS commands to uninstall start menu shortcuts.
+    #set(CPACK_NSIS_DELETE_ICONS_EXTRA "")
+
+    # Creating NSIS start menu links assumes that they are in 'bin' unless this 
+    # variable is set. For example, you would set this to 'exec' if your executables 
+    # are in an exec directory.
+    #set(CPACK_NSIS_EXECUTABLES_DIRECTORY "")
+
+    # Specify an executable to add an option to run on the finish page 
+    # of the NSIS installer.
+    #set(CPACK_NSIS_MUI_FINISHPAGE_RUN "")
+    
+
+    #SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}\\\\bin\\\\graphics\\\\flow123d.ico")
+    #SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} Flow123d")
+
+
+    set(CPACK_GENERATOR "NSIS")
     set(CPACK_SOURCE_GENERATOR "ZIP")
+    
+    add_custom_target(post_package
+                      COMMAND makensis.exe "${WIN_CMAKE_CURRENT_BINARY_DIR}\\\\_CPack_Packages\\\\CYGWIN\\\\NSIS\\\\project.nsi"
+                      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_CPack_Packages/CYGWIN/NSIS"
+                      )
 elseif (UNIX)
+    SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
     set(CPACK_GENERATOR "TGZ")
     set(CPACK_SOURCE_GENERATOR "TGZ")
+    add_custom_target(post_package
+                      COMMAND echo ""
+                      )
 endif()
+
 
 
 #IF(WIN32 AND NOT UNIX)
@@ -811,5 +982,8 @@ endif()
 #SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
 
 INCLUDE(CPack)
+
+FILE(APPEND ${CMAKE_BINARY_DIR}/CPackConfig.cmake "set(CPACK_WIN_BINARY_DIRECTORY \"${WIN_CMAKE_CURRENT_BINARY_DIR}\")")
+               
 
 

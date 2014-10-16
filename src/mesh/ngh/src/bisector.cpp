@@ -6,7 +6,6 @@
 #include "mesh/ngh/include/bisector.h"
 #include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/intersection.h"
-//#include "mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -59,8 +58,6 @@ TBisector::~TBisector() {
 }
 
 TBisector & TBisector::operator =(const TBisector &b) {
-    //  U = new TVector();
-    //  X0 = new TPoint();
     *(*this).U = *b.U;
     *(*this).X0 = *b.X0;
 

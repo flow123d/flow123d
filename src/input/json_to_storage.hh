@@ -170,9 +170,6 @@ public:
     /*
      * Exceptions.
      */
-    // unfortunately following is not safe:
-    // TYPEDEF_ERR_INFO(EI_InputType, Type::TypeBase const *);
-
     /// General exception during conversion from JSON tree to storage.
     TYPEDEF_ERR_INFO(EI_InputType, string );
     TYPEDEF_ERR_INFO(EI_File, const string);
@@ -257,10 +254,6 @@ protected:
     StorageBase * make_storage_from_default( const string &dflt_str, const Type::TypeBase *type);
 
 
-
-    /// helper envelope for get_root_interface
-    //StorageArray *envelope;
-
     /// Storage of the read and checked input data
     StorageBase *storage_;
 
@@ -273,11 +266,6 @@ protected:
      *
      */
     vector<string> json_type_names;
-
-    /**
-     * List of paths specifications of the keys that wasn't read by the JSON reader.
-     */
-    //vector<string> ignored_keys;
 
 };
 

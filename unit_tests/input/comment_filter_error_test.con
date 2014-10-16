@@ -1,0 +1,164 @@
+/**
+ * 
+ */
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Testovaci uloha.", 
+    mesh = {
+      // This file assumes domain
+      // (-a,a) \times (0,1)
+      mesh_file = "siroke_2D.msh",
+      sets = [
+          {name = "matrix",
+           region_labels = [ "hornina_L", "hornina_R" ]
+          },
+          {
+            name="bc_LR",
+            region_labels=[".left", ".right"]
+          }
+      ]
+    }, 
+
+    /* We want to get a particular flow profile that is zero on the top and bottom boundary, 
+     * have non zero Y component in the middle of the domain.
+     * We assume domain (-a,a) \times (0,1).
+     * 
+     * The flow is given by formulas:
+     * UX = 1/2
+     * UY = Y*(1-Y)
+     * 
+     * The flow has potential, so for conductivity K=1, we have pressure:
+     * p = -x/2-y^3/3+y^2/2
+     *
+     * However the flow has nonzero divergence so we have to prescribe nonzero source:
+     * div(UX,UY) = 2*y
+     *
+     *
+     *
+     * =================================================
+     * The flow that has zero Y component on whole boundary:
+     * The flow is given by formulas:
+     * UX = 2*x*(y^3/3 - y^2/2+1/12)+1/2
+     * UY = (y-1)*y*(x^2-a^2)
+     * 
+     * The flow has potential, so for conductivity K=1, we have pressure:
+     * p = (y^3/3-y^2/2 +1/12)(x^2-a^2) +x/2
+     *
+     * However the flow has nonzero divergence so we have to prescribe nonzero source:
+     * -2*(y^3/3 - y^2/2+1/12) - 2*x*(y-1)*y.
+     *
+     * ============================================
+     * We are not sure if transport accepts flow that has nonzero divergence.
+     *
+     *
+     */
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields= [
+        { r_set = "BULK",
+          conductivity = 1,            // K_2d
+          cross_section = 1           // delta_2d
+          //water_source_density= {TYPE= "FieldFormula", value="2*y-1"}
+        },/*
+        { region = "puklina",
+          conductivity = 1,           // K1
+          cross_section = 1         // delta_1d
+        },*/
+        { //region = ".left",
+          r_set="BOUNDARY",  
+          bc_type = "dirichlet",
+          //bc_pressure = {TYPE = "FieldFormula", value = "-x/2-y^3/3+y^2/2-1/12"}
+          //                                                 1                               0                    0.079   
+          //                                                 0                               0                    0.08
+          //                                                 0.1                             0                    0.084
+          //bc_pressure = {TYPE = "FieldFormula", value = "4*x+2*( (2*y-1)^2 -1)*(2*y-1-1)/4 + 0*( (2*y-1)^2 -1)*(2*y-1+1)/4-(2*y-1)*((2*y-1)^2-3)/2"} 
+          //bc_pressure = {TYPE = "FieldFormula", value = "(sin((2*y-1)*2*atan(1))+1)*(exp(x)-exp(-x))"} 
+          bc_pressure = {TYPE = "FieldFormula", value = "(sin( (2*y-1)*2*atan(1) )+1)"} 
+        }/*,
+        { region = ".right",          
+          bc_type = "dirichlet",
+          //bc_pressure = {TYPE = "FieldFormula", value = "-x/2-y^3/3+y^2/2-1/12"}
+          bc_pressure = {TYPE = "FieldFormula", value = "4*x+0*( (2*y-1)^2 -1)*(2*y-1-1)/4 +2*( (2*y-1)^2 -1)*(2*y-1+1)/4-(2*y-1)*((2*y-1)^2-3)/2"} 
+        }*/
+      
+      ],
+
+      output = {
+        output_stream = {
+          file = "flow_2d2d.pvd", 
+            format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }
+        },
+        balance_output = "water_balance.out",  
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0", "conductivity" ]
+      }, 
+          
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07,
+      } 
+    }
+    /*
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+
+      substances = [
+        "A" 
+      ],
+      
+      time = {
+        end_time = 0.2,
+        init_dt = 0.005
+      },
+      
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+        //options="-ksp_type gmres -ksp_monitor"
+      },
+      
+      input_fields=[
+       
+        { region = ".right",
+          bc_type = "dirichlet",
+          bc_conc = 1
+        },
+             
+        
+        {
+          r_set="matrix",
+          init_conc=0,
+          porosity= 0.1,          
+          dg_penalty=10
+        },
+        {
+          region="puklina",
+          init_conc=0,
+          porosity= 0.1,                   
+          dg_penalty=10
+        }
+      ],
+
+      mass_balance = {
+        cumulative = true
+      },
+      
+
+      output_stream = {
+          time_step=0.01,
+          file = "trans_2d2d.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          } 
+      } 
+    }*/
+  
+      
+  } // problem
+}

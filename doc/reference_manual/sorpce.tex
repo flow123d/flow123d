@@ -75,7 +75,7 @@ where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration 
 \hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
 $\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from transport equation \eqref{e:ADE}.
 
-The analytic solution of the system of differential equations at time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
+The analytic solution of the system of differential equations at the time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
 \begin{align}
      c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0), 
      \label{eqn:dual_porosity_anal1}\\
@@ -87,8 +87,8 @@ where $c_a$ is the weighted average
   c_a = \frac{\vartheta_m c_m + \vartheta_i c_i}{\vartheta_m + \vartheta_i}.
 \]
 
-If the time step is large we use the analytic solution to compute new values of concentrations. 
-Otherwise we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
+If the time step is large, we use the analytic solution to compute new values of concentrations. 
+Otherwise, we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
 by first order forward differences and we get the classical Euler scheme
 \begin{align}
   c_m(t^+) = \frac{D_{dp} \Delta t}{\vartheta_m}(c_i(t) - c_m(t)) + c_m(t), \\
@@ -96,21 +96,21 @@ by first order forward differences and we get the classical Euler scheme
 \end{align}
 where $\Delta t = t^+ - t$ is the time step. 
 
-The condition on the size of the time step is derived from the Taylor exapansion of 
+The condition on the size of the time step is derived from the Taylor expansion of 
 \eqref{eqn:dual_porosity_anal1} or \eqref{eqn:dual_porosity_anal2}, respectively. We neglect the higher order 
-terms and we want the second order term smaller than given scheme tolerance 
-\hyperA{DualPorosity::scheme-tolerance}{$tol$} relatively to $c_a$
+terms and we want the second order term to be smaller than the given scheme tolerance 
+\hyperA{DualPorosity::scheme-tolerance}{$tol$}, relatively to $c_a$,
 \begin{equation}
   (c_m(0) - c_a(0))
   \frac{ D_{dp}^2 (\Delta t)^2 \left(\frac{\vartheta_m + \vartheta_i}{\vartheta_m \vartheta_i}\right)^2}{2}
   \frac{1}{c_a} \leq tol. \\
 \end{equation}
-Then we transform the above inequation into the following condition which is tested in the program
+We then transform the above inequation into the following condition which is tested in the program
 \begin{equation} \label{eqn:euler_scheme_condition}
   \max(|c_m(0) - c_a(0)|, |c_i(0) - c_a(0)|) \leq 
   2 c_a \left(\frac{\vartheta_m \vartheta_i}{D_{dp} \Delta t (\vartheta_m + \vartheta_i)}\right)^2 tol. \\
 \end{equation}
-If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied then the analytic 
+If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied, then the analytic 
 solution is used.
  
 
@@ -141,19 +141,57 @@ Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{\t
 
 Notation:
 \begin{itemize}
- \item Concentration in solid $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$], where $m_s$, $n$ is the 
-       mass of solid and the molar amount of the substance in unit volume, respectively;
- \item Concentration in liquid $c_l = \frac{m}{m_l}$ \units{}{}{}, where $m_l$ is 
-       the mass of liquid in unit volume. The relation between $c_l$ and the concentration $c$ from 
-       transport equation \eqref{e:ADE} is $c = c_l \varrho_l$;
- \item \hyperA{Sorption::solvent-density}{$\varrho_l$}, \hyperA{Sorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively;
- \item \hyperA{Sorption::molar-mass}{$M_s$} denotes the molar mass of a substance;
+ \item In solid, $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$] is the fraction of the molar amount of the solute 
+       adsorbed $n$ and the amount of the adsorbent $m_s$ (mass of solid), all in unit volume.
+ \item In liquid, $c_l = \frac{m}{m_l}$ \units{}{}{} is the fraction of the amount of the solute $m$ and 
+       the mass of liquid $m_l$, all in unit volume. The relation between $c_l$ and the concentration $c$ from 
+       transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
+ \item \hyperA{Sorption::solvent-density}{$\varrho_l$}, \hyperA{Sorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively.
+ \item \hyperA{Sorption::molar-mass}{$M_s$} denotes the molar mass of a substance.
  \item Multiplication parameters $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$] are given by 
-       \hyperA{Sorption-Data::isotherm-mult}{\tt isotherm\_mult};
+       \hyperA{Sorption-Data::isotherm-mult}{\tt isotherm\_mult}.
  \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Sorption-Data::isotherm-other}{\tt isotherm\_other}.
 \end{itemize}
 
-Denoting
+The units of $c_l$, $c_s$ and $k_i$ can vary in literature. To avoid misinterpretation, we derive (according
+to Bowman~\cite{bowman_conversion_1982}) a conversion rule for Freundlich isotherm which will lead the user 
+also in other cases, we believe. 
+
+Let us have $c$ \units{1}{-3}{}, the mass concentration in liquid, and $s$ [kg\,$\mathrm{kg}^{-1}$], 
+the fraction of the amount of the solute adsorbed and the amount of the adsorbent in solid. 
+The unit of $K$ follows from the dimensional analysis of $s=Kc^{\alpha}$:
+\[[K] = \frac{\rm{kg}^{1-\alpha}\rm{m}^{3\alpha}}{\rm{kg}},\]
+which we want to convert to $k_F$ [mol\,$\mathrm{kg}^{-1}$] in the formula $c_s=k_Fc_l^\alpha$.
+
+The first step is a conversion of the mass of the solute to moles by dividing it by the
+molar mass $M_s$. We then have the formula 
+\begin{eqnarray}
+s&=&Kc^{\alpha} \nonumber \\
+\frac{s}{M_s} &=& K'\left(\frac{c}{M_s}\right)^\alpha, \label{eqn:sorp_molar_conc}\\
+s &=& K'M_s^{1-\alpha}c^\alpha, \nonumber 
+\end{eqnarray}
+where $s=c_sM_s$ and $K'=KM_s^{\alpha-1}$ [$\rm{mol}^{1-\alpha}\rm{kg}^{-1}\rm{m}^{3\alpha}$] is a new constant,
+distributing the molar concentration in liquid to the ratio of the molar mass and the amount of sorbent in solid.
+
+The second step is introducing $c_l = \frac{c}{\varrho_l}$ into the formula \eqref{eqn:sorp_molar_conc}
+\begin{equation}
+c_s = K'\left(\frac{c_l \rho_l }{M_s}\right)^\alpha
+= K' M_s^{-\alpha}\rho_l^{\alpha}c_l^\alpha 
+= \left( K M_s^{-1}\rho_l^{\alpha} \right) c_l^\alpha,
+\end{equation}
+where we can denote 
+\begin{equation}
+k_F=K M_s^{-1}\rho_l^{\alpha},
+\end{equation} 
+which is the constant we are looking for. This can be also translated to the case of the linear isotherm, where
+$\alpha=1$ and $[K] = \rm{kg}^{-1}\rm{m}^{3}$, and we get the conversion rule
+\begin{equation}
+k_l=K M_s^{-1}\rho_l.
+\end{equation} 
+The conversion of different prefixes of units are left on the user. One should be careful using the 
+Freundlich isotherm, though, where the exponent $\alpha$ must not be forgotten.
+
+Let us now describe the actual computation of the sorption model. Denoting
 \[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
 and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
 \begin{equation}
@@ -178,9 +216,9 @@ $c_l^{max} + const_{small}$.
 \end{figure}
 
 
-To approximate the equation \eqref{eq:nonlin_sorption} using interpolation we need to prepare the set of values 
-which represent $[c_l, f(c_l)]$, with $c_l$ equidistantly distributed in transformed (rotated and rescaled) 
-coordination system at first. The approach for construction of interpolation table follows.
+To approximate the equation \eqref{eq:nonlin_sorption} using interpolation, we need to prepare the set of values 
+which represents $[c_l, f(c_l)]$, with $c_l$ equidistantly distributed in transformed (rotated and rescaled) 
+coordination system at first. The construction process of the interpolation table follows.
 \begin{enumerate}
  \item Maximal ``total mass'' $\bar{c}_T = \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ is computed.
  \item Total mass step is derived $mass\_step = \bar{c}_T/n\_steps$. $n\_steps$ is given by
@@ -190,7 +228,7 @@ coordination system at first. The approach for construction of interpolation tab
        for $c_l^j$ as unknowns. The solution is the set of ordered couples (points) 
        $[c_l^j,f(c_l^j)],~j\in\{0,\ldots,n\_steps\}$.
 \end{enumerate}
-After computation of $\{[c_l^j,f(c_l^j)]\}$ we transform these coordinates to the system where the total mass is 
+After the computation of $\{[c_l^j,f(c_l^j)]\}$, we transform these coordinates to the system where the total mass is 
 an independent variable. This is done by multiplication of precomputed points using the transformation matrix ${\bf A}$:
 \begin{equation}
  \begin{array}{l}
@@ -209,13 +247,13 @@ an independent variable. This is done by multiplication of precomputed points us
 The values $c_l^{R,j}$ are equidistantly distributed and there is no reason to save them, but the values 
 $c_s^{R,j}$ are stored in onedimensional interpolation table.
 
-Once we have the interpolation table, we can use it for projection of ${[c_l,c_s]}$ transport results on the 
-isotherm under consideration. The approach looks as folows.
+Once we have the interpolation table, we can use it for projecting the transport results ${[c_l,c_s]}$ on the 
+isotherm under consideration. Following steps must be taken.
 \begin{enumerate}
  \item Achieved concentrations are transformed to the coordinate system through multiplication with the 
        matrix ${\bf A}$, see \eqref{eq:transf_mat}.
  \item Transformed values are interpolated.
- \item The result of interpolation is transformed back. The backward transformation consist of multiplication 
+ \item The result of interpolation is transformed back. The backward transformation consists of multiplication 
        with ${\bf A}^T$ which is followed by rescaling the result. Rescaling the result is necessary because  
        ${\bf A}$ is not orthonormal as it is shown bellow.
  \[

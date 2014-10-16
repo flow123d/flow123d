@@ -1,4 +1,4 @@
-INI_FILES="flow_decay_gmsh.con flow_decay_vtk.con flow_lin_react_gmsh.con flow_lin_react_vtk.con flow_decay_molar_mass_vtk.con"
+INI_FILES="decay_gmsh.con decay_vtk.con lin_react_gmsh.con lin_react_vtk.con flow_decay_molar_mass_vtk.con"
 NPROC="1 2"
 FLOW_PARAMS="-o output"
 

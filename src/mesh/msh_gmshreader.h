@@ -47,7 +47,7 @@ class FilePath;
 
 
 /***********************************
- * Structure to store the information from a header of $ElementData section.
+ * Structure to store the information from a header of \\$ElementData section.
  *
  * Format of GMSH ASCII data sections
  *
@@ -109,7 +109,7 @@ public:
     void read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
 
     /**
-     *  Reads ElementData sections of opened GMSH file. The file is serached for the $ElementData section with header
+     *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
      *  that match the given @p search_header (same field_name, time of the next section is the first greater then
      *  that given in the @p search_header). If such section has not been yet read, we read the data section into
      *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into

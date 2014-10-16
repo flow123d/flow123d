@@ -11,7 +11,6 @@
 #define FIELD_VALUES_HH_
 
 #include <armadillo>
-//#include <boost/type_traits.hpp>
 #include <boost/format.hpp>
 #include <system/exceptions.hh>
 #include "input/input_type.hh"
@@ -387,7 +386,6 @@ public:
                 value_.at(i)=ET(*it);
         } else if ( rec.size() == n_rows() ) {
             for(unsigned int i=0; i< n_rows(); i++, ++it) {
-                //cout << "set vec[" << i << "] =" << ET(*it) << endl;
                 value_.at(i)=ET(*it);
             }
         } else {

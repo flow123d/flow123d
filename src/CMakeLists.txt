@@ -83,7 +83,6 @@ set(sources_mesh_lib
     mesh/elements.cc
     mesh/mesh.cc
     mesh/neighbours.cc
-    mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
     mesh/ref_element.cc
@@ -139,6 +138,7 @@ set (sources_lib_coupling
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
+    fields/unit_si.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc

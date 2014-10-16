@@ -800,7 +800,6 @@ template<> struct TD<float> { typedef double OT; };
 template< class T>
 struct TypeDispatch {
     BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
-    //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
 
     typedef T TmpType;
 
