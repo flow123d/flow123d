@@ -32,6 +32,8 @@
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace BMI=::boost::multi_index;
 
@@ -318,6 +320,8 @@ public:
     TYPEDEF_ERR_INFO( EI_NumOp, unsigned int);
     DECLARE_INPUT_EXCEPTION( ExcWrongOpNumber, << "Wrong number of operands. Expect 2, given: " << EI_NumOp::val);
 
+    DECLARE_INPUT_EXCEPTION(ExcUniqueRegionId, << "Id of region must be unique, id: " << EI_ID::val );
+
     /// Default constructor
     RegionDB();
 
@@ -329,7 +333,7 @@ public:
 
     /// Undefined dimension for regions introduced from mesh input record.
     /// Dimensions 0,1,2,3 are valid.
-    static const unsigned int undefined_dim = 10;
+    static const unsigned int undefined_dim;
 
 
     /**
@@ -348,13 +352,13 @@ public:
      * (where one can apply boundary condition).
      *
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
     /**
      * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
      * Used in read_regions_from_input ( with undefined dimension) to read regions given in 'regions' key of the 'mesh' input record.
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
+    Region add_region(unsigned int id, const std::string &label);
 
     /**
      * As the previous, but generates automatic label of form 'region_ID' if the region with same ID is not already present. Set bulk region.
@@ -369,6 +373,12 @@ public:
 
     /**
      * Returns a @p Region with given @p id. If it is not found it returns @p undefined Region.
+     * Gmsh ID numbers are unique only over one dimension, so dimension @p dim must be provided as well.
+     */
+    Region find_id(unsigned int id, unsigned int dim) const;
+
+    /**
+     * Slower version that tries to find region for given ID. If it is not unique it throws.
      */
     Region find_id(unsigned int id) const;
 
@@ -411,7 +421,8 @@ public:
 
     /**
      * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
-     * This region has label "IMPLICIT_BOUNDARY".
+     * This region has label "IMPLICIT_BOUNDARY" and it is obsolete, the name is not consistent
+     * with boundary label notation.
      */
     Region implicit_boundary_region();
 
@@ -492,22 +503,25 @@ public:
 private:
 
 
+    typedef std::pair<unsigned int, unsigned int> DimID;
 
     /// One item in region database
     struct RegionItem {
         RegionItem(unsigned int index, unsigned int id, const std::string &label, unsigned int dim)
-            : index(index), id(id), label(label), dim_(dim) {}
+            : index(index), id(dim, id), label(label) {}
+
+        unsigned int get_id() const {return id.second;}
+        unsigned int dim() const {return id.first;}
 
         // unique identifiers
         unsigned int index;
-        unsigned int id;
+        DimID id;
         std::string label;
-        // data
-        unsigned int dim_;
     };
 
     // tags
-    struct ID {};
+    struct DimId {};
+    struct OnlyID {};
     struct Label {};
     struct Index {};
 
@@ -523,19 +537,18 @@ private:
                 //BMI::random_access< BMI::tag<RandomIndex > >,
                 BMI::ordered_unique< BMI::tag<Index>, BMI::member<RegionItem, unsigned int, &RegionItem::index > >,
                 // use hashing for IDs, to get O(1) find complexity .. necessary for large meshes
-                BMI::hashed_unique< BMI::tag<ID>,    BMI::member<RegionItem, unsigned int, &RegionItem::id> >,
+                BMI::hashed_unique< BMI::tag<DimId>,    BMI::member<RegionItem, DimID, &RegionItem::id> >,
+                // non unique index for sole ID
+                BMI::hashed_non_unique< BMI::tag<OnlyID>,    BMI::const_mem_fun<RegionItem, unsigned int, &RegionItem::get_id> >,
                 // ordered access (like stl::map) by label
                 BMI::ordered_unique< BMI::tag<Label>, BMI::member<RegionItem, std::string, &RegionItem::label> >
             >
     > RegionTable;
 
-    // ID and Label index iterators
-    typedef RegionTable::index<Label>::type::iterator   LabelIter;
-    typedef RegionTable::index<ID>::type::iterator IDIter;
-
-
-    /// Consistency check in common use by various add_region methods.
-    void check_dim_consistency(IDIter it_id, unsigned int dim);
+    // DimID and Label index iterators
+    typedef RegionTable::index<Label>::type::iterator  LabelIter;
+    typedef RegionTable::index<DimId>::type::iterator  DimIDIter;
+    typedef RegionTable::index<OnlyID>::type::iterator OnlyIDIter;
 
 
     /// Database of all regions (both boundary and bulk).
@@ -572,6 +585,35 @@ private:
      * are existing sets. Return pair of checked set names.
      */
     pair<string,string> get_and_check_operands(const Input::Array & operands);
+
+    /**
+     * Create label of region in format: "region_"+id
+     *
+     * Use if label is not set.
+     */
+    void create_label_from_id(const string & label, unsigned int id);
+
+    /**
+     * Insert new region into database.
+     */
+    Region insert_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+
+    /**
+     * Replace dimension of existing region with undefined_dim.
+     */
+    Region replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary);
+
+    /**
+     * Find existing region given by pair (dim, id).
+     */
+    Region find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary);
+
+    /**
+     * Return boundary flag for given label. Label of boundary region must start by '.' symbol.
+     */
+    inline bool is_boundary(const std::string &label) {
+    	return (label.size() != 0) && (label[0] == '.');
+    }
 
 };
 
