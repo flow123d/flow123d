@@ -85,11 +85,12 @@ RegionDB::RegionDB()
 
 
 Region RegionDB::implicit_boundary_region() {
-    return add_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
+    return insert_region(Region::undefined-2, "IMPLICIT BOUNDARY", undefined_dim, Region::boundary);
 }
 
 
-Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim, bool boundary) {
+Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned int dim) {
+	bool boundary = is_boundary(label);
     DimIDIter it_id = region_set_.get<DimId>().find(DimID(dim,id));
     if (it_id != region_set_.get<DimId>().end() ) {
     	// Find existing region
@@ -113,7 +114,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
 
 Region RegionDB::add_region(unsigned int id, const std::string &label) {
-	bool boundary = (label.size() != 0) && (label[0] == '.');
+	bool boundary = is_boundary(label);
 	if (label.size() == 0) create_label_from_id(label, id);
 
     DimIDIter it_id = region_set_.get<DimId>().find(DimID(undefined_dim,id));
@@ -141,7 +142,8 @@ Region RegionDB::add_region(unsigned int id, unsigned int dim) {
     DimIDIter it_undef_dim = region_set_.get<DimId>().find(DimID(undefined_dim,id));
 	if (it_undef_dim != region_set_.get<DimId>().end() ) {
 		// Region with same ID and undefined_dim exists, replace undefined_dim
-		return replace_region_dim(it_undef_dim, dim, false);
+		bool boundary = is_boundary(it_undef_dim->label);
+		return replace_region_dim(it_undef_dim, dim, boundary);
     }
 
     // else

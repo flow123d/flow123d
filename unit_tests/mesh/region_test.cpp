@@ -18,20 +18,20 @@ TEST(Region, all) {
 //    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     RegionDB    region_db;
-    region_db.add_region(0,"nothing_bc", 0, true);
-    region_db.add_region(1,"nothing_bulk", 0, false);
+    region_db.add_region(0,".nothing_bc", 0);
+    region_db.add_region(1,"nothing_bulk", 0);
 
     {
-    Region r=region_db.add_region(1001,"top", 2,true);
+    Region r=region_db.add_region(1001,".top", 2);
     EXPECT_EQ(2, r.idx() );
     EXPECT_TRUE( r.is_boundary() );
     EXPECT_EQ(1, r.boundary_idx() );
     EXPECT_TRUE( r.is_valid() );
     EXPECT_EQ(1001, r.id());
-    EXPECT_EQ("top", r.label());
+    EXPECT_EQ(".top", r.label());
     EXPECT_EQ(2, r.dim());
 
-    EXPECT_EQ(2, region_db.add_region(1001,"top", 2,true).idx() );
+    EXPECT_EQ(2, region_db.add_region(1001,".top", 2).idx() );
 
     // try to convert Region to RegionIdx
     RegionIdx r_idx = r;
@@ -39,7 +39,7 @@ TEST(Region, all) {
     }
 
     {
-    Region r=region_db.add_region(1002,"inside 1", 3, false);
+    Region r=region_db.add_region(1002,"inside 1", 3);
     EXPECT_EQ(3, r.idx() );
     EXPECT_EQ(1, r.bulk_idx() );
     EXPECT_EQ("inside 1", r.label() );
@@ -48,7 +48,7 @@ TEST(Region, all) {
     }
 
     {
-        Region a=region_db.find_label("top");
+        Region a=region_db.find_label(".top");
         Region b=region_db.find_id(1001);
         EXPECT_EQ(a,b);
         Region c=region_db.find_id(1002);
@@ -65,19 +65,19 @@ TEST(Region, all) {
     }
 
     {
-    Region r=region_db.add_region(1004,"bottom", 2, true);
+    Region r=region_db.add_region(1004,".bottom", 2);
     EXPECT_EQ(4, r.idx() );
     EXPECT_EQ(2, r.boundary_idx() );
-    EXPECT_EQ("bottom", r.label() );
+    EXPECT_EQ(".bottom", r.label() );
     EXPECT_EQ(1004, r.id() );
     }
 
-    region_db.add_region(1005,"side", 2, true);
+    region_db.add_region(1005,".side", 2);
     //EXPECT_THROW( region_db.add_region(1005,"new", 3, false) , RegionDB::ExcInconsistentAdd);
-    EXPECT_THROW( region_db.add_region(1001,"bottom", 2, true) , RegionDB::ExcNonuniqueID);
-    EXPECT_THROW( region_db.add_region(1101,"top", 2, true) , RegionDB::ExcNonuniqueLabel);
-    EXPECT_THROW( region_db.add_region(1001,"top", 3, true) , RegionDB::ExcNonuniqueLabel);
-    EXPECT_THROW( region_db.add_region(1001,"top", 2, false) , RegionDB::ExcInconsistentBoundary);
+    EXPECT_THROW( region_db.add_region(1001,".bottom", 2) , RegionDB::ExcNonuniqueID);
+    EXPECT_THROW( region_db.add_region(1101,".top", 2) , RegionDB::ExcNonuniqueLabel);
+    EXPECT_THROW( region_db.add_region(1001,".top", 3) , RegionDB::ExcNonuniqueLabel);
+    //EXPECT_THROW( region_db.add_region(1001,"top", 2) , RegionDB::ExcNonuniqueLabel);
 
     region_db.close(); // close should be called automatically at first call to any size method.
 
@@ -91,7 +91,7 @@ TEST(Region, all) {
     EXPECT_EQ(1002, bulk[1].id());
     EXPECT_EQ(1003, bulk[2].id());
 
-    EXPECT_THROW_WHAT( { region_db.add_region(1006,"side_", 2, true);}, RegionDB::ExcAddingIntoClosed, "Can not add label='side_'");
+    EXPECT_THROW_WHAT( { region_db.add_region(1006,".side_", 2);}, RegionDB::ExcAddingIntoClosed, "Can not add label='.side_'");
 
 }
 
@@ -109,7 +109,7 @@ TEST(Region, add_nonunique_id_region) {
 	}
 
 	{
-		Region r=region_db.add_region(1, "region_name", 3, false);
+		Region r=region_db.add_region(1, "region_name", 3);
 	    EXPECT_EQ(1, r.idx() );
 	    EXPECT_FALSE( r.is_boundary() );
 	    EXPECT_EQ(0, r.bulk_idx() );
@@ -120,7 +120,7 @@ TEST(Region, add_nonunique_id_region) {
 	}
 
 	{
-		Region r=region_db.add_region(2, "other_dim", 2, false);
+		Region r=region_db.add_region(2, "other_dim", 2);
 	    EXPECT_EQ(3, r.idx() );
 	    EXPECT_FALSE( r.is_boundary() );
 	    EXPECT_EQ(1, r.bulk_idx() );
@@ -139,7 +139,7 @@ const string read_sets_json = R"JSON(
 		region_ids= [ 2, 1 ],
 		region_labels = 
 		[
-		   "label_3",
+		   ".label_3",
 		   "label_2"
 		] 
 	},
@@ -184,11 +184,11 @@ TEST(Region, read_sets_from_input) {
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
-	region_db.add_region(0, "label_0", 1, false);
-	region_db.add_region(1, "label_1", 1, false);
-	region_db.add_region(2, "label_2", 2, false);
-	region_db.add_region(3, "label_3", 2, true);
-	region_db.add_region(4, "label_4", 3, false);
+	region_db.add_region(0, "label_0", 1);
+	region_db.add_region(1, "label_1", 1);
+	region_db.add_region(2, "label_2", 2);
+	region_db.add_region(3, ".label_3", 2);
+	region_db.add_region(4, "label_4", 3);
 
 	region_db.read_sets_from_input(i_arr);
 
@@ -258,10 +258,10 @@ TEST(Region, read_element_map_from_input) {
 void init_db(RegionDB &db,int bc_size, int bulk_size) {
     int i;
     for(i=0; i<bc_size; i++) {
-        db.add_region(i, boost::lexical_cast<std::string>(i),1,true);
+        db.add_region(i, boost::lexical_cast<std::string>(i),1);
     }
     for(; i<bc_size+bulk_size; i++) {
-        db.add_region(i, boost::lexical_cast<std::string>(i),1,false);
+        db.add_region(i, "."+boost::lexical_cast<std::string>(i),1);
     }
 }
 

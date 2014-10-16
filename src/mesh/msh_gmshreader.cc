@@ -235,8 +235,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok, Mesh * mesh) {
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
             string name = *tok; ++tok;
 
-            bool boundary =  ( name.size() != 0 && name[0] == '.' );
-            mesh->region_db_.add_region(id, name, dim, boundary);
+            mesh->region_db_.add_region(id, name, dim);
         }
 
     } catch (bad_lexical_cast &) {

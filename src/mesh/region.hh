@@ -367,7 +367,7 @@ public:
      * (where one can apply boundary condition).
      *
      */
-    Region add_region(unsigned int id, const std::string &label, unsigned int dim, bool boundary);
+    Region add_region(unsigned int id, const std::string &label, unsigned int dim);
 
     /**
      * As the previous, but set the 'boundary; flag according to the label (labels starting with dot '.' are boundary).
@@ -442,7 +442,8 @@ public:
 
     /**
      * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.
-     * This region has label "IMPLICIT_BOUNDARY".
+     * This region has label "IMPLICIT_BOUNDARY" and it is obsolete, the name is not consistent
+     * with boundary label notation.
      */
     Region implicit_boundary_region();
 
@@ -627,6 +628,13 @@ private:
      * Find existing region given by pair (dim, id).
      */
     Region find_by_dimid(DimIDIter it_id, unsigned int id, const std::string &label, bool boundary);
+
+    /**
+     * Return boundary flag for given label. Label of boundary region must start by '.' symbol.
+     */
+    inline bool is_boundary(const std::string &label) {
+    	return (label.size() != 0) && (label[0] == '.');
+    }
 
 };
 
