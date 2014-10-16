@@ -1311,6 +1311,7 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 std::string Balance::format_csv_val(std::string val, char delimiter)
 {
 	std::stringstream ss;
+	std::replace( val.begin(), val.end(), '\"', '\'');
 	if (delimiter == ' ') {
 		std::stringstream sval;
 		sval << "\"" << val << "\"";
