@@ -8,7 +8,23 @@
 #include "inspectelements.h"
 namespace computeintersection {
 
-InspectElements::InspectElements(){};
+InspectElements::InspectElements(){
+
+
+};
+
+InspectElements::InspectElements(Simplex<2> sim2, Simplex<3> sim3){
+	triangle = sim2;
+	tetrahedron = sim3;
+
+	IntersectionLocal il(1,2);
+	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+	CI_23.init();
+	CI_23.compute(il);
+	//il.printTracingTable();
+	il.tracePolygon();
+	all_intersections.push_back(il);
+};
 
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 	//projeti.assign(sit->n_elements(),false);
@@ -76,7 +92,7 @@ void InspectElements::ComputeIntersections23(){
 				std::vector<unsigned int> searchedElements;
 			    //TAbscissa ta;
 			    TTriangle tt;
-			    ElementFullIter efi = mesh->element(elm.index());
+			    //ElementFullIter efi = mesh->element(elm.index());
 			    //FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(efi, ta);
 	tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
 				 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
@@ -156,9 +172,9 @@ void InspectElements::print(unsigned int vyber){
 		}
 	fprintf(soubor, "%d\n", (pocet_pruseciku + pocet_predtim));
 
-	int velikost = 0;
+	unsigned int velikost = 0;
 	int pocet_prus = pocet_predtim;
-	int velikost_pruseciku = all_intersections.size();
+	unsigned int velikost_pruseciku = all_intersections.size();
 
 	FOR_NODES(mesh, nod){
 		arma::vec3 bod = nod->point();

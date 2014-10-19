@@ -33,6 +33,7 @@ add_test_directory("${libs}")
     #define_test(intersection_1_3)
     #define_test(fast_intersection_1_3)
     define_test(intersection_2_3)
+    define_test(intersection_area)
     
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)

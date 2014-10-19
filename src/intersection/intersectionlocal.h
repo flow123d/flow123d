@@ -169,7 +169,7 @@ public:
     			 */
 
 
-    			if((i_points[i].getSide2()%2) == i_points[i].getOrientation()){
+    			if((i_points[i].getSide2()%2) == (int)i_points[i].getOrientation()){
     				j = 1;
     			}
 

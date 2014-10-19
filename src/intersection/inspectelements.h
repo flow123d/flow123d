@@ -36,6 +36,7 @@ class InspectElements {
 
 public:
 	InspectElements();
+	InspectElements(Simplex<2> sim2, Simplex<3> sim3);
 	InspectElements(Mesh *_mesh);
 	~InspectElements();
 

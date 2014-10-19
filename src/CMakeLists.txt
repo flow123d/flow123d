@@ -259,6 +259,12 @@ add_library(intersection_2_3_lib ${sources_intersection_2_3})
 target_link_libraries(intersection_2_3_lib
     mesh_lib system_lib armadillo ${Boost_LIBRARIES})
     
+# intersection_area_lib
+add_library(intersection_area_lib ${sources_intersection_area})
+target_link_libraries(intersection_area_lib intersection_2_3_lib
+    mesh_lib system_lib armadillo ${Boost_LIBRARIES})
+    
+    
 # fem_lib    
 add_library(fem_lib ${sources_fem_lib})
 target_link_libraries(fem_lib
