@@ -46,12 +46,10 @@ ExceptionBase::ExceptionBase(const ExceptionBase &other)
 
 
 ExceptionBase::~ExceptionBase() throw () {
-    //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     if (stacktrace) {
         free(stacktrace);
         stacktrace=NULL;
         n_stacktrace_frames=0;
-        //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     }
 }
 
@@ -63,7 +61,6 @@ void ExceptionBase::fill_stacktrace()
         void * array[25];
         n_stacktrace_frames = backtrace(array, 25);
         stacktrace = backtrace_symbols(array, n_stacktrace_frames);
-        //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     }
 #endif
 }

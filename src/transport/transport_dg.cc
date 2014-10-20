@@ -207,21 +207,18 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
             .input_default("\"inflow\"")
             .input_selection( &bc_type_selection)
-            .flags_add(FieldFlag::in_rhs);
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-//    std::vector<FieldEnum> list; list.push_back(neumann);
     *this+=bc_flux
             .name("bc_flux")
             .description("Flux in Neumann boundary condition.")
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs);
-//    	bc_flux.disable_where(bc_type, { dirichlet, inflow });
     *this+=bc_robin_sigma
             .name("bc_robin_sigma")
             .description("Conductivity coefficient in Robin boundary condition.")
             .input_default("0.0")
-            .flags_add(FieldFlag::in_rhs);
-//    	bc_robin_sigma.disable_where(bc_type, {dirichlet, inflow, neumann});
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     // add all input fields to the output list
 
@@ -1124,14 +1121,6 @@ void TransportDG<Model>::set_boundary_conditions()
     		bc_fluxes(qsize, arma::vec(n_substances())),
     		bc_sigma(qsize, arma::vec(n_substances()));
 	vector<arma::vec3> velocity;
-/*
-    for (unsigned int i=0; i<qsize; i++)
-    {
-    	bc_values[i].resize(n_subst_);
-    	bc_fluxes[i].resize(n_subst_);
-    	bc_sigma[i].resize(n_subst_);
-    }
-*/
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
     	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];

@@ -369,7 +369,6 @@ inline Isotherm::ConcPair Isotherm::precipitate( Isotherm::ConcPair c_pair) {
 template<class Func>
 inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const Func &isotherm)
 {
-	//START_TIMER("new-sorption, solve_conc, toms748_solve");
 	boost::uintmax_t max_iter = 20;
 	tolerance<double> toler(30);
 	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
@@ -381,9 +380,7 @@ inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const 
 		mass_limit = total_mass;
 	}
 	upper_solution_bound = mass_limit / scale_aqua_;
-	//xprintf(Msg,"%s upper_solution_bound %f, total_mass %e \n",typeid(Func).name(), upper_solution_bound, total_mass);
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
-	//xprintf(Msg,"CrossFunction returns %e, %f, scale_aqua_ %f, scale_sorbed_ %f, c_aqua %e, c_sorbed %e\n", eq_func(0), eq_func(upper_solution_bound), scale_aqua_, scale_sorbed_, c_aqua, c_sorbed);
 	pair<double,double> solution;
 	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
 		solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
@@ -435,7 +432,6 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
     if(mass_limit < 0.0)
     {
         xprintf(UsrErr,"Isotherm mass_limit has negative value.\n");
-        //cout << "isotherm mass_limit has negative value " << mass_limit << ", scale_aqua "  << scale_aqua_ << ", c_aq_limit " << table_limit_ << ", scale_sorbed " << scale_sorbed_ << endl;
     }
     total_mass_step_ = mass_limit / n_steps;
     double mass = 0.0;

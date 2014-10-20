@@ -59,11 +59,6 @@ public:
     /// Default region is undefined/invalid
 	RegionIdx():idx_(undefined) {}
 
-	/// Allow implicit conversion from Region. We loose information about input ID, label, dim stored in database.
-	//RegionIdx(Region region)
-	//: idx_(region.idx())
-	//{}
-
     /// Returns true if it is a Boundary region and false if it is a Bulk region.
     inline bool is_boundary() const
         { return !(idx_ & 1); }
@@ -161,15 +156,6 @@ public:
 
     /// Returns dimension of the region.
     unsigned int dim() const;
-
-    /* NOTE: seems that this conversion is provided automatically by C++, we taest this in region_test.cpp
-     * moreover the default version provided by compiler overrides our implementation
-    /// Conversion to RegionIdx class
-    /// NOTE:
-    //inline explicit operator RegionIdx() const {
-    //    return RegionIdx(this->idx_);
-    //
-     */
 
     /**
      * Returns static region database. Meant to be used for getting range of
@@ -316,7 +302,6 @@ public:
     TYPEDEF_ERR_INFO( EI_IDOfOtherLabel, unsigned int);
     TYPEDEF_ERR_INFO( EI_LabelOfOtherID, const std::string);
     DECLARE_EXCEPTION( ExcAddingIntoClosed, << "Can not add label=" << EI_Label::qval << " into closed MaterialDispatch.\n");
-    //DECLARE_EXCEPTION( ExcSizeWhileOpen, << "Can not get size of MaterialDispatch yet open.");
     DECLARE_EXCEPTION( ExcNonuniqueID, << "Non-unique ID during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
                                              << "other region with same ID but different label: " << EI_LabelOfOtherID::qval << " already exists\n");
     DECLARE_EXCEPTION( ExcNonuniqueLabel, << "Non-unique label during add of region id: " << EI_ID::val << ", label: " << EI_Label::qval << "\n" \
@@ -433,12 +418,6 @@ public:
      * Returns total number bulk regions.
      */
     unsigned int bulk_size() const;
-
-    /**
-     * Returns implicit bulk region.
-     */
-    //Region implicit_bulk() const
-    //{ return implicit_bulk_; }
 
     /**
      * Returns implicit boundary region. Is used for boundary elements created by Flow123d itself.

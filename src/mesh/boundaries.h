@@ -83,27 +83,12 @@ public:
         return edge()->side_[0];
     }
 
-    // Data readed from boundary conditions files (REMOVE)
-    //int      type;      // Type of boundary condition
-    //double   scalar;    // Scalar - for Dirichlet's or Newton's type
-    //double   flux;      // Flux - for Neumann's type or source
-    //double   sigma;     // Sigma koef. - for Newton's type
-
-    //int      group;     // Group of condition
     // Topology of the mesh
     unsigned int    edge_idx_;    // more then one side can be at one boundary element
     unsigned int    bc_ele_idx_;  // in near future this should replace Boundary itself, when we remove BC data members
     Mesh *mesh_;
 
 };
-/*
-#define DIRICHLET   1
-#define NEUMANN     2
-#define NEWTON      3
-*/
-
-//void read_boundary(Mesh*, const string &boundary_filename);
-
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

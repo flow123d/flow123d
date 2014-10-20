@@ -450,26 +450,6 @@ void RegionDB::read_sets_from_input(Input::Array arr) {
 
 		add_set(set_name, region_set);
 	}
-
-	/*
-	  Input::Array region_ids;
-	  if (rec.opt_val("region_ids", region_ids) ) {
-	    ... add regions
-	        // for int_item in region_ids -> RegionDB.find_id(int_item)
-	        // ... bud prida nalezany region pomoci add_to_set, nebo chyba
-
-	  }
-
-	  if (rec.opt_val("region_labels", region_labels)) {
-    // ... podobne pro region_labels, s pouzitim RegionDB::find_label
-
-	  }
-
-	  if (rec.opt_val("union", ...) ) {
-	   ...
-	   if (region_set.size() != 0) xprintf(Warn, "Overwriting previous initialization of region set 'NAME' by union operation.");
-	  }
-	 */
 }
 
 void RegionDB::read_regions_from_input(Input::Array region_list, MapElementIDToRegionID &map) {

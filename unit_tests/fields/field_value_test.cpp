@@ -31,45 +31,6 @@ TEST(FieldValue_, all) {
 }
 
 
-/**
- * Speed results:
- * debug (-g -O0 -NODEBUG) (100 M steps):
- * interface: 1747ms
- * direct   :  361ms
- *
- * optimized -O3 (100 M steps):
- * interface: 123ms
- * direct   : 121ms
- */
-
-#define STEPS (100*1000*1000)
-
-TEST(FieldValue_, speed_test_interface) {
-
-    typedef FieldValue_<1,1, double> T;
-   double r_val;
-
-
-   for(int step=0;step < STEPS; step++) {
-       T val(r_val);
-
-       for(unsigned int row=0;row< val.n_cols(); ++row)
-           for(unsigned int col=0;col< val.n_rows(); ++col)
-               val(row,col)+=step;
-   }
-   cout << r_val << endl;
-}
-
-TEST(FieldValue_, speed_test_direct) {
-
-   double val;
-
-   for(int step=0;step < STEPS; step++) {
-       val+=step;
-   }
-   cout << val << endl;
-}
-
 TEST(FieldValue_, construction_from_raw) {
 
     double raw_data[6]={1,2,3,4,5,6};

@@ -82,7 +82,7 @@ void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
     ASSERT_LESS( 0, shared_->input_list_.size());
 
     // pass through field descriptors containing key matching field name.
-    double time,last_time=0.0;
+    double time;
     for( auto it = shared_->input_list_.begin<Input::Record>();
          it != shared_->input_list_.end(); ++it)
         if (it->find<Input::AbstractRecord>(input_name())) {

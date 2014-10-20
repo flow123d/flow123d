@@ -61,17 +61,17 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .name("disp_l")
             .description("Longitudal dispersivity (for each substance).")
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
 
 	*this+=output_field
 	        .name("conc")

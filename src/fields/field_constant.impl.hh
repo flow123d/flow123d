@@ -12,8 +12,6 @@
 #include "input/input_type.hh"
 
 
-//#include <boost/type_traits.hpp>
-
 /// Implementation.
 
 namespace it = Input::Type;

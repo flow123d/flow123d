@@ -15,7 +15,7 @@
 #include <boost/lexical_cast.hpp>
 
 TEST(Region, all) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     RegionDB    region_db;
     region_db.add_region(0,".nothing_bc", 0);
@@ -301,7 +301,7 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check  825
  * O3       100     add_region_consistancy_check && using iterators  446
  */
-/*
+#ifdef RUN_UNIT_BENCHMARKS
 #define STEPS (10*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
@@ -342,4 +342,4 @@ TEST(RegionDB, speed_map) {
         }
    cout << ii << endl;
 }
-*/
+#endif // RUN_UNIT_BENCHMARKS

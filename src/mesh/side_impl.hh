@@ -33,9 +33,7 @@ inline Side::Side(const Element * ele, unsigned int set_lnum)
     }
 
     inline const Node * Side::node(unsigned int i) const {
-        // cout << "sn dim: " << dim() << "side: " << lnum << "node: "<< i << endl;
         int i_n = mesh()->side_nodes[dim()][el_idx_][i];
-        // cout << "el node: "<< i_n << "nn: " << element->n_nodes << endl;
 
         return element_->node[ i_n ];
     }

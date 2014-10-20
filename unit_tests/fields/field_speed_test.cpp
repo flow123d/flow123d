@@ -9,12 +9,15 @@
 
 #include <flow_gtest_mpi.hh>
 
+#ifdef RUN_UNIT_BENCHMARKS
+
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
 #include "fields/field_elementwise.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
+#include "fields/field_values.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/json_to_storage.hh"
@@ -23,6 +26,8 @@
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+
+#include <iostream>
 
 
 using namespace std;
@@ -417,3 +422,47 @@ TYPED_TEST(FieldSpeed, field_elementwise) {
 	this->test_result( this->expect_elementwise_val_, 21 );
 	this->profiler_output();
 }
+
+
+
+/**
+ * Speed results:
+ * debug (-g -O0 -NODEBUG) (100 M steps):
+ * interface: 1747ms
+ * direct   :  361ms
+ *
+ * optimized -O3 (100 M steps):
+ * interface: 123ms
+ * direct   : 121ms
+ */
+
+#define STEPS (100*1000*1000)
+
+TEST(FieldValue_, speed_test_interface) {
+
+   typedef FieldValue_<1,1, double> T;
+   double r_val;
+
+
+   for(int step=0;step < STEPS; step++) {
+       T val(r_val);
+
+       for(unsigned int row=0;row< val.n_cols(); ++row)
+           for(unsigned int col=0;col< val.n_rows(); ++col)
+               val(row,col)+=step;
+   }
+   cout << r_val << endl;
+}
+
+TEST(FieldValue_, speed_test_direct) {
+
+   double val;
+
+   for(int step=0;step < STEPS; step++) {
+       val+=step;
+   }
+   cout << val << endl;
+}
+
+#endif // RUN_UNIT_BENCHMARKS
+

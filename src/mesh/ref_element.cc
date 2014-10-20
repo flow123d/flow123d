@@ -54,19 +54,12 @@ template<> const unsigned int RefElement<1>::side_nodes[][1] = {
 };
 
 template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-/*		{ 0, 1 },
-		{ 0, 2 },
-		{ 1, 2 }*/
         { 0, 1},
         { 1, 2},
         { 0, 2}
 };
 
 template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-/*		{ 0, 1, 2 },
-		{ 0, 1, 3 },
-		{ 0, 2, 3 },
-		{ 1, 2, 3 }*/
         {1,2,3},
         {0,2,3},
         {0,1,3},
@@ -82,9 +75,6 @@ template<> const unsigned int RefElement<3>::side_lines[][3] = {
         {0,1,3}
 };
 
-//template<unsigned int dim>
-//const unsigned int RefElement<dim>::side_lines[][0] = {{}};
-
 
 
 template<> const unsigned int RefElement<3>::line_nodes[][2] = {
@@ -95,8 +85,6 @@ template<> const unsigned int RefElement<3>::line_nodes[][2] = {
         {1,3},
         {2,3}
 };
-//template<unsigned int dim>
-//const unsigned int RefElement<dim>::line_nodes[][0] = {};
 
 
 

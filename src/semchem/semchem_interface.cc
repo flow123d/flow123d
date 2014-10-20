@@ -8,7 +8,6 @@
 
 #include "semchem/che_semchem.h"
 #include "semchem/semchem_interface.hh"
-//#include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
@@ -33,28 +32,14 @@ it::Record Specie::input_type = it::Record("Isotope", "Definition of information
 						"Identifier of the isotope.")
 	.declare_key("half_life", it::Double(), it::Default::obligatory(),
 						"Half life parameter.");
-		/*rec.declare_key("next", Array(Integer()), Default(0),
-						"Identifiers of childern in decay chain.");
-		rec.declare_key("bifurcation", Array(Double), Default(0),
-						"Fractions of division decay chain into branches.");
-		rec.declare_key("kinetic constant", Double(), Default(1.0),
-						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 
 it::Record General_reaction::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
 	.derive_from(ReactionTerm::input_type)
-        //rec.declare_key("general_reaction", Array( Linear_reaction::get_one_decay_substep() ), Default::optional(),
-        //        "Description of general chemical reactions.");
 	.declare_key("identifier", it::Integer(), it::Default::obligatory(),
 						"Identifier of the isotope.")
 	.declare_key("half_life", it::Double(), it::Default::obligatory(),
 						"Half life parameter.");
-		/*rec.declare_key("next", Array(Integer()), Default(0),
-						"Identifiers of childern in decay chain.");
-		rec.declare_key("bifurcation", Array(Double), Default(0),
-						"Fractions of division decay chain into branches.");
-		rec.declare_key("kinetic constant", Double(), Default(1.0),
-						"Kinetic conxtant appropriate to described first order reaction.");*/
 
 
 it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_module", "Declares infos valid for all reactions.")
@@ -84,13 +69,6 @@ Semchem_interface::Semchem_interface(double timeStep, Mesh * mesh, int nrOfSpeci
   std::string semchem_output_fname = FilePath("semchem_output.out", FilePath::output_file);
   xprintf(Msg,"Semchem output file name is %s\n",semchem_output_fname.c_str());
 
-  //char *Semchem_output_file;
-  //= semchem_output_fname.c_str();
-  //Semchem_output_file = (char *)xmalloc(sizeof(char)*(semchem_output_fname.length() + 1));
-  //sprintf(Semchem_output_file,"%s",semchem_output_fname.c_str());
-  //strcpy(Semchem_output_file,semchem_output_fname.c_str());
-  //Semchem_output_file[semchem_output_fname.length()] = "\0";
-
   this->set_fw_chem(semchem_output_fname); //DOES NOT WORK ((const char*)semchem_output_fname.c_str());
   this->set_chemistry_computation();
   if(semchem_on == true) ctiich();
@@ -115,16 +93,6 @@ void Semchem_interface::set_sorption_fields(Field<3, FieldValue<3>::Scalar> *por
 }
 
 
-/*Semchem_interface::~Semchem_interface(void)
-{
-	if(fw_chem != NULL)
-	{
-		free(fw_chem);
-		fw_chem = NULL;
-	}
-	return;
-}*/
-
 void Semchem_interface::update_solution(void)
 {
 	if(semchem_on == true)
@@ -141,15 +109,13 @@ void Semchem_interface::update_solution(void)
 //---------------------------------------------------------------------------
 //                 FUNKCE NA VYPOCET CHEMIE PRO ELEMENT V TRANSPORTU
 //---------------------------------------------------------------------------
-//void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double **conc_mob_arr, double **conc_immob_arr)
 void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc)
 {
-   //FILE *fw, *stream, *fr;
-   int i; //, j, poradi;
+   int i;
    int krok;
    int poc_krok;
    double celkova_molalita;
-   char *vystupni_soubor; //[] = "./output/semchem_output.txt";
+   char *vystupni_soubor;
    double **conc_mob_arr = conc[MOBILE];
    double **conc_immob_arr = conc[IMMOBILE];
    double pomoc;
@@ -239,8 +205,6 @@ void Semchem_interface::compute_reaction(bool porTyp, ElementIter ppelm, int por
     //-----------------------VYPOCET CHEMIE----------------------------
   if (celkova_molalita > 1e-16)
    {
-	  //if (G_prm.vypisy==1) che_nadpis__soubor(fw_chem);
-
 	  for (krok = 1; krok<=G_prm.cas_kroku; krok++)
 	  {
 		 che_pocitej_soubor(vystupni_soubor,&poc_krok);
@@ -301,9 +265,8 @@ void Semchem_interface::set_mesh_(Mesh *mesh)
 	return;
 }
 
-void Semchem_interface::set_fw_chem(std::string semchem_output_file) //(const char* semchem_output_file)
+void Semchem_interface::set_fw_chem(std::string semchem_output_file)
 {
-	//fw_chem = (char*)xmalloc(sizeof((semchem_output_file)/sizeof(char)+1)*sizeof(char));
 	fw_chem = (char*)xmalloc(semchem_output_file.length()+1);
 	strcpy(fw_chem,semchem_output_file.c_str());
 	xprintf(Msg,"Output file for Semchem is %s\n",fw_chem);
