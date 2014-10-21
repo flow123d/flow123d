@@ -16,7 +16,7 @@ using namespace arma;
 LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-    Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("numerical_method");
+    Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {
         if (num_it->type() == PadeApproximant::input_type) 
@@ -90,6 +90,7 @@ void LinearReactionBase::compute_reaction_matrix(void )
     	prepare_reaction_matrix_analytic();
     }
     
+    //TODO: do this on the original matrix of the system
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
 }

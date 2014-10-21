@@ -58,16 +58,16 @@
       },
       
       reaction_term = {
-        TYPE="DecayChain",
+        TYPE="RadioactiveDecay",
 
         decays = [
           {
-            parent = "A",
+            radionuclide = "A",
             half_life = 2.5,
             products = [
               "B", "C"
             ],
-            branch_ratios = [ 0.9, 0.1 ]
+            branching_ratios = [ 0.9, 0.1 ]
           }
         ]
       }

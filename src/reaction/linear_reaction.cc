@@ -9,26 +9,29 @@ using namespace std;
 using namespace Input::Type;
 
 Record LinearReaction::input_type_single_reaction
-	= Record("Reaction", "Equation for reading information about radioactive decays.")
-	.declare_key("parent", String(), Default::obligatory(),
-				"Identifier of an isotope.")
-    .declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.")
-    .declare_key("kinetic", Double(), Default::optional(),
-                "Kinetic constants describing first order reactions.")
+	= Record("Reaction", "Describes a single first order chemical reaction.")
+	.declare_key("reactant", String(), Default::obligatory(),
+				"The name of the reactant.")
+//     .declare_key("half_life", Double(), Default::optional(),
+//                 "The half life of the reactant in seconds")
+    .declare_key("reaction_rate", Double(), Default::obligatory(),
+                "The reaction rate coefficient of the first order reaction.")
     .declare_key("products", Array(String()), Default::obligatory(),
-				"Identifies isotopes which decays parental atom to.")
-	.declare_key("branch_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
-				"Decay chain branching percentage.");
+				"An array of the names of products.")
+	.declare_key("branching_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
+				"This is an array of branching ratios when more than one product is present. "
+                "Considering only one product, the default ratio 1.0 is used."
+                "The values are given as fractions in interval [0.0,1.0] and"
+                "their sum must be 1.0; it is checked during input reading.");
 
 
 Record LinearReaction::input_type
-	= Record("LinearReactions", "Information for a decision about the way to simulate radioactive decay.")
+	= Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
 	.derive_from( ReactionTerm::input_type )
     .declare_key("reactions", Array( LinearReaction::input_type_single_reaction), Default::obligatory(),
-                "Description of particular decay chain substeps.")
-    .declare_key("numerical_method", NumericalMethod::input_type, Default::optional(),
-                 "Numerical method in decay.");
+                "An array of first order chemical reactions.")
+    .declare_key("ode_solver", NumericalMethod::input_type, Default::optional(),
+                 "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
 LinearReaction::LinearReaction(Mesh &init_mesh, Input::Record in_rec)
@@ -102,23 +105,28 @@ void LinearReaction::initialize_from_input()
 	int i_decay=0;
 	for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it, ++i_decay)
 	{
-		//half-lives determining part
-		Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
-		if (it_hl) {
-		   half_lives_[i_decay] = *it_hl;
-		} else {
-		   it_hl = dec_it->find<double>("kinetic");
-		   if (it_hl) {
-			   half_lives_[i_decay] = log(2)/(*it_hl);
-		   } else {
-		    xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
-		  }
-		}
-
+// 		//half-lives determining part
+// 		Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
+// 		if (it_hl) {
+// 		   half_lives_[i_decay] = *it_hl;
+// 		} else {
+// 		   it_hl = dec_it->find<double>("kinetic");
+// 		   if (it_hl) {
+// 			   half_lives_[i_decay] = log(2)/(*it_hl);
+// 		   } else {
+// 		    xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
+// 		  }
+// 		}
+        
+        //TODO:have array of reaction rates, not half lives
+        //half-lives determining part
+        double reaction_rate = dec_it->val<double>("reaction_rate");
+        half_lives_[i_decay] = log(2)/(reaction_rate);
+        
 		//indices determining part
-		string parent_name = dec_it->val<string>("parent");
+		string parent_name = dec_it->val<string>("reactant");
 		Input::Array product_array = dec_it->val<Input::Array>("products");
-		Input::Array ratio_array = dec_it->val<Input::Array>("branch_ratios"); // has default value [ 1.0 ]
+		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
 		// substance_ids contains also parent id
 		if (product_array.size() > 0)   substance_ids_[i_decay].resize( product_array.size()+1 );
@@ -141,7 +149,7 @@ void LinearReaction::initialize_from_input()
 
 		//bifurcation determining part
         if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_decay] );
-        else            xprintf(UsrErr,"Number of branches %d has to match number of products %d in the %d-th reaction.\n",
+        else            xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
                                        ratio_array.size(), product_array.size(), i_decay);
 
 	}

@@ -13,23 +13,29 @@ using namespace arma;
 using namespace Input::Type;
 
 Record DecayChain::input_type_single_decay
-    = Record("Decay", "Equation for reading information about radioactive decays.")
-    .declare_key("parent", String(), Default::obligatory(),
-                "Identifier of an isotope.")
+    = Record("Decay", "A model of a radioactive decay.")
+    .declare_key("radionuclide", String(), Default::obligatory(),
+                "The name of the parent radionuclide.")
     .declare_key("half_life", Double(), Default::optional(),
-                "Half life of the parent substance.")
+                 "The half life of the parent radionuclide in seconds.")
     .declare_key("products", Array(String()), Default::obligatory(),
-                "Products of the decay from the parent.")
-    .declare_key("branch_ratios", Array(Double()), Default("1.0"),  //default is one product, with ratio = 1.0
-                "Decay chain branching percentage.");
+                "An array of the decay products (daughters).")
+    .declare_key("energy", Array(Double()), Default::optional(),
+                "Not used now but it can be used for source in the thermal convection-diffusion model in future. "
+                "An array of energy in MeV which is released from the parent radionuclide to a specific product.")
+    .declare_key("branching_ratios", Array(Double()), Default("1.0"),  //default is one product, with ratio = 1.0
+                "This is an array of branching ratios when more than one product is present. "
+                "Considering only one product, the default ratio 1.0 is used. "
+                "The values are given as fractions in interval [0.0,1.0] and "
+                "their sum must be 1.0; it is checked during input reading.");
 
 Record DecayChain::input_type
-    = Record("DecayChain", "Abstract record with an information about pade approximant parameters.")
+    = Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
     .derive_from( ReactionTerm::input_type )
     .declare_key("decays", Array( DecayChain::input_type_single_decay), Default::obligatory(),
-                "Description of particular decay chain substeps.")
-    .declare_key("numerical_method", NumericalMethod::input_type, Default::optional(),
-                 "Numerical method in decay.");
+                "An array of radioactive decays. They can make a chain.")
+    .declare_key("ode_solver", NumericalMethod::input_type, Default::optional(),
+                 "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
 
@@ -59,19 +65,20 @@ void DecayChain::initialize_from_input()
         Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
         if (it_hl) {
            half_lives_[i_decay] = *it_hl;
-        } else {
-           it_hl = dec_it->find<double>("kinetic");
-           if (it_hl) {
-               half_lives_[i_decay] = log(2)/(*it_hl);
-           } else {
-            xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
-          }
+        } 
+        else {
+//            it_hl = dec_it->find<double>("kinetic");
+//            if (it_hl) {
+//                half_lives_[i_decay] = log(2)/(*it_hl);
+//            } else {
+            xprintf(UsrErr, "Missing half-life in the %d-th reaction.\n", i_decay);
         }
+        //}
 
         //indices determining part
-        string parent_name = dec_it->val<string>("parent");
+        string parent_name = dec_it->val<string>("radionuclide");
         Input::Array product_array = dec_it->val<Input::Array>("products");
-        Input::Array ratio_array = dec_it->val<Input::Array>("branch_ratios"); // has default value [ 1.0 ]
+        Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
         // substance_ids contains also parent id
         if (product_array.size() > 0)   substance_ids_[i_decay].resize( product_array.size()+1 );

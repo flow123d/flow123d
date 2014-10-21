@@ -87,11 +87,11 @@
           ],
           
           reaction_liquid = {
-            TYPE="LinearReactions",
+            TYPE="FirstOrderReaction",
             reactions = [
               {
-                parent = "A",
-                half_life = 2.5,
+                reactant = "A",
+                reaction_rate = 0.277258872,
                 products = [ "B" ]
               }
             ]

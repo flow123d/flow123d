@@ -63,61 +63,67 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
-
+        TYPE="FirstOrderReaction", 
+        /*
+        numerical_method = {
+          TYPE = "PadeApproximant",
+          nominator_degree = 3,
+          denominator_degree = 3
+        },*/
+        
         reactions = [
           {
-            parent = "E",
-            kinetic = 1.3836,
+            reactant = "E",
+            reaction_rate = 1.3836,
             products = [
               "D"
             ]
           },
           {
-            parent = "D",
-            half_life = 0.5,
+            reactant = "D",
+            reaction_rate = 1.386294361,
             products = [
               "F"
             ]
           },
           {
-            parent = "F",
-            kinetic = 1.3836,
+            reactant = "F",
+            reaction_rate = 1.3836,
             products = [
               "B"
             ]
           },
           {
-            parent = "B",
-            half_life = 0.5,
+            reactant = "B",
+            reaction_rate = 1.386294361,
             products = [
               "A",
               "G",
               "H"
             ],
-            branch_ratios = [
+            branching_ratios = [
               0.2,
               0.2,
               0.6
             ]
           },
             {
-            parent = "A",
-            half_life = 0.5,
+            reactant = "A",
+            reaction_rate = 1.386294361,
             products = [
               "G"
             ]
           },
           {
-            parent = "H",
-            half_life = 0.5,
+            reactant = "H",
+            reaction_rate = 1.386294361,
             products = [
               "G"
             ]
           },
           {
-            parent = "G",
-            half_life = 0.5,
+            reactant = "G",
+            reaction_rate = 1.386294361,
             products = [
               "C"
             ]
