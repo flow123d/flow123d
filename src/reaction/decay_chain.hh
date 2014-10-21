@@ -40,8 +40,8 @@ protected:
     /// Initializes private members of sorption from the input record.
     void initialize_from_input() override;
     
-    /// Implements reaction matrix initialization and preparation.
-    void prepare_reaction_matrix(void) override;
+    /// Implements the assembly of the system matrix of the ODEs.
+    void assemble_ode_matrix(void) override;
     
     /// Implements reaction matrix analytical computation.
     void prepare_reaction_matrix_analytic(void) override;

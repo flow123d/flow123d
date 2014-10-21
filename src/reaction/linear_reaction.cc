@@ -12,8 +12,6 @@ Record LinearReaction::input_type_single_reaction
 	= Record("Reaction", "Describes a single first order chemical reaction.")
 	.declare_key("reactant", String(), Default::obligatory(),
 				"The name of the reactant.")
-//     .declare_key("half_life", Double(), Default::optional(),
-//                 "The half life of the reactant in seconds")
     .declare_key("reaction_rate", Double(), Default::obligatory(),
                 "The reaction rate coefficient of the first order reaction.")
     .declare_key("products", Array(String()), Default::obligatory(),
@@ -43,123 +41,104 @@ LinearReaction::~LinearReaction()
 {
 }
 
-void LinearReaction::prepare_reaction_matrix(void )
+void LinearReaction::assemble_ode_matrix(void )
 {
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
-    double exponent;    //temporary variable
-    for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
-        reactant_index = substance_ids_[i_decay][0];
-        exponent = log(2) * time_->dt() / half_lives_[i_decay];
+    double exponent;    //temporary variable for -kt
+    for (unsigned int i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
+        reactant_index = substance_ids_[i_reaction][0];
+        exponent = reaction_rates_[i_reaction] * time_->dt();
         reaction_matrix_(reactant_index, reactant_index) = -exponent;
         
-        for (unsigned int i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product){
-            product_index = substance_ids_[i_decay][i_product];
-            reaction_matrix_(product_index, reactant_index) = exponent * bifurcation_[i_decay][i_product-1];
+        for (unsigned int i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product){
+            product_index = substance_ids_[i_reaction][i_product];
+            reaction_matrix_(product_index, reactant_index) = exponent * bifurcation_[i_reaction][i_product-1];
         }
     }
-    //DBGMSG("reactions matrix prepared\n");
-    //reaction_matrix_.print();
 }
 
 void LinearReaction::prepare_reaction_matrix_analytic(void)
 {
     reaction_matrix_ = eye(n_substances_, n_substances_);
     
-    unsigned int parent_idx, product_idx,   // global indices of substances
-                 i_decay, i_product;        // local indices of substances
-    double relative_timestep,   // exponent of 0.5
-           temp_power;          // temporary power of 0.5
+    unsigned int reactant_idx, product_idx,   // global indices of substances
+                 i_reaction, i_product;       // local indices of substances
+    double exponential; //temporary value for the exponential exp(-kt)
     
     // cycle over reactions/over rows/over parents
-    for (i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
+    for (i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
         // setting diagonal elements
-        parent_idx = substance_ids_[i_decay][0];
-        relative_timestep = time_->dt() / half_lives_[i_decay];
-        temp_power = pow(0.5, relative_timestep);
-        reaction_matrix_(parent_idx,parent_idx) = temp_power;
+        reactant_idx = substance_ids_[i_reaction][0];
+        exponential = std::exp(- reaction_rates_[i_reaction] * time_->dt());
+        reaction_matrix_(reactant_idx,reactant_idx) = exponential;
 
-        // cycle over products of specific reaction/row/parent
-        for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product) {
-            product_idx = substance_ids_[i_decay][i_product];
-            reaction_matrix_(product_idx,parent_idx)
-                                       = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
+        // cycle over products of specific reaction/row/reactant
+        for (i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product) {
+            product_idx = substance_ids_[i_reaction][i_product];
+            reaction_matrix_(product_idx,reactant_idx)
+                                       = (1 - exponential)* bifurcation_[i_reaction][i_product-1];
         }
     }
 }
 
 
-
-//       raise warning if sum of ratios is not one
 void LinearReaction::initialize_from_input()
 {
-    unsigned int idx;
+    unsigned int idx;   //temporary variable, indexing substances
 
-	Input::Array decay_array = input_record_.val<Input::Array>("reactions");
+	Input::Array reactions_array = input_record_.val<Input::Array>("reactions");
 
-	substance_ids_.resize( decay_array.size() );
-	half_lives_.resize( decay_array.size() );
-	bifurcation_.resize( decay_array.size() );
+	substance_ids_.resize( reactions_array.size() );
+    reaction_rates_.resize( reactions_array.size() );
+	bifurcation_.resize( reactions_array.size() );
 
-	int i_decay=0;
-	for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it, ++i_decay)
-	{
-// 		//half-lives determining part
-// 		Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
-// 		if (it_hl) {
-// 		   half_lives_[i_decay] = *it_hl;
-// 		} else {
-// 		   it_hl = dec_it->find<double>("kinetic");
-// 		   if (it_hl) {
-// 			   half_lives_[i_decay] = log(2)/(*it_hl);
-// 		   } else {
-// 		    xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
-// 		  }
-// 		}
+	int i_reaction=0;
+	for (Input::Iterator<Input::Record> dec_it = reactions_array.begin<Input::Record>(); 
+         dec_it != reactions_array.end(); ++dec_it, ++i_reaction)
+	{ 
+        //read reaction rate
+        reaction_rates_[i_reaction] = dec_it->val<double>("reaction_rate");
         
-        //TODO:have array of reaction rates, not half lives
-        //half-lives determining part
-        double reaction_rate = dec_it->val<double>("reaction_rate");
-        half_lives_[i_decay] = log(2)/(reaction_rate);
-        
-		//indices determining part
+		//read reactant name, product names and branching ratios
 		string parent_name = dec_it->val<string>("reactant");
 		Input::Array product_array = dec_it->val<Input::Array>("products");
 		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
 		// substance_ids contains also parent id
-		if (product_array.size() > 0)   substance_ids_[i_decay].resize( product_array.size()+1 );
-		else			xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_decay);
+		if (product_array.size() > 0)   substance_ids_[i_reaction].resize( product_array.size()+1 );
+		else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_reaction);
 
 
 		// set parent index
 		idx = find_subst_name(parent_name);
-		if (idx < substances_.size())	substance_ids_[i_decay][0] = idx;
-		else                		xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
+		if (idx < substances_.size())	substance_ids_[i_reaction][0] = idx;
+		else    xprintf(UsrErr,"Unknown name of the reactant in the %d-th reaction.\n", i_reaction);
 
 		// set products
 		unsigned int i_product = 1;
-		for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
+		for(Input::Iterator<string> product_it = product_array.begin<string>(); 
+            product_it != product_array.end(); ++product_it, i_product++)
 		{
 			idx = find_subst_name(*product_it);
-			if (idx < substances_.size())   substance_ids_[i_decay][i_product] = idx;
-			else                    	xprintf(Warn,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
+			if (idx < substances_.size())   substance_ids_[i_reaction][i_product] = idx;
+			else    xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_reaction);
 		}
 
 		//bifurcation determining part
-        if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_decay] );
-        else            xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
-                                       ratio_array.size(), product_array.size(), i_decay);
+        if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_reaction] );
+        else    xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
+                        ratio_array.size(), product_array.size(), i_reaction);
 
+        //test the sum of branching ratios = 1.0
+        double test_sum=0;
+        for(auto &b : bifurcation_[i_reaction])
+        {
+            test_sum += b;
+        }
+        if(test_sum != 1.0)
+            xprintf(UsrErr,"The sum of branching ratios %f in the %d-th reaction is not 1.0.\n",
+                        test_sum, i_reaction);
 	}
-}
-
-void LinearReaction::print_half_lives() {
-    unsigned int i;
-
-    xprintf(Msg, "\nHalf-lives are defined as:\n");
-    for (i = 0; i < half_lives_.size(); i++) {
-            xprintf(Msg, "parent_id: %d half_life: %f\n",substance_ids_[i][0], half_lives_[i]);
-    }
 }

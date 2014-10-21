@@ -16,7 +16,7 @@ Record DecayChain::input_type_single_decay
     = Record("Decay", "A model of a radioactive decay.")
     .declare_key("radionuclide", String(), Default::obligatory(),
                 "The name of the parent radionuclide.")
-    .declare_key("half_life", Double(), Default::optional(),
+    .declare_key("half_life", Double(), Default::obligatory(),
                  "The half life of the parent radionuclide in seconds.")
     .declare_key("products", Array(String()), Default::obligatory(),
                 "An array of the decay products (daughters).")
@@ -61,34 +61,23 @@ void DecayChain::initialize_from_input()
     int i_decay=0;
     for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it, ++i_decay)
     {
-        //half-lives determining part
-        Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
-        if (it_hl) {
-           half_lives_[i_decay] = *it_hl;
-        } 
-        else {
-//            it_hl = dec_it->find<double>("kinetic");
-//            if (it_hl) {
-//                half_lives_[i_decay] = log(2)/(*it_hl);
-//            } else {
-            xprintf(UsrErr, "Missing half-life in the %d-th reaction.\n", i_decay);
-        }
-        //}
+        //read half-life
+        half_lives_[i_decay] = dec_it->val<double>("half_life");
 
-        //indices determining part
-        string parent_name = dec_it->val<string>("radionuclide");
+        //radionuclide name, product name array and branching ratio array
+        string radionuclide = dec_it->val<string>("radionuclide");
         Input::Array product_array = dec_it->val<Input::Array>("products");
         Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
         // substance_ids contains also parent id
         if (product_array.size() > 0)   substance_ids_[i_decay].resize( product_array.size()+1 );
-        else            xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_decay);
+        else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_decay);
 
 
-        // set parent index
-        idx = find_subst_name(parent_name);
+        // set radionuclide substance index
+        idx = find_subst_name(radionuclide);
         if (idx < substances_.size())    substance_ids_[i_decay][0] = idx;
-        else                        xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
+        else    xprintf(UsrErr,"Unknown name of the radionuclide in the %d-th reaction.\n", i_decay);
 
         // set products
         unsigned int i_product = 1;
@@ -96,24 +85,33 @@ void DecayChain::initialize_from_input()
         {
             idx = find_subst_name(*product_it);
             if (idx < substances_.size())   substance_ids_[i_decay][i_product] = idx;
-            else                        xprintf(Warn,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
+            else                        xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
         }
 
-        //bifurcation determining part
+        //set branching ratio array
         if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_decay] );
         else            xprintf(UsrErr,"Number of branches %d has to match number of products %d in the %d-th reaction.\n",
                                        ratio_array.size(), product_array.size(), i_decay);
-
+        
+        //test the sum of branching ratios = 1.0
+        double test_sum=0;
+        for(auto &b : bifurcation_[i_decay])
+        {
+            test_sum += b;
+        }
+        if(test_sum != 1.0)
+            xprintf(UsrErr,"The sum of branching ratios %f in the %d-th reaction is not 1.0.\n",
+                        test_sum, i_decay);
     }
 }
 
 
-void DecayChain::prepare_reaction_matrix(void )
+void DecayChain::assemble_ode_matrix(void )
 {
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
-    double exponent;    //temporary variable
+    double exponent;    //temporary variable kt = ln(2)*t/t_half
     for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
         reactant_index = substance_ids_[i_decay][0];
         exponent = log(2) * time_->dt() / half_lives_[i_decay];
@@ -124,8 +122,6 @@ void DecayChain::prepare_reaction_matrix(void )
             reaction_matrix_(product_index, reactant_index) = exponent * bifurcation_[i_decay][i_product-1];
         }
     }
-    //DBGMSG("reactions_matrix_created\n");
-    //reaction_matrix_.print();
 }
 
 
@@ -153,7 +149,4 @@ void DecayChain::prepare_reaction_matrix_analytic(void)
                                        = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
         }
     }
-    
-    //print_half_lives();
-    //print_reaction_matrix(); //just for control print
 }

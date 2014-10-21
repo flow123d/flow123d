@@ -82,7 +82,7 @@ void LinearReactionBase::compute_reaction_matrix(void )
     	break;
 
     case NumericalMethod::pade_approximant:
-    	prepare_reaction_matrix();
+    	assemble_ode_matrix();
     	pade_approximant_->approximate_matrix(reaction_matrix_);
     	break;
 

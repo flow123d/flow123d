@@ -48,11 +48,19 @@ public:
     void update_solution(void) override;
     
 protected:
-    /// Initializes and prepares the reaction matrix.
+    /// Assembles the matrix of the ODEs.
     /**
+     * We solve the system of \f$N\f$ equations
+     * \f[ 
+     *  \frac{\textrm{d} c_i}{\textrm{d}t}=-\sum\limits_{j=1}^N \frac{M_i}{M_j} \lambda_{i} b_j c_j, \qquad \textrm i=1,\ldots,N
+     * \f]
+     * where \f$M_i, M_j\f$ are the molar masses of the parent substances and products, \f$\lambda_i\f$ are the 
+     * reaction rate constants (in case of decays converted from half_lives) and \f$b_j\f$ are the branching ratios.
+     * The constant coefficients \f$\mathbf{A}_{ij}=\frac{M_i}{M_j} \lambda_{i} b_j\f$ are the elements of the system matrix.
+     * 
      * It is pure virtual and must be implemented in descendants.
      */
-    virtual void prepare_reaction_matrix(void) = 0;
+    virtual void assemble_ode_matrix(void) = 0;
     
     /// Computes the reaction matrix analyticaly.
     /**
