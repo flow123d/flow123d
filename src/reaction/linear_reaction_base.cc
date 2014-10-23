@@ -1,5 +1,6 @@
 #include "reaction/linear_reaction_base.hh"
 #include "reaction/reaction.hh"
+#include "transport/mass_balance.hh"
 
 #include "reaction/pade_approximant.hh"
 
@@ -13,9 +14,26 @@ using namespace Input::Type;
 using namespace arma;
 
 
+
+
+LinearReactionBase::EqData::EqData()
+{
+  //creating field for porosity that is set later from the governing equation (transport)
+  *this +=porosity
+        .name("porosity")
+        .units("1")
+        .flags( FieldFlag::input_copy );
+
+}
+
+
+
 LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
+	  //set pointer to equation data fieldset
+	  this->eq_data_ = &data_;
+
     Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("numerical_method");
     if ( num_it )
     {
@@ -61,6 +79,19 @@ void LinearReactionBase::initialize()
     	molar_matrix_(i,i) = substances_[i].molar_mass();
     	molar_mat_inverse_(i,i) = 1./substances_[i].molar_mass();
     }
+
+    data_.set_mesh(*mesh_);
+    data_.set_limit_side(LimitSide::right);
+
+    sources.resize(n_substances_, vector<double>(mesh_->region_db().bulk_size(), 0));
+    sources_in.resize(n_substances_, vector<double>(mesh_->region_db().bulk_size(), 0));
+    sources_out.resize(n_substances_, vector<double>(mesh_->region_db().bulk_size(), 0));
+}
+
+void LinearReactionBase::set_balance_object(boost::shared_ptr<Balance> &balance)
+{
+	balance_ = balance;
+	subst_idx_ = balance_->quantity_indices(substances_.names());
 }
 
 
@@ -92,6 +123,7 @@ void LinearReactionBase::compute_reaction_matrix(void )
     
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
+    balance_matrix_ = reaction_matrix_ - eye(n_substances_,n_substances_);
 }
 
 
@@ -183,10 +215,45 @@ void LinearReactionBase::update_solution(void)
 
     START_TIMER("linear reaction step");
     
+    data_.set_time(*time_);
+
+    vector<double> tmp(mesh_->region_db().bulk_size(), 0);
+    fill_n(sources.begin(), n_substances_, tmp);
+    fill_n(sources_in.begin(), n_substances_, tmp);
+    fill_n(sources_out.begin(), n_substances_, tmp);
+
     for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
+    {
         this->compute_reaction(concentration_matrix_, loc_el);
+
+        double por_m = data_.porosity.value(mesh_->element[loc_el].centre(), mesh_->element[loc_el].element_accessor());
+
+        vec source = (balance_matrix_ * prev_conc_) * por_m * mesh_->element[loc_el].measure() / time_->dt();
+        for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+        {
+        	sources[sbi][mesh_->element[loc_el].region().bulk_idx()] += source(sbi);
+        	if (source(sbi) > 0)
+        		sources_in[sbi][mesh_->element[loc_el].region().bulk_idx()] += source(sbi);
+        	else
+        		sources_out[sbi][mesh_->element[loc_el].region().bulk_idx()] += source(sbi);
+        }
+    }
     
     END_TIMER("linear reaction step");
+}
+
+
+void LinearReactionBase::update_instant_balance()
+{
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    	balance_->add_instant_sources(subst_idx_[sbi], sources[sbi], sources_in[sbi], sources_out[sbi]);
+}
+
+
+void LinearReactionBase::update_cumulative_balance()
+{
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    	balance_->add_cumulative_sources(subst_idx_[sbi], sources[sbi], time_->dt());
 }
 
 

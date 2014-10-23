@@ -6,6 +6,9 @@
 #include "transport/substance.hh"
 #include "petscmat.h"
 
+
+class RegionDB;
+
 /**
  * Interface class for equation which implements methods required for mass balance.
  */
@@ -156,43 +159,43 @@ protected:
  *
  * The mass, flux and source are calculated as follows:
  *
- * 	m(q,c,r) = ( M'(q,c) * solution )[r]
- * 	f(q,c,r) = ( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
- * 	s(q,c,r) = ( S'(q,c) * solution + sv(q,c) )[r]
+ * 	m(q,r) = ( M'(q) * solution )[r]
+ * 	f(q,r) = ( R' * ( F(q) * solution + fv(q) ) )[r]
+ * 	s(q,r) = ( S'(q) * solution + sv(q) )[r]
  *
  * where M' stands for matrix transpose,
  *
- * 	m(q,c,r)...mass of q-th substance's c-th component in region r
- * 	f(q,c,r)...flux of q-th substance's c-th component in region r
- * 	s(q,c,r)...source of q-th substance's c-th component in region r
+ * 	m(q,r)...mass of q-th quantity in region r
+ * 	f(q,r)...flux of q-th quantity in region r
+ * 	s(q,r)...source of q-th quantity in region r
  *
  * and
  *
- * 	M(q,c)...region_mass_matrix_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
- * 	F(q,c)...be_flux_matrix_[q*quantities_.size() + c]			n_boundary_edges x n_dofs
- * 	S(q,c)...region_source_matrix_[q*quantities_.size() + c]	n_dofs x n_bulk_regions
- * 	SV(q,c)..region_source_rhs_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
- * 	fv(q,c)..be_flux_vec_[q*quantities_.size() + c]				n_boundary_edges
- * 	sv(q,c)..region_source_vec_[q*quantities_.size() + c]    	n_bulk_regions
- * 	R........region_be_matrix_									n_boundary_edges x n_boundary_regions
+ * 	M(q)...region_mass_matrix_[q]		n_dofs x n_bulk_regions
+ * 	F(q)...be_flux_matrix_[q]			n_boundary_edges x n_dofs
+ * 	S(q)...region_source_matrix_[q]		n_dofs x n_bulk_regions
+ * 	SV(q)..region_source_rhs_[q]		n_dofs x n_bulk_regions
+ * 	fv(q)..be_flux_vec_[q]				n_boundary_edges
+ * 	sv(q)..region_source_vec_[q]    	n_bulk_regions
+ * 	R........region_be_matrix_			n_boundary_edges x n_boundary_regions
  *
  * Note that it holds:
  *
- * 	sv(q,c) = column sum of SV(q,c)
+ * 	sv(q) = column sum of SV(q)
  *
  * Except for that, we also provide information on positive/negative flux and source:
  *
- * 	fp(q,c,r) = ( R' * EFP(q,c) )[r],	EFP(q,c)[e] = max{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
- * 	fn(q,c,r) = ( R' * EFN(q,c) )[r],	EFN(q,c)[e] = min{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
- * 	sp(q,c,r) = sum_{i in DOFS } max{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
- * 	sn(q,c,r) = sum_{i in DOFS } min{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
+ * 	fp(q,r) = ( R' * EFP(q) )[r],	EFP(q)[e] = max{ 0, ( F(q) * solution + fv(q) )[e] }
+ * 	fn(q,r) = ( R' * EFN(q) )[r],	EFN(q)[e] = min{ 0, ( F(q) * solution + fv(q) )[e] }
+ * 	sp(q,r) = sum_{i in DOFS } max{ 0, ( S(q)[i,r] * solution[i] + SV(q)[i,r] ) }
+ * 	sn(q,r) = sum_{i in DOFS } min{ 0, ( S(q)[i,r] * solution[i] + SV(q)[i,r] ) }
  *
  * where
  *
- * 	fp(q,c,r)...positive (outward) flux of q-th quantity's c-th component in region r
- * 	fn(q,c,r)...negative (inward) flux of q-th quantity's c-th component in region r
- * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
- * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
+ * 	fp(q,r)...positive (outward) flux of q-th quantity in region r
+ * 	fn(q,r)...negative (inward) flux of q-th quantity in region r
+ * 	sp(q,r)...positive source (spring) of q-th quantity in region r
+ * 	sn(q,r)...negative source (sink) of q-th quantity in region r
  *
  * Remark: The matrix R is needed only for calculation of signed fluxes.
  * The reason is that to determine sign, we decompose flux to sum of local contributions
@@ -277,6 +280,18 @@ public:
 	 * @return      List of quantities' indices.
 	 */
 	std::vector<unsigned int> add_quantities(const std::vector<string> &names);
+
+	/**
+	 * Return index of a quantity.
+	 * @param name Name of the quantity.
+	 */
+	unsigned int quantity_index(const string &name);
+
+	/**
+	 * Return indices of quantities.
+	 * @param names List of quantities' names.
+	 */
+	std::vector<unsigned int> quantity_indices(const std::vector<string> &names);
 
 	/**
 	 * Allocates matrices and vectors for balance.
@@ -464,6 +479,29 @@ public:
 	void calculate_source(unsigned int quantity_idx,
 			const Vec &solution);
 
+    /**
+     * Adds provided values to the actual sources.
+	 * @param quantity_idx  Index of quantity.
+     * @param sources     Sources per region.
+     * @param sources_in  Positive sources per region.
+     * @param sources_out Negative sources per region.
+     */
+	void add_instant_sources(unsigned int quantity_idx,
+			std::vector<double> sources,
+			std::vector<double> sources_in,
+			std::vector<double> sources_out);
+
+    /**
+     * Adds provided values to the cumulative sources.
+	 * @param quantity_idx  Index of quantity.
+     * @param sources Sources per region.
+     * @param dt      Actual time step.
+     */
+	void add_cumulative_sources(unsigned int quantity_idx,
+			std::vector<double> sources,
+			double dt);
+
+
 	/// Perform output to file for given time instant.
 	void output(double time);
 
@@ -521,7 +559,7 @@ private:
 
 
     // Vectors storing mass and balances of fluxes and volumes.
-    // substance, phase, region
+    // quantity, region
     std::vector<std::vector<double> > fluxes_;
     std::vector<std::vector<double> > fluxes_in_;
     std::vector<std::vector<double> > fluxes_out_;
@@ -530,7 +568,7 @@ private:
     std::vector<std::vector<double> > sources_in_;
     std::vector<std::vector<double> > sources_out_;
 
-    // Sums of the above vectors over phases and regions
+    // Sums of the above vectors over regions
     std::vector<double> sum_fluxes_;
     std::vector<double> sum_fluxes_in_;
     std::vector<double> sum_fluxes_out_;

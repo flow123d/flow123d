@@ -7,6 +7,7 @@
 #include "reaction/reaction.hh"
 #include "reaction/pade_approximant.hh"
 #include "input/accessors.hh"
+#include "fields/field_set.hh"
 
 #include "armadillo"
 
@@ -27,6 +28,19 @@ class PadeApproximant;
 class LinearReactionBase: public ReactionTerm
 {
 public:
+
+
+	class EqData : public FieldSet
+	{
+	public:
+
+	    EqData();
+
+	    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
+
+	};
+
+
     /// Constructor.
     LinearReactionBase(Mesh &init_mesh, Input::Record in_rec);
 
@@ -47,6 +61,12 @@ public:
      */
     void update_solution(void) override;
     
+    void set_balance_object(boost::shared_ptr<Balance> &balance) override;
+
+    void update_instant_balance() override;
+
+    void update_cumulative_balance() override;
+
 protected:
     /// Initializes and prepares the reaction matrix.
     /**
@@ -95,8 +115,16 @@ protected:
     arma::mat molar_matrix_;      ///< Diagonal matrix with molar masses of substances.
     arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.
 
+    arma::mat balance_matrix_;    ///< Matrix used for calculation of sources.
+    vector<vector<double> > sources;
+    vector<vector<double> > sources_in;
+    vector<vector<double> > sources_out;
+    vector<unsigned int> subst_idx_; ///< Indices of substances within balance object.
+
     NumericalMethod::Type numerical_method_;    ///< Numerical method selection.
     PadeApproximant *pade_approximant_;         ///< Pade approximant object.
+
+    EqData data_;
 };
 
 #endif  // LINEAR_REACTION_H

@@ -10,7 +10,7 @@
 #include "input/accessors.hh"
 #include "armadillo"
 
-using namespace arma;
+//using namespace arma;
 
 /// Base class for the numerical method used in reaction.
 class NumericalMethod
@@ -53,7 +53,7 @@ public:
     /**
     *   Evaluates Pade approximant from Reaction_matrix.
     */
-    void approximate_matrix(mat &matrix);
+    void approximate_matrix(arma::mat &matrix);
     
 protected:
     
@@ -71,8 +71,8 @@ protected:
      * @param reaction_matrix is the reaction matrix (with elements -kt)
      * @param coefs is the vector of coeficients of the polynomial
      */
-    void evaluate_matrix_polynomial(mat &polynomial_matrix, 
-                                    const mat &reaction_matrix, 
+    void evaluate_matrix_polynomial(arma::mat &polynomial_matrix,
+                                    const arma::mat &reaction_matrix,
                                     const std::vector<double> &coefs);
     
     /// Computes factorial of @p k.

@@ -37,3 +37,8 @@ void ReactionTerm::choose_next_time(void)
 {
   ASSERT(0,"ReactionTerm does not change TimeGovernor.\n");
 }
+
+void ReactionTerm::set_balance_object(boost::shared_ptr<Balance> &balance)
+{
+	balance_ = balance;
+}

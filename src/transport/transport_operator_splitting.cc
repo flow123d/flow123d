@@ -174,7 +174,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   //coupling - passing fields
   if(reaction)
   if( typeid(*reaction) == typeid(SorptionSimple) || 
-      typeid(*reaction) == typeid(DualPorosity)
+      typeid(*reaction) == typeid(DualPorosity) ||
+      typeid(*reaction) == typeid(LinearReaction) ||
+      typeid(*reaction) == typeid(DecayChain)
     )
   {
     reaction->data().set_field("porosity", convection->data()["porosity"]);
@@ -200,6 +202,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	  balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
 
 	  convection->set_balance_object(balance_);
+	  if (reaction) reaction->set_balance_object(balance_);
 
 	  balance_->allocate(el_distribution->lsize(), 1);
   }
@@ -231,6 +234,7 @@ void TransportOperatorSplitting::output_data(){
         {
         	START_TIMER("TOS-balance");
         	convection->calculate_instant_balance();
+        	if (reaction) reaction->update_instant_balance();
         	balance_->output(time_->t());
         	END_TIMER("TOS-balance");
         }
@@ -277,6 +281,7 @@ void TransportOperatorSplitting::update_solution() {
 	    {
 	    	START_TIMER("TOS-balance");
 	    	convection->calculate_cumulative_balance();
+	    	if (reaction) reaction->update_cumulative_balance();
 	    	END_TIMER("TOS-balance");
 	    }
 	}

@@ -452,6 +452,30 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 	return indices;
 }
 
+unsigned int Balance::quantity_index(const string &name)
+{
+	for (auto q : quantities_)
+	{
+		if (q.name_ == name)
+			return q.index_;
+	}
+
+	// Return -1 if name was not found in the vector of quantities.
+	return -1;
+}
+
+std::vector<unsigned int> Balance::quantity_indices(const std::vector<string> &names)
+{
+	vector<unsigned int> idx_list;
+
+	// this may be slow for large number of quantities as we repeatedly search in the whole vector of quantities.
+	for (auto name : names)
+		idx_list.push_back(quantity_index(name));
+
+	return idx_list;
+}
+
+
 
 void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
@@ -904,6 +928,39 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	VecRestoreArrayRead(temp, &flux_array);
 	VecDestroy(&temp);
 	VecDestroy(&boundary_vec);
+}
+
+
+
+void Balance::add_instant_sources(unsigned int quantity_idx,
+		std::vector<double> sources,
+		std::vector<double> sources_in,
+		std::vector<double> sources_out)
+{
+	ASSERT(sources.size() == sources_[quantity_idx].size(), "Size mismatch in sources vectors.");
+	ASSERT(sources_in.size() == sources_[quantity_idx].size(), "Size mismatch in sources vectors.");
+	ASSERT(sources_out.size() == sources_[quantity_idx].size(), "Size mismatch in sources vectors.");
+
+	for (unsigned int i=0; i<sources.size(); i++)
+	{
+		sources_[quantity_idx][i] += sources[i];
+		sources_in_[quantity_idx][i] += sources_in[i];
+		sources_out_[quantity_idx][i] += sources_out[i];
+	}
+}
+
+
+void Balance::add_cumulative_sources(unsigned int quantity_idx,
+		std::vector<double> sources,
+		double dt)
+{
+	ASSERT(sources.size() == sources_[quantity_idx].size(), "Size mismatch in sources vectors.");
+
+	if (rank_ == 0)
+	{
+		for (unsigned int i=0; i<sources.size(); i++)
+			integrated_sources_[quantity_idx] += sources[i]*dt;
+	}
 }
 
 

@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace Input::Type;
+using namespace arma;
 
 Record LinearReaction::input_type_single_reaction
 	= Record("Reaction", "Equation for reading information about radioactive decays.")
