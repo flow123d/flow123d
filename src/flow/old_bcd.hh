@@ -77,6 +77,31 @@ public:
 
     static OldBcdInput * instance();
 
+    template<int spacedim, class Value>
+    class OldFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    public:
+
+    	typedef typename Field<spacedim,Value>::FieldBasePtr FieldPtr;
+
+    	OldFieldFactory( FieldPtr field )
+    	: field_(field)
+    	{}
+
+    	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+    		Input::AbstractRecord field_record;
+    		if (rec.opt_val(field.input_name(), field_record))
+    			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+        	else {
+        		OldBcdInput *old_bcd = OldBcdInput::instance();
+        		old_bcd->read_flow_record(rec, field);
+        		return field_;
+        	}
+    	}
+
+    	FieldPtr field_;
+
+    };
+
     // hooks
     static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommon &field) {
     	OldBcdInput *old_bcd = OldBcdInput::instance();

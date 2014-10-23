@@ -22,7 +22,8 @@
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
 : read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>())
+  data_(std::make_shared<SharedData>()),
+  factory_base_ptr_(std::make_shared<FactoryBase>())
 
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -34,7 +35,8 @@ Field<spacedim,Value>::Field()
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
 : read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>())
+  data_(std::make_shared<SharedData>()),
+  factory_base_ptr_(std::make_shared<FactoryBase>())
 
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -50,7 +52,8 @@ template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   read_field_descriptor_hook( other.read_field_descriptor_hook ),
-  data_(other.data_)
+  data_(other.data_),
+  factory_base_ptr_(other.factory_base_ptr_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -78,6 +81,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	set_time_result_ = TimeStatus::unknown;
 
 	read_field_descriptor_hook = other.read_field_descriptor_hook;
+	factory_base_ptr_ = other.factory_base_ptr_;
 	data_ = other.data_;
 
 	if (other.no_check_control_field_) {
@@ -384,6 +388,7 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
         continue;
       }
 			// get field instance
+			//FieldBasePtr field_instance = factory_base_ptr_.create_field(*(shared_->list_it_), *this);
 			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
 			if (field_instance)  // skip descriptors without related keys
 			{
@@ -452,6 +457,22 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         }
     }
     shared_->is_fully_initialized_;
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_factory_base_ptr(std::shared_ptr<FactoryBase> factory_base_ptr) {
+	factory_base_ptr_ = factory_base_ptr;
+}
+
+
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::AbstractRecord field_record;
+	if (rec.opt_val(field.input_name(), field_record))
+		return FieldBaseType::function_factory(field_record, field.n_comp() );
+	else
+		return FieldBasePtr();
 }
 
 

@@ -162,6 +162,7 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
         bc_type.input_selection(&bc_type_selection);
         bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+        bc_type.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Enum> >(OldBcdInput::instance()->flow_type));
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");

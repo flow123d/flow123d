@@ -70,6 +70,11 @@ public:
      */
     FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
 
+    class FactoryBase {
+    public:
+    	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+    };
+
     /**
      * Default constructor.
      *
@@ -204,6 +209,11 @@ public:
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list) const;
 
+    /**
+     * Set @p factory_base_ptr_
+     */
+    void set_factory_base_ptr(std::shared_ptr<FactoryBase> factory_base_ptr);
+
 protected:
     /**
      * For fields returning "enum", i.e. with @p Value == FieldEnum, the input type (meaning whole input_Type tree of the field) depends on the
@@ -261,6 +271,8 @@ protected:
      * Table with pointers to fields on individual regions.
      */
     std::vector< FieldBasePtr > region_fields_;
+
+    std::shared_ptr<FactoryBase> factory_base_ptr_;
 
 
 
