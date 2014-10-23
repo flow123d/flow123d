@@ -46,14 +46,16 @@ using namespace Input::Type;
 
 Selection Balance::format_selection_input_type
 	= Selection("Balance_output_format", "Format of output file for balance.")
-	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.");
+	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
+	.add_value(Balance::csv, "csv", "Excel format with semicolon delimiter.")
+	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fix column width.");
 
 Record MassBalance::input_type
 	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
-	.declare_key("format", Balance::format_selection_input_type, Default("legacy"), "Format of output file.")
+	.declare_key("format", Balance::format_selection_input_type, Default("csv"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
-	.declare_key("file", FileName::output(), Default("mass_balance.txt"), "File name for output of mass balance.")
+	.declare_key("file", FileName::output(), Default::read_time("FileName mass_balance.*"), "File name for output of mass balance.")
 ;
 
 
@@ -392,15 +394,33 @@ Balance::Balance(const std::vector<unsigned int> &elem_regions,
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
-	  	  allocation_done_(false)
+	  	  allocation_done_(false),
+	  	  output_line_counter_(0)
 
 {
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
 
 	cumulative_ = in_rec.val<bool>("cumulative");
+	output_format_ = in_rec.val<OutputFormat>("format");
 
-	if (rank_ == 0)
-		output_.open(string(in_rec.val<FilePath>("file")).c_str());
+	if (rank_ == 0) {
+		// set default value by output_format_
+		std::string default_file_name;
+		switch (output_format_)
+		{
+		case csv:
+			default_file_name = "mass_balance.csv";
+			break;
+		case gnuplot:
+			default_file_name = "mass_balance.dat";
+			break;
+		case legacy:
+			default_file_name = "mass_balance.txt";
+			break;
+		}
+
+		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
+	}
 }
 
 
@@ -1013,7 +1033,11 @@ void Balance::output(double time)
 	switch (output_format_)
 	{
 	case csv:
+		output_csv(time, ';', "");
+		break;
 	case gnuplot:
+		output_csv(time, ' ', "#", 30);
+		break;
 	case legacy:
 		output_legacy(time);
 		break;
@@ -1171,6 +1195,144 @@ void Balance::output_legacy(double time)
 	output_ << endl << endl;
 }
 
+
+std::string Balance::csv_zero_vals(unsigned int cnt, char delimiter)
+{
+	std::stringstream ss;
+	for (unsigned int i=0; i<cnt; i++) ss << format_csv_val(0, delimiter);
+	return ss.str();
+}
+
+
+void Balance::output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat)
+{
+	// write output only on process #0
+	if (rank_ != 0) return;
+
+	const unsigned int n_quant = quantities_.size();
+
+	// print data header only on first line
+	if (repeat==0 && output_line_counter_==0) format_csv_output_header(delimiter, comment_string);
+
+	// print sources and masses over bulk regions
+	const RegionSet & bulk_set = regions_.get_region_set("BULK");
+	for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val(reg->label(), delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
+					<< csv_zero_vals(3, delimiter)
+					<< format_csv_val(masses_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_in_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_out_[qi][reg->bulk_idx()], delimiter)
+					<< csv_zero_vals(3, delimiter) << endl;
+			++output_line_counter_;
+		}
+	}
+
+	// print mass fluxes over boundaries
+	const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
+	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++) {
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val(reg->label(), delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
+					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
+					<< csv_zero_vals(7, delimiter) << endl;
+			++output_line_counter_;
+		}
+	}
+
+	if (cumulative_)
+	{
+		for (unsigned int qi=0; qi<n_quant; qi++)
+		{
+			// print data header (repeat header after every "repeat" lines)
+			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
+
+			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
+			output_ << format_csv_val(time, delimiter)
+					<< format_csv_val("ALL", delimiter)
+					<< format_csv_val(quantities_[qi].name_, delimiter)
+					<< format_csv_val(sum_fluxes_[qi], delimiter)
+					<< format_csv_val(sum_fluxes_in_[qi], delimiter)
+					<< format_csv_val(sum_fluxes_out_[qi], delimiter)
+					<< format_csv_val(sum_masses_[qi], delimiter)
+					<< format_csv_val(sum_sources_[qi], delimiter)
+					<< format_csv_val(sum_sources_in_[qi], delimiter)
+					<< format_csv_val(sum_sources_out_[qi], delimiter)
+					<< format_csv_val(integrated_fluxes_[qi], delimiter)
+					<< format_csv_val(integrated_sources_[qi], delimiter)
+					<< format_csv_val(error, delimiter) << endl;
+			++output_line_counter_;
+		}
+	}
+
+}
+
+
+void Balance::format_csv_output_header(char delimiter, const std::string& comment_string)
+{
+	std::stringstream ss;
+	if (delimiter == ' ') {
+		ss << setw(output_column_width-comment_string.size()) << "\"time\"";
+	} else {
+		ss << delimiter << "\"time\"";
+	}
+
+	output_ << comment_string << ss.str()
+			<< format_csv_val("region", delimiter)
+			<< format_csv_val("quantity", delimiter)
+			<< format_csv_val("flux", delimiter)
+			<< format_csv_val("flux_in", delimiter)
+			<< format_csv_val("flux_out", delimiter)
+			<< format_csv_val("mass", delimiter)
+			<< format_csv_val("source", delimiter)
+			<< format_csv_val("source_in", delimiter)
+			<< format_csv_val("source_out", delimiter)
+			<< format_csv_val("integrated_flux", delimiter)
+			<< format_csv_val("integrated_source", delimiter)
+			<< format_csv_val("error", delimiter)
+			<< endl;
+}
+
+std::string Balance::format_csv_val(std::string val, char delimiter)
+{
+	std::stringstream ss;
+	std::replace( val.begin(), val.end(), '\"', '\'');
+	if (delimiter == ' ') {
+		std::stringstream sval;
+		sval << "\"" << val << "\"";
+		ss << " " << setw(output_column_width-1) << sval.str();
+	} else {
+		ss << delimiter << "\"" << val << "\"";
+	}
+
+	return ss.str();
+}
+
+std::string Balance::format_csv_val(double val, char delimiter)
+{
+	std::stringstream ss;
+	if (delimiter == ' ') {
+		ss << " " << setw(output_column_width-1) << val;
+	} else {
+		ss << delimiter << val;
+	}
+	return ss.str();
+}
 
 
 
