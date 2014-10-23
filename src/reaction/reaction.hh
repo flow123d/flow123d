@@ -79,7 +79,8 @@ public:
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;
 
-  virtual void set_balance_object(boost::shared_ptr<Balance> &balance);
+  virtual void set_balance_object(boost::shared_ptr<Balance> &balance,
+		  const std::vector<unsigned int> &subst_idx);
 
   virtual void update_instant_balance() {};
 
@@ -120,6 +121,8 @@ protected:
   OutputTime *output_stream_;
 
   boost::shared_ptr<Balance> balance_;
+
+  std::vector<unsigned int> subst_idx_;
 
 };
 

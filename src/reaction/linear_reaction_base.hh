@@ -36,6 +36,7 @@ public:
 
 	    EqData();
 
+	    Field<3, FieldValue<3>::Scalar > cross_section; ///< Cross section field.
 	    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
 
 	};
@@ -61,7 +62,8 @@ public:
      */
     void update_solution(void) override;
     
-    void set_balance_object(boost::shared_ptr<Balance> &balance) override;
+    void set_balance_object(boost::shared_ptr<Balance> &balance,
+    		const std::vector<unsigned int> &subst_idx) override;
 
     void update_instant_balance() override;
 
@@ -89,6 +91,9 @@ protected:
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input();
+
+    /// Computes coefficient for calculating balance of sources. It is assembled only when data change.
+    void assemble_balance_coef();
             
     /** Help function to create mapping of substance indices. 
      * Finds a position of a string in specified array.
@@ -119,7 +124,7 @@ protected:
     vector<vector<double> > sources;
     vector<vector<double> > sources_in;
     vector<vector<double> > sources_out;
-    vector<unsigned int> subst_idx_; ///< Indices of substances within balance object.
+    vector<double> source_bal_coef; ///< Coefficients for calculating sources, assembled only when data change.
 
     NumericalMethod::Type numerical_method_;    ///< Numerical method selection.
     PadeApproximant *pade_approximant_;         ///< Pade approximant object.

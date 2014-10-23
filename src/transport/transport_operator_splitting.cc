@@ -172,14 +172,14 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	}
         
   //coupling - passing fields
-  if(reaction)
-  if( typeid(*reaction) == typeid(SorptionSimple) || 
-      typeid(*reaction) == typeid(DualPorosity) ||
-      typeid(*reaction) == typeid(LinearReaction) ||
-      typeid(*reaction) == typeid(DecayChain)
-    )
-  {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+  if(reaction) {
+	  if( typeid(*reaction) == typeid(SorptionSimple) ||
+		  typeid(*reaction) == typeid(DualPorosity) ||
+		  typeid(*reaction) == typeid(LinearReaction) ||
+		  typeid(*reaction) == typeid(DecayChain)
+		)
+		reaction->data().set_field("porosity", convection->data()["porosity"]);
+
   }
 
   // initialization of balance object
@@ -202,7 +202,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	  balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
 
 	  convection->set_balance_object(balance_);
-	  if (reaction) reaction->set_balance_object(balance_);
+	  if (reaction) reaction->set_balance_object(balance_, balance_->quantity_indices(substances_.names()));
 
 	  balance_->allocate(el_distribution->lsize(), 1);
   }
@@ -245,6 +245,11 @@ void TransportOperatorSplitting::output_data(){
 
 void TransportOperatorSplitting::zero_time_step()
 {
+	if (reaction)
+	  if( typeid(*reaction) == typeid(LinearReaction) ||
+	  	  typeid(*reaction) == typeid(DecayChain)
+	  	)
+	  		reaction->data().set_field("cross_section", convection->data()["cross_section"]);
   
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
