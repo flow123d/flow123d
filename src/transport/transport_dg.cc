@@ -326,7 +326,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	}
     data_.set_limit_side(LimitSide::left);
 	output_stream = OutputTime::create_output_stream(output_rec);
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // set time marks for writing the output
     output_stream->mark_output_times(*time_);
