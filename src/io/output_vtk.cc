@@ -421,7 +421,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     } else {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << this->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << mesh->n_corners() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         this->write_vtk_discont_geometry();
@@ -446,7 +446,6 @@ void OutputVTK::write_vtk_vtu(void)
 
 int OutputVTK::write_data(void)
 {
-    //Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
     char base_file_name[PATH_MAX];
@@ -455,19 +454,11 @@ int OutputVTK::write_data(void)
     ofstream *data_file = new ofstream;
     DIR *dir;
     int i, j, ret;
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
-    }
-
-    // Write header with mesh, when it hasn't been written to output file yet
-    if(this->header_written == false) {
-        this->write_head();
-        this->header_written = true;
     }
 
     strncpy(base_dir_name, this->_base_filename->c_str(), PATH_MAX);
@@ -556,11 +547,8 @@ int OutputVTK::write_data(void)
 
 int OutputVTK::write_head(void)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
@@ -580,11 +568,8 @@ int OutputVTK::write_head(void)
 
 int OutputVTK::write_tail(void)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
@@ -613,9 +598,8 @@ void OutputVTK::fix_base_file_name(void)
 
 OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-	this->file_format = OutputTime::VTK;
 	this->fix_base_file_name();
-    this->header_written = false;
+	this->write_head();
 }
 
 
