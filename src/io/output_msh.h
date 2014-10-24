@@ -85,9 +85,6 @@ public:
 
 private:
 
-    /**
-     * Was header already written to output file?
-     */
     bool header_written;
 
     /**

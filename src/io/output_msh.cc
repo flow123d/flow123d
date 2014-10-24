@@ -248,7 +248,7 @@ int OutputMSH::write_data(void)
         this->write_head();
         this->header_written = true;
     }
-        
+
     this->write_msh_node_data(this->time, this->current_step);
     this->write_msh_elem_data(this->time, this->current_step);
 
@@ -278,7 +278,6 @@ int OutputMSH::write_tail(void)
 
 OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-	this->file_format = OutputTime::GMSH;
 	this->fix_base_file_name();
     this->header_written = false;
 }
