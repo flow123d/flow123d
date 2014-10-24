@@ -145,6 +145,9 @@ public:
     inline unsigned int n_edges() const {
         return edges.size();
     }
+
+    unsigned int n_corners();
+
     inline const RegionDB &region_db() const {
         return region_db_;
     }
