@@ -157,9 +157,10 @@ private:
 class FullEnum {
 public:
     FullEnum() : val_(0) {}
-    FullEnum(int v, Input::Type::Selection sel) :val_(v) { this->sel_ = sel; }
-    operator int() const {return val_;}
-    operator unsigned int() const {return val_;}
+    FullEnum(int v, Input::Type::Selection sel) :val_(v), sel_(sel) { this->sel_ = sel; }
+    operator int() const {return this->val_;}
+    operator unsigned int() const {return this->val_;}
+    operator string() const {return this->sel_.int_to_name(this->val_); }
 private:
     int val_;
     Input::Type::Selection sel_;
@@ -803,20 +804,24 @@ namespace internal {
 /**
  *  Template specializations for primary type dispatch.
  */
+template<> struct TD<char> { typedef int OT; };
+template<> struct TD<unsigned char> { typedef int OT; };
 template<> struct TD<short int> { typedef int OT; };
 template<> struct TD<unsigned short int> { typedef int OT; };
+template<> struct TD<int> { typedef int OT; };
 template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<char> { typedef int OT; };
 template<> struct TD<float> { typedef double OT; };
+template<> struct TD<double> { typedef double OT; };
 
 /**
  *  Template specializations for secondary type dispatch.
  */
 
-// generic implementation accepts only enum types
+// Generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
+
+    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
 
     typedef T TmpType;
 
@@ -825,13 +830,12 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
-
 template<>
 struct TypeDispatch<Enum> {
     typedef Enum TmpType;
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_string() ); }
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
 template<>
@@ -839,7 +843,7 @@ struct TypeDispatch<FullEnum> {
     typedef FullEnum TmpType;
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
 };
 
 template<>
