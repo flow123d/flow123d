@@ -140,7 +140,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
 
 	output_stream = OutputTime::create_output_stream(in_rec.val<Input::Record>("output_stream"));
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), OutputFields::output_selection);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 	output_stream->mark_output_times(darcy_flow->time());
 
     int rank;
