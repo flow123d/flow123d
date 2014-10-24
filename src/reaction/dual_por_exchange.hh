@@ -46,6 +46,8 @@ public:
     
     MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
 
+    Field<3, FieldValue<3>::Scalar > cross_section; ///< Cross section field.
+
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
 
@@ -78,6 +80,13 @@ public:
   /// Main output routine.
   void output_data(void) override;
   
+  void set_balance_object(boost::shared_ptr<Balance> &balance,
+		  const std::vector<unsigned int> &subst_idx) override;
+
+  void update_instant_balance() override;
+
+  void update_cumulative_balance() override;
+
 protected:
   /**
    * This method disables to use constructor without parameters.
@@ -94,6 +103,9 @@ protected:
   /// Allocates petsc vectors, prepares them for output and creates output vector scatter.
   void allocate_output_mpi(void);
   
+  /// Assembles mass matrix for calculation of balance for immobile concentrations.
+  void assemble_balance_matrix();
+
   double **compute_reaction(double **concentrations, int loc_el) override;
   
   /// Gathers all the parallel vectors to enable them to be output.
@@ -133,6 +145,15 @@ protected:
   double **conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)  
   //@}
   
+  vector<unsigned int> subst_idx_mob_; ///< Indices for mobile concentrations in balance.
+  vector<unsigned int> subst_idx_immob_; ///< Indices for immobile concentrations in balance.
+  vector<vector<double> > sources_mob;
+  vector<vector<double> > sources_in_mob;
+  vector<vector<double> > sources_out_mob;
+  vector<vector<double> > sources_immob;
+  vector<vector<double> > sources_in_immob;
+  vector<vector<double> > sources_out_immob;
+
 };
 
 #endif  //DUAL_POROSITY_H

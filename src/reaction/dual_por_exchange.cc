@@ -19,6 +19,7 @@
 // #include "reaction/pade_approximant.hh"
 #include "reaction/decay_chain.hh"
 #include "semchem/semchem_interface.hh"
+#include "transport/mass_balance.hh"
 
 using namespace Input::Type;
 using namespace std;
@@ -70,6 +71,13 @@ DualPorosity::EqData::EqData()
         .name("porosity")
         .units("1")
         .flags( FieldFlag::input_copy );
+
+	//creating field for cross section that is set later from the governing equation (transport)
+	*this +=cross_section
+			.name("cross_section")
+	        .units("")
+	        .flags( FieldFlag::input_copy );
+
 
   output_fields += *this;
   output_fields += conc_immobile.name("conc_immobile").units("M/L^3");
@@ -236,7 +244,33 @@ void DualPorosity::initialize_fields()
   }
   data_.output_fields.set_limit_side(LimitSide::right);
   output_stream_->add_admissible_field_names(output_array, data_.output_selection);
+
 }
+
+
+void DualPorosity::set_balance_object(boost::shared_ptr<Balance> &balance,
+		const std::vector<unsigned int> &subst_idx)
+{
+	ReactionTerm::set_balance_object(balance, subst_idx);
+
+	subst_idx_mob_ = subst_idx_;
+	for (auto name : substances_.names())
+		subst_idx_immob_.push_back(balance_->add_quantity(name + "_immobile"));
+
+	if (reaction_mobile)
+		reaction_mobile->set_balance_object(balance_, subst_idx_mob_);
+	if (reaction_immobile)
+		reaction_immobile->set_balance_object(balance_, subst_idx_immob_);
+
+	sources_mob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_in_mob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_out_mob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+
+	sources_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_in_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_out_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+}
+
 
 
 void DualPorosity::zero_time_step()
@@ -249,21 +283,41 @@ void DualPorosity::zero_time_step()
  
   //coupling - passing fields
   if(reaction_mobile)
-  if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-          reaction_mobile->data().set_field("porosity", data_["porosity"]);
-          reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  if (typeid(*reaction_mobile) == typeid(SorptionMob))
+	  {
+			  reaction_mobile->data().set_field("porosity", data_["porosity"]);
+			  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  }
+	  if (typeid(*reaction_mobile) == typeid(LinearReaction) ||
+		  typeid(*reaction_mobile) == typeid(DecayChain))
+	  {
+		  reaction_mobile->data().set_field("porosity", data_["porosity"]);
+		  reaction_mobile->data().set_field("cross_section", data_["cross_section"]);
+	  }
   }
   if(reaction_immobile)
-  if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-      reaction_immobile->data().set_field("porosity", data_["porosity"]);
-      reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  if (typeid(*reaction_immobile) == typeid(SorptionImmob))
+	  {
+		  reaction_immobile->data().set_field("porosity", data_["porosity"]);
+		  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  }
+	  if (typeid(*reaction_immobile) == typeid(LinearReaction) ||
+		  typeid(*reaction_immobile) == typeid(DecayChain))
+	  {
+		  reaction_immobile->data().set_field("porosity", data_["porosity_immobile"]);
+		  reaction_immobile->data().set_field("cross_section", data_["cross_section"]);
+	  }
   }
   
   data_.set_time(*time_);
   set_initial_condition();
   
+	if (data_.porosity_immobile.changed() ||
+		data_.cross_section.changed())
+		assemble_balance_matrix();
+
   // write initial condition
   output_vector_gather();
   data_.output_fields.set_time(*time_);
@@ -293,10 +347,45 @@ void DualPorosity::set_initial_condition()
   }
 }
 
+void DualPorosity::assemble_balance_matrix()
+{
+    if (balance_ != nullptr)
+    {
+    	balance_->start_mass_assembly(subst_idx_immob_);
+
+    	for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
+    	{
+    		ElementFullIter elm = mesh_->element(el_4_loc_[loc_el]);
+    		double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
+    		double por_imm = data_.porosity_immobile.value(elm->centre(), elm->element_accessor());
+
+        	for (unsigned int sbi=0; sbi<substances_.size(); ++sbi)
+        		balance_->add_mass_matrix_values(subst_idx_immob_[sbi], elm->region().bulk_idx(), {row_4_el_[el_4_loc_[loc_el]]}, {csection*por_imm*elm->measure()} );
+        }
+
+    	balance_->finish_mass_assembly(subst_idx_immob_);
+    }
+}
+
 void DualPorosity::update_solution(void) 
 {
   //DBGMSG("DualPorosity - update solution\n");
   data_.set_time(*time_);
+
+  if (balance_ != nullptr)
+  {
+	vector<double> tmp(mesh_->region_db().bulk_size(), 0);
+	fill_n(sources_mob.begin(), substances_.size(), tmp);
+	fill_n(sources_in_mob.begin(), substances_.size(), tmp);
+	fill_n(sources_out_mob.begin(), substances_.size(), tmp);
+	fill_n(sources_immob.begin(), substances_.size(), tmp);
+	fill_n(sources_in_immob.begin(), substances_.size(), tmp);
+	fill_n(sources_out_immob.begin(), substances_.size(), tmp);
+
+	if (data_.porosity_immobile.changed() ||
+		data_.cross_section.changed())
+		assemble_balance_matrix();
+  }
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
@@ -321,6 +410,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
    
   // get data from fields
   ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
+  double csection = data_.cross_section.value(ele->centre(), ele->element_accessor());
   por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
   por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
   arma::Col<double> diff_vec = data_.diffusion_rate_immobile.value(ele->centre(), ele->element_accessor());
@@ -398,11 +488,54 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
         
         concentration_matrix_[sbi][loc_el] = conc_mob;
         conc_immobile[sbi][loc_el] = conc_immob;
+
+        if (balance_ != nullptr)
+        {
+        	double source_mob = (conc_mob - previous_conc_mob)*csection*por_mob*ele->measure()/time_->dt();
+        	double source_immob = (conc_immob - previous_conc_immob)*csection*por_immob*ele->measure()/time_->dt();
+			sources_mob[sbi][ele->region().bulk_idx()] += source_mob;
+			sources_immob[sbi][ele->region().bulk_idx()] += source_immob;
+			if (source_mob > 0)
+				sources_in_mob[sbi][ele->region().bulk_idx()] += source_mob;
+			else
+				sources_out_mob[sbi][ele->region().bulk_idx()] += source_mob;
+			if (source_immob > 0)
+				sources_in_immob[sbi][ele->region().bulk_idx()] += source_immob;
+			else
+				sources_out_immob[sbi][ele->region().bulk_idx()] += source_immob;
+        }
     }
   //*/
   
   return conc_immobile;
 }
+
+void DualPorosity::update_instant_balance()
+{
+    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+    {
+    	balance_->add_instant_sources(subst_idx_mob_[sbi], sources_mob[sbi], sources_in_mob[sbi], sources_out_mob[sbi]);
+    	balance_->add_instant_sources(subst_idx_immob_[sbi], sources_immob[sbi], sources_in_immob[sbi], sources_out_immob[sbi]);
+    	balance_->calculate_mass(subst_idx_immob_[sbi], vconc_immobile[sbi]);
+    }
+
+    if (reaction_mobile) reaction_mobile->update_instant_balance();
+    if (reaction_immobile) reaction_immobile->update_instant_balance();
+}
+
+
+void DualPorosity::update_cumulative_balance()
+{
+    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+    {
+    	balance_->add_cumulative_sources(subst_idx_mob_[sbi], sources_mob[sbi], time_->dt());
+    	balance_->add_cumulative_sources(subst_idx_immob_[sbi], sources_immob[sbi], time_->dt());
+    }
+
+    if (reaction_mobile) reaction_mobile->update_cumulative_balance();
+    if (reaction_immobile) reaction_immobile->update_cumulative_balance();
+}
+
 
 
 void DualPorosity::allocate_output_mpi(void )
