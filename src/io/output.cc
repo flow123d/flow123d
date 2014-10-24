@@ -203,27 +203,14 @@ OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
 }
 */
 
-void OutputTime::add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel)
+void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 {
-    vector<Input::Enum> field_ids;
+    vector<Input::FullEnum> field_ids;
     in_array.copy_to(field_ids);
 
-    // first copy all possible field names from selection
-    for (auto it = in_sel.begin(); it != in_sel.end(); ++it)
-        //output_names.emplace(it->key_, false); //introduced in gcc4.8 (C++11) - does not work with gcc4.7
-        output_names.insert(std::pair<std::string, bool>(it->key_,false));
-
-    // then mark those fields that will be saved
-    for (auto it: field_ids)
-        if (in_sel.has_value(it))
-            output_names[in_sel.int_to_name(it)] = true;
-
-#if 0
-	for (auto it = in_array.begin<string>(); it != in_array.end(); ++it) {
-	    std::cout << *it << std::endl;
-	    this->output_names.insert(std::pair<std::string, bool>(*it, true));
-	}
-#endif
+    for (auto it: field_ids) {
+        this->output_names.insert(std::pair<std::string, bool>((string)it, true));
+    }
 }
 
 
@@ -236,19 +223,19 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     base_file = new ofstream;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if(rank == 0) {
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+    if(this->rank == 0) {
     	base_file->open(fname.c_str());
     	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
     	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
     }
 
     this->current_step = 0;
-
     this->_base_file = base_file;
     this->_base_filename = new string(fname);
+    this->_data_file = NULL;
+    this->_data_filename = NULL;
     this->_mesh = NULL;
-
     this->time = -1.0;
     this->write_time = -1.0;
 
@@ -308,12 +295,8 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 void OutputTime::write_time_frame()
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    //ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
     /* TODO: do something, when support for Parallel VTK is added */
-    if (rank == 0) {
+    if (this->rank == 0) {
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {

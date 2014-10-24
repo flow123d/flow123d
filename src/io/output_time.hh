@@ -149,9 +149,8 @@ public:
     /**
      * \brief Registers names of output fields that can be written using this stream.
      * @param in_array Array of admissible fields (array of selections).
-     * @param in_sel   Temporary - selection with field names.
      */
-    void add_admissible_field_names(const Input::Array &in_array, const Input::Type::Selection &in_sel);
+    void add_admissible_field_names(const Input::Array &in_array);
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
@@ -172,15 +171,6 @@ protected:
     ofstream        *_data_file;        ///< Data output stream (could be same as base_file)
     string          *_data_filename;     ///< Name of data output file
     Mesh            *_mesh;
-
-    /**
-     * Enumeration of file formats supported by Flow123d
-     */
-    typedef enum OutFileFormat {
-        NONE    = 0,
-        GMSH    = 1,
-        VTK     = 2,
-    } OutFileFormat;
 
     /**
      * Interpolate given @p field into output discrete @p space and store the values
@@ -217,16 +207,6 @@ protected:
      */
     virtual int write_tail(void) = 0;
 
-    unsigned int get_corner_count(void) {
-        unsigned int li, count = 0;
-        FOR_ELEMENTS(this->_mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     /**
      * \brief Vector of pointers at OutputTime
      */
@@ -235,7 +215,6 @@ protected:
     /// MPI rank of process (is tested in methods)
     int             rank;
 
-    OutFileFormat   file_format;
     //OutputFormat    *output_format;
     //string          name;              ///< Name of output stream
 
