@@ -93,11 +93,6 @@ public:
 private:
 
     /**
-     * Was header already written to output file?
-     */
-    bool header_written;
-
-    /**
      * \brief The declaration enumeration used for variant of file VTK format
      */
     typedef enum Variant {
