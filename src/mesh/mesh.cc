@@ -158,7 +158,15 @@ unsigned int Mesh::n_sides()
     return n_sides_;
 }
 
-
+unsigned int Mesh::n_corners() {
+    unsigned int li, count = 0;
+    FOR_ELEMENTS(this, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            count++;
+        }
+    }
+    return count;
+}
 
 Partitioning *Mesh::get_part() {
     return part_.get();
