@@ -134,6 +134,12 @@ TEST(intersections, all) {
 	//Profiler::instance()->output(0,cout);//MPI_COMM_WORLD,cout);
 	Profiler::uninitialize();
 
+	xprintf(Msg, "test nulových pluckerových souřadnic");
+
+
+
+
+
 	xprintf(Msg, "Test complete!");
 }
 

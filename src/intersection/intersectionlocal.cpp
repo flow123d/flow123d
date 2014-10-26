@@ -45,10 +45,11 @@ void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
  */
 double IntersectionLocal::getArea(){
 	double subtotal = 0.0;
-	for(unsigned int j = 0; j < i_points.size() - 2;j++){
-		subtotal += i_points[0].getLocalCoords1()(1)*(i_points[j+1].getLocalCoords1()(2) - i_points[j+2].getLocalCoords1()(2)) +
-				 i_points[j+1].getLocalCoords1()(1)*(i_points[j+2].getLocalCoords1()(2) - i_points[0].getLocalCoords1()(2)) +
-				 i_points[j+2].getLocalCoords1()(1)*(i_points[0].getLocalCoords1()(2) - i_points[j+1].getLocalCoords1()(2));
+	for(unsigned int j = 2; j < i_points.size();j++){
+		//xprintf(Msg, "volani %d %d\n",j, i_points.size());
+		subtotal += i_points[0].getLocalCoords1()(1)*(i_points[j-1].getLocalCoords1()(2) - i_points[j].getLocalCoords1()(2)) +
+				 i_points[j-1].getLocalCoords1()(1)*(i_points[j].getLocalCoords1()(2) - i_points[0].getLocalCoords1()(2)) +
+				 i_points[j].getLocalCoords1()(1)*(i_points[0].getLocalCoords1()(2) - i_points[j-1].getLocalCoords1()(2));
 	}
 	return subtotal/2;
 };

@@ -51,6 +51,14 @@ void Plucker::compute(const arma::vec3 a,const arma::vec3 b){
 
 };
 
+arma::vec3 Plucker::getU(){
+	return coordinates(arma::span(0,2));
+};
+
+arma::vec3 Plucker::getUA(){
+	return coordinates(arma::span(3,5));
+};
+
 
 void Plucker::toString(){
 		if(computed){

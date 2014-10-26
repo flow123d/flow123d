@@ -11,11 +11,13 @@ namespace computeintersection{
  * METODY PRO SIMPLEX 1 A SIMPLEX 2
  ****************************************************************/
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){
+	computed = false;
 	abscissa = NULL;
 	triangle = NULL;
 };
 
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs,Simplex<2> &triang){
+	computed = false;
 	abscissa = &abs;
 	triangle = &triang;
 
@@ -38,39 +40,43 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 	//this->p_coordinates_abscissa[0] = NULL;
 };
 
-bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2> &IP){//double &theta, arma::vec3 &local_triangle){
+void ComputeIntersection<Simplex<1>, Simplex<2>>::initPluckerToCompute(){
 	// Spočtení pluckerovych souradnic
 
 	if(!plucker_coordinates_abscissa[0]->isComputed()){
-		//cout << "pocitam abscissa" << endl;
 		plucker_coordinates_abscissa[0]->compute((*abscissa)[0].getPointCoordinates(),
 												 (*abscissa)[1].getPointCoordinates());
 	}
 	for(unsigned int i = 0; i < 3; i++){
 		if(!plucker_coordinates_triangle[i]->isComputed()){
-			//cout << "pocitam triangle" << endl;
 			plucker_coordinates_triangle[i]->compute((*triangle)[i][0].getPointCoordinates(), (*triangle)[i][1].getPointCoordinates());
 		}
 	}
 
-	// Vypočítání součinu dvou pluckerovych souřadnic a sdělení, jestli se jedná o průnik
-
 	for(unsigned int i = 0; i < 3; i++){
-		//cout << "[" << i << "]" ;
 		if(plucker_products[i] == NULL){
-		plucker_products[i] = new double((*plucker_coordinates_abscissa[0])*(*plucker_coordinates_triangle[i]));
-		//cout << "PP nastaven = " << *plucker_products[i] << endl;
-		}else{
-		//cout << "PP pouzit = " << *plucker_products[i] << endl;
+			plucker_products[i] = new double((*plucker_coordinates_abscissa[0])*(*plucker_coordinates_triangle[i]));
 		}
 	}
+
+};
+
+bool ComputeIntersection<Simplex<1>, Simplex<2>>::isComputed(){
+	return computed;
+};
+
+bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2> &IP, bool compute_zeros_plucker_products = false){//double &theta, arma::vec3 &local_triangle){
+
+	initPluckerToCompute();
+
+	computed = true;
 
 	if(((*plucker_products[0] > 0) && (*plucker_products[1] < 0) && (*plucker_products[2] > 0)) ||
 	   ((*plucker_products[0] < 0) && (*plucker_products[1] > 0) && (*plucker_products[2] < 0))){
 		double c = *plucker_products[0]; //c = -c;
 		double d = *plucker_products[1]; d = -d;
 		double e = *plucker_products[2]; //e = -e;
-
+		//xprintf(Msg,"Prunik.%f %f %f\n",c,d,e);
 		// c = w0; d = w1; e = w2
 		// lokální alfa = w2/soucet; lokální beta = w1/soucet; => lokální souřadnice na stěně
 		arma::vec::fixed<3> local_triangle;
@@ -103,6 +109,59 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 		IP.setLocalCoords2(local_triangle);
 		IP.setOrientation(*plucker_products[0] > 0 ? 1 : 0);
 		return true;
+	}else if(compute_zeros_plucker_products && (*plucker_products[0] == 0 || *plucker_products[1] == 0 || *plucker_products[2] == 0)){
+
+		unsigned int num_zeros = 0;
+		for(unsigned int i = 0; i < 3;i++){
+			if(*plucker_products[i] == 0){
+				num_zeros++;
+				arma::vec3 A = (*abscissa)[0].getPointCoordinates();
+				//arma::vec3 B("9 5 0");
+				arma::vec3 U = plucker_coordinates_abscissa[0]->getU();
+				arma::vec3 C = (*triangle)[i][i%2].getPointCoordinates();
+				//arma::vec3 D("4 4 0");
+				arma::vec3 V = plucker_coordinates_triangle[i]->getU();
+				arma::vec3 K = C - A;
+				arma::vec3 Det = -arma::cross(U,V);
+				unsigned int max_index = 0;
+				double maximum = Det[0];
+				if(fabs(Det[1]) > fabs(maximum)){
+					maximum = Det[1];
+					max_index = 1;
+				}
+				if(fabs(Det[2]) > fabs(maximum)){
+					maximum = Det[2];
+					max_index = 2;
+				}
+				if(maximum == 0){
+					return false;
+				}
+
+				double DetX = K[(max_index+2)%3]*V[(max_index+1)%3]
+							-K[(max_index+1)%3]*V[(max_index+2)%3];
+
+			    double DetY = K[(max_index+2)%3]*U[(max_index+1)%3]
+							-K[(max_index+1)%3]*U[(max_index+2)%3];
+
+				double s,t;
+
+				s = DetX/Det[max_index];
+				t = DetY/Det[max_index];
+
+				if(s > 1 || s < 0 || t > 1 || t < 0){
+					return false;
+				}
+
+				xprintf(Msg, "s,t : %f,%f \n",s,t);
+
+				arma::vec3 X1 = A + s*U;
+				arma::vec3 X2 = C + t*V;
+
+				X1.print();
+				X2.print();
+			}
+		}
+		return false;
 	}else{
 		return false;
 	}
@@ -227,7 +286,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			CI12[i].setPluckerProduct(CI12[j].getPluckerProduct(i-1),j);
 		}
 
-		if(CI12[i].compute(IP)){
+		if(!CI12[i].isComputed() && CI12[i].compute(IP, true)){
 			pocet_pruniku++;
 			IP.setSide2(i);
 			//if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){

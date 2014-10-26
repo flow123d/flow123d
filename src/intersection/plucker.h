@@ -26,6 +26,12 @@ public:
 
 	void compute(const arma::vec3 u, const arma::vec3 a);
 
+	// get directional vector U
+	arma::vec3 getU();
+
+	// get cross product vector UxA
+	arma::vec3 getUA();
+
 	void toString();
 };
 } // END namespace_close

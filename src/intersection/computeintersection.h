@@ -39,7 +39,9 @@ public:
 	inline ~ComputeIntersection() {};
 
 	void clear_all();
-	bool compute(IntersectionPoint<1,2> &IP);
+	bool compute(IntersectionPoint<1,2> &IP, bool compute_zeros_plucker_products);
+	void initPluckerToCompute();
+
 
 	std::vector<Plucker *> &getPC_abscissa();
 	std::vector<Plucker *> &getPC_triangle();
@@ -56,6 +58,8 @@ public:
 	void setPluckerProduct(double* number, unsigned int i);
 	double* getPluckerProduct(unsigned int i);
 
+	bool isComputed();
+
 	//void setPluckerDirection(int &number, unsigned int i);
 	//int &getPluckerDirection(unsigned int i);
 
@@ -70,6 +74,8 @@ private:
 	std::vector<Plucker *> plucker_coordinates_triangle;
 
 	double *plucker_products[3];
+	bool computed;
+
 
 	//int plucker_directions[3];
 	//bool intersectionexists;

@@ -35,6 +35,8 @@ TEST(area_intersections, all) {
 	reader.read_mesh(&mesh);
 
 	InspectElements ie(&mesh);
+	ie.print(0);
+	ie.print(1);
 	area1 = ie.polygonArea();
 	xprintf(Msg, "Polygon area successfully computed\n\n");
 
