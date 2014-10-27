@@ -248,7 +248,8 @@ void TransportOperatorSplitting::zero_time_step()
 	if (reaction)
 	  if( typeid(*reaction) == typeid(DualPorosity) ||
 		  typeid(*reaction) == typeid(LinearReaction) ||
-	  	  typeid(*reaction) == typeid(DecayChain)
+	  	  typeid(*reaction) == typeid(DecayChain) ||
+	  	  typeid(*reaction) == typeid(SorptionSimple)
 	  	)
 	  		reaction->data().set_field("cross_section", convection->data()["cross_section"]);
   

@@ -8,6 +8,7 @@
 #include "semchem/semchem_interface.hh"
 #include "reaction/isotherm.hh"
 #include "reaction/sorption_base.hh"
+#include "transport/mass_balance.hh"
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -80,6 +81,12 @@ SorptionBase::EqData::EqData(const string &output_field_name)
             .units("1")
             .flags(FieldFlag::input_copy);
     
+	//creating field for cross section that is set later from the governing equation (transport)
+	*this +=cross_section
+			.name("cross_section")
+	        .units("")
+	        .flags( FieldFlag::input_copy );
+
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units("M/L^3");
 }
@@ -398,6 +405,10 @@ void SorptionBase::zero_time_step()
   data_->output_fields.set_time(*time_);
   data_->output_fields.output(output_stream_);
   
+	if (data_->porosity.changed() ||
+		data_->cross_section.changed())
+		assemble_balance_matrix();
+
   if(reaction_liquid != nullptr) reaction_liquid->zero_time_step();
   if(reaction_solid != nullptr) reaction_solid->zero_time_step();
 }
@@ -430,6 +441,21 @@ void SorptionBase::update_solution(void)
   // update interpolation tables in the case of constant rock matrix parameters
   if(data_->changed())
     make_tables();
+
+  if (balance_ != nullptr)
+  {
+	vector<double> tmp(mesh_->region_db().bulk_size(), 0);
+	fill_n(sources_l.begin(), n_substances_, tmp);
+	fill_n(sources_in_l.begin(), n_substances_, tmp);
+	fill_n(sources_out_l.begin(), n_substances_, tmp);
+	fill_n(sources_s.begin(), n_substances_, tmp);
+	fill_n(sources_in_s.begin(), n_substances_, tmp);
+	fill_n(sources_out_s.begin(), n_substances_, tmp);
+
+	if (data_->porosity.changed() ||
+		data_->cross_section.changed())
+		assemble_balance_matrix();
+  }
     
 
   START_TIMER("Sorption");
@@ -471,6 +497,21 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
     
+    double por, csection, rock_density, old_conc_l[n_substances_], old_conc_s[n_substances_];
+
+    if (balance_ != nullptr)
+    {
+		por = data_->porosity.value(elem->centre(), elem->element_accessor());
+		csection = data_->cross_section.value(elem->centre(), elem->element_accessor());
+		rock_density = data_->rock_density.value(elem->centre(), elem->element_accessor());
+
+		for (i_subst = 0; i_subst < n_substances_; ++i_subst)
+		{
+			old_conc_l[i_subst] = concentration_matrix_[substance_global_idx_[i_subst]][loc_el];
+			old_conc_s[i_subst] = conc_solid[substance_global_idx_[i_subst]][loc_el];
+		}
+    }
+
     // Constant value of rock density and mobile porosity over the whole region 
     // => interpolation_table is precomputed
     if (isotherms_vec[0].is_precomputed()) 
@@ -496,7 +537,104 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
       }
     }
     
-  return concentrations;
+    if (balance_ != nullptr)
+    {
+    	for (i_subst = 0; i_subst < n_substances_; ++i_subst)
+    	{
+    		subst_id = substance_global_idx_[i_subst];
+    		double source_l = (concentration_matrix_[subst_id][loc_el] - old_conc_l[i_subst])*csection*por*elem->measure() / time_->dt();
+    		double source_s = (conc_solid[subst_id][loc_el] - old_conc_s[i_subst])*csection*(1-por)*substances_[subst_id].molar_mass()*rock_density*elem->measure() / time_->dt();
+
+			sources_l[i_subst][elem->region().bulk_idx()] += source_l;
+			sources_s[i_subst][elem->region().bulk_idx()] += source_s;
+			if (source_l > 0)
+				sources_in_l[i_subst][elem->region().bulk_idx()] += source_l;
+			else
+				sources_out_l[i_subst][elem->region().bulk_idx()] += source_l;
+			if (source_s > 0)
+				sources_in_s[i_subst][elem->region().bulk_idx()] += source_s;
+			else
+				sources_out_s[i_subst][elem->region().bulk_idx()] += source_s;
+    	}
+    }
+
+    return concentrations;
+}
+
+
+void SorptionBase::set_balance_object(boost::shared_ptr<Balance> &balance,
+		const std::vector<unsigned int> &subst_idx)
+{
+	ReactionTerm::set_balance_object(balance, subst_idx);
+
+	for (auto subst_id : substance_global_idx_)
+	{
+		subst_idx_l_.push_back(subst_idx_[subst_id]);
+		subst_idx_s_.push_back(balance_->add_quantity(substances_[subst_id].name() + "_solid"));
+	}
+
+	if (reaction_liquid)
+		reaction_liquid->set_balance_object(balance_, subst_idx_l_);
+	if (reaction_solid)
+		reaction_solid->set_balance_object(balance_, subst_idx_s_);
+
+	sources_l.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_in_l.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_out_l.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+
+	sources_s.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_in_s.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+	sources_out_s.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+}
+
+
+void SorptionBase::assemble_balance_matrix()
+{
+    if (balance_ != nullptr)
+    {
+    	balance_->start_mass_assembly(subst_idx_s_);
+
+    	for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
+    	{
+    		ElementFullIter elm = mesh_->element(el_4_loc_[loc_el]);
+    		double csection = data_->cross_section.value(elm->centre(), elm->element_accessor());
+    		double por = data_->porosity.value(elm->centre(), elm->element_accessor());
+    		double rock_density = data_->rock_density.value(elm->centre(), elm->element_accessor());
+
+        	for (unsigned int sbi=0; sbi<n_substances_; ++sbi)
+        		balance_->add_mass_matrix_values(subst_idx_s_[sbi], elm->region().bulk_idx(), {row_4_el_[el_4_loc_[loc_el]]},
+        				{csection*(1-por)*rock_density*substances_[substance_global_idx_[sbi]].molar_mass()*elm->measure()} );
+        }
+
+    	balance_->finish_mass_assembly(subst_idx_s_);
+    }
+}
+
+
+void SorptionBase::update_instant_balance()
+{
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    {
+    	balance_->add_instant_sources(subst_idx_l_[sbi], sources_l[sbi], sources_in_l[sbi], sources_out_l[sbi]);
+    	balance_->add_instant_sources(subst_idx_s_[sbi], sources_s[sbi], sources_in_s[sbi], sources_out_s[sbi]);
+    	balance_->calculate_mass(subst_idx_s_[sbi], vconc_solid[sbi]);
+    }
+
+    if (reaction_liquid) reaction_liquid->update_instant_balance();
+    if (reaction_solid) reaction_solid->update_instant_balance();
+}
+
+
+void SorptionBase::update_cumulative_balance()
+{
+    for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
+    {
+    	balance_->add_cumulative_sources(subst_idx_l_[sbi], sources_l[sbi], time_->dt());
+    	balance_->add_cumulative_sources(subst_idx_s_[sbi], sources_s[sbi], time_->dt());
+    }
+
+    if (reaction_liquid) reaction_liquid->update_cumulative_balance();
+    if (reaction_solid) reaction_solid->update_cumulative_balance();
 }
 
 

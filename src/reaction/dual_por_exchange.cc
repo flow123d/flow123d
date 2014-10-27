@@ -288,6 +288,7 @@ void DualPorosity::zero_time_step()
 	  {
 			  reaction_mobile->data().set_field("porosity", data_["porosity"]);
 			  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+			  reaction_mobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
 	  if (typeid(*reaction_mobile) == typeid(LinearReaction) ||
 		  typeid(*reaction_mobile) == typeid(DecayChain))
@@ -302,6 +303,7 @@ void DualPorosity::zero_time_step()
 	  {
 		  reaction_immobile->data().set_field("porosity", data_["porosity"]);
 		  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+		  reaction_immobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
 	  if (typeid(*reaction_immobile) == typeid(LinearReaction) ||
 		  typeid(*reaction_immobile) == typeid(DecayChain))
