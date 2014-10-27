@@ -27,7 +27,7 @@ TEST(area_intersections, all) {
 	xprintf(Msg, "==============\n");
 	double area1, area2;
 
-	string path = (string)UNIT_TESTS_SRC_DIR + "/mesh/intersection_area_test.msh";
+	string path = (string)UNIT_TESTS_SRC_DIR + "/mesh/site/triangle_tetrahedron11.msh";//intersection_area_test.msh";
 	FilePath mesh_file(path, FilePath::input_file);
 	Profiler::initialize();
 	Mesh mesh;

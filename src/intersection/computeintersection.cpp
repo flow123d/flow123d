@@ -143,22 +143,54 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 			    double DetY = K[(max_index+2)%3]*U[(max_index+1)%3]
 							-K[(max_index+1)%3]*U[(max_index+2)%3];
 
-				double s,t;
+				double s;
+				double t;
 
 				s = DetX/Det[max_index];
 				t = DetY/Det[max_index];
 
-				if(s > 1 || s < 0 || t > 1 || t < 0){
-					return false;
-				}
-
 				xprintf(Msg, "s,t : %f,%f \n",s,t);
 
-				arma::vec3 X1 = A + s*U;
-				arma::vec3 X2 = C + t*V;
+				if(s > 1 || s < 0 || t > 1 || t < 0){
+					//return false;
+				}else{
 
-				X1.print();
-				X2.print();
+					arma::vec::fixed<2> local_abscissa;
+					local_abscissa[0] = 1-s;
+					local_abscissa[1] = s;
+
+					arma::vec::fixed<3> l_triangle;
+					/*
+					 * 0 = 1- t, t, 0
+					 * 1 = 1 -t , 0, t // 1 = t, 0 , 1 - t
+					 * 2 = 0, 1 - t, t
+					 *
+					 * t = 0 => 1; 1 => 0, 2 => 2
+					 *
+					 * */
+					if(i == 0){
+						l_triangle[0] = 1 - t;
+						l_triangle[1] = t;
+						l_triangle[2] = 0;
+					}else if(i == 1){
+						l_triangle[0] = 1 - t;
+						l_triangle[1] = 0;
+						l_triangle[2] = t;
+					}else{
+						l_triangle[0] = 0;
+						l_triangle[1] = 1 - t;
+						l_triangle[2] = t;
+					}
+
+					IP.setLocalCoords1(local_abscissa);
+					IP.setLocalCoords2(l_triangle);
+					IP.setOrientation(1);
+					return true;
+				}
+
+
+
+
 			}
 		}
 		return false;
