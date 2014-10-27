@@ -392,6 +392,11 @@ public:
      */
     string address_string() const;
 
+    /**
+     * Get name of record_type_
+     */
+    string record_type_name();
+
 
 
 protected:

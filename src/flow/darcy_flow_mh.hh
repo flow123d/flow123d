@@ -165,6 +165,29 @@ public:
     };
 
 
+    template<int spacedim, class Value>
+    class PiezoFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    public:
+    	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+    		cout << "PiezoFieldFactory::create_field" << endl;
+    		Input::AbstractRecord field_record;
+    		if (rec.opt_val(field.input_name(), field_record))
+    			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+
+       		OldBcdInput *old_bcd = OldBcdInput::instance();
+       		old_bcd->read_flow_record(rec, field);
+       		auto field_ptr = old_bcd->flow_pressure;
+
+       		Input::AbstractRecord field_a_rec;
+        	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
+        		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( DarcyFlowMH::EqData::gravity_, field_a_rec);
+        	} else {
+        		return field_ptr;
+        	}
+    	}
+    };
+
+
     /**
      * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
      *

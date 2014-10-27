@@ -324,6 +324,11 @@ public:
     typedef Field<spacedim, Value> SubFieldType;
     typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
 
+    class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    public:
+    	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+    };
+
     /**
      * Default constructor.
      */

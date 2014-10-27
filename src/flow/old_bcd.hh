@@ -89,11 +89,19 @@ public:
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
     		Input::AbstractRecord field_record;
-    		if (rec.opt_val(field.input_name(), field_record))
+    		cout << "OldFieldFactory::create_field ";
+    		if (rec.opt_val(field.input_name(), field_record)) {
+    			cout << "if" << endl;
     			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+    		}
         	else {
+        		cout << "else" << endl;
         		OldBcdInput *old_bcd = OldBcdInput::instance();
-        		old_bcd->read_flow_record(rec, field);
+        		if (rec.record_type_name() == "DarcyFlowMH_Data") {
+        			old_bcd->read_flow_record(rec, field);
+        		} else if (rec.record_type_name() == "TransportOperatorSplitting_Data") {
+        			old_bcd->read_transport_record(rec, field);
+        		}
         		return field_;
         	}
     	}

@@ -580,6 +580,13 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 
 
 
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	return NULL;
+}
+
+
+
 
 
 #endif /* FIELD_IMPL_HH_ */

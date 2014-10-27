@@ -112,6 +112,29 @@ protected:
 
         static IT::Selection bc_type_selection;
 
+        template<int spacedim, class Value>
+        class PiezoFieldFactory : public Field<spacedim, Value>::FactoryBase {
+        public:
+        	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+        		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
+
+        		Input::AbstractRecord field_record;
+        		if (rec.opt_val(field.input_name(), field_record))
+        			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+
+           		OldBcdInput *old_bcd = OldBcdInput::instance();
+           		old_bcd->read_flow_record(rec, field);
+           		auto field_ptr = old_bcd->flow_pressure;
+
+           		Input::AbstractRecord field_a_rec;
+            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
+            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
+            	} else {
+            		return field_ptr;
+            	}
+        	}
+        };
+
         inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
         	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
         {
@@ -133,25 +156,30 @@ protected:
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
             bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+            bc_type.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Enum> >(OldBcdInput::instance()->flow_type));
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
         	bc_pressure.read_field_descriptor_hook = bc_piezo_head_hook;
+        	bc_pressure.set_factory_base_ptr(std::make_shared< EqData::PiezoFieldFactory<3, FieldValue<3>::Scalar> >());
             bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
         	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+        	bc_flux.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Scalar> >(OldBcdInput::instance()->flow_flux));
             bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
         	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+        	bc_robin_sigma.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Scalar> >(OldBcdInput::instance()->flow_sigma));
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+            bc_conc.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Vector> >(OldBcdInput::instance()->trans_conc));
             bc_conc.units( UnitSI::dimensionless() );
         }
 
