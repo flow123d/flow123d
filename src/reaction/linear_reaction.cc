@@ -9,7 +9,7 @@
 using namespace std;
 using namespace Input::Type;
 
-Record LinearReaction::input_type_single_reaction
+Record FirstOrderReaction::input_type_single_reaction
 	= Record("Reaction", "Describes a single first order chemical reaction.")
 	.declare_key("reactant", String(), Default::obligatory(),
 				"The name of the reactant.")
@@ -24,25 +24,25 @@ Record LinearReaction::input_type_single_reaction
                 "their sum must be 1.0; it is checked during input reading.");
 
 
-Record LinearReaction::input_type
+Record FirstOrderReaction::input_type
 	= Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
 	.derive_from( ReactionTerm::input_type )
-    .declare_key("reactions", Array( LinearReaction::input_type_single_reaction), Default::obligatory(),
+    .declare_key("reactions", Array( FirstOrderReaction::input_type_single_reaction), Default::obligatory(),
                 "An array of first order chemical reactions.")
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
-LinearReaction::LinearReaction(Mesh &init_mesh, Input::Record in_rec)
-      : LinearReactionBase(init_mesh, in_rec)
+FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)
+      : FirstOrderReactionBase(init_mesh, in_rec)
 {
 }
 
-LinearReaction::~LinearReaction()
+FirstOrderReaction::~FirstOrderReaction()
 {
 }
 
-void LinearReaction::assemble_ode_matrix(void )
+void FirstOrderReaction::assemble_ode_matrix(void )
 {
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
@@ -61,7 +61,7 @@ void LinearReaction::assemble_ode_matrix(void )
     }
 }
 
-// void LinearReaction::prepare_reaction_matrix_analytic(void)
+// void FirstOrderReaction::prepare_reaction_matrix_analytic(void)
 // {
 //     reaction_matrix_ = eye(n_substances_, n_substances_);
 //     
@@ -86,7 +86,7 @@ void LinearReaction::assemble_ode_matrix(void )
 // }
 
 
-void LinearReaction::initialize_from_input()
+void FirstOrderReaction::initialize_from_input()
 {
     unsigned int idx;   //temporary variable, indexing substances
 

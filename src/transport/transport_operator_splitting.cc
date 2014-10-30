@@ -140,11 +140,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
 	if ( reactions_it ) {
-		if (reactions_it->type() == LinearReaction::input_type ) {
-			reaction =  new LinearReaction(init_mesh, *reactions_it);
+		if (reactions_it->type() == FirstOrderReaction::input_type ) {
+			reaction =  new FirstOrderReaction(init_mesh, *reactions_it);
 		} else
-		if (reactions_it->type() == DecayChain::input_type) {
-			reaction = new DecayChain(init_mesh, *reactions_it);
+		if (reactions_it->type() == RadioactiveDecay::input_type) {
+			reaction = new RadioactiveDecay(init_mesh, *reactions_it);
 		} else
 		if (reactions_it->type() == SorptionSimple::input_type ) {
 			reaction =  new SorptionSimple(init_mesh, *reactions_it);

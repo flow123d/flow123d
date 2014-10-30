@@ -12,9 +12,9 @@ class Distribution;
 /** @brief Class implements the linear reactions.
  * 
  * This class implements the user interface for linear reactions and prepares the reaction matrix.
- * Common features are inherited from the @p LinearReactionBase class.
+ * Common features are inherited from the @p FirstOrderReactionBase class.
  */
-class LinearReaction: public LinearReactionBase
+class FirstOrderReaction: public FirstOrderReactionBase
 {
 public:
     /**
@@ -27,10 +27,10 @@ public:
     static Input::Type::Record input_type_single_reaction;
 
     /// Constructor.
-    LinearReaction(Mesh &init_mesh, Input::Record in_rec);
+    FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec);
 
     /// Destructor.
-    ~LinearReaction(void);
+    ~FirstOrderReaction(void);
     
 protected:
 

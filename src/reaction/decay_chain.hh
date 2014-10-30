@@ -12,15 +12,15 @@ class Mesh;
  * 
  * This class implements the user interface for radioactive decay chain and prepares the reaction matrix,
  * The decay behaves like the linear reaction thus everything else is inherited from 
- * the @p LinearReactionBase class.
+ * the @p FirstOrderReactionBase class.
  * 
  * TODO: fix the mass balance - we do not take in account the emitted particles.
  */
-class DecayChain: public LinearReactionBase
+class RadioactiveDecay: public FirstOrderReactionBase
 {
 public:
     /**
-     * Input record for class DecayChain.
+     * Input record for class RadioactiveDecay.
      */
     static Input::Type::Record input_type;
     /**
@@ -29,10 +29,10 @@ public:
     static Input::Type::Record input_type_single_decay;
    
     /// Constructor.
-    DecayChain(Mesh &mesh, Input::Record in_rec);
+    RadioactiveDecay(Mesh &mesh, Input::Record in_rec);
 
     /// Destructor.
-    ~DecayChain(void);
+    ~RadioactiveDecay(void);
 
 
 protected:

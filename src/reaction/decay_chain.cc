@@ -13,7 +13,7 @@
 using namespace arma;
 using namespace Input::Type;
 
-Record DecayChain::input_type_single_decay
+Record RadioactiveDecay::input_type_single_decay
     = Record("Decay", "A model of a radioactive decay.")
     .declare_key("radionuclide", String(), Default::obligatory(),
                 "The name of the parent radionuclide.")
@@ -30,27 +30,27 @@ Record DecayChain::input_type_single_decay
                 "The values are given as fractions in interval [0.0,1.0] and "
                 "their sum must be 1.0; it is checked during input reading.");
 
-Record DecayChain::input_type
+Record RadioactiveDecay::input_type
     = Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
     .derive_from( ReactionTerm::input_type )
-    .declare_key("decays", Array( DecayChain::input_type_single_decay), Default::obligatory(),
+    .declare_key("decays", Array( RadioactiveDecay::input_type_single_decay), Default::obligatory(),
                 "An array of radioactive decays. They can make a chain.")
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
 
-DecayChain::DecayChain(Mesh &init_mesh, Input::Record in_rec)
-      : LinearReactionBase(init_mesh, in_rec)
+RadioactiveDecay::RadioactiveDecay(Mesh &init_mesh, Input::Record in_rec)
+      : FirstOrderReactionBase(init_mesh, in_rec)
 {
 }
 
-DecayChain::~DecayChain()
+RadioactiveDecay::~RadioactiveDecay()
 {
 }
 
 
-void DecayChain::initialize_from_input()
+void RadioactiveDecay::initialize_from_input()
 {
     Input::Array decay_array = input_record_.val<Input::Array>("decays");
 
@@ -107,7 +107,7 @@ void DecayChain::initialize_from_input()
 }
 
 
-void DecayChain::assemble_ode_matrix(void )
+void RadioactiveDecay::assemble_ode_matrix(void )
 {
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
@@ -127,7 +127,7 @@ void DecayChain::assemble_ode_matrix(void )
 }
 
 
-// void DecayChain::prepare_reaction_matrix_analytic(void)
+// void RadioactiveDecay::prepare_reaction_matrix_analytic(void)
 // {
 //     reaction_matrix_ = eye(n_substances_, n_substances_);
 //     

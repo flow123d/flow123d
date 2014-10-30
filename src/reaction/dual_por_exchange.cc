@@ -112,12 +112,12 @@ void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == LinearReaction::input_type ) {
-          reaction_mobile =  new LinearReaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == FirstOrderReaction::input_type ) {
+          reaction_mobile =  new FirstOrderReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == DecayChain::input_type) {
-          reaction_mobile = new DecayChain(*mesh_, *reactions_it);
+      if (reactions_it->type() == RadioactiveDecay::input_type) {
+          reaction_mobile = new RadioactiveDecay(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionMob::input_type ) {
           reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
@@ -140,12 +140,12 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == LinearReaction::input_type ) {
-          reaction_immobile =  new LinearReaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == FirstOrderReaction::input_type ) {
+          reaction_immobile =  new FirstOrderReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == DecayChain::input_type) {
-          reaction_immobile = new DecayChain(*mesh_, *reactions_it);
+      if (reactions_it->type() == RadioactiveDecay::input_type) {
+          reaction_immobile = new RadioactiveDecay(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionImmob::input_type ) {
           reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);

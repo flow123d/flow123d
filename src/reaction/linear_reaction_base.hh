@@ -25,14 +25,14 @@ class PadeApproximant;
  * It uses armadillo to compute the reaction matrix which then multiplies to concetration vector.
  * This class also resolves the choice of the numerical method which is used to compute the reaction matrix.
  */
-class LinearReactionBase: public ReactionTerm
+class FirstOrderReactionBase: public ReactionTerm
 {
 public:
     /// Constructor.
-    LinearReactionBase(Mesh &init_mesh, Input::Record in_rec);
+    FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec);
 
     /// Destructor.
-    ~LinearReactionBase(void);
+    ~FirstOrderReactionBase(void);
                 
     /// Prepares the object to usage.
     /**

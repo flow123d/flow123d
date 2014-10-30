@@ -155,11 +155,11 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_liquid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == LinearReaction::input_type ) {
-        reaction_liquid =  new LinearReaction(*mesh_, *reactions_it);
+    if (reactions_it->type() == FirstOrderReaction::input_type ) {
+        reaction_liquid =  new FirstOrderReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == DecayChain::input_type) {
-        reaction_liquid = new DecayChain(*mesh_, *reactions_it);
+    if (reactions_it->type() == RadioactiveDecay::input_type) {
+        reaction_liquid = new RadioactiveDecay(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
@@ -182,11 +182,11 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_solid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == LinearReaction::input_type ) {
-        reaction_solid =  new LinearReaction(*mesh_, *reactions_it);
+    if (reactions_it->type() == FirstOrderReaction::input_type ) {
+        reaction_solid =  new FirstOrderReaction(*mesh_, *reactions_it);
     } else
-    if (reactions_it->type() == DecayChain::input_type) {
-        reaction_solid = new DecayChain(*mesh_, *reactions_it);
+    if (reactions_it->type() == RadioactiveDecay::input_type) {
+        reaction_solid = new RadioactiveDecay(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
         xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");

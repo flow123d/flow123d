@@ -14,7 +14,7 @@ using namespace Input::Type;
 using namespace arma;
 
 
-LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
+FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
     Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
@@ -38,16 +38,16 @@ LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
     }
 }
 
-LinearReactionBase::~LinearReactionBase()
+FirstOrderReactionBase::~FirstOrderReactionBase()
 {
 }
 
-void LinearReactionBase::initialize_from_input()
+void FirstOrderReactionBase::initialize_from_input()
 {
     xprintf(Warn, "The method initialize_from_input() should be reimplemented in descendants.");
 }
 
-void LinearReactionBase::initialize()
+void FirstOrderReactionBase::initialize()
 {
     ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
     ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
@@ -73,7 +73,7 @@ void LinearReactionBase::initialize()
 }
 
 
-void LinearReactionBase::zero_time_step()
+void FirstOrderReactionBase::zero_time_step()
 {
     ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
     ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
@@ -91,7 +91,7 @@ void LinearReactionBase::zero_time_step()
     } 
 }
 
-void LinearReactionBase::compute_bifurcation_matrix(mat& bifurcation_matrix_)
+void FirstOrderReactionBase::compute_bifurcation_matrix(mat& bifurcation_matrix_)
 {
     bifurcation_matrix_ = zeros(n_substances_, n_substances_);
     
@@ -110,7 +110,7 @@ void LinearReactionBase::compute_bifurcation_matrix(mat& bifurcation_matrix_)
 }
 
 
-double **LinearReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+double **FirstOrderReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {      
     unsigned int rows;  // row in the concentration matrix, regards the substance index
     vec new_conc;
@@ -129,9 +129,9 @@ double **LinearReactionBase::compute_reaction(double **concentrations, int loc_e
     return concentrations;
 }
 
-void LinearReactionBase::update_solution(void)
+void FirstOrderReactionBase::update_solution(void)
 {
-    //DBGMSG("LinearReactionBases - update solution\n");
+    //DBGMSG("FirstOrderReactionBases - update solution\n");
     if(time_->is_changed_dt())
     {
         linear_ode_solver_->set_step(time_->dt());
@@ -146,7 +146,7 @@ void LinearReactionBase::update_solution(void)
 }
 
 
-unsigned int LinearReactionBase::find_subst_name(const string &name)
+unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
 {
     unsigned int k=0;
         for(; k < n_substances_; k++)
