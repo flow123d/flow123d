@@ -1,21 +1,19 @@
 #include "reaction/pade_approximant.hh"
-#include "reaction/linear_reaction_base.hh"
+#include "reaction/linear_ode_solver.hh"
+
 #include "system/global_defs.h"
 
-#include <input/accessors.hh>
+#include "input/accessors.hh"
 
 #include "armadillo"
 
 using namespace arma;
 using namespace Input::Type;
-
-AbstractRecord NumericalMethod::input_type
-    = AbstractRecord("NumericalMethod", "Numerical method used in reaction computation.");
     
     
 Record PadeApproximant::input_type
     = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    .derive_from( NumericalMethod::input_type)
+    .derive_from(LinearODESolverBase::input_type)
     .declare_key("nominator_degree", Integer(), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
     .declare_key("denominator_degree", Integer(), Default("2"),
@@ -30,9 +28,32 @@ PadeApproximant::PadeApproximant(Input::Record in_rec)
     if(denominator_degree_ < 0) xprintf(UsrErr,"Wrong denominator degree in PadeApproximant.");
 }
 
+PadeApproximant::PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree)
+:   nominator_degree_(nominator_degree), denominator_degree_(denominator_degree)
+{
+}
+
 PadeApproximant::~PadeApproximant()
 {
 }
+
+void PadeApproximant::update_solution(vec& init_vector, vec& output_vec)
+{
+    if(step_changed_)
+    {
+        solution_matrix_ = system_matrix_*step_;    //coefficients multiplied by time
+        approximate_matrix(solution_matrix_);
+        step_changed_ = false;
+    }
+    
+    output_vec = solution_matrix_ * init_vector;
+}
+
+// void PadeApproximant::update_solution(mat& init_vectors, mat& output_vecs, const std::vector< unsigned int >& mask)
+// {
+//     ASSERT(0, "Method must be implemented in the template class.");
+// }
+
 
 void PadeApproximant::approximate_matrix(mat &matrix)
 {
@@ -89,15 +110,15 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
 }
 
 void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix, 
-                                                 const mat& reaction_matrix, 
+                                                 const mat& input_matrix, 
                                                  const std::vector< double >& coefs)
 {
-    mat identity = eye(reaction_matrix.n_rows, reaction_matrix.n_cols);
+    mat identity = eye(input_matrix.n_rows, input_matrix.n_cols);
 
     ///Horner scheme for evaluating polynomial a0 + [a1 + [a2 + [a3 +...]*R(t)]*R(t)]*R(t)
     for(int i = coefs.size()-1; i >= 0; i--)
     {
-        polynomial_matrix = coefs[i] * identity + (polynomial_matrix * reaction_matrix);
+        polynomial_matrix = coefs[i] * identity + (polynomial_matrix * input_matrix);
     }
     //polynomial_matrix.print();
 }

@@ -10,6 +10,7 @@
 
 #include "armadillo"
 
+#include "reaction/linear_ode_solver.hh"
 
 class Mesh;
 class ReactionTerm;
@@ -62,22 +63,15 @@ protected:
      */
     virtual void assemble_ode_matrix(void) = 0;
     
-    /// Computes the reaction matrix analyticaly.
-    /**
-     * Evaluation can be expensive.
-     * It is pure virtual and must be implemented in descendants.
-     */
-    virtual void prepare_reaction_matrix_analytic(void) = 0;
-    
-    /// Chooses the numerical method and computes the reaction matrix.
-    void compute_reaction_matrix(void);
-    
     /// Computes the reaction on a specified element.
     virtual double **compute_reaction(double **concentrations, int loc_el) override;
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input();
             
+    /// Computes the bifurcation matrix in order to pass it to the analytic solution.
+    void compute_bifurcation_matrix(mat &bifurcation_matrix_);
+    
     /** Help function to create mapping of substance indices. 
      * Finds a position of a string in specified array.
      */
@@ -93,6 +87,7 @@ protected:
     *   Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
     */
     std::vector<std::vector<double> > bifurcation_;
+    mat bifurcation_matrix_;
     
     /// Number of all transported substances. It is the dimension of the reaction matrix.
     unsigned int n_substances_;
@@ -103,8 +98,7 @@ protected:
     arma::mat molar_matrix_;      ///< Diagonal matrix with molar masses of substances.
     arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.
 
-    NumericalMethod::Type numerical_method_;    ///< Numerical method selection.
-    PadeApproximant *pade_approximant_;         ///< Pade approximant object.
+    LinearODESolverBase *linear_ode_solver_;
 };
 
 #endif  // LINEAR_REACTION_H

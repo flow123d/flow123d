@@ -59,7 +59,13 @@
       
       reaction_term = {
         TYPE="RadioactiveDecay",
-
+        /*
+        numerical_method = {
+          TYPE = "PadeApproximant",
+          nominator_degree = 5,
+          denominator_degree = 5
+        },
+        */
         decays = [
           {
             radionuclide = "A",

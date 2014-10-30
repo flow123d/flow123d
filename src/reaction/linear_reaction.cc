@@ -2,6 +2,7 @@
 #include "reaction/reaction.hh"
 #include "system/global_defs.h"
 
+#include "reaction/linear_ode_solver.hh"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 
@@ -28,7 +29,7 @@ Record LinearReaction::input_type
 	.derive_from( ReactionTerm::input_type )
     .declare_key("reactions", Array( LinearReaction::input_type_single_reaction), Default::obligatory(),
                 "An array of first order chemical reactions.")
-    .declare_key("ode_solver", NumericalMethod::input_type, Default::optional(),
+    .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
@@ -46,10 +47,11 @@ void LinearReaction::assemble_ode_matrix(void )
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
-    double exponent;    //temporary variable for -kt
+    double exponent;    //temporary variable for k
     for (unsigned int i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
         reactant_index = substance_ids_[i_reaction][0];
-        exponent = reaction_rates_[i_reaction] * time_->dt();
+//         exponent = reaction_rates_[i_reaction] * time_->dt();
+        exponent = reaction_rates_[i_reaction];
         reaction_matrix_(reactant_index, reactant_index) = -exponent;
         
         for (unsigned int i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product){
@@ -59,29 +61,29 @@ void LinearReaction::assemble_ode_matrix(void )
     }
 }
 
-void LinearReaction::prepare_reaction_matrix_analytic(void)
-{
-    reaction_matrix_ = eye(n_substances_, n_substances_);
-    
-    unsigned int reactant_idx, product_idx,   // global indices of substances
-                 i_reaction, i_product;       // local indices of substances
-    double exponential; //temporary value for the exponential exp(-kt)
-    
-    // cycle over reactions/over rows/over parents
-    for (i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
-        // setting diagonal elements
-        reactant_idx = substance_ids_[i_reaction][0];
-        exponential = std::exp(- reaction_rates_[i_reaction] * time_->dt());
-        reaction_matrix_(reactant_idx,reactant_idx) = exponential;
-
-        // cycle over products of specific reaction/row/reactant
-        for (i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product) {
-            product_idx = substance_ids_[i_reaction][i_product];
-            reaction_matrix_(product_idx,reactant_idx)
-                                       = (1 - exponential)* bifurcation_[i_reaction][i_product-1];
-        }
-    }
-}
+// void LinearReaction::prepare_reaction_matrix_analytic(void)
+// {
+//     reaction_matrix_ = eye(n_substances_, n_substances_);
+//     
+//     unsigned int reactant_idx, product_idx,   // global indices of substances
+//                  i_reaction, i_product;       // local indices of substances
+//     double exponential; //temporary value for the exponential exp(-kt)
+//     
+//     // cycle over reactions/over rows/over parents
+//     for (i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
+//         // setting diagonal elements
+//         reactant_idx = substance_ids_[i_reaction][0];
+//         exponential = std::exp(- reaction_rates_[i_reaction] * time_->dt());
+//         reaction_matrix_(reactant_idx,reactant_idx) = exponential;
+// 
+//         // cycle over products of specific reaction/row/reactant
+//         for (i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product) {
+//             product_idx = substance_ids_[i_reaction][i_product];
+//             reaction_matrix_(product_idx,reactant_idx)
+//                                        = (1 - exponential)* bifurcation_[i_reaction][i_product-1];
+//         }
+//     }
+// }
 
 
 void LinearReaction::initialize_from_input()

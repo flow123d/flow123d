@@ -8,24 +8,10 @@
 #define PADE_APPROXIMANT_H_
 
 #include "input/accessors.hh"
+#include "reaction/linear_ode_solver.hh"
 #include "armadillo"
 
 using namespace arma;
-
-/// Base class for the numerical method used in reaction.
-class NumericalMethod
-{
-public:
-    /**
-     * Abstract record for numerical method.
-     */
-    static Input::Type::AbstractRecord input_type;
-    
-    /// Type of numerical method.
-    typedef enum { analytic,            ///< Analytic solution is computed.
-                   pade_approximant,    ///< Pade approximation.
-    } Type;
-};
 
 /** @brief This class implements the Pade approximation of exponential function. 
  *
@@ -36,7 +22,7 @@ public:
  * set from the input record.
  * 
  */
-class PadeApproximant : NumericalMethod
+class PadeApproximant : public LinearODESolver<PadeApproximant>
 {
 public:
     /**
@@ -44,18 +30,27 @@ public:
      */
     static Input::Type::Record input_type;
     
-    /// Constructor.
+    /// Constructor from input record.
     PadeApproximant(Input::Record in_rec);
+    
+    /// Constructor.
+    PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree);
 
     /// Destructor.
     ~PadeApproximant(void);
     
-    /**
-    *   Evaluates Pade approximant from Reaction_matrix.
-    */
-    void approximate_matrix(mat &matrix);
+    void update_solution(vec &init_vector, vec &output_vec) override;
+//     void update_solution(mat &init_vectors, mat &output_vecs, 
+//                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
 protected:
+    ///Hide default constructor.
+    PadeApproximant(){};
+    
+    /**
+     *   Approximate the matrix function.
+     */
+    void approximate_matrix(mat &matrix);
     
     /// Evaluates nominator and denominator coeficients of PadeApproximant for exponencial function.
     /** @param nominator_degree is the degree of polynomial in the nominator
@@ -68,15 +63,17 @@ protected:
     
     /// Evaluates the matrix polynomial by Horner scheme.
     /** @param polynomial_matrix is the output matrix
-     * @param reaction_matrix is the reaction matrix (with elements -kt)
+     * @param input_matrix is the input matrix (with elements -kt)
      * @param coefs is the vector of coeficients of the polynomial
      */
     void evaluate_matrix_polynomial(mat &polynomial_matrix, 
-                                    const mat &reaction_matrix, 
+                                    const mat &input_matrix, 
                                     const std::vector<double> &coefs);
     
     int nominator_degree_;      ///< Degree of the polynomial in the nominator.
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
+    
+    mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
 };
 
 #endif // PADE_APPROXIMANT_H_

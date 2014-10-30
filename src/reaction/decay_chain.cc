@@ -2,7 +2,8 @@
 
 #include "reaction/reaction.hh"
 #include "reaction/linear_reaction_base.hh"
-#include "reaction/pade_approximant.hh"
+
+#include "reaction/linear_ode_solver.hh"
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
@@ -34,7 +35,7 @@ Record DecayChain::input_type
     .derive_from( ReactionTerm::input_type )
     .declare_key("decays", Array( DecayChain::input_type_single_decay), Default::obligatory(),
                 "An array of radioactive decays. They can make a chain.")
-    .declare_key("ode_solver", NumericalMethod::input_type, Default::optional(),
+    .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 
@@ -111,10 +112,11 @@ void DecayChain::assemble_ode_matrix(void )
     // create decay matrix
     reaction_matrix_ = zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
-    double exponent;    //temporary variable kt = ln(2)*t/t_half
+    double exponent;    //temporary variable k = ln(2)/t_half
     for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
         reactant_index = substance_ids_[i_decay][0];
-        exponent = log(2) * time_->dt() / half_lives_[i_decay];
+        //exponent = log(2) * time_->dt() / half_lives_[i_decay];
+        exponent = log(2) / half_lives_[i_decay];
         reaction_matrix_(reactant_index, reactant_index) = -exponent;
         
         for (unsigned int i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product){
@@ -125,28 +127,28 @@ void DecayChain::assemble_ode_matrix(void )
 }
 
 
-void DecayChain::prepare_reaction_matrix_analytic(void)
-{
-    reaction_matrix_ = eye(n_substances_, n_substances_);
-    
-    unsigned int parent_idx, product_idx,   // global indices of substances
-                 i_decay, i_product;        // local indices of substances
-    double relative_timestep,   // exponent of 0.5
-           temp_power;          // temporary power of 0.5
-    
-    // cycle over reactions/over rows/over parents
-    for (i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
-        // setting diagonal elements
-        parent_idx = substance_ids_[i_decay][0];
-        relative_timestep = time_->dt() / half_lives_[i_decay];
-        temp_power = pow(0.5, relative_timestep);
-        reaction_matrix_(parent_idx,parent_idx) = temp_power;
-
-        // cycle over products of specific reaction/row/parent
-        for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product) {
-            product_idx = substance_ids_[i_decay][i_product];
-            reaction_matrix_(product_idx,parent_idx)
-                                       = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
-        }
-    }
-}
+// void DecayChain::prepare_reaction_matrix_analytic(void)
+// {
+//     reaction_matrix_ = eye(n_substances_, n_substances_);
+//     
+//     unsigned int parent_idx, product_idx,   // global indices of substances
+//                  i_decay, i_product;        // local indices of substances
+//     double relative_timestep,   // exponent of 0.5
+//            temp_power;          // temporary power of 0.5
+//     
+//     // cycle over reactions/over rows/over parents
+//     for (i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
+//         // setting diagonal elements
+//         parent_idx = substance_ids_[i_decay][0];
+//         relative_timestep = time_->dt() / half_lives_[i_decay];
+//         temp_power = pow(0.5, relative_timestep);
+//         reaction_matrix_(parent_idx,parent_idx) = temp_power;
+// 
+//         // cycle over products of specific reaction/row/parent
+//         for (i_product = 1; i_product < substance_ids_[i_decay].size(); ++i_product) {
+//             product_idx = substance_ids_[i_decay][i_product];
+//             reaction_matrix_(product_idx,parent_idx)
+//                                        = (1 - temp_power)* bifurcation_[i_decay][i_product-1];
+//         }
+//     }
+// }

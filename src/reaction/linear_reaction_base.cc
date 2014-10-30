@@ -2,6 +2,7 @@
 #include "reaction/reaction.hh"
 
 #include "reaction/pade_approximant.hh"
+#include "reaction/linear_ode_solver.hh"
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
@@ -19,14 +20,22 @@ LinearReactionBase::LinearReactionBase(Mesh &init_mesh, Input::Record in_rec)
     Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {
+        //TODO: switch
         if (num_it->type() == PadeApproximant::input_type) 
         {
-            pade_approximant_ = new PadeApproximant(*num_it);
-            numerical_method_ = NumericalMethod::pade_approximant;
+            linear_ode_solver_ = new PadeApproximant(*num_it);
         }
+        if (num_it->type() == LinearODEAnalytic::input_type) 
+        {
+            linear_ode_solver_ = new LinearODEAnalytic();
+        }
+        else
+            xprintf(UsrErr,"Unknown input in the record 'ode_solver' in reaction/decay.");
     }
-    else
-        numerical_method_ = NumericalMethod::analytic;  //no numerical method, use analytic solution
+    else    //default linear ode solver
+    {
+        linear_ode_solver_ = new LinearODEAnalytic();
+    }
 }
 
 LinearReactionBase::~LinearReactionBase()
@@ -70,42 +79,48 @@ void LinearReactionBase::zero_time_step()
     ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
     ASSERT_LESS(0, substances_.size());
 
-    //nothing is to be computed at zero_time_step
-}
-
-void LinearReactionBase::compute_reaction_matrix(void )
-{
-    switch(numerical_method_)
-    {
-    case NumericalMethod::analytic:
-    	prepare_reaction_matrix_analytic();
-    	break;
-
-    case NumericalMethod::pade_approximant:
-    	assemble_ode_matrix();
-    	pade_approximant_->approximate_matrix(reaction_matrix_);
-    	break;
-
-    default:
-    	prepare_reaction_matrix_analytic();
-    }
-    
-    //TODO: do this on the original matrix of the system
+    assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
+    linear_ode_solver_->set_system_matrix(reaction_matrix_);
+
+    // if the analytic solution should be computed, we must set the bifurcation matrix.
+    if(LinearODEAnalytic *temp = dynamic_cast<LinearODEAnalytic*>(linear_ode_solver_)) {
+        compute_bifurcation_matrix(bifurcation_matrix_);
+        temp->set_bifurcation_matrix(bifurcation_matrix_);
+    } 
+}
+
+void LinearReactionBase::compute_bifurcation_matrix(mat& bifurcation_matrix_)
+{
+    bifurcation_matrix_ = zeros(n_substances_, n_substances_);
+    
+    unsigned int substance_idx, product_idx;   // global indices of substances
+    for (unsigned int i = 0; i < bifurcation_.size(); i++) {
+    //for (i_reaction = 0; i_reaction < n_substances_; i_reaction++) {
+        substance_idx = substance_ids_[i][0];
+
+        // cycle over products of specific reaction/row/reactant
+        for (unsigned int j = 1; j < substance_ids_[i].size(); ++j) {
+            product_idx = substance_ids_[i][j];
+            bifurcation_matrix_(substance_idx, product_idx)
+                                       = bifurcation_[i][j-1];
+        }
+    }
 }
 
 
 double **LinearReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {      
     unsigned int rows;  // row in the concentration matrix, regards the substance index
+    vec new_conc;
     
     // save previous concentrations to column vector
     for(rows = 0; rows < n_substances_; rows++)
         prev_conc_(rows) = concentrations[rows][loc_el];
     
     // compute new concetrations R*c
-    vec new_conc = reaction_matrix_ * prev_conc_;
+    linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
     for(rows = 0; rows < n_substances_; rows++)
@@ -114,72 +129,12 @@ double **LinearReactionBase::compute_reaction(double **concentrations, int loc_e
     return concentrations;
 }
 
-//       raise warning if sum of ratios is not one
-// void LinearReactionBase::initialize_from_input()
-// {
-//     unsigned int idx;
-// 
-//     Input::Array decay_array = input_record_.val<Input::Array>("decays");
-// 
-//     substance_ids_.resize( decay_array.size() );
-//     half_lives_.resize( decay_array.size() );
-//     bifurcation_.resize( decay_array.size() );
-// 
-//     int i_decay=0;
-//     for (Input::Iterator<Input::Record> dec_it = decay_array.begin<Input::Record>(); dec_it != decay_array.end(); ++dec_it, ++i_decay)
-//     {
-//         //half-lives determining part
-//         Input::Iterator<double> it_hl = dec_it->find<double>("half_life");
-//         if (it_hl) {
-//            half_lives_[i_decay] = *it_hl;
-//         } else {
-//            it_hl = dec_it->find<double>("kinetic");
-//            if (it_hl) {
-//                half_lives_[i_decay] = log(2)/(*it_hl);
-//            } else {
-//             xprintf(UsrErr, "Missing half-life or kinetic in the %d-th reaction.\n", i_decay);
-//           }
-//         }
-// 
-//         //indices determining part
-//         string parent_name = dec_it->val<string>("parent");
-//         Input::Array product_array = dec_it->val<Input::Array>("products");
-//         Input::Array ratio_array = dec_it->val<Input::Array>("branch_ratios"); // has default value [ 1.0 ]
-// 
-//         // substance_ids contains also parent id
-//         if (product_array.size() > 0)   substance_ids_[i_decay].resize( product_array.size()+1 );
-//         else            xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_decay);
-// 
-// 
-//         // set parent index
-//         idx = find_subst_name(parent_name);
-//         if (idx < names_.size())    substance_ids_[i_decay][0] = idx;
-//         else                        xprintf(UsrErr,"Wrong name of parent substance in the %d-th reaction.\n", i_decay);
-// 
-//         // set products
-//         unsigned int i_product = 1;
-//         for(Input::Iterator<string> product_it = product_array.begin<string>(); product_it != product_array.end(); ++product_it, i_product++)
-//         {
-//             idx = find_subst_name(*product_it);
-//             if (idx < names_.size())   substance_ids_[i_decay][i_product] = idx;
-//             else                        xprintf(Warn,"Wrong name of %d-th product in the %d-th reaction.\n", i_product-1 , i_decay);
-//         }
-// 
-//         //bifurcation determining part
-//         if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_decay] );
-//         else            xprintf(UsrErr,"Number of branches %d has to match number of products %d in the %d-th reaction.\n",
-//                                        ratio_array.size(), product_array.size(), i_decay);
-// 
-//     }
-// }
-
 void LinearReactionBase::update_solution(void)
 {
     //DBGMSG("LinearReactionBases - update solution\n");
     if(time_->is_changed_dt())
     {
-        compute_reaction_matrix();
-        //reaction_matrix_.print();
+        linear_ode_solver_->set_step(time_->dt());
     }
 
     START_TIMER("linear reaction step");

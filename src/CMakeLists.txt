@@ -169,6 +169,7 @@ set(sources_lib_non_system
     reaction/sorption.cc
     reaction/dual_por_exchange.cc
     reaction/isotherm.cc
+    reaction/linear_ode_solver.cc
     semchem/semchem_interface.cc
 
     transport/concentration_model.cc
