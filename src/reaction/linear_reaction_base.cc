@@ -20,12 +20,11 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
     Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {
-        //TODO: switch
         if (num_it->type() == PadeApproximant::input_type) 
         {
             linear_ode_solver_ = new PadeApproximant(*num_it);
         }
-        if (num_it->type() == LinearODEAnalytic::input_type) 
+        else if (num_it->type() == LinearODEAnalytic::input_type) 
         {
             linear_ode_solver_ = new LinearODEAnalytic();
         }
@@ -83,30 +82,6 @@ void FirstOrderReactionBase::zero_time_step()
     // make scaling that takes into account different molar masses of substances
     reaction_matrix_ = molar_matrix_ * reaction_matrix_ * molar_mat_inverse_;
     linear_ode_solver_->set_system_matrix(reaction_matrix_);
-
-    // if the analytic solution should be computed, we must set the bifurcation matrix.
-    if(LinearODEAnalytic *temp = dynamic_cast<LinearODEAnalytic*>(linear_ode_solver_)) {
-        compute_bifurcation_matrix(bifurcation_matrix_);
-        temp->set_bifurcation_matrix(bifurcation_matrix_);
-    } 
-}
-
-void FirstOrderReactionBase::compute_bifurcation_matrix(mat& bifurcation_matrix_)
-{
-    bifurcation_matrix_ = zeros(n_substances_, n_substances_);
-    
-    unsigned int substance_idx, product_idx;   // global indices of substances
-    for (unsigned int i = 0; i < bifurcation_.size(); i++) {
-    //for (i_reaction = 0; i_reaction < n_substances_; i_reaction++) {
-        substance_idx = substance_ids_[i][0];
-
-        // cycle over products of specific reaction/row/reactant
-        for (unsigned int j = 1; j < substance_ids_[i].size(); ++j) {
-            product_idx = substance_ids_[i][j];
-            bifurcation_matrix_(substance_idx, product_idx)
-                                       = bifurcation_[i][j-1];
-        }
-    }
 }
 
 

@@ -68,9 +68,6 @@ protected:
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input();
-            
-    /// Computes the bifurcation matrix in order to pass it to the analytic solution.
-    void compute_bifurcation_matrix(mat &bifurcation_matrix_);
     
     /** Help function to create mapping of substance indices. 
      * Finds a position of a string in specified array.

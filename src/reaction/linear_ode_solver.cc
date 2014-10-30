@@ -45,11 +45,6 @@ LinearODEAnalytic::~LinearODEAnalytic()
 {
 }
 
-void LinearODEAnalytic::set_bifurcation_matrix(const mat& bifurcation)
-{
-    bifurcation_matrix_ = bifurcation;
-}
-
 void LinearODEAnalytic::update_solution(vec& init_vector, vec& output_vec)
 {
     if(step_changed_)
@@ -70,22 +65,23 @@ void LinearODEAnalytic::update_solution(vec& init_vector, vec& output_vec)
 void LinearODEAnalytic::compute_matrix()
 {
     ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
-    ASSERT(bifurcation_matrix_.n_rows == system_matrix_.n_rows, "Bifurcation matrix dimensions are wrong.");
-    ASSERT(bifurcation_matrix_.n_cols == system_matrix_.n_cols, "Bifurcation matrix dimensions are wrong.");
     solution_matrix_.copy_size(system_matrix_);
     
-    double exponential;
+    double exponential, temp;
     for(unsigned int i = 0; i < solution_matrix_.n_rows; i++)
     {
         exponential = std::exp(system_matrix_(i,i) * step_);
         for(unsigned int j = 0; j < solution_matrix_.n_cols; j++)
         {
-            solution_matrix_(j,i) = (1-exponential)*bifurcation_matrix_(i,j);
+            temp = 1.0;
+            if( (i != j) && (system_matrix_(i,i) != 0.0) )
+                temp = -system_matrix_(j,i)/system_matrix_(i,i);
+            
+            solution_matrix_(j,i) = (1-exponential)*temp;
         }
         solution_matrix_(i,i) = exponential;
     }
     
-//     bifurcation_matrix_.print();
 //     system_matrix_.print();
 //     solution_matrix_.print();
 }

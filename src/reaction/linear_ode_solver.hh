@@ -93,7 +93,7 @@ void LinearODESolver<Method>::update_solution(mat& init_vectors, mat& output_vec
 /** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
  *
  * The analytic solution can be obtained in special case when decrease of one quantity is a fraction
- * of increase of other quantity. The fractions are passed through the bifurcation matrix.
+ * of increase of other quantity. The fractions are derived from the matrix.
  * 
  * It is used in first order reactions and decays.
  */
@@ -118,16 +118,11 @@ public:
 //     void update_solution(mat &init_vectors, mat &output_vecs, 
 //                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
-    void set_bifurcation_matrix(const mat &bifurcation);
-    
 protected:
     /**
      *   Computes the standard fundamental matrix.
      */
     void compute_matrix();
-    
-    /// The bifurcation matrix. 
-    mat bifurcation_matrix_;
     
     /// The solution is computed only by matrix multiplication (standard fundamental matrix).
     mat solution_matrix_;
