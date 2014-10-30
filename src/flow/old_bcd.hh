@@ -78,18 +78,20 @@ public:
     static OldBcdInput * instance();
 
     template<int spacedim, class Value>
-    class OldFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    class FieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
 
-    	typedef typename Field<spacedim,Value>::FieldBasePtr FieldPtr;
+        typedef FieldElementwise<spacedim, Value> FieldElementwiseType;
+        typedef std::shared_ptr< FieldElementwiseType > FieldPtr;
+    	//typedef typename Field<spacedim,Value>::FieldBasePtr FieldPtr;
 
-    	OldFieldFactory( FieldPtr field )
+    	FieldFactory( FieldPtr * field )
     	: field_(field)
     	{}
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
     		Input::AbstractRecord field_record;
-    		cout << "OldFieldFactory::create_field ";
+    		cout << "OldBcdInput FieldFactory::create_field ";
     		if (rec.opt_val(field.input_name(), field_record)) {
     			cout << "if" << endl;
     			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
@@ -102,13 +104,19 @@ public:
         		} else if (rec.record_type_name() == "TransportOperatorSplitting_Data") {
         			old_bcd->read_transport_record(rec, field);
         		}
-        		return field_;
+        		return *field_;
         	}
     	}
 
-    	FieldPtr field_;
+    	FieldPtr * field_;
 
     };
+
+    std::shared_ptr<Field<3, FieldValue<3>::Enum>::FactoryBase> flow_type_factory;
+    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_pressure_factory;
+    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_flux_factory;
+    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_sigma_factory;
+    std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> trans_conc_factory;
 
     // hooks
     static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommon &field) {
@@ -185,6 +193,8 @@ public:
     map<unsigned int, unsigned int> id_2_bcd_;
 
 private:
+    OldBcdInput();
+
     const Mesh *mesh_;
     Region  some_bc_region_;
 

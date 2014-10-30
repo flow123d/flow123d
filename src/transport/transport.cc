@@ -81,7 +81,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
     	bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
-    	bc_conc.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Vector> >(OldBcdInput::instance()->trans_conc));
+    	bc_conc.set_factory_base_ptr(std::make_shared< OldBcdInput::FieldFactory<3, FieldValue<3>::Vector> >(OldBcdInput::instance()->trans_conc));
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );

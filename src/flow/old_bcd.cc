@@ -13,6 +13,15 @@
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
+OldBcdInput::OldBcdInput()
+: flow_type_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Enum> >(&(this->flow_type)) ),
+  flow_pressure_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_pressure)) ),
+  flow_flux_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_pressure)) ),
+  flow_sigma_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(this->flow_sigma)) ),
+  trans_conc_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Vector> >(&(this->trans_conc)) ),
+  mesh_(NULL)
+{}
+
 OldBcdInput * OldBcdInput::instance() {
     static OldBcdInput *obcd = new OldBcdInput;
     return obcd;

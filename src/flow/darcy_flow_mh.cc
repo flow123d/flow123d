@@ -162,7 +162,7 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
         bc_type.input_selection(&bc_type_selection);
         bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
-        bc_type.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Enum> >(OldBcdInput::instance()->flow_type));
+        bc_type.set_factory_base_ptr(OldBcdInput::instance()->flow_type_factory);
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
@@ -174,13 +174,13 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
     	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
-    	bc_flux.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Scalar> >(OldBcdInput::instance()->flow_flux));
+    	bc_flux.set_factory_base_ptr(OldBcdInput::instance()->flow_flux_factory);
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
     	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
-    	bc_robin_sigma.set_factory_base_ptr(std::make_shared< OldBcdInput::OldFieldFactory<3, FieldValue<3>::Scalar> >(OldBcdInput::instance()->flow_sigma));
+    	bc_robin_sigma.set_factory_base_ptr(OldBcdInput::instance()->flow_sigma_factory);
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
