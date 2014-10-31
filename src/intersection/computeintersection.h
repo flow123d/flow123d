@@ -59,7 +59,7 @@ public:
 	double* getPluckerProduct(unsigned int i);
 
 	bool isComputed();
-
+	void setComputed();
 	//void setPluckerDirection(int &number, unsigned int i);
 	//int &getPluckerDirection(unsigned int i);
 

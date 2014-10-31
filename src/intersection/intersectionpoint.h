@@ -18,7 +18,9 @@ template<int N, int M> class IntersectionPoint{
 	int side_idx2;
 
 	unsigned int orientation;
+
 	bool is_vertex;
+	bool is_patological;
 
 	public:
 
@@ -27,19 +29,22 @@ template<int N, int M> class IntersectionPoint{
 		side_idx2 = -1;
 		orientation = 1;
 		is_vertex = false;
+		is_patological = false;
 	};
 	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
 					  int side1 = -1,
 					  int side2 = -1,
 					  unsigned int ori = 1,
-					  bool vertex = false)
+					  bool vertex = false,
+					  bool patological = false)
 					  : local_coords1(lc1),
 					    local_coords2(lc2),
 					    side_idx1(side1),
 					    side_idx2(side2),
 					    orientation(ori),
-					    is_vertex(vertex){};
+					    is_vertex(vertex),
+					    is_patological(patological){};
 	inline ~IntersectionPoint(){};
 
 	inline void clear(){
@@ -49,6 +54,7 @@ template<int N, int M> class IntersectionPoint{
 		side_idx2 = -1;
 		orientation = 1;
 		is_vertex = false;
+		is_patological = false;
 	};
 
 	inline void print(){
@@ -56,7 +62,7 @@ template<int N, int M> class IntersectionPoint{
 		local_coords1.print();
 		cout << "Local coords on the second element on side(" << side_idx2 << ")" << endl;
 		local_coords2.print();
-		cout << "Orientation: " << orientation << endl;
+		cout << "Orientation: " << orientation << " Vertex: " << is_vertex << " Patological: " << is_patological << endl;
 	};
 
 	inline arma::vec::fixed<N+1> getLocalCoords1(){
@@ -90,6 +96,10 @@ template<int N, int M> class IntersectionPoint{
 		is_vertex = iv;
 	}
 
+	inline void setIsPatological(bool ip){
+		is_patological = ip;
+	}
+
 	inline int getSide1(){
 		return side_idx1;
 	};
@@ -105,6 +115,10 @@ template<int N, int M> class IntersectionPoint{
 	inline bool isVertex(){
 		return is_vertex;
 	};
+
+	inline bool isPatological(){
+		return is_patological;
+	}
 
 	inline int getDim1(){
 		return N;

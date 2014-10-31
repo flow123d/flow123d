@@ -65,6 +65,10 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::isComputed(){
 	return computed;
 };
 
+void ComputeIntersection<Simplex<1>, Simplex<2>>::setComputed(){
+	computed = true;
+};
+
 bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2> &IP, bool compute_zeros_plucker_products = false){//double &theta, arma::vec3 &local_triangle){
 
 	initPluckerToCompute();
@@ -115,6 +119,17 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 		for(unsigned int i = 0; i < 3;i++){
 			if(*plucker_products[i] == 0){
 				num_zeros++;
+			}
+		}
+
+		// Pokud je 1 nula = jeden patologický průsečík
+
+		// Pokud jsou 2 nuly => průsečík ve vrcholu
+
+		// Pokud jsou 3 nuly - všechny vypočítat
+
+		for(unsigned int i = 0; i < 3;i++){
+			if(*plucker_products[i] == 0){
 				arma::vec3 A = (*abscissa)[0].getPointCoordinates();
 				//arma::vec3 B("9 5 0");
 				arma::vec3 U = plucker_coordinates_abscissa[0]->getU();
@@ -149,9 +164,13 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 				s = DetX/Det[max_index];
 				t = DetY/Det[max_index];
 
+				if(i == 1){
+					t = -t;
+				}
+
 				xprintf(Msg, "s,t : %f,%f \n",s,t);
 
-				if(s > 1 || s < 0 || t > 1 || t < 0){
+				if(t > 1 || t < 0){
 					//return false;
 				}else{
 
@@ -168,23 +187,30 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 					 * t = 0 => 1; 1 => 0, 2 => 2
 					 *
 					 * */
+					l_triangle[(3-i)%3] = 1 - t;
+					l_triangle[(4-i)%3] = t;
+					l_triangle[2-i] = 0;
+					/*
 					if(i == 0){
 						l_triangle[0] = 1 - t;
 						l_triangle[1] = t;
 						l_triangle[2] = 0;
 					}else if(i == 1){
-						l_triangle[0] = 1 - t;
+						l_triangle[0] = t;
 						l_triangle[1] = 0;
-						l_triangle[2] = t;
+						l_triangle[2] = 1 - t;
 					}else{
 						l_triangle[0] = 0;
 						l_triangle[1] = 1 - t;
 						l_triangle[2] = t;
-					}
+					}*/
 
 					IP.setLocalCoords1(local_abscissa);
 					IP.setLocalCoords2(l_triangle);
+					IP.setIsPatological(true);
+					IP.setSide2(i);
 					IP.setOrientation(1);
+
 					return true;
 				}
 
@@ -317,10 +343,16 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 		for(unsigned int j = 0; j < i;j++){
 			CI12[i].setPluckerProduct(CI12[j].getPluckerProduct(i-1),j);
 		}
-
 		if(!CI12[i].isComputed() && CI12[i].compute(IP, true)){
+			if(IP.isPatological()){
+				CI12[IP.getSide2() + 1].setComputed();
+				//IP.setSide2(RefSimplex<3>::side_lines[i][IP.getSide2()]);
+				IP.setSide2(i);
+			}else{
+				IP.setSide2(i);
+			}
 			pocet_pruniku++;
-			IP.setSide2(i);
+
 			//if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
 				IP.print();
 				IntersectionPoint<1,3> IP13 = IntersectionLocal::interpolateDimension<1,3>(IP);
@@ -353,7 +385,9 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
 				IP13s[IP13s.size()-2].setLocalCoords2(interpolovane);
 				IP13s[IP13s.size()-2].setLocalCoords1(inter);
-				IP13s[IP13s.size()-2].setIsVertex(true);
+
+					IP13s[IP13s.size()-2].setIsVertex(true);
+
 				first_theta = theta;
 			}
 			// Druhá souřadnice leží uvnitř čtyřstěnu
@@ -363,7 +397,9 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				arma::vec::fixed<4> interpolovane2 = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].getLocalCoords2(), IP13s[IP13s.size()-1].getLocalCoords2(), first_theta, second_theta,theta2);
 				IP13s[IP13s.size()-1].setLocalCoords2(interpolovane2);
 				IP13s[IP13s.size()-1].setLocalCoords1(inter2);
-				IP13s[IP13s.size()-1].setIsVertex(true);
+
+					IP13s[IP13s.size()-1].setIsVertex(true);
+
 			}
 		}
 	}

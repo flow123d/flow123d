@@ -115,7 +115,8 @@ void InspectElements::ComputeIntersections23(){
 			        	CI_23.init();
 			        	CI_23.compute(il);
 			        	//il.printTracingTable();
-			        	il.tracePolygon();
+			        	//il.tracePolygon();
+			        	il.tracePolygon2();
 			        	all_intersections.push_back(il);
 
 			        	// Stará metoda pro výpočet obsahu polygonu

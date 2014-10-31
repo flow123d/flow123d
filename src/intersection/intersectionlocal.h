@@ -64,6 +64,118 @@ public:
     	return tracing_table(rows, cols);
     };
 
+
+    inline void tracePolygon2(){
+
+    	double max_A, max_B, max_C = 0.0;
+    	int idx_max_A, idx_max_B, idx_max_C = -1;
+
+    	for(int i = 0; i < (int)i_points.size();i++){
+    		i_points[i].print();
+    		if(i_points[i].getSide1() != -1){
+    			if(i_points[i].getLocalCoords1()[0] > max_A){
+					max_A = i_points[i].getLocalCoords1()[0];
+					idx_max_A = i;
+				}else if(i_points[i].getLocalCoords1()[1] > max_B){
+					max_B = i_points[i].getLocalCoords1()[1];
+					idx_max_B = i;
+				}else if(i_points[i].getLocalCoords1()[2] > max_C){
+					max_C = i_points[i].getLocalCoords1()[2];
+					idx_max_C = i;
+				}
+    		}else{
+    			if(i_points[i].getLocalCoords1()[0] >= max_A){
+    				max_A = i_points[i].getLocalCoords1()[0];
+    				idx_max_A = i;
+    			}else if(i_points[i].getLocalCoords1()[1] >= max_B){
+    				max_B = i_points[i].getLocalCoords1()[1];
+    				idx_max_B = i;
+    			}else if(i_points[i].getLocalCoords1()[2] >= max_C){
+    				max_C = i_points[i].getLocalCoords1()[2];
+    				idx_max_C = i;
+    			}
+    		}
+
+    	}
+
+    	for(int i = 0; i < (int)i_points.size();i++){
+
+    		xprintf(Msg, "OOO YEAH\n");
+
+    		if(i_points[i].getSide1() != -1){
+    			xprintf(Msg,"neto\n");
+    			// bod vznikl na hraně
+    			if(tracing_table(i_points[i].getSide1(),1) == -1){
+    				// bod je prvním na hraně
+    				xprintf(Msg, "mlask\n");
+    				tracing_table(i_points[i].getSide1(),1) = i;
+    				xprintf(Msg, "plesk\n");
+    			}else{
+    				// bod je druhým na hraně
+    				unsigned int id_pr = tracing_table(i_points[i].getSide1(),1);
+    				if(i_points[id_pr].getLocalCoords1()[(3-i_points[id_pr].getSide1())%3] >
+    				i_points[i].getLocalCoords1()[(3-i_points[i].getSide1())%3]){
+    					tracing_table(i_points[i].getSide1(),2) = i;
+    				}else{
+    					tracing_table(i_points[i].getSide1(),2) = id_pr;
+    					tracing_table(i_points[i].getSide1(),1) = i;
+    				}
+    			}
+
+
+    		}else{
+    			// bod vznikl na čtyřstěnu
+
+    			xprintf(Msg, "SSSSS\n");
+
+    			if(i == idx_max_A){
+    				// spojuje 1 -> 0
+    				tracing_table(3,1) = i;
+    			}else if(i == idx_max_B){
+    				tracing_table(4,1) = i;
+    			}else if(i == idx_max_C){
+    				tracing_table(5,1) = i;
+    			}else{
+    				tracing_table(6,1) = i;
+    			}
+    		}
+    	}
+
+
+    	std::vector<IntersectionPoint<2,3>> new_points, new_points2;
+
+
+    	int pole[7] = {0,4,2,5,1,3,6};
+
+
+    	for(int j = 0; j < 7;j++){
+    		for(int k = 1;k < 3;k++){
+    			if(tracing_table(pole[j],k) != -1){
+    				new_points.push_back(i_points[tracing_table(pole[j],k)]);
+    			}
+    		}
+    	}
+
+    	if(new_points.size() > 0){
+    		double old1 = new_points[new_points.size() - 1].getLocalCoords1()[0];
+    		double old2 = new_points[new_points.size() - 1].getLocalCoords1()[1];
+
+    		for(unsigned int j = 0; j < new_points.size();j++){
+
+    			if(new_points[j].getLocalCoords1()[0] != old1 ||
+    					new_points[j].getLocalCoords1()[1] != old2){
+    				new_points2.push_back(new_points[j]);
+    			}
+    			old1 = new_points[j].getLocalCoords1()[0];
+    			old2 = new_points[j].getLocalCoords1()[1];
+    		}
+
+    	}
+
+    	i_points = new_points2;
+
+    }
+
     /**
      * Trasování Polygonu
      *  - po té, co se naplní trasovací tabulka se tato tabulka prochází
@@ -137,7 +249,7 @@ public:
     inline void fillTracingTable(){
 
     	for(unsigned int i = 0; i < i_points.size();i++){
-
+    	if(!i_points[i].isPatological()){
     		if(i_points[i].getSide1() != -1){
     			// jedná se o průniky 1 -> 2 resp 1 -> 3
     			// Tyto průniky jsou vždy po dvojicích
@@ -234,6 +346,32 @@ public:
 
 
     		}
+    	}else{
+    		// Patologické případy k trasování
+
+    		// Normální pat. případ => vznikl na hraně 4stěnu
+
+
+    		// Vrchol ve stěně čtyřstěnů -> je potřeba ověřit index stěny čtyřstěnu
+
+
+    		// Vrchol celého čtyřstěnu
+
+    		xprintf(Msg,"Patologický: Orientace(%d), hrana(%d), stena(%d), vrchol(%d)\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+			unsigned int stena = i_points[i].getSide2();
+			unsigned int index1 = RefSimplex<3>::line_sides[stena][1];
+			unsigned int index2 = RefSimplex<3>::line_sides[stena][0];
+			xprintf(Msg, "Na stěně(%d) do stěny(%d)\n", index1, index2);
+			/*tracing_table(index1,0) = index2;
+
+			if(tracing_table(index1,1) == -1){
+				tracing_table(index1,1) = i;
+			}else{
+				tracing_table(index1,2) = i;
+			}*/
+
+
+    	}
     	}
 
     	tracing_table.print();
@@ -244,7 +382,7 @@ public:
      * */
     template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> flipDimension(IntersectionPoint<dim, subdim> IP){
     		cout << "IntersectionLocal::flipDimension<" << dim << "," << subdim << "> na <" << subdim << "," <<  dim << ">" << endl;
-        	IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords2(), IP.getLocalCoords1(), IP.getSide2(), IP.getSide1(), IP.getOrientation(), IP.isVertex());
+        	IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords2(), IP.getLocalCoords1(), IP.getSide2(), IP.getSide1(), IP.getOrientation(), IP.isVertex(), IP.isPatological());
         	return IPn;
      };
 
@@ -265,7 +403,7 @@ public:
         		cout << "zakazany stav" << endl;
         		interpolovane.zeros();
         	}
-        	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(),IP.getOrientation(),IP.isVertex());
+        	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(),IP.getOrientation(),IP.isVertex(), IP.isPatological());
         	return IPn;
       };
 
@@ -284,7 +422,7 @@ public:
              		cout << "zakazany stav" << endl;
              		interpolovane.zeros();
              	}
-             	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(), IP.getOrientation(),IP.isVertex());
+             	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(), IP.getOrientation(),IP.isVertex(), IP.isPatological());
              	return IPn;
            };
 };
