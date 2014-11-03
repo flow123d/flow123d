@@ -89,6 +89,11 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units("M/L^3");
+
+    if (output_field_name.substr(0,4).compare("conc") == 0)
+    	output_appendix_ = output_field_name.substr(5);
+    else
+    	output_appendix_ = output_field_name;
 }
 
 Record SorptionBase::record_factory(SorptionBase::SorptionRecord::Type fact)
@@ -396,6 +401,25 @@ void SorptionBase::zero_time_step()
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, substances_.size());
   
+  if(reaction_liquid)
+  {
+	  if (typeid(*reaction_liquid) == typeid(LinearReaction) ||
+		  typeid(*reaction_liquid) == typeid(DecayChain))
+	  {
+		  reaction_liquid->data().set_field("porosity", data_->porosity);
+		  reaction_liquid->data().set_field("cross_section", data_->cross_section);
+	  }
+  }
+  if(reaction_solid)
+  {
+	  if (typeid(*reaction_solid) == typeid(LinearReaction) ||
+		  typeid(*reaction_solid) == typeid(DecayChain))
+	  {
+		  reaction_solid->data().set_field("porosity", data_->porosity);
+		  reaction_solid->data().set_field("cross_section", data_->cross_section);
+	  }
+  }
+
   data_->set_time(*time_);
   set_initial_condition();
   make_tables();
@@ -497,13 +521,15 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
     
-    double por, csection, rock_density, old_conc_l[n_substances_], old_conc_s[n_substances_];
+    double por, por_coeff_l, por_coeff_s, csection, rock_density, old_conc_l[n_substances_], old_conc_s[n_substances_];
 
     if (balance_ != nullptr)
     {
 		por = data_->porosity.value(elem->centre(), elem->element_accessor());
 		csection = data_->cross_section.value(elem->centre(), elem->element_accessor());
 		rock_density = data_->rock_density.value(elem->centre(), elem->element_accessor());
+		por_coeff_l = porosity_coeff_l(elem);
+		por_coeff_s = porosity_coeff_s(elem);
 
 		for (i_subst = 0; i_subst < n_substances_; ++i_subst)
 		{
@@ -542,8 +568,8 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
     	for (i_subst = 0; i_subst < n_substances_; ++i_subst)
     	{
     		subst_id = substance_global_idx_[i_subst];
-    		double source_l = (concentration_matrix_[subst_id][loc_el] - old_conc_l[i_subst])*csection*por*elem->measure() / time_->dt();
-    		double source_s = (conc_solid[subst_id][loc_el] - old_conc_s[i_subst])*csection*(1-por)*substances_[subst_id].molar_mass()*rock_density*elem->measure() / time_->dt();
+    		double source_l = (concentration_matrix_[subst_id][loc_el] - old_conc_l[i_subst])*csection*por_coeff_l*elem->measure() / time_->dt();
+    		double source_s = (conc_solid[subst_id][loc_el] - old_conc_s[i_subst])*csection*por_coeff_s*substances_[subst_id].molar_mass()*rock_density*elem->measure() / time_->dt();
 
 			sources_l[i_subst][elem->region().bulk_idx()] += source_l;
 			sources_s[i_subst][elem->region().bulk_idx()] += source_s;
@@ -570,7 +596,7 @@ void SorptionBase::set_balance_object(boost::shared_ptr<Balance> &balance,
 	for (auto subst_id : substance_global_idx_)
 	{
 		subst_idx_l_.push_back(subst_idx_[subst_id]);
-		subst_idx_s_.push_back(balance_->add_quantity(substances_[subst_id].name() + "_solid"));
+		subst_idx_s_.push_back(balance_->add_quantity(substances_[subst_id].name() + "_" + data_->output_appendix_));
 	}
 
 	if (reaction_liquid)
@@ -598,12 +624,12 @@ void SorptionBase::assemble_balance_matrix()
     	{
     		ElementFullIter elm = mesh_->element(el_4_loc_[loc_el]);
     		double csection = data_->cross_section.value(elm->centre(), elm->element_accessor());
-    		double por = data_->porosity.value(elm->centre(), elm->element_accessor());
     		double rock_density = data_->rock_density.value(elm->centre(), elm->element_accessor());
+    		double por_coeff = porosity_coeff_s(elm);
 
         	for (unsigned int sbi=0; sbi<n_substances_; ++sbi)
         		balance_->add_mass_matrix_values(subst_idx_s_[sbi], elm->region().bulk_idx(), {row_4_el_[el_4_loc_[loc_el]]},
-        				{csection*(1-por)*rock_density*substances_[substance_global_idx_[sbi]].molar_mass()*elm->measure()} );
+        				{csection*por_coeff*rock_density*substances_[substance_global_idx_[sbi]].molar_mass()*elm->measure()} );
         }
 
     	balance_->finish_mass_assembly(subst_idx_s_);

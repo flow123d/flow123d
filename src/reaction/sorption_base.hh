@@ -76,6 +76,9 @@ public:
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
 
+    /// String added to name of output field for concentrations.
+    string output_appendix_;
+
   };
 
   /**
@@ -165,6 +168,10 @@ protected:
   
   /// Assembles matrix for calculation of sorbed mass.
   void assemble_balance_matrix();
+
+  virtual double porosity_coeff_l(const ElementFullIter &elm) = 0;
+
+  virtual double porosity_coeff_s(const ElementFullIter &elm) = 0;
 
 
   /// Pointer to equation data. The object is constructed in descendants.

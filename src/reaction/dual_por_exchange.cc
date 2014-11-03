@@ -269,6 +269,9 @@ void DualPorosity::set_balance_object(boost::shared_ptr<Balance> &balance,
 	sources_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
 	sources_in_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
 	sources_out_immob.resize(substances_.size(), vector<double>(mesh_->region_db().bulk_size(), 0));
+
+	old_mass_coef_mob_.resize(distribution_->lsize(), 0);
+	old_mass_coef_immob_.resize(distribution_->lsize(), 0);
 }
 
 
@@ -287,7 +290,7 @@ void DualPorosity::zero_time_step()
 	  if (typeid(*reaction_mobile) == typeid(SorptionMob))
 	  {
 			  reaction_mobile->data().set_field("porosity", data_["porosity"]);
-			  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+			  ((SorptionMob *)reaction_mobile)->set_porosity_immobile(data_.porosity_immobile);
 			  reaction_mobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
 	  if (typeid(*reaction_mobile) == typeid(LinearReaction) ||
@@ -302,7 +305,7 @@ void DualPorosity::zero_time_step()
 	  if (typeid(*reaction_immobile) == typeid(SorptionImmob))
 	  {
 		  reaction_immobile->data().set_field("porosity", data_["porosity"]);
-		  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+		  ((SorptionImmob *)reaction_immobile)->set_porosity_immobile(data_.porosity_immobile);
 		  reaction_immobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
 	  if (typeid(*reaction_immobile) == typeid(LinearReaction) ||
@@ -316,9 +319,24 @@ void DualPorosity::zero_time_step()
   data_.set_time(*time_);
   set_initial_condition();
   
-	if (data_.porosity_immobile.changed() ||
-		data_.cross_section.changed())
-		assemble_balance_matrix();
+	if (data_.porosity_immobile.changed())
+	{
+		if (data_.cross_section.changed())
+			assemble_balance_matrix();
+
+		if (balance_ != nullptr)
+		{
+			for (unsigned int loc_el=0; loc_el<distribution_->lsize(); ++loc_el)
+			{
+				ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
+				double csection = data_.cross_section.value(ele->centre(), ele->element_accessor());
+				double por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
+				double por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
+				old_mass_coef_mob_[loc_el] = por_mob*csection;
+				old_mass_coef_immob_[loc_el] = por_immob*csection;
+			}
+		}
+	}
 
   // write initial condition
   output_vector_gather();
@@ -493,8 +511,10 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 
         if (balance_ != nullptr)
         {
-        	double source_mob = (conc_mob - previous_conc_mob)*csection*por_mob*ele->measure()/time_->dt();
-        	double source_immob = (conc_immob - previous_conc_immob)*csection*por_immob*ele->measure()/time_->dt();
+        	double source_mob = (conc_mob*csection*por_mob - previous_conc_mob*old_mass_coef_mob_[loc_el])
+        			*ele->measure()/time_->dt();
+        	double source_immob = (conc_immob*por_immob*csection - previous_conc_immob*old_mass_coef_immob_[loc_el])
+        			*ele->measure()/time_->dt();
 			sources_mob[sbi][ele->region().bulk_idx()] += source_mob;
 			sources_immob[sbi][ele->region().bulk_idx()] += source_immob;
 			if (source_mob > 0)
@@ -505,7 +525,13 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 				sources_in_immob[sbi][ele->region().bulk_idx()] += source_immob;
 			else
 				sources_out_immob[sbi][ele->region().bulk_idx()] += source_immob;
+
         }
+    }
+    if (balance_ != nullptr)
+    {
+    	old_mass_coef_mob_[loc_el] = por_mob*csection;
+    	old_mass_coef_immob_[loc_el] = por_immob*csection;
     }
   //*/
   

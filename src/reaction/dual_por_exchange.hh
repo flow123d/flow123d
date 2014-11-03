@@ -153,6 +153,8 @@ protected:
   vector<vector<double> > sources_immob;
   vector<vector<double> > sources_in_immob;
   vector<vector<double> > sources_out_immob;
+  vector<double> old_mass_coef_mob_; // local elementwise values of mobile mass coefficient at previous time instant
+  vector<double> old_mass_coef_immob_; // local elementwise values of immobile mass coefficient at previous time instant
 
 };
 

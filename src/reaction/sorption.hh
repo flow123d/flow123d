@@ -36,6 +36,10 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+
+    double porosity_coeff_l(const ElementFullIter &elm) override;
+
+    double porosity_coeff_s(const ElementFullIter &elm) override;
 };
 
 
@@ -86,6 +90,10 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
+
+    double porosity_coeff_l(const ElementFullIter &elm) override;
+
+    double porosity_coeff_s(const ElementFullIter &elm) override;
   
     //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
@@ -108,6 +116,10 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
+
+    double porosity_coeff_l(const ElementFullIter &elm) override;
+
+    double porosity_coeff_s(const ElementFullIter &elm) override;
   
     //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
