@@ -21,8 +21,7 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>()),
+: data_(std::make_shared<SharedData>()),
   factory_base_ptr_(std::make_shared<FactoryBase>())
 
 {
@@ -34,8 +33,7 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>()),
+: data_(std::make_shared<SharedData>()),
   factory_base_ptr_(std::make_shared<FactoryBase>())
 
 {
@@ -51,7 +49,6 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
-  read_field_descriptor_hook( other.read_field_descriptor_hook ),
   data_(other.data_),
   factory_base_ptr_(other.factory_base_ptr_)
 {
@@ -80,7 +77,6 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
 
-	read_field_descriptor_hook = other.read_field_descriptor_hook;
 	factory_base_ptr_ = other.factory_base_ptr_;
 	data_ = other.data_;
 
@@ -235,18 +231,6 @@ void Field<spacedim, Value>::set_field(
 
 
 
-template<int spacedim, class Value>
-auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommon &field) -> FieldBasePtr
-{
-	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.input_name(), field_record))
-		return FieldBaseType::function_factory(field_record, field.n_comp() );
-	else
-		return FieldBasePtr();
-}
-
-
-
 
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
@@ -388,8 +372,7 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
         continue;
       }
 			// get field instance
-			//FieldBasePtr field_instance = factory_base_ptr_.create_field(*(shared_->list_it_), *this);
-			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
+			FieldBasePtr field_instance = factory_base_ptr_->create_field(*(shared_->list_it_), *this);
 			if (field_instance)  // skip descriptors without related keys
 			{
 				// add to history

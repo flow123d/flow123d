@@ -68,7 +68,7 @@ public:
      * 1) backward compatibility with old BCD input files
      * 2) setting pressure values are piezometric head values
      */
-    FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
+    //FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
 
     class FactoryBase {
     public:
@@ -158,7 +158,7 @@ public:
      * Reads key given by @p field_name and creates the field instance using
      * @p FieldBase<...>::function_factory.
      */
-    static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommon &field);
+    //static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommon &field);
 
     void set_limit_side(LimitSide side) override
     { this->limit_side_=side; }

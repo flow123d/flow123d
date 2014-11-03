@@ -119,21 +119,6 @@ public:
         EqData();
 
 
-        /**
-         * Hook for processing "bc_piezo_head" key.
-         */
-        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
-        {
-            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
-                Input::AbstractRecord field_a_rec;
-            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
-            	} else {
-            		return field_ptr;
-            	}
-        }
-       
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;

@@ -163,20 +163,6 @@ protected:
         	}
         };
 
-        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
-        {
-        		arma::vec4 gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
-
-            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
-                Input::AbstractRecord field_a_rec;
-            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
-            	} else {
-            		return field_ptr;
-            	}
-        }
-
         EqData() :
         	bc_type_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Enum> >(&(OldBcdInput::instance()->flow_type)) ),
         	bc_flux_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(OldBcdInput::instance()->flow_flux)) ),
@@ -188,30 +174,25 @@ protected:
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
-            bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
             bc_type.set_factory_base_ptr( this->bc_type_factory );
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
-        	bc_pressure.read_field_descriptor_hook = bc_piezo_head_hook;
         	bc_pressure.set_factory_base_ptr(std::make_shared< EqData::PiezoFieldFactory<3, FieldValue<3>::Scalar> >());
             bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
-        	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
         	bc_flux.set_factory_base_ptr( this->bc_flux_factory );
             bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
-        	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
         	bc_robin_sigma.set_factory_base_ptr( this->bc_robin_sigma_factory );
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
             bc_conc.set_factory_base_ptr( this->bc_conc_factory );
             bc_conc.units( UnitSI::dimensionless() );
         }

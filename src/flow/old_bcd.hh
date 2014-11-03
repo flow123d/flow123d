@@ -118,53 +118,6 @@ public:
     std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_sigma_factory;
     std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> trans_conc_factory;
 
-    // hooks
-    static FieldBaseEnum flow_type_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr=Field_Enum::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_type;
-    	}
-    }
-    static FieldBaseScalar flow_pressure_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr= Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_pressure;
-    	}
-    }
-    static FieldBaseScalar flow_flux_hook(Input::Record rec, const FieldCommon &field) {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_flux;
-    	}
-    }
-    static FieldBaseScalar flow_sigma_hook(Input::Record rec, const FieldCommon &field)  {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Scalar::read_field_descriptor(rec, field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_flow_record(rec, field);
-    		return old_bcd->flow_sigma;
-    	}
-    }
-    static FieldBaseVector trans_conc_hook(Input::Record rec, const FieldCommon &field)  {
-    	OldBcdInput *old_bcd = OldBcdInput::instance();
-    	auto field_ptr = Field_Vector::read_field_descriptor(rec,field);
-    	if (field_ptr) return field_ptr;
-    	else {
-    		old_bcd->read_transport_record( rec, field);
-    		return old_bcd->trans_conc;
-    	}
-    }
-
     void read_flow_record(Input::Record rec, const FieldCommon &field) {
     	FilePath bcd_file;
     	if (rec.opt_val(flow_old_bcd_file_key(), bcd_file)
