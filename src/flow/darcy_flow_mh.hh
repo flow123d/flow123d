@@ -166,10 +166,9 @@ public:
 
 
     template<int spacedim, class Value>
-    class PiezoFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    class FieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-    		cout << "PiezoFieldFactory::create_field" << endl;
     		Input::AbstractRecord field_record;
     		if (rec.opt_val(field.input_name(), field_record))
     			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );

@@ -113,6 +113,34 @@ protected:
         static IT::Selection bc_type_selection;
 
         template<int spacedim, class Value>
+        class FieldFactory : public OldBcdInput::FieldFactory<spacedim, Value> {
+        public:
+        	FieldFactory( typename OldBcdInput::FieldFactory<spacedim, Value>::FieldPtr * field, bool read_flow = true )
+        	: OldBcdInput::FieldFactory<spacedim, Value>(field),
+        	  read_flow_(read_flow)
+        	{}
+
+        	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+        		Input::AbstractRecord field_record;
+        		if (rec.opt_val(field.input_name(), field_record)) {
+        			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
+        		}
+            	else {
+            		OldBcdInput *old_bcd = OldBcdInput::instance();
+            		if (read_flow_) {
+            			old_bcd->read_flow_record(rec, field);
+            		} else  {
+            			old_bcd->read_transport_record(rec, field);
+            		}
+            		return *(this->field_);
+            	}
+        	}
+
+        	/// Set true if field needs flow record, false if needs transport record
+        	bool read_flow_;
+        };
+
+        template<int spacedim, class Value>
         class PiezoFieldFactory : public Field<spacedim, Value>::FactoryBase {
         public:
         	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
@@ -149,14 +177,19 @@ protected:
             	}
         }
 
-        EqData()  {
+        EqData() :
+        	bc_type_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Enum> >(&(OldBcdInput::instance()->flow_type)) ),
+        	bc_flux_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(OldBcdInput::instance()->flow_flux)) ),
+        	bc_robin_sigma_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(OldBcdInput::instance()->flow_sigma)) ),
+        	bc_conc_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Vector> >(&(OldBcdInput::instance()->trans_conc), false) )
+        {
             ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
             anisotropy.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
             bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
-            bc_type.set_factory_base_ptr( OldBcdInput::instance()->flow_type_factory );
+            bc_type.set_factory_base_ptr( this->bc_type_factory );
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
@@ -168,18 +201,18 @@ protected:
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
         	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
-        	bc_flux.set_factory_base_ptr( OldBcdInput::instance()->flow_flux_factory );
+        	bc_flux.set_factory_base_ptr( this->bc_flux_factory );
             bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
         	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
-        	bc_robin_sigma.set_factory_base_ptr( OldBcdInput::instance()->flow_sigma_factory );
+        	bc_robin_sigma.set_factory_base_ptr( this->bc_robin_sigma_factory );
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
-            bc_conc.set_factory_base_ptr( OldBcdInput::instance()->trans_conc_factory );
+            bc_conc.set_factory_base_ptr( this->bc_conc_factory );
             bc_conc.units( UnitSI::dimensionless() );
         }
 
@@ -192,6 +225,11 @@ protected:
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         BCField<3, FieldValue<3>::Vector > bc_conc;
+
+        std::shared_ptr<Field<3, FieldValue<3>::Enum>::FactoryBase> bc_type_factory;
+        std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> bc_flux_factory;
+        std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> bc_robin_sigma_factory;
+        std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> bc_conc_factory;
     };
 
     void output_data() override {}

@@ -168,7 +168,7 @@ DarcyFlowMH::EqData::EqData()
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
     	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
-    	bc_pressure.set_factory_base_ptr(std::make_shared< DarcyFlowMH::PiezoFieldFactory<3, FieldValue<3>::Scalar> >());
+    	bc_pressure.set_factory_base_ptr(std::make_shared< DarcyFlowMH::FieldFactory<3, FieldValue<3>::Scalar> >());
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
