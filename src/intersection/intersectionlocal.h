@@ -14,6 +14,7 @@ class IntersectionLocal {
 
 	//static int numberInstance;
 	int id;
+	bool is_patological;
 
 	std::vector<IntersectionPoint<2,3>> i_points; //vektor ukazatelu na dvojice lokal. souradnic
 	arma::mat::fixed<7,3> tracing_table;
@@ -28,6 +29,10 @@ public:
     ~IntersectionLocal();
 
     void addIP(IntersectionPoint<2,3> InPoint);
+
+    inline bool isPatological(){
+    	return is_patological;
+    };
 
     inline IntersectionPoint<2,3> get_point(const unsigned int index)
     {
@@ -64,117 +69,140 @@ public:
     	return tracing_table(rows, cols);
     };
 
+    inline void tracePolygon(){
+    	if(is_patological){
+    		traceGenericPolygon();
+    	}else{
+    		tracePolygonOpt();
+    	}
+    };
 
-    inline void tracePolygon2(){
+    inline void traceGenericPolygon(){
 
-    	double max_A, max_B, max_C = 0.0;
-    	int idx_max_A, idx_max_B, idx_max_C = -1;
+		std::vector<int> pp;
+		std::vector<IntersectionPoint<2,3>> new_points, new_points2;
 
-    	for(int i = 0; i < (int)i_points.size();i++){
-    		i_points[i].print();
-    		if(i_points[i].getSide1() != -1){
-    			if(i_points[i].getLocalCoords1()[0] > max_A){
-					max_A = i_points[i].getLocalCoords1()[0];
-					idx_max_A = i;
-				}else if(i_points[i].getLocalCoords1()[1] > max_B){
-					max_B = i_points[i].getLocalCoords1()[1];
-					idx_max_B = i;
-				}else if(i_points[i].getLocalCoords1()[2] > max_C){
-					max_C = i_points[i].getLocalCoords1()[2];
-					idx_max_C = i;
+		double startA,startB,startC = 0.0;
+		arma::vec::fixed<3> min; min.zeros();
+		int min_index = -1;
+
+		min[2] = 1;
+		while(true){
+			for(unsigned int j = 0; j < i_points.size();j++){
+				if(i_points[j].getLocalCoords1()[1] >= startB && i_points[j].getLocalCoords1()[2] <= min[2]){
+					if(i_points[j].getLocalCoords1()[2] == min[2]){
+						if(i_points[j].getLocalCoords1()[1] <= min[1]){
+							min = i_points[j].getLocalCoords1();
+							min_index = j;
+						}
+					}else{
+						min = i_points[j].getLocalCoords1();
+						min_index = j;
+					}
 				}
-    		}else{
-    			if(i_points[i].getLocalCoords1()[0] >= max_A){
-    				max_A = i_points[i].getLocalCoords1()[0];
-    				idx_max_A = i;
-    			}else if(i_points[i].getLocalCoords1()[1] >= max_B){
-    				max_B = i_points[i].getLocalCoords1()[1];
-    				idx_max_B = i;
-    			}else if(i_points[i].getLocalCoords1()[2] >= max_C){
-    				max_C = i_points[i].getLocalCoords1()[2];
-    				idx_max_C = i;
-    			}
-    		}
+			}
+			if(min_index != -1){
+				new_points.push_back(i_points[min_index]);
+				startA = i_points[min_index].getLocalCoords1()[0];
+				startB = i_points[min_index].getLocalCoords1()[1];
+				startC = i_points[min_index].getLocalCoords1()[2];
+				i_points.erase(i_points.begin() + min_index);
+				min.zeros();min[2] = 1;
+				min_index = -1;
+			}else{
+				break;
+			}
+		}
 
-    	}
+		// Po šikmé hraně
+		min.zeros();min[0] = 1;
+		while(true){
+			for(unsigned int j = 0; j < i_points.size();j++){
+				if(i_points[j].getLocalCoords1()[2] >= startC && i_points[j].getLocalCoords1()[0] <= min[0]){
+					if(i_points[j].getLocalCoords1()[0] == min[0]){
+						if(i_points[j].getLocalCoords1()[2] <= min[2]){
+							min = i_points[j].getLocalCoords1();
+							min_index = j;
+						}
+					}else{
+						min = i_points[j].getLocalCoords1();
+						min_index = j;
+					}
+				}
+			}
+			if(min_index != -1){
+				new_points.push_back(i_points[min_index]);
+				startA = i_points[min_index].getLocalCoords1()[0];
+				startB = i_points[min_index].getLocalCoords1()[1];
+				startC = i_points[min_index].getLocalCoords1()[2];
+				i_points.erase(i_points.begin() + min_index);
+				min.zeros();min[0] = 1;
+				min_index = -1;
+			}else{
+				break;
+			}
+		}
+		// dolu po CA->
+		min.zeros();min[1] = 1;
+		while(true){
+			for(unsigned int j = 0; j < i_points.size();j++){
+				if(i_points[j].getLocalCoords1()[0] >= startA && i_points[j].getLocalCoords1()[1] <= min[1]){
+					if(i_points[j].getLocalCoords1()[1] == min[1]){
+						if(i_points[j].getLocalCoords1()[0] <= min[0]){
+							min = i_points[j].getLocalCoords1();
+							min_index = j;
+						}
+					}else{
+						min = i_points[j].getLocalCoords1();
+						min_index = j;
+					}
+				}
+			}
+			if(min_index != -1){
+				new_points.push_back(i_points[min_index]);
+				startA = i_points[min_index].getLocalCoords1()[0];
+				startB = i_points[min_index].getLocalCoords1()[1];
+				startC = i_points[min_index].getLocalCoords1()[2];
+				i_points.erase(i_points.begin() + min_index);
+				min.zeros();min[1] = 1;
+				min_index = -1;
+			}else{
+				break;
+			}
+		}
 
-    	for(int i = 0; i < (int)i_points.size();i++){
+        	if(new_points.size() > 0){
+        		unsigned int j;
+        		double old1;
+        		double old2;
 
-    		xprintf(Msg, "OOO YEAH\n");
+        		if(new_points.size() <= 2){
+        			j = 1;
+        			old1 = new_points[0].getLocalCoords1()[0];
+        			old2 = new_points[0].getLocalCoords1()[1];
+        		}else{
+        			j = 0;
+        			old1 = new_points[new_points.size() - 1].getLocalCoords1()[0];
+        			old2 = new_points[new_points.size() - 1].getLocalCoords1()[1];
+        		}
 
-    		if(i_points[i].getSide1() != -1){
-    			xprintf(Msg,"neto\n");
-    			// bod vznikl na hraně
-    			if(tracing_table(i_points[i].getSide1(),1) == -1){
-    				// bod je prvním na hraně
-    				xprintf(Msg, "mlask\n");
-    				tracing_table(i_points[i].getSide1(),1) = i;
-    				xprintf(Msg, "plesk\n");
-    			}else{
-    				// bod je druhým na hraně
-    				unsigned int id_pr = tracing_table(i_points[i].getSide1(),1);
-    				if(i_points[id_pr].getLocalCoords1()[(3-i_points[id_pr].getSide1())%3] >
-    				i_points[i].getLocalCoords1()[(3-i_points[i].getSide1())%3]){
-    					tracing_table(i_points[i].getSide1(),2) = i;
-    				}else{
-    					tracing_table(i_points[i].getSide1(),2) = id_pr;
-    					tracing_table(i_points[i].getSide1(),1) = i;
-    				}
-    			}
+        		for(; j < new_points.size();j++){
 
+        			if(new_points[j].getLocalCoords1()[0] != old1 ||
+        					new_points[j].getLocalCoords1()[1] != old2){
+        				new_points2.push_back(new_points[j]);
+        			}
+        			old1 = new_points[j].getLocalCoords1()[0];
+        			old2 = new_points[j].getLocalCoords1()[1];
+        		}
 
-    		}else{
-    			// bod vznikl na čtyřstěnu
+        	}
 
-    			xprintf(Msg, "SSSSS\n");
-
-    			if(i == idx_max_A){
-    				// spojuje 1 -> 0
-    				tracing_table(3,1) = i;
-    			}else if(i == idx_max_B){
-    				tracing_table(4,1) = i;
-    			}else if(i == idx_max_C){
-    				tracing_table(5,1) = i;
-    			}else{
-    				tracing_table(6,1) = i;
-    			}
-    		}
-    	}
+        	i_points = new_points;
 
 
-    	std::vector<IntersectionPoint<2,3>> new_points, new_points2;
 
-
-    	int pole[7] = {0,4,2,5,1,3,6};
-
-
-    	for(int j = 0; j < 7;j++){
-    		for(int k = 1;k < 3;k++){
-    			if(tracing_table(pole[j],k) != -1){
-    				new_points.push_back(i_points[tracing_table(pole[j],k)]);
-    			}
-    		}
-    	}
-
-    	if(new_points.size() > 0){
-    		double old1 = new_points[new_points.size() - 1].getLocalCoords1()[0];
-    		double old2 = new_points[new_points.size() - 1].getLocalCoords1()[1];
-
-    		for(unsigned int j = 0; j < new_points.size();j++){
-
-    			if(new_points[j].getLocalCoords1()[0] != old1 ||
-    					new_points[j].getLocalCoords1()[1] != old2){
-    				new_points2.push_back(new_points[j]);
-    			}
-    			old1 = new_points[j].getLocalCoords1()[0];
-    			old2 = new_points[j].getLocalCoords1()[1];
-    		}
-
-    	}
-
-    	i_points = new_points2;
-
-    }
+        }
 
     /**
      * Trasování Polygonu
@@ -185,7 +213,7 @@ public:
      *  každý řádek má údaj o tom, do kterého řádku má pokračovat a
      *  zda-li je na něm 0 - 2 průniků.
      */
-    inline void tracePolygon(){
+    inline void tracePolygonOpt(){
 
     	//return;
     	fillTracingTable();
@@ -254,8 +282,8 @@ public:
     			// jedná se o průniky 1 -> 2 resp 1 -> 3
     			// Tyto průniky jsou vždy po dvojicích
     			unsigned int index1, index2;
-    			xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
-    			xprintf(Msg,"Orientace(%d), hrana(%d),stena(%d), vrchol(%d)\n", i_points[i+1].getOrientation(),i_points[i+1].getSide1(),i_points[i+1].getSide2(),i_points[i+1].isVertex());
+    			//xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+    			//xprintf(Msg,"Orientace(%d), hrana(%d),stena(%d), vrchol(%d)\n", i_points[i+1].getOrientation(),i_points[i+1].getSide1(),i_points[i+1].getSide2(),i_points[i+1].isVertex());
 
     			unsigned int j = 0;
     			/* Orientace přímek podle orientace stěn
@@ -332,7 +360,7 @@ public:
     			i++;
     		}else{
     			// jedná se o průniky 2 -> 1
-    			xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+    			//xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
     			unsigned int stena = i_points[i].getSide2();
     			unsigned int index1 = RefSimplex<3>::line_sides[stena][i_points[i].getOrientation()];
     			unsigned int index2 = RefSimplex<3>::line_sides[stena][1 - i_points[i].getOrientation()];
@@ -357,11 +385,11 @@ public:
 
     		// Vrchol celého čtyřstěnu
 
-    		xprintf(Msg,"Patologický: Orientace(%d), hrana(%d), stena(%d), vrchol(%d)\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
-			unsigned int stena = i_points[i].getSide2();
-			unsigned int index1 = RefSimplex<3>::line_sides[stena][1];
-			unsigned int index2 = RefSimplex<3>::line_sides[stena][0];
-			xprintf(Msg, "Na stěně(%d) do stěny(%d)\n", index1, index2);
+    		//xprintf(Msg,"Patologický: Orientace(%d), hrana(%d), stena(%d), vrchol(%d)\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+				//unsigned int stena = i_points[i].getSide2();
+				//unsigned int index1 = RefSimplex<3>::line_sides[stena][1];
+				//unsigned int index2 = RefSimplex<3>::line_sides[stena][0];
+			//xprintf(Msg, "Na stěně(%d) do stěny(%d)\n", index1, index2);
 			/*tracing_table(index1,0) = index2;
 
 			if(tracing_table(index1,1) == -1){
@@ -374,14 +402,14 @@ public:
     	}
     	}
 
-    	tracing_table.print();
+    	//tracing_table.print();
     }
 
     /*
      * Vrací IntersectionPoint s prohozenými dimenzemi i daty.
      * */
     template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> flipDimension(IntersectionPoint<dim, subdim> IP){
-    		cout << "IntersectionLocal::flipDimension<" << dim << "," << subdim << "> na <" << subdim << "," <<  dim << ">" << endl;
+    		//cout << "IntersectionLocal::flipDimension<" << dim << "," << subdim << "> na <" << subdim << "," <<  dim << ">" << endl;
         	IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords2(), IP.getLocalCoords1(), IP.getSide2(), IP.getSide1(), IP.getOrientation(), IP.isVertex(), IP.isPatological());
         	return IPn;
      };
@@ -394,7 +422,7 @@ public:
      template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-1> IP){
 
         	arma::vec::fixed<d+1> interpolovane;
-        	cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
+        	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
         	if(d == 3){
         		interpolovane = RefSimplex<3>::interpolate<2>(IP.getLocalCoords2(), IP.getSide2());
         	}else if(d == 2){
@@ -415,7 +443,7 @@ public:
      template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-2> IP){
 
              	arma::vec::fixed<d+1> interpolovane;
-             	cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-2 << "> na <" << sd << "," <<  d << ">" << endl;
+             	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-2 << "> na <" << sd << "," <<  d << ">" << endl;
              	if(d == 3){
              		interpolovane = RefSimplex<3>::interpolate<1>(IP.getLocalCoords2(), IP.getSide2());
              	}else{

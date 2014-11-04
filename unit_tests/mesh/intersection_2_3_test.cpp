@@ -109,7 +109,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	//FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/home/viktor/diplomka/flow123d/unit_tests/mesh/site/triangle_tetrahedron14.msh", FilePath::input_file);
+	FilePath mesh_file("/home/viktor/diplomka/flow123d/unit_tests/mesh/site/velka_sit2.msh", FilePath::input_file);
 
 	Profiler::initialize();
 

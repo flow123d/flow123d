@@ -107,7 +107,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 		theta[0] = 1 - theta[1];
 		//arma::vec3 local = ((-1)*abscissa[0].getPointCoordinates() + local_triangle)/vec;
 		//arma::vec3 global_abscissa = local_abscissa * abscissa[1].getPointCoordinates() + (1 - local_abscissa) * abscissa[0].getPointCoordinates();
-		xprintf(Msg, "vypocitany 3D (%f, %f, %f)\n", global_triangle[0], global_triangle[1], global_triangle[2]);
+		//xprintf(Msg, "vypocitany 3D (%f, %f, %f)\n", global_triangle[0], global_triangle[1], global_triangle[2]);
 		//IntersectionPoint<1,2> neto(theta, local_triangle);
 		IP.setLocalCoords1(theta);
 		IP.setLocalCoords2(local_triangle);
@@ -168,7 +168,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 					t = -t;
 				}
 
-				xprintf(Msg, "s,t : %f,%f \n",s,t);
+				//xprintf(Msg, "s,t : %f,%f \n",s,t);
 
 				if(t > 1 || t < 0){
 					//return false;
@@ -210,7 +210,6 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 					IP.setIsPatological(true);
 					IP.setSide2(i);
 					IP.setOrientation(1);
-
 					return true;
 				}
 
@@ -354,7 +353,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			pocet_pruniku++;
 
 			//if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
-				IP.print();
+				//IP.print();
 				IntersectionPoint<1,3> IP13 = IntersectionLocal::interpolateDimension<1,3>(IP);
 				//IP13.print();
 				IP13s.push_back(IP13);
@@ -537,13 +536,20 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 	int pocet_pruniku = 0;
 	int pocet_13_pruniku;
 
-	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
+	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges triangle vs tetrahedron" << endl;
 		for(unsigned int i = 0; i < 3;i++){
 			pocet_13_pruniku = CI13[(3-i)%3].compute(IP13s);
 			//(triange->getAbscissa(i)).toString();
 			// Vždy by měl být počet průniku 2 nebo 0
-			if(pocet_13_pruniku == 2){
-				cout << "Stena:" << IP13s[IP13s.size() - 2].getSide2();
+			if(pocet_13_pruniku == 1){
+				IP13s[IP13s.size() - 1].setSide1((3-i)%3);
+				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
+				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
+				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
+				lokalni_mnohouhelnik.addIP(IP23);
+
+			}else if(pocet_13_pruniku == 2){
+				//cout << "Stena:" << IP13s[IP13s.size() - 2].getSide2();
 				// pokud se jedná o druhou hranu (index 1) - je opačná orientace
 
 				//if((IP13s[IP13s.size() - 2].getOrientation() == 1)){
@@ -650,17 +656,17 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 		CI12[5].setPluckerProduct(CI13[i].getPluckerProduct(2,2),i);
 	}
 
-	cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
+	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
 		for(unsigned int i = 0; i < 6;i++){
 			if(CI12[i].compute(IP)){
 				pocet_pruniku++;
 				IP.setSide1(i);
 				if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
-									IP.print();
+									//IP.print();
 									IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP);
 									IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
 									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
-									IP23.print();
+									//IP23.print();
 									lokalni_mnohouhelnik.addIP(IP23);
 
 									/*cout << "PPPPPPPPPPPPPPPPPPPP" << endl;

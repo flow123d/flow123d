@@ -116,7 +116,11 @@ void InspectElements::ComputeIntersections23(){
 			        	CI_23.compute(il);
 			        	//il.printTracingTable();
 			        	//il.tracePolygon();
-			        	il.tracePolygon2();
+			        	//il.tracePolygon2();
+			        	//il.tracePolygon3();
+			        	il.tracePolygon();
+
+			        	xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
 			        	all_intersections.push_back(il);
 
 			        	// Stará metoda pro výpočet obsahu polygonu

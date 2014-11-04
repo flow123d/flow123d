@@ -9,14 +9,11 @@
 
 namespace computeintersection{
 
-/*
-IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):element_2D_idx(elem2D),element_3D_idx(elem3D){
-	id = 0;
-};
-*/
 IntersectionLocal::IntersectionLocal(){};
 
 IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):element_2D_idx(elem2D),element_3D_idx(elem3D){
+
+	is_patological = false;
 
 	for(unsigned int i = 0; i < 7;i++){
 		for(unsigned int j = 0; j < 3;j++){
@@ -28,6 +25,9 @@ IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):el
 IntersectionLocal::~IntersectionLocal(){};
 
 void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
+	if(InPoint.isPatological()){
+		is_patological = true;
+	}
 	i_points.push_back(InPoint);
 };
 
@@ -47,22 +47,12 @@ double IntersectionLocal::getArea(){
 	double subtotal = 0.0;
 	for(unsigned int j = 2; j < i_points.size();j++){
 		//xprintf(Msg, "volani %d %d\n",j, i_points.size());
-		subtotal += i_points[0].getLocalCoords1()(1)*(i_points[j-1].getLocalCoords1()(2) - i_points[j].getLocalCoords1()(2)) +
+		subtotal += fabs(i_points[0].getLocalCoords1()(1)*(i_points[j-1].getLocalCoords1()(2) - i_points[j].getLocalCoords1()(2)) +
 				 i_points[j-1].getLocalCoords1()(1)*(i_points[j].getLocalCoords1()(2) - i_points[0].getLocalCoords1()(2)) +
-				 i_points[j].getLocalCoords1()(1)*(i_points[0].getLocalCoords1()(2) - i_points[j-1].getLocalCoords1()(2));
+				 i_points[j].getLocalCoords1()(1)*(i_points[0].getLocalCoords1()(2) - i_points[j-1].getLocalCoords1()(2)));
 	}
-	return subtotal/2;
+	return fabs(subtotal/2);
 };
-
-
-//void IntersectionLocal::add_local_coord(const std::vector<double> &coordin1, const double &coordin2){
-	/*for(unsigned int i = 0; i < coordin1.size(); i++){
-	std::printf("Souřadnice - 3D: %f \n", coordin1[i]);
-	}
-	std::printf("Souřadnice - 1D: %f \n", coordin2);
-	 */
-	//i_points.push_back(new IntersectionPoint(coordin1, coordin2));
-//};
 
 
 } // namespace computeintersection close
