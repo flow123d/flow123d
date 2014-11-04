@@ -49,11 +49,6 @@ void PadeApproximant::update_solution(vec& init_vector, vec& output_vec)
     output_vec = solution_matrix_ * init_vector;
 }
 
-// void PadeApproximant::update_solution(mat& init_vectors, mat& output_vecs, const std::vector< unsigned int >& mask)
-// {
-//     ASSERT(0, "Method must be implemented in the template class.");
-// }
-
 
 void PadeApproximant::approximate_matrix(mat &matrix)
 {

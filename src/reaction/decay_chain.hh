@@ -42,9 +42,6 @@ protected:
     /// Implements the assembly of the system matrix of the ODEs.
     void assemble_ode_matrix(void) override;
     
-//     /// Implements reaction matrix analytical computation.
-//     void prepare_reaction_matrix_analytic(void) override;
-    
     std::vector<double> half_lives_;    ///< Half-lives of the substances.
 };
 

@@ -61,30 +61,6 @@ void FirstOrderReaction::assemble_ode_matrix(void )
     }
 }
 
-// void FirstOrderReaction::prepare_reaction_matrix_analytic(void)
-// {
-//     reaction_matrix_ = eye(n_substances_, n_substances_);
-//     
-//     unsigned int reactant_idx, product_idx,   // global indices of substances
-//                  i_reaction, i_product;       // local indices of substances
-//     double exponential; //temporary value for the exponential exp(-kt)
-//     
-//     // cycle over reactions/over rows/over parents
-//     for (i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
-//         // setting diagonal elements
-//         reactant_idx = substance_ids_[i_reaction][0];
-//         exponential = std::exp(- reaction_rates_[i_reaction] * time_->dt());
-//         reaction_matrix_(reactant_idx,reactant_idx) = exponential;
-// 
-//         // cycle over products of specific reaction/row/reactant
-//         for (i_product = 1; i_product < substance_ids_[i_reaction].size(); ++i_product) {
-//             product_idx = substance_ids_[i_reaction][i_product];
-//             reaction_matrix_(product_idx,reactant_idx)
-//                                        = (1 - exponential)* bifurcation_[i_reaction][i_product-1];
-//         }
-//     }
-// }
-
 
 void FirstOrderReaction::initialize_from_input()
 {

@@ -24,7 +24,7 @@ public:
     void set_system_matrix(const mat &matrix);  ///< Sets the matrix of ODE system.
     void set_step(double step);                 ///< Sets the step of the numerical method.
     
-    /// Updates solution of the system.
+    /// Updates solution of the ODEs system.
     virtual void update_solution(vec &init_vector, vec &output_vec) = 0;
     
     /// Updates solution of the system with different initial vectors.
@@ -48,6 +48,9 @@ protected:
  * It provides a common method @p update_solution which can compute the same system of ODEs with 
  * different initial vectors at once.
  * 
+ * This class represents the Curiously Recurring Template Pattern (CRTP). Therefore, the method update_solution
+ * of the template called inside @p update_solution using static_cast is not a virtual one.
+ * 
  */
 template<class Method>
 class LinearODESolver : public LinearODESolverBase
@@ -67,22 +70,17 @@ public:
 private:
 };
 
-// template<class Method>
-// LinearODESolver<Method>::LinearODESolver()
-// {
-// }
-
-
-// template<class Method>
-// void LinearODESolver<Method>::update_solution(vec& init_vector, vec& output_vec)
-// {
-//     static_cast<Method*>(this)->update_solution(init_vector,output_vec);
-//     step_changed_ = false;
-// }
-
 template<class Method>
 void LinearODESolver<Method>::update_solution(mat& init_vectors, mat& output_vecs, const std::vector< unsigned int > &mask)
 {  
+    ASSERT(0,"Not implemented yet.");
+    ASSERT_EQUAL(init_vectors.n_cols, output_vecs.n_cols);
+    ASSERT_EQUAL(init_vectors.n_rows, output_vecs.n_rows);
+    
+    for(unsigned int j=0; j < init_vectors.n_cols; j++)
+    {
+        //static_cast<Method*>(this)->update_solution(init_vectors.col(j), output_vecs.col(j));
+    }
 }
 
 
@@ -92,7 +90,7 @@ void LinearODESolver<Method>::update_solution(mat& init_vectors, mat& output_vec
 /*********************** ANALYTIC SOLUTION ************************/
 /** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
  *
- * The analytic solution can be obtained in special case when decrease of one quantity is a fraction
+ * The analytic solution can be obtained in the special case when decrease of one quantity is a fraction
  * of increase of other quantity. The fractions are derived from the matrix.
  * 
  * It is used in first order reactions and decays.
@@ -115,8 +113,6 @@ public:
     ~LinearODEAnalytic(void);
     
     void update_solution(vec &init_vector, vec &output_vec) override;
-//     void update_solution(mat &init_vectors, mat &output_vecs, 
-//                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
 protected:
     /**
@@ -124,7 +120,7 @@ protected:
      */
     void compute_matrix();
     
-    /// The solution is computed only by matrix multiplication (standard fundamental matrix).
+    /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
     mat solution_matrix_;
 };
 

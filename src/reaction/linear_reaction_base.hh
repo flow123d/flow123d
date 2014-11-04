@@ -40,6 +40,9 @@ public:
      */
     void initialize() override;
   
+    /// Moves the model to zero time. 
+    /** The assembly of the system matrix is called here.
+     */
     void zero_time_step() override;
                 
     /// Updates the solution. 
@@ -84,7 +87,7 @@ protected:
     *   Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
     */
     std::vector<std::vector<double> > bifurcation_;
-    mat bifurcation_matrix_;
+    arma::mat bifurcation_matrix_;
     
     /// Number of all transported substances. It is the dimension of the reaction matrix.
     unsigned int n_substances_;

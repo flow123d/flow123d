@@ -40,8 +40,6 @@ public:
     ~PadeApproximant(void);
     
     void update_solution(vec &init_vector, vec &output_vec) override;
-//     void update_solution(mat &init_vectors, mat &output_vecs, 
-//                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
 protected:
     ///Hide default constructor.

@@ -56,12 +56,6 @@ void LinearODEAnalytic::update_solution(vec& init_vector, vec& output_vec)
     output_vec = solution_matrix_ * init_vector;
 }
 
-// void LinearODEAnalytic::update_solution(mat& init_vectors, mat& output_vecs, 
-//                                         const std::vector< unsigned int >& mask)
-// {
-//     ASSERT(0, "Method must be implemented in the template class.");
-// }
-
 void LinearODEAnalytic::compute_matrix()
 {
     ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
@@ -81,7 +75,4 @@ void LinearODEAnalytic::compute_matrix()
         }
         solution_matrix_(i,i) = exponential;
     }
-    
-//     system_matrix_.print();
-//     solution_matrix_.print();
 }
