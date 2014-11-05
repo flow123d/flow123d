@@ -36,8 +36,13 @@ public:
     FieldAddPotential( const arma::vec::fixed<spacedim+1> &potential_grad, const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
 
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for setting pressure values are piezometric head values.
+     */
     class FieldFactory : public FactoryBaseType {
     public:
+    	/// Constructor.
     	FieldFactory(arma::vec::fixed<spacedim+1> potential, std::string field_name)
     	: potential_(potential),
     	  field_name_(field_name)

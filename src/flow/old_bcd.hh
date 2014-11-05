@@ -45,6 +45,11 @@ using namespace std;
  *
  */
 class OldBcdInput {
+private:
+	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
+	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
+	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
+
 public:
 
 	/**
@@ -57,18 +62,6 @@ public:
 		return "transport_old_bcd_file";
 	}
 
-	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
-	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
-	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
-
-	typedef Field<3, FieldValue<3>::Scalar> Field_Scalar;
-	typedef Field<3, FieldValue<3>::Enum> Field_Enum;
-	typedef Field<3, FieldValue<3>::Vector> Field_Vector;
-
-	typedef Field_Scalar::FieldBasePtr FieldBaseScalar;
-	typedef Field_Enum::FieldBasePtr FieldBaseEnum;
-	typedef Field_Vector::FieldBasePtr FieldBaseVector;
-
     shared_ptr<FieldEnum>	flow_type;
     shared_ptr<FieldScalar>  flow_pressure;
     shared_ptr<FieldScalar>  flow_flux;
@@ -77,27 +70,34 @@ public:
 
     static OldBcdInput * instance();
 
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for backward compatibility with old BCD input files.
+     */
     template<int spacedim, class Value>
     class FieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
 
         typedef FieldElementwise<spacedim, Value> FieldElementwiseType;
         typedef std::shared_ptr< FieldElementwiseType > FieldPtr;
-    	//typedef typename Field<spacedim,Value>::FieldBasePtr FieldPtr;
 
+        /**
+         * Constructor.
+         *
+         * We need pointer to std::shared_ptr. Object stored to shared_ptr
+         * doesn't exist during construction.
+         */
     	FieldFactory( FieldPtr * field )
     	: field_(field)
     	{}
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
     		Input::AbstractRecord field_record;
-    		cout << "OldBcdInput FieldFactory::create_field ";
     		if (rec.opt_val(field.input_name(), field_record)) {
-    			cout << "if" << endl;
     			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
     		}
         	else {
-        		cout << "else" << endl;
         		OldBcdInput *old_bcd = OldBcdInput::instance();
         		if (rec.record_type_name() == "DarcyFlowMH_Data") {
         			old_bcd->read_flow_record(rec, field);
@@ -130,7 +130,6 @@ public:
 
 
     inline void read_transport_record(Input::Record rec, const FieldCommon &field);
-
 
     /**
      * Create flow_* fields from given input file.
@@ -168,5 +167,6 @@ void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommon &fi
 		transport_input_file_ = string(bcd_file);
 	}
 }
+
 
 #endif /* OLD_BCD_HH_ */
