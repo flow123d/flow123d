@@ -142,8 +142,6 @@ arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
 
 DarcyFlowMH::EqData::EqData()
 {
-    gravity_ = arma::vec4("0 0 -1 0");
-
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
 
@@ -166,7 +164,7 @@ DarcyFlowMH::EqData::EqData()
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
-    	bc_pressure.set_factory_base_ptr(std::make_shared< DarcyFlowMH::FieldFactory<3, FieldValue<3>::Scalar> >());
+    	bc_pressure.set_factory_base_ptr(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >(DarcyFlowMH::EqData::gravity_, "bc_piezo_head"));
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
