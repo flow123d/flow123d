@@ -105,7 +105,9 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." );
+                "Method for coupling Darcy flow between dimensions." )
+        .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
+        		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -136,10 +138,6 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 
 
 
-// gravity vector + constant shift of values
-arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
-
-
 DarcyFlowMH::EqData::EqData()
 {
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
@@ -164,7 +162,7 @@ DarcyFlowMH::EqData::EqData()
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
-    	bc_pressure.set_factory_base_ptr(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >(DarcyFlowMH::EqData::gravity_, "bc_piezo_head"));
+    	//bc_pressure.set_factory_base_ptr(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >(DarcyFlowMH::EqData::gravity_, "bc_piezo_head"));
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
@@ -227,6 +225,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
+    data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.bc_pressure.set_factory_base_ptr(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >(data_.gravity_, "bc_piezo_head"));
     
     solution = NULL;
     schur0   = NULL;

@@ -138,11 +138,8 @@ public:
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
-         *
-         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
-         * introduce some kind of context pointer into @p FieldCommonBase.
          */
-        static arma::vec4 gravity_;
+        arma::vec4 gravity_;
 
         FieldSet	time_term_fields;
         FieldSet	main_matrix_fields;
