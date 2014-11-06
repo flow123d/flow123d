@@ -8,3 +8,5 @@ set(PETSC_INSTALL_CONFIG "full")
 set(BDDCML_ROOT "_INSTALL_")
 set(USE_PYTHON "yes")
 set(PYTHON_COPY "yes")
+
+set(PLATFORM_NAME "linux_x86_64")

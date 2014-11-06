@@ -74,14 +74,7 @@ it::Record HC_ExplicitSequential::input_type
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
     START_TIMER("HC constructor");
-    //int i=0;
     using namespace Input;
-
-    // Initialize Time Marks
-    //main_time_marks = new TimeMarks();
-
-    // Material Database
-    // material_database = new MaterialDatabase( in_record.val<FilePath>("material") );
 
     // Read mesh
     {
@@ -233,15 +226,12 @@ void HC_ExplicitSequential::run_simulation()
             transport_reaction->output_data();
         }
 
-        // Write all data
-        //OutputTime::write_all_data();
     }
     xprintf(Msg, "End of simulation at time: %f\n", transport_reaction->solved_time());
 }
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    //delete material_database;
     delete water;
     delete transport_reaction;
     delete mesh;

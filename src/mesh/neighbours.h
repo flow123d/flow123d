@@ -151,9 +151,6 @@ public:
 
 
 
-
-//void read_neighbour_list(Mesh*);
-
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

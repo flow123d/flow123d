@@ -36,7 +36,6 @@
 
 class Distribution;
 class OutputTime;
-class DOFHandlerBase;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -155,11 +154,11 @@ public:
 		EqData();
 
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+		Field<3, FieldValue<3>::Vector> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
-        BCField<3, FieldValue<3>::EnumVector > bc_type;
-        BCField<3, FieldValue<3>::Vector > bc_flux;
-        BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+        BCField<3, FieldValue<3>::EnumVector > bc_type;    ///< Type of boundary condition (see also BC_Type)
+        BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
+        BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
 	};
 
@@ -218,13 +217,6 @@ public:
 	 */
 	void output_data();
 
-    /**
-     * @brief Sets pointer to data of other equations.
-     * TODO: there should be also passed the sigma parameter between dimensions
-     * @param cross_section is pointer to cross_section data of Darcy flow equation
-     */
-	//void set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section) { Model::set_cross_section_field(cross_section); }
-
 	/**
 	 * @brief Getter for field data.
 	 */
@@ -239,24 +231,10 @@ public:
 
 private:
 
-	typename Model::ModelEqData &data() { return data_; }
+	inline typename Model::ModelEqData &data() { return data_; }
 
 	void output_vector_gather();
 
-	/*
-    bool stiffness_matrix_changed() {
-    	return Model::stiffness_matrix_changed() ||
-
-
-    }
-
-    bool mass_matrix_changed() { return Model::mass_matrix_changed(); }
-
-    bool rhs_changed() {
-    	return Model::rhs_changed() ||
-
-    }
-*/
 	/**
 	 * @brief Assembles the mass matrix.
 	 *

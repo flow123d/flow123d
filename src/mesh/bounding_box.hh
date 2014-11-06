@@ -196,7 +196,6 @@ public:
     bool intersect(const BoundingBox &b2) const
     {
     	for (unsigned int i=0; i<dimension; i++) {
-    		//double delta = (max_vertex_(i) - min_vertex_(i)) *
     		if ( (min_vertex_(i) > b2.max_vertex_(i) + epsilon) ||
     			 (b2.min_vertex_(i)  > max_vertex_(i) + epsilon ) ) return false;
     	}

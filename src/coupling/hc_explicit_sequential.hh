@@ -71,9 +71,6 @@ private:
     /// mesh common to darcy flow and transport
     Mesh *mesh;
 
-    /// Material database to provide various material dependent data
-    //MaterialDatabase *material_database;
-
     /// steady or unsteady water flow simulator based on MH scheme
     DarcyFlowMH *water;
 

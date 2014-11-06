@@ -23,7 +23,7 @@ file (WRITE "${cmakelists_fname}"
     SOURCE_DIR ${EXTERNAL_BOOST_DIR}/src
     BINARY_DIR ${EXTERNAL_BOOST_DIR}/src
     CONFIGURE_COMMAND ${EXTERNAL_BOOST_DIR}/src/bootstrap.sh ${Boost_CONFIG_FLAGS} --prefix=${EXTERNAL_BOOST_DIR} --with-libraries=program_options,serialization,regex,filesystem,system
-    BUILD_COMMAND ${EXTERNAL_BOOST_DIR}/src/b2 ${Boost_BUILD_FLAGS} install
+    BUILD_COMMAND ${EXTERNAL_BOOST_DIR}/src/b2 ${MAKE_NUMCPUS_FLAG} ${Boost_BUILD_FLAGS} install
     INSTALL_COMMAND \"\"
   )
 ")

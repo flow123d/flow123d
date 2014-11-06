@@ -191,8 +191,9 @@ show :
       #message(STATUS ${var_list})   
       
       foreach( var ${var_list} )
-          petsc_get_variable(${var} PETSC_VAR_${var})
+          petsc_get_variable(${var} PETSC_VAR_tmp_${var})
           message(STATUS "EXPORTING PETSC VARIABLE: " ${var} " as PETSC_VAR_${var} = " ${PETSC_VAR_${var}})
+          set(PETSC_VAR_${var} ${PETSC_VAR_tmp_${var}} CACHE STRING "Exported variable from PETSc." FORCE)
       endforeach(var)
   endmacro(PETSC_EXPORT_VARIABLES)  
   

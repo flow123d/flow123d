@@ -50,32 +50,37 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 {
     *this+=bc_conc
             .name("bc_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
     *this+=init_conc
             .name("init_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Initial concentrations.")
             .input_default("0.0");
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
+            .units( UnitSI().m(2).s(-1) )
             .input_default("0.0")
-            .flags_add( in_main_matrix );
+            .flags_add( in_main_matrix & in_rhs );
 
 	*this+=output_field
 	        .name("conc")
-	        .units("M/L^3")
+	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 }
 
@@ -105,57 +110,12 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 		flux_changed(true)
 {}
 
-/*
-void ConcentrationTransportModel::init_data(unsigned int n_subst_)
-{
-	data().init_conc.n_comp(n_subst_);
-	data().bc_conc.n_comp(n_subst_);
-    data().sources_density.n_comp(n_subst_);
-    data().sources_sigma.n_comp(n_subst_);
-    data().sources_conc.n_comp(n_subst_);
-	data().diff_m.n_comp(n_subst_);
-	data().disp_l.n_comp(n_subst_);
-	data().disp_t.n_comp(n_subst_);
-}
-*/
-
-/*
-void ConcentrationTransportModel::set_cross_section_field(const Field< 3, FieldValue<3>::Scalar >& cross_section)
-{
-  data().cross_section.copy_from(cross_section);
-}
-*/
 
 void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
 {
 	in_rec.val<Input::Array>("substances").copy_to(names);
 }
 
-/*
-bool ConcentrationTransportModel::mass_matrix_changed()
-{
-	return (data().cross_section.changed() || data().porosity.changed());
-}
-
-
-bool ConcentrationTransportModel::stiffness_matrix_changed()
-{
-	return (flux_changed ||
-
-			data().porosity.changed() ||
-			data().cross_section.changed());
-}
-
-
-bool ConcentrationTransportModel::rhs_changed()
-{
-	return (flux_changed ||
-			data().bc_conc.changed() ||
-			data().sources_conc.changed() ||
-			data().sources_density.changed() ||
-			data().sources_sigma.changed());
-}
-*/
 
 void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 		const ElementAccessor<3> &ele_acc,
@@ -189,6 +149,8 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 }
 
 
+
+
 void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
@@ -197,7 +159,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 {
 	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
-	std::vector<arma::vec> Dm(qsize), alphaL(qsize), alphaT(qsize);
+	std::vector<arma::vec> Dm(qsize, arma::vec(n_subst) ), alphaL(qsize, arma::vec(n_subst) ), alphaT(qsize, arma::vec(n_subst) );
 	std::vector<double> por_m(qsize), csection(qsize);
 
 	data().diff_m.value_list(point_list, ele_acc, Dm);
@@ -209,7 +171,9 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 	for (unsigned int i=0; i<qsize; i++) {
 		for (unsigned int sbi=0; sbi<n_subst; sbi++) {
 			ad_coef[sbi][i] = velocity[i];
-			calculate_dispersivity_tensor(velocity[i], Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i], dif_coef[sbi][i]);
+			calculate_dispersivity_tensor(velocity[i],
+					Dm[i][sbi], alphaL[i][sbi], alphaT[i][sbi], por_m[i], csection[i],
+					dif_coef[sbi][i]);
 		}
 	}
 }

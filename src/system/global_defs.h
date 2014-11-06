@@ -72,6 +72,7 @@
  * Flow123d_DEBUG overrides Flow123d_NODEBUG
  */
 
+
 #ifdef Flow123d_NODEBUG
 
 #undef  DEBUG_MESSAGES
@@ -195,6 +196,17 @@
 #define DBGMSG(...)
 #define DBGCOUT(...)
 #define DBGVAR(var)
+
+#endif
+
+
+#ifdef DEBUG_ASSERTS
+
+static const int debug_asserts_view = 1;
+
+#else
+
+static const int debug_asserts_view = 0;
 
 #endif
 

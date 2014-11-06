@@ -40,9 +40,7 @@
 #include <string>
 #include "mpi.h"
 
-#include "global_defs.h"
 #include "system/system.hh"
-//#include "io/read_ini.h"
 #include "system/xio.h"
 #include "system/file_path.hh"
 
@@ -53,13 +51,6 @@
 
 
 SystemInfo sys_info;
-
-
-void system_set_from_options()
-{
-    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
-
-}
 
 
 /// @brief INTERNAL DEFINITIONS FOR XPRINTF
@@ -221,7 +212,6 @@ void *xmalloc( size_t size )
 
 
 	if (size == 0 ) size++;
-	//ASSERT( size != 0 ,"Bad requested size (%u bytes) for memory allocation\n", size );
 	rc = malloc( size );
 	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
@@ -487,5 +477,4 @@ char *xgetcwd( void )
 
     return(xstrcpy( tmp ));
 }
-
 

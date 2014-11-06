@@ -12,8 +12,6 @@
 #include <fstream>
 #include <input/input_type.hh>
 #include <input/type_output.hh>
-//#include <input/json_to_storage.hh>
-//#include <input/accessors.hh>
 
 using namespace Input::Type;
 namespace IT=Input::Type;

@@ -105,10 +105,6 @@ private:
     void make_element_scalar();
     void make_element_vector();
 
-    //void make_element_vector_line(ElementFullIter, arma::vec3 &vec);
-    //void make_element_vector_triangle(ElementFullIter, arma::vec3 &vec);
-    //void make_element_vector_tetrahedron(ElementFullIter, arma::vec3 &vec);
-
     void make_sides_scalar();
     /**
      * \brief Calculate nodes scalar,
@@ -118,7 +114,6 @@ private:
     void make_node_scalar();
     void make_corner_scalar(vector<double> &node_scalar);
     void make_neighbour_flux();
-    //void make_previous_scalar();
     void output_internal_flow_data();
 
     /**
@@ -152,19 +147,10 @@ private:
     DarcyFlowMH_Steady *darcy_flow;
     Mesh *mesh_;
 
-    //TimeMark::Type output_mark_type;
-
     /// Accessor to the input record for the DarcyFlow output.
     Input::Record   in_rec_;
 
 
-    /** This we need to allow piezo output and nead not to modify all test outputs. It should be replaced by
-     *  more general scheme, where you can switch every output field on or off.
-     */
-    //bool output_piezo_head;
-
-    /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by node indexes in mesh.*/
-    //vector<double> node_pressure;
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     vector<double> corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/

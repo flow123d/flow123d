@@ -1,16 +1,13 @@
 # Flow123d #
 
-[![Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
-
-[Source documentation](http://bacula.nti.tul.cz/~jan.brezina/flow123d_doc/source_doc/) generated from development sources
-
-[Reference manual](http://bacula.nti.tul.cz/~jan.brezina/flow123d_doc/flow123d_doc.pdf) for current development version
-
 Flow123d is a simulator of underground water flow and transport processes in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
-we can combine continuum models and discrete fracture network models. For details see:
-[Features](https://dev.nti.tul.cz/trac/flow123d/wiki/Features) page.
+we can combine continuum models and discrete fracture network models.
+For more information see project pages:
+[flow123d.github.com](http://flow123d.github.com).
+  
+[![CI Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
 
 ## License ##
 
@@ -40,18 +37,22 @@ Requested packages are:
 Recommended packages for development: 
 * libboost                        General purpose C++ library 
 
-Namely you need development version of the Boost sub-libraries: "Program Options", "Serialize", and "Regex".
-In KUbuntu, these are in separate packages:
+Namely you need development version of the Boost sub-libraries: "Program Options", "Serialize", "Regex", and "Filesystem".
+In Debian/Ubuntu distributions, these are in separate packages:
 
 * libboost-program-options-dev 
 * libboost-serialize-dev
 * libboost-regex-dev
+* libboost-filesystem-dev 
 
 Flow123d downloads and installs Boost during configuration if it is not found in the system, but it may
-take long. Optionally you may use
+take long. Optionally you may need
 
-* doxygen, graphviz     source generated documentation and its support tool for diagrams 
-* tetex                 or other Latex package to build reference manual
+* doxygen, graphviz     for source generated documentation and its dependency diagrams 
+* texlive-latex         or other Latex package to build reference manual, we use also some extra packages:
+                        on RedHat type distributions you may need texlive-cooltooltips, on Debian/Ubuntu 
+			texlive-latex-extra
+* imagemagick		tool is used to generate some graphics for the reference manual	
 
 Flow123d depends also on PETSc library. It can be installed automatically during configuration,
 but for good parallel performance it has to be configured manually see appropriate section later on.

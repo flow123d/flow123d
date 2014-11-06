@@ -16,14 +16,14 @@ void ctiich_obecne( void )
 
         G_prm.pocet_latekvefazi = OptGetInt("Transport", "N_substances", NULL );
         if (G_prm.pocet_latekvefazi < 1){
-          printf(/*Msg,*/ "\nNumber of aqueous species must be higher then 1.");
+          printf("\nNumber of aqueous species must be higher then 1.");
           exit(133);
         }
 /*------------------------------------------------------------------*/
         G_prm.T = OptGetDbl(section,"Temperature","0.0");
         if ( G_prm.T <= 0.0 )
         {
-        printf(/*Msg,*/ "\nTeplota musi byt kladna!");
+        printf("\nTeplota musi byt kladna!");
       exit(133);
         }
 /*------------------------------------------------------------------*/
@@ -34,21 +34,21 @@ void ctiich_obecne( void )
         }
         if ( G_prm.T <= 0.0 )
         {
-        printf(/*Msg,*/ "\nTeplota pro zadani dGf musi byt kladna!");
+        printf("\nTeplota pro zadani dGf musi byt kladna!");
       exit(133);
         }
 /*------------------------------------------------------------------*/
         G_prm.epsilon = OptGetDbl(section,"Epsilon","0.0");
         if ( G_prm.epsilon<= 0.0 )
         {
-        printf(/*Msg,*/ "\nEpsilon musi byt kladne!");
+        printf("\nEpsilon musi byt kladne!");
       exit(133);
         }
 /*------------------------------------------------------------------*/
    pString = strcpy(buffer,OptGetStr(section, "Error_norm_type", "Absolute"));
    if ( pString == NULL )
    {
-      printf(/*Msg,*/ "\nChybi typ normy!");
+      printf("\nChybi typ normy!");
       exit(133);
    }
    G_prm.abs_norma = -1;
@@ -68,7 +68,7 @@ void ctiich_obecne( void )
    if ( strcmp( buffer, "1" ) == 0 ) G_prm.abs_norma = 1;
    if (G_prm.abs_norma == -1)
    {
-      printf(/*Msg,*/ "\nTyp normy neni platny!");
+      printf("\nTyp normy neni platny!");
       exit(133);
    }
    G_prm.omega = 1.0;
@@ -76,7 +76,7 @@ void ctiich_obecne( void )
    pString = strcpy(buffer,OptGetStr(section,"Scaling","No"));
    if ( pString == NULL )
    {
-      printf(/*Msg,*/ "\nChybi definice skalovani!");
+      printf("\nChybi definice skalovani!");
       exit(133);
    }
    G_prm.skaluj_matici = -1;
@@ -91,28 +91,28 @@ void ctiich_obecne( void )
    if ( strcmp( buffer, "1" ) == 0 ) G_prm.skaluj_matici = 1;
    if (G_prm.skaluj_matici == -1)
    {
-      printf(/*Msg,*/ "\nSkalovani matice neni platne!");
+      printf("\nSkalovani matice neni platne!");
       exit(133);
    }
 /*-----------------------------------------------*/
         G_prm.Afi = OptGetDbl(section,"Param_Afi","-1.0");
         if ( G_prm.Afi < 0.0 )
         {
-        printf(/*Msg,*/ "\nAfi musi byt nezaporne!");
+        printf("\nAfi musi byt nezaporne!");
       exit(133);
    }
 /*------------------------------------------------------------------*/
         G_prm.b = OptGetDbl(section,"Param_b","0.0");
         if ( G_prm.b <= 0.0 )
         {
-        printf(/*Msg,*/ "\nb musi byt kladne!");
+        printf("\nb musi byt kladne!");
       exit(133);
    }
 /*------------------------------------------------------------------*/
         G_prm.cas_kroku = OptGetInt(section,"Time_steps","0");
         if ( G_prm.cas_kroku <= 0 )
         {
-        printf(/*Msg,*/ "\nPocet casovych kroku musi byt kladny!");
+        printf("\nPocet casovych kroku musi byt kladny!");
       exit(133);
    }
 /*------------------------------------------------------------------*/
@@ -121,7 +121,7 @@ void ctiich_obecne( void )
         i = OptGetInt(section, "Number_of_further_species","0");
         if ( i < 0 )
         {
-        printf(/*Msg,*/ "\nPocet dalsich latek nesmi byt zaporny!");
+        printf("\nPocet dalsich latek nesmi byt zaporny!");
       exit(133);
    }
    G_prm.pocet_latek = i+G_prm.pocet_latekvefazi;
@@ -134,7 +134,7 @@ void ctiich_obecne( void )
         G_prm.deleni_RK = OptGetInt(section,"Slow_kinetics_substeps","1");
         if ( G_prm.deleni_RK < 1 )
         {
-        printf(/*Msg,*/ "\nPocet kroku pomale kinetiky musi byt kladny!");
+        printf("\nPocet kroku pomale kinetiky musi byt kladny!");
       exit(133);
    }
 }
@@ -145,7 +145,7 @@ void ctiich_latkyvefazi( void )
 {
    char  buffer[1024];
    int   j;
-   char  nazev[30], *pom_buf; //, nazev1[30]
+   char  nazev[30], *pom_buf;
    const char *separators = " ,\t";
 
 // Alokace seznamu latek
@@ -175,16 +175,16 @@ void ctiich_latkyvefazi( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi dGf %d. latky ve fazi!", j+1);
+         printf("\nChybi dGf %d. latky ve fazi!", j+1);
          exit(133);
       }
       P_lat[j].dGf = atof(pom_buf);
-        printf(/*Msg,*/ "\n P_lat[%d].dGf %f\n",j,P_lat[j].dGf);
+        printf("\n P_lat[%d].dGf %f\n",j,P_lat[j].dGf);
       pom_buf = strtok( NULL, separators );
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho dGf pro latky ve fazi!");
+      printf("\nPrilis mnoho dGf pro latky ve fazi!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -202,7 +202,7 @@ void ctiich_latkyvefazi( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi dHf %d. latky ve fazi!", j+1);
+         printf("\nChybi dHf %d. latky ve fazi!", j+1);
          exit(133);
       }
       P_lat[j].dHf = atof(pom_buf);
@@ -210,7 +210,7 @@ void ctiich_latkyvefazi( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho dHf pro latky ve fazi!");
+      printf("\nPrilis mnoho dHf pro latky ve fazi!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -224,7 +224,7 @@ void ctiich_latkyvefazi( void )
       {
          if ( pom_buf == NULL )
          {
-            printf(/*Msg,*/ "\nChybi molarni hmotnost %d. latky ve fazi!", j+1);
+            printf("\nChybi molarni hmotnost %d. latky ve fazi!", j+1);
             exit(133);
          }
                  P_lat[j].M = atof(pom_buf);
@@ -232,7 +232,7 @@ void ctiich_latkyvefazi( void )
       }
       if ( pom_buf != NULL )
       {
-         printf(/*Msg,*/ "\nPrilis mnoho molarnich hmotnosti pro latky ve fazi!");
+         printf("\nPrilis mnoho molarnich hmotnosti pro latky ve fazi!");
          exit(133);
       }
 /*-----------------------------------------------*/
@@ -246,7 +246,7 @@ void ctiich_latkyvefazi( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi naboj %d. latky ve fazi!", j+1);
+         printf("\nChybi naboj %d. latky ve fazi!", j+1);
          exit(133);
       }
       P_lat[j].Q = atoi(pom_buf);
@@ -254,7 +254,7 @@ void ctiich_latkyvefazi( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho naboju pro latky ve fazi!");
+      printf("\nPrilis mnoho naboju pro latky ve fazi!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -293,7 +293,7 @@ void ctiich_dalsilatky( void )
       {
          if ( pom_buf == NULL )
          {
-            printf(/*Msg,*/ "\nChybi nazev %d. dalsi latky!", j+1-G_prm.pocet_latek);
+            printf("\nChybi nazev %d. dalsi latky!", j+1-G_prm.pocet_latek);
             exit(133);
          }
          strcpy (P_lat[j].nazev, pom_buf);
@@ -301,7 +301,7 @@ void ctiich_dalsilatky( void )
       }
       if ( pom_buf != NULL )
       {
-         printf(/*Msg,*/ "\nPrilis mnoho nazvu dalsich latek!");
+         printf("\nPrilis mnoho nazvu dalsich latek!");
          exit(133);
       }
    }
@@ -316,7 +316,7 @@ void ctiich_dalsilatky( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi dGf %d. dalsi latky!", j+1-G_prm.pocet_latek);
+         printf("\nChybi dGf %d. dalsi latky!", j+1-G_prm.pocet_latek);
          exit(133);
       }
       P_lat[j].dGf = atof(pom_buf);
@@ -324,7 +324,7 @@ void ctiich_dalsilatky( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho dGf pro dalsi latky!");
+      printf("\nPrilis mnoho dGf pro dalsi latky!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -342,7 +342,7 @@ void ctiich_dalsilatky( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi dHf %d. dalsi latky!", j+1-G_prm.pocet_latek);
+         printf("\nChybi dHf %d. dalsi latky!", j+1-G_prm.pocet_latek);
          exit(133);
       }
       P_lat[j].dHf = atof(pom_buf);
@@ -350,7 +350,7 @@ void ctiich_dalsilatky( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho dHf pro dalsi latky!");
+      printf("\nPrilis mnoho dHf pro dalsi latky!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -364,7 +364,7 @@ void ctiich_dalsilatky( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi molarni hmotnost %d. dalsi latky!", j+1-G_prm.pocet_latek);
+         printf("\nChybi molarni hmotnost %d. dalsi latky!", j+1-G_prm.pocet_latek);
          exit(133);
       }
       P_lat[j].M = atof(pom_buf);
@@ -372,7 +372,7 @@ void ctiich_dalsilatky( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho molarnich hmotnosti pro dalsi latky!");
+      printf("\nPrilis mnoho molarnich hmotnosti pro dalsi latky!");
       exit(133);
    }
 /*-----------------------------------------------*/
@@ -386,7 +386,7 @@ void ctiich_dalsilatky( void )
    {
       if ( pom_buf == NULL )
       {
-         printf(/*Msg,*/ "\nChybi aktivita %d. dalsi latky!", j+1-G_prm.pocet_latek);
+         printf("\nChybi aktivita %d. dalsi latky!", j+1-G_prm.pocet_latek);
          exit(133);
       }
       P_lat[j].aktivita = atof(pom_buf);
@@ -394,7 +394,7 @@ void ctiich_dalsilatky( void )
    }
    if ( pom_buf != NULL )
    {
-      printf(/*Msg,*/ "\nPrilis mnoho aktivit pro dalsi latky!");
+      printf("\nPrilis mnoho aktivit pro dalsi latky!");
       exit(133);
    }
 }
@@ -413,13 +413,13 @@ void ctiich_reakce( void )
    for ( i = 1;; ++i )
    {
       sprintf( nazev, "Reaction_%d", i );
-      strcpy(buffer,OptGetStr(nazev,"Reaction_type","<NeplatnyNazev>")); printf(/*Msg,*/ "probehlo zjisteni typu reakce %d: %s\n",i, buffer);
+      strcpy(buffer,OptGetStr(nazev,"Reaction_type","<NeplatnyNazev>")); printf("probehlo zjisteni typu reakce %d: %s\n",i, buffer);
       if ( strcmp( buffer, "<NeplatnyNazev>" ) == 0 ) break;
    }
    G_prm.celkovy_pocet_reakci = i-1;
         if ( i==1 )
         {
-        printf(/*Msg,*/ "\nNeni definovana zadna reakce!");
+        printf("\nNeni definovana zadna reakce!");
       exit(133);
    }
 // Alokace seznamu reakci
@@ -460,7 +460,7 @@ void ctiich_reakce( void )
       if ( strcmp( pom_buf, "0" ) == 0 ) P_che[i].typ_reakce = 0;
       if (P_che[i].typ_reakce == -888)
       {
-         printf(/*Msg,*/ "\nThe type of reaction nr. %d is not valid!", i);
+         printf("\nThe type of reaction nr. %d is not valid!", i);
          exit(133);
       }
       if (P_che[i].typ_reakce==0)
@@ -487,26 +487,26 @@ void ctiich_reakce( void )
       {
          if ( pom_buf == NULL )
          {
-            printf(/*Msg,*/ "\nChybi %d. stechometricky koeficient v %d. rovnici!", j+1, i+1);
+            printf("\nChybi %d. stechometricky koeficient v %d. rovnici!", j+1, i+1);
             exit(133);
          }
                  P_che[i].stech_koef_p[j] = atoi( pom_buf );
-                 printf(/*Msg,*/ "\nP_che[%d].stech_koef_p[%d]: %d",i,j,P_che[i].stech_koef_p[j]);
+                 printf("\nP_che[%d].stech_koef_p[%d]: %d",i,j,P_che[i].stech_koef_p[j]);
          pom_buf = strtok( NULL, separators );
       }
       if ( pom_buf != NULL )
       {
-         printf(/*Msg,*/ "\nV %d. rovnici je prilis mnoho stechiometrickych koeficientu!", i+1);
+         printf("\nV %d. rovnici je prilis mnoho stechiometrickych koeficientu!", i+1);
          exit(133);
       }
 /*------------------------------------------------------------------*/
       if ((P_che[i].typ_reakce==1)||(P_che[i].typ_reakce==3))
       {
          P_che[i].K = OptGetDbl(nazev,"Kinetic_constant","0.0");
-         if(P_che[i].typ_reakce==1)printf(/*Msg,*/ "\nKineticka konstanta v %d. rovnici ma hodnotu %f", i+1, P_che[i].K);
+         if(P_che[i].typ_reakce==1)printf("\nKineticka konstanta v %d. rovnici ma hodnotu %f", i+1, P_che[i].K);
          if ( P_che[i].K <= 0.0 )
          {
-            printf(/*Msg,*/ "\nKineticka konstanta v %d. rovnici neni kladna!", i+1);
+            printf("\nKineticka konstanta v %d. rovnici neni kladna!", i+1);
             exit(133);
          }
 /*------------------------------------------------------------------*/
@@ -514,22 +514,21 @@ void ctiich_reakce( void )
          pom_buf = strtok( buffer, separators );
          for (j = 0; j<G_prm.pocet_latek; j++)
          {
-            if(j >= G_prm.pocet_latekvefazi) ;//P_che[i].exponent[j] = 0.0;
-            else
+            if(j < G_prm.pocet_latekvefazi)
             {
                 if( pom_buf == NULL )
                 {
-               printf(/*Msg,*/ "\nChybi %d. mocnina pro kinetiku %d. rovnice!", j+1, i+1);
+               printf("\nChybi %d. mocnina pro kinetiku %d. rovnice!", j+1, i+1);
                exit(133);
                 }
             P_che[i].exponent[j] = atof( pom_buf );
-            printf(/*Msg,*/ "\nP_che[%d].exponent[%d]: %f",i,j,P_che[i].exponent[j]);
+            printf("\nP_che[%d].exponent[%d]: %f",i,j,P_che[i].exponent[j]);
             pom_buf = strtok( NULL, separators );
            }
          }
          if ( pom_buf != NULL )
          {
-            printf(/*Msg,*/ "\nV %d. rovnici je prilis mnoho exponentu pro kinetiku!", i+1);
+            printf("\nV %d. rovnici je prilis mnoho exponentu pro kinetiku!", i+1);
             exit(133);
          }
       }
@@ -560,10 +559,10 @@ void ctiich_reakce( void )
 // Cte soubor parametru chemie .ICH
 void ctiich( void )
 {
-        printf(/*MsgLog,*/ "Cteni parametru (%s): \n", G_prm.jmeno_ich );
-        ctiich_obecne(); printf(/*MsgLog,*/"probehla funkce ctiich_obecne()\n");
-        ctiich_latkyvefazi(); printf(/*MsgLog,*/"probehla funkce ctiich_latkyvefazi()\n");
-        ctiich_dalsilatky(); printf(/*MsgLog,*/"probehla funkce ctiich_dalsilatky()\n");
-        ctiich_reakce(); printf(/*MsgLog,*/"probehla funkce ctiich_reakce()\n");
-        printf(/*MsgLog,*/ "O.K.\n" );
+        printf("Cteni parametru (%s): \n", G_prm.jmeno_ich );
+        ctiich_obecne(); printf("probehla funkce ctiich_obecne()\n");
+        ctiich_latkyvefazi(); printf("probehla funkce ctiich_latkyvefazi()\n");
+        ctiich_dalsilatky(); printf("probehla funkce ctiich_dalsilatky()\n");
+        ctiich_reakce(); printf("probehla funkce ctiich_reakce()\n");
+        printf("O.K.\n" );
 }

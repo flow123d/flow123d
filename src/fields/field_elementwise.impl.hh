@@ -34,7 +34,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
-                "The values of the Field are read from the $ElementData section with field name given by this key.")
+                "The values of the Field are read from the \\$ElementData section with field name given by this key.")
         .close();
 
     return type;
@@ -171,7 +171,13 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
         unsigned int idx = n_components_*elm.idx();
 
         typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
-        for(unsigned int i=0; i< value_list.size(); i++) value_list[i] = ref;
+        for(unsigned int i=0; i< value_list.size(); i++) {
+            ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
+                    "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
+                    i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+
+            value_list[i] = ref;
+        }
     } else {
         xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
     }

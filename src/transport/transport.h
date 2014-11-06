@@ -102,13 +102,6 @@ public:
 
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
-//DELETE
-//         Field<3, FieldValue<3>::Scalar> por_imm;        ///< Immobile porosity
-//         Field<3, FieldValue<3>::Vector> alpha;          ///< Coefficients of non-equilibrium linear mobile-immobile exchange
-//         Field<3, FieldValue<3>::EnumVector> sorp_type;  ///< Type of sorption for each substance
-//         Field<3, FieldValue<3>::Vector> sorp_coef0;     ///< Coefficient of sorption for each substance
-//         Field<3, FieldValue<3>::Vector> sorp_coef1;     ///< Coefficient of sorption for each substance
-//         Field<3, FieldValue<3>::Scalar> phi;            ///< solid / solid mobile
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
@@ -134,21 +127,6 @@ public:
 	 */
 	void update_solution() override;
 
-	/**
-	 * Use new flow field vector for construction of convection matrix.
-	 * Updates CFL time step constrain.
-	 * TODO: Just set the new velocity, postpone update till compute_one_step
-	 */
-	//void set_flow_field_vector(const MH_DofHandler &dh);
-  
-	/**
-	 * Set cross section of fractures from the Flow equation.
-	 *
-	 * TODO: Make this and previous part of Transport interface in TransportBase.
-	 */
-	//oid set_cross_section_field(const Field< 3, FieldValue<3>::Scalar > &cross_section);
-
-
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
      * In particular the velocity field dosn't change over this interval.
@@ -170,12 +148,12 @@ public:
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
-	void output_vector_gather(); //
+	void output_vector_gather();
 
     /**
      * @brief Write computed fields.
      */
-    virtual void output_data();
+    virtual void output_data() override;
 
 
 	/**
@@ -190,7 +168,7 @@ public:
 	int *get_el_4_loc();
 	int *get_row_4_el();
 
-	TimeIntegrationScheme time_scheme() { return explicit_euler; }
+	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
 
 private:
 
@@ -221,13 +199,6 @@ private:
 	 * Finish explicit transport matrix (time step scaling)
 	 */
 	void transport_matrix_step_mpi(double time_step); //
-
-        //DELETE
-// 	void transport_dual_porosity( int elm_pos, ElementFullIter elem, int sbi); //
-// 	void transport_sorption(int elm_pos, ElementFullIter elem, int sbi); //
-// 	void compute_sorption(double conc_avg, double sorp_coef0, double sorp_coef1, unsigned int sorp_type,
-// 			double *concx, double *concx_sorb, double Nv, double N); //
-
 
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
@@ -262,7 +233,7 @@ private:
     Vec v_sources_corr;
     
     ///temporary arrays to store constant values of fields over time interval
-    //(avoiding calling "field.value()" to often)
+    //(avoiding calling "field.value()" too often)
     double **sources_density, 
            **sources_conc,
            **sources_sigma;
@@ -288,7 +259,6 @@ private:
 
     ///
     Vec *vpconc; // previous concentration vector
-    //double ***pconc;
     Vec *bcvcorr; // boundary condition correction vector
     Vec *vcumulative_corr;
     double **cumulative_corr;

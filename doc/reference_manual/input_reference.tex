@@ -1,3 +1,4 @@
+Application constructor
 
 \begin{RecordType}{\HTRaised{IT::Root}{Root}}{}{}{}{Root record of JSON input for Flow123d.}
 \KeyItem{\hyperB{Root::problem}{problem}}{abstract type: \hyperlink{IT::Problem}{Problem}}{\textless\it obligatory\textgreater}{}{Simulation problem to be solved.}
@@ -147,21 +148,21 @@ neighborings of elements of different dimension.}
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::DarcyMHOutput-Selection}{DarcyMHOutput\_Selection}}{Selection of fields available for output.}
-\KeyItem{anisotropy}{Output of field anisotropy (Anisotropy of the conductivity tensor.).}
-\KeyItem{cross\_section}{Output of field cross\_section (Complement dimension parameter (cross section for 1D, thickness for 2D).).}
-\KeyItem{conductivity}{Output of field conductivity (Isotropic conductivity scalar.).}
-\KeyItem{sigma}{Output of field sigma (Transition coefficient between dimensions.).}
-\KeyItem{water\_source\_density}{Output of field water\_source\_density (Water source density.).}
-\KeyItem{init\_pressure}{Output of field init\_pressure (Initial condition as pressure).}
-\KeyItem{storativity}{Output of field storativity (Storativity.).}
-\KeyItem{pressure\_p0}{Output of field pressure\_p0.}
-\KeyItem{pressure\_p1}{Output of field pressure\_p1.}
-\KeyItem{piezo\_head\_p0}{Output of field piezo\_head\_p0.}
-\KeyItem{velocity\_p0}{Output of field velocity\_p0.}
-\KeyItem{subdomain}{Output of field subdomain.}
-\KeyItem{pressure\_diff}{Output of field pressure\_diff.}
-\KeyItem{velocity\_diff}{Output of field velocity\_diff.}
-\KeyItem{div\_diff}{Output of field div\_diff.}
+\KeyItem{anisotropy}{Output of the field anisotropy (Anisotropy of the conductivity tensor.).}
+\KeyItem{cross\_section}{Output of the field cross\_section (Complement dimension parameter (cross section for 1D, thickness for 2D).).}
+\KeyItem{conductivity}{Output of the field conductivity (Isotropic conductivity scalar.).}
+\KeyItem{sigma}{Output of the field sigma (Transition coefficient between dimensions.).}
+\KeyItem{water\_source\_density}{Output of the field water\_source\_density (Water source density.).}
+\KeyItem{init\_pressure}{Output of the field init\_pressure (Initial condition as pressure).}
+\KeyItem{storativity}{Output of the field storativity (Storativity.).}
+\KeyItem{pressure\_p0}{Output of the field pressure\_p0.}
+\KeyItem{pressure\_p1}{Output of the field pressure\_p1.}
+\KeyItem{piezo\_head\_p0}{Output of the field piezo\_head\_p0.}
+\KeyItem{velocity\_p0}{Output of the field velocity\_p0.}
+\KeyItem{subdomain}{Output of the field subdomain.}
+\KeyItem{pressure\_diff}{Output of the field pressure\_diff.}
+\KeyItem{velocity\_diff}{Output of the field velocity\_diff.}
+\KeyItem{div\_diff}{Output of the field div\_diff.}
 \end{SelectionType}
 
 \begin{SelectionType}{\HTRaised{IT::MH-MortarMethod}{MH\_MortarMethod}}{}
@@ -361,10 +362,10 @@ coupled with reaction and adsorption model (ODE per element)
 \Descendant{\hyperlink{IT::LinearReactions}{LinearReactions}}
 \Descendant{\hyperlink{IT::PadeApproximant}{PadeApproximant}}
 \Descendant{\hyperlink{IT::Sorption}{Sorption}}
-\Descendant{\hyperlink{IT::DualPorosity}{DualPorosity}}
-\Descendant{\hyperlink{IT::Isotope}{Isotope}}
 \Descendant{\hyperlink{IT::SorptionMobile}{SorptionMobile}}
 \Descendant{\hyperlink{IT::SorptionImmobile}{SorptionImmobile}}
+\Descendant{\hyperlink{IT::DualPorosity}{DualPorosity}}
+\Descendant{\hyperlink{IT::Isotope}{Isotope}}
 \end{AbstractType}
 
 \begin{RecordType}{\HTRaised{IT::LinearReactions}{LinearReactions}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information for a decision about the way to simulate radioactive decay.}
@@ -387,7 +388,7 @@ coupled with reaction and adsorption model (ODE per element)
 \KeyItem{\hyperB{PadeApproximant::den-pol-deg}{den\_pol\_deg}}{Integer }{2}{}{Polynomial degree of the nominator of Pade approximant}
 \end{RecordType}
 
-\begin{RecordType}{\HTRaised{IT::Sorption}{Sorption}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
+\begin{RecordType}{\HTRaised{IT::Sorption}{Sorption}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Adsorption model in the reaction term of transport.}
 \KeyItem{\hyperB{Sorption::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{Sorption}{}{Sub-record selection.}
 \KeyItem{\hyperB{Sorption::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
 \KeyItem{\hyperB{Sorption::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
@@ -396,7 +397,8 @@ coupled with reaction and adsorption model (ODE per element)
 \KeyItem{\hyperB{Sorption::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
 \KeyItem{\hyperB{Sorption::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
 \KeyItem{\hyperB{Sorption::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
-\KeyItem{\hyperB{Sorption::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
+\KeyItem{\hyperB{Sorption::reaction-liquid}{reaction\_liquid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the liquid.}
+\KeyItem{\hyperB{Sorption::reaction-solid}{reaction\_solid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the solid.}
 \KeyItem{\hyperB{Sorption::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::Sorption-Output}{Sorption\_Output}}{conc\_solid}{}{List of fields to write to output stream.}
 \end{RecordType}
 
@@ -497,13 +499,58 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::Sorption-Output}{Sorption\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity.}
-\KeyItem{conc\_solid}{Output of field conc\_solid.}
+\KeyItem{rock\_density}{Output of the field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of the field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of the field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of the field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of the field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{conc\_solid}{Output of the field conc\_solid.}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::SorptionMobile}{SorptionMobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Adsorption model in the mobile zone, following the dual porosity model.}
+\KeyItem{\hyperB{SorptionMobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionMobile}{}{Sub-record selection.}
+\KeyItem{\hyperB{SorptionMobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
+\KeyItem{\hyperB{SorptionMobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
+\KeyItem{\hyperB{SorptionMobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{SorptionMobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionMobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionMobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
+\KeyItem{\hyperB{SorptionMobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
+\KeyItem{\hyperB{SorptionMobile::reaction-liquid}{reaction\_liquid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the liquid.}
+\KeyItem{\hyperB{SorptionMobile::reaction-solid}{reaction\_solid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the solid.}
+\KeyItem{\hyperB{SorptionMobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{conc\_solid}{}{List of fields to write to output stream.}
+\end{RecordType}
+
+\begin{SelectionType}{\HTRaised{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{}
+\KeyItem{rock\_density}{Output of the field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of the field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of the field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of the field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of the field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{conc\_solid}{Output of the field conc\_solid.}
+\end{SelectionType}
+
+\begin{RecordType}{\HTRaised{IT::SorptionImmobile}{SorptionImmobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Adsorption model in the immobile zone, following the dual porosity model.}
+\KeyItem{\hyperB{SorptionImmobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionImmobile}{}{Sub-record selection.}
+\KeyItem{\hyperB{SorptionImmobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
+\KeyItem{\hyperB{SorptionImmobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
+\KeyItem{\hyperB{SorptionImmobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
+\KeyItem{\hyperB{SorptionImmobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionImmobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
+\KeyItem{\hyperB{SorptionImmobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
+\KeyItem{\hyperB{SorptionImmobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
+\KeyItem{\hyperB{SorptionImmobile::reaction-liquid}{reaction\_liquid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the liquid.}
+\KeyItem{\hyperB{SorptionImmobile::reaction-solid}{reaction\_solid}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption in the solid.}
+\KeyItem{\hyperB{SorptionImmobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{conc\_immobile\_solid}{}{List of fields to write to output stream.}
+\end{RecordType}
+
+\begin{SelectionType}{\HTRaised{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{}
+\KeyItem{rock\_density}{Output of the field rock\_density (Rock matrix density.).}
+\KeyItem{sorption\_type}{Output of the field sorption\_type (Considered adsorption is described by selected isotherm.).}
+\KeyItem{isotherm\_mult}{Output of the field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
+\KeyItem{isotherm\_other}{Output of the field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
+\KeyItem{init\_conc\_solid}{Output of the field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
+\KeyItem{conc\_immobile\_solid}{Output of the field conc\_immobile\_solid.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::DualPorosity}{DualPorosity}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Dual porosity model in transport problems.
@@ -511,6 +558,7 @@ Provides computing the concentration of substances in mobile and immobile zone.
 }
 \KeyItem{\hyperB{DualPorosity::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{DualPorosity}{}{Sub-record selection.}
 \KeyItem{\hyperB{DualPorosity::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::DualPorosity-Data}{DualPorosity\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct dual porosity model.}
+\KeyItem{\hyperB{DualPorosity::scheme-tolerance}{scheme\_tolerance}}{Double [0, ]}{1e-3}{}{Tolerance according to which the explicit Euler scheme is used or not.Set 0.0 to use analytic formula only (can be slower).}
 \KeyItem{\hyperB{DualPorosity::reaction-mobile}{reaction\_mobile}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model in mobile zone.}
 \KeyItem{\hyperB{DualPorosity::reaction-immobile}{reaction\_immobile}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model in immobile zone.}
 \KeyItem{\hyperB{DualPorosity::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::DualPorosity-Output}{DualPorosity\_Output}}{conc\_immobile}{}{List of fields to write to output stream.}
@@ -530,11 +578,10 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::DualPorosity-Output}{DualPorosity\_Output}}{}
-\KeyItem{diffusion\_rate\_immobile}{Output of field diffusion\_rate\_immobile (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.).}
-\KeyItem{porosity\_immobile}{Output of field porosity\_immobile (Porosity of the immobile zone.).}
-\KeyItem{init\_conc\_immobile}{Output of field init\_conc\_immobile (Initial concentration of substances in the immobile zone.).}
-\KeyItem{porosity}{Output of field porosity.}
-\KeyItem{conc\_immobile}{Output of field conc\_immobile.}
+\KeyItem{diffusion\_rate\_immobile}{Output of the field diffusion\_rate\_immobile (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.).}
+\KeyItem{porosity\_immobile}{Output of the field porosity\_immobile (Porosity of the immobile zone.).}
+\KeyItem{init\_conc\_immobile}{Output of the field init\_conc\_immobile (Initial concentration of substances in the immobile zone.).}
+\KeyItem{conc\_immobile}{Output of the field conc\_immobile.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::Isotope}{Isotope}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Definition of information about a single isotope.}
@@ -542,52 +589,6 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{Isotope::identifier}{identifier}}{Integer }{\textless\it obligatory\textgreater}{}{Identifier of the isotope.}
 \KeyItem{\hyperB{Isotope::half-life}{half\_life}}{Double }{\textless\it obligatory\textgreater}{}{Half life parameter.}
 \end{RecordType}
-
-\begin{RecordType}{\HTRaised{IT::SorptionMobile}{SorptionMobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
-\KeyItem{\hyperB{SorptionMobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionMobile}{}{Sub-record selection.}
-\KeyItem{\hyperB{SorptionMobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
-\KeyItem{\hyperB{SorptionMobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
-\KeyItem{\hyperB{SorptionMobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
-\KeyItem{\hyperB{SorptionMobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
-\KeyItem{\hyperB{SorptionMobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
-\KeyItem{\hyperB{SorptionMobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
-\KeyItem{\hyperB{SorptionMobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
-\KeyItem{\hyperB{SorptionMobile::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
-\KeyItem{\hyperB{SorptionMobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{conc\_solid}{}{List of fields to write to output stream.}
-\end{RecordType}
-
-\begin{SelectionType}{\HTRaised{IT::SorptionMobile-Output}{SorptionMobile\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity.}
-\KeyItem{conc\_solid}{Output of field conc\_solid.}
-\end{SelectionType}
-
-\begin{RecordType}{\HTRaised{IT::SorptionImmobile}{SorptionImmobile}}{\hyperlink{IT::ReactionTerm}{ReactionTerm}}{}{}{Information about all the limited solubility affected adsorptions.}
-\KeyItem{\hyperB{SorptionImmobile::TYPE}{TYPE}}{selection: ReactionTerm\_TYPE\_selection}{SorptionImmobile}{}{Sub-record selection.}
-\KeyItem{\hyperB{SorptionImmobile::substances}{substances}}{Array  of String (generic)}{\textless\it obligatory\textgreater}{}{Names of the substances that take part in the adsorption model.}
-\KeyItem{\hyperB{SorptionImmobile::solvent-density}{solvent\_density}}{Double }{1.0}{}{Density of the solvent.}
-\KeyItem{\hyperB{SorptionImmobile::substeps}{substeps}}{Integer }{1000}{}{Number of equidistant substeps, molar mass and isotherm intersections}
-\KeyItem{\hyperB{SorptionImmobile::molar-mass}{molar\_mass}}{Array  of Double }{\textless\it obligatory\textgreater}{}{Specifies molar masses of all the adsorbing species.}
-\KeyItem{\hyperB{SorptionImmobile::solubility}{solubility}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies solubility limits of all the adsorbing species.}
-\KeyItem{\hyperB{SorptionImmobile::table-limits}{table\_limits}}{Array  of Double [0, ]}{\textless\it optional\textgreater}{}{Specifies highest aqueous concentration in interpolation table.}
-\KeyItem{\hyperB{SorptionImmobile::input-fields}{input\_fields}}{Array  of record: \hyperlink{IT::Sorption-Data}{Sorption\_Data}}{\textless\it obligatory\textgreater}{}{Containes region specific data necessary to construct isotherms.}
-\KeyItem{\hyperB{SorptionImmobile::reaction}{reaction}}{abstract type: \hyperlink{IT::ReactionTerm}{ReactionTerm}}{\textless\it optional\textgreater}{}{Reaction model following the sorption.}
-\KeyItem{\hyperB{SorptionImmobile::output-fields}{output\_fields}}{Array  of selection: \hyperlink{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{conc\_immobile\_solid}{}{List of fields to write to output stream.}
-\end{RecordType}
-
-\begin{SelectionType}{\HTRaised{IT::SorptionImmobile-Output}{SorptionImmobile\_Output}}{}
-\KeyItem{rock\_density}{Output of field rock\_density (Rock matrix density.).}
-\KeyItem{sorption\_type}{Output of field sorption\_type (Considered adsorption is described by selected isotherm.).}
-\KeyItem{isotherm\_mult}{Output of field isotherm\_mult (Multiplication parameters (k, omega) in either Langmuir c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a) or in linear c\_s = k * c\_a isothermal description.).}
-\KeyItem{isotherm\_other}{Output of field isotherm\_other (Second parameters (alpha, ...) defining isotherm  c\_s = omega * (alpha*c\_a)/(1- alpha*c\_a).).}
-\KeyItem{init\_conc\_solid}{Output of field init\_conc\_solid (Initial solid concentration of substances. Vector, one value for every substance.).}
-\KeyItem{porosity}{Output of field porosity.}
-\KeyItem{conc\_immobile\_solid}{Output of field conc\_immobile\_solid.}
-\end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::TransportOperatorSplitting-Data}{TransportOperatorSplitting\_Data}}{}{}{}{Record to set fields of the equation.
 The fields are set only on the domain specified by one of the keys: 'region', 'rid', 'r\_set'
@@ -607,13 +608,12 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::ConvectionTransport-Output}{ConvectionTransport\_Output}}{}
-\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
-\KeyItem{cross\_section}{Output of field cross\_section.}
-\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
-\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
-\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
-\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
-\KeyItem{conc}{Output of field conc.}
+\KeyItem{porosity}{Output of the field porosity (Mobile porosity).}
+\KeyItem{sources\_density}{Output of the field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of the field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of the field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of the field init\_conc (Initial concentrations.).}
+\KeyItem{conc}{Output of the field conc.}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::SoluteTransport-DG}{SoluteTransport\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for solute transport.}
@@ -660,18 +660,17 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{SelectionType}
 
 \begin{SelectionType}{\HTRaised{IT::SoluteTransport-DG-Output}{SoluteTransport\_DG\_Output}}{Output record for DG solver for solute transport.}
-\KeyItem{conc}{Output of field conc.}
-\KeyItem{porosity}{Output of field porosity (Mobile porosity).}
-\KeyItem{cross\_section}{Output of field cross\_section.}
-\KeyItem{sources\_density}{Output of field sources\_density (Density of concentration sources.).}
-\KeyItem{sources\_sigma}{Output of field sources\_sigma (Concentration flux.).}
-\KeyItem{sources\_conc}{Output of field sources\_conc (Concentration sources threshold.).}
-\KeyItem{init\_conc}{Output of field init\_conc (Initial concentrations.).}
-\KeyItem{disp\_l}{Output of field disp\_l (Longitudal dispersivity (for each substance).).}
-\KeyItem{disp\_t}{Output of field disp\_t (Transversal dispersivity (for each substance).).}
-\KeyItem{diff\_m}{Output of field diff\_m (Molecular diffusivity (for each substance).).}
-\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
-\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\KeyItem{porosity}{Output of the field porosity (Mobile porosity).}
+\KeyItem{sources\_density}{Output of the field sources\_density (Density of concentration sources.).}
+\KeyItem{sources\_sigma}{Output of the field sources\_sigma (Concentration flux.).}
+\KeyItem{sources\_conc}{Output of the field sources\_conc (Concentration sources threshold.).}
+\KeyItem{init\_conc}{Output of the field init\_conc (Initial concentrations.).}
+\KeyItem{disp\_l}{Output of the field disp\_l (Longitudal dispersivity (for each substance).).}
+\KeyItem{disp\_t}{Output of the field disp\_t (Transversal dispersivity (for each substance).).}
+\KeyItem{diff\_m}{Output of the field diff\_m (Molecular diffusivity (for each substance).).}
+\KeyItem{conc}{Output of the field conc.}
+\KeyItem{fracture\_sigma}{Output of the field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of the field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
 \end{SelectionType}
 
 \begin{RecordType}{\HTRaised{IT::HeatTransfer-DG}{HeatTransfer\_DG}}{\hyperlink{IT::Transport}{Transport}}{}{}{DG solver for heat transfer.}
@@ -708,8 +707,8 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-thermal-source}{fluid\_thermal\_source}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Thermal source density in fluid.}
 \KeyItem{\hyperB{HeatTransfer-DG-Data::solid-thermal-source}{solid\_thermal\_source}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Thermal source density in solid.}
 \KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-heat-exchange-rate}{fluid\_heat\_exchange\_rate}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat exchange rate in fluid.}
-\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-heat-exchange-rate}{solid\_heat\_exchange\_rate}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat exchange rate in solid.}
-\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-ref-temperature}{fluid\_ref\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Reference temperature in fluid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::solid-heat-exchange-rate}{solid\_heat\_exchange\_rate}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Heat exchange rate of source in solid.}
+\KeyItem{\hyperB{HeatTransfer-DG-Data::fluid-ref-temperature}{fluid\_ref\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Reference temperature of source in fluid.}
 \KeyItem{\hyperB{HeatTransfer-DG-Data::solid-ref-temperature}{solid\_ref\_temperature}}{abstract type: \hyperlink{IT::Field:R3 - Real}{Field:R3 $\rightarrow$ Real}}{\textless\it optional\textgreater}{}{Reference temperature in solid.}
 \KeyItem{\hyperB{HeatTransfer-DG-Data::fracture-sigma}{fracture\_sigma}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Coefficient of diffusive transfer through fractures (for each substance).}
 \KeyItem{\hyperB{HeatTransfer-DG-Data::dg-penalty}{dg\_penalty}}{abstract type: \hyperlink{IT::Field:R3 - Real[n]}{Field:R3 $\rightarrow$ Real[n]}}{\textless\it optional\textgreater}{}{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.}
@@ -719,25 +718,24 @@ and after the time given by the key 'time'. The field setting can be overridden 
 \end{RecordType}
 
 \begin{SelectionType}{\HTRaised{IT::HeatTransfer-DG-Output}{HeatTransfer\_DG\_Output}}{Selection for output fields of DG solver for heat transfer.}
-\KeyItem{temperature}{Output of field temperature.}
-\KeyItem{init\_temperature}{Output of field init\_temperature (Initial temperature.).}
-\KeyItem{porosity}{Output of field porosity (Porosity.).}
-\KeyItem{fluid\_density}{Output of field fluid\_density (Density of fluid.).}
-\KeyItem{fluid\_heat\_capacity}{Output of field fluid\_heat\_capacity (Heat capacity of fluid.).}
-\KeyItem{fluid\_heat\_conductivity}{Output of field fluid\_heat\_conductivity (Heat conductivity of fluid.).}
-\KeyItem{solid\_density}{Output of field solid\_density (Density of solid (rock).).}
-\KeyItem{solid\_heat\_capacity}{Output of field solid\_heat\_capacity (Heat capacity of solid (rock).).}
-\KeyItem{solid\_heat\_conductivity}{Output of field solid\_heat\_conductivity (Heat conductivity of solid (rock).).}
-\KeyItem{disp\_l}{Output of field disp\_l (Longitudal heat dispersivity in fluid.).}
-\KeyItem{disp\_t}{Output of field disp\_t (Transversal heat dispersivity in fluid.).}
-\KeyItem{fluid\_thermal\_source}{Output of field fluid\_thermal\_source (Thermal source density in fluid.).}
-\KeyItem{solid\_thermal\_source}{Output of field solid\_thermal\_source (Thermal source density in solid.).}
-\KeyItem{fluid\_heat\_exchange\_rate}{Output of field fluid\_heat\_exchange\_rate (Heat exchange rate in fluid.).}
-\KeyItem{solid\_heat\_exchange\_rate}{Output of field solid\_heat\_exchange\_rate (Heat exchange rate in solid.).}
-\KeyItem{fluid\_ref\_temperature}{Output of field fluid\_ref\_temperature (Reference temperature in fluid.).}
-\KeyItem{solid\_ref\_temperature}{Output of field solid\_ref\_temperature (Reference temperature in solid.).}
-\KeyItem{cross\_section}{Output of field cross\_section.}
-\KeyItem{fracture\_sigma}{Output of field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
-\KeyItem{dg\_penalty}{Output of field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
+\KeyItem{init\_temperature}{Output of the field init\_temperature (Initial temperature.).}
+\KeyItem{porosity}{Output of the field porosity (Porosity.).}
+\KeyItem{fluid\_density}{Output of the field fluid\_density (Density of fluid.).}
+\KeyItem{fluid\_heat\_capacity}{Output of the field fluid\_heat\_capacity (Heat capacity of fluid.).}
+\KeyItem{fluid\_heat\_conductivity}{Output of the field fluid\_heat\_conductivity (Heat conductivity of fluid.).}
+\KeyItem{solid\_density}{Output of the field solid\_density (Density of solid (rock).).}
+\KeyItem{solid\_heat\_capacity}{Output of the field solid\_heat\_capacity (Heat capacity of solid (rock).).}
+\KeyItem{solid\_heat\_conductivity}{Output of the field solid\_heat\_conductivity (Heat conductivity of solid (rock).).}
+\KeyItem{disp\_l}{Output of the field disp\_l (Longitudal heat dispersivity in fluid.).}
+\KeyItem{disp\_t}{Output of the field disp\_t (Transversal heat dispersivity in fluid.).}
+\KeyItem{fluid\_thermal\_source}{Output of the field fluid\_thermal\_source (Thermal source density in fluid.).}
+\KeyItem{solid\_thermal\_source}{Output of the field solid\_thermal\_source (Thermal source density in solid.).}
+\KeyItem{fluid\_heat\_exchange\_rate}{Output of the field fluid\_heat\_exchange\_rate (Heat exchange rate in fluid.).}
+\KeyItem{solid\_heat\_exchange\_rate}{Output of the field solid\_heat\_exchange\_rate (Heat exchange rate of source in solid.).}
+\KeyItem{fluid\_ref\_temperature}{Output of the field fluid\_ref\_temperature (Reference temperature of source in fluid.).}
+\KeyItem{solid\_ref\_temperature}{Output of the field solid\_ref\_temperature (Reference temperature in solid.).}
+\KeyItem{temperature}{Output of the field temperature.}
+\KeyItem{fracture\_sigma}{Output of the field fracture\_sigma (Coefficient of diffusive transfer through fractures (for each substance).).}
+\KeyItem{dg\_penalty}{Output of the field dg\_penalty (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases. Higher value diminishes the inter-element jumps.).}
 \end{SelectionType}
 

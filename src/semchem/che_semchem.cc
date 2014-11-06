@@ -1,10 +1,8 @@
-//#define MAIN
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "semchem/che_semchem.h"
-//#include "system/system.hh"
 #define _R 0.008314
 #define VERZE "30-09-2005"
 #define vystupni_soubor "che_out.txt"
@@ -238,7 +236,6 @@ double che_poww_ld (double A, double b, int *error)
       {
 		   printf ("chyba pri mocneni %f**%f !\n", A, b);
 		 *error = -1;
-//		   exit(111);
          return 0.0;						// cislo vycucane z prstu
       }
       else if (A==0.0)
@@ -247,7 +244,6 @@ double che_poww_ld (double A, double b, int *error)
          {
             printf ("chyba pri mocneni %f**%f !\n", A, b);
 	         *error = 1;
-//          exit(111);
             return 1.0e99;						// cislo vycucane z prstu
          }
          else
@@ -333,7 +329,7 @@ double che_gama_ (int i, double *zeta, int *error)
    double sqrtlI = 0.0;
 
    *error = 0;
-	if (G_prm.vypisy>4) printf("\nche_gama_:");//printf(/*Msg,*/ "\nche_gama_:");
+	if (G_prm.vypisy>4) printf("\nche_gama_:");
    if (che_I(zeta)<0.0)
    {
 	   printf ("che_I(zeta)=%f!\n", che_I(zeta));
@@ -343,7 +339,7 @@ double che_gama_ (int i, double *zeta, int *error)
    vystup = -P_lat[i].Q*P_lat[i].Q*G_prm.Afi*(sqrtlI/(1.0+G_prm.b*sqrtlI)+2.0/G_prm.b*log(1.0+G_prm.b*sqrtlI));
    vystup = exp(vystup);
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_gama_)");
+	if (G_prm.vypisy>4) printf("o.k.(che_gama_)");
    return vystup;
 }
 
@@ -354,7 +350,7 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
 	double pom = 0.0;
 
    error = 0;
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_dgama_:");
+	if (G_prm.vypisy>4) printf("\nche_dgama_:");
    if (che_dI(smer)==0.0)
    {
 	   return 0.0;
@@ -362,25 +358,24 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
    if (che_I(zeta)<0.0)
    {
 	   printf ("che_I(zeta)=%f!\n", che_I(zeta));
-//	   exit (123);
 		*error = 1;
    }
    sqrtlI = sqrt(fabs(che_I(zeta)));
    if (sqrtlI==0.0)
    {
-	   printf(/*Msg,*/ "sqrtlI = 0.0, posouvam ve smeru: ");
+	   printf("sqrtlI = 0.0, posouvam ve smeru: ");
 		pom = zeta[smer];
       zeta[smer]+=DROBNY_POSUN;						// cislo vycucane z prstu
 	   sqrtlI = sqrt(fabs(che_I(zeta)));
       zeta[smer]=pom;
-	   printf(/*Msg,*/ "sqrtlI = %f\n", sqrtlI);
+	   printf("sqrtlI = %f\n", sqrtlI);
       if (che_I(zeta)<0.0)
       {
          printf ("che_I(zeta)=%f, posouvam proti smeru: ", che_I(zeta));
          zeta[smer]-=DROBNY_POSUN;						// cislo vycucane z prstu
          sqrtlI = sqrt(fabs(che_I(zeta)));
          zeta[smer]=pom;
-         printf(/*Msg,*/ "sqrtlI = %f\n", sqrtlI);
+         printf("sqrtlI = %f\n", sqrtlI);
       }
    }
    vystup = -P_lat[i].Q*P_lat[i].Q*G_prm.Afi*(sqrtlI/(1.0+G_prm.b*sqrtlI)+2.0/G_prm.b*log(1.0+G_prm.b*sqrtlI));
@@ -389,16 +384,16 @@ double che_dgama_ (int i, double *zeta, int smer, int *error)
    vystup*= (3.0+2.0*G_prm.b*sqrtlI)/(1.0+G_prm.b*sqrtlI)/(1.0+G_prm.b*sqrtlI);
    if (sqrtlI==0.0)
    {
-	   printf(/*Msg,*/ "sqrtlI = 0.0: ");
+	   printf("sqrtlI = 0.0: ");
 		vystup *= 1.0e56;						// cislo vycucane z prstu
-	   printf(/*Msg,*/ "vystup = %f\n", vystup);
+	   printf("vystup = %f\n", vystup);
    }
    else
    {
    	vystup/= 2.0*sqrtlI;
    }
    vystup*= che_dI(smer);
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_dgama_)");
+	if (G_prm.vypisy>4) printf("o.k.(che_dgama_)");
 
    return vystup;
 }
@@ -412,10 +407,10 @@ double che_K1_( double *zeta, int rce, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)									// cislo vycucane z prstu
    {
-      printf(/*Msg,*/ "k1 se moc spatne pocita, koncim!");
+      printf("k1 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K1_)");
+	if (G_prm.vypisy>4) printf("\n (che_K1_)");
    if (P_che[rce].typ_reakce==2)
    {
 	   k1=0.0;
@@ -437,17 +432,17 @@ double che_K1_( double *zeta, int rce, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI) 		// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam ve smeru: ");
+               printf("k1 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam poprve proti smeru: ");
+               printf("k1 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
             }
             else
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam proti smeru: ");
+               printf("k1 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             k1 = che_K1_(zeta, rce, vnoreni+1);
@@ -484,17 +479,17 @@ double che_K1_( double *zeta, int rce, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam ve smeru: ");
+               printf("k1 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam poprve proti smeru: ");
+               printf("k1 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;// cislo vycucane z prstu
             }
             else
             {
-               printf(/*Msg,*/ "k1 se spatne pocita, posouvam proti smeru: ");
+               printf("k1 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             k1 = che_K1_(zeta, rce, vnoreni+1);
@@ -516,10 +511,10 @@ double che_K2_( double *zeta, int rce, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)					// cislo vycucane z prstu
    {
-      printf(/*Msg,*/ "k2 se moc spatne pocita, koncim!");
+      printf("k2 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K2_)");
+	if (G_prm.vypisy>4) printf("\n (che_K2_)");
    if (P_che[rce].typ_reakce!=0)
    {
    	return 1.0;
@@ -531,7 +526,7 @@ double che_K2_( double *zeta, int rce, int vnoreni)
       if (chybicka > 0)
 		{
       	// zaporna iontova sila!
-         printf(/*Msg,*/ "Zaporna iontova sila - ");
+         printf("Zaporna iontova sila - ");
          chyba += 1;
       }
       if (chyba > 0)
@@ -540,17 +535,17 @@ double che_K2_( double *zeta, int rce, int vnoreni)
          pom = zeta[rce];
          if (vnoreni < PUL_POCTU_VNORENI)				// cislo vycucane z prstu
          {
-            printf(/*Msg,*/ "k2 se spatne pocita, posouvam ve smeru: ");
+            printf("k2 se spatne pocita, posouvam ve smeru: ");
             zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
          }
          else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
          {
-            printf(/*Msg,*/ "k2 se spatne pocita, posouvam poprve proti smeru: ");
+            printf("k2 se spatne pocita, posouvam poprve proti smeru: ");
             zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;		// cislo vycucane z prstu
          }
          else
          {
-            printf(/*Msg,*/ "k2 se spatne pocita, posouvam proti smeru: ");
+            printf("k2 se spatne pocita, posouvam proti smeru: ");
             zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
          }
          k2 = che_K2_(zeta, rce, vnoreni+1);
@@ -596,7 +591,7 @@ double che_K_(int rce)
    double kk = 0.0;
    int chyba = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_K_)");
+	if (G_prm.vypisy>4) printf("\n (che_K_)");
    if (P_che[rce].typ_reakce==2)
    {
 	   kk=P_che[rce].K;
@@ -611,7 +606,7 @@ double che_K_(int rce)
          if (chyba > 0)
          {
             // nula na zaporne cislo nebo zaporne cislo na necely exponent!
-			printf(/*Msg,*/ "K se moc spatne pocita, koncim!");
+			printf("K se moc spatne pocita, koncim!");
             exit (222);
          }
       }
@@ -638,7 +633,7 @@ double che_K_(int rce)
 				if (chyba > 0)
             {
                // nula na zaporne cislo!
-               printf(/*Msg,*/ "K se moc spatne pocita, koncim!");
+               printf("K se moc spatne pocita, koncim!");
                exit (222);
             }
          }
@@ -658,10 +653,10 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)					// cislo vycucane z prstu
    {
-      printf(/*Msg,*/ "dk1 se moc spatne pocita, koncim!");
+      printf("dk1 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_dK1_)");
+	if (G_prm.vypisy>4) printf("\n (che_dK1_)");
    if (P_che[rce].typ_reakce==2)
    {
    	dk1 = 0.0;
@@ -685,17 +680,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf("dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                }
                else
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -718,17 +713,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                   pom = zeta[rce];
                   if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
+                     printf("dk1 se spatne pocita, posouvam ve smeru: ");
                      zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                     printf("dk1 se spatne pocita, posouvam poprve proti smeru: ");
                      zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                   }
                   else
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
+                     printf("dk1 se spatne pocita, posouvam proti smeru: ");
                      zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -746,17 +741,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf("dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                }
                else
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -789,17 +784,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                   pom = zeta[rce];
                   if (vnoreni < PUL_POCTU_VNORENI)		// cislo vycucane z prstu
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
+                     printf("dk1 se spatne pocita, posouvam ve smeru: ");
                      zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   else if (vnoreni == PUL_POCTU_VNORENI)	// cislo vycucane z prstu
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                     printf("dk1 se spatne pocita, posouvam poprve proti smeru: ");
                      zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;	// cislo vycucane z prstu
                   }
                   else
                   {
-                     printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
+                     printf("dk1 se spatne pocita, posouvam proti smeru: ");
                      zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                   }
                   dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -817,17 +812,17 @@ double che_dK1_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)			// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam ve smeru: ");
+                  printf("dk1 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else
                {
-                  printf(/*Msg,*/ "dk1 se spatne pocita, posouvam proti smeru: ");
+                  printf("dk1 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk1 = che_dK1_(zeta, rce, smer, vnoreni+1);
@@ -858,10 +853,10 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
 
    if (vnoreni>2*PUL_POCTU_VNORENI)									// cislo vycucane z prstu
    {
-      printf(/*Msg,*/ "dk2 se moc spatne pocita, koncim!");
+      printf("dk2 se moc spatne pocita, koncim!");
    	exit (222);
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\n (che_dK2_)");
+	if (G_prm.vypisy>4) printf("\n (che_dK2_)");
    if (P_che[rce].typ_reakce) return 0.0;
    dk2=0.0;
    for (i=0; i<G_prm.pocet_latekvefazi; i++)
@@ -875,7 +870,7 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
             if (chybicka > 0)
             {
                // zaporna iontova sila!
-               printf(/*Msg,*/ "Zaporna iontova sila - ");
+               printf("Zaporna iontova sila - ");
                chyba += 1;
             }
             if (chyba > 0)
@@ -884,17 +879,17 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
                pom = zeta[rce];
                if (vnoreni < PUL_POCTU_VNORENI)								// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam ve smeru: ");
+                  printf("dk2 se spatne pocita, posouvam ve smeru: ");
                   zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
                {
-                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam poprve proti smeru: ");
+                  printf("dk2 se spatne pocita, posouvam poprve proti smeru: ");
                   zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
                }
                else
                {
-                  printf(/*Msg,*/ "dk2 se spatne pocita, posouvam proti smeru: ");
+                  printf("dk2 se spatne pocita, posouvam proti smeru: ");
                   zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
                }
                dk2 = che_dK2_(zeta, rce, smer, vnoreni+1);
@@ -909,7 +904,7 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
          if ((chybicka + chybicka2) > 0)
          {
             // zaporna iontova sila!
-            printf(/*Msg,*/ "Zaporna iontova sila - ");
+            printf("Zaporna iontova sila - ");
             chyba += 1;
          }
          if (chyba > 0)
@@ -918,17 +913,17 @@ double che_dK2_(double *zeta, int rce, int smer, int vnoreni)
             pom = zeta[rce];
             if (vnoreni < PUL_POCTU_VNORENI)								// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam ve smeru: ");
+               printf("dk2 se spatne pocita, posouvam ve smeru: ");
                zeta[rce]+=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else if (vnoreni == PUL_POCTU_VNORENI)						// cislo vycucane z prstu
             {
-               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam poprve proti smeru: ");
+               printf("dk2 se spatne pocita, posouvam poprve proti smeru: ");
                zeta[rce]-=(PUL_POCTU_VNORENI+1)*DROBNY_POSUN;						// cislo vycucane z prstu
             }
             else
             {
-               printf(/*Msg,*/ "dk2 se spatne pocita, posouvam proti smeru: ");
+               printf("dk2 se spatne pocita, posouvam proti smeru: ");
                zeta[rce]-=DROBNY_POSUN;						// cislo vycucane z prstu
             }
             dk2 = che_dK2_(zeta, rce, smer, vnoreni+1);
@@ -944,9 +939,9 @@ double che_hodnota_(double *zeta, int rce)
 {
 	double vystup = 0.0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_hodnota_:");
+	if (G_prm.vypisy>4) printf("\nche_hodnota_:");
 	vystup = che_K1_(zeta,rce,0)*che_K2_(zeta,rce,0);
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_hodnota_)");
+	if (G_prm.vypisy>4) printf("o.k. (che_hodnota_)");
 
    return vystup;
 }
@@ -955,9 +950,9 @@ double che_derivace_(double *zeta, int rce, int smer)
 {
 	double vystup = 0.0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_derivace_:");
+	if (G_prm.vypisy>4) printf("\nche_derivace_:");
    vystup = che_K1_(zeta,rce,0)*che_dK2_(zeta,rce,smer,0)+che_K2_(zeta,rce,0)*che_dK1_(zeta,rce,smer,0);
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_derivace_)");
+	if (G_prm.vypisy>4) printf("o.k. (che_derivace_)");
 
    return vystup;
 }
@@ -977,7 +972,7 @@ void che_Jakobi(double *zeta, double *J, double *skala)
    int i = 0;
    int j =0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_Jakobi: ");
+	if (G_prm.vypisy>4) printf("\nche_Jakobi: ");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
    {
 	   for (j=0;j<G_prm.pocet_reakci_pro_matici;j++)
@@ -985,7 +980,7 @@ void che_Jakobi(double *zeta, double *J, double *skala)
 		   J[i*G_prm.pocet_reakci_pro_matici+j]=che_derivace_(zeta,i,j)*skala[i];
       }
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (Jakobi)");
+	if (G_prm.vypisy>4) printf("o.k. (Jakobi)");
 }
 
 double che_abs_norma(double *x)
@@ -1034,60 +1029,60 @@ void che_odecti (double *x, double *y, double *z)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_odecti: ");
+	if (G_prm.vypisy>4) printf("\nche_odecti: ");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
 	{
       z[i]=x[i]-y[i];
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_odecti)");
+	if (G_prm.vypisy>4) printf("o.k. (che_odecti)");
 }
 
 void che_nasob_ld (double x, double *y, double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_nasob_ld: ");
+	if (G_prm.vypisy>4) printf("\nche_nasob_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=x*y[i];
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_nasob_ld)");
+	if (G_prm.vypisy>4) printf("o.k. (che_nasob_ld)");
 }
 
 void che_kombinuj4_ld (double x1, double *y1, double x2, double *y2, double x3, double *y3, double x4, double *y4, double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_kombinuj4_ld: ");
+	if (G_prm.vypisy>4) printf("\nche_kombinuj4_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=x1*y1[i]+x2*y2[i]+x3*y3[i]+x4*y4[i];
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_kombinuj4_ld)");
+	if (G_prm.vypisy>4) printf("o.k. (che_kombinuj4_ld)");
 }
 
 void che_nuluj_ld (double *z, int delka)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_nuluj_ld: ");
+	if (G_prm.vypisy>4) printf("\nche_nuluj_ld: ");
    for (i=0;i<delka;i++)
 	{
       z[i]=0.0;
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_nuluj_ld)");
+	if (G_prm.vypisy>4) printf("o.k. (che_nuluj_ld)");
 }
 
 void che_kopiruj (double *y, double *z)
 {
    int i = 0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nkopiruj:");
+	if (G_prm.vypisy>4) printf("\nkopiruj:");
    for (i=0;i<G_prm.pocet_reakci_pro_matici;i++)
    {
       z[i]=y[i];
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (kopiruj)");
+	if (G_prm.vypisy>4) printf("o.k. (kopiruj)");
 }
 
 void che_zgaussproprg ( double *prstrana, int *hprvky, double *vysl )
@@ -1143,7 +1138,7 @@ int che_odecti_s_korekci_ld(double *x, double *y, double *z, int delka)
    double *z0 = NULL;
    FILE *fw = NULL;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_odecti_s_korekci_ld:");
+	if (G_prm.vypisy>4) printf("\nche_odecti_s_korekci_ld:");
    for (i=0;i<G_prm.pocet_latekvefazi;i++)
    {
       if (che_m(i,x) < 0.0)
@@ -1218,7 +1213,7 @@ int che_odecti_s_korekci_ld(double *x, double *y, double *z, int delka)
    }
    while (problem > 0);
 	che_kopiruj (z0, z);
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "O.K.(che_odecti_s_korekci_ld)");
+	if (G_prm.vypisy>4) printf("O.K.(che_odecti_s_korekci_ld)");
 
    free(z0);
    z0 = NULL;
@@ -1280,7 +1275,7 @@ double che_osklivost(double *zeta0, int *zapornych, int *nulovych, int *nejhorsi
    double hodnota = 0.0;
    double vysledek = 0.0;
 
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_osklivost: ");
+	if (G_prm.vypisy>4) printf("\nche_osklivost: ");
 	vysledek = 0.0;
    *nejhorsi = -1;
    hodnota = 1.0;
@@ -1317,7 +1312,7 @@ double che_osklivost(double *zeta0, int *zapornych, int *nulovych, int *nejhorsi
 		//neznama promenna nulovych
 		vysledek = (1.0 * (*nulovych)) / G_prm.pocet_latekvefazi;
    }
-	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k.(che_osklivost = %f)", vysledek);
+	if (G_prm.vypisy>4) printf("o.k.(che_osklivost = %f)", vysledek);
    return vysledek;
 }
 
@@ -1402,7 +1397,7 @@ int che_urci_zeta0(void)
    }
    if (osklivost0>0.0)
    {
-   	printf(/*Msg,*/ "\nzeta0 se nepodarilo nastavit (osklivost je 1.0+(%f))", osklivost0-1.0);
+   	printf("\nzeta0 se nepodarilo nastavit (osklivost je 1.0+(%f))", osklivost0-1.0);
    }
    free(zeta0);
    zeta0 = NULL;
@@ -1665,7 +1660,7 @@ void che_spocitej_rychlosti(double *rychlosti, double *poloha, double dt)
 	   	rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu] *= che_poww_ld(poloha[j],P_che[i].exponent[j],&chyba);
 	 if (G_prm.vypisy > 4)
 	 {
-	      printf(/*Msg,*/ "\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
+	      printf("\n  %d.  rychlost %d. kineticke reakce %10.24f, poloha = %f, exponent = %f\n", j, i, rychlosti[i-G_prm.pocet_reakci_pro_matici-G_prm.pocet_rozpadu], poloha[j], P_che[i].exponent[j]);
 	 }
          if (chyba > 0)
          {
@@ -1721,8 +1716,7 @@ void che_zkrat_latku_o(int kterou, double o_kolik, double *rychlosti)
       }
       if (reakce==-1)
       {
-         printf(/*Msg,*/"\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
-         //fclose(fw);
+         printf("\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - nelze uz zkratit spotrebu latky!");
          exit(224);
       }
       if (maximum>=o_kolik)
@@ -1761,7 +1755,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
    {
       return;
    }
-   if (G_prm.vypisy>4) printf(/*Msg,*/ "\nche_pomala_kinetika: ");
+   if (G_prm.vypisy>4) printf("\nche_pomala_kinetika: ");
 
 //  TOHLE JE JEDEN KROK RUNGE-KUTTA - mel bych priprogramovat moznost rozdelit vypocet na vic kroku
 
@@ -1828,7 +1822,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
          poloha[j] = P_lat[j].m0;
          if (P_lat[j].m0<0.0)
          {
-            printf(/*Msg,*/ "\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
+            printf("\nchemie: Vstup do pomalych kinetickych reakci obsahoval zapornou molalitu %d. latky-neprobehne vypocet!!", j+1);
             free(rychlosti);
 	    rychlosti = NULL;
             
@@ -1879,7 +1873,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
       {
          if (poloha2[j]<0.0)
          {
-            printf(/*Msg,*/ "\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
+            printf("\nchemie: pri pomalych kinetickych reakcich dosla %d. latka (%f)\t", j+1, poloha2[j]);
             che_zkrat_latku_o(j,-poloha2[j],rychlosti);
             che_spocitej_posunuti(posunuti, rychlosti);
             che_prepocitej_polohu(poloha2, poloha, posunuti);
@@ -1897,8 +1891,7 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
             }
             else
             {
-               printf(/*Msg,*/ "\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
-               //fclose(fw);
+               printf("\nchemie: Tohle se vubec nemelo stat, nerozumim tomu - pomale kineticke reakce nejsou dost pomale!\n%d.latka (%f)", j+1,P_lat[j].m0);
                exit(224);
             }
          }
@@ -1927,9 +1920,8 @@ void che_pomala_kinetika (char *soubor, int poc_kroku)
 
   free(poloha);
   poloha = NULL;
-//
-   //fclose (fw);
-  	if (G_prm.vypisy>4) printf(/*Msg,*/ "o.k. (che_pomala_kinetika)");
+
+  if (G_prm.vypisy>4) printf("o.k. (che_pomala_kinetika)");
 }
 
 void che_vypocet_rovnovah (char *soubor)
@@ -1977,32 +1969,32 @@ void che_vypis_prm_lat_che ( void )
 {
    int i = 0;
    int j = 0;
-   printf(/*Msg,*/ "\nPRM: ");
-   printf(/*Msg,*/ "%d %d %d %d ", G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
-   printf(/*Msg,*/ "%f %f %f %f %f %f ",G_prm.T,G_prm.Afi,G_prm.b,G_prm.epsilon,G_prm.omega,G_prm.deltaT);
-   printf(/*Msg,*/ "%d %d",G_prm.cas_kroku,G_prm.vypisy);
+   printf("\nPRM: ");
+   printf("%d %d %d %d ", G_prm.pocet_latek,G_prm.pocet_latekvefazi,G_prm.celkovy_pocet_reakci,G_prm.pocet_reakci_pro_matici);
+   printf("%f %f %f %f %f %f ",G_prm.T,G_prm.Afi,G_prm.b,G_prm.epsilon,G_prm.omega,G_prm.deltaT);
+   printf("%d %d",G_prm.cas_kroku,G_prm.vypisy);
 
-   printf(/*Msg,*/ "\nLAT: ");
+   printf("\nLAT: ");
    for (i=0; i<G_prm.pocet_latek; i++)
    {
-       printf(/*Msg,*/ "\n  (%d): ", i);
-       printf(/*Msg,*/ "%d. %f %f %f %f %d %f",i,P_lat[i].m0,P_lat[i].m,P_lat[i].M,P_lat[i].dGf,P_lat[i].Q,P_lat[i].aktivita);
+       printf("\n  (%d): ", i);
+       printf("%d. %f %f %f %f %d %f",i,P_lat[i].m0,P_lat[i].m,P_lat[i].M,P_lat[i].dGf,P_lat[i].Q,P_lat[i].aktivita);
    }
 
-   printf(/*Msg,*/ "\nCHE: ");
+   printf("\nCHE: ");
    for (i=0; i<G_prm.celkovy_pocet_reakci; i++)
    {
-       printf(/*Msg,*/ "\n  (%d): ", i);
-       printf(/*Msg,*/ "%d %f %d %f",i,P_che[i].K,P_che[i].typ_reakce,P_che[i].zeta0);
-       printf(/*Msg,*/ "\n     stech. koef.: ");
+       printf("\n  (%d): ", i);
+       printf("%d %f %d %f",i,P_che[i].K,P_che[i].typ_reakce,P_che[i].zeta0);
+       printf("\n     stech. koef.: ");
       for (j = 0; j<G_prm.pocet_latek; j++)
       {
-          printf(/*Msg,*/ "%d ", P_che[i].stech_koef_p[j]);
+          printf("%d ", P_che[i].stech_koef_p[j]);
       }
-       printf(/*Msg,*/ "\n     exponenty:    ");
+       printf("\n     exponenty:    ");
       for (j = 0; j<G_prm.pocet_latekvefazi; j++)
       {
-          printf(/*Msg,*/ "%f ", P_che[i].exponent[j]);
+          printf("%f ", P_che[i].exponent[j]);
       }
    }
 }
@@ -2012,17 +2004,17 @@ void che_vypis_prm_lat_che ( void )
 /********************************************************************/
 void che_uvolneni_P( void )
 {
-   printf(/*Msg,*/  "Uvolneni che_ P_lat, P_che : " );
+   printf("Uvolneni che_ P_lat, P_che : " );
    if ( P_lat != NULL )
    {
       free( P_lat ); P_lat = NULL;
    }
-   printf(/*Msg,*/  "O.k., " );
+   printf("O.k., " );
    if ( P_che != NULL )
    {
       free( P_che ); P_che = NULL;
    }
-   printf(/*Msg,*/  "O.k.\n" );
+   printf("O.k.\n" );
 }
 
 /********************************************************************/

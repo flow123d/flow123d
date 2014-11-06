@@ -40,9 +40,6 @@
 
 #include <vector>
 
-//#include <boost/numeric/ublas/matrix.hpp>
-//#include <boost/numeric/ublas/vector.hpp>
-
 namespace la {
     class BddcmlWrapper; 
 };
@@ -86,19 +83,15 @@ public:
 
     int solve();
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
-    void set_whole_solution( std::vector<double> & globalSolution );
-
     void set_from_input(const Input::Record in_rec);
 
     double get_solution_precision();
 
     ~LinSys_BDDC( );
 
-private:
+//private:
 
-    void gatherSolution_( );
+    //void gatherSolution_( );
 
 private:
 

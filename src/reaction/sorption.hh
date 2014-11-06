@@ -4,6 +4,10 @@
  * The difference is only in the isotherm_reinit method. 
  * Passing immobile porosity from dual porosity model is solved in abstract class SorptionDual.
  * 
+ * TODO:
+ * It seems that the methods isotherm_reinit() are different only at computation of scale_aqua and scale_sorbed.
+ * So it could be moved to SorptionDual and the only method which would be virtual would be 
+ * compute_sorbing_scale(). It is prepared in comment code.
  */
 #ifndef SORPTION_H
 #define SORPTION_H
@@ -60,7 +64,7 @@ protected:
     virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
-    
+
     //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
@@ -82,7 +86,7 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-  
+
     //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
 
@@ -104,7 +108,7 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-  
+
     //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
 

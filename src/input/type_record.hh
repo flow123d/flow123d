@@ -334,9 +334,6 @@ protected:
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        //if (! is_finished()) {
-        //    DBGMSG("Record not finished!\n");
-        //}
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
@@ -423,6 +420,7 @@ protected:
     boost::shared_ptr<RecordData> data_;
 };
 
+
 /**
  * @brief Class for declaration of polymorphic Record.
  *
@@ -462,8 +460,6 @@ protected:
  *
  * @ingroup input_types
  */
-
-
 class AbstractRecord : public Record {
 	friend class OutputBase;
 	friend class AdHocAbstractRecord;
