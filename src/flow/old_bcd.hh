@@ -46,9 +46,6 @@ using namespace std;
  */
 class OldBcdInput {
 private:
-	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
-	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
-	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
 
 public:
 
@@ -62,7 +59,11 @@ public:
 		return "transport_old_bcd_file";
 	}
 
-    shared_ptr<FieldEnum>	flow_type;
+	typedef FieldElementwise<3, FieldValue<3>::Scalar> FieldScalar;
+	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
+	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
+
+	shared_ptr<FieldEnum>	flow_type;
     shared_ptr<FieldScalar>  flow_pressure;
     shared_ptr<FieldScalar>  flow_flux;
     shared_ptr<FieldScalar>  flow_sigma;
