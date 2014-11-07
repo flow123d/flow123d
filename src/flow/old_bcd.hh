@@ -113,11 +113,11 @@ public:
 
     };
 
-    std::shared_ptr<Field<3, FieldValue<3>::Enum>::FactoryBase> flow_type_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_pressure_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_flux_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_sigma_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> trans_conc_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Enum> flow_type_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_pressure_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_flux_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_sigma_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Vector> trans_conc_factory;
 
     void read_flow_record(Input::Record rec, const FieldCommon &field) {
     	FilePath bcd_file;

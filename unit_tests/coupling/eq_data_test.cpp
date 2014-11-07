@@ -141,10 +141,10 @@ protected:
         };
 
         EqData() :
-        	bc_type_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Enum> >(&(OldBcdInput::instance()->flow_type)) ),
-        	bc_flux_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(OldBcdInput::instance()->flow_flux)) ),
-        	bc_robin_sigma_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Scalar> >(&(OldBcdInput::instance()->flow_sigma)) ),
-        	bc_conc_factory( std::make_shared< FieldFactory<3, FieldValue<3>::Vector> >(&(OldBcdInput::instance()->trans_conc), false) )
+        	bc_type_factory( FieldFactory<3, FieldValue<3>::Enum>(&(OldBcdInput::instance()->flow_type)) ),
+        	bc_flux_factory( FieldFactory<3, FieldValue<3>::Scalar>(&(OldBcdInput::instance()->flow_flux)) ),
+        	bc_robin_sigma_factory( FieldFactory<3, FieldValue<3>::Scalar>(&(OldBcdInput::instance()->flow_sigma)) ),
+        	bc_conc_factory( FieldFactory<3, FieldValue<3>::Vector>(&(OldBcdInput::instance()->trans_conc), false) )
         {
         	arma::vec4 gravity = arma::vec4("3.0 2.0 1.0 -5.0");
 
@@ -153,26 +153,26 @@ protected:
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
-            bc_type.set_factory_base_ptr( this->bc_type_factory );
+            bc_type.add_factory( &(this->bc_type_factory) );
             bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
-        	bc_pressure.set_factory_base_ptr(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >(gravity, "bc_piezo_head"));
+        	bc_pressure.add_factory( new FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory(gravity, "bc_piezo_head"));
             bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
-        	bc_flux.set_factory_base_ptr( this->bc_flux_factory );
+        	bc_flux.add_factory( &(this->bc_flux_factory) );
             bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
-        	bc_robin_sigma.set_factory_base_ptr( this->bc_robin_sigma_factory );
+        	bc_robin_sigma.add_factory( &(this->bc_robin_sigma_factory) );
             bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            bc_conc.set_factory_base_ptr( this->bc_conc_factory );
+            bc_conc.add_factory( &(this->bc_conc_factory) );
             bc_conc.units( UnitSI::dimensionless() );
         }
 
@@ -186,10 +186,10 @@ protected:
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         BCField<3, FieldValue<3>::Vector > bc_conc;
 
-        std::shared_ptr<Field<3, FieldValue<3>::Enum>::FactoryBase> bc_type_factory;
-        std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> bc_flux_factory;
-        std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> bc_robin_sigma_factory;
-        std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> bc_conc_factory;
+        FieldFactory<3, FieldValue<3>::Enum> bc_type_factory;
+        FieldFactory<3, FieldValue<3>::Scalar> bc_flux_factory;
+        FieldFactory<3, FieldValue<3>::Scalar> bc_robin_sigma_factory;
+        FieldFactory<3, FieldValue<3>::Vector> bc_conc_factory;
     };
 
     void output_data() override {}

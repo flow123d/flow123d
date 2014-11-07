@@ -206,9 +206,9 @@ public:
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
-     * Set @p factory_base_ptr_
+     * Add item to @p factories_
      */
-    void set_factory_base_ptr(std::shared_ptr<FactoryBase> factory_base_ptr);
+    void add_factory(FactoryBase * factory);
 
 protected:
     /**
@@ -268,7 +268,7 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
-    std::shared_ptr<FactoryBase> factory_base_ptr_;
+    std::shared_ptr< std::vector<FactoryBase *> > factories_;
 
 
 

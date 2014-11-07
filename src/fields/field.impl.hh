@@ -22,19 +22,21 @@
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
 : data_(std::make_shared<SharedData>()),
-  factory_base_ptr_(std::make_shared<FactoryBase>())
+  factories_(std::make_shared< std::vector<FactoryBase *> >())
 
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+
+	factories_.get()->push_back( new FactoryBase() );
 }
 
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
 : data_(std::make_shared<SharedData>()),
-  factory_base_ptr_(std::make_shared<FactoryBase>())
+  factories_(std::make_shared< std::vector<FactoryBase *> >())
 
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -42,6 +44,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 		shared_->bc_=bc;
 		this->name( name );
+		factories_.get()->push_back( new FactoryBase() );
 }
 
 
@@ -50,7 +53,7 @@ template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
-  factory_base_ptr_(other.factory_base_ptr_)
+  factories_(other.factories_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -77,7 +80,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
 
-	factory_base_ptr_ = other.factory_base_ptr_;
+	factories_ = other.factories_;
 	data_ = other.data_;
 
 	if (other.no_check_control_field_) {
@@ -372,18 +375,22 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
         continue;
       }
 			// get field instance
-			FieldBasePtr field_instance = factory_base_ptr_->create_field(*(shared_->list_it_), *this);
-			if (field_instance)  // skip descriptors without related keys
-			{
-				// add to history
-				ASSERT_EQUAL( field_instance->n_comp() , n_comp());
-				field_instance->set_mesh( mesh() , is_bc() );
-				for(const Region &reg: domain) {
-					data_->region_history_[reg.idx()].push_front(
-							HistoryPoint(input_time, field_instance)
-					);
+		    std::vector<FactoryBase *> * ftrs = factories_.get();
+		    for (typename std::vector<FactoryBase *>::iterator it = (*ftrs).begin() ; it != (*ftrs).end(); ++it) {
+		    	FieldBasePtr field_instance = (*it)->create_field(*(shared_->list_it_), *this);
+				if (field_instance)  // skip descriptors without related keys
+				{
+					// add to history
+					ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+					field_instance->set_mesh( mesh() , is_bc() );
+					for(const Region &reg: domain) {
+						data_->region_history_[reg.idx()].push_front(
+								HistoryPoint(input_time, field_instance)
+						);
+					}
 				}
-			}
+		    }
+
         	++shared_->list_it_;
         }
     }
@@ -444,8 +451,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::set_factory_base_ptr(std::shared_ptr<FactoryBase> factory_base_ptr) {
-	factory_base_ptr_ = factory_base_ptr;
+void Field<spacedim,Value>::add_factory(FactoryBase * factory) {
+	factories_.get()->push_back( factory );
 }
 
 
