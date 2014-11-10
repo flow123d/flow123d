@@ -34,8 +34,19 @@ public:
 	    VectorSize vals_per_element_;
 	};
 
-    typedef std::map<std::string, QuantityStorageBase*> TimeStep;
-
+    typedef std::string QuantityName;    
+    typedef std::map<QuantityName, QuantityStorageBase*> TimeStep;
+    typedef std::circular_buffer<TimeStep> DataHistory;
+    typedef std::map<FileName, DataHistory> FileHistory; 
+    
+    /**
+     * Returns data, possibly call reading the file with appropriate reader.
+     */
+    QunatityStorage<T> *get_quantity_data<T>(string file_name, double time, string quantity_name);
+    
+    
+    
+    
 };
 
 #endif /* ELEMENT_DATA_CACHE_HH_ */
