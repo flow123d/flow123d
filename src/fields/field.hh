@@ -70,6 +70,13 @@ public:
      */
     //FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
 
+    /**
+     * Note for future:
+     * We pass through parameter @p field information about field that holds the factory which are necessary
+     * for interpreting user input and create particular field instance. It would be clearer to pass these information
+     * when the factory is assigned to a field. Moreover some information may not be set to field at all but directly passed
+     * to the factory.
+     */
     class FactoryBase {
     public:
     	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
