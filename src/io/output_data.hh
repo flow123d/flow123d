@@ -298,17 +298,13 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     if (!output_data) {
         switch(space_type) {
         case NODE_DATA:
-        	output_data = new OutputData<Value>(field, this->_mesh->n_nodes());
+        	output_data = new OutputData<Value>(field, this->_mesh->n_nodes() );
             node_data.push_back(output_data);
             break;
-        case CORNER_DATA: {
-            unsigned int n_corners = 0;
-            FOR_ELEMENTS(this->_mesh, ele)
-                n_corners += ele->n_nodes();
-        	output_data = new OutputData<Value>(field, n_corners );
+        case CORNER_DATA:
+        	output_data = new OutputData<Value>(field, this->_mesh->n_corners() );
             corner_data.push_back(output_data);
-        }
-        break;
+            break;
         case ELEM_DATA:
         	output_data = new OutputData<Value>(field, this->_mesh->n_elements() );
             elem_data.push_back(output_data);
