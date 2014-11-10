@@ -57,19 +57,17 @@ public:
 
 
     /**
-     * Pointer to function that creates an instance of FieldBase for
-     * field with name @p field_name based on data in field descriptor @p rec.
+     * Factory class that creates an instance of FieldBase for field
+     * with name @p field_name based on data in field descriptor @p rec.
      *
-     * Default implementation in method @p read_field_descriptor  just reads key given by
+     * Default implementation in method @p create_field just reads key given by
      * @p field_name and creates instance using @p FieldBase<...>::function_factory.
      * Function should return empty SharedField (that is shared_ptr to FieldBase).
      *
-     * Hooks are necessary to implement:
-     * 1) backward compatibility with old BCD input files
-     * 2) setting pressure values are piezometric head values
+     * Implementation of these descendants is necessary:
+     * 1) for backward compatibility with old BCD input files
+     * 2) for setting pressure values are piezometric head values
      */
-    //FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
-
     /**
      * Note for future:
      * We pass through parameter @p field information about field that holds the factory which are necessary
@@ -79,6 +77,12 @@ public:
      */
     class FactoryBase {
     public:
+    	/**
+    	 * Default method that creates an instance of FieldBase for field.
+    	 *
+    	 * Reads key given by @p field_name and creates the field instance using
+    	 * @p FieldBase<...>::function_factory.
+    	 */
     	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
     };
 
@@ -159,14 +163,6 @@ public:
      */
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
-    /**
-     * Default implementation of @p read_field_descriptor_hook.
-     *
-     * Reads key given by @p field_name and creates the field instance using
-     * @p FieldBase<...>::function_factory.
-     */
-    //static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommon &field);
-
     void set_limit_side(LimitSide side) override
     { this->limit_side_=side; }
 
@@ -217,9 +213,9 @@ public:
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
-     * Set @p factory_base_ptr_
+     * Add item to @p factories_
      */
-    void set_factory_base_ptr(std::shared_ptr<FactoryBase> factory_base_ptr);
+    void add_factory(FactoryBase * factory);
 
 protected:
     /**
@@ -279,7 +275,7 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
-    std::shared_ptr<FactoryBase> factory_base_ptr_;
+    std::shared_ptr< std::vector<FactoryBase *> > factories_;
 
 
 

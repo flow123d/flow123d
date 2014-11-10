@@ -105,7 +105,9 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-                "Method for coupling Darcy flow between dimensions." );
+                "Method for coupling Darcy flow between dimensions." )
+        .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
+        		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -136,14 +138,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 
 
 
-// gravity vector + constant shift of values
-arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
-
-
 DarcyFlowMH::EqData::EqData()
 {
-    gravity_ = arma::vec4("0 0 -1 0");
-
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
 
@@ -161,22 +157,21 @@ DarcyFlowMH::EqData::EqData()
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
         bc_type.input_selection(&bc_type_selection);
-        bc_type.set_factory_base_ptr(OldBcdInput::instance()->flow_type_factory);
+        bc_type.add_factory( &(OldBcdInput::instance()->flow_type_factory) );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
-    	bc_pressure.set_factory_base_ptr(std::make_shared< DarcyFlowMH::FieldFactory<3, FieldValue<3>::Scalar> >());
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
-    	bc_flux.set_factory_base_ptr(OldBcdInput::instance()->flow_flux_factory);
+    	bc_flux.add_factory( &(OldBcdInput::instance()->flow_flux_factory) );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
-    	bc_robin_sigma.set_factory_base_ptr(OldBcdInput::instance()->flow_sigma_factory);
+    	bc_robin_sigma.add_factory( &(OldBcdInput::instance()->flow_sigma_factory) );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
@@ -229,6 +224,9 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
+    data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.bc_pressure.add_factory( &(OldBcdInput::instance()->flow_pressure_factory) );
+    data_.bc_pressure.add_factory( new FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory(data_.gravity_, "bc_piezo_head") );
     
     solution = NULL;
     schur0   = NULL;

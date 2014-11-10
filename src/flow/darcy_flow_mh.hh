@@ -138,37 +138,12 @@ public:
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
-         *
-         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
-         * introduce some kind of context pointer into @p FieldCommonBase.
          */
-        static arma::vec4 gravity_;
+        arma::vec4 gravity_;
 
         FieldSet	time_term_fields;
         FieldSet	main_matrix_fields;
         FieldSet	rhs_fields;
-    };
-
-
-    template<int spacedim, class Value>
-    class FieldFactory : public Field<spacedim, Value>::FactoryBase {
-    public:
-    	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-    		Input::AbstractRecord field_record;
-    		if (rec.opt_val(field.input_name(), field_record))
-    			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
-
-       		OldBcdInput *old_bcd = OldBcdInput::instance();
-       		old_bcd->read_flow_record(rec, field);
-       		auto field_ptr = old_bcd->flow_pressure;
-
-       		Input::AbstractRecord field_a_rec;
-        	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-        		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( DarcyFlowMH::EqData::gravity_, field_a_rec);
-        	} else {
-        		return field_ptr;
-        	}
-    	}
     };
 
 

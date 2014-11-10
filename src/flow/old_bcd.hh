@@ -45,6 +45,8 @@ using namespace std;
  *
  */
 class OldBcdInput {
+private:
+
 public:
 
 	/**
@@ -61,15 +63,7 @@ public:
 	typedef FieldElementwise<3, FieldValue<3>::Enum> FieldEnum;
 	typedef FieldElementwise<3, FieldValue<3>::Vector> FieldVector;
 
-	typedef Field<3, FieldValue<3>::Scalar> Field_Scalar;
-	typedef Field<3, FieldValue<3>::Enum> Field_Enum;
-	typedef Field<3, FieldValue<3>::Vector> Field_Vector;
-
-	typedef Field_Scalar::FieldBasePtr FieldBaseScalar;
-	typedef Field_Enum::FieldBasePtr FieldBaseEnum;
-	typedef Field_Vector::FieldBasePtr FieldBaseVector;
-
-    shared_ptr<FieldEnum>	flow_type;
+	shared_ptr<FieldEnum>	flow_type;
     shared_ptr<FieldScalar>  flow_pressure;
     shared_ptr<FieldScalar>  flow_flux;
     shared_ptr<FieldScalar>  flow_sigma;
@@ -77,46 +71,47 @@ public:
 
     static OldBcdInput * instance();
 
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for backward compatibility with old BCD input files.
+     */
     template<int spacedim, class Value>
     class FieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
 
         typedef FieldElementwise<spacedim, Value> FieldElementwiseType;
         typedef std::shared_ptr< FieldElementwiseType > FieldPtr;
-    	//typedef typename Field<spacedim,Value>::FieldBasePtr FieldPtr;
 
+        /**
+         * Constructor.
+         *
+         * We need pointer to std::shared_ptr. Object stored to shared_ptr
+         * doesn't exist during construction.
+         */
     	FieldFactory( FieldPtr * field )
     	: field_(field)
     	{}
 
     	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
-    		Input::AbstractRecord field_record;
-    		cout << "OldBcdInput FieldFactory::create_field ";
-    		if (rec.opt_val(field.input_name(), field_record)) {
-    			cout << "if" << endl;
-    			return Field<spacedim,Value>::FieldBaseType::function_factory(field_record, field.n_comp() );
-    		}
-        	else {
-        		cout << "else" << endl;
-        		OldBcdInput *old_bcd = OldBcdInput::instance();
-        		if (rec.record_type_name() == "DarcyFlowMH_Data") {
-        			old_bcd->read_flow_record(rec, field);
-        		} else if (rec.record_type_name() == "TransportOperatorSplitting_Data") {
-        			old_bcd->read_transport_record(rec, field);
-        		}
-        		return *field_;
-        	}
+			OldBcdInput *old_bcd = OldBcdInput::instance();
+			if (rec.record_type_name() == "DarcyFlowMH_Data") {
+				old_bcd->read_flow_record(rec, field);
+			} else if (rec.record_type_name() == "TransportOperatorSplitting_Data") {
+				old_bcd->read_transport_record(rec, field);
+			}
+			return *field_;
     	}
 
     	FieldPtr * field_;
 
     };
 
-    std::shared_ptr<Field<3, FieldValue<3>::Enum>::FactoryBase> flow_type_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_pressure_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_flux_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Scalar>::FactoryBase> flow_sigma_factory;
-    std::shared_ptr<Field<3, FieldValue<3>::Vector>::FactoryBase> trans_conc_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Enum> flow_type_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_pressure_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_flux_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Scalar> flow_sigma_factory;
+    OldBcdInput::FieldFactory<3, FieldValue<3>::Vector> trans_conc_factory;
 
     void read_flow_record(Input::Record rec, const FieldCommon &field) {
     	FilePath bcd_file;
@@ -130,7 +125,6 @@ public:
 
 
     inline void read_transport_record(Input::Record rec, const FieldCommon &field);
-
 
     /**
      * Create flow_* fields from given input file.
@@ -168,5 +162,6 @@ void OldBcdInput::read_transport_record(Input::Record rec, const FieldCommon &fi
 		transport_input_file_ = string(bcd_file);
 	}
 }
+
 
 #endif /* OLD_BCD_HH_ */
