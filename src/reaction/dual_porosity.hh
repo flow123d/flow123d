@@ -6,19 +6,17 @@
  * also in both zones.
  *
  */
-#ifndef DUAL_POROSITY_H
-#define DUAL_POROSITY_H
+#ifndef DUAL_POROSITY_H_
+#define DUAL_POROSITY_H_
 
 #include <vector>
 #include <input/input_type.hh>
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
-#include "./reaction/reaction.hh"
+#include "./reaction/reaction_term.hh"
 
 class Mesh;
-class Distribution;
-class SorptionBase;
 
 /// Class representing dual porosity model in transport.
 class DualPorosity:  public ReactionTerm
@@ -135,4 +133,4 @@ protected:
   
 };
 
-#endif  //DUAL_POROSITY_H
+#endif  //DUAL_POROSITY_H_

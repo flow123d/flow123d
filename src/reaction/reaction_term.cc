@@ -1,4 +1,4 @@
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 #include "io/output.h"

@@ -1,9 +1,9 @@
-#ifndef DECAY_CHAIN_H_
-#define DECAY_CHAIN_H_
+#ifndef RADIOACTIVE_DECAY_H_
+#define RADIOACTIVE_DECAY_H_
 
 #include <vector>
 
-#include "reaction/linear_reaction_base.hh"
+#include "reaction/first_order_reaction_base.hh"
 #include "input/accessors.hh"
 
 class Mesh;
@@ -45,4 +45,4 @@ protected:
     std::vector<double> half_lives_;    ///< Half-lives of the substances.
 };
 
-#endif // DECAY_CHAIN_H_
+#endif // RADIOACTIVE_DECAY_H_

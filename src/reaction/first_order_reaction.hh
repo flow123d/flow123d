@@ -1,13 +1,12 @@
-#ifndef LINEAR_REACTION_H
-#define LINEAR_REACTION_H
+#ifndef FIRST_ORDER_REACTION_H_
+#define FIRST_ORDER_REACTION_H_
 
 #include <vector>
 
-#include "reaction/linear_reaction_base.hh"
+#include "reaction/first_order_reaction_base.hh"
 #include "input/accessors.hh"
 
 class Mesh;
-class Distribution;
 
 /** @brief Class implements the linear reactions.
  * 
@@ -43,4 +42,4 @@ protected:
     std::vector<double> reaction_rates_;    ///< Vector of reaction rates of the transported substances.
 };
 
-#endif  // LINEAR_REACTION_H
+#endif  // FIRST_ORDER_REACTION_H_

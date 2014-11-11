@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"

@@ -1,5 +1,5 @@
-#include "reaction/linear_reaction_base.hh"
-#include "reaction/reaction.hh"
+#include "reaction/first_order_reaction_base.hh"
+#include "reaction/reaction_term.hh"
 
 #include "reaction/pade_approximant.hh"
 #include "reaction/linear_ode_solver.hh"

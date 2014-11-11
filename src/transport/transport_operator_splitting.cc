@@ -21,12 +21,11 @@
 #include "mesh/mesh.h"
 #include "flow/old_bcd.hh"
 
-#include "reaction/reaction.hh"
-#include "reaction/linear_reaction.hh"
-// #include "reaction/pade_approximant.hh"
-#include "reaction/decay_chain.hh"
+#include "reaction/reaction_term.hh"
+#include "reaction/first_order_reaction.hh"
+#include "reaction/radioactive_decay.hh"
 #include "reaction/sorption.hh"
-#include "reaction/dual_por_exchange.hh"
+#include "reaction/dual_porosity.hh"
 
 #include "semchem/semchem_interface.hh"
 

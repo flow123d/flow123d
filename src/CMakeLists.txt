@@ -160,14 +160,14 @@ set(sources_lib_non_system
 
 
     
-    reaction/reaction.cc
-    reaction/linear_reaction.cc
-    reaction/linear_reaction_base.cc
-    reaction/decay_chain.cc
+    reaction/reaction_term.cc
+    reaction/first_order_reaction.cc
+    reaction/first_order_reaction_base.cc
+    reaction/radioactive_decay.cc
     reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
-    reaction/dual_por_exchange.cc
+    reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
     semchem/semchem_interface.cc

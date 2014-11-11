@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "reaction/reaction.hh"
-#include "reaction/dual_por_exchange.hh"
+#include "reaction/reaction_term.hh"
+#include "reaction/dual_porosity.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include <petscmat.h>
@@ -15,9 +15,8 @@
 #include "fields/field_elementwise.hh" 
 
 #include "reaction/sorption.hh"
-#include "reaction/linear_reaction.hh"
-// #include "reaction/pade_approximant.hh"
-#include "reaction/decay_chain.hh"
+#include "reaction/first_order_reaction.hh"
+#include "reaction/radioactive_decay.hh"
 #include "semchem/semchem_interface.hh"
 
 using namespace Input::Type;

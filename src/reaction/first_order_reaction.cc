@@ -1,9 +1,7 @@
-#include "reaction/linear_reaction.hh"
-#include "reaction/reaction.hh"
-#include "system/global_defs.h"
+#include "reaction/first_order_reaction.hh"
+#include "reaction/reaction_term.hh"
 
-#include "reaction/linear_ode_solver.hh"
-#include "la/distribution.hh"
+#include "system/global_defs.h"
 #include "mesh/mesh.h"
 
 using namespace std;

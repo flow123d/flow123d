@@ -1,20 +1,16 @@
-#ifndef LINEAR_REACTION_BASE_H
-#define LINEAR_REACTION_BASE_H
+#ifndef FIRST_ORDER_REACTION_BASE_H_
+#define FIRST_ORDER_REACTION_BASE_H_
 
 #include <vector>
 #include <ostream>
 
-#include "reaction/reaction.hh"
-#include "reaction/pade_approximant.hh"
+#include "reaction/reaction_term.hh"
+#include "reaction/linear_ode_solver.hh"
 #include "input/accessors.hh"
 
 #include "armadillo"
 
-#include "reaction/linear_ode_solver.hh"
-
 class Mesh;
-class ReactionTerm;
-class PadeApproximant;
 
 /** @brief Base class for linear reactions and decay chain.
  *
@@ -101,4 +97,4 @@ protected:
     LinearODESolverBase *linear_ode_solver_;
 };
 
-#endif  // LINEAR_REACTION_H
+#endif  // FIRST_ORDER_REACTION_BASE_H_
