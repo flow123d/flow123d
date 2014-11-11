@@ -220,6 +220,7 @@ private:
     ConvectionTransport *convection;
     ReactionTerm *reaction;
 
+    double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
 
 };

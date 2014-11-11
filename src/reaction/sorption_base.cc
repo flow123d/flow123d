@@ -59,7 +59,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
     	rock_density.units( UnitSI().kg().m(-3) );
 
-    ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm."); //
+    ADD_FIELD(sorption_type,"Considered adsorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically."); //
         sorption_type.input_selection(&sorption_type_selection);
         sorption_type.units( UnitSI::dimensionless() );
 
