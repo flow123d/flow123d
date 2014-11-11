@@ -345,6 +345,10 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
         	unsigned int id;
 			if (shared_->list_it_->opt_val("r_set", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
+				if (domain.size() == 0) {
+					THROW( RegionDB::ExcUnknownSetOperand()
+							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
+				}
 
 			} else if (shared_->list_it_->opt_val("region", domain_name)) {
 				// try find region by label
@@ -370,10 +374,8 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 						<< shared_->list_it_->ei_address() );
 			}
 		    
-			if (domain.size() == 0) {
-				++shared_->list_it_;
-				continue;
-			}
+			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
+
 			// get field instance
 		    std::vector<FactoryBase *> * ftrs = factories_.get();
 		    for (typename std::vector<FactoryBase *>::iterator it = (*ftrs).begin() ; it != (*ftrs).end(); ++it) {
