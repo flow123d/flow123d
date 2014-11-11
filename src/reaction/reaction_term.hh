@@ -10,7 +10,6 @@
 #include "transport/substance.hh"
 
 class Mesh;
-class Element;
 class Distribution;
 class OutputTime;
 

@@ -1,5 +1,6 @@
 #include "reaction/first_order_reaction.hh"
 #include "reaction/reaction_term.hh"
+#include "reaction/linear_ode_solver.hh"
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"

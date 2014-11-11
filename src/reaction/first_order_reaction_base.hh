@@ -2,15 +2,14 @@
 #define FIRST_ORDER_REACTION_BASE_H_
 
 #include <vector>
-#include <ostream>
 
 #include "reaction/reaction_term.hh"
-#include "reaction/linear_ode_solver.hh"
 #include "input/accessors.hh"
 
 #include "armadillo"
 
 class Mesh;
+class LinearODESolverBase;
 
 /** @brief Base class for linear reactions and decay chain.
  *

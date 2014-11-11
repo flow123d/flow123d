@@ -18,7 +18,6 @@
 
 class Isotherm;
 class Mesh;
-class Distribution;
 
 class SorptionBase:  public ReactionTerm
 {

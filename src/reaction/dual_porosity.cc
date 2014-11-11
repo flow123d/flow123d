@@ -2,11 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "reaction/reaction_term.hh"
 #include "reaction/dual_porosity.hh"
+#include "reaction/reaction_term.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include <petscmat.h>
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
