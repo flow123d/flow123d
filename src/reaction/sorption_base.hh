@@ -14,6 +14,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
 #include "reaction/reaction.hh"
 
 class Isotherm;

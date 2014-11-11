@@ -78,6 +78,7 @@
 #include "mesh/mesh.h"
 
 #include "fields/field.hh"
+#include "fields/multi_field.hh"
 #include "input/accessors.hh"
 #include "system/exceptions.hh"
 #include "io/output_time.hh"

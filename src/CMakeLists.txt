@@ -135,6 +135,8 @@ set (sources_lib_coupling
     fields/field_values.cc
     fields/field_common.cc
     fields/field.cc
+    fields/bc_field.cc
+    fields/multi_field.cc
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
