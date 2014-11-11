@@ -28,7 +28,7 @@ something
 
 
 void test_tokenizer(Tokenizer &tok) { 
-    //::testing::FLAGS_gtest_death_test_style = "threadsafe"; 
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
                                                             
     EXPECT_TRUE( tok.eol() );                               
     EXPECT_EQ(0, tok.line_num());                           
@@ -44,7 +44,7 @@ void test_tokenizer(Tokenizer &tok) {
     ++tok;                                                  
     EXPECT_TRUE( tok.eol() );                               
                                                             
-    EXPECT_DEATH( { *tok; }, "Missing token, .* position: '2'");
+    EXPECT_THROW_WHAT( { *tok; }, ExcXprintfMsg, "Missing token, .* position: '2'");
                                                             
     // tokenizer should not lead to seg fault if we iterate over the end of line
     ++tok;                                                  
@@ -74,7 +74,7 @@ void test_tokenizer(Tokenizer &tok) {
 
 
 TEST(Tokenizer, from_stream) {
-    //::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     std::stringstream ss(input);
     Tokenizer tok(ss);
@@ -87,7 +87,7 @@ TEST(Tokenizer, from_stream) {
 
 
 TEST(Tokenizer, from_file) {
-    //::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     // test Tokenizer constructed from FilePAth
     FilePath tok_file( string(UNIT_TESTS_SRC_DIR) + "/system/tokenizer_test_input", FilePath::input_file);

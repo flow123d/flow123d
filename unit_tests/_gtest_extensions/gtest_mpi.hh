@@ -24,9 +24,6 @@
 #ifndef GTEST_FLOW_HH_
 #define GTEST_FLOW_HH_
 
-//#include <global_defs.h>
-//#include <system/system.hh>
-
 #include <gtest/gtest.h>
 
 #ifdef TEST_USE_PETSC
@@ -47,9 +44,9 @@
  */
 namespace testing {
 
+
 namespace internal {
 
-//#include "gtest/internal/gtest-port.h"
 
 // various imported thinks
 // A test filter that matches everything.
@@ -95,7 +92,6 @@ private:
 
 
   static void PrintFailedTests(const UnitTest& unit_test);
-  internal::String test_case_name_;
 };
 
 

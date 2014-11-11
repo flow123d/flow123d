@@ -1,0 +1,1656 @@
+$MeshFormat
+2 0 8
+$EndMeshFormat
+$Nodes
+6
+1 0 0 0
+2 3 0 0
+3 0 3 0
+4 0 0 3
+5 3 0 3
+6 0 3 3
+$EndNodes
+$Elements
+3
+29 4 3 1 1 0 1 2 3 5
+30 4 3 1 1 0 1 3 4 5
+31 4 3 1 1 0 3 4 5 6
+$EndElements
+$ElementData
+1
+"A_conc"
+1
+0
+3
+0
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+0
+3
+0
+1
+3
+29 0.02 
+30 0.02 
+31 0.02 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+0
+3
+0
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+0
+3
+0
+1
+3
+29 0.04 
+30 0.04 
+31 0.04 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+0
+3
+0
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+0
+3
+0
+1
+3
+29 0.06 
+30 0.06 
+31 0.06 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.0277669662022326 
+30 0.0277669662022326 
+31 0.0277669662022326 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.034822022531845 
+30 0.034822022531845 
+31 0.034822022531845 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+0.5
+3
+1
+1
+3
+29 0.0574110112659225 
+30 0.0574110112659225 
+31 0.0574110112659225 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+1
+3
+2
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+1
+3
+2
+1
+3
+29 0.0351987892712061 
+30 0.0351987892712061 
+31 0.0351987892712061 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+1
+3
+2
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+1
+3
+2
+1
+3
+29 0.030314331330208 
+30 0.030314331330208 
+31 0.030314331330208 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+1
+3
+2
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+1
+3
+2
+1
+3
+29 0.054486879398586 
+30 0.054486879398586 
+31 0.054486879398586 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.0422520851171051 
+30 0.0422520851171051 
+31 0.0422520851171051 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.0263901582154579 
+30 0.0263901582154579 
+31 0.0263901582154579 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+1.5
+3
+3
+1
+3
+29 0.0513577566674371 
+30 0.0513577566674371 
+31 0.0513577566674371 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+2
+3
+4
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+2
+3
+4
+1
+3
+29 0.0489003177880795 
+30 0.0489003177880795 
+31 0.0489003177880795 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+2
+3
+4
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+2
+3
+4
+1
+3
+29 0.0229739670999407 
+30 0.0229739670999407 
+31 0.0229739670999407 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+2
+3
+4
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+2
+3
+4
+1
+3
+29 0.0481257151119798 
+30 0.0481257151119798 
+31 0.0481257151119798 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.0551301645002965 
+30 0.0551301645002965 
+31 0.0551301645002965 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.02 
+30 0.02 
+31 0.02 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+2.5
+3
+5
+1
+3
+29 0.0448698354997035 
+30 0.0448698354997035 
+31 0.0448698354997035 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+3
+3
+6
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+3
+3
+6
+1
+3
+29 0.0609385394307287 
+30 0.0609385394307287 
+31 0.0609385394307287 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+3
+3
+6
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+3
+3
+6
+1
+3
+29 0.0174110112659225 
+30 0.0174110112659225 
+31 0.0174110112659225 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+3
+3
+6
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+3
+3
+6
+1
+3
+29 0.0416504493033488 
+30 0.0416504493033488 
+31 0.0416504493033488 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.0663301666315106 
+30 0.0663301666315105 
+31 0.0663301666315105 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.015157165665104 
+30 0.015157165665104 
+31 0.015157165665104 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+3.5
+3
+7
+1
+3
+29 0.0385126677033855 
+30 0.0385126677033855 
+31 0.0385126677033855 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+4
+3
+8
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+4
+3
+8
+1
+3
+29 0.0713156097716774 
+30 0.0713156097716773 
+31 0.0713156097716773 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+4
+3
+8
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+4
+3
+8
+1
+3
+29 0.013195079107729 
+30 0.0131950791077289 
+31 0.0131950791077289 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+4
+3
+8
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+4
+3
+8
+1
+3
+29 0.0354893111205937 
+30 0.0354893111205937 
+31 0.0354893111205937 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.0759096811052468 
+30 0.0759096811052468 
+31 0.0759096811052468 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.0114869835499704 
+30 0.0114869835499703 
+31 0.0114869835499704 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+4.5
+3
+9
+1
+3
+29 0.0326033353447829 
+30 0.0326033353447829 
+31 0.0326033353447829 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+5
+3
+10
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+5
+3
+10
+1
+3
+29 0.0801301645002965 
+30 0.0801301645002965 
+31 0.0801301645002965 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+5
+3
+10
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+5
+3
+10
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+5
+3
+10
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+5
+3
+10
+1
+3
+29 0.0298698354997035 
+30 0.0298698354997035 
+31 0.0298698354997035 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.0839967978801706 
+30 0.0839967978801706 
+31 0.0839967978801706 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.00870550563296125 
+30 0.00870550563296124 
+31 0.00870550563296125 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+5.5
+3
+11
+1
+3
+29 0.0272976964868682 
+30 0.0272976964868682 
+31 0.0272976964868682 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+6
+3
+12
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+6
+3
+12
+1
+3
+29 0.087530469313709 
+30 0.087530469313709 
+31 0.087530469313709 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+6
+3
+12
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+6
+3
+12
+1
+3
+29 0.007578582832552 
+30 0.00757858283255199 
+31 0.007578582832552 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+6
+3
+12
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+6
+3
+12
+1
+3
+29 0.024890947853739 
+30 0.024890947853739 
+31 0.024890947853739 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.0907525884924011 
+30 0.0907525884924011 
+31 0.0907525884924011 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.03 
+30 0.03 
+31 0.03 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.00659753955386448 
+30 0.00659753955386447 
+31 0.00659753955386448 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+6.5
+3
+13
+1
+3
+29 0.0226498719537345 
+30 0.0226498719537345 
+31 0.0226498719537345 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+7
+3
+14
+1
+3
+29 0.01 
+30 0.01 
+31 0.01 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+7
+3
+14
+1
+3
+29 0.093684601658227 
+30 0.0936846016582269 
+31 0.0936846016582269 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+7
+3
+14
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+7
+3
+14
+1
+3
+29 0.00574349177498519 
+30 0.00574349177498517 
+31 0.00574349177498518 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+7
+3
+14
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+7
+3
+14
+1
+3
+29 0.0205719065667879 
+30 0.0205719065667879 
+31 0.0205719065667879 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.0963476233752224 
+30 0.0963476233752224 
+31 0.0963476233752224 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.00500000000000001 
+30 0.005 
+31 0.00500000000000001 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+7.5
+3
+15
+1
+3
+29 0.0186523766247776 
+30 0.0186523766247776 
+31 0.0186523766247776 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+8
+3
+16
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+8
+3
+16
+1
+3
+29 0.0987621630224884 
+30 0.0987621630224884 
+31 0.0987621630224884 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+8
+3
+16
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+8
+3
+16
+1
+3
+29 0.00435275281648063 
+30 0.00435275281648062 
+31 0.00435275281648063 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+8
+3
+16
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+8
+3
+16
+1
+3
+29 0.016885084161031 
+30 0.016885084161031 
+31 0.016885084161031 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.100947927655831 
+30 0.100947927655831 
+31 0.100947927655831 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.00378929141627601 
+30 0.003789291416276 
+31 0.003789291416276 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+8.5
+3
+17
+1
+3
+29 0.0152627809278926 
+30 0.0152627809278926 
+31 0.0152627809278926 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+9
+3
+18
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+9
+3
+18
+1
+3
+29 0.102923686049482 
+30 0.102923686049482 
+31 0.102923686049482 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+9
+3
+18
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+9
+3
+18
+1
+3
+29 0.00329876977693225 
+30 0.00329876977693224 
+31 0.00329876977693225 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+9
+3
+18
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+9
+3
+18
+1
+3
+29 0.013777544173586 
+30 0.013777544173586 
+31 0.013777544173586 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.104707181381915 
+30 0.104707181381915 
+31 0.104707181381915 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.0028717458874926 
+30 0.00287174588749259 
+31 0.0028717458874926 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+9.5
+3
+19
+1
+3
+29 0.0124210727305922 
+30 0.0124210727305922 
+31 0.0124210727305922 
+$EndElementData
+$ElementData
+1
+"A_conc"
+1
+10
+3
+20
+1
+3
+29 0.0100000000000001 
+30 0.01 
+31 0.0100000000000001 
+$EndElementData
+$ElementData
+1
+"B_conc"
+1
+10
+3
+20
+1
+3
+29 0.106315082250148 
+30 0.106315082250148 
+31 0.106315082250148 
+$EndElementData
+$ElementData
+1
+"C_conc"
+1
+10
+3
+20
+1
+3
+29 0.0300000000000001 
+30 0.03 
+31 0.0300000000000001 
+$EndElementData
+$ElementData
+1
+"D_conc"
+1
+10
+3
+20
+1
+3
+29 0.00250000000000001 
+30 0.0025 
+31 0.00250000000000001 
+$EndElementData
+$ElementData
+1
+"E_conc"
+1
+10
+3
+20
+1
+3
+29 0.05 
+30 0.05 
+31 0.05 
+$EndElementData
+$ElementData
+1
+"F_conc"
+1
+10
+3
+20
+1
+3
+29 0.0111849177498518 
+30 0.0111849177498518 
+31 0.0111849177498518 
+$EndElementData

@@ -105,7 +105,7 @@ public:
     /**
      * Computes bounding box of element (OBSOLETE)
      */
-    void get_bounding_box(BoundingBox &bounding_box);
+    void get_bounding_box(BoundingBox &bounding_box) const;
 
     /**
      * Return bounding box of the element.

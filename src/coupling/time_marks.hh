@@ -60,10 +60,9 @@ public:
 
     /// Mask that matches every type of TimeMark.
     static const Type every_type;
+    /// Mask that matches no type of TimeMark.
+    static const Type none_type;
     
-    //This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks     //OBSOLETE
-    //static const Type strict;
-
     /**
      * Constructor for a TimeMarks::Mark
      * @param time time of the mark
@@ -126,69 +125,11 @@ ostream& operator<<(ostream& stream, const TimeMark &marks);
 
 
 
-/**
- * @brief Iterator over TimeMark objects in TimeMarks object (database of TimeMark objects).
- * 
- * Iterator over the TimeMarks of particular mask. This is always const iterator, i.e. it points to const TimeMark.
- * While iterating over TimeMarks with different types, all non matching types are skipped.
- */
-class TimeMarksIterator {
-public:
-    /**Constructor. It is used in TimeMarks class which has the vector of TimeMark objects.
-     * @param marks is vector of TimeMark objects.
-     * @param it is iterator over the vector of TimeMark objects.
-     * @param mask is the type of marks over which we iterate. 
-     */
-    TimeMarksIterator(const vector<TimeMark> &marks,const  vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
-    : marks_(marks), it_(it), mask_(mask) {}
-
-    TimeMarksIterator &operator=(const TimeMarksIterator &it)
-    {ASSERT(&marks_ == &it.marks_, "Can not assign TimeMarks::iterator of different container.\n");
-     it_=it.it_;
-     mask_=it.mask_;
-     return *this;
-    }
-    /// Prefix increment. Skip non matching marks.
-    TimeMarksIterator &operator++()
-    //{ while ( it_ != marks_.begin() && ! (++it_) -> match_mask(mask_) ); return (*this); }
-    { while ( it_ != marks_.end() && ! (++it_) -> match_mask(mask_) ); return (*this); }
-    
-    /// Prefix decrement. Skip non matching marks.
-    TimeMarksIterator &operator--()
-    //{ while ( it_ != marks_.end() && ! (--it_) -> match_mask(mask_) ); return (*this); }
-    { while ( it_ != marks_.begin() && ! (--it_) -> match_mask(mask_) ); return (*this); }
-
-    ///  * dereference operator
-    inline const TimeMark & operator *() const
-            { return *it_; }
-
-    /// -> dereference operator
-    inline const TimeMark * operator ->() const
-            { return &(*(it_)); }
-    
-    inline bool operator ==(const TimeMarksIterator &other) const
-        {return it_ == other.it_; }
-
-    inline bool operator !=(const TimeMarksIterator &other) const
-            {return it_ != other.it_; }
-
-    /// Returns mask.
-    TimeMark::Type mask()
-    { return mask_; }
-    
-private:
-    /// Reference to the vector of TimeMark objects.
-    const vector<TimeMark> &marks_;
-    /// Iterator over the vector of TimeMark objects.
-    vector<TimeMark>::const_iterator it_;
-    /// Mask type.
-    TimeMark::Type mask_;
-};
 
 
 /***************************************************************************************/
 class TimeGovernor;
-
+class TimeMarksIterator;
 
 /**
  * @brief This class is a collection of time marks to manage various events occurring during simulation time.
@@ -253,8 +194,8 @@ public:
 
     /// Predefined base TimeMark type for times when the boundary condition is changed.
     /// Is defined by constructor as 0x04.
-    inline TimeMark::Type type_bc_change()
-    { return type_bc_change_;}
+    inline TimeMark::Type type_input()
+    { return type_input_;}
 
 
     /**
@@ -301,13 +242,16 @@ public:
      */
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
+    /**
+     * Returns iterator to the last time mark matching given @p mask.
+     */
+    TimeMarks::iterator last(const TimeMark::Type &mask) const;
+
     /// Iterator for the begin mimics container-like  of TimeMarks
-    TimeMarks::iterator begin() const
-    {return TimeMarksIterator(marks_, marks_.begin(), TimeMark::every_type); }
+    TimeMarks::iterator begin(TimeMark::Type mask = TimeMark::every_type) const;
 
     /// Iterator for the end mimics container-like  of TimeMarks
-    TimeMarks::iterator end() const
-        {return TimeMarksIterator(marks_, --marks_.end(), TimeMark::every_type); }
+    TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
 
     /// Friend output operator.
     friend ostream& operator<<(ostream& stream, const TimeMarks &marks);
@@ -325,8 +269,85 @@ private:
     /// Predefined type for output.
     TimeMark::Type type_output_;
     /// Predefined type for change of boundary condition.
-    TimeMark::Type type_bc_change_;
+    TimeMark::Type type_input_;
 };
 
+
+
+/**
+ * @brief Iterator over TimeMark objects in TimeMarks object (database of TimeMark objects).
+ *
+ * Iterator over the TimeMarks of particular mask. This is always const iterator, i.e. it points to const TimeMark.
+ * While iterating over TimeMarks with different types, all non matching types are skipped.
+ */
+class TimeMarksIterator {
+public:
+    /**Constructor. It is used in TimeMarks class which has the vector of TimeMark objects.
+     * @param marks is vector of TimeMark objects.
+     * @param it is iterator over the vector of TimeMark objects.
+     * @param mask is the type of marks over which we iterate.
+     */
+    TimeMarksIterator(const vector<TimeMark> &marks,const  vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
+    : marks_(marks), it_(it), mask_(mask) {}
+
+    TimeMarksIterator &operator=(const TimeMarksIterator &it)
+    {ASSERT(&marks_ == &it.marks_, "Can not assign TimeMarks::iterator of different container.\n");
+     it_=it.it_;
+     mask_=it.mask_;
+     return *this;
+    }
+
+    /// Prefix increment. Skip non matching marks.
+    TimeMarksIterator &operator++()
+    {
+    	while ( it_ != marks_.end() ) {
+    		++it_;
+    		if (it_->match_mask(mask_)) break;
+    	}
+    	return (*this);
+    }
+
+    /// Prefix decrement. Skip non matching marks.
+    TimeMarksIterator &operator--()
+    {
+    	while ( it_ != marks_.begin() ) {
+    		--it_;
+    		if (it_->match_mask(mask_)) break;
+    	}
+    	return (*this);
+    }
+
+    ///  * dereference operator
+    inline const TimeMark & operator *() const
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return *it_;
+    }
+
+    /// -> dereference operator
+    inline const TimeMark * operator ->() const
+    {
+    	ASSERT(it_!= marks_.end(), "Out of marks vector.\n");
+    	return &(*(it_));
+    }
+
+    inline bool operator ==(const TimeMarksIterator &other) const
+        {return it_ == other.it_; }
+
+    inline bool operator !=(const TimeMarksIterator &other) const
+            {return it_ != other.it_; }
+
+    /// Returns mask.
+    TimeMark::Type mask()
+    { return mask_; }
+
+private:
+    /// Reference to the vector of TimeMark objects.
+    const vector<TimeMark> &marks_;
+    /// Iterator over the vector of TimeMark objects.
+    vector<TimeMark>::const_iterator it_;
+    /// Mask type.
+    TimeMark::Type mask_;
+};
 
 #endif /* TIME_MARKS_HH_ */

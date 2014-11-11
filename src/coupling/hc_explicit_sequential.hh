@@ -40,7 +40,7 @@ class DarcyFlowMH;
 class DarcyFlowMHOutput;
 class Mesh;
 class EquationBase;
-class TransportBase;
+class AdvectionProcessBase;
 class MaterialDatabase;
 
 
@@ -71,16 +71,11 @@ private:
     /// mesh common to darcy flow and transport
     Mesh *mesh;
 
-    /// Material database to provide various material dependent data
-    //MaterialDatabase *material_database;
-
     /// steady or unsteady water flow simulator based on MH scheme
     DarcyFlowMH *water;
-    /// output object for water flow
-    DarcyFlowMHOutput *water_output;
 
     /// explicit transport with chemistry through operator splitting
-    TransportBase *transport_reaction;
+    AdvectionProcessBase *transport_reaction;
 
 };
 

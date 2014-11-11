@@ -58,10 +58,10 @@
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "mesh/msh_reader.h"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
+#define NDEF  -1
 
 namespace IT = Input::Type;
 
@@ -85,9 +85,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
-    Input::JSONToStorage reader;
-    std::stringstream in(input_str);
-    reader.read_stream( in, Mesh::input_type );
+
+    Input::JSONToStorage reader( input_str, Mesh::input_type );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
@@ -107,8 +106,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 void Mesh::reinit(Input::Record in_record)
 {
 
-    //n_materials = NDEF;
-
     n_insides = NDEF;
     n_exsides = NDEF;
     n_sides_ = NDEF;
@@ -118,6 +115,7 @@ void Mesh::reinit(Input::Record in_record)
     n_triangles = 0;
     n_tetrahedras = 0;
 
+    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 
     // Initialize numbering of nodes on sides.
     // This is temporary solution, until class Element is templated
@@ -171,8 +169,6 @@ Partitioning *Mesh::get_part() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    F_ENTRY;
-
     FOR_ELEMENTS(this, elm)
     switch (elm->dim()) {
         case 1:
@@ -200,8 +196,6 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 
 
 void Mesh::init_from_input() {
-    F_ENTRY;
-
     START_TIMER("Reading mesh - init_from_input");
     
     Input::Array region_list;
@@ -227,8 +221,6 @@ void Mesh::init_from_input() {
 
 
 void Mesh::setup_topology() {
-    F_ENTRY;
-
     START_TIMER("MESH - setup topology");
     
     count_element_types();
@@ -253,9 +245,6 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-    //FOR_SIDES(this,  sde ) {
-    //    DBGMSG( "ele: %d edge: %d\n", sde->element().index(), sde->edge_idx());
-    //}
     FOR_SIDES(this,  sde ) {
         if (sde->is_external()) n_exsides++;
         else n_insides++;
@@ -434,6 +423,8 @@ void Mesh::make_neighbours_and_edges()
                 edg = &( edges.back() );
                 edg->n_sides = 0;
                 edg->side_ = new struct SideIter[ intersection_list.size() ];
+                if (intersection_list.size() > max_edge_sides_[e->dim()-1])
+                	max_edge_sides_[e->dim()-1] = intersection_list.size();
 
                 if (intersection_list.size() == 1) { // outer edge, create boundary object as well
                     edg->n_sides=1;
@@ -570,91 +561,6 @@ void Mesh::make_edge_permutations()
 
 
 
-/**
- * Set Element->boundaries_ for all external sides. (temporary solution)
- */
-void Mesh::create_external_boundary()
-{
-    /*
-    // set to non zero all pointers including boundary connected to lower dim elements
-    // these have only one side per edge
-    Boundary empty_boundary;
-
-
-    FOR_ELEMENTS(this, ele) {
-        // is there any outer side
-        bool outer=false;
-        FOR_ELEMENT_SIDES(ele, si)
-        {
-            if ( ele->side(si)->edge()->n_sides == 1) {
-                outer=true;
-                break;
-            }
-        }
-       if (outer) {
-           // for elements on the boundary set boundaries_
-           FOR_ELEMENT_SIDES(ele,si)
-                if ( ele->side(si)->edge()->n_sides == 1)
-                    ele->boundaries_[si] = &empty_boundary;
-                else
-                    ele->boundaries_[si] = NULL;
-
-       } else {
-           // can delete boundaries on internal elements !!
-            delete ele->boundaries_;
-            ele->boundaries_=NULL;
-       }
-    }
-
-    int count=0;
-    // pass through neighbours and set to NULL internal interfaces
-    FOR_NEIGHBOURS(this,  ngh ) {
-        SideIter s = ngh->side();
-        if (s->element()->boundaries_ == NULL) continue;
-        s->element()->boundaries_[ s->el_idx() ] = NULL;
-    }
-
-    // count remaining
-    unsigned int n_boundaries=0;
-    FOR_ELEMENTS(this, ele) {
-        if (ele->boundaries_ == NULL) continue;
-        FOR_ELEMENT_SIDES(ele, si)
-            if (ele->boundaries_[si]) n_boundaries ++;
-    }
-
-    // fill boundaries
-    BoundaryFullIter bcd(boundary);
-    unsigned int ni;
-
-    boundary.reserve(n_boundaries);
-    DBGMSG("bc_elements size after read: %d\n", bc_elements.size());
-    bc_elements.reserve(n_boundaries);
-    FOR_ELEMENTS(this, ele) {
-         if (ele->boundaries_ == NULL) continue;
-         FOR_ELEMENT_SIDES(ele, si)
-             if (ele->boundaries_[si]) {
-                 // add boundary object
-                 bcd = boundary.add_item();
-
-
-                 // fill boundary element
-                 Element * bc_ele = bc_elements.add_item( -bcd.index() ); // use negative bcd index as ID,
-                 bc_ele->dim_ = ele->dim()-1;
-                 bc_ele->node = new Node * [bc_ele->n_nodes()];
-                 FOR_ELEMENT_NODES(bc_ele, ni) {
-                     bc_ele->node[ni] = (Node *)ele->side(si)->node(ni);
-                 }
-
-                 // fill Boudary object
-                 bcd->side = ele->side(si);
-                 bcd->bc_element_ = bc_ele;
-                 ele->boundaries_[si] = bcd;
-
-             }
-    }*/
-}
-
-
 //=============================================================================
 //
 //=============================================================================
@@ -701,30 +607,23 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-
 	BIHTree bih_tree( this );
-	vector<unsigned int> candidate_list(20);
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
 		Element &ele = this->element[i_ele];
 
 		if (ele.dim() == 1) {
-			//bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-			//DBGMSG("1d el: %d n_cand: %d\n", ele.index(), candidate_list.size() );
-			//for(int i_elm: candidate_list) {
+			vector<unsigned int> candidate_list;
 			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;
 					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					//DBGMSG("2d el: %d %p\n", elm->index(), intersection);
 					if (intersection && intersection->get_type() == IntersectionLocal::line) {
 
 						master_elements[i_ele].push_back( intersections.size() );
 						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-						//DBGMSG("isec: %d %d %g\n" , ele.index(), elm->index(),
-						//		intersections.back().intersection_true_size() );
 				    }
 				}
 
@@ -742,7 +641,8 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
+vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+{
     if (bulk_elements_id_.size() ==0) {
         std::vector<int>::iterator map_it;
         int last_id;
@@ -750,25 +650,25 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) {
         bulk_elements_id_.resize(n_elements());
         map_it = bulk_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=element.begin(); it!=element.end(); ++it, ++map_it) {
-            if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-            last_id=*map_it = it.id();
-//            DBGMSG("bulk map: %d\n", *map_it);
+        for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
+        	int id = element.get_id(idx);
+            if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+            last_id=*map_it = id;
         }
 
         boundary_elements_id_.resize(bc_elements.size());
         map_it = boundary_elements_id_.begin();
         last_id = -1;
-        for(ElementFullIter it=bc_elements.begin(); it!=bc_elements.end(); ++it, ++map_it) {
+        for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
+        	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id_
             // and thus report error for any remaining data lines
-            if (it.id() < 0) last_id=*map_it=-1;
+            if (id < 0) last_id=*map_it=-1;
             else {
-                if (last_id >= it.id()) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", it.id());
-                last_id=*map_it = it.id();
+                if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+                last_id=*map_it = id;
             }
-//            DBGMSG("bc map: %d\n", *map_it);
         }
     }
 

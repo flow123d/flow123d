@@ -18,6 +18,24 @@
 
 #include "system/file_path.hh"
 
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
+}
+
+
+
+
+
+
+
     enum SelectionToRead {
         value_a = 0,
         value_b = 1,
@@ -34,7 +52,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("/json_root_dir","/json_root_dir","variant_input","/output_root");
+        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
@@ -151,7 +169,6 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        delete storage;
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
@@ -203,7 +220,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/json_root_dir/output_root/output_subdir/output.vtk",
+    			(string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
     // read enum from selection
@@ -289,7 +307,7 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -310,10 +328,17 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(2, vec_int[1]);
 
     Iterator<int> it = array.begin<int>();
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    --it;
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    ++it;
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
 
 
 
@@ -328,11 +353,11 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 
 //        if (it->has_key("some_int", data_array[idx].i) ) {
 //            EXPECT_EQ(123,data_array[idx].i);
- //       }
- //       it->has_key("some_double", data_array[idx].d);
- //       EXPECT_EQ(1.23, data_array[idx].d);
- //       it->has_key("some_string", data_array[idx].s);
- //       EXPECT_EQ("123", data_array[idx].s);
+//        }
+//        it->has_key("some_double", data_array[idx].d);
+//        EXPECT_EQ(1.23, data_array[idx].d);
+//        it->has_key("some_string", data_array[idx].s);
+//        EXPECT_EQ("123", data_array[idx].s);
     }
 
     // check creation of empty accessor and defautl iterator
@@ -346,7 +371,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-//    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);

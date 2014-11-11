@@ -23,21 +23,28 @@
 
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(libs field_lib mesh_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs coupling_lib mesh_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 add_test_directory("${libs}")
 
 
 if(CMAKE_HAVE_CXX11)
-    
-    define_test(field_python)
-    define_mpi_test(field_interpolated_p0 1)
+
     define_test(field_value)
+    
+    define_mpi_test(field_algo_base 1)
+    define_mpi_test(field_algo_base 2)
+    
+    define_mpi_test(field_set 1)
+
     define_test(field_const)
     define_test(field_formula)
-    define_mpi_test(field_elementwise 1)
-    
-    define_mpi_test(field_base 1)
-    #define_mpi_test(field_base 2)
+    define_test(field_python)
+    define_mpi_test(field_elementwise 1)   
+    define_mpi_test(field_interpolated_p0 1)
+    define_mpi_test(field_fe 1)
+    define_test(unit_si)
+    define_mpi_test(field_speed 1)
+       
 endif()
 
 

@@ -10,7 +10,7 @@
 
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 
 #include <string>
@@ -29,17 +29,17 @@ class FunctionParser;
  *
  */
 template <int spacedim, class Value>
-class FieldFormula : public FieldBase<spacedim, Value>
+class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     FieldFormula(unsigned int n_comp=0);
 
 
     static Input::Type::Record input_type;
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 

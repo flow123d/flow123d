@@ -5,11 +5,11 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             1.23956       11.9966       -10.757       
-  -3            IMPLICIT BOUNDARY        B             -2.0994       11.9412       -14.0406      
+  -3            IMPLICIT BOUNDARY        A             1.23064       11.9966       -10.7659      
+  -3            IMPLICIT BOUNDARY        B             -2.15585      11.9412       -14.097       
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             1.23956       11.9966       -10.757       
-# Total mass flux of substance [M/T]     B             -2.0994       11.9412       -14.0406      
+# Total mass flux of substance [M/T]     A             1.23064       11.9966       -10.7659      
+# Total mass flux of substance [M/T]     B             -2.15585      11.9412       -14.097       
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -38,30 +38,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             -4.93754      12.6155       -17.5531      
-  -3            IMPLICIT BOUNDARY        B             -3.06078      14.5494       -17.6102      
+  -3            IMPLICIT BOUNDARY        A             -4.95607      12.6161       -17.5721      
+  -3            IMPLICIT BOUNDARY        B             -3.07268      14.5505       -17.6232      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             -4.93754      12.6155       -17.5531      
-# Total mass flux of substance [M/T]     B             -3.06078      14.5494       -17.6102      
+# Total mass flux of substance [M/T]     A             -4.95607      12.6161       -17.5721      
+# Total mass flux of substance [M/T]     B             -3.07268      14.5505       -17.6232      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             11.5197       0             
-  48            region_48                B             10.7616       0             
-  184           region_184               A             12.7276       0             
-  184           region_184               B             11.979        0             
+  48            region_48                A             11.5228       0             
+  48            region_48                B             10.7635       0             
+  184           region_184               A             12.7338       0             
+  184           region_184               B             11.983        0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             24.2473       0             
-# Total mass [M] and sources [M/T]       B             22.7406       0             
+# Total mass [M] and sources [M/T]       A             24.2566       0             
+# Total mass [M] and sources [M/T]       B             22.7465       0             
 
 
 # Cumulative mass balance on time interval [0,0.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -2.46877      24.2473       24.2473       1.06581e-14   4.39559e-16   
-  B             21.2102       0             -1.53039      22.7406       22.7406       0             0             
+  A             21.7786       0             -2.47803      24.2566       24.2566       -1.1724e-13   4.83331e-15   
+  B             21.2102       0             -1.53634      22.7465       22.7465       -4.15668e-13  1.82739e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -71,30 +71,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             -7.45372      14.4054       -21.8591      
-  -3            IMPLICIT BOUNDARY        B             -7.35666      14.5057       -21.8623      
+  -3            IMPLICIT BOUNDARY        A             -7.46618      14.4078       -21.8739      
+  -3            IMPLICIT BOUNDARY        B             -7.36835      14.508        -21.8763      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             -7.45372      14.4054       -21.8591      
-# Total mass flux of substance [M/T]     B             -7.35666      14.5057       -21.8623      
+# Total mass flux of substance [M/T]     A             -7.46618      14.4078       -21.8739      
+# Total mass flux of substance [M/T]     B             -7.36835      14.508        -21.8763      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             13.5378       0             
-  48            region_48                B             12.9259       0             
-  184           region_184               A             14.4364       0             
-  184           region_184               B             13.493        0             
+  48            region_48                A             13.5438       0             
+  48            region_48                B             12.9307       0             
+  184           region_184               A             14.4459       0             
+  184           region_184               B             13.5          0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             27.9742       0             
-# Total mass [M] and sources [M/T]       B             26.4189       0             
+# Total mass [M] and sources [M/T]       A             27.9897       0             
+# Total mass [M] and sources [M/T]       B             26.4307       0             
 
 
 # Cumulative mass balance on time interval [0,1]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -6.19563      27.9742       27.9742       1.77636e-14   6.34998e-16   
-  B             21.2102       0             -5.20872      26.4189       26.4189       7.10543e-15   2.68952e-16   
+  A             21.7786       0             -6.21112      27.9897       27.9897       -2.94875e-13  1.05351e-14   
+  B             21.2102       0             -5.22051      26.4307       26.4307       -5.82645e-13  2.20442e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -104,30 +104,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             -7.4599       16.257        -23.7169      
-  -3            IMPLICIT BOUNDARY        B             -7.98784      15.7291       -23.717       
+  -3            IMPLICIT BOUNDARY        A             -7.462        16.2613       -23.7233      
+  -3            IMPLICIT BOUNDARY        B             -7.99099      15.7323       -23.7233      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             -7.4599       16.257        -23.7169      
-# Total mass flux of substance [M/T]     B             -7.98784      15.7291       -23.717       
+# Total mass flux of substance [M/T]     A             -7.462        16.2613       -23.7233      
+# Total mass flux of substance [M/T]     B             -7.99099      15.7323       -23.7233      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             15.4701       0             
-  48            region_48                B             14.9291       0             
-  184           region_184               A             16.234        0             
-  184           region_184               B             15.4837       0             
+  48            region_48                A             15.4772       0             
+  48            region_48                B             14.9353       0             
+  184           region_184               A             16.2435       0             
+  184           region_184               B             15.4909       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             31.7041       0             
-# Total mass [M] and sources [M/T]       B             30.4128       0             
+# Total mass [M] and sources [M/T]       A             31.7207       0             
+# Total mass [M] and sources [M/T]       B             30.4262       0             
 
 
 # Cumulative mass balance on time interval [0,1.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -9.92558      31.7041       31.7041       0             0             
-  B             21.2102       0             -9.20264      30.4128       30.4128       -7.10543e-15  2.33633e-16   
+  A             21.7786       0             -9.94212      31.7207       31.7207       -3.44613e-13  1.0864e-14    
+  B             21.2102       0             -9.21601      30.4262       30.4262       -6.75016e-13  2.21853e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -137,30 +137,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             -4.798        17.8768       -22.6748      
-  -3            IMPLICIT BOUNDARY        B             -5.44389      17.2309       -22.6747      
+  -3            IMPLICIT BOUNDARY        A             -4.78953      17.8818       -22.6713      
+  -3            IMPLICIT BOUNDARY        B             -5.43721      17.2341       -22.6713      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             -4.798        17.8768       -22.6748      
-# Total mass flux of substance [M/T]     B             -5.44389      17.2309       -22.6747      
+# Total mass flux of substance [M/T]     A             -4.78953      17.8818       -22.6713      
+# Total mass flux of substance [M/T]     B             -5.43721      17.2341       -22.6713      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             16.5599       0             
-  48            region_48                B             16.1049       0             
-  184           region_184               A             17.5432       0             
-  184           region_184               B             17.0299       0             
+  48            region_48                A             16.5656       0             
+  48            region_48                B             16.1101       0             
+  184           region_184               A             17.5498       0             
+  184           region_184               B             17.0347       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             34.1031       0             
-# Total mass [M] and sources [M/T]       B             33.1348       0             
+# Total mass [M] and sources [M/T]       A             34.1155       0             
+# Total mass [M] and sources [M/T]       B             33.1448       0             
 
 
 # Cumulative mass balance on time interval [0,2]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -12.3246      34.1031       34.1031       7.10543e-15   2.08351e-16   
-  B             21.2102       0             -11.9246      33.1348       33.1348       1.42109e-14   4.2888e-16    
+  A             21.7786       0             -12.3369      34.1155       34.1155       -3.48166e-13  1.02055e-14   
+  B             21.2102       0             -11.9346      33.1448       33.1448       -7.88702e-13  2.37957e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -170,30 +170,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             -0.334798     18.653        -18.9878      
-  -3            IMPLICIT BOUNDARY        B             -0.890047     18.0978       -18.9878      
+  -3            IMPLICIT BOUNDARY        A             -0.318407     18.6569       -18.9753      
+  -3            IMPLICIT BOUNDARY        B             -0.87546      18.0999       -18.9753      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             -0.334798     18.653        -18.9878      
-# Total mass flux of substance [M/T]     B             -0.890047     18.0978       -18.9878      
+# Total mass flux of substance [M/T]     A             -0.318407     18.6569       -18.9753      
+# Total mass flux of substance [M/T]     B             -0.87546      18.0999       -18.9753      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             16.3886       0             
-  48            region_48                B             16.0351       0             
-  184           region_184               A             17.8819       0             
-  184           region_184               B             17.5447       0             
+  48            region_48                A             16.3912       0             
+  48            region_48                B             16.0374       0             
+  184           region_184               A             17.8835       0             
+  184           region_184               B             17.5452       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             34.2705       0             
-# Total mass [M] and sources [M/T]       B             33.5798       0             
+# Total mass [M] and sources [M/T]       A             34.2747       0             
+# Total mass [M] and sources [M/T]       B             33.5825       0             
 
 
 # Cumulative mass balance on time interval [0,2.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -12.492       34.2705       34.2705       -7.10543e-15  2.07333e-16   
-  B             21.2102       0             -12.3696      33.5798       33.5798       -7.10543e-15  2.11598e-16   
+  A             21.7786       0             -12.4961      34.2747       34.2747       -2.77112e-13  8.08503e-15   
+  B             21.2102       0             -12.3723      33.5825       33.5825       -6.89226e-13  2.05234e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -203,30 +203,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             4.66618       18.225        -13.5588      
-  -3            IMPLICIT BOUNDARY        B             4.24632       17.8052       -13.5588      
+  -3            IMPLICIT BOUNDARY        A             4.68608       18.2264       -13.5404      
+  -3            IMPLICIT BOUNDARY        B             4.26479       17.8051       -13.5404      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             4.66618       18.225        -13.5588      
-# Total mass flux of substance [M/T]     B             4.24632       17.8052       -13.5588      
+# Total mass flux of substance [M/T]     A             4.68608       18.2264       -13.5404      
+# Total mass flux of substance [M/T]     B             4.26479       17.8051       -13.5404      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             14.9007       0             
-  48            region_48                B             14.6412       0             
-  184           region_184               A             17.0368       0             
-  184           region_184               B             16.8154       0             
+  48            region_48                A             14.899        0             
+  48            region_48                B             14.6395       0             
+  184           region_184               A             17.0326       0             
+  184           region_184               B             16.8107       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             31.9374       0             
-# Total mass [M] and sources [M/T]       B             31.4566       0             
+# Total mass [M] and sources [M/T]       A             31.9316       0             
+# Total mass [M] and sources [M/T]       B             31.4501       0             
 
 
 # Cumulative mass balance on time interval [0,3]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -10.1589      31.9374       31.9374       3.55271e-15   1.1124e-16    
-  B             21.2102       0             -10.2464      31.4566       31.4566       -1.06581e-14  3.3882e-16    
+  A             21.7786       0             -10.1531      31.9316       31.9316       -9.9476e-14   3.11528e-15   
+  B             21.2102       0             -10.2399      31.4501       31.4501       -5.8975e-13   1.87519e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -236,30 +236,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             8.84914       16.5661       -7.71696      
-  -3            IMPLICIT BOUNDARY        B             8.55088       16.2678       -7.71696      
+  -3            IMPLICIT BOUNDARY        A             8.86746       16.5645       -7.69705      
+  -3            IMPLICIT BOUNDARY        B             8.56825       16.2653       -7.69705      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             8.84914       16.5661       -7.71696      
-# Total mass flux of substance [M/T]     B             8.55088       16.2678       -7.71696      
+# Total mass flux of substance [M/T]     A             8.86746       16.5645       -7.69705      
+# Total mass flux of substance [M/T]     B             8.56825       16.2653       -7.69705      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             12.3883       0             
-  48            region_48                B             12.2036       0             
-  184           region_184               A             15.1246       0             
-  184           region_184               B             14.9776       0             
+  48            region_48                A             12.3826       0             
+  48            region_48                B             12.1978       0             
+  184           region_184               A             15.1153       0             
+  184           region_184               B             14.9682       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             27.5129       0             
-# Total mass [M] and sources [M/T]       B             27.1812       0             
+# Total mass [M] and sources [M/T]       A             27.4979       0             
+# Total mass [M] and sources [M/T]       B             27.166        0             
 
 
 # Cumulative mass balance on time interval [0,3.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -5.73432      27.5129       27.5129       1.42109e-14   5.16516e-16   
-  B             21.2102       0             -5.97101      27.1812       27.1812       -3.55271e-15  1.30705e-16   
+  A             21.7786       0             -5.71932      27.4979       27.4979       -3.55271e-15  1.292e-16     
+  B             21.2102       0             -5.95582      27.166        27.166        -4.83169e-13  1.77858e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -269,30 +269,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             11.0941       13.9866       -2.89254      
-  -3            IMPLICIT BOUNDARY        B             10.8896       13.7821       -2.89254      
+  -3            IMPLICIT BOUNDARY        A             11.1063       13.9823       -2.87606      
+  -3            IMPLICIT BOUNDARY        B             10.9011       13.7772       -2.87606      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             11.0941       13.9866       -2.89254      
-# Total mass flux of substance [M/T]     B             10.8896       13.7821       -2.89254      
+# Total mass flux of substance [M/T]     A             11.1063       13.9823       -2.87606      
+# Total mass flux of substance [M/T]     B             10.9011       13.7772       -2.87606      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             9.41282       0             
-  48            region_48                B             9.2825        0             
-  184           region_184               A             12.553        0             
-  184           region_184               B             12.4539       0             
+  48            region_48                A             9.40407       0             
+  48            region_48                B             9.27381       0             
+  184           region_184               A             12.5407       0             
+  184           region_184               B             12.4416       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             21.9658       0             
-# Total mass [M] and sources [M/T]       B             21.7364       0             
+# Total mass [M] and sources [M/T]       A             21.9448       0             
+# Total mass [M] and sources [M/T]       B             21.7154       0             
 
 
 # Cumulative mass balance on time interval [0,4]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             -0.187261     21.9658       21.9658       3.55271e-15   1.61738e-16   
-  B             21.2102       0             -0.526231     21.7364       21.7364       1.42109e-14   6.53781e-16   
+  A             21.7786       0             -0.166196     21.9448       21.9448       3.19744e-14   1.45704e-15   
+  B             21.2102       0             -0.50525      21.7154       21.7154       -4.40536e-13  2.02868e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -302,30 +302,30 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             10.7862       11.0529       -0.26673      
-  -3            IMPLICIT BOUNDARY        B             10.6483       10.9151       -0.26673      
+  -3            IMPLICIT BOUNDARY        A             10.7891       11.0468       -0.25772      
+  -3            IMPLICIT BOUNDARY        B             10.6509       10.9087       -0.25772      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             10.7862       11.0529       -0.26673      
-# Total mass flux of substance [M/T]     B             10.6483       10.9151       -0.26673      
+# Total mass flux of substance [M/T]     A             10.7891       11.0468       -0.25772      
+# Total mass flux of substance [M/T]     B             10.6509       10.9087       -0.25772      
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             6.66336       0             
-  48            region_48                B             6.57106       0             
-  184           region_184               A             9.90937       0             
-  184           region_184               B             9.8412        0             
+  48            region_48                A             6.6535        0             
+  48            region_48                B             6.56133       0             
+  184           region_184               A             9.89672       0             
+  184           region_184               B             9.82864       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             16.5727       0             
-# Total mass [M] and sources [M/T]       B             16.4123       0             
+# Total mass [M] and sources [M/T]       A             16.5502       0             
+# Total mass [M] and sources [M/T]       B             16.39         0             
 
 
 # Cumulative mass balance on time interval [0,4.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             5.20584       16.5727       16.5727       1.42109e-14   8.57484e-16   
-  B             21.2102       0             4.79794       16.4123       16.4123       7.10543e-15   4.32934e-16   
+  A             21.7786       0             5.22834       16.5502       16.5502       5.68434e-14   3.4346e-15    
+  B             21.2102       0             4.82022       16.39         16.39         -4.12115e-13  2.51443e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
@@ -335,29 +335,29 @@
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        A             7.95798       8.44042       -0.482437     
-  -3            IMPLICIT BOUNDARY        B             7.86528       8.34772       -0.482437     
+  -3            IMPLICIT BOUNDARY        A             7.95079       8.43389       -0.483104     
+  -3            IMPLICIT BOUNDARY        B             7.85798       8.34108       -0.483104     
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     A             7.95798       8.44042       -0.482437     
-# Total mass flux of substance [M/T]     B             7.86528       8.34772       -0.482437     
+# Total mass flux of substance [M/T]     A             7.95079       8.43389       -0.483104     
+# Total mass flux of substance [M/T]     B             7.85798       8.34108       -0.483104     
 
 
 # Mass [M] and sources [M/T] on regions:
 # [region_id]   [label]                  [substance]   [total_mass]  [total_source]
 # -------------------------------------------------------------------------------------------------------------
-  48            region_48                A             4.78509       0             
-  48            region_48                B             4.7191        0             
-  184           region_184               A             7.80865       0             
-  184           region_184               B             7.76052       0             
+  48            region_48                A             4.77632       0             
+  48            region_48                B             4.7105        0             
+  184           region_184               A             7.7985        0             
+  184           region_184               B             7.75048       0             
 # -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       A             12.5937       0             
-# Total mass [M] and sources [M/T]       B             12.4796       0             
+# Total mass [M] and sources [M/T]       A             12.5748       0             
+# Total mass [M] and sources [M/T]       B             12.461        0             
 
 
 # Cumulative mass balance on time interval [0,5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             21.7786       0             9.18483       12.5937       12.5937       -1.77636e-15  1.41051e-16   
-  B             21.2102       0             8.73058       12.4796       12.4796       1.24345e-14   9.96385e-16   
+  A             21.7786       0             9.20374       12.5748       12.5748       5.68434e-14   4.52041e-15   
+  B             21.2102       0             8.74921       12.461        12.461        -4.06786e-13  3.26448e-14   
 
 

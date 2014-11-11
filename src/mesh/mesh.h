@@ -117,16 +117,22 @@ public:
 
     /**
      * Constructor with input record given by string. Aimed for testing purpose.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(const std::string &input_str="{mesh_file=\"\"}", MPI_Comm com = MPI_COMM_WORLD);
     /**
      * Constructor from an input record.
+     * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
     /**
      * Common part of both previous constructors and way how to reinitialize a mesh from the  given input record.
      */
     void reinit(Input::Record in_record);
+
+    inline unsigned int n_nodes() const {
+        return node_vector.size();
+    }
 
     inline unsigned int n_elements() const {
         return element.size();
@@ -161,6 +167,13 @@ public:
     inline unsigned int n_vb_neighbours() const {
         return vb_neighbours_.size();
     }
+
+    /**
+     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
+     * @param dim Dimension of elements sharing the edge.
+     */
+    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
+
     /**
      *
      */
@@ -174,7 +187,7 @@ public:
     /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    vector<int> const & elements_id_maps( bool boundary_domain);
+    vector<int> const & elements_id_maps( bool boundary_domain) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -213,7 +226,6 @@ public:
      * Vector of compatible neighbourings.
      */
     vector<Neighbour> vb_neighbours_;
-    //int n_materials; // # of materials
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
@@ -290,7 +302,6 @@ protected:
 
 
     void element_to_neigh_vb();
-    void create_external_boundary();
 
     void count_element_types();
     void count_side_types();
@@ -301,12 +312,15 @@ protected:
     /// in input mesh file and has ID assigned.
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    vector<int> bulk_elements_id_, boundary_elements_id_;
+    mutable vector<int> bulk_elements_id_, boundary_elements_id_;
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
+
+    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
+    unsigned int max_edge_sides_[3];
 
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
@@ -397,8 +411,6 @@ for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
 
 #define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
 #define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
-
-//int *max_entry();
 
 
 #endif

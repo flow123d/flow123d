@@ -48,6 +48,7 @@
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
+#include <boost/algorithm/string.hpp>
 
 static struct Read_ini *read_ini = NULL;
 
@@ -79,7 +80,7 @@ void make_ini_item_list(const char *fname)
 	read_ini=(struct Read_ini*)xmalloc(sizeof(struct Read_ini));
 
 	ini=xfopen(fname,"rt");
-	ASSERT(NONULL(ini),"Failed to open the ini file: %s",fname);
+	ASSERT( ini,"Failed to open the ini file: %s",fname);
 
 
 	while( xfgets( line, LINE_SIZE - 2, ini ) != NULL ) {
@@ -275,21 +276,20 @@ double OptGetDbl( const char *section,const  char *key,const  char *defval )
 //=============================================================================
 // GET BOOL VARIABLE FROM INI FILE
 //=============================================================================
-#define SCMP(x)	(strcmpi( str, x ) == 0)
 bool OptGetBool( const char *section,const  char *key,const  char *defval )
 {
 	char *str;
-	char res;
+	char res=false;
 	str = OptGetStr(section, key, defval);
 
-	if ( SCMP("yes")||SCMP("true")||SCMP("1") ) res=true;
-	else if ( SCMP("no")||SCMP("false")||SCMP("0") ) res=false;
+	if ( boost::iequals(str, "yes") || boost::iequals(str, "true") || boost::iequals(str, "1") ) res=true;
+	else if ( boost::iequals(str, "no") || boost::iequals(str, "false") || boost::iequals(str, "0") ) res=false;
 	else {
 		xfree(str);
 		if (defval == NULL) xprintf(UsrErr,"Required parameter: [%s] %s is not a boolen.\n",section,key);
 		str=(char *)defval;
-		if ( SCMP("yes")||SCMP("true")||SCMP("1") ) res=true;
-		else if ( SCMP("no")||SCMP("false")||SCMP("0") ) res=false;
+		if ( boost::iequals(str, "yes") || boost::iequals(str, "true") || boost::iequals(str, "1") ) res=true;
+		else if ( boost::iequals(str, "no") || boost::iequals(str, "false") || boost::iequals(str, "0") ) res=false;
 		else xprintf(PrgErr,"Default value \"%s\" of parameter: [%s] %s is not a boolean.\n",defval,section,key);
 	}
 	return res;
@@ -303,11 +303,11 @@ void OptionsInit(const char *fname )
 	//char *path;
 	//int len;
 
-	ASSERT(NONULL(fname),"NULL file name\n");
+	ASSERT( fname,"NULL file name\n");
 
 	// take absolute path to the file
 	// this is completly wrong in the case the absolute path is alredy given
-	// since we should remain in the workdir when calling this it is not critical 
+	// since we should remain in the workdir when calling this it is not critical
 	// to hava correct function for path manipulation (see BOOST)
 	/*
 	path=xgetcwd();
@@ -390,7 +390,7 @@ void OptGetIntArray( const char *section,const  char *key,const  char *defval, i
 		if( (!strcmp(ini_item->section,section)) && (!strcmp(ini_item->key,key)) ){
 			for(i=0; i < sb_count; i++)
 			{
-			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL) 
+			  if(sscanf(ini_item->value,"%s",dest[i].nazev) == NULL)
 			  {
 				printf("\nerror during required %d-th parameter initialization occured\n",i);
 			  }else{

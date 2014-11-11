@@ -40,9 +40,6 @@
 
 #include <vector>
 
-//#include <boost/numeric/ublas/matrix.hpp>
-//#include <boost/numeric/ublas/vector.hpp>
-
 namespace la {
     class BddcmlWrapper; 
 };
@@ -70,11 +67,15 @@ public:
                     const std::vector<double> & element_permeability,
                     const int meshDim );
 
-    void load_diagonal( std::map<int,double> & diag );
-
     void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );
 
     void rhs_set_values( int nrow, int *rows, double *vals );
+
+    void diagonal_weights_set_value( int global_index, double value );
+
+    PetscErrorCode mat_zero_entries() override;
+
+    PetscErrorCode rhs_zero_entries() override;
 
     void finish_assembly( );
 
@@ -82,17 +83,15 @@ public:
 
     int solve();
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
-    void set_whole_solution( std::vector<double> & globalSolution );
-
     void set_from_input(const Input::Record in_rec);
+
+    double get_solution_precision();
 
     ~LinSys_BDDC( );
 
-private:
+//private:
 
-    void gatherSolution_( );
+    //void gatherSolution_( );
 
 private:
 

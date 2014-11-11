@@ -24,7 +24,7 @@ using namespace std;
 
 string python_code = R"CODE(
 def testFunc():
-    print "spam!"
+    print "Python hallo."
 
 class testClass:
     def testMethod(self):
@@ -61,7 +61,7 @@ TEST(PythonLoader, all) {
     PyObject * module = PythonLoader::load_module_from_string("my_module", python_code);
     PyObject * p_func = PyObject_GetAttrString(module, "testFunc" );
     PyObject * p_args = PyTuple_New( 0 );
-    PyObject_CallObject(p_func, p_args); // this should print out 'spam!'
+    PyObject_CallObject(p_func, p_args); // this should print out 'Python hallo.'
 }
 
 TEST(FieldPython, vector_2D) {
@@ -72,11 +72,38 @@ TEST(FieldPython, vector_2D) {
     point_1(0)=1.0; point_1(1)= pi / 2.0;
     point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
 
-    FieldPython<2, FieldValue<2>::VectorFixed > vec_func(0.0);
+    FieldPython<2, FieldValue<2>::VectorFixed > vec_func;
     vec_func.set_python_field_from_string(python_function, "func_circle");
     ElementAccessor<2> elm;
 
     arma::vec2 result;
+    {
+    result = vec_func.value( point_1, elm);
+    EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
+    EXPECT_DOUBLE_EQ( 1, result[1]);
+    }
+
+    {
+    result = vec_func.value( point_2, elm);
+    EXPECT_DOUBLE_EQ( -1, result[0]);
+    EXPECT_DOUBLE_EQ( 1, result[1]);
+    }
+}
+
+
+TEST(FieldPython, vector_variable) {
+
+    double pi = 4.0 * atan(1);
+
+    Space<2>::Point point_1, point_2;
+    point_1(0)=1.0; point_1(1)= pi / 2.0;
+    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0;
+
+    FieldPython<2, FieldValue<2>::Vector> vec_func(2);
+    vec_func.set_python_field_from_string(python_function, "func_circle");
+    ElementAccessor<2> elm;
+
+    arma::vec result;
     {
     result = vec_func.value( point_1, elm);
     EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
@@ -108,8 +135,8 @@ TEST(FieldPython, double_3D) {
 
 
 TEST(FieldPython, read_from_input) {
-    typedef FieldBase<2, FieldValue<2>::VectorFixed > VectorField;
-    typedef FieldBase<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldAlgorithmBase<2, FieldValue<2>::VectorFixed > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > ScalarField;
     double pi = 4.0 * atan(1);
 
     // setup FilePath directories
@@ -121,9 +148,7 @@ TEST(FieldPython, read_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), 0.0);

@@ -1,7 +1,0 @@
-Test problem 9
----------------------
-problem of steady flow derived from Test 01
-
-verification of:
-- MATIS matrix format
-- Balancing Neumann-Neumann preconditioner

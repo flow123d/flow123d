@@ -55,8 +55,11 @@ public:
      * Exceptions specific to this class.
      */
     TYPEDEF_ERR_INFO( EI_Selection, const Selection );
+    TYPEDEF_ERR_INFO( EI_Value, const int);
     DECLARE_EXCEPTION( ExcSelectionKeyNotFound,
             << "Key " << EI_KeyName::qval <<" not found in Selection:\n" <<  EI_Selection::val );
+    DECLARE_EXCEPTION( ExcSelectionValueNotFound,
+                << "Value " << EI_Value::val <<" not found in Selection:\n" <<  EI_Selection::val );
 
     /**
      * Structure for description of one key in selection
@@ -131,6 +134,13 @@ public:
      * Converts given value name \p key to the value. Throws exception if the value name does not exist.
      */
     int name_to_int(const string &key) const;
+
+    /**
+     * Returns value name for the given \p value. Throws exception if the value does not exist.
+     */
+    string int_to_name(const int &value) const;
+
+    Selection &copy_values(const Selection &sel);
 
     /**
      * Same as \p Selection::name_to_int, but throws different exception, when string comes from default value.
@@ -234,8 +244,8 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    //ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
-    //        "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
+    ASSERT( data_->keys_.size() == data_->key_to_index_.size(),
+            "Sizes of Type:Selection doesn't match. (map: %ld vec: %ld)\n", data_->key_to_index_.size(), data_->keys_.size());
     ASSERT_EQUAL( data_->keys_.size(), data_->key_to_index_.size());
     return data_->keys_.size();
 }

@@ -181,7 +181,7 @@ regions form disjoint covering of elements, the sets, however, may overlap. Ther
 
 
 \subsection{Field records}
-\label{}
+\label{sec:Fields}
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
 Field $R^m -> \mathcal{S}$, where $m$ is currently always $m=3$ and $\mathcal{S}$ is a specification of the target space, which can be:
 \begin{itemize}
@@ -242,39 +242,38 @@ concentration = {
 \end{verbatim}
 
 \subsection{Field data for equations}
-Every equation record has keys \verb'bulk_data' and \verb'bc_data'. Both have the same structure, however, the first one is intended to set the bulk fields (on bulk regions)
-while the second serves for initialization of the boundary fields (on boundary regions). These keys contains an array of region-time initialization records
-like the \hyperlink{IT::DarcyFlowMH-Steady-BulkData}{BulkData} record of the DarcyFlow equation. Every such record specify fields on particular region 
+Every equation record has key \verb'input_fields', intended to set both the bulk and boundary fields. These keys contain an array of region-time initialization records
+like the \hyperlink{IT::DarcyFlowMH-Data}{\tt Data} record of the DarcyFlow equation. Every such record specifies fields on particular region 
 (keys \hyperA{DarcyFlowMH-Steady-BulkData::region}{{\tt region}} and \hyperA{DarcyFlowMH-Steady-BulkData::rid}{{\tt rid}} ) or on a region set 
 (key \hyperA{DarcyFlowMH-Steady-BulkData::r-set}{{\tt r\_set}}) starting from the time specified by the key \hyperA{DarcyFlowMH-Steady-BulkData::time}{{\tt time}}.
-The array is processed sequentially and latter values overwrites the previous ones. Times should form a non-decreasing sequence.
+The array is processed sequentially and latter values overwrite the previous ones. Times should form a non-decreasing sequence.
 
 Example:
 \begin{verbatim}
-bulk_data = [   
+input_fields = [   
     { // time=0.0  - default value
-        r_set="BULK"
+        r_set="BULK",
         conductivity=1   // setting the conductivity field on all regions
-    }
+    },
     {
-        region="2d_part"
+        region="2d_part",
         conductivity=2  // overwriting the previous value
-    }
-    {   time=1.0
-        region="2d_part"
+    },
+    {   time=1.0,
+        region="2d_part",
         conductivity={
             // from time=1.0 we switch to the linear function in time
-            TYPE=FieldFormula
+            TYPE=FieldFormula,
             value="2+t"      
         }    
-    }
-    {   time=2.0
-        region="2d_part"
+    },
+    {   time=2.0,
+        region="2d_part",
         conductivity={
             // from time=2.0 we switch to elementwise field, but only
             // on the region "2d_part"
-            TYPE=FieldElementwise
-            gmsh_file="./input/data.msh"
+            TYPE=FieldElementwise,
+            gmsh_file="./input/data.msh",
             field_name="conductivity"
         }
     }    

@@ -49,8 +49,6 @@ namespace testing {
 
 namespace internal {
 
-//#include "gtest/internal/gtest-port.h"
-
 // various imported thinks
 // A test filter that matches everything.
 static const char kUniversalFilter[] = "*";

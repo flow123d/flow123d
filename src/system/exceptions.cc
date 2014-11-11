@@ -46,12 +46,10 @@ ExceptionBase::ExceptionBase(const ExceptionBase &other)
 
 
 ExceptionBase::~ExceptionBase() throw () {
-    //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     if (stacktrace) {
         free(stacktrace);
         stacktrace=NULL;
         n_stacktrace_frames=0;
-        //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     }
 }
 
@@ -63,7 +61,6 @@ void ExceptionBase::fill_stacktrace()
         void * array[25];
         n_stacktrace_frames = backtrace(array, 25);
         stacktrace = backtrace_symbols(array, n_stacktrace_frames);
-        //DBGMSG("st: %p %p %d\n", this, stacktrace, n_stacktrace_frames);
     }
 #endif
 }
@@ -97,7 +94,7 @@ void ExceptionBase::print_stacktrace(std::ostream &out) const {
         string magled_fname = frame.substr( start_pos, end_pos-start_pos );
 
         int status=-1;
-        char *demagled_f_name;
+        char *demagled_f_name = {0};
 
 #ifdef HAVE_DEMAGLER
         demagled_f_name = abi::__cxa_demangle(magled_fname.c_str(), 0, 0, &status);
@@ -125,7 +122,7 @@ const char * ExceptionBase::what() const throw () {
     try {
         std::ostringstream converter;
 
-        converter << std::endl;
+        converter << std::endl << std::endl;
         converter << "--------------------------------------------------------" << std::endl;
         converter << "Program Error: ";
         print_info(converter);
@@ -154,43 +151,3 @@ const char * ExceptionBase::what() const throw () {
 
 
 
-/*************************************************************************************************************************************
- * Implementation of InputException
- */
-
-
-const char * InputException::what() const throw () {
-    // have preallocated some space for error message we want to return
-    // Is there any difference, if we move this into ExceptionBase ??
-    static std::string message(1024,' ');
-
-
-    // Be sure that this function do not throw.
-    try {
-        std::ostringstream converter;
-
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << "User Error: ";
-        print_info(converter);
-        converter << "--------------------------------------------------------" << std::endl;
-
-        message = converter.str();
-        return message.c_str();
-
-    } catch (std::exception &exc) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
-                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
-
-        std::abort();
-    } catch (...) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
-                << std::endl;
-
-        std::abort();
-    }
-    return 0;
-}
-
-
-InputException::~InputException() throw ()
-{}

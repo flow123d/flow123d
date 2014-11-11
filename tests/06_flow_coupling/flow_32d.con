@@ -10,10 +10,10 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      input_fields= [
         { region = "2d_fraction",
           conductivity = 16,            // K_2d
-          sigma = 1,                    // sigma
+          sigma = 0.3125,               // sigma
           cross_section = 10,           // delta_2d
           water_source_density = {      // f_2d
             TYPE = "FieldFormula",
@@ -22,10 +22,7 @@
         },
         { region = "3d_cube",
           conductivity = 2              // K_3d
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".2d_fraction",
           bc_type = "neumann",
           bc_flux = {
@@ -52,10 +49,7 @@
         name = "flow_output_stream"
         },
         balance_output = "water_balance.out",  
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 

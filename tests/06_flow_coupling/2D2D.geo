@@ -1,77 +1,88 @@
+// domain dimensions
+domain_x    = 1.50;
+domain_y    = 1.0;
+
+// We consider fracture placed in the middle of domain,
+// intersecting only horizontal boundary. The fracture central
+// part may hav different material properties, effectively model
+// fracture with ends inside
+
+// fracture width
+delta=0.02;
+
+// fracture length relative to domain_y
+main_rel_length=1.0;
+
+// fracture angle  with y-axis (in degrees)
+// we assume that fracture intersects only horizontal boundary
+angle=45;
+
+// mesh step on fracture
+h_fracture=0.005;
+
+// mesh step elsewhere
+h_domain=0.005;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 pi = 3.141592653589793;
-prevod = (2 * pi) / 360.0;
+deg_to_rad = (2 * pi) / 360.0;
+angle_rad = angle * deg_to_rad;
+tan = Sin(angle_rad) / Cos(angle_rad);
 
-rozsah_x    = 1.50;
-rozsah_y    = 1.0;
-rozevreni_x = 0.01;
+// length of intersection with x-axis
+delta_x = delta/ Cos(angle_rad);
 
-uhel        = 45.0;
-delka_pukliny_x = Cos(uhel * prevod)/Sin(uhel * prevod) * rozsah_y;
-odstup_y    = 0.1;
-odstup_x    = (odstup_y/rozsah_y) * delka_pukliny_x;
-
-diskretizace = 0.02;
-
-Point(1) = {0,0,0,diskretizace};
-Point(2) = {rozsah_x,0,0,diskretizace};
-Point(3) = {rozsah_x,rozsah_y,0,diskretizace};
-Point(4) = {0,rozsah_y,0,diskretizace};
+// coordinates of left border of the fracture
+// fracture is placed in the middle
+fracture_bottom_x=(domain_x - tan * domain_y - delta_x)/2;
+fracture_top_x=(domain_x + tan * domain_y - delta_x)/2;
 
 
-Point(5) = {0+(rozsah_x - delka_pukliny_x)/2.0,	0,	0,	diskretizace};
-Point(6) = {0+(rozsah_x - delka_pukliny_x)/2.0 + rozevreni_x,	0,	0,	diskretizace};
-
-Point(7) = {rozsah_x-(rozsah_x - delka_pukliny_x)/2.0,	rozsah_y,	0,	diskretizace};
-Point(8) = {rozsah_x-(rozsah_x - delka_pukliny_x)/2.0 + rozevreni_x,	rozsah_y,	0,	diskretizace};
-
-Point(9) = {0+(rozsah_x - delka_pukliny_x)/2.0 + odstup_x,	odstup_y,	0,	diskretizace};
-Point(10) = {0+(rozsah_x - delka_pukliny_x)/2.0 + rozevreni_x +odstup_x,	odstup_y,	0,	diskretizace};
-
-Point(11) = {rozsah_x-(rozsah_x - delka_pukliny_x)/2.0 - odstup_x,	rozsah_y - odstup_y,	0,	diskretizace};
-Point(12) = {rozsah_x-(rozsah_x - delka_pukliny_x)/2.0 + rozevreni_x- odstup_x,	rozsah_y - odstup_y,	0,	diskretizace};
+// corner points
+Point(1) = {0,          0,              0,h_domain};
+Point(2) = {domain_x,   0,              0,h_domain};
+Point(3) = {domain_x,   domain_y,       0,h_domain};
+Point(4) = {0,          domain_y,       0,h_domain};
 
 
+// fracture corners (intersect with boundary)
+Point(5) = {fracture_bottom_x, 0, 0, h_fracture};
+Point(8) = {fracture_top_x, domain_y, 0, h_fracture};
+
+Point(9) = {fracture_bottom_x+delta_x, 0, 0, h_fracture};
+Point(12) = {fracture_top_x+delta_x, domain_y, 0, h_fracture};
+
+//left
 Line(1) = {1, 5};
-Line(2) = {5, 6};
-Line(3) = {6, 2};
-Line(4) = {2, 3};
-Line(5) = {3, 8};
-Line(6) = {8, 7};
-Line(7) = {7, 4};
-Line(8) = {4, 1};
-Line(9) = {9, 10};
-Line(10) = {12, 11};
-Line(11) = {5, 9};
-Line(12) = {9, 11};
-Line(13) = {11, 7};
-Line(14) = {6, 10};
-Line(15) = {10, 12};
-Line(16) = {12, 8};
-
-
-Line Loop(17) = {1, 11, 12, 13, 7, 8};
+Line(2) = {5, 8};
+Line(3) = {8, 4};
+Line(4) = {4, 1};
+Line Loop(17) = { 1, 2, 3, 4};
 Plane Surface(18) = {17};
-Line Loop(19) = {3, 4, 5, -16, -15, -14};
+Physical Surface("matrix_left") = {18};
+
+//right
+Line(5) = {3, 12};
+Line(6) = {12, 9};
+Line(7) = {9, 2};
+Line(8) = {2, 3};
+Line Loop(19) = { 5, 6, 7, 8};
 Plane Surface(20) = {19};
-Line Loop(21) = {2, 14, -9, -11};
+Physical Surface("matrix_right") = {20};
+
+// fracture
+Line(10) = {8, 12};
+Line(12) = {9, 5};
+Line Loop(21) = { 2, 10, 6, 12};
 Plane Surface(22) = {21};
-Line Loop(23) = {12, -10, -15, -9};
-Plane Surface(24) = {23};
-Line Loop(25) = {10, 13, -6, -16};
-Plane Surface(26) = {25};
+Physical Surface("fracture") = {22};
 
-// 2D blok
-Physical Surface("2d_porous_block_left") = {18};
-Physical Surface("2d_porous_block_right") = {20};
-// 1D puklina
-Physical Surface("2d_fracture_ends") = {22, 26};
-Physical Surface("2d_fracture") = {24};
+// boundary
+Physical Line(".top") = {3, 5};
+Physical Line(".bottom") = {1, 7};
+Physical Line(".left") = {4};
+Physical Line(".right") = {8};
 
-// dolni okraj vlevo, puklina, vpravo
-Physical Line(".2d_bottom_left") = {1};
-Physical Line(".2d_bottom_fracture") = {2};
-Physical Line(".2d_bottom_right") = {3};
-// horni okraje vlevo, puklina, vpravo
-Physical Line(".2d_top_left") = {7};
-Physical Line(".2d_top_fracture") = {6};
-Physical Line(".2d_top_right") = {5};
+Physical Line(".top_fracture") = {10};
+Physical Line(".bottom_fracture") = {12};
+

@@ -74,16 +74,14 @@ void Partitioning::make_element_connection_graph() {
     Distribution edistr = graph_->get_distr();
 
     Edge *edg;
-    int li, e_idx, i_neigh;
+    int li, e_idx;
+    unsigned int i_neigh;
     int i_s, n_s;
-    F_ENTRY;
 
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
 
     FOR_ELEMENTS( mesh_, ele) {
-        //xprintf(Msg,"Element id %d , its index %d.\n",ele.id(), i_ele);
-
         // skip non-local elements
         if (!edistr.is_local(ele.index()))
             continue;
@@ -166,26 +164,19 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     AO new_old_ao;
     int *old_4_new;
     int i_loc;
-    F_ENTRY;
-    // make distribution and numbering
-    //DBGPRINT_INT("Local partitioning",old_ds->lsize,loc_part_);
 
+    // make distribution and numbering
     ISCreateGeneral(PETSC_COMM_WORLD, old_ds.lsize(), loc_part, PETSC_COPY_VALUES, &part); // global IS part.
     ISPartitioningCount(part, old_ds.np(), new_counts); // new size of each proc
 
     new_ds = new Distribution((unsigned int *) new_counts, PETSC_COMM_WORLD); // new distribution
     ISPartitioningToNumbering(part, &new_numbering); // new numbering
 
-    //xprintf(Msg,"Func: %d\n",petscstack->currentsize);
-    //   xprintf(Msg,"Func: %s\n",petscstack->function[petscstack->currentsize]);
-    //xprintf(Msg,"Func: %s\n",petscstack->function[petscstack->currentsize-1]);
-
     old_4_new = (int *) xmalloc(size * sizeof(int));
     id_4_loc = (int *) xmalloc(new_ds->lsize() * sizeof(int));
     new_4_id = (int *) xmalloc((n_ids + 1) * sizeof(int));
 
     // create whole new->old mapping on each proc
-    //DBGMSG("Creating global new->old mapping ...\n");
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
     for (unsigned int i = 0; i < size; i++)
         old_4_new[i] = i;
@@ -193,17 +184,12 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     AODestroy(&(new_old_ao));
 
     // compute id_4_loc
-    //DBGMSG("Creating loc.number -> id mapping ...\n");
     i_loc = 0;
-    //DBGPRINT_INT("id_4_old",old_ds.lsize(),id_4_old);
-    //DBGPRINT_INT("old_4_new",new_ds->lsize(),old_4_new)
 
     for (unsigned int i_new = new_ds->begin(); i_new < new_ds->end(); i_new++) {
-        //printf("i_new: %d old: %d id: %d i_loc: %d \n",i_new,old_4_new[i_new],i_loc);
         id_4_loc[i_loc++] = id_4_old[old_4_new[i_new]];
     }
     // compute row_4_id
-    //DBGMSG("Creating id -> stiffness mtx. row mapping ...\n");
     for (i_loc = 0; i_loc <= n_ids; i_loc++)
         new_4_id[i_loc] = -1; // ensure that all ids are initialized
     for (unsigned int i_new = 0; i_new < size; i_new++)
@@ -221,12 +207,10 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 vector<int> &Partitioning::seq_output_partition() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
     if (seq_part_.size() == 0) {
-    //    cout << "[" << myp() << "]" << seqDBGMSG("make distr part\n");
         if (init_el_ds_->myp() == 0)
             seq_part_.resize(init_el_ds_->size());
         else
             seq_part_.resize(1);
-        //for(unsigned int i = 0; i<init_el_ds_.lsize();i++) seq_part_[init_el_ds_->begin()+i]=loc
         // communicate send sizes
 
 
@@ -237,7 +221,6 @@ vector<int> &Partitioning::seq_output_partition() {
                 MPI_INT, 0,init_el_ds_->get_comm() );
 
     }
-    //ASSERT_EQUAL(seq_part_.size(), init_el_ds_->size());
     return seq_part_;
 
 }

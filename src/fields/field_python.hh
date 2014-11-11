@@ -14,7 +14,7 @@
 
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 
 #include <string>
@@ -33,10 +33,10 @@ using namespace std;
  *
  */
 template <int spacedim, class Value>
-class FieldPython : public FieldBase<spacedim, Value>
+class FieldPython : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     FieldPython(unsigned int n_comp=0);
 
@@ -44,7 +44,7 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     /**
      * Set the file and field to be called.

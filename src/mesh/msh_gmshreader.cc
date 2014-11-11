@@ -74,8 +74,6 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 void GmshMeshReader::read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map) {
-    F_ENTRY;
-    
     START_TIMER("GMSHReader - read mesh");
     
     ASSERT( mesh , "Argument mesh is NULL.\n");
@@ -158,6 +156,7 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
                     dim = 0;
                     break;
                 default:
+                    dim = 0;
                     xprintf(UsrErr, "Element %d is of the unsupported type %d\n", id, type);
                     break;
             }
@@ -170,14 +169,14 @@ void GmshMeshReader::read_elements(Tokenizer &tok, Mesh * mesh, const RegionDB::
 
             //get tags 1 and 2
             unsigned int region_id = lexical_cast<unsigned int>(*tok); ++tok;
-            unsigned int object_id = lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
+            lexical_cast<unsigned int>(*tok); ++tok; // GMSH region number, we do not store this
             //get remaining tags
             unsigned int partition_id=0;
             if (n_tags > 2)  { partition_id = lexical_cast<unsigned int>(*tok); ++tok; } // save partition number from the new GMSH format
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok;         //skip remaining tags
 
             // allocate element arrays TODO: should be in mesh class
-            Element *ele;
+            Element *ele=nullptr;
             // possibly modify region id
             if (el_to_reg_map) {
                 RegionDB::MapElementIDToRegionID::const_iterator it = el_to_reg_map->find(id);
@@ -236,8 +235,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok, Mesh * mesh) {
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
             string name = *tok; ++tok;
 
-            bool boundary =  ( name.size() != 0 && name[0] == '.' );
-            mesh->region_db_.add_region(id, name, dim, boundary);
+            mesh->region_db_.add_region(id, name, dim);
         }
 
     } catch (bad_lexical_cast &) {
@@ -326,10 +324,8 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
             for (i_row = 0; i_row < last_header.n_entities; ++i_row)
                 try {
                     tok_.next_line();
-//                    DBGMSG("data line: %d %d '%s'\n", i_row, last_header.n_entities, tok_.line().c_str());
                     id = lexical_cast<unsigned int>(*tok_); ++tok_;
                     while (id_iter != el_ids.end() && *id_iter < (int)id) {
-//                        DBGMSG("get id: %u %d\n", id, *id_iter);
                         ++id_iter; // skip initialization of some rows in data if ID is missing
                     }
                     if (id_iter == el_ids.end()) {

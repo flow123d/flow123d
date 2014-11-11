@@ -46,7 +46,6 @@ TEST(Quadrature, test_1d) {
 
 
 double test_1_2d( const arma::vec::fixed<2> & p) {
-    //return 3 * p[0] + 2 * p[1] + 1.0;
     return 3 * p[1] + 2 * p[0] + 1.0;
 }
 

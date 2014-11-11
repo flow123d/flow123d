@@ -90,65 +90,84 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 
 
-void Record::make_derive_from(AbstractRecord &parent) const {
+void Record::make_derive_from(AbstractRecord &parent) {
     if (data_->derived_) return;
 
     parent.finish();
     parent.add_descendant(*this);
 
-    // copy keys form parent
-    std::vector<Key>::iterator it = data_->keys.begin();
-    int n_inserted = 0;
-    for(KeyIter pit=parent.data_->keys.begin(); pit != parent.data_->keys.end(); ++pit) {
-        Key tmp_key=*pit;    // make temporary copy of the key
-        KeyHash key_h = key_hash(tmp_key.key_);
-
-        tmp_key.derived = true;
-
-        // we have to copy TYPE also since there should be place in storage for it
-        // however we change its Default to name of actual Record
-        if (tmp_key.key_=="TYPE")
-            tmp_key.default_=Default( type_name() );
-
-        // check for duplicate keys, save only the key derived by the descendant
-        RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
-        if (kit != data_->key_to_index.end()) {
-            Key *k = &(data_->keys[kit->second+n_inserted]);
-            
-            //does not work with intel c++ compiler
-            //tmp_key = { tmp_key.key_index, k->key_, k->description_, k->type_, k->p_type, k->default_, false };
-
-            tmp_key.key_ = k->key_;
-            tmp_key.description_ = k->description_;
-            tmp_key.type_ = k->type_;
-            tmp_key.p_type = k->p_type;
-            tmp_key.default_ = k->default_;
-            tmp_key.derived = false;
-            k->key_ = "";
-        }
-
-        data_->key_to_index[key_h] = tmp_key.key_index;
-
-        it = data_->keys.insert(it, tmp_key)+1;
-        n_inserted++;
-    }
-    // delete duplicate keys and update key indices
-    for (int i=0; i<data_->keys.size(); i++) {
-        if (data_->keys[i].key_.compare("") == 0) {
-            data_->keys.erase( data_->keys.begin()+i);
-            i--;
-        } else {
-            data_->keys[i].key_index = i;
-            data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
-        }
-    }
+    make_copy_keys(parent);
 
     data_->derived_ = true;
 }
 
 
 
+void Record::make_copy_keys(Record &origin) {
+
+	origin.finish();
+
+	std::vector<Key>::iterator it = data_->keys.begin();
+	int n_inserted = 0;
+	for(KeyIter pit=origin.data_->keys.begin(); pit != origin.data_->keys.end(); ++pit) {
+		Key tmp_key=*pit;    // make temporary copy of the key
+		KeyHash key_h = key_hash(tmp_key.key_);
+
+		tmp_key.derived = true;
+
+		// we have to copy TYPE also since there should be place in storage for it
+		// however we change its Default to name of actual Record
+		if (tmp_key.key_=="TYPE")
+			tmp_key.default_=Default( type_name() );
+
+		// check for duplicate keys, override keys of the parent record by the child record
+		RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
+		if (kit != data_->key_to_index.end()) {
+			// in actual record exists a key with same name as in parent record
+			// use values form the child record
+			Key *k = &(data_->keys[kit->second+n_inserted]); // indices in key_to_index are not yet updated
+
+			tmp_key.key_ = k->key_;
+			tmp_key.description_ = k->description_;
+			tmp_key.type_ = k->type_;
+			tmp_key.p_type = k->p_type;
+			tmp_key.default_ = k->default_;
+			tmp_key.derived = false;
+			k->key_ = ""; // mark original key for deletion
+		}
+
+		data_->key_to_index[key_h] = tmp_key.key_index;
+
+		it = data_->keys.insert(it, tmp_key)+1;
+		n_inserted++;
+	}
+	// delete duplicate keys and update key indices
+	for (unsigned int i=0; i<data_->keys.size(); i++) {
+		if (data_->keys[i].key_.compare("") == 0) {
+			data_->keys.erase( data_->keys.begin()+i);
+			i--;
+		} else {
+			data_->keys[i].key_index = i;
+			data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
+		}
+	}
+}
+
+
+void Record::make_copy_keys_all() {
+	for(auto &ptr : data_->copy_from_ptr) {
+		ASSERT( ptr && TypeBase::was_constructed( ptr ), "Invalid pointer to source record for copy keys operation.\n");
+		Record tmp(*ptr);
+		make_copy_keys(tmp);
+		ptr = NULL;
+	}
+	data_->copy_from_ptr.clear();
+}
+
+
+
 Record &Record::derive_from(AbstractRecord &parent) {
+	ASSERT( ! data_->p_parent_ || ! data_->parent_ptr_ , "Record has been already derived.\n");
     if (TypeBase::was_constructed(&parent)) {
         data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
         data_->p_parent_ = NULL;
@@ -159,6 +178,17 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	return *this;
 }
 
+
+
+Record &Record::copy_keys(const Record &other) {
+    if (TypeBase::was_constructed(&other)) {
+    	Record tmp(other);
+    	make_copy_keys(tmp);
+    } else { //postponed
+        data_->copy_from_ptr.push_back( &other );
+    }
+    return *this;
+}
 
 
 bool Record::is_finished() const {
@@ -191,7 +221,10 @@ bool Record::finish()
 	if (data_->finished) return true;
 
 	close();
-    // Set correctly data_->parent_ptr
+	// postponed key copies
+	make_copy_keys_all();
+
+    // Set correctly data_->parent_ptr; copy keys from parent abstract record after all other copies
     if (data_->p_parent_ != 0 ) {
         if (TypeBase::was_constructed( data_->p_parent_))  data_->parent_ptr_=boost::make_shared<AbstractRecord>( * data_->p_parent_ );
         else return false;
@@ -207,7 +240,6 @@ bool Record::finish()
         // make our own copy of type object allocated at heap (could be expensive, but we don't care)
         if (it->p_type != 0) {
             if (! was_constructed(it->p_type)) return ( data_->finished=false );
-            //if (! it->p_type->finish()) return false;
 
             if ( dynamic_cast<const AbstractRecord *>(it->p_type) != 0 ) {
                 const AbstractRecord *ar = dynamic_cast<const AbstractRecord *>(it->p_type);
@@ -238,10 +270,10 @@ bool Record::finish()
     if (data_->auto_conversion_key_idx != -1 ) {
         data_->auto_conversion_key_idx=key_index(data_->auto_conversion_key);
 
-        // check that all other keys have default values
+        // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
-            if (! it->default_.has_value_at_declaration() && it->key_index != data_->auto_conversion_key_idx)
-                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other key: '%s' has no default value.\n",
+            if (it->default_.is_obligatory() && (int)(it->key_index) != data_->auto_conversion_key_idx)
+                xprintf(PrgErr, "Finishing Record auto convertible from the key '%s', but other obligatory key: '%s' has no default value.\n",
                         data_->auto_conversion_key_iter()->key_.c_str(), it->key_.c_str());
         }
     }

@@ -10,7 +10,7 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      data= [
         { region = "2d_porous_block_left",
           cross_section = 1, 
           anisotropy = 0.1
@@ -28,10 +28,7 @@
           cross_section =  0.007071,
           sigma = 2828,
           anisotropy = 10
-        }
-      ],
-      
-      bc_data = [
+        },
         { region = ".2d_bottom_left",
           bc_type = "dirichlet",
           bc_pressure = {

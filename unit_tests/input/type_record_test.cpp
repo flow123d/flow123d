@@ -17,7 +17,7 @@
  */
 TEST(InputTypeRecord, declare_key_scalars) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 
    // make auxiliary record and test declare_key for
@@ -43,20 +43,19 @@ using namespace Input::Type;
    Record rec_empty;
 
 #ifdef DEBUG_ASSERTS
-   EXPECT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, ".*into closed record 'EmptyRecord'.");
+   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
 #endif
 
    Record rec_fin("xx","");
    rec_fin.close();
-   EXPECT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "Can not add .* into closed record");
+   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Can not add .* into closed record");
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.
    Record rec_unfin("yy","");
    rec.declare_key("yy", rec_unfin, "");
 
-   EXPECT_DEATH( { rec.declare_key("data_description", String(),"");},
-                "Re-declaration of the key:");
+   EXPECT_THROW_WHAT( { rec.declare_key("data_description", String(),"");}, ExcXprintfMsg, "Re-declaration of the key:");
 
    EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); }, ExcWrongDefault,
            "Default value .* do not match type: 'Double';");
@@ -148,21 +147,24 @@ using namespace Input::Type;
 //::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     {
-    static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
-    sub_rec.declare_key("int_key", Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
+    Record sub_rec = Record( "SubRecord", "")
+    				 .declare_key("default_bool", Bool(), Default("false"), "")
+    				 .declare_key("optional_bool", Bool(), Default::optional(), "")
+    				 .declare_key("read_time_bool", Bool(), Default::read_time(""), "")
+     	 	 	 	 .declare_key("int_key", Integer(),  "")
+     	 	 	 	 .allow_auto_conversion("int_key");
     sub_rec.finish();
 
-    EXPECT_EQ(1, sub_rec.auto_conversion_key_iter()->key_index );
+    EXPECT_EQ(3, sub_rec.auto_conversion_key_iter()->key_index );
     }
 
     {
     static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), "");
+    sub_rec.declare_key("obligatory_int", Integer(), Default::obligatory(), "");
     sub_rec.declare_key("int_key", Integer(),  "");
     sub_rec.allow_auto_conversion("int_key");
-    EXPECT_DEATH( {sub_rec.finish();}, "Finishing Record auto convertible from the key 'int_key', but other key: 'bool_key' has no default value.");
+    EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg,
+    		"Finishing Record auto convertible from the key 'int_key', but other obligatory key: 'obligatory_int' has no default value.");
     }
 
     {
@@ -176,8 +178,7 @@ using namespace Input::Type;
 
 TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record record_record("RecordOfRecords", "");
     Record record_record2("RecordOfRecords2", "");
@@ -258,25 +259,25 @@ TEST(InputTypeRecord, iterating) {
 
 TEST(InputTypeRecord, check_key_validity) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord",
             "Information about one file for field data.");
-    EXPECT_DEATH( {output_record.declare_key("a b",Bool(),"desc."); },
-            "Invalid key identifier"
+    EXPECT_THROW_WHAT( {output_record.declare_key("a b",Bool(),"desc."); },
+    		ExcXprintfMsg, "Invalid key identifier"
             );
-    EXPECT_DEATH( {output_record.declare_key("AB",Bool(),"desc."); },
-            "Invalid key identifier"
+    EXPECT_THROW_WHAT( {output_record.declare_key("AB",Bool(),"desc."); },
+    		ExcXprintfMsg, "Invalid key identifier"
             );
-    EXPECT_DEATH( {output_record.declare_key("%$a",Bool(),"desc."); },
-            "Invalid key identifier"
+    EXPECT_THROW_WHAT( {output_record.declare_key("%$a",Bool(),"desc."); },
+    		ExcXprintfMsg, "Invalid key identifier"
             );
 
 }
 
 TEST(InputTypeRecord, RecordCopy) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     Record output_record("OutputRecord", "");
     output_record.declare_key("file", FileName::output(), "");
@@ -292,13 +293,45 @@ using namespace Input::Type;
     EXPECT_EQ( true, output_record.has_key("digits") );
 }
 
+
+TEST(InputTypeRecord, copy_keys) {
+using namespace Input::Type;
+
+    Record rec1 =
+    		Record("Rec1", "")
+    		.declare_key("a", Integer(), "a from rec1");
+
+    Record rec2 =
+    		Record("Rec2","")
+    		.declare_key("a", Integer(), "a from rec2")
+    		.declare_key("b", Integer(), "b from rec2")
+    		.declare_key("c", Integer(), "c from rec2");
+
+    Record composite =
+    		Record("composite","")
+    		.declare_key("b", Integer(), "b from composite")
+    		.copy_keys(rec1)
+    		.copy_keys(rec2);
+
+    composite.finish();
+
+    EXPECT_TRUE(rec1.is_finished());
+    EXPECT_TRUE(rec2.is_finished());
+
+    EXPECT_EQ(3, composite.size());
+    EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
+    EXPECT_EQ("b from composite", composite.key_iterator("b")->description_);
+    EXPECT_EQ("c from rec2", composite.key_iterator("c")->description_);
+}
+
+
 /**
  * Test Abstract Record.
  */
 
 TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     AbstractRecord a_rec("EqBase","Base of equation records.");
     a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
@@ -324,7 +357,7 @@ using namespace Input::Type;
     // auto conversion - default value for TYPE
     EXPECT_EQ("EqDarcy", a_rec.key_iterator("TYPE")->default_.value() );
     // no more allow_auto_conversion for a_rec
-    EXPECT_DEATH( { a_rec.allow_auto_conversion("EqTransp");}, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
+    EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
 
     a_rec.no_more_descendants();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
@@ -358,9 +391,12 @@ using namespace Input::Type;
     // check of correct auto conversion value
     AbstractRecord  x("AR","");
     x.allow_auto_conversion("BR");
-    EXPECT_DEATH({ x.no_more_descendants(); }, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
+    EXPECT_THROW_WHAT({ x.no_more_descendants(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
+
+
+
 
 
 /**
@@ -410,7 +446,7 @@ IT::Record AdHocDataTest::in_rec2 = IT::Record("Record 2","")
 
 TEST(InputTypeAdHocAbstractRecord, inheritance) {
 using namespace Input::Type;
-//::testing::FLAGS_gtest_death_test_style = "threadsafe";
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	AdHocDataTest::in_rec1.finish();
 	AdHocDataTest::in_rec2.finish();
 	AdHocDataTest::adhoc_1.finish();

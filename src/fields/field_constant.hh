@@ -10,7 +10,7 @@
 #define FIELD_CONSTANT_HH_
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
 
 
@@ -19,10 +19,10 @@
  *
  */
 template <int spacedim, class Value>
-class FieldConstant : public FieldBase<spacedim, Value>
+class FieldConstant : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
@@ -36,7 +36,7 @@ public:
      * Return Record for initialization of FieldConstant that is derived from AbstractRecord given by @p a_type
      * and the individual elements of the possible Value (vector, tensor) have Input::Type @p eit.
      */
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     /**
      * Smart setter from the given value to return.

@@ -3,6 +3,10 @@ profiler_info*.log
 flow*.log
 unit_tests/*/makefile
 unit_tests/makefile
+unit_tests/fields/speed_test_*.log
+unit_tests/output/*.pvd
+unit_tests/output/*.msh
+unit_tests/output/test?/
 bin/tests/makefile
 bin/flow123d
 bin/mpiexec

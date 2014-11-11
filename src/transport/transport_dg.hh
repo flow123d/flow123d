@@ -35,12 +35,67 @@
 #include "flow/mh_dofhandler.hh"
 
 class Distribution;
-class DOFHandlerBase;
+class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
+
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of all dimensions.
+ * Its purpose is to provide templated access to these objects, applicable in
+ * the assembling methods.
+ */
+class FEObjects {
+public:
+
+	FEObjects(Mesh *mesh_, unsigned int fe_order);
+	~FEObjects();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim,3> *fe();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim,3> *fe_rt();
+
+	template<unsigned int dim>
+	inline Quadrature<dim> *q();
+
+	template<unsigned int dim>
+	inline Mapping<dim,3> *mapping();
+
+	inline DOFHandlerMultiDim *dh();
+
+private:
+
+	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<1,3> *fe1_;
+	FiniteElement<2,3> *fe2_;
+	FiniteElement<3,3> *fe3_;
+
+	/// Finite elements for the water velocity field.
+	FiniteElement<1,3> *fe_rt1_;
+	FiniteElement<2,3> *fe_rt2_;
+	FiniteElement<3,3> *fe_rt3_;
+
+	/// Quadratures used in assembling methods.
+	Quadrature<0> *q0_;
+	Quadrature<1> *q1_;
+	Quadrature<2> *q2_;
+	Quadrature<3> *q3_;
+
+	/// Auxiliary mappings of reference elements.
+	Mapping<0,3> *map0_;
+	Mapping<1,3> *map1_;
+	Mapping<2,3> *map2_;
+	Mapping<3,3> *map3_;
+
+	/// Object for distribution of dofs.
+	DOFHandlerMultiDim *dh_;
+};
 
 
 
@@ -78,11 +133,12 @@ template<unsigned int dim> class Quadrature;
  * @ingroup transport_mod
  *
  */
-class TransportDG : public TransportBase
+template<class Model>
+class TransportDG : public TransportBase, public Model
 {
 public:
 
-	class EqData : public TransportBase::TransportEqData {
+	class EqData : public Model::ModelEqData {
 	public:
 
         enum BC_Type {
@@ -93,73 +149,20 @@ public:
         };
         static Input::Type::Selection bc_type_selection;
 
+        static Input::Type::Selection output_selection;
+
 		EqData();
-		RegionSet read_boundary_list_item(Input::Record rec);
 
-		Field<3, FieldValue<3>::Vector> disp_l;     ///< Longitudal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> disp_t;     ///< Transversal dispersivity (for each substance).
-		Field<3, FieldValue<3>::Vector> diff_m;     ///< Molecular diffusivity (for each substance).
-		Field<3, FieldValue<3>::Vector> sigma_c;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		Field<3, FieldValue<3>::Vector> dg_penalty; ///< Penalty enforcing inter-element continuity of solution (for each substance).
+		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		Field<3, FieldValue<3>::Vector> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
-        BCField<3, FieldValue<3>::EnumVector > bc_type;
-        BCField<3, FieldValue<3>::Vector > bc_flux;
-        BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+        BCField<3, FieldValue<3>::EnumVector > bc_type;    ///< Type of boundary condition (see also BC_Type)
+        BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
+        BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
 	};
 
-	/**
-	 * Auxiliary container class for Finite element and related objects of all dimensions.
-	 * Its purpose is to provide templated access to these objects, applicable in
-	 * the assembling methods.
-	 */
-	class FEObjects {
-	public:
 
-		FEObjects(Mesh *mesh_, unsigned int fe_order);
-		~FEObjects();
-
-		template<unsigned int dim>
-		inline FiniteElement<dim,3> *fe();
-
-		template<unsigned int dim>
-		inline FiniteElement<dim,3> *fe_rt();
-
-		template<unsigned int dim>
-		inline Quadrature<dim> *q();
-
-		template<unsigned int dim>
-		inline Mapping<dim,3> *mapping();
-
-		inline DOFHandlerMultiDim *dh();
-
-	private:
-
-		/// Finite elements for the solution of the advection-diffusion equation.
-		FiniteElement<1,3> *fe1_;
-		FiniteElement<2,3> *fe2_;
-		FiniteElement<3,3> *fe3_;
-
-		/// Finite elements for the water velocity field.
-		FiniteElement<1,3> *fe_rt1_;
-		FiniteElement<2,3> *fe_rt2_;
-		FiniteElement<3,3> *fe_rt3_;
-
-		/// Quadratures used in assembling methods.
-		Quadrature<0> *q0_;
-		Quadrature<1> *q1_;
-		Quadrature<2> *q2_;
-		Quadrature<3> *q3_;
-
-		/// Auxiliary mappings of reference elements.
-		Mapping<0,3> *map0_;
-		Mapping<1,3> *map1_;
-		Mapping<2,3> *map2_;
-		Mapping<3,3> *map3_;
-
-		/// Object for distribution of dofs.
-		DOFHandlerMultiDim *dh_;
-	};
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -178,8 +181,8 @@ public:
      * @param in_rec            input record
      */
     TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
-
     /**
+
      * @brief Declare input record type for the equation TransportDG.
      */
     static Input::Type::Record input_type;
@@ -190,22 +193,14 @@ public:
     static Input::Type::Selection dg_variant_selection_input_type;
 
     /**
+     * @brief Initialize solution in the zero time.
+     */
+	void zero_time_step() override;
+
+    /**
      * @brief Computes the solution in one time instant.
      */
-	void update_solution();
-
-	/**
-	 * @brief Returns the serialized solution array.
-	 * @param vector the solution
-	 * @param size   size of the array
-	 */
-	void get_solution_vector(double * &vector, unsigned int &size);
-
-	/**
-	 * @brief Returns the (possibly) parallel solution vector.
-	 * @param vector
-	 */
-	void get_parallel_solution_vector(Vec &vector);
+	void update_solution() override;
 
 	/**
 	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
@@ -222,17 +217,10 @@ public:
 	 */
 	void output_data();
 
-    /**
-     * @brief Sets pointer to data of other equations.
-     * TODO: there should be also passed the sigma parameter between dimensions
-     * @param cross_section is pointer to cross_section data of Darcy flow equation
-     */
-	void set_eq_data(Field< 3, FieldValue<3>::Scalar >* cross_section);
-
 	/**
 	 * @brief Getter for field data.
 	 */
-	virtual EqData *get_data() { return &data; }
+	virtual EqData *get_data() { return &data_; }
 
 	TimeIntegrationScheme time_scheme() { return implicit_euler; }
 
@@ -242,6 +230,10 @@ public:
 	~TransportDG();
 
 private:
+
+	inline typename Model::ModelEqData &data() { return data_; }
+
+	void output_vector_gather();
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -350,19 +342,24 @@ private:
 	 * @param edg				The edge.
 	 * @param s1				Side 1.
 	 * @param s2				Side 2.
-	 * @param K					Dispersivity tensor.
+	 * @param K_size            Size of vector of tensors K.
+	 * @param K1				Dispersivity tensors on side s1 (in quadrature points).
+	 * @param K2				Dispersivity tensors on side s2 (in quadrature points).
 	 * @param normal_vector		Normal vector to side 0 of the neighbour
 	 * 							(assumed constant along the side).
 	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 * @param omega				Computed weights.
-	 * @param transport_flux	Computed flux from side 1 to side 2.
+	 * @param transport_flux	Computed flux from side s1 to side s2.
 	 */
 	void set_DG_parameters_edge(const Edge &edg,
 	        const int s1,
 	        const int s2,
-	        const std::vector< std::vector<arma::mat33> > &K,
+	        const int K_size,
+	        const std::vector<arma::mat33> &K1,
+	        const std::vector<arma::mat33> &K2,
+	        const std::vector<double> &fluxes,
 	        const arma::vec3 &normal_vector,
 	        const double alpha1,
 	        const double alpha2,
@@ -375,14 +372,18 @@ private:
 	 *
 	 * Assumption is that the edge consists of only 1 side.
 	 * @param side       		The boundary side.
+	 * @param K_size            Size of vector of tensors K.
 	 * @param K					Dispersivity tensor.
+	 * @param ad_vector         Advection vector.
 	 * @param normal_vector		Normal vector (assumed constant along the edge).
 	 * @param alpha				Penalty parameter that influences the continuity
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 */
 	void set_DG_parameters_boundary(const SideIter side,
+			    const int K_size,
 	            const std::vector<arma::mat33> &K,
+	            const double flux,
 	            const arma::vec3 &normal_vector,
 	            const double alpha,
 	            double &gamma);
@@ -442,14 +443,8 @@ private:
 	// @{
 
 	/// Field data for model parameters.
-	EqData data;
+	EqData data_;
 
-
-	/// True if sorption is considered.
-	bool sorption;
-
-	/// True if dual porosity is considered.
-	bool dual_porosity;
 	// @}
 
 
@@ -499,8 +494,31 @@ private:
 	/// Array for storing the output solution data.
 	vector<double*> output_solution;
 
-	/// Class for handling the solution output.
-	OutputTime *transport_output;
+	/// Vector of solution data.
+	vector<Vec> output_vec;
+
+	/// Record with output specification.
+	Input::Record output_rec;
+
+	OutputTime *output_stream;
+
+
+	// @}
+
+
+	/// @name Auxiliary fields used during assembly
+	// @{
+
+	/// Mass matrix coefficients.
+	vector<double> mm_coef;
+	/// Advection coefficients.
+	vector<vector<arma::vec3> > ad_coef;
+	/// Diffusion coefficients.
+	vector<vector<arma::mat33> > dif_coef;
+	/// Advection coefficients on edges.
+	vector<vector<vector<arma::vec3> > > ad_coef_edg;
+	/// Diffusion coefficients on edges.
+	vector<vector<vector<arma::mat33> > > dif_coef_edg;
 
 	// @}
 
@@ -509,9 +527,6 @@ private:
 
 	/// @name Other
 	// @{
-
-    /// Indicates whether the fluxes have changed in the last time step.
-    bool flux_changed;
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;

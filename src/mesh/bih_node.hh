@@ -35,7 +35,6 @@
 #include "input/accessors.hh"
 
 class BIHNode {
-	friend class BIHTree;
 public:
 
     /// count of subareas - don't change
@@ -43,40 +42,46 @@ public:
     /// count of dimensions
     static const unsigned char dimension = 3;
 
+    /**
+     * Set leaf node.
+     */
+    void set_leaf(unsigned int begin, unsigned int end, double bound,unsigned int depth) {
+    	child_[0]=begin;
+    	child_[1]=end;
+    	bound_ = bound;
+    	axis_=dimension+depth;
+    }
 
     /**
-     * Constructor
-     *
-     * Default node is leaf node at depth 0.
+     * Set non-leaf node.
      */
-    BIHNode(unsigned int depth = 0)
-    : axis_( depth + dimension)
-    { }
-	/**
-	 * Destructor
-	 */
-	//~BIHNode();
-
-
+    void set_non_leaf(unsigned int left, unsigned int right, unsigned int axis) {
+    	ASSERT(axis < dimension," ");
+    	ASSERT(is_leaf(), " "); // first must be leaf node (must set bound_)
+    	axis_=axis;
+    	child_[0]=left;
+    	child_[1]=right;
+    }
 
     /// return true if node is leaf
-    inline bool is_leaf() const
-    	{ return axis_ >= dimension; }
+    bool is_leaf() const
+    { return axis_ >= dimension; }
 
     /// return depth of leaf node
+
     inline unsigned char depth() const
     {
     	ASSERT( is_leaf(), "Not leaf node.");
     	return axis_ - dimension;
     }
 
-    inline unsigned int leaf_begin() const
+    unsigned int leaf_begin() const
     {
     	ASSERT( is_leaf(), "Not leaf node.");
     	return child_[0];
     }
 
-    inline unsigned int leaf_end() const
+    unsigned int leaf_end() const
     {
     	ASSERT( is_leaf(), "Not leaf node.");
     	return child_[1];
@@ -94,20 +99,19 @@ public:
     }
 
     /// return axes (coordination of splitting) of inner node
-    inline unsigned char axis() const
+    unsigned int axis() const
     {
     	ASSERT(!is_leaf(), "Not in branch node.\n");
     	return axis_;
     }
 
-    inline double median() const
+    double bound() const
     {
-    	ASSERT(!is_leaf(), "Not in branch node.\n");
-    	return median_;
+    	return bound_;
     }
 
     /// Return index of child node.
-    inline unsigned int child(unsigned int i_child)  const
+    unsigned int child(unsigned int i_child)  const
     {
     	ASSERT(!is_leaf(), "Not in branch node.\n");
     	ASSERT_LESS( i_child, child_count );
@@ -116,14 +120,6 @@ public:
     }
 private:
 
-
-    /**
-	 * Constructor
-	 *
-	 * Set class members
-	 * @param depth Depth of node in tree.
-	 */
-	//BIHNode(unsigned int depth);
 
 	/**
 	 * Set depth of node to axes_ class members
@@ -136,8 +132,14 @@ private:
 
     /// child nodes indexes
     unsigned int child_[child_count];
-    /// value of median which splits area to subareas (coordination is getting by axes_)
-    double median_;
+
+    /**
+     * A non-leaf node has two childs (left and right). Their bounding boxes are created from the bounding box of parent
+     * so that in one direction the left child set max to its bound_ and the right child set its min to bound_.
+     * This way we can always repcreate bounding box of every node when traversing the tree from the root.
+     */
+    double bound_;
+
     /**
      * Value stores coordination of splitting area for inner nodes or depth for leaf nodes
      *  - values 0,1,2 indicate inner node of tree and coordination of splitting area

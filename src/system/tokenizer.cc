@@ -29,7 +29,6 @@ Tokenizer::Tokenizer(const FilePath &fp)
     own_stream_->open( string(fp).c_str() );
     // check correct openning
     INPUT_CHECK(! own_stream_->fail(), "Can not open input file '%s'.\n", f_name_.c_str() );
-    //own_stream_->exceptions ( ifstream::failbit | ifstream::badbit );
 
 }
 
@@ -72,7 +71,6 @@ bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_searc
 bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // input assert about remaining tokens
     if (assert_for_remaining_tokens && (! eol() )) {
-        //DBGMSG("Line: '%s'\n", line_.c_str());
         xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_);
     }
 

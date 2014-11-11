@@ -63,7 +63,7 @@ function print_help {
 	echo "    --host HOSTNAME               Use given HOSTNAME for backend script resolution. Script 'config/\${HOSTNAME}.sh' must exist."
 	echo "    -t, --walltime TIMEOUT        Specifies a maximum time period after which Flow123d will be killed.  Time TIMEOUT is expressed in seconds as an integer,\n or in the form: [[hours:]minutes:]seconds[.milliseconds]."
 	echo "    -m, --mem MEM                 Flow123d can use only MEM magabytes per process."
-	echo "    -n NICE, --nice               Run Flow123d with changed (lower) priority."
+	echo "    -n, --nice NICE               Run Flow123d with changed (lower) priority."
 	echo "    -np N                         Run Flow123d using N parallel processes." 
 	echo "    -ppn PPN                      Run PPN processes per node. NP should be divisible by PPN other wise it will be truncated."
 	echo "    -q, --queue QUEUE             Name of queue to use for batch processing. For interactive runs this redirect stdout and stderr to the file with name in format QUEUE.DATE."
@@ -133,6 +133,15 @@ function parse_arguments()
                 fi
                 shift
         done        
+        
+        if [ -n "${UNRESOLVED_PARAMS}" ]
+        then
+            echo "-----------------------------------------------------"
+            echo "WARNNING, unresolved parameters: ${UNRESOLVED_PARAMS}"
+            echo "use flow123d.sh --help for documentation"
+            echo "-----------------------------------------------------"
+            echo
+        fi    
         
         FLOW_PARAMS="$@"
 	
@@ -218,7 +227,7 @@ function call_flow() {
       if [ -x "${FLOW123D}" ]
       then
               (
-              ulimit -S -v ${MEM_LIMIT}
+              ulimit -S -v ${MEM_LIMIT} >/dev/null
               nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
               exit $?
               )
@@ -291,6 +300,7 @@ if [ -f "${0%/*}/config/${HOSTNAME}.sh" ]
 then
 	. "${0%/*}/config/${HOSTNAME}.sh"
 fi 
+
 
 # Run Flow123d
 run_flow

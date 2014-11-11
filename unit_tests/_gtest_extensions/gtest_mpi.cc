@@ -19,20 +19,20 @@ namespace testing {
 //
 // FormatCountableNoun(1, "formula", "formuli") returns "1 formula".
 // FormatCountableNoun(5, "book", "books") returns "5 books".
-static internal::String FormatCountableNoun(int count,
+static std::string FormatCountableNoun(int count,
                                             const char * singular_form,
                                             const char * plural_form) {
-  return internal::String::Format("%d %s", count,
-                                  count == 1 ? singular_form : plural_form);
+	  return internal::StreamableToString(count) + " " +
+	      (count == 1 ? singular_form : plural_form);
 }
 
 // Formats the count of tests.
-static internal::String FormatTestCount(int test_count) {
+static std::string FormatTestCount(int test_count) {
   return FormatCountableNoun(test_count, "test", "tests");
 }
 
 // Formats the count of test cases.
-static internal::String FormatTestCaseCount(int test_case_count) {
+static std::string FormatTestCaseCount(int test_case_count) {
   return FormatCountableNoun(test_case_count, "test case", "test cases");
 }
 
@@ -56,9 +56,8 @@ static const char * TestPartResultTypeToString(TestPartResult::Type type) {
       return "Unknown result type";
   }
 }
-
 // Prints a TestPartResult to a String.
-static internal::String PrintTestPartResultToString(
+static std::string PrintTestPartResultToString(
     const TestPartResult& test_part_result) {
   return (Message()
           << internal::FormatFileLocation(test_part_result.file_name(),
@@ -69,7 +68,7 @@ static internal::String PrintTestPartResultToString(
 
 // Prints a TestPartResult.
 static void PrintTestPartResult(const TestPartResult& test_part_result) {
-  const internal::String& result =
+  const internal::string& result =
       PrintTestPartResultToString(test_part_result);
   printf("%s\n", result.c_str());
   fflush(stdout);
@@ -85,6 +84,7 @@ static void PrintTestPartResult(const TestPartResult& test_part_result) {
   ::OutputDebugStringA("\n");
 #endif
 }
+
 
 namespace internal {
 
@@ -106,39 +106,39 @@ void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, cons
 // (not yet MPI friendly)
 
 void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
-/*
-    if (GTEST_FLAG(repeat) != 1)
-    printf("\nRepeating all tests (iteration %d) . . .\n\n", iteration + 1);
+	/*
+	    if (GTEST_FLAG(repeat) != 1)
+	    printf("\nRepeating all tests (iteration %d) . . .\n\n", iteration + 1);
 
-  const char* const filter = GTEST_FLAG(filter).c_str();
+	  const char* const filter = GTEST_FLAG(filter).c_str();
 
-  // Prints the filter if it's not *.  This reminds the user that some
-  // tests may be skipped.
-  if (! internal::String::CStringEquals(filter, kUniversalFilter)) {
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: %s filter = %s\n", GTEST_NAME_, filter);
-  }
+	  // Prints the filter if it's not *.  This reminds the user that some
+	  // tests may be skipped.
+	  if (! internal::String::CStringEquals(filter, kUniversalFilter)) {
+	    ColoredPrintf(COLOR_YELLOW,
+	                  "Note: %s filter = %s\n", GTEST_NAME_, filter);
+	  }
 
-  if (internal::ShouldShard(kTestTotalShards, kTestShardIndex, false)) {
-    const Int32 shard_index = Int32FromEnvOrDie(kTestShardIndex, -1);
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: This is test shard %d of %s.\n",
-                  static_cast<int>(shard_index) + 1,
-                  internal::posix::GetEnv(kTestTotalShards));
-  }
+	  if (internal::ShouldShard(kTestTotalShards, kTestShardIndex, false)) {
+	    const Int32 shard_index = Int32FromEnvOrDie(kTestShardIndex, -1);
+	    ColoredPrintf(COLOR_YELLOW,
+	                  "Note: This is test shard %d of %s.\n",
+	                  static_cast<int>(shard_index) + 1,
+	                  internal::posix::GetEnv(kTestTotalShards));
+	  }
 
-  if (GTEST_FLAG(shuffle)) {
-    ColoredPrintf(COLOR_YELLOW,
-                  "Note: Randomizing tests' orders with a seed of %d .\n",
-                  unit_test.random_seed());
-  }
+	  if (GTEST_FLAG(shuffle)) {
+	    ColoredPrintf(COLOR_YELLOW,
+	                  "Note: Randomizing tests' orders with a seed of %d .\n",
+	                  unit_test.random_seed());
+	  }
 
-  ColoredPrintf(COLOR_GREEN,  "[==========] ");
-  printf("Running %s from %s.\n",
-         FormatTestCount(unit_test.test_to_run_count()).c_str(),
-         FormatTestCaseCount(unit_test.test_case_to_run_count()).c_str());
-  fflush(stdout);
-*/
+	  ColoredPrintf(COLOR_GREEN,  "[==========] ");
+	  printf("Running %s from %s.\n",
+	         FormatTestCount(unit_test.test_to_run_count()).c_str(),
+	         FormatTestCaseCount(unit_test.test_case_to_run_count()).c_str());
+	  fflush(stdout);
+	*/
 }
 
 
@@ -153,12 +153,11 @@ void MPI_PrettyUnitTestResultPrinter::OnEnvironmentsSetUpStart(const UnitTest& /
 
 void MPI_PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case) {
   if (rank==0) {
-      test_case_name_ = test_case.name();
-      const internal::String counts =
+      const std::string counts =
               FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
 
       ColoredPrintf(COLOR_GREEN, "[----------] ");
-      printf("%s from %s", counts.c_str(), test_case_name_.c_str());
+      printf("%s from %s", counts.c_str(), test_case.name());
       if (test_case.type_param() == NULL) {
           printf("\n");
       } else {
@@ -172,7 +171,7 @@ void MPI_PrettyUnitTestResultPrinter::OnTestCaseStart(const TestCase& test_case)
 void MPI_PrettyUnitTestResultPrinter::OnTestStart(const TestInfo& test_info) {
   if (rank == 0) {
       ColoredPrintf(COLOR_GREEN,  "[ RUN      ] ");
-      PrintTestName(test_case_name_.c_str(), test_info.name());
+      PrintTestName(test_info.test_case_name(), test_info.name());
       printf("\n");
       fflush(stdout);
   }
@@ -182,13 +181,12 @@ void MPI_PrettyUnitTestResultPrinter::OnTestStart(const TestInfo& test_info) {
 // Called after a failed assertion or a SUCCEED() invocation.
 void MPI_PrettyUnitTestResultPrinter::OnTestPartResult(const TestPartResult& result) {
     // let print one process after other
-    for(unsigned int i=0; i < np; i++) {
+    for(int i=0; i < np; i++) {
         if (rank == i && (result.type() != TestPartResult::kSuccess)) {
             printf("[%d] ", rank);
             PrintTestPartResult(result);
             fflush(stdout);
         }
-      //  MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 
@@ -204,7 +202,7 @@ void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
       } else {
           ColoredPrintf(COLOR_RED, "[  FAILED  ] ");
       }
-      PrintTestName(test_case_name_.c_str(), test_info.name());
+      PrintTestName(test_info.test_case_name(), test_info.name());
 
       // HERE we should print comments for failed processes
       if (! reduced_success)
@@ -225,14 +223,14 @@ void MPI_PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestCase& test_case) {
   if (!GTEST_FLAG(print_time)) return;
 
   if (rank==0) {
-      test_case_name_ = test_case.name();
-      const internal::String counts =
-              FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
-      ColoredPrintf(COLOR_GREEN, "[----------] ");
-      printf("%s from %s (%s ms total)\n\n",
-         counts.c_str(), test_case_name_.c_str(),
-         internal::StreamableToString(test_case.elapsed_time()).c_str());
-      fflush(stdout);
+	  const std::string counts =
+	      FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
+	  ColoredPrintf(COLOR_GREEN, "[----------] ");
+	  printf("%s from %s (%s ms total)\n\n",
+	         counts.c_str(), test_case.name(),
+	         internal::StreamableToString(test_case.elapsed_time()).c_str());
+	  fflush(stdout);
+
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }

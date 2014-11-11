@@ -29,15 +29,15 @@
  */
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 
 class GmshMeshReader;
 
 template <int spacedim, class Value>
-class FieldElementwise : public FieldBase<spacedim, Value>
+class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
-    typedef typename FieldBase<spacedim, Value>::Point Point;
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
     FieldElementwise(unsigned int n_comp=0);
 
@@ -47,9 +47,16 @@ public:
      */
     FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
 
+    /**
+     * Alternative to previous constructor.
+     */
+    FieldElementwise(vector<double> &data, unsigned int n_components)
+    : FieldElementwise(&(data[0]), n_components, data.size() )
+    {}
+
     static Input::Type::Record input_type;
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -69,7 +76,7 @@ public:
      *
      * See also description of the FieldBase<...>::set_mesh.
      */
-    virtual void set_mesh(Mesh *mesh, bool boundary_domain);
+    virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
 
 
     /**
@@ -87,15 +94,14 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// If the data vector is provided at construction, we disallow initialization form input.
-    bool allow_init_from_input;
+    /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
+    /// and do not delete data pointer in destructor.
+    bool internal_raw_data;
     /**
      * Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
      * TODO: temporary solution until we have separate mesh for the boundary part
      */
     bool boundary_domain_;
-    /// number of bulk data lines in the buffer
-    //unsigned int bulk_size_;
     /// Allocated size of data_ buffer
     unsigned int data_size_;
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
@@ -106,7 +112,7 @@ private:
     unsigned int n_components_;
 
     GmshMeshReader *reader_;
-    Mesh *mesh_;
+    const Mesh *mesh_;
     std::string field_name_;
 };
 

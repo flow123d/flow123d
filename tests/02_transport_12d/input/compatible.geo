@@ -3,8 +3,8 @@
 
 Mesh.Algorithm=1;
 
-h2d=0.1;
-h2d_critical=0.1;
+h2d=0.5;
+h2d_critical=0.5;
 
 Point(2) = {0, 8, 0, h2d};
 Point(3) = {0, 0.7, 0, h2d};

@@ -1,5 +1,5 @@
 #include <cmath>
-#include "system/exceptions.hh"
+#include "system/exc_common.hh"
 
 #include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"
@@ -13,11 +13,6 @@ int TTetrahedron::generateId() {
 
 TTetrahedron::TTetrahedron() {
 	id = generateId();
-
-	/*T1 = new TTriangle();
-	T2 = new TTriangle();
-	T3 = new TTriangle();
-	T4 = new TTriangle();*/
 
 	A1 = new TAbscissa();
 	A2 = new TAbscissa();
@@ -54,16 +49,6 @@ TTetrahedron::TTetrahedron(const TPoint& X1, const TPoint& X2,
 }
 
 TTetrahedron::~TTetrahedron() {
-    /*delete X1;
-    delete X2;
-    delete X3;
-    delete X4;*/
-
-    /*delete T1;
-    delete T2;
-    delete T3;
-    delete T4;*/
-
     delete A1;
     delete A2;
     delete A3;

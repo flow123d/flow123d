@@ -40,8 +40,8 @@
 #include <petscvec.h>
 
 class Mesh;
-class FieldCommonBase;
 class Region;
+class FieldSet;
 typedef std::vector<Region> RegionSet;
 
 
@@ -71,7 +71,7 @@ class EquationBase {
 public:
 
     /**
-     * Default constructor. Necessary to make tests fixtures for equations.
+     * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
      * TODO:
      * Replace setting all in constructor with appropriate getters and setters.
      * Make appropriate checks if key ingredients are initialized.
@@ -89,22 +89,33 @@ public:
     virtual ~EquationBase() {};
 
     /**
-     *  Child class have to implement computation of solution in actual time.
+     *  Initialization of the solution in the zero time.
+     *  There is lot of things that can not be done in the constructor
+     *  since we have not fully initialized fields yet. Fields coming from coupling
+     *  has to be set after the constructor and before zero_time_step.
      */
-    virtual void update_solution() {
-        // solve equation here ...
-        time_->next_time();
+    virtual void zero_time_step() {
+      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
     /**
-     *  Computation of one time step is split into update_solution() and choose_next_time() in order to allow dependency of the next time step
-     *  on other coupled models.
+     *  Calculation of the next time step and its output.
      */
-//    virtual void compute_one_step() {
-//        update_solution();
-//        choose_next_time();
-//    }
+    virtual void update_solution() {
+      if (equation_empty_) DBGMSG("Calling 'update_solution' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'update_solution' of '%s' is not implemented.\n",typeid(*this).name());
+    }
 
+    ///Initialize fields.
+    /** 
+     * All members that are needed to set fields must be set at this moment (e.g. number of components).
+     */
+    virtual void initialize() {
+      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());      
+    }
+    
     /**
      * Fix the next discrete time for computation.
      * Can be rewritten in child class to set possible constrains
@@ -131,9 +142,16 @@ public:
      */
     inline TimeGovernor const &time()
     {
-        ASSERT(NONULL(time_),"Time governor was not created.\n");
+        ASSERT( time_,"Time governor was not created.\n");
         return *time_;
     }
+
+    /**
+     * Set time governor.
+     *
+     * Used to set pointer to common time governor (e.g. in Transport Operator Splitting, Reaction).
+     */
+    virtual void set_time_governor(TimeGovernor &time);
 
     /**
      * Most actual planned time for solution.
@@ -159,196 +177,54 @@ public:
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
-        {return equation_mark_type_;}
+    {
+    	return time().equation_mark_type();
+    }
+
+    /**
+     * Return reference to the equation data object containing all fields
+     * that the equation needs or produce.
+     */
+    FieldSet &data()
+    {
+    	ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
+    	return *eq_data_;
+    }
 
     /**
      * Child class have to implement getter for sequential solution vector.
+     * DEPRECATED
      */
-    virtual void get_solution_vector(double * &vector, unsigned int &size) =0;
+    virtual void get_solution_vector(double * &vector, unsigned int &size)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * Child class have to implement getter for parallel solution vector.
+     * DEPRECATED
      */
-    virtual void get_parallel_solution_vector(Vec &vector) =0;
-
-protected:
-    Mesh * mesh_;
-    TimeGovernor *time_;
-    TimeMark::Type equation_mark_type_;
-    Input::Record input_record_;
-};
-
-
-
-/**
- * Base class for a data subclasses of equations. We suggest following structure of an equation class:
- * @code
- *      class SomeEquation : public EqBase {
- *          class EqData : public EqDataBase {
- *          ...
- *          }
- *          ...
- *
- *          ///
- *          EqData data_;
- *      }
- * @endcode
- * The @p SomeEquation::EqData class should be used to introduce all necessary data of the equation in terms of bulk (Field)
- * and boundary (BCField) fields. The base class EqDataBase implements some common operations with these fields as
- * construction of the Input::Type objects, reading fields from the input and calling set_time methods.
- *
- *
- * TODO:
- * Mechanism to access fields in EqData from other equations and vice versa, set (or copy) field from somewhere else.
- * - Is it necessary to have EqDataBase as separate class from EqBase ?
- * - getter mechanism:
- *   template <int spacedim, class T>
- *   Field<spacedim, T> *get_field(string &name) {
- *      FieldCommonBase *base_field = get_field_(name); // EqDataBase should have some name database
- *      if ( typeid(base_field) == typeid(Field<spacedim, T> *)
- *      return static_cast<...>(base_field)
- *   }
- *
- * - setter mechanism:
- *   - Should it suppress field on the input? Not easy to accomplish.
- *     Need way how to modify an Input::Type tree from higher levels,
- *     e.g. Let Equation1 to make its Input::Type::Record, make its deep_copy & modify it and use it by Equation_2
- *     After all Input::Type tree is just a definition of input structure. Seems that we made it too rigid.
- */
-class EqDataBase {
-public:
-	TYPEDEF_ERR_INFO( EI_Domain, string);
-	DECLARE_EXCEPTION(ExcUnknownDomain,
-			<< "Unknown field domain: " << EI_Domain::val << "\n");
-	//		<< Input::EI_Address::val << endl);
-    /**
-     * The only constructor. The name of the equation has to be provided by parameter @p eq_name.
-     */
-    EqDataBase(const std::string& eq_name);
+    virtual void get_parallel_solution_vector(Vec &vector)
+    { ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
-     * Adds given field into list of fields for group operations on fields.
-     * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
-     * @p d_val with default value. This method is rather called through the macro ADD_FIELD
+     * @brief Write computed fields.
      */
-    void add_field( FieldCommonBase *field, const string &name, const string &desc, Input::Type::Default d_val= Input::Type::Default::optional() );
-
-    /**
-     * This method returns a Record for
-     * - @p eq_class_name should be name of the particular equation class, the name of bulk data record has form:
-     *   'EqName_BulkData' and record for boundary data has name 'EqName_BoundaryData'. However, these names has
-     *   only documentation purpose since these records are not descendants of an AbstractRecord.
-     */
-    Input::Type::Record generic_input_type(bool bc_regions);
-
-    /**
-     * Return Input::Type for field descriptor record. The key 'bulk_data' of an equation should be declared as
-     * Array of this record.
-     */
-    virtual Input::Type::Record bulk_input_type();
-
-    /**
-     * Return Input::Type for field descriptor record. The key 'boundary_data' of an equation should be declared as
-     * Array of this record.
-     */
-    virtual Input::Type::Record boundary_input_type();
-
-    /**
-     * Actualize fields for actual state of the time governor. We assume that this method is called
-     * before the actual time in time governor is solved.
-     *
-     * - call set_time, which should read up to the first bigger time
-     * - check that all fields are initialized
-     *
-     */
-    virtual void set_time(const TimeGovernor &time);
-
-    /**
-     * Set mesh pointer in EqDataBase so that it can be set in  those fields that needs it.
-     * The mesh has to be set before initialization of fields from input.
-     */
-    void set_mesh(Mesh *mesh);
-
-    /**
-     * Set bulk and boundary region data list accessors.
-     * The method takes accessor @p bulk_list of an input array containing records with
-     * definition of fields on individual regions (Region data list) and similar accessor @p
-     * bc_list with Region data list for boundary fields. The method do not initialize fields
-     * from the lists this is done in set_time.
-     *
-     * Either of accessors can be empty. You can get an empty accessor by default constructor Input::Array().
-     */
-    void init_from_input(Input::Array bulk_list, Input::Array bc_list);
-
-    /**
-     * Reads input from one region - one time descriptor.
-     */
-    virtual RegionSet read_boundary_list_item(Input::Record rec);
-
-    virtual RegionSet read_bulk_list_item(Input::Record rec);
-
-    virtual ~EqDataBase();
-
-protected:
-    EqDataBase();
-
-    void check_times(Input::Array &list);
-
-    void set_time(const TimeGovernor &time, Input::Array &list, Input::Iterator<Input::Record> &it, bool bc_regions);
-
-    RegionSet read_list_item(Input::Record rec, bool bc_regions);
-
-    /// Pointer to mesh where the equation data fields live.
-    Mesh *mesh_;
-    /// Equation name. Used to name input type records.
-    std::string equation_name_;
-    /// List of all fields.
-    std::vector<FieldCommonBase *> field_list;
-
-    /// Accessors to to bulk and boundary input arrays.
-    Input::Array bulk_input_array_, boundary_input_array_;
-    /// Iterators into these arrays pointing to the first unprocessed item.
-    Input::Iterator<Input::Record> bulk_it_, boundary_it_;
-};
-
-
-/**
- * Macro to simplify call of EqDataBase::add_field method. Two forms are supported:
- *
- * ADD_FIELD(some_field, description);
- * ADD_FIELD(some_field, description, Default);
- *
- * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
- * value is specified, so the user must initialize the field on all regions (This is checked at the end of the method
- * EqDataBase::init_from_input.
- *
- * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
- * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
- * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
- */
-#define ADD_FIELD(name, ...)                   add_field(&name, string(#name), __VA_ARGS__)
-
-
-
-
-
-
-/**
- * Demonstration of empty equation class, which can be used if user turns off some equation in the model.
- */
-class EquationNothing : public EquationBase {
-
-public:
-    EquationNothing(Mesh &mesh);
-
-    virtual void get_solution_vector(double * &vector, unsigned int &size) {
-        vector = NULL;
-        size = 0;
+    virtual void output_data() {
+      if (equation_empty_) DBGMSG("Calling 'output_data' of empty equation '%s'.\n",typeid(*this).name());
+      else DBGMSG("Method 'output_data' of '%s' is not implemented.\n",typeid(*this).name());
     }
 
-    virtual void get_parallel_solution_vector(Vec &vector) {};
-
-    virtual ~EquationNothing() {};
+protected:
+    bool equation_empty_;       ///< flag is true if only default constructor was called
+    Mesh * mesh_;
+    TimeGovernor *time_;
+    Input::Record input_record_;
+    
+    /**
+     * Pointer to the equation data object. Every particular equation is responsible
+     * to set the pointer in its constructor. This is used by the general method
+     * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
+     */
+    FieldSet *eq_data_;
 };
 
 

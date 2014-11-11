@@ -4,8 +4,9 @@
 05_flow_boundary_conditions
 06_flow_coupling
 08_steady_flow_sources
+09_flow_steady_time_dep
 10_unsteady_2d
-11_reactional_transport_semchem
+11_reactions_semchem
 12_radioactive_decay
 13_edge_solute_mixing
 14_trans_time_bc
@@ -15,3 +16,6 @@
 18_diffusion_fracture
 19_BC_interpolation
 20_limited_sorption
+21_heat_transfer
+22_noncompatible
+23_dual_porosity

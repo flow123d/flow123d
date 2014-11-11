@@ -98,6 +98,23 @@ public:
 	 */
 	BoundingBox(const vector<Point> &points);
 
+	/**
+	 * Set maximum in given axis.
+	 */
+	void set_max(unsigned int axis, double max) {
+		ASSERT_LESS(axis , dimension);
+		ASSERT_LE( min(axis) , max);
+		max_vertex_[axis] = max;
+	}
+
+	/**
+	 * Set minimum on given axis.
+	 */
+	void set_min(unsigned int axis, double min) {
+		ASSERT_LESS(axis, dimension);
+		ASSERT_LE(min , max(axis));
+		min_vertex_[axis] = min;
+	}
 
 	/**
 	 *  Return minimal vertex of the bounding box.
@@ -112,6 +129,29 @@ public:
 	const Point &max() const {
 		return max_vertex_;
 	}
+
+	/**
+	 *  Return minimal value on given axis.
+	 */
+	double min(unsigned int axis) const {
+		return min()[axis];
+	}
+
+	/**
+	 *  Return maximal value on given axis.
+	 */
+	double max(unsigned int axis) const {
+		return max()[axis];
+	}
+
+
+	/**
+	 *  Return size of the box in given axis.
+	 */
+	double size(unsigned int axis) const {
+		return max()[axis] - min()[axis];
+	}
+
 
 	/**
 	 *  Return center of the bounding box.
@@ -156,7 +196,6 @@ public:
     bool intersect(const BoundingBox &b2) const
     {
     	for (unsigned int i=0; i<dimension; i++) {
-    		//double delta = (max_vertex_(i) - min_vertex_(i)) *
     		if ( (min_vertex_(i) > b2.max_vertex_(i) + epsilon) ||
     			 (b2.min_vertex_(i)  > max_vertex_(i) + epsilon ) ) return false;
     	}
@@ -164,21 +203,21 @@ public:
     }
 
     /**
-     * Returns true is projection of the box to @p axis is an interval
-     * less or equal (with tolerance) to given @p value.
+     * Returns true if projection of the box to @p axis is an interval
+     * less then (with tolerance) to given @p value.
      */
-    bool projection_le(unsigned int axis, double value) const
+    bool projection_lt(unsigned int axis, double value) const
     {
-    	return max_vertex_(axis) - epsilon < value;
+    	return max_vertex_(axis) + epsilon < value;
     }
 
     /**
-     * Returns true is projection of the box to @p axis is an interval
-     * greater or equal (with tolerance) to given @p value.
+     * Returns true if projection of the box to @p axis is an interval
+     * greater then (with tolerance) to given @p value.
      */
-    bool projection_ge(unsigned int axis, double value) const
+    bool projection_gt(unsigned int axis, double value) const
     {
-    	return max_vertex_(axis) + epsilon > value;
+    	return min_vertex_(axis) - epsilon > value;
     }
 
     /**
@@ -202,7 +241,7 @@ public:
     }
 
     /**
-     * Expand bounding box to contain also gitven @p point.
+     * Expand bounding box to contain also given @p point.
      */
     void expand(const Point &point) {
 		for(unsigned int j=0; j<dimension; j++) {
@@ -232,7 +271,14 @@ private:
 
 /// Overloads output operator for box.
 inline ostream &operator<<(ostream &stream, const BoundingBox &box) {
-	return stream << "Box(" << arma::trans(box.min()) << ", " << arma::trans(box.max()) << ") ";
+	stream << "Box("
+		   << box.min(0) << " "
+		   << box.min(1) << " "
+		   << box.min(2) << "; "
+		   << box.max(0) << " "
+		   << box.max(1) << " "
+		   << box.max(2) << ")";
+	return stream;
 }
 
 #endif /* BOX_ELEMENT_HH_ */

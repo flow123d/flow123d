@@ -94,26 +94,23 @@ IT::Record get_type_record() {
 TEST(JSONReference, valid_reference_rec_test) {
 	using namespace Input;
 
-    JSONToStorage json_reader;
-	stringstream ss(valid_record_json.c_str());
-	json_reader.read_stream( ss, get_type_record());
-	// Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
+	JSONToStorage json_reader( valid_record_json, get_type_record());
 }
 
 TEST(JSONReference, cyclic_reference_rec_test) {
 	using namespace Input;
 
-    JSONToStorage json_reader;
-	stringstream ss(cyclic_record_json.c_str());
-    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, JSONPath::ExcReferenceNotFound,
+    EXPECT_THROW_WHAT(
+    		{JSONToStorage json_reader( cyclic_record_json, get_type_record());},
+    		JSONPath::ExcReferenceNotFound,
 			"cannot follow reference");
 }
 
 TEST(JSONReference, cyclic_reference_arr_test) {
 	using namespace Input;
 
-    JSONToStorage json_reader;
-	stringstream ss(cyclic_array_json.c_str());
-    EXPECT_THROW_WHAT( {json_reader.read_stream( ss, get_type_record());}, JSONPath::ExcReferenceNotFound,
+    EXPECT_THROW_WHAT(
+    		{JSONToStorage json_reader( cyclic_array_json, get_type_record());},
+    		JSONPath::ExcReferenceNotFound,
 			"cannot follow reference");
 }

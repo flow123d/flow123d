@@ -17,24 +17,44 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
- * $Revision$
- * $LastChangedBy$
- * $LastChangedDate$
+ * $Id: output.h 2505 2013-09-13 14:52:27Z jiri.hnidek $
+ * $Revision: 2505 $
+ * $LastChangedBy: jiri.hnidek $
+ * $LastChangedDate: 2013-09-13 16:52:27 +0200 (Pá, 13 IX 2013) $
  *
  * @file    output.h
  * @brief   Header: The functions for all outputs.
  *
  *
  * TODO:
- * - remove Output, keep OutputTime only
+ * - remove Output, keep OutputTime only (done)
  * - remove parameter mesh from static method OutputTime::output_stream (done)
  * - move initialization of streams from hc_expolicit_sequantial to
  *     Aplication::Aplication() constructor (done)
- * - OutputTime::register_XXX_data - use MultiField and Field parameters
- * - set type of data output (element, corner, point) through parameter not function name
+ * - OutputTime::register_XXX_data - should accept iterator to output record of particular equation, ask for presence of the key
+ *   that has same name as the name of the quantity to output, extract the string with stream name from this key, find the stream
+ *   and perform output.
  *
- * - make profiling and optimization - output is very slow
+ *   on input:
+ *
+ *   { // darcy flow
+ *      output = {
+ *          pressure_nodes="nodal_data",
+ *          pressure_elements="el_data"
+ *      }
+ *   }
+ *
+ *   output_streams=[
+ *      {name="nodal_data", ... },
+ *      {name="el_data", ... }
+ *   ]
+ *
+ *   in code:
+ *
+ *   Input::Record out_rec = in_rec.val<Input::Record>("output");
+ *   OutputTime::register_node_data(mesh_, "pressure_nodes", "L", out_rec, node_pressure);
+ *   OutputTime::register_elem_data(mesh_, "pressure_elements", "L", out_rec, ele_pressure);
+ *   ...
  *
  * - use exceptions instead of returning result, see declaration of exceptions through DECLARE_EXCEPTION macro
  * - move write_data from equations into coupling, write all streams
@@ -52,795 +72,315 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <mpi.h>
+#include <ostream>
 
-#include "system/xio.h"
+#include "system/system.hh"
 #include "mesh/mesh.h"
 
+#include "fields/field.hh"
 #include "input/accessors.hh"
+#include "system/exceptions.hh"
+#include "io/output_time.hh"
 
-template<int spacedim, class Value>
-class MultiField;
-template<int spacedim, class Value>
-class Field;
+#include "io/output_data_base.hh"
+
+//class OutputVTK;
+//class OutputMSH;
 
 
-class OutputFormat;
 
 /**
- * Class of output data storing reference on data.
+ * \brief This class is used for storing data that are copied from field.
  *
- * This class is referenced in Output and OuputTime class. The object contains
- * only reference on data. The referenced data could not be freed or rewrite
- * until data are written to the output file.
+ *
  */
-class OutputData {
-private:
+template <class Value>
+class OutputData : public OutputDataBase {
 public:
-    // Types of data, that could be written to output file
-    typedef enum {
-        OUT_VECTOR_INT_SCA,
-        OUT_VECTOR_INT_VEC,
-        OUT_VECTOR_FLOAT_SCA,
-        OUT_VECTOR_FLOAT_VEC,
-        OUT_VECTOR_DOUBLE_SCA,
-        OUT_VECTOR_DOUBLE_VEC,
-        OUT_ARRAY_INT_SCA,
-        OUT_ARRAY_FLOAT_SCA,
-        OUT_ARRAY_DOUBLE_SCA
-    } OutDataType;
+	typedef typename Value::element_type ElemType;
 
-    // Types of reference data
-    typedef enum {
-        NODE_DATA,
-        CORNER_DATA,
-        ELEM_DATA
-    } RefType;
+	/**
+     * \brief Constructor of templated OutputData
+     */
+	OutputData(const FieldCommon &field,
+	        unsigned int size)
+	: val_aux(aux)
+	{
+		this->field_name = field.name();
+		this->field_units = field.units();
+		this->output_field_name = this->field_name;
 
-    string          *name;      ///< String with name of data
-    string          *units;     ///< String with units
-    void            *data;      ///< Pointer at own data
-    OutDataType     type;       ///< Type values in vector
-    RefType         ref_type;   ///< Type of reference data
-    int             comp_num;   ///< Number of components in vector
-    int             num;        ///< Number of values in vector/array
+		this->n_values=size;
+		//val_aux.set_n_comp(10); // just to check that n_elem depends on n_comp
+
+		if (val_aux.NCols_==1) {
+			if (val_aux.NRows_==1) {
+				this->n_elem_ = scalar;
+				this->n_rows = 1;
+				this->n_cols = 1;
+			} else {
+				if (val_aux.NRows_>1) {
+					if (val_aux.NRows_ > 3) {
+						xprintf(PrgErr, "Do not support output of vectors with fixed size >3. Field: %s\n", this->field_name.c_str());
+					} else {
+						this->n_elem_ = vector;
+						this->n_rows = 3;
+						this->n_cols = 1;
+					}
+				} else {
+					THROW(OutputTime::ExcOutputVariableVector() << OutputTime::EI_FieldName(this->field_name));
+				}
+			}
+		} else {
+			this->n_elem_ = tensor;
+			this->n_rows = 3;
+			this->n_cols = 3;
+		}
+
+
+	    data_ = new ElemType[n_values * n_elem_];
+	}
 
 
     /**
-     * Un-named constructor can't be called directly
+     * \brief Destructor of OutputData
      */
-    OutputData() {};
-
-    string* getName(void) { return name; };
-    string* getUnits(void) { return units; };
-    int getCompNum(void) { return comp_num; };
-    int getValueNum(void) { return num; };
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, int *data, unsigned int size);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, float *data, unsigned int size);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, double *data, unsigned int size);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector<int> &data);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector< vector<int> > &data);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector<float> &data);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector< vector<float> > &data);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector<double> &data);
-
-    /**
-     * \brief Constructor for OutputData storing names of output data and their
-     * units.
-     */
-    OutputData(std::string name, std::string unit, std::vector< vector<double> > &data);
-
+    ~OutputData()
+	{
+	    delete[] this->data_;
+	}
 
 
     /**
-     * \brief Destructor for OutputData
+     * Output data element on given index @p idx. Method for writing data to output stream
+     *
+     * TODO: should at least output whole output value at once, since storage format should be hidden.
+     * TODO: should output whole array at once, otherwise this could be performance bottleneck.
+     * TODO: indicate if the tensor data are output in column-first or raw-first order
+     *       and possibly implement transposition. Set such property for individual file formats.
+     *       Class OutputData stores always in raw-first order.
      */
-    ~OutputData() {};
+    void print(ostream &out_stream, unsigned int idx) override
+    {
+        ASSERT_LESS(idx, this->n_values);
+        ElemType *ptr_begin = data_ + n_elem_ * idx;
+        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+        	out_stream << *ptr << " ";
+    }
+
+    /**
+     * Store data element of given data value under given index.
+     */
+    void store_value(unsigned int idx, const Value& value) {
+    	operate(idx, value,  [](ElemType& raw, ElemType val) {raw=val;});
+    };
+
+    /**
+     * Add value to given index
+     */
+    void add(unsigned int idx, const Value& value) {
+    	operate(idx, value,   [](ElemType& raw, ElemType val) {raw+=val;});
+    };
+
+    void zero(unsigned int idx) {
+    	operate(idx, val_aux, 	[](ElemType& raw, ElemType val) {raw=0;});
+    };
+
+    void normalize(unsigned int idx, unsigned int divisor) {
+    	operate(idx, val_aux, 	[divisor](ElemType& raw, ElemType val) {raw/=divisor;});
+    };
+
+
+
+private:
+
+
+    template <class Func>
+    void operate(unsigned int idx, const Value &val, const Func& func) {
+    	ASSERT_LESS(idx, this->n_values);
+    	ElemType *ptr = data_ + idx*n_elem_;
+        for(unsigned int i_row=0; i_row < this->n_rows; i_row++)
+        	for(unsigned int i_col=0; i_col < this->n_cols; i_col++)
+        	{
+        		if (i_row < val.n_rows() && i_col < val.n_cols())
+        			func(*ptr, val(i_row, i_col));
+        		else
+        			func(*ptr, 0);
+        		ptr++;
+        	}
+    };
+
+
+
+
+
+    /**
+     * Computed data values for output stored as continuous buffer of their data elements.
+     * One data value has @p n_elem data elements (of type double, int or unsigned int).
+     */
+    ElemType *data_;
+
+    /// auxiliary value
+    typename Value::return_type aux;
+    // auxiliary field value envelope over @p aux
+    Value val_aux;
+
+    // Number of rows and cols in stored data element, valid values are
+    // (1,1) for scalar; (3,1) for vectors; (3,3) for tensors
+    unsigned int n_rows, n_cols;
+
+
+
 };
 
-/**
- * Definition of output data vector
+
+
+/**************************************************************************************************************
+ * OutputTime implementation
  */
-typedef std::vector<OutputData> OutputDataVec;
 
-/**
- * \brief The class for outputing data during time.
- *
- * This class is descendant of Output class. This class is used for outputing
- * data varying in time. Own output to specific file formats is done at other
- * places to. See output_vtk.cc and output_msh.cc.
- */
-class OutputTime {
-protected:
+template<int spacedim, class Value>
+void OutputTime::register_data(const DiscreteSpace type,
+        MultiField<spacedim, Value> &multi_field)
+{
+	if (output_names.find(multi_field.name()) != output_names.end()) {
+		if (output_names[multi_field.name()] == true)
+			for (unsigned long index=0; index < multi_field.size(); index++)
+				this->compute_field_data(type, multi_field[index] );
 
-    int             rank;               ///< MPI rank of process (is tested in methods)
+		return;
+	}
+	else
+	{
+		// We are trying to output field that is not recognized by the stream.
+		//DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
+	}
+}
 
-    // Protected setters for descendant
-    void set_mesh(Mesh *_mesh) { mesh = _mesh; };
 
-    void set_base_file(ofstream *_base_file) { base_file = _base_file; };
+template<int spacedim, class Value>
+void OutputTime::register_data(const DiscreteSpace ref_type,
+        Field<spacedim, Value> &field_ref)
+{
+	if (output_names.find(field_ref.name()) != output_names.end()) {
+		if (output_names[field_ref.name()] == true)
+			this->compute_field_data(ref_type, field_ref);
 
-    void set_base_filename(string *_base_filename) { base_filename = _base_filename; };
+		return;
+	}
+	else
+	{
+		// We are trying to output field that is not recognized by the stream.
+		//DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
+	}
+}
 
-    void set_node_data(std::vector<OutputData> *_node_data) { node_data = _node_data; };
 
-    void set_corner_data(std::vector<OutputData> *_corner_data) { corner_data = _corner_data; };
+template<int spacedim, class Value>
+void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
+{
 
-    void set_elem_data(std::vector<OutputData> *_elem_data) { elem_data = _elem_data; };
+    /* It's possible now to do output to the file only in the first process */
+    if( this->rank != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
 
-    OutputTime() { node_scalar = NULL; element_scalar = NULL; element_vector = NULL; };
 
-private:
-    struct OutScalar *node_scalar;      // Temporary solution
-    struct OutScalar *element_scalar;   // Temporary solution
-    struct OutVector *element_vector;   // Temporary solution
+    // TODO: remove const_cast after resolving problems with const Mesh.
+    mesh = const_cast<Mesh *>(field.mesh());
+    ASSERT(mesh, "Null mesh pointer.\n");
 
-    ofstream        *base_file;         ///< Base output stream
-    string          *base_filename;     ///< Name of base output file
-    string          *data_filename;     ///< Name of data output file
-    ofstream        *data_file;         ///< Data output stream (could be same as base_file)
-    Mesh            *mesh;
-    OutputDataVec   *node_data;         ///< The list of data on nodes
-    OutputDataVec   *corner_data;       ///< The list of data on corners
-    OutputDataVec   *elem_data;         ///< The list of data on elements
+    // get possibly existing data for the same field, check both name and type
+    OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
+    OutputData<Value> *output_data = dynamic_cast<OutputData<Value> *>(data);
 
-public:
+    if (!output_data) {
+        switch(space_type) {
+        case NODE_DATA:
+        	output_data = new OutputData<Value>(field, mesh->n_nodes());
+            node_data.push_back(output_data);
+            break;
+        case CORNER_DATA: {
+            unsigned int n_corners = 0;
+            FOR_ELEMENTS(mesh, ele)
+                n_corners += ele->n_nodes();
+        	output_data = new OutputData<Value>(field, n_corners );
+            corner_data.push_back(output_data);
+        }
+        break;
+        case ELEM_DATA:
+        	output_data = new OutputData<Value>(field, mesh->n_elements() );
+            elem_data.push_back(output_data);
+            break;
+        }
+    }
 
-    std::vector<OutputData> *get_node_data(void) { return node_data; };
+    unsigned int i_node;
 
-    std::vector<OutputData> *get_corner_data(void) { return corner_data; };
+    /* Copy data to array */
+    switch(space_type) {
+    case NODE_DATA: {
+    	// set output data to zero
+    	vector<unsigned int> count(output_data->n_values, 0);
+    	for(unsigned int idx=0; idx < output_data->n_values; idx++)
+    		output_data->zero(idx);
 
-    std::vector<OutputData> *get_elem_data(void) { return elem_data; };
+    	// sum values
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, i_node) {
+                Node * node = ele->node[i_node];
+                unsigned int ele_index = ele.index();
+                unsigned int node_index = mesh->node_vector.index(ele->node[i_node]);
 
-    ofstream& get_base_file(void) { return *base_file; };
+				const Value &node_value =
+						Value( const_cast<typename Value::return_type &>(
+								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+				output_data->add(node_index, node_value);
+				count[node_index]++;
 
-    string& get_base_filename(void) { return *base_filename; };
-
-    ofstream& get_data_file(void) { return *data_file; };
-
-    string& get_data_filename(void) { return *data_filename; };
-
-    Mesh *get_mesh(void) { return mesh; };
-
-    unsigned int get_corner_count(void) {
-        unsigned int li, count = 0;
-        FOR_ELEMENTS(this->mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                count++;
             }
         }
-        return count;
+
+        // Compute mean values at nodes
+    	for(unsigned int idx=0; idx < output_data->n_values; idx++)
+    		output_data->normalize(idx, count[idx]);
     }
+    break;
+    case CORNER_DATA: {
+    	unsigned int corner_index=0;
+        FOR_ELEMENTS(mesh, ele) {
+            FOR_ELEMENT_NODES(ele, i_node) {
+                Node * node = ele->node[i_node];
+                unsigned int ele_index = ele.index();
 
-    void set_data_file(ofstream *_data_file) { data_file = _data_file; };
-
-    /**
-     * Enumeration of file formats supported by Flow123d
-     */
-    typedef enum {
-        NONE = 0,
-        GMSH = 1,
-        VTK = 2,
-    } OutFileFormat;
-
-    OutFileFormat   file_format;
-    OutputFormat    *output_format;
-    string          *name;              ///< Name of output stream
-
-    /**
-     * \brief Temporary definition for storing data (C++ vector of double scalars)
-     */
-    typedef std::vector<double> ScalarFloatVector;
-
-    /**
-     * \brief Temporary definition for storing data (C++ vector of double vectors)
-     */
-    typedef std::vector< vector<double> > VectorFloatVector;
-
-    /**
-     * \brief Temporary structure for storing data (double scalars)
-     */
-    typedef struct OutScalar {
-        ScalarFloatVector   *scalars;
-        string              name;
-        string              unit;
-    } _OutScalar;
-
-    /**
-     * \brief Temporary structure for storing data (double vectors)
-     */
-    typedef struct OutVector {
-        VectorFloatVector   *vectors;
-        string              name;
-        string              unit;
-    } _OutVector;
-
-    /**
-     * \brief Temporary vectors of structures for storing data (double scalars)
-     */
-    typedef std::vector<OutScalar> OutScalarsVector;
-
-    /**
-     * \brief Temporary vectors of structures for storing data (double vectors)
-     */
-    typedef std::vector<OutVector> OutVectorsVector;
-
-    /**
-     * \brief Vector of pointers at OutputTime
-     */
-    static std::vector<OutputTime*> output_streams;
-
-    /**
-     * \brief Does OutputStream with same name and filename exist?
-     *
-     * When this record is already created, then it returns pointer at
-     * coresponding OutputTime. When this record doesn't exixt, then
-     * it create new OutputTime object and it puts this object to the
-     * array of OutputTime pointers
-     *
-     * \param[in] in_rec  The reference at the input record
-     */
-    static OutputTime *output_stream(const Input::Record &in_rec);
-
-    /**
-     * \brief This method delete all object instances of class OutputTime stored
-     * in output_streams vector
-     */
-    static void destroy_all(void);
-
-    /**
-     * \brief Constructor of OutputTime object. It opens base file for writing.
-     *
-     * \param[in] in_rec The reference on the input record
-     */
-    OutputTime(const Input::Record &in_rec);
-
-    /**
-     * \brief Destructor of OutputTime. It doesn't do anything, because all
-     * necessary destructors will be called in destructor of Output
-     */
-    virtual ~OutputTime();
-
-    /**
-     * \brief The specification of output stream
-     *
-     * \return This variable defines record for output stream
-     */
-    static Input::Type::Record input_type;
-
-
-    /**
-     * \brief This function register data on nodes.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * It is possible to call this function only once, when data are at the same
-     * address during time. It is possible to call this function for each step, when
-     * data are not at the same address, but name of the data has to be same.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in] name      The name of data
-     * \param[in] unit      The units of data
-     * \param[in] in_rec    The reference on the input record
-     * \param[in] *data     The pointer at data (array of int, float or double)
-     * \param[in] size      The size of array (number of values)
-     *
-     * \return This function returns 1, when data were registered. This function
-     * returns 0, when it wasn't able to register data (number of values isn't
-     * same as number of nodes).
-     */
-    template <typename _Data>
-    static int register_node_data(Mesh *mesh,
-            std::string name,
-    		std::string unit,
-    		const Input::Record &in_rec,
-    		_Data *data,
-    		unsigned int size);
-
-    /**
-     * \brief This function register data on corners of triangles.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * It is possible to call this function only once, when data are at the same
-     * address during time. It is possible to call this function for each step, when
-     * data are not at the same address, but name of the data has to be same.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] in_rec    The reference on the input record
-     * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
-     *
-     * \return This function returns 1, when data were registered. This function
-     * returns 0, when it wasn't able to register data (number of values isn't
-     * same as number of nodes).
-     */
-    template <typename _Data>
-    static int register_corner_data(Mesh *mesh,
-            std::string name,
-            std::string unit,
-            const Input::Record &in_rec,
-            _Data *data,
-            unsigned int size);
-
-    /**
-     * \brief This function register data on elements.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * It is possible to call this function only once, when data are at the same
-     * address during time. it is possible to call this function for each step, when
-     * data are not at the same address, but name of the data has to be same.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] *data The pointer at data (array of int, float or double)
-     * \param[in] size  The size of array (number of values)
-     *
-     * \return This function returns 1, when data were registered. This function
-     * returns 0, when it wasn't able to register data (number of values isn't
-     * same as number of elements).
-     */
-    template <typename _Data>
-    static int register_elem_data(Mesh *mesh,
-            std::string name,
-            std::string unit,
-            const Input::Record &in_rec,
-            _Data *data,
-            unsigned int size);
-
-    /**
-     * \brief This function register data on nodes.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * It is possible to call this function only once, when data are at the same
-     * address during time. it is possible to call this function for each step, when
-     * data are not at the same address, but name of the data has to be same.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] *data The pointer at data (array of int, float or double)
-     *
-     * \return This function returns 1, when data were registered. This function
-     * returns 0, when it wasn't able to register data (number of values isn't
-     * same as number of nodes).
-     */
-    template <typename _Data>
-    static int register_node_data(Mesh *mesh,
-            std::string name,
-            std::string unit,
-            const Input::Record &in_rec,
-            std::vector<_Data> &data);
-
-    /**
-     * \brief This function register data on corners of triangles.
-     *
-     * This function will add reference on this array of data to the Output object.
-     * It is possible to call this function only once, when data are at the same
-     * address during time. it is possible to call this function for each step, when
-     * data are not at the same address, but name of the data has to be same.
-     * Own data will be written to the file, when write_data() method will be called.
-     *
-     * \param[in] name  The name of data
-     * \param[in] unit  The units of data
-     * \param[in] *data The pointer at data (array of int, float or double)
-     *
-     * \return This function returns 1, when data were registered. This function
-     * returns 0, when it wasn't able to register data (number of values isn't
-     * same as number of nodes).
-     */
-    template <typename _Data>
-    static int register_corner_data(Mesh *mesh,
-            std::string name,
-            std::string unit,
-            const Input::Record &in_rec,
-            std::vector<_Data> &data);
-
-    /**
-     * \brief Register vector of data on elements.
-     *
-     * This function will add reference on the data to the Output object. Own
-     * data will be written to the file, when write_data() method will be called.
-     * When the data has been already registered, then pointer at data will be
-     * updated. Otherwise, new data will be registered.
-     *
-     * \param[in] name  The name of data
-     * \param[in] unit  The unit of data
-     * \param[in] &data The reference on vector (int, float, double)
-     *
-     * \return This function returns 1, when data were successfully registered.
-     * This function returns 0, when number of elements and items of vector is
-     * not the same.
-     */
-    template <typename _Data>
-    static int register_elem_data(Mesh *mesh,
-            std::string name,
-            std::string unit,
-            const Input::Record &in_rec,
-            std::vector<_Data> &data);
-
-
-    /**
-     * Proposed declaration.
-     */
-    template<int spacedim, class Value>
-    static int register_elem_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
-
-    template<int spacedim, class Value>
-    static int register_corner_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
-
-    // this can be done by averaging of corner data
-    template<int spacedim, class Value>
-    static int register_point_data(const Input::Record &in_rec, MultiField<spacedim, Value> field);
-
-    /**
-     * Proposed declaration.
-     *
-     * use field to get : mesh, name, units
-     * use field.value(...) to get values on individual elements of the mesh
-     */
-    template<int spacedim, class Value>
-    static int register_elem_data(const Input::Record &in_rec, Field<spacedim, Value> field);
-
-    template<int spacedim, class Value>
-    static int register_corner_data(const Input::Record &in_rec, Field<spacedim, Value> field);
-
-    // this can be done by averaging of corner data
-    template<int spacedim, class Value>
-    static int register_point_data(const Input::Record &in_rec, Field<spacedim, Value> field);
-
-    /**
-     * \brief This is depreciated method. Every file format should specify its own
-     * method for writing data to output file. This method will not be public
-     * in the future.
-     *
-     * \param[in] time  The output will be done for this time
-     *
-     * \return This function returns result of method _write_data().
-     */
-    int write_data(double time);
-
-    /**
-     * \brief This method write all registered data to output streams
-     *
-     * \param[in] time  The output will be done for this time
-     */
-    static void write_all_data(double time);
-
-    int              current_step;      ///< Current step
-
-};
-
-
-template <typename _Data>
-int OutputTime::register_node_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        _Data *data,
-        uint size)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *node_data = output_time->get_node_data();
-
-    ASSERT(mesh->node_vector.size() == size,
-            "mesh->node_vector.size(): %d != size: %d",
-            mesh->node_vector.size(),
-            size);
-
-    for(std::vector<OutputData>::iterator od_iter = node_data->begin();
-            od_iter != node_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)data;
-            found = 1;
-            break;
+				const Value &node_value =
+						Value( const_cast<typename Value::return_type &>(
+								field.value(node->point(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+                output_data->store_value(corner_index,  node_value);
+                corner_index++;
+            }
         }
     }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        out_data->ref_type = OutputData::NODE_DATA;
-        node_data->push_back(*out_data);
-    }
-
-    return 1;
-
-}
-
-template <typename _Data>
-int OutputTime::register_corner_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        _Data *data,
-        uint size)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *corner_data = output_time->get_corner_data();
-
-    unsigned int corner_count = output_time->get_corner_count();
-    ASSERT(corner_count == size,
-            "output_time->get_corner_count(): %d != size: %d",
-            corner_count,
-            size);
-
-    for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
-            od_iter != corner_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)data;
-            found = 1;
-            break;
+    break;
+    case ELEM_DATA: {
+        FOR_ELEMENTS(mesh, ele) {
+            unsigned int ele_index = ele.index();
+			const Value &ele_value =
+					Value( const_cast<typename Value::return_type &>(
+							field.value(ele->centre(), ElementAccessor<spacedim>(mesh, ele_index,false)) ));
+			//std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
+            output_data->store_value(ele_index,  ele_value);
         }
     }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        out_data->ref_type = OutputData::CORNER_DATA;
-        corner_data->push_back(*out_data);
+    break;
     }
 
-    return 1;
-
+    /* Set the last time */
+    if(this->time < field.time()) {
+        this->time = field.time();
+    }
 }
-
-template <typename _Data>
-int OutputTime::register_elem_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        _Data *data,
-        unsigned int size)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *elem_data = output_time->get_elem_data();
-
-    ASSERT(mesh->element.size() == size,
-            "mesh->element.size(): %d != size: %d",
-            mesh->element.size(),
-            size);
-
-    for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
-            od_iter != elem_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)data;
-            found = 1;
-            break;
-        }
-    }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data, size);
-        out_data->ref_type = OutputData::ELEM_DATA;
-        elem_data->push_back(*out_data);
-    }
-
-    return 1;
-}
-
-template <typename _Data>
-int OutputTime::register_node_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        std::vector<_Data> &data)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *node_data = output_time->get_node_data();
-
-    ASSERT_EQUAL(mesh->node_vector.size(), data.size() );
-
-    for(std::vector<OutputData>::iterator od_iter = node_data->begin();
-            od_iter != node_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)&data;
-            found = 1;
-            break;
-        }
-    }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        out_data->ref_type = OutputData::NODE_DATA;
-        node_data->push_back(*out_data);
-    }
-
-    return 1;
-}
-
-template <typename _Data>
-int OutputTime::register_corner_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        std::vector<_Data> &data)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-    
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *corner_data = output_time->get_corner_data();
-
-    int corner_count = output_time->get_corner_count();
-    ASSERT(corner_count == data.size(),
-            "output_time->get_corner_count(): %d != size: %d",
-            corner_count,
-            data.size());
-
-    for(std::vector<OutputData>::iterator od_iter = corner_data->begin();
-            od_iter != corner_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)&data;
-            found = 1;
-            break;
-        }
-    }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        out_data->ref_type = OutputData::CORNER_DATA;
-        corner_data->push_back(*out_data);
-    }
-
-    return 1;
-}
-
-template <typename _Data>
-int OutputTime::register_elem_data(Mesh *mesh,
-        std::string name,
-        std::string unit,
-        const Input::Record &in_rec,
-        std::vector<_Data> &data)
-{
-    OutputTime *output_time = OutputTime::output_stream(in_rec);
-
-    /* It's possible now to do output to the file only in the first process */
-    if(output_time == NULL || output_time->rank!=0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    output_time->set_mesh(mesh);
-
-    int found = 0;
-    std::vector<OutputData> *elem_data = output_time->get_elem_data();
-
-    ASSERT(mesh->element.size() == data.size(),
-            "mesh->element.size(): %d != size: %d",
-            mesh->element.size(),
-            data.size());
-
-    for(std::vector<OutputData>::iterator od_iter = elem_data->begin();
-            od_iter != elem_data->end();
-            od_iter++)
-    {
-        if(*od_iter->name == name) {
-            od_iter->data = (void*)&data;
-            found = 1;
-            break;
-        }
-    }
-
-    if(found == 0) {
-        OutputData *out_data = new OutputData(name, unit, data);
-        out_data->ref_type = OutputData::ELEM_DATA;
-        elem_data->push_back(*out_data);
-    }
-    return 1;
-
-}
-
-/**
- * \brief The class used as parent class of file format classes
- */
-class OutputFormat {
-public:
-	OutputFormat() {}
-    virtual ~OutputFormat() {}
-	virtual int write_data(void) { return 0; }
-	virtual int write_data(double time) { return 0; }
-	virtual int write_head(void) { return 0; }
-	virtual int write_tail(void) { return 0; }
-
-	static Input::Type::AbstractRecord input_type;
-};
 
 
 #endif

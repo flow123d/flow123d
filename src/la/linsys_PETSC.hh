@@ -48,6 +48,11 @@ public:
     LinSys_PETSC(const  Distribution * rows_ds);
 
     /**
+     * Copy constructor.
+     */
+    LinSys_PETSC( LinSys_PETSC &other );
+
+    /**
      * Returns whole Distribution class for distribution of the solution.
      */
     inline const Distribution* get_ds( )
@@ -55,33 +60,37 @@ public:
         return rows_ds_; 
     }
 
-    const Mat &get_matrix()
+    const Mat *get_matrix()
     { 
-        return matrix_; 
+        return &matrix_;
     }
 
-    const Vec &get_rhs()
+    const Vec *get_rhs()
     { 
-        return rhs_; 
+        return &rhs_;
     }
 
     PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
     {
+        matrix_changed_ = true;
     	return MatCopy(matrix, matrix_, str);
     }
 
     PetscErrorCode set_rhs(Vec &rhs)
     {
+        rhs_changed_ = true;
     	return VecCopy(rhs, rhs_);
     }
 
     PetscErrorCode mat_zero_entries()
     {
+        matrix_changed_ = true;
     	return MatZeroEntries(matrix_);
     }
 
     PetscErrorCode rhs_zero_entries()
     {
+        rhs_changed_ = true;
     	return VecSet(rhs_, 0);
     }
 
@@ -105,6 +114,8 @@ public:
 
     void apply_constrains( double scalar = 1. );
 
+    void set_initial_guess_nonzero(bool set_nonzero = true);
+
     int solve();
 
     /**
@@ -114,8 +125,6 @@ public:
        return a_tol_;
     };
 
-    void get_whole_solution( std::vector<double> & globalSolution );
-
     void view( );
 
     /**
@@ -123,6 +132,7 @@ public:
      */
     void set_from_input(const Input::Record in_rec);
 
+    double get_solution_precision();
 
     ~LinSys_PETSC( );
 
@@ -144,11 +154,11 @@ private:
         }
     };
 
-    void gatherSolution_( );
+protected:
 
-private:
+    std::string params_;		 //!< command-line-like options for the PETSc solver
 
-    std::string params_;		 // command-line-like options for the PETSc solver
+    bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
@@ -157,6 +167,9 @@ private:
 
     Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
     Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
+
+    double  solution_precision_; // precision of KSP system solver
+
 
 };
 

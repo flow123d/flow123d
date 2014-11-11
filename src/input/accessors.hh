@@ -34,12 +34,79 @@
 
 
 
+
+
+
+
 namespace Input {
 
 using std::string;
 
-// exceptions and error_info types
 
+/**
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
+ */
+class Exception : public virtual ExceptionBase
+{
+public:
+    const char * what () const throw ();
+    virtual ~Exception() throw () {};
+};
+
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ *
+ *  Use case example:
+ *  Input::Record input = ...;
+ *  string name=input.val("name");
+ *  if (name.size() > STR_LIMIT) THROW(ExcToLongStr() << EI_Address( input.address_string() ));
+ *
+ *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
+ *  see also ei_address methods.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const std::string);
+
+
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * Reports input address provided through EI_Address object, see above.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << ::Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+/**
+ * Simple input exception that accepts just string message.
+ */
+DECLARE_INPUT_EXCEPTION(ExcInputMessage, << EI_Message::val );
+
+
+
+
+
+// exceptions and error_info types
 // throwed in Iterator<>
 TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
@@ -136,6 +203,17 @@ protected:
          * Actual storage - tip of the storage tree
          */
         const StorageBase * actual_storage_;
+
+        /**
+         * Delete whole storage tree when last root input accessor is destroyed.
+         */
+        ~AddressData() {
+        	if (	parent_ == nullptr
+        			&& root_storage_ == actual_storage_
+        			&& root_type_ ) {
+        		delete root_storage_;
+        	}
+        }
     };
 
 public:
@@ -190,18 +268,14 @@ protected:
 
 };
 
+
+
 /**
  * Address output operator.
  */
 inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
 	return stream << address.make_full_address();
 }
-
-/**
- *  Declaration of error info class for passing Input::Address through exceptions.
- *  Is returned by input accessors : Input::Record, Input::Array, etc.
- */
-TYPEDEF_ERR_INFO( EI_Address, const Address);
 
 
 /**
@@ -332,7 +406,7 @@ protected:
      * Set address (currently necessary for creating root accessor)
      */
     void set_address(const Address &address);
-    //friend class JSONToStorage;
+    friend class JSONToStorage;
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
@@ -498,6 +572,13 @@ public:
     */
    template <class Container>
    void copy_to(Container &out) const;
+
+   /**
+    * Returns true if the accessor is empty (after default constructor).
+    * TODO: have something similar for other accessors.
+    */
+   inline bool is_empty() const
+   { return (address_.storage_head() == Address().storage_head()); }
 
    /**
     * Returns address error info.
@@ -670,6 +751,9 @@ public:
     /// Prefix. Advance operator.
     inline Iterator<T> &operator ++ ();
 
+    /// Prefix. Back operator.
+    inline Iterator<T> &operator -- ();
+
     /**
      *  Dereference operator * ; Shouldn't we return type T, i.e. try to cast from OutputType to T ??
      */
@@ -723,7 +807,6 @@ template<> struct TD<float> { typedef double OT; };
 template< class T>
 struct TypeDispatch {
     BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
-    //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
 
     typedef T TmpType;
 

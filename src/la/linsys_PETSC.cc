@@ -46,11 +46,10 @@ it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
 
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
-        : LinSys( rows_ds )
+        : LinSys( rows_ds ),
+          init_guess_nonzero(false),
+          matrix_(0)
 {
-    // set type
-    //type = LinSys::PETSC;
-
     // create PETSC vectors:
     PetscErrorCode ierr;
     // rhs
@@ -59,6 +58,19 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
 
     params_ = "";
+    matrix_ = NULL;
+    solution_precision_ = std::numeric_limits<double>::infinity();
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+}
+
+LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
+	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
+{
+	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+	VecCopy(other.rhs_, rhs_);
+	VecCopy(other.on_vec_, on_vec_);
+	VecCopy(other.off_vec_, off_vec_);
 }
 
 void LinSys_PETSC::start_allocation( )
@@ -121,6 +133,8 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
             break;
         default: DBGMSG("LS SetValues with non allowed insert mode.\n");
     }
+
+    matrix_changed_ = true;
 }
 
 void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
@@ -136,6 +150,8 @@ void LinSys_PETSC::rhs_set_values( int nrow, int *rows, double *vals )
             break;
         default: ASSERT(false, "LinSys's status disallow set values.\n");
     }
+
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
@@ -177,7 +193,7 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( on_vec_,  &on_array );
     VecGetArray( off_vec_, &off_array );
 
-    for ( int i=0; i<rows_ds_->lsize(); i++ ) {
+    for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
         on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
         off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
     }
@@ -188,6 +204,10 @@ void LinSys_PETSC::preallocate_matrix()
     VecDestroy(&off_vec_);
 
     // create PETSC matrix with preallocation
+    if (matrix_ != NULL)
+    {
+    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
@@ -218,6 +238,9 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    matrix_changed_ = true;
+    rhs_changed_ = true;
 }
 
 void LinSys_PETSC::apply_constrains( double scalar )
@@ -251,10 +274,12 @@ void LinSys_PETSC::apply_constrains( double scalar )
 
     // set matrix rows to zero 
     ierr = MatZeroRows( matrix_, numConstraints, globalDofPtr, diagScalar, PETSC_NULL, PETSC_NULL ); CHKERRV( ierr ); 
+    matrix_changed_ = true;
 
     // set RHS entries to values (crashes if called with NULL pointers)
     if ( numConstraints ) {
         ierr = VecSetValues( rhs_, numConstraints, globalDofPtr, valuePtr, INSERT_VALUES ); CHKERRV( ierr ); 
+        rhs_changed_ = true;
     }
 
     // perform communication in the rhs vector
@@ -263,15 +288,18 @@ void LinSys_PETSC::apply_constrains( double scalar )
 }
 
 
+void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
+{
+	init_guess_nonzero = set_nonzero;
+}
+
+
 int LinSys_PETSC::solve()
 {
-    PetscErrorCode     ierr;
-
     KSP                system;
     KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
-    //const char *petsc_str;
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
@@ -295,48 +323,47 @@ int LinSys_PETSC::solve()
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
-    //petsc_str = params.c_str();
     xprintf(MsgLog,"inserting petsc options: %s\n",params_.c_str());
     PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
-    //xfree(petsc_str);
     
-    ierr = MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE ); 
+    MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
-    ierr = KSPCreate( comm_, &system ); 
-    ierr = KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN); 
+    KSPCreate( comm_, &system );
+    KSPSetOperators(system, matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    //double solver_accurany = OptGetDbl("Solver","Solver_accurancy","1.0e-7");
-    //double r_tol           = OptGetDbl("Solver", "r_tol", "-1" );
-    //if (r_tol < 0) r_tol=solver_accuracy;
-    //double a_tol           = OptGetDbl("Solver", "a_tol", "1.0e-9" );
-    DBGMSG("KSP tolerances: r_tol_ %g, a_tol_ %g\n", r_tol_, a_tol_);
-    ierr = KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
-    ierr = KSPSetFromOptions(system); 
+    KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT);
+    KSPSetFromOptions(system);
+    // We set the KSP flag set_initial_guess_nonzero
+    // unless KSP type is preonly.
+    // In such case PETSc fails (version 3.4.1)
+    if (init_guess_nonzero)
+    {
+    	KSPType type;
+    	KSPGetType(system, &type);
+    	if (strcmp(type, KSPPREONLY) != 0)
+    		KSPSetInitialGuessNonzero(system, PETSC_TRUE);
+    }
 
-    ierr = KSPSolve(system, rhs_, solution_ ); 
-    ierr = KSPGetConvergedReason(system,&reason); 
-    ierr = KSPGetIterationNumber(system,&nits); 
+    KSPSolve(system, rhs_, solution_ );
+    KSPGetConvergedReason(system,&reason);
+    KSPGetIterationNumber(system,&nits);
 
     // substitute by PETSc call for residual
-    ierr = VecNorm(rhs_, NORM_2, &residual_norm_);
+    VecNorm(rhs_, NORM_2, &residual_norm_);
     
     xprintf(MsgLog,"convergence reason %d, number of iterations is %d\n", reason, nits);
+
+    // get residual norm
+    KSPGetResidualNorm(system, &solution_precision_);
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    ierr = KSPDestroy(&system); 
+    KSPDestroy(&system);
 
     return static_cast<int>(reason);
 
-}
-
-void LinSys_PETSC::get_whole_solution( std::vector<double> & globalSolution )
-{
-    this -> gatherSolution_( );
-    globalSolution.resize( globalSolution_.size( ) );
-    std::copy( globalSolution_.begin(), globalSolution_.end(), globalSolution.begin() );
 }
 
 void LinSys_PETSC::view( )
@@ -369,53 +396,11 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
-    delete[] v_rhs_;
+    if (v_rhs_ != NULL) delete[] v_rhs_;
 }
-
-void LinSys_PETSC::gatherSolution_( )
-{
-    // unsigned
-    unsigned globalSize = rows_ds_->size( );
-
-    // create a large local solution vector for gathering 
-    PetscErrorCode ierr;
-    Vec solutionGathered;              //!< large vector of global solution stored locally
-    ierr = VecCreateSeq( PETSC_COMM_SELF, globalSize, &solutionGathered ); CHKERRV( ierr ); 
-
-    // prepare gathering scatter
-    VecScatter VSdistToLarge;          //!< scatter for gathering local parts into large vector
-    ierr = VecScatterCreateToAll( solution_, &VSdistToLarge, &solutionGathered ); CHKERRV( ierr ); 
-    //ierr = VecScatterCreate( solution_, PETSC_NULL, solutionGathered, PETSC_NULL, &VSdistToLarge ); CHKERRV( ierr ); 
-
-    // get global solution vector at each process
-    ierr = VecScatterBegin( VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr ); 
-    ierr = VecScatterEnd(   VSdistToLarge, solution_, solutionGathered, INSERT_VALUES, SCATTER_FORWARD ); CHKERRV( ierr );
-
-    // extract array of global solution for copy
-    PetscScalar *solutionGatheredArray;
-    ierr = VecGetArray( solutionGathered, &solutionGatheredArray );
-
-    // copy the result to calling routine
-    //std::transform( &(solutionGatheredArray[0]), &(solutionGatheredArray[ globalSize ]), sol_disordered.begin( ), 
-    //                LinSys_PETSC::PetscScalar2Double_( ) ) ;
-    
-    //reorder solution
-    globalSolution_.resize( globalSize );
-    for ( int i = 0; i < globalSize; i++ ) {
-        globalSolution_[i] = static_cast<double>( solutionGatheredArray[i] );
-    }
-
-    // release array
-    ierr = VecRestoreArray( solutionGathered, &solutionGatheredArray );
-
-    // destroy PETSc objects
-    ierr = VecDestroy( &solutionGathered );     CHKERRV( ierr );
-    ierr = VecScatterDestroy( &VSdistToLarge ); CHKERRV( ierr );
-}
-
 
 void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 {
@@ -427,5 +412,11 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 		a_tol_  = in_rec.val<double>("a_tol");
 		params_ = in_rec.val<string>("options");
 	}
+}
+
+
+double LinSys_PETSC::get_solution_precision()
+{
+	return solution_precision_;
 }
 

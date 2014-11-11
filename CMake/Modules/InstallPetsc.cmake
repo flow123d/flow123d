@@ -46,6 +46,8 @@ else()
   set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-debugging=0)
 endif()
 
+# force static libraries
+set(PETSC_CONF_LINE  ${PETSC_CONF_LINE} --with-shared-libraries=0)
 # set necessary libraries: MPI, BLAS, LAPACK
 if (PETSC_INSTALL_MPI_DIR)
     set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-mpi-dir=${PETSC_MPI_DIR})
@@ -102,7 +104,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  

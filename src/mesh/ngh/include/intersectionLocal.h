@@ -8,7 +8,7 @@
 using namespace std;
 
 
-//class IntersectionPoint - dva vektory lokalnich souradnic
+//class IntersectionPoint - two vectors of local coords
 class IntersectionPoint {
 public:
 	IntersectionPoint(const std::vector<double> &c1, const std::vector<double> &c2)
@@ -42,12 +42,9 @@ public:
     IntersectionLocal(IntersectionLocal*);
     ~IntersectionLocal();
 
-    //void set_elements(TElement *elem1, TElement *elem2); //metoda na naplneni ele1, ele2
-    void add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2); //metoda na pridani souradnic do i_points
+    void add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2); //add coords to i_points
     void add_local_point(IntersectionPoint *InPoint);
     void print(FILE *out_file);
-
-    //void AddNewLocalcoord(); //doplnit predavany parametr, pridat novou i_points
 
     static int getNumInstances() {
 		return IntersectionLocal::numberInstance;

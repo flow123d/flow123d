@@ -30,6 +30,7 @@
 #include <string>
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "system/application_base.hh"
 
 using namespace std;
 
@@ -37,20 +38,14 @@ using namespace std;
 #define MAIN_H
 
 
-class Application {
+
+class Application : public ApplicationBase {
 public:
     /// Root of the Input::Type tree. Description of whole input structure.
     static Input::Type::Record input_type;
     
     /// Application constructor. 
     Application(int argc, char ** argv);
-    
-    /**
-     * Parse command line parameters.
-     * @param[in] argc       command line argument count
-     * @param[in] argv       command line arguments
-     */ 
-    void parse_cmd_line(const int argc, char ** argv);
     
     /**
      * Displays program version and build info.
@@ -67,8 +62,36 @@ public:
      */ 
     Input::Record read_input();
     
-    /// TODO: should be destructor ?
-    void free_and_exit();
+    /// Destructor
+    virtual ~Application();
+
+protected:
+
+    /**
+     * Run application.
+     *
+     * Read input and solve problem.
+     */
+    virtual void run();
+
+    /**
+     * Check pause_after_run flag defined in input file.
+     */
+    virtual void after_run();
+
+    /**
+     * Parse command line parameters.
+     * @param[in] argc       command line argument count
+     * @param[in] argv       command line arguments
+     */
+    virtual void parse_cmd_line(const int argc, char ** argv);
+
+    /**
+     * Split path to directory (part up to last DIR_SEPARATOR excluded) and filename.
+     * Directory is set to "." if no DIR_SEPARATOR is found.
+     */
+    void split_path(const string& path, string& directory, string& file_name);
+
 private:
 
     /// directory of main input file (used to resolve relative paths of other input files)
@@ -76,12 +99,6 @@ private:
     /// filename of main input file
     string main_input_filename_;
 
-    /**
-     * Log file name argument - passed to system_init; "" menas default, "\n" means no logging
-     * TODO: move whole system_init into Application, use singleton for some runtime global options
-     * for the Flow123d library.
-     */
-    string log_filename_;
     int passed_argc_;
     char ** passed_argv_;
     
@@ -90,6 +107,9 @@ private:
 
     /// If true, we do output of profiling information.
     bool use_profiler;
+
+    /// root input record
+    Input::Record root_record;
 };
 
 
