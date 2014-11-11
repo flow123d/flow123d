@@ -147,7 +147,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
             if (reactions_it->type() == Semchem_interface::input_type ) {
                 Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
                 Semchem_reactions->set_el_4_loc(el_4_loc);
-                Semchem_reactions->set_concentration_matrix(convection->get_concentration_matrix(), el_distribution, el_4_loc);
+                //Semchem works with phases 0-3; this is not supported no more!
+                semchem_conc_ptr = new double**[1];
+                semchem_conc_ptr[0] = convection->get_concentration_matrix();
+                Semchem_reactions->set_concentration_matrix(semchem_conc_ptr, el_distribution, el_4_loc);
 
             } else {
                 xprintf(UsrErr, "Wrong reaction type.\n");
@@ -157,7 +160,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                           "Only the mass flux over boundaries is correct.\n");
 
             reaction->names(subst_names_)
-                    .concentration_matrix(convection->get_concentration_matrix()[MOBILE],
+                    .concentration_matrix(convection->get_concentration_matrix(),
                             el_distribution, el_4_loc, convection->get_row_4_el())
                     .output_stream(*(convection->output_stream()))
                     .set_time_governor(*(convection->time_));

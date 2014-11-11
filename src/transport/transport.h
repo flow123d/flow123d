@@ -56,12 +56,6 @@ class ConvectionTransport;
 //=============================================================================
 // TRANSPORT
 //=============================================================================
-#define MOBILE 0
-#define IMMOBILE 1
-#define MOBILE_SORB 2
-#define IMMOBILE_SORB 3
-
-#define MAX_PHASES 4
 
 /**
  * TODO:
@@ -163,7 +157,7 @@ public:
 
 	inline OutputTime *output_stream() { return output_stream_; }
 
-	double ***get_concentration_matrix();
+	double **get_concentration_matrix();
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	int *get_el_4_loc();
 	int *get_row_4_el();
@@ -223,12 +217,6 @@ private:
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
 
-    //TODO: remove this and make concentration_matrix only two-dimensional
-    int sub_problem;    // 0-only transport,1-transport+dual porosity,
-                        // 2-transport+sorption
-                        // 3-transport+dual porosity+sorption
-
-
     double *sources_corr;
     Vec v_sources_corr;
     
@@ -255,7 +243,7 @@ private:
     /// Concentration vectors for mobile phase.
     Vec *vconc; // concentration vector
     /// Concentrations for phase, substance, element
-    double ***conc;
+    double **conc;
 
     ///
     Vec *vpconc; // previous concentration vector
@@ -264,7 +252,7 @@ private:
     double **cumulative_corr;
 
     Vec *vconc_out; // concentration vector output (gathered)
-    double ***out_conc;
+    double **out_conc;
 
 	/// Record with output specification.
 	Input::Record output_rec;
