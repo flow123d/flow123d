@@ -1,8 +1,10 @@
 #include "reaction/first_order_reaction_base.hh"
 #include "reaction/reaction_term.hh"
 
-#include "reaction/pade_approximant.hh"
 #include "reaction/linear_ode_solver.hh"
+#include "reaction/pade_approximant.hh"
+#include "reaction/linear_ode_analytic.hh"
+
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
