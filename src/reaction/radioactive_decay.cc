@@ -37,7 +37,7 @@ Record RadioactiveDecay::input_type
     = Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
     .derive_from( ReactionTerm::input_type )
     .declare_key("decays", Array( RadioactiveDecay::input_type_single_decay, 1), Default::obligatory(),
-                "An array of radioactive decays. They can make a chain.")
+                "An array of radioactive decays.")
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
@@ -77,6 +77,7 @@ void RadioactiveDecay::initialize_from_input()
         substance_ids_[i_decay].resize(product_array.size()+1);
         bifurcation_[i_decay].resize(product_array.size());
         
+        //Reading products - setting substance ids, branching ratios.
         //iterating over products
         unsigned int i_product = 0;
         for (Input::Iterator<Input::Record> prod_it = product_array.begin<Input::Record>(); 
@@ -84,17 +85,23 @@ void RadioactiveDecay::initialize_from_input()
         {   
             string product_name = prod_it->val<string>("name");
             idx = find_subst_name(product_name);
-            if (idx < substances_.size())   substance_ids_[i_decay][i_product+1] = idx;
-            else xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product , i_decay);
+            if (idx < substances_.size())
+                substance_ids_[i_decay][i_product+1] = idx;
+            else THROW(ReactionTerm::ExcUnknownSubstance() 
+                       << ReactionTerm::EI_Substance(product_name) 
+                       << (*prod_it).ei_address());
             
             bifurcation_[i_decay][i_product] = prod_it->val<double>("branching_ratio");
         }
         
         // set radionuclide substance index
         idx = find_subst_name(radionuclide);
-        if (idx < substances_.size())    substance_ids_[i_decay][0] = idx;
-        else    xprintf(UsrErr,"Unknown name of the radionuclide in the %d-th reaction.\n", i_decay);
-        
+        if (idx < substances_.size())    
+            substance_ids_[i_decay][0] = idx;
+        else THROW(ReactionTerm::ExcUnknownSubstance() 
+                    << ReactionTerm::EI_Substance(radionuclide) 
+                    << (*dec_it).ei_address());
+            
         //Normalization of branching ratios in bifurcation vector by its norm.
         //sum:
         double sum=0;
@@ -115,7 +122,6 @@ void RadioactiveDecay::assemble_ode_matrix(void )
     double exponent;    //temporary variable k = ln(2)/t_half
     for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {
         reactant_index = substance_ids_[i_decay][0];
-        //exponent = log(2) * time_->dt() / half_lives_[i_decay];
         exponent = log(2) / half_lives_[i_decay];
         reaction_matrix_(reactant_index, reactant_index) = -exponent;
         

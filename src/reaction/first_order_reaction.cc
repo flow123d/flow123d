@@ -49,7 +49,6 @@ void FirstOrderReaction::assemble_ode_matrix(void )
     double exponent;    //temporary variable for k
     for (unsigned int i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {
         reactant_index = substance_ids_[i_reaction][0];
-//         exponent = reaction_rates_[i_reaction] * time_->dt();
         exponent = reaction_rates_[i_reaction];
         reaction_matrix_(reactant_index, reactant_index) = -exponent;
         
@@ -79,7 +78,7 @@ void FirstOrderReaction::initialize_from_input()
         reaction_rates_[i_reaction] = dec_it->val<double>("reaction_rate");
         
 		//read reactant name, product names and branching ratios
-		string parent_name = dec_it->val<string>("reactant");
+		string reactant_name = dec_it->val<string>("reactant");
 		Input::Array product_array = dec_it->val<Input::Array>("products");
 		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
@@ -89,9 +88,12 @@ void FirstOrderReaction::initialize_from_input()
 
 
 		// set parent index
-		idx = find_subst_name(parent_name);
-		if (idx < substances_.size())	substance_ids_[i_reaction][0] = idx;
-		else    xprintf(UsrErr,"Unknown name of the reactant in the %d-th reaction.\n", i_reaction);
+		idx = find_subst_name(reactant_name);
+		if (idx < substances_.size())	
+            substance_ids_[i_reaction][0] = idx;
+		else THROW(ReactionTerm::ExcUnknownSubstance() 
+                    << ReactionTerm::EI_Substance(reactant_name) 
+                    << (*dec_it).ei_address());
 
 		// set products
 		unsigned int i_product = 1;
@@ -99,8 +101,12 @@ void FirstOrderReaction::initialize_from_input()
             product_it != product_array.end(); ++product_it, i_product++)
 		{
 			idx = find_subst_name(*product_it);
-			if (idx < substances_.size())   substance_ids_[i_reaction][i_product] = idx;
-			else    xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_reaction);
+			if (idx < substances_.size())
+                substance_ids_[i_reaction][i_product] = idx;
+			else THROW(ReactionTerm::ExcUnknownSubstance() 
+                        << ReactionTerm::EI_Substance(*product_it) 
+                        << product_array.ei_address());
+            
 		}
 
 		//bifurcation determining part

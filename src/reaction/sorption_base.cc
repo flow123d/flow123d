@@ -283,8 +283,9 @@ void SorptionBase::initialize_substance_ids()
     }
     
     if(!found)
-      xprintf(UsrErr,"Wrong name of %d-th substance - not found in global set of transported substances.\n", 
-              i_subst);
+        THROW(ReactionTerm::ExcUnknownSubstance() 
+                << ReactionTerm::EI_Substance(*spec_iter) 
+                << substances_array.ei_address());
     
     //finding the global index of substance in the local array
     found = false;
