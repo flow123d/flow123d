@@ -5,7 +5,6 @@
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 
-using namespace std;
 using namespace Input::Type;
 
 Record FirstOrderReaction::input_type_single_reaction
@@ -44,7 +43,7 @@ FirstOrderReaction::~FirstOrderReaction()
 void FirstOrderReaction::assemble_ode_matrix(void )
 {
     // create decay matrix
-    reaction_matrix_ = zeros(n_substances_, n_substances_);
+    reaction_matrix_ = arma::zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
     double exponent;    //temporary variable for k
     for (unsigned int i_reaction = 0; i_reaction < reaction_rates_.size(); i_reaction++) {

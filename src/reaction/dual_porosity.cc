@@ -19,7 +19,6 @@
 #include "semchem/semchem_interface.hh"
 
 using namespace Input::Type;
-using namespace std;
 
 
 Selection DualPorosity::EqData::output_selection

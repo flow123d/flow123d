@@ -11,8 +11,6 @@
 #include "la/distribution.hh"
 
 using namespace Input::Type;
-using namespace arma;
-
 
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
@@ -88,7 +86,7 @@ void FirstOrderReactionBase::zero_time_step()
 double **FirstOrderReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {      
     unsigned int rows;  // row in the concentration matrix, regards the substance index
-    vec new_conc;
+    arma::vec new_conc;
     
     // save previous concentrations to column vector
     for(rows = 0; rows < n_substances_; rows++)

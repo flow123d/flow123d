@@ -19,8 +19,6 @@
 #include "fields/field_set.hh"
 #include "fields/field_elementwise.hh" 
 
-
-using namespace std;
 using namespace Input::Type;
 
 Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionType")

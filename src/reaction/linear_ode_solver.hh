@@ -4,7 +4,6 @@
 #include "armadillo"
 #include "input/accessors.hh"
 
-using namespace arma;
 
 /// @brief Base class for linear ODE solver.
 /** This class represents an interface to a solver of a system of linear ordinary differential 
@@ -21,23 +20,23 @@ public:
     LinearODESolverBase();
     virtual ~LinearODESolverBase();
     
-    void set_system_matrix(const mat &matrix);  ///< Sets the matrix of ODE system.
+    void set_system_matrix(const arma::mat &matrix);  ///< Sets the matrix of ODE system.
     void set_step(double step);                 ///< Sets the step of the numerical method.
     
     /// Updates solution of the ODEs system.
-    virtual void update_solution(vec &init_vector, vec &output_vec) = 0;
+    virtual void update_solution(arma::vec &init_vector, arma::vec &output_vec) = 0;
     
     /// Updates solution of the system with different initial vectors.
     /**
      * Column initial and output vectors are grouped in the matrices.
      * Parameter @p mask can be used to skip some of the vectors.
      */
-    virtual void update_solution(mat &init_vectors, mat &output_vecs, 
+    virtual void update_solution(arma::mat &init_vectors, arma::mat &output_vecs, 
                                  const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) = 0;
                                  
 protected:
-    mat system_matrix_;     ///< the matrix of ODE system
-    vec rhs_;               ///< the vector of RHS values (not used currently)
+    arma::mat system_matrix_;     ///< the matrix of ODE system
+    arma::vec rhs_;               ///< the vector of RHS values (not used currently)
     double step_;           ///< the step of the numerical method
     bool step_changed_;     ///< flag is true if the step has been changed
 };
@@ -64,14 +63,14 @@ public:
      * Column initial and output vectors are grouped in the matrices.
      * Parameter @p mask can be used to skip some of the vectors.
      */
-    virtual void update_solution(mat &init_vectors, mat &output_vecs, 
+    virtual void update_solution(arma::mat &init_vectors, arma::mat &output_vecs, 
                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
 private:
 };
 
 template<class Method>
-void LinearODESolver<Method>::update_solution(mat& init_vectors, mat& output_vecs, const std::vector< unsigned int > &mask)
+void LinearODESolver<Method>::update_solution(arma::mat& init_vectors, arma::mat& output_vecs, const std::vector< unsigned int > &mask)
 {  
     ASSERT(0,"Not implemented yet.");
     ASSERT_EQUAL(init_vectors.n_cols, output_vecs.n_cols);
@@ -112,7 +111,7 @@ public:
     /// Destructor.
     ~LinearODEAnalytic(void);
     
-    void update_solution(vec &init_vector, vec &output_vec) override;
+    void update_solution(arma::vec &init_vector, arma::vec &output_vec) override;
     
 protected:
     /**
@@ -121,7 +120,7 @@ protected:
     void compute_matrix();
     
     /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
-    mat solution_matrix_;
+    arma::mat solution_matrix_;
 };
 
 #endif // LINEAR_ODE_SOLVER_H_

@@ -10,7 +10,7 @@
 #define DUAL_POROSITY_H_
 
 #include <vector>
-#include <input/input_type.hh>
+#include "input/accessors.hh"
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"

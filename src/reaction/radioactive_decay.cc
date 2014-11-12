@@ -8,7 +8,6 @@
 
 #include "armadillo"
 
-using namespace arma;
 using namespace Input::Type;
 
 Record RadioactiveDecay::input_type_product 
@@ -117,7 +116,7 @@ void RadioactiveDecay::initialize_from_input()
 void RadioactiveDecay::assemble_ode_matrix(void )
 {
     // create decay matrix
-    reaction_matrix_ = zeros(n_substances_, n_substances_);
+    reaction_matrix_ = arma::zeros(n_substances_, n_substances_);
     unsigned int reactant_index, product_index; //global indices of the substances
     double exponent;    //temporary variable k = ln(2)/t_half
     for (unsigned int i_decay = 0; i_decay < half_lives_.size(); i_decay++) {

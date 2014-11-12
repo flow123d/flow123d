@@ -11,8 +11,6 @@
 #include "reaction/linear_ode_solver.hh"
 #include "armadillo"
 
-using namespace arma;
-
 /** @brief This class implements the Pade approximation of exponential function. 
  *
  * The exponential function is considered in the form \f$ e^{At} \f$ where \f$ A \f$ is a constant matrix.
@@ -39,7 +37,7 @@ public:
     /// Destructor.
     ~PadeApproximant(void);
     
-    void update_solution(vec &init_vector, vec &output_vec) override;
+    void update_solution(arma::vec &init_vector, arma::vec &output_vec) override;
     
 protected:
     ///Hide default constructor.
@@ -48,7 +46,7 @@ protected:
     /**
      *   Approximate the matrix function.
      */
-    void approximate_matrix(mat &matrix);
+    void approximate_matrix(arma::mat &matrix);
     
     /// Evaluates nominator and denominator coeficients of PadeApproximant for exponencial function.
     /** @param nominator_degree is the degree of polynomial in the nominator
@@ -64,14 +62,14 @@ protected:
      * @param input_matrix is the input matrix (with elements -kt)
      * @param coefs is the vector of coeficients of the polynomial
      */
-    void evaluate_matrix_polynomial(mat &polynomial_matrix, 
-                                    const mat &input_matrix, 
+    void evaluate_matrix_polynomial(arma::mat &polynomial_matrix, 
+                                    const arma::mat &input_matrix, 
                                     const std::vector<double> &coefs);
     
     int nominator_degree_;      ///< Degree of the polynomial in the nominator.
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
     
-    mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
+    arma::mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
 };
 
 #endif // PADE_APPROXIMANT_H_

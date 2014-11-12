@@ -22,7 +22,7 @@ LinearODESolverBase::~LinearODESolverBase()
 {
 }
 
-void LinearODESolverBase::set_system_matrix(const mat& matrix)
+void LinearODESolverBase::set_system_matrix(const arma::mat& matrix)
 {
     system_matrix_ = matrix;
     step_changed_ = true;
@@ -45,7 +45,7 @@ LinearODEAnalytic::~LinearODEAnalytic()
 {
 }
 
-void LinearODEAnalytic::update_solution(vec& init_vector, vec& output_vec)
+void LinearODEAnalytic::update_solution(arma::vec& init_vector, arma::vec& output_vec)
 {
     if(step_changed_)
     {
