@@ -159,17 +159,25 @@ void SorptionBase::make_reactions()
         reaction_liquid = new RadioactiveDecay(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
     } else
     if (reactions_it->type() == Semchem_interface::input_type )
-    {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+    {   THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
     } else
-    {
-        xprintf(UsrErr, "Unknown reactions type in Sorption model.\n");
+    {   //This point cannot be reached. The TYPE_selection will throw an error first. 
+        THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
     }
   } else
   {
@@ -186,17 +194,25 @@ void SorptionBase::make_reactions()
         reaction_solid = new RadioactiveDecay(*mesh_, *reactions_it);
     } else
     if (reactions_it->type() == SorptionBase::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have another descendant sorption model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
     } else
     if (reactions_it->type() == DualPorosity::input_type ) {
-        xprintf(UsrErr, "Sorption model cannot have descendant dual porosity model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
     } else
     if (reactions_it->type() == Semchem_interface::input_type )
-    {
-        xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+    {   THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
     } else
-    {
-        xprintf(UsrErr, "Unknown reactions type in Sorption model.\n");
+    {   //This point cannot be reached. The TYPE_selection will throw an error first. 
+        THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
     }
   } else
   {
