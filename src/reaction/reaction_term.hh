@@ -18,7 +18,11 @@ class OutputTime;
 class ReactionTerm: public EquationBase
 {
 public:
-  
+    TYPEDEF_ERR_INFO( EI_Substance, std::string);
+    TYPEDEF_ERR_INFO( EI_Model, std::string);
+    DECLARE_INPUT_EXCEPTION( ExcUnknownSubstance, << "Unknown substance name: " << EI_Substance::qval);
+    DECLARE_INPUT_EXCEPTION( ExcWrongDescendantModel, << "Impossible descendant model: " << EI_Model::qval);
+    
   /**
    * Static variable for definition of common input record in reaction term.
    */

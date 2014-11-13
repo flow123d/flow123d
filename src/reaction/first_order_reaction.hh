@@ -37,7 +37,7 @@ protected:
     void assemble_ode_matrix(void) override;
     
     /// Initializes private members of sorption from the input record.
-    void initialize_from_input();
+    void initialize_from_input() override;
     
     std::vector<double> reaction_rates_;    ///< Vector of reaction rates of the transported substances.
 };

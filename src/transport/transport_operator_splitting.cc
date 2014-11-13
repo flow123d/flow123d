@@ -154,15 +154,22 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 			reaction =  new DualPorosity(init_mesh, *reactions_it);
 		} else
 		if (reactions_it->type() == Semchem_interface::input_type ) {
-			Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
-			Semchem_reactions->set_el_4_loc(el_4_loc);
-                //Semchem works with phases 0-3; this is not supported no more!
-                semchem_conc_ptr = new double**[1];
-                semchem_conc_ptr[0] = convection->get_concentration_matrix();
-                Semchem_reactions->set_concentration_matrix(semchem_conc_ptr, el_distribution, el_4_loc);
+// 			Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
+// 			Semchem_reactions->set_el_4_loc(el_4_loc);
+//                 //Semchem works with phases 0-3; this is not supported no more!
+//                 semchem_conc_ptr = new double**[1];
+//                 semchem_conc_ptr[0] = convection->get_concentration_matrix();
+//                 Semchem_reactions->set_concentration_matrix(semchem_conc_ptr, el_distribution, el_4_loc);
+            THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
 
 		} else {
-			xprintf(UsrErr, "Wrong reaction type.\n");
+			//This point cannot be reached. The TYPE_selection will throw an error first. 
+            THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
 		}
 		//temporary, until new mass balance considering reaction term is created
 		xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "

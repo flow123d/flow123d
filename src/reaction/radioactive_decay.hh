@@ -19,15 +19,10 @@ class Mesh;
 class RadioactiveDecay: public FirstOrderReactionBase
 {
 public:
-    /**
-     * Input record for class RadioactiveDecay.
-     */
-    static Input::Type::Record input_type;
-    /**
-     * Input record which defines particular decay step.
-     */
-    static Input::Type::Record input_type_single_decay;
-   
+    static Input::Type::Record input_type;              ///< Input record for class RadioactiveDecay.
+    static Input::Type::Record input_type_single_decay; ///< Input record which defines particular decay step.
+    static Input::Type::Record input_type_product;      ///< Input record for a product of a radioactive decay.
+    
     /// Constructor.
     RadioactiveDecay(Mesh &mesh, Input::Record in_rec);
 

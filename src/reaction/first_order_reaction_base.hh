@@ -65,7 +65,7 @@ protected:
     virtual double **compute_reaction(double **concentrations, int loc_el) override;
             
     /// Initializes private members of sorption from the input record.
-    virtual void initialize_from_input();
+    virtual void initialize_from_input() = 0;
     
     /** Help function to create mapping of substance indices. 
      * Finds a position of a string in specified array.
@@ -82,13 +82,12 @@ protected:
     *   Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
     */
     std::vector<std::vector<double> > bifurcation_;
-    arma::mat bifurcation_matrix_;
     
     /// Number of all transported substances. It is the dimension of the reaction matrix.
     unsigned int n_substances_;
     
     arma::mat reaction_matrix_;   ///< Reaction matrix.
-    arma::colvec prev_conc_;      ///< Column vector storing previous concetrations on an element.
+    arma::vec prev_conc_;      ///< Column vector storing previous concetrations on an element.
     
     arma::mat molar_matrix_;      ///< Diagonal matrix with molar masses of substances.
     arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.

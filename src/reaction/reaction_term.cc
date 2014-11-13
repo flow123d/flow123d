@@ -4,8 +4,6 @@
 #include "io/output.h"
 
 using namespace Input::Type;
-using namespace std;
-
         
 AbstractRecord ReactionTerm::input_type
     = AbstractRecord("ReactionTerm", "Equation for reading information about simple chemical reactions.");

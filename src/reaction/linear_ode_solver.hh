@@ -4,7 +4,6 @@
 #include "armadillo"
 #include "input/accessors.hh"
 
-using namespace arma;
 
 /// @brief Base class for linear ODE solver.
 /** This class represents an interface to a solver of a system of linear ordinary differential 
@@ -21,23 +20,27 @@ public:
     LinearODESolverBase();
     virtual ~LinearODESolverBase();
     
-    void set_system_matrix(const mat &matrix);  ///< Sets the matrix of ODE system.
+    void set_system_matrix(const arma::mat &matrix);  ///< Sets the matrix of ODE system.
     void set_step(double step);                 ///< Sets the step of the numerical method.
     
     /// Updates solution of the ODEs system.
-    virtual void update_solution(vec &init_vector, vec &output_vec) = 0;
+    /**
+     * @param init_vec is the column initial vector
+     * @param output_vec is the column output vector containing the result
+     */
+    virtual void update_solution(arma::vec &init_vec, arma::vec &output_vec) = 0;
     
     /// Updates solution of the system with different initial vectors.
     /**
-     * Column initial and output vectors are grouped in the matrices.
+     * Column initial @p init_vecs and output @p output_vecs vectors are grouped in the matrices.
      * Parameter @p mask can be used to skip some of the vectors.
      */
-    virtual void update_solution(mat &init_vectors, mat &output_vecs, 
+    virtual void update_solution(arma::mat &init_vecs, arma::mat &output_vecs, 
                                  const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) = 0;
                                  
 protected:
-    mat system_matrix_;     ///< the matrix of ODE system
-    vec rhs_;               ///< the vector of RHS values (not used currently)
+    arma::mat system_matrix_;     ///< the square matrix of ODE system
+    arma::vec rhs_;               ///< the column vector of RHS values (not used currently)
     double step_;           ///< the step of the numerical method
     bool step_changed_;     ///< flag is true if the step has been changed
 };
@@ -61,67 +64,25 @@ public:
     
     /// Updates solution of the system with different initial vectors.
     /**
-     * Column initial and output vectors are grouped in the matrices.
-     * Parameter @p mask can be used to skip some of the vectors.
+     * See the base class member documentation.
      */
-    virtual void update_solution(mat &init_vectors, mat &output_vecs, 
+    virtual void update_solution(arma::mat &init_vecs, arma::mat &output_vecs, 
                          const std::vector<unsigned int> &mask = std::vector<unsigned int>(0)) override;
     
 private:
 };
 
 template<class Method>
-void LinearODESolver<Method>::update_solution(mat& init_vectors, mat& output_vecs, const std::vector< unsigned int > &mask)
+void LinearODESolver<Method>::update_solution(arma::mat& init_vecs, arma::mat& output_vecs, const std::vector< unsigned int > &mask)
 {  
     ASSERT(0,"Not implemented yet.");
-    ASSERT_EQUAL(init_vectors.n_cols, output_vecs.n_cols);
-    ASSERT_EQUAL(init_vectors.n_rows, output_vecs.n_rows);
+    ASSERT_EQUAL(init_vecs.n_cols, output_vecs.n_cols);
+    ASSERT_EQUAL(init_vecs.n_rows, output_vecs.n_rows);
     
-    for(unsigned int j=0; j < init_vectors.n_cols; j++)
+    for(unsigned int j=0; j < init_vecs.n_cols; j++)
     {
-        //static_cast<Method*>(this)->update_solution(init_vectors.col(j), output_vecs.col(j));
+        //static_cast<Method*>(this)->update_solution(init_vecs.col(j), output_vecs.col(j));
     }
 }
-
-
-
-
-
-/*********************** ANALYTIC SOLUTION ************************/
-/** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
- *
- * The analytic solution can be obtained in the special case when decrease of one quantity is a fraction
- * of increase of other quantity. The fractions are derived from the matrix.
- * 
- * It is used in first order reactions and decays.
- */
-class LinearODEAnalytic : public LinearODESolver<LinearODEAnalytic>
-{
-public:
-    /**
-     * Input record for class LinearODE_analytic.
-     */
-    static Input::Type::Record input_type;
-    
-    ///Default constructor is possible because the input record is not needed.
-    LinearODEAnalytic(){};
-    
-    /// Constructor from the input data.
-    LinearODEAnalytic(Input::Record in_rec);
-
-    /// Destructor.
-    ~LinearODEAnalytic(void);
-    
-    void update_solution(vec &init_vector, vec &output_vec) override;
-    
-protected:
-    /**
-     *   Computes the standard fundamental matrix.
-     */
-    void compute_matrix();
-    
-    /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
-    mat solution_matrix_;
-};
 
 #endif // LINEAR_ODE_SOLVER_H_

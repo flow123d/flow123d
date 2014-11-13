@@ -170,6 +170,7 @@ set(sources_lib_non_system
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
+    reaction/linear_ode_analytic.cc
     semchem/semchem_interface.cc
 
     transport/concentration_model.cc

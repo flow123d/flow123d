@@ -1,8 +1,10 @@
 #include "reaction/first_order_reaction_base.hh"
 #include "reaction/reaction_term.hh"
 
-#include "reaction/pade_approximant.hh"
 #include "reaction/linear_ode_solver.hh"
+#include "reaction/pade_approximant.hh"
+#include "reaction/linear_ode_analytic.hh"
+
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
@@ -11,8 +13,6 @@
 #include "la/distribution.hh"
 
 using namespace Input::Type;
-using namespace arma;
-
 
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
@@ -29,7 +29,11 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
             linear_ode_solver_ = new LinearODEAnalytic();
         }
         else
-            xprintf(UsrErr,"Unknown input in the record 'ode_solver' in reaction/decay.");
+        {   //This point cannot be reached. The TYPE_selection will throw an error first. 
+            THROW( ExcMessage() 
+                    << EI_Message("Linear ODEs solver selection failed (SHOULD NEVER HAPPEN).") 
+                    << (*num_it).ei_address());
+        }
     }
     else    //default linear ode solver
     {
@@ -39,11 +43,6 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
 {
-}
-
-void FirstOrderReactionBase::initialize_from_input()
-{
-    xprintf(Warn, "The method initialize_from_input() should be reimplemented in descendants.");
 }
 
 void FirstOrderReactionBase::initialize()
@@ -88,7 +87,7 @@ void FirstOrderReactionBase::zero_time_step()
 double **FirstOrderReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
 {      
     unsigned int rows;  // row in the concentration matrix, regards the substance index
-    vec new_conc;
+    arma::vec new_conc;
     
     // save previous concentrations to column vector
     for(rows = 0; rows < n_substances_; rows++)

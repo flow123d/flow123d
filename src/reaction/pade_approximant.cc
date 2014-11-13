@@ -7,16 +7,15 @@
 
 #include "armadillo"
 
-using namespace arma;
 using namespace Input::Type;
     
     
 Record PadeApproximant::input_type
     = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
     .derive_from(LinearODESolverBase::input_type)
-    .declare_key("nominator_degree", Integer(), Default("2"),
+    .declare_key("nominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
-    .declare_key("denominator_degree", Integer(), Default("2"),
+    .declare_key("denominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant");
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
@@ -24,8 +23,6 @@ PadeApproximant::PadeApproximant(Input::Record in_rec)
     //DBGMSG("PadeApproximant constructor.\n");
     nominator_degree_ = in_rec.val<int>("nominator_degree");
     denominator_degree_ = in_rec.val<int>("denominator_degree");
-    if(nominator_degree_ < 0) xprintf(UsrErr,"Wrong nominator degree in PadeApproximant.");
-    if(denominator_degree_ < 0) xprintf(UsrErr,"Wrong denominator degree in PadeApproximant.");
 }
 
 PadeApproximant::PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree)
@@ -37,7 +34,7 @@ PadeApproximant::~PadeApproximant()
 {
 }
 
-void PadeApproximant::update_solution(vec& init_vector, vec& output_vec)
+void PadeApproximant::update_solution(arma::vec& init_vector, arma::vec& output_vec)
 {
     if(step_changed_)
     {
@@ -50,15 +47,15 @@ void PadeApproximant::update_solution(vec& init_vector, vec& output_vec)
 }
 
 
-void PadeApproximant::approximate_matrix(mat &matrix)
+void PadeApproximant::approximate_matrix(arma::mat &matrix)
 {
     ASSERT(matrix.n_rows == matrix.n_cols, "Matrix is not square.");
     
     unsigned int size = matrix.n_rows;
     
     //compute Pade Approximant
-    mat nominator_matrix(size, size),
-        denominator_matrix(size, size);
+    arma::mat nominator_matrix(size, size),
+              denominator_matrix(size, size);
         
     nominator_matrix.fill(0);
     denominator_matrix.fill(0);
@@ -104,11 +101,11 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
     } 
 }
 
-void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix, 
-                                                 const mat& input_matrix, 
+void PadeApproximant::evaluate_matrix_polynomial(arma::mat& polynomial_matrix, 
+                                                 const arma::mat& input_matrix, 
                                                  const std::vector< double >& coefs)
 {
-    mat identity = eye(input_matrix.n_rows, input_matrix.n_cols);
+    arma::mat identity = arma::eye(input_matrix.n_rows, input_matrix.n_cols);
 
     ///Horner scheme for evaluating polynomial a0 + [a1 + [a2 + [a3 +...]*R(t)]*R(t)]*R(t)
     for(int i = coefs.size()-1; i >= 0; i--)

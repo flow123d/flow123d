@@ -69,14 +69,14 @@
             radionuclide = "D",
             half_life = 2.5,
             products = [
-              "F"
+              { name = "F", energy = 0.0, branching_ratio = 1.0 }
             ]
           },
           {
             radionuclide = "F",
             half_life = 2.5,
             products = [
-              "B"
+              { name = "B", energy = 0.0, branching_ratio = 1.0 }
             ]
           }
         ]
