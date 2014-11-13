@@ -123,6 +123,7 @@ protected:
 
     /// Transported substances.
     SubstanceList substances_;
+    SubstanceArray substances_new_;
 
     /**
      * Temporary solution how to pass velocity field form the flow model.

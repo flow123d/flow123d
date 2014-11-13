@@ -128,6 +128,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	// Initialize list of substances.
 	substances_.initialize(in_rec.val<Input::Array>("substances"));
+    substances_new_.initialize(in_rec.val<Input::Array>("substances"));
+    
     n_subst_ = substances_.size();
 
 	convection = new ConvectionTransport(*mesh_, in_rec);
@@ -167,6 +169,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 					  "Only the mass flux over boundaries is correct.\n");
 
 		reaction->substances(substances_)
+                  .substances(substances_new_)
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
 				.output_stream(*(convection->output_stream()))

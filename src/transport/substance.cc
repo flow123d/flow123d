@@ -96,3 +96,12 @@ void SubstanceList::initialize(const std::vector<std::string> &names)
 	*names_ = names;
 }
 
+
+void SubstanceArray::initialize(const Input::Array& in_array)
+{
+    members_.clear();
+    for (auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it)
+    {
+        members_.push_back(new Substance(*it));
+    }
+}

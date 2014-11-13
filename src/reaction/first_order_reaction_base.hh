@@ -77,7 +77,7 @@ protected:
     *   substance_ids_[reactant][local_product_idx] = global_substance_idx
     */
     std::vector< std::vector <unsigned int> >substance_ids_;
-    
+    std::vector<SubstanceArray> reaction_substances_;
     /**
     *   Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
     */

@@ -35,7 +35,7 @@
 
 
 #include "input/accessors.hh"
-
+#include "system/named_vector.hh"
 
 /**
  * Class Substance is a storage for data which are specific for a (chemical) substance.
@@ -108,7 +108,12 @@ private:
 };
 
 
-
+class SubstanceArray : public NamedVector<Substance>
+{
+public:
+    /// Read from input array.
+    void initialize(const Input::Array &in_array);
+};
 
 
 

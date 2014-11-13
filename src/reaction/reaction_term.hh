@@ -8,6 +8,7 @@
 
 #include "coupling/equation.hh"
 #include "transport/substance.hh"
+#include "system/named_vector.hh"
 
 class Mesh;
 class Distribution;
@@ -45,7 +46,11 @@ public:
   ///Sets the names of substances considered in transport.
   ReactionTerm &substances(SubstanceList &substances)
   {substances_.initialize(substances); return *this;}
-
+  
+  
+  ReactionTerm &substances(SubstanceArray &substances)
+  {substances_new_ = &substances; return *this;}
+  
   ///Sets the output stream which is given from transport class.
   ReactionTerm &output_stream(OutputTime &ostream)
   {output_stream_=&ostream; return *this;}
@@ -108,6 +113,8 @@ protected:
    */
   SubstanceList substances_;
 
+  SubstanceArray *substances_new_;
+  
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;
 

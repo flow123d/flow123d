@@ -65,45 +65,55 @@ void FirstOrderReaction::initialize_from_input()
 {
     unsigned int idx;   //temporary variable, indexing substances
 
-	Input::Array reactions_array = input_record_.val<Input::Array>("reactions");
+    Input::Array reactions_array = input_record_.val<Input::Array>("reactions");
 
-	substance_ids_.resize( reactions_array.size() );
+    reaction_substances_.resize(reactions_array.size());
+    substance_ids_.resize( reactions_array.size() );
     reaction_rates_.resize( reactions_array.size() );
-	bifurcation_.resize( reactions_array.size() );
+    bifurcation_.resize( reactions_array.size() );
 
-	int i_reaction=0;
-	for (Input::Iterator<Input::Record> dec_it = reactions_array.begin<Input::Record>(); 
+    int i_reaction=0;
+    for (Input::Iterator<Input::Record> dec_it = reactions_array.begin<Input::Record>(); 
          dec_it != reactions_array.end(); ++dec_it, ++i_reaction)
-	{ 
+    { 
         //read reaction rate
         reaction_rates_[i_reaction] = dec_it->val<double>("reaction_rate");
         
-		//read reactant name, product names and branching ratios
-		string parent_name = dec_it->val<string>("reactant");
-		Input::Array product_array = dec_it->val<Input::Array>("products");
-		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
+        //read reactant name, product names and branching ratios
+        string parent_name = dec_it->val<string>("reactant");
+        Input::Array product_array = dec_it->val<Input::Array>("products");
+        Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
-		// substance_ids contains also parent id
-		if (product_array.size() > 0)   substance_ids_[i_reaction].resize( product_array.size()+1 );
-		else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_reaction);
+        std::vector<string> subst_names;
+        product_array.copy_to(subst_names);
+        
+        reaction_substances_[i_reaction] += (*substances_new_)[parent_name];
+        reaction_substances_[i_reaction] += (*substances_new_).subset(subst_names);
+        
+        
+        // substance_ids contains also parent id
+        if (product_array.size() > 0)   substance_ids_[i_reaction].resize( product_array.size()+1 );
+        else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_reaction);
 
 
-		// set parent index
-		idx = find_subst_name(parent_name);
-		if (idx < substances_.size())	substance_ids_[i_reaction][0] = idx;
-		else    xprintf(UsrErr,"Unknown name of the reactant in the %d-th reaction.\n", i_reaction);
+        // set parent index
+        Substance parent;
+        idx = substances_new_->idx(parent_name,&parent);
+        //idx = find_subst_name(parent_name);
+        if (idx < substances_.size())   substance_ids_[i_reaction][0] = idx;
+        else    xprintf(UsrErr,"Unknown name of the reactant in the %d-th reaction.\n", i_reaction);
 
-		// set products
-		unsigned int i_product = 1;
-		for(Input::Iterator<string> product_it = product_array.begin<string>(); 
+        // set products
+        unsigned int i_product = 1;
+        for(Input::Iterator<string> product_it = product_array.begin<string>(); 
             product_it != product_array.end(); ++product_it, i_product++)
-		{
-			idx = find_subst_name(*product_it);
-			if (idx < substances_.size())   substance_ids_[i_reaction][i_product] = idx;
-			else    xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_reaction);
-		}
+        {
+            idx = find_subst_name(*product_it);
+            if (idx < substances_.size())   substance_ids_[i_reaction][i_product] = idx;
+            else    xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_reaction);
+        }
 
-		//bifurcation determining part
+        //bifurcation determining part
         if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_reaction] );
         else    xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
                         ratio_array.size(), product_array.size(), i_reaction);
@@ -117,5 +127,65 @@ void FirstOrderReaction::initialize_from_input()
         if(test_sum != 1.0)
             xprintf(UsrErr,"The sum of branching ratios %f in the %d-th reaction is not 1.0.\n",
                         test_sum, i_reaction);
-	}
+    }
 }
+
+// void FirstOrderReaction::initialize_from_input()
+// {
+//     unsigned int idx;   //temporary variable, indexing substances
+// 
+// 	Input::Array reactions_array = input_record_.val<Input::Array>("reactions");
+// 
+// 	substance_ids_.resize( reactions_array.size() );
+//     reaction_rates_.resize( reactions_array.size() );
+// 	bifurcation_.resize( reactions_array.size() );
+// 
+// 	int i_reaction=0;
+// 	for (Input::Iterator<Input::Record> dec_it = reactions_array.begin<Input::Record>(); 
+//          dec_it != reactions_array.end(); ++dec_it, ++i_reaction)
+// 	{ 
+//         //read reaction rate
+//         reaction_rates_[i_reaction] = dec_it->val<double>("reaction_rate");
+//         
+// 		//read reactant name, product names and branching ratios
+// 		string parent_name = dec_it->val<string>("reactant");
+// 		Input::Array product_array = dec_it->val<Input::Array>("products");
+// 		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
+// 
+// 		// substance_ids contains also parent id
+// 		if (product_array.size() > 0)   substance_ids_[i_reaction].resize( product_array.size()+1 );
+// 		else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_reaction);
+// 
+// 
+// 		// set parent index
+//         idx = substances_new_->idx(parent_name);
+// 		//idx = find_subst_name(parent_name);
+// 		if (idx < substances_.size())	substance_ids_[i_reaction][0] = idx;
+// 		else    xprintf(UsrErr,"Unknown name of the reactant in the %d-th reaction.\n", i_reaction);
+// 
+// 		// set products
+// 		unsigned int i_product = 1;
+// 		for(Input::Iterator<string> product_it = product_array.begin<string>(); 
+//             product_it != product_array.end(); ++product_it, i_product++)
+// 		{
+// 			idx = find_subst_name(*product_it);
+// 			if (idx < substances_.size())   substance_ids_[i_reaction][i_product] = idx;
+// 			else    xprintf(Warn,"Unknown name of the %d-th product in the %d-th reaction.\n", i_product-1 , i_reaction);
+// 		}
+// 
+// 		//bifurcation determining part
+//         if (ratio_array.size() == product_array.size() )   ratio_array.copy_to( bifurcation_[i_reaction] );
+//         else    xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
+//                         ratio_array.size(), product_array.size(), i_reaction);
+// 
+//         //test the sum of branching ratios = 1.0
+//         double test_sum=0;
+//         for(auto &b : bifurcation_[i_reaction])
+//         {
+//             test_sum += b;
+//         }
+//         if(test_sum != 1.0)
+//             xprintf(UsrErr,"The sum of branching ratios %f in the %d-th reaction is not 1.0.\n",
+//                         test_sum, i_reaction);
+// 	}
+// }

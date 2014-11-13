@@ -26,6 +26,7 @@ ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
 {
 }
 
+
 ReactionTerm::~ReactionTerm()
 {
 }
