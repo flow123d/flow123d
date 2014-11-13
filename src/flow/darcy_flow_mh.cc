@@ -605,12 +605,13 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 	}
 
 	dofs.resize(ele->n_sides());
+        dirichlet.resize(ele->n_sides());
+        dirichlet.zeros();
 
 	for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
 		dofs[i_side]=darcy_.row_4_edge[ele->side(i_side)->edge_idx()];
 		Boundary * bcd = ele->side(i_side)->cond();
-		if (bcd) {
-			dirichlet.resize(ele->n_sides());
+		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
 			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
@@ -620,7 +621,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
 				dirichlet[i_side] = bc_pressure;
 			}
-		}
+		} 
 	}
 
 }

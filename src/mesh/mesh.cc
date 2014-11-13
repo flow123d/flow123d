@@ -615,7 +615,10 @@ void Mesh::make_intersec_elements() {
 
 		if (ele.dim() == 1) {
 			vector<unsigned int> candidate_list;
-			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+                        
+			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        for(unsigned int i_elm : candidate_list) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;
