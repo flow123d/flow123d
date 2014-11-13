@@ -108,15 +108,4 @@ private:
 };
 
 
-class SubstanceArray : public NamedVector<Substance>
-{
-public:
-    /// Read from input array.
-    void initialize(const Input::Array &in_array);
-};
-
-
-
-
-
 #endif // SUBSTANCE_HH_

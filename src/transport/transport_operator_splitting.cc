@@ -128,7 +128,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	// Initialize list of substances.
 	substances_.initialize(in_rec.val<Input::Array>("substances"));
-    substances_new_.initialize(in_rec.val<Input::Array>("substances"));
+    NamedVectorTools::initialize(substances_new_,in_rec.val<Input::Array>("substances"));
     
     n_subst_ = substances_.size();
 

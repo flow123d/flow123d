@@ -78,12 +78,28 @@ public:
     inline iterator begin() {return members_.begin();}
     inline iterator end() {return members_.end();}
     
-    bool empty() {return begin() == end();}
+    inline bool empty() {return begin() == end();}
+    
+    inline void clear(){ members_.clear();}
     
 protected:
     std::vector<T *> members_;
     //std::vector<std::string> names_;
 };
+
+namespace NamedVectorTools {
+
+template<class T>
+static void initialize(NamedVector<T> &vector, const Input::Array& in_array)
+{
+    vector.clear();
+    for (auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it)
+    {
+        vector += *(new T(*it));
+    }
+}
+
+} //namespace NamedVectorTools
 
 
 ////////////////////////////////////////////////////////// IMPLEMENTATION

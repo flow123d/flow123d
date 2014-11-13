@@ -52,7 +52,7 @@ public:
   {substances_.initialize(substances); return *this;}
   
   
-  ReactionTerm &substances(SubstanceArray &substances)
+  ReactionTerm &substances(NamedVector<Substance> &substances)
   {substances_new_ = &substances; return *this;}
   
   ///Sets the output stream which is given from transport class.
@@ -117,7 +117,7 @@ protected:
    */
   SubstanceList substances_;
 
-  SubstanceArray *substances_new_;
+  NamedVector<Substance> *substances_new_;
   
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;

@@ -93,7 +93,9 @@ void FirstOrderReaction::initialize_from_input()
         
 
 		// set reactant index
-		idx = find_subst_name(reactant_name);
+		//idx = find_subst_name(reactant_name);
+        Substance reactant;
+        idx = substances_new_->idx(reactant_name, &reactant);
 		if (idx < substances_.size())	
             substance_ids_[i_reaction][0] = idx;
 		else THROW(ReactionTerm::ExcUnknownSubstance() 
