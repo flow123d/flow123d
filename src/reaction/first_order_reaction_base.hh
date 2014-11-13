@@ -82,7 +82,6 @@ protected:
     *   Two dimensional array contains mass percentage of every single decay bifurcation on every single row.
     */
     std::vector<std::vector<double> > bifurcation_;
-    arma::mat bifurcation_matrix_;
     
     /// Number of all transported substances. It is the dimension of the reaction matrix.
     unsigned int n_substances_;
