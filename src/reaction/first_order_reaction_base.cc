@@ -29,7 +29,11 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
             linear_ode_solver_ = new LinearODEAnalytic();
         }
         else
-            xprintf(UsrErr,"Unknown input in the record 'ode_solver' in reaction/decay.");
+        {   //This point cannot be reached. The TYPE_selection will throw an error first. 
+            THROW( ExcMessage() 
+                    << EI_Message("Linear ODEs solver selection failed (SHOULD NEVER HAPPEN).") 
+                    << (*num_it).ei_address());
+        }
     }
     else    //default linear ode solver
     {
@@ -39,11 +43,6 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
 {
-}
-
-void FirstOrderReactionBase::initialize_from_input()
-{
-    xprintf(Warn, "The method initialize_from_input() should be reimplemented in descendants.");
 }
 
 void FirstOrderReactionBase::initialize()

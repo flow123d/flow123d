@@ -11,15 +11,15 @@ Record FirstOrderReaction::input_type_single_reaction
 	= Record("Reaction", "Describes a single first order chemical reaction.")
 	.declare_key("reactant", String(), Default::obligatory(),
 				"The name of the reactant.")
-    .declare_key("reaction_rate", Double(), Default::obligatory(),
+    .declare_key("reaction_rate", Double(0.0), Default::obligatory(),
                 "The reaction rate coefficient of the first order reaction.")
-    .declare_key("products", Array(String()), Default::obligatory(),
+    .declare_key("products", Array(String(),1), Default::obligatory(),
 				"An array of the names of products.")
-	.declare_key("branching_ratios", Array(Double()), Default("1.0"),   // default is one product, with ratio == 1.0
-				"This is an array of branching ratios when more than one product is present. "
-                "Considering only one product, the default ratio 1.0 is used."
-                "The values are given as fractions in interval [0.0,1.0] and"
-                "their sum must be 1.0; it is checked during input reading.");
+	.declare_key("branching_ratios", Array(Double(0.0)), Default("1.0"),   // default is one product, with ratio == 1.0
+                 "This is an array of branching ratios of the products when there is more than one present."
+                 "Considering only one product, the default ratio 1.0 is used."
+                 "Its value must be positive. Further, the branching ratios of all products are normalized" 
+                 "by their sum, so the sum then gives 1.0 (this also resolves possible rouding errors).");
 
 
 Record FirstOrderReaction::input_type
@@ -81,12 +81,10 @@ void FirstOrderReaction::initialize_from_input()
 		Input::Array product_array = dec_it->val<Input::Array>("products");
 		Input::Array ratio_array = dec_it->val<Input::Array>("branching_ratios"); // has default value [ 1.0 ]
 
-		// substance_ids contains also parent id
-		if (product_array.size() > 0)   substance_ids_[i_reaction].resize( product_array.size()+1 );
-		else    xprintf(UsrErr,"Empty array of products in the %d-th reaction.\n", i_reaction);
+		//resize substance_ids array
+		substance_ids_[i_reaction].resize( product_array.size()+1 );
 
-
-		// set parent index
+		// set reactant index
 		idx = find_subst_name(reactant_name);
 		if (idx < substances_.size())	
             substance_ids_[i_reaction][0] = idx;
@@ -105,7 +103,6 @@ void FirstOrderReaction::initialize_from_input()
 			else THROW(ReactionTerm::ExcUnknownSubstance() 
                         << ReactionTerm::EI_Substance(*product_it) 
                         << product_array.ei_address());
-            
 		}
 
 		//bifurcation determining part
@@ -113,14 +110,13 @@ void FirstOrderReaction::initialize_from_input()
         else    xprintf(UsrErr,"Number of branches %d has to match the number of products %d in the %d-th reaction.\n",
                         ratio_array.size(), product_array.size(), i_reaction);
 
-        //test the sum of branching ratios = 1.0
-        double test_sum=0;
+        //Normalization of branching ratios in bifurcation vector by its norm.
+        //sum:
+        double sum=0;
         for(auto &b : bifurcation_[i_reaction])
-        {
-            test_sum += b;
-        }
-        if(test_sum != 1.0)
-            xprintf(UsrErr,"The sum of branching ratios %f in the %d-th reaction is not 1.0.\n",
-                        test_sum, i_reaction);
+            sum += b;
+        //Normalization:
+        for(auto &b : bifurcation_[i_reaction])
+            b = b / sum;
 	}
 }
