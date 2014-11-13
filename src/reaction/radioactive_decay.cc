@@ -16,7 +16,7 @@ Record RadioactiveDecay::input_type_product
     .declare_key("name", String(), Default::obligatory(), 
                  "The name of the product.")
     .declare_key("energy", Double(0.0), Default("0.0"),
-                 "The released energy in MeV from the decay of the radionuclide to the product.")
+                 "Not used at the moment! The released energy in MeV from the decay of the radionuclide into the product.")
     .declare_key("branching_ratio", Double(0.0), Default("1.0"),
                  "The branching ratio of the product when there is more than one."
                  "Considering only one product, the default ratio 1.0 is used."

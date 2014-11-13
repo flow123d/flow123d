@@ -26,7 +26,7 @@
  * <B>Drawback:</B>  These assumptions (equation independence) are adequate when very small time step is 
  * applied. This will lead to huge amount of evaluations of the exponential functions which can be expensive,
  * so other numerical methods might be more appropriate. 
- * When the time step is large then the assuption is quite inadequate.
+ * When the time step is large then the assumption is quite inadequate.
  * 
  */
 class LinearODEAnalytic : public LinearODESolver<LinearODEAnalytic>
