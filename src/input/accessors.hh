@@ -63,6 +63,11 @@ public:
  *  Declaration of error info class for passing Input::Address through exceptions.
  *  Is returned by input accessors : Input::Record, Input::Array, etc.
  *
+ *  Use case example:
+ *  Input::Record input = ...;
+ *  string name=input.val("name");
+ *  if (name.size() > STR_LIMIT) THROW(ExcToLongStr() << EI_Address( input.address_string() ));
+ *
  *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
  *  see also ei_address methods.
  */
@@ -74,6 +79,8 @@ TYPEDEF_ERR_INFO( EI_Address, const std::string);
  *
  * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
  * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * Reports input address provided through EI_Address object, see above.
  *
  * @ingroup exceptions
  */
