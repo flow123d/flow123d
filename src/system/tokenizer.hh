@@ -50,6 +50,14 @@ public:
     typedef boost::escaped_list_separator<char> Separator;
     typedef boost::tokenizer<Separator> BT;
 
+    struct Position {
+        unsigned int line_counter_;   ///< Actual line in file.
+        unsigned int line_pos_;       ///< Actual position in line.
+
+        Position(unsigned int line, unsigned int pos):
+        	line_counter_(line), line_pos_(pos) {}
+    };
+
     /**
      * Opens a file given by file path @p fp. And construct the tokenizer over the
      * input stream for this file.
@@ -111,9 +119,9 @@ public:
      * Moves to the next token on the line.
      */
     inline BT::iterator & operator ++() {
-      if (! eol()) {position_++; ++tok_;}
+      if (! eol()) {position_.line_pos_++; ++tok_;}
       // skip empty tokens (consecutive separators)
-      while (! eol() && (*tok_).size()==0 ) {position_++; ++tok_;}
+      while (! eol() && (*tok_).size()==0 ) {position_.line_pos_++; ++tok_;}
       return tok_;
     }
 
@@ -133,14 +141,14 @@ public:
      * Returns position on line.
      */
     inline unsigned int pos() const
-        { return position_;}
+        { return position_.line_pos_;}
 
     /**
      * Returns number of lines read by the tokenizer.
      * After first call of @p next_line this returns '1'.
      */
     inline unsigned int line_num() const
-        {return line_counter_;}
+        {return position_.line_counter_;}
 
     /**
      * Returns file name.
@@ -180,8 +188,7 @@ private:
     std::string comment_pattern_;
 
     /// Number of liner read by the tokenizer.
-    unsigned int line_counter_;
-    unsigned int position_;
+    Position position_;
 
     /// Line token iterator
     BT::iterator tok_;
