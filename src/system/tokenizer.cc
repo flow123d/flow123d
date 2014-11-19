@@ -109,7 +109,6 @@ const std::string & Tokenizer::operator *() const
 
 void Tokenizer::set_tokenizer()
 {
-	cout << "Tokenizer::set_tokenizer() - line: " << position_.line_counter_ << endl;
         line_tokenizer_.assign(line_);
         tok_ = line_tokenizer_.begin();
         position_.line_position_ = 0;
