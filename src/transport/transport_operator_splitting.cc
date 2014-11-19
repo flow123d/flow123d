@@ -44,7 +44,8 @@ AbstractRecord AdvectionProcessBase::input_type
 			"Time governor setting for the secondary equation.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.")
-	.declare_key("mass_balance", MassBalance::input_type, Default::optional(), "Settings for computing mass balance.");
+	.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
+			"Settings for computing mass balance.");
 
 
 Record TransportBase::input_type_output_record
@@ -182,7 +183,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
   // initialization of balance object
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-  if (it)
+  if (it->val<bool>("mass_balance_on"))
   {
 	  convection->get_par_info(el_4_loc, el_distribution);
 	  vector<unsigned int> edg_regions;

@@ -52,10 +52,12 @@ Selection Balance::format_selection_input_type
 
 Record MassBalance::input_type
 	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
+	.declare_key("mass_balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
 	.declare_key("format", Balance::format_selection_input_type, Default("csv"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
 	.declare_key("file", FileName::output(), Default::read_time("FileName mass_balance.*"), "File name for output of mass balance.")
+	.allow_auto_conversion("mass_balance_on")
 ;
 
 
