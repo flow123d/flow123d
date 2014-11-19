@@ -50,12 +50,35 @@ public:
     typedef boost::escaped_list_separator<char> Separator;
     typedef boost::tokenizer<Separator> BT;
 
-    struct Position {
-        unsigned int line_counter_;   ///< Actual line in file.
-        unsigned int line_pos_;       ///< Actual position in line.
+    /**
+     * Class represents actual position of Tokenizer in file.
+     *
+     * It is necessary to check if stored values are correct. Out of Tokenizer values are set
+     * only during construction. Entered file_position_ must correspond with values line_counter_
+     * and line_position_. Unfortunately, any control mechanism of entered values doesn't exist.
+     * If Position object is returned out of Tokenizer, value of file_position_ must be set
+     * according to the position of Tokenizer.
+     */
+    class Position {
+    	friend class Tokenizer;
+    public:
+    	/// Constructor
+        Position(int file_pos, unsigned int line, unsigned int line_pos):
+        	file_position_(file_pos), line_counter_(line), line_position_(line_pos) {}
 
-        Position(unsigned int line, unsigned int pos):
-        	line_counter_(line), line_pos_(pos) {}
+        inline int file_position()
+        	{ return file_position_; }
+
+        inline unsigned int line_counter()
+        	{ return line_counter_; }
+
+        inline unsigned int line_position()
+        	{ return line_position_; }
+
+    private:
+        mutable int file_position_;     ///< Actual (global) position in file.
+        unsigned int line_counter_;     ///< Actual line in file.
+        unsigned int line_position_;    ///< Actual position in line.
     };
 
     /**
@@ -119,9 +142,9 @@ public:
      * Moves to the next token on the line.
      */
     inline BT::iterator & operator ++() {
-      if (! eol()) {position_.line_pos_++; ++tok_;}
+      if (! eol()) {position_.line_position_++; ++tok_;}
       // skip empty tokens (consecutive separators)
-      while (! eol() && (*tok_).size()==0 ) {position_.line_pos_++; ++tok_;}
+      while (! eol() && (*tok_).size()==0 ) {position_.line_position_++; ++tok_;}
       return tok_;
     }
 
@@ -141,7 +164,7 @@ public:
      * Returns position on line.
      */
     inline unsigned int pos() const
-        { return position_.line_pos_;}
+        { return position_.line_position_;}
 
     /**
      * Returns number of lines read by the tokenizer.
@@ -166,6 +189,19 @@ public:
      */
     inline const std::string &line() const
         { return line_;}
+
+    /**
+     * Returns actual position in file.
+     */
+    Tokenizer::Position get_position() const;
+
+    /**
+     * Set new position of tokenizer in file.
+     *
+     * Warning! Actual file_position_ must correspond with values line_counter_
+     * and line_position_. Method can't check if the values are entered correctly.
+     */
+    void set_position(Tokenizer::Position pos);
 
     /**
      * Destructor close the file if it was opened by tokenizer itself.
