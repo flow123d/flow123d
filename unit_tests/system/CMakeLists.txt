@@ -41,6 +41,7 @@ add_test_directory("${libs}")
     if (CMAKE_HAVE_CXX11)
         # reqires raw strings  
         define_test(tokenizer)
+        define_mpi_test(tokenizer_speed 1)
     endif (CMAKE_HAVE_CXX11)  
 
 
