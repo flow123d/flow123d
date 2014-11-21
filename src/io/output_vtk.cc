@@ -39,6 +39,7 @@
 #include "io/output_data.hh"
 #include "io/output_vtk.h"
 #include "mesh/mesh.h"
+#include "system/sys_profiler.hh"
 
 
 using namespace Input::Type;
@@ -299,12 +300,9 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
                 << endl;
 
         /* Set precision to max */
-        //file.precision(std::numeric_limits<float>::digits10);
         file.precision(std::numeric_limits<double>::digits10);
 
-        for(unsigned int i=0; i < data->n_values; i ++) {
-            data->print(file, i);
-        }
+        data->print_all(file);
 
         file << "\n</DataArray>" << endl;
     }

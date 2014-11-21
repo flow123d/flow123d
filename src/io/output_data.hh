@@ -152,20 +152,33 @@ public:
 
 
     /**
-     * Output data element on given index @p idx. Method for writing data to output stream
+     * Output data element on given index @p idx. Method for writing data
+     * to output stream.
      *
-     * TODO: should at least output whole output value at once, since storage format should be hidden.
-     * TODO: should output whole array at once, otherwise this could be performance bottleneck.
-     * TODO: indicate if the tensor data are output in column-first or raw-first order
-     *       and possibly implement transposition. Set such property for individual file formats.
-     *       Class OutputData stores always in raw-first order.
+     * \note This method is used only by MSH file format.
      */
     void print(ostream &out_stream, unsigned int idx) override
     {
         ASSERT_LESS(idx, this->n_values);
-        ElemType *ptr_begin = data_ + n_elem_ * idx;
+        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
         	out_stream << *ptr << " ";
+    }
+
+    /**
+     * \brief Print all data stored in output data
+     *
+     * TODO: indicate if the tensor data are output in column-first or raw-first order
+     *       and possibly implement transposition. Set such property for individual file formats.
+     *       Class OutputData stores always in raw-first order.
+     */
+    void print_all(ostream &out_stream) override
+    {
+        for(unsigned int idx = 0; idx < this->n_values; idx++) {
+            ElemType *ptr_begin = this->data_ + n_elem_ * idx;
+            for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
+                out_stream << *ptr << " ";
+        }
     }
 
     /**
