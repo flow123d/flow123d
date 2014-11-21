@@ -34,9 +34,9 @@ endif()
 # A temporary CMakeLists.txt
 
 # set compilers
-set(PETSC_CONF_LINE --CC=${CMAKE_C_COMPILER} --CFLAGS='${CMAKE_C_FLAGS}' --CXX=${CMAKE_CXX_COMPILER} --CXXFLAGS='${CMAKE_CXX_FLAGS}' --with-clanguage=C)
+set(PETSC_CONF_LINE --CC=${CMAKE_C_COMPILER} --CFLAGS='${PETSC_C_FLAGS}' --CXX=${CMAKE_CXX_COMPILER} --CXXFLAGS='${PETSC_CXX_FLAGS}' --with-clanguage=C)
 if (CMAKE_Fortran_COMPILER)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --FC=${CMAKE_Fortran_COMPILER} --FFLAGS=${CMAKE_Fortran_FLAGS})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --FC=${CMAKE_Fortran_COMPILER} --FFLAGS=${PETSC_Fortran_FLAGS})
 endif()
 
 # set debugging
@@ -104,7 +104,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  

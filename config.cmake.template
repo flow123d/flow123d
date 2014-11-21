@@ -111,6 +111,7 @@
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags: "-g -DFlow123d_DEBUG"
 # "release" set flags: "-O3 -DDEBUG_PROFILER -DARMA_NO_DEBUG "
+# "coverage" set flags: "-g -O0 -fprofile-arcs -ftest-coverage" and flags for external libs: "-g -O0"
 #
 
 set(FLOW_BUILD_TYPE debug)
