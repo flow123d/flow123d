@@ -45,32 +45,32 @@
 using namespace Input::Type;
 
 Record OutputVTK::input_type
-	= Record("vtk", "Parameters of vtk output format.")
-	// It is derived from abstract class
-	.derive_from(OutputTime::input_format_type)
-	.declare_key("variant", input_type_variant, Default("ascii"),
-			"Variant of output stream file format.")
-	// The parallel or serial variant
-	.declare_key("parallel", Bool(), Default("false"),
-			"Parallel or serial version of file format.")
-	.declare_key("compression", input_type_compression, Default("none"),
-			"Compression used in output stream file format.");
+    = Record("vtk", "Parameters of vtk output format.")
+    // It is derived from abstract class
+    .derive_from(OutputTime::input_format_type)
+    .declare_key("variant", input_type_variant, Default("ascii"),
+        "Variant of output stream file format.")
+    // The parallel or serial variant
+    .declare_key("parallel", Bool(), Default("false"),
+        "Parallel or serial version of file format.")
+    .declare_key("compression", input_type_compression, Default("none"),
+        "Compression used in output stream file format.");
 
 
 Selection OutputVTK::input_type_variant
-	= Selection("VTK variant (ascii or binary)")
-	.add_value(OutputVTK::VARIANT_ASCII, "ascii",
-		"ASCII variant of VTK file format")
-	.add_value(OutputVTK::VARIANT_BINARY, "binary",
-		"Binary variant of VTK file format (not supported yet)");
+    = Selection("VTK variant (ascii or binary)")
+    .add_value(OutputVTK::VARIANT_ASCII, "ascii",
+        "ASCII variant of VTK file format")
+    .add_value(OutputVTK::VARIANT_BINARY, "binary",
+        "Binary variant of VTK file format (not supported yet)");
 
 
 Selection OutputVTK::input_type_compression
-	= Selection("Type of compression of VTK file format")
-	.add_value(OutputVTK::COMPRESSION_NONE, "none",
-		"Data in VTK file format are not compressed")
-	.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-		"Data in VTK file format are compressed using zlib (not supported yet)");
+    = Selection("Type of compression of VTK file format")
+    .add_value(OutputVTK::COMPRESSION_NONE, "none",
+        "Data in VTK file format are not compressed")
+    .add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
+        "Data in VTK file format are compressed using zlib (not supported yet)");
 
 
 
