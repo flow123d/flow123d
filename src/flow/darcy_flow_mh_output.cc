@@ -762,6 +762,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
     	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
     	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
+    	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
 }

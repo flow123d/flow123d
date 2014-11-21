@@ -704,19 +704,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 
 /**
- * P1 coonection of different dimensions
- * - demonstrated convergence, but still major open questions:
- * ? in all test cases the error on the fracture is less on the left and greater on the right
- *   with incresing trend
- *   tried:
- *   - changed order of 1d elements (no change)
- *   - higher precision of ngh output and linear solver (no change)
- * ? seems that there should be some factor 6.0 in the communication term
- * ? in the case of infinite k2 -> simplest 1d-constant communication, the biggest difference on borders,
- *   numerical solution greater then analytical
+ * P1 connection of different dimensions
  *
- * TODO:
- * * full implementation of Dirichlet BC ( also for 2d sides)
+ * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
 void P1_CouplingAssembler::assembly(LinSys &ls) {
