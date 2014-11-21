@@ -106,43 +106,6 @@ void OutputTime::destroy_all(void)
     OutputTime::output_streams.clear();
 }
 
-/*
-OutputTime *OutputTime::output_stream_by_name(string name)
-{
-	OutputTime *output_time;
-    // Try to find existing object
-    for(std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
-            output_iter != OutputTime::output_streams.end();
-            ++output_iter)
-    {
-        output_time = (*output_iter);
-        if( output_time->name == name) {
-            return output_time;
-        }
-    }
-
-    return NULL;
-}
-*/
-
-/*
-OutputTime *OutputTime::output_stream_by_key_name(const Input::Record &in_rec, const string key_name)
-{
-	// TODO: do not try to find empty string and raise exception
-
-	// Try to find record with output stream (the key is name of data)
-	Input::Iterator<string> stream_name_iter = in_rec.find<string>(key_name);
-
-	// If record was not found, then throw exception
-	if(!stream_name_iter) {
-		return nullptr;
-	}
-
-	// Try to find existing output stream
-	return output_stream_by_name(*stream_name_iter);
-}
-*/
-
 OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 {
     OutputTime* output_time;
@@ -164,44 +127,6 @@ OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 
     return output_time;
 }
-
-/*
-OutputTime *OutputTime::output_stream(const Input::Record &in_rec)
-{
-    // testing rank of process
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
-    // It's possible now to do output to the file only in the first process
-    //if(rank != 0) {
-    //    xprintf(MsgLog, "NOT MASTER PROC\n");
-    //    // TODO: do something, when support for Parallel VTK is added
-    //    return NULL;
-    //}
-
-    OutputTime *output_time;
-    string name = in_rec.val<string>("name");
-
-    xprintf(MsgLog, "Trying to find output_stream: %s ... ", name.c_str());
-
-    output_time = OutputTime::output_stream_by_name(name);
-    if(output_time != NULL) {
-        xprintf(MsgLog, "FOUND\n");
-        return output_time;
-    }
-
-    xprintf(MsgLog, "NOT FOUND. Creating new ... ");
-
-    output_time = OutputTime::create_output_stream(in_rec);
-    OutputTime::output_streams.push_back(output_time);
-
-    xprintf(MsgLog, "DONE\n");
-
-    ASSERT(output_time == OutputTime::output_stream_by_name(name),"Wrong stream push back.\n");
-    return output_time;
-}
-*/
 
 void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 {
@@ -311,49 +236,6 @@ void OutputTime::write_time_frame()
     }
     clear_data();
 }
-/*
-void OutputTime::write_all_data(void)
-{
-    int ierr, rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ASSERT(ierr == 0, "Error in MPI_Comm_rank.");
-
-    OutputTime *output_time = NULL;
-
-    // It's possible now to do output to the file only in the first process
-//if(rank != 0) {
-//        // TODO: do something, when support for Parallel VTK is added
-//        return;
-//    }
-    if (rank == 0) {
-		// Go through all OutputTime objects
-		for(std::vector<OutputTime*>::iterator stream_iter = OutputTime::output_streams.begin();
-				stream_iter != OutputTime::output_streams.end();
-				++stream_iter)
-		{
-			// Write data to output stream, when data registered to this output
-			// streams were changed
-			output_time = (*stream_iter);
-			if(output_time->write_time < output_time->time) {
-				xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
-						output_time->name.c_str(),
-						output_time->time);
-				output_time->write_data();
-				// Remember the last time of writing to output stream
-				output_time->write_time = output_time->time;
-				output_time->current_step++;
-			} else {
-				xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
-						output_time->name.c_str(),
-						output_time->time);
-			}
-		}
-    }
-
-    // Free all registered data
-    for(auto *stream : OutputTime::output_streams) stream->clear_data();
-}
-*/
 
 void OutputTime::clear_data(void)
 {
