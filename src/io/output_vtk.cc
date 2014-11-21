@@ -315,17 +315,17 @@ void OutputVTK::write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &ve
 {
     file << "Scalars=\"";
 	for( auto &data : vec_output_data)
-		if (data->n_elem_ == OutputDataBase::scalar) file << data->output_field_name << ",";
+		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
 	for( auto &data : vec_output_data)
-		if (data->n_elem_ == OutputDataBase::vector) file << data->output_field_name << ",";
+		if (data->n_elem_ == OutputDataBase::N_VECTOR) file << data->output_field_name << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
 	for( auto &data : vec_output_data)
-		if (data->n_elem_ == OutputDataBase::tensor) file << data->output_field_name << ",";
+		if (data->n_elem_ == OutputDataBase::N_TENSOR) file << data->output_field_name << ",";
 	file << "\"";
 }
 

@@ -12,11 +12,8 @@
 #include <string>
 #include <fstream>
 
-//#include <mpi.h>
-
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
-
 
 
 class OutputDataBase;
@@ -28,51 +25,15 @@ class MultiField;
 
 
 /**
- * \brief The class for outputing data during time.
+ * \brief The class for outputting data during time.
  *
- * This class is descendant of Output class. This class is used for outputing
+ * This class is descendant of Output class. This class is used for outputting
  * data varying in time. Own output to specific file formats is done at other
  * places to. See output_vtk.cc and output_msh.cc.
  */
 class OutputTime {
 
 public:
-	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-	DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-			<< " returning variable size vectors. Try convert to MultiField.\n");
-    /**
-     * Types of reference data
-     */
-    enum DiscreteSpace {
-        NODE_DATA   = 0,
-        CORNER_DATA = 1,
-        ELEM_DATA   = 3
-    };
-
-    /**
-     * \brief The specification of output stream
-     *
-     * \return This variable defines record for output stream
-     */
-    static Input::Type::Record input_type;
-
-    /**
-     * \brief The specification of output file format
-     */
-    static Input::Type::AbstractRecord input_format_type;
-
-    /**
-     * \brief This method delete all object instances of class OutputTime stored
-     * in output_streams vector
-     */
-    static void destroy_all(void);
-
-
-    /**
-     *
-     */
-    static OutputTime* create_output_stream(const Input::Record &in_rec);
-
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
@@ -87,6 +48,39 @@ public:
     virtual ~OutputTime();
 
     /**
+     * \brief The specification of output stream
+     *
+     * \return This variable defines record for output stream
+     */
+    static Input::Type::Record input_type;
+
+    /**
+     * \brief The specification of output file format
+     */
+    static Input::Type::AbstractRecord input_format_type;
+
+    /**
+     * Types of reference data
+     */
+    enum DiscreteSpace {
+        NODE_DATA   = 0,
+        CORNER_DATA = 1,
+        ELEM_DATA   = 3
+    };
+
+    /**
+     * \brief This method delete all object instances of class OutputTime stored
+     * in output_streams vector
+     */
+    static void destroy_all(void);
+
+    /**
+     * \brief This method tries to create new instance of OutputTime according
+     * record in configuration file.
+     */
+    static OutputTime* create_output_stream(const Input::Record &in_rec);
+
+    /**
      * \brief Generic method for registering output data stored in MultiField
      *
      * @param ref_type    Type of output (element, node, corner data).
@@ -95,7 +89,6 @@ public:
     template<int spacedim, class Value>
     void register_data(const DiscreteSpace type,
             MultiField<spacedim, Value> &multi_field);
-
 
     /**
      * \brief Generic method for registering of output data stored in Field
@@ -130,13 +123,18 @@ public:
      */
     void mark_output_times(const TimeGovernor &tg);
 
-protected:
+    /**
+     * Declaration of new exception info used in following exception
+     */
+    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 
-    ofstream        *_base_file;        ///< Base output stream
-    string          *_base_filename;    ///< Name of base output file
-    ofstream        *_data_file;        ///< Data output stream (could be same as base_file)
-    string          *_data_filename;     ///< Name of data output file
-    Mesh            *_mesh;
+    /**
+     * Declaration of exception
+     */
+    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
+            << " returning variable size vectors. Try convert to MultiField.\n");
+
+protected:
 
     /**
      * Interpolate given @p field into output discrete @p space and store the values
@@ -144,7 +142,6 @@ protected:
      */
     template<int spacedim, class Value>
     void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
-
 
     /**
      * \brief This method returns pointer at existing data, when corresponding
@@ -157,19 +154,18 @@ protected:
      */
     void set_data_time(void *data, double time);
 
-
     /**
-     *
-     */
-    virtual int write_data(void) = 0;
-
-    /**
-     *
+     * \brief Virtual method for writing header of output file
      */
     virtual int write_head(void) = 0 ;
 
     /**
-     *
+     * \brief Virtual method for writing data to output file
+     */
+    virtual int write_data(void) = 0;
+
+    /**
+     * \brief Virtual method for writing tail of output file
      */
     virtual int write_tail(void) = 0;
 
@@ -178,26 +174,76 @@ protected:
      */
     static std::vector<OutputTime*> output_streams;
 
-    /// MPI rank of process (is tested in methods)
-    int             rank;
+    /**
+     * Cached MPI rank of process (is tested in methods)
+     */
+    int rank;
 
-    vector<OutputDataBase*>    node_data;
-    vector<OutputDataBase*>    corner_data;
-    vector<OutputDataBase*>    elem_data;
+    /**
+     * Vector of registered output data related to nodes
+     */
+    vector<OutputDataBase*> node_data;
 
+    /**
+     * Vector of registered output data related to corner of elements
+     */
+    vector<OutputDataBase*> corner_data;
 
-    int             current_step;      ///< Current step
+    /**
+     * Vector of registered output data related to elements
+     */
+    vector<OutputDataBase*> elem_data;
 
-    double          time;               ///< The newest time of registered data
+    /**
+     * Current step
+     */
+    int current_step;
 
-    double          write_time;         ///< The last time, when data was wrote to this stream
+    /**
+     * The newest time of registered data
+     */
+    double time;
 
-    map<string, bool> output_names; ///< Map of names of output fields. True means that field will be saved.
+    /**
+     * The last time, when data was wrote to this stream
+     */
+    double write_time;
 
+    /**
+     * Map of names of output fields. True means that field will be saved.
+     */
+    map<string, bool> output_names;
+
+    /**
+     * Record for current output stream
+     */
     Input::Record input_record_;
+
+    /**
+     * Base output stream
+     */
+    ofstream *_base_file;
+
+    /**
+     * Name of base output file
+     */
+    string *_base_filename;
+
+    /**
+     * Data output stream (could be same as base_file)
+     */
+    ofstream *_data_file;
+
+    /**
+     * Name of data output file
+     */
+    string *_data_filename;
+
+    /**
+     * Cached pointer at mesh used by this output stream
+     */
+    Mesh *_mesh;
 };
-
-
 
 
 #endif /* OUTPUT_TIME_HH_ */
