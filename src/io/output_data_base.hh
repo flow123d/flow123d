@@ -34,6 +34,7 @@ public:
 
     virtual ~OutputDataBase() {};
     virtual void print(ostream &out_stream, unsigned int idx) = 0;
+    virtual void print_all(ostream &out_stream) = 0;
 
 
     /**
