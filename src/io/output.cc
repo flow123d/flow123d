@@ -92,7 +92,7 @@ OutputDataBase *OutputTime::output_data_by_field_name
 /* Initialize static member of the class */
 std::vector<OutputTime*> OutputTime::output_streams;
 
-// Destroy all objects
+
 void OutputTime::destroy_all(void)
 {
     // Delete all objects
@@ -259,19 +259,18 @@ void OutputTime::clear_data(void)
 	template class OutputData<value>;
 
 
-#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to)                      \
-		MACRO(dim_from, FieldValue<dim_to>::VectorFixed )                       \
+#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to) \
+		MACRO(dim_from, FieldValue<dim_to>::VectorFixed ) \
 		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
 
 #define INSTANCE_TO_ALL( MACRO, dim_from) \
 		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::EnumVector)                \
-		MACRO(dim_from, FieldValue<0>::Integer)                \
-		MACRO(dim_from, FieldValue<0>::Scalar)                  \
-		MACRO(dim_from, FieldValue<0>::Vector)                  \
-\
-INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
-INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
+		MACRO(dim_from, FieldValue<0>::EnumVector) \
+		MACRO(dim_from, FieldValue<0>::Integer) \
+		MACRO(dim_from, FieldValue<0>::Scalar) \
+		MACRO(dim_from, FieldValue<0>::Vector) \
+        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
+        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
 
 #define INSTANCE_ALL(MACRO) \
 		INSTANCE_TO_ALL( MACRO, 3) \
