@@ -134,6 +134,11 @@ public:
     DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
             << " returning variable size vectors. Try convert to MultiField.\n");
 
+    /**
+     * Record for current output stream
+     */
+    Input::AbstractRecord format_record_;
+
 protected:
 
     /**
