@@ -66,7 +66,7 @@ public:
         Position(int file_pos, unsigned int line, unsigned int line_pos):
         	file_position_(file_pos), line_counter_(line), line_position_(line_pos) {}
 
-        inline int file_position()
+        inline std::streampos file_position()
         	{ return file_position_; }
 
         inline unsigned int line_counter()
@@ -76,9 +76,9 @@ public:
         	{ return line_position_; }
 
     private:
-        mutable int file_position_;     ///< Actual (global) position in file.
-        unsigned int line_counter_;     ///< Actual line in file.
-        unsigned int line_position_;    ///< Actual position in line.
+        mutable std::streampos file_position_;     ///< Actual (global) position in file.
+        unsigned int line_counter_;                ///< Actual line in file.
+        unsigned int line_position_;               ///< Actual position in line.
     };
 
     /**
@@ -193,7 +193,7 @@ public:
     /**
      * Returns actual position in file.
      */
-    Tokenizer::Position get_position() const;
+    const Tokenizer::Position get_position() const;
 
     /**
      * Set new position of tokenizer in file.
@@ -201,7 +201,7 @@ public:
      * Warning! Actual file_position_ must correspond with values line_counter_
      * and line_position_. Method can't check if the values are entered correctly.
      */
-    void set_position(Tokenizer::Position pos);
+    void set_position(const Tokenizer::Position pos);
 
     /**
      * Destructor close the file if it was opened by tokenizer itself.
