@@ -18,7 +18,9 @@
 #include "system/sys_profiler.hh"
 
 
-static const int loop_call_count = 100000;
+static const unsigned int loop_call_count = 100000;
+static const unsigned int file_line_count = 100;
+static const std::string file_line_text = "\"some_text_line\"";
 
 struct TestData {
 	Tokenizer::Position pos;
@@ -33,6 +35,16 @@ TEST(TokenizerPosition, compare_speed) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+
+	/* // create file
+	ofstream fout( FilePath("tokenizer_speed.txt", FilePath::output_file) );
+	//fout << "1" << " " << "text" << std::endl;
+	for (unsigned int i=0; i<file_line_count; i++) {
+		fout << "1" << " " << file_line_text << std::endl;
+	}
+	fout << flush;
+	fout.close(); */
+
 	FilePath tok_file("/fields/simplest_cube_data.msh", FilePath::input_file);
 
 	std::vector<TestData> test_data;
