@@ -169,7 +169,7 @@ private:
     void write_vtk_discont_topology(void);
 
     /**
-     *
+     * Write registered data to output stream using ascii format
      */
     void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
 
@@ -177,12 +177,19 @@ private:
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
      * Output is done into stream @p file.
      */
-    void write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &output_data);
+    void write_vtk_data_names(ofstream &file,
+            vector<OutputDataBase*> &output_data,
+            bool output_region_ids);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
      */
     void write_vtk_node_data(void);
+
+    /**
+     * Write IDs of regions to output stream
+     */
+    void write_region_ids(void);
 
     /**
      * \brief Write data on elements to the VTK file (.vtu)

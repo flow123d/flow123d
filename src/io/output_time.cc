@@ -121,6 +121,7 @@ OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
             xprintf(Warn, "Unsupported file format, using default VTK\n");
             output_time = new OutputVTK(in_rec);
         }
+        output_time->format_record_ = *format;
     } else {
         output_time = new OutputVTK(in_rec);
     }
@@ -163,7 +164,6 @@ OutputTime::OutputTime(const Input::Record &in_rec)
     this->_mesh = NULL;
     this->time = -1.0;
     this->write_time = -1.0;
-
 }
 
 OutputTime::~OutputTime(void)
