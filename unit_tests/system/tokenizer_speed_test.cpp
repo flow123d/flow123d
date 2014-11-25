@@ -60,7 +60,7 @@ TEST(TokenizerPosition, compare_speed) {
 			tok.set_position( position_data[index] );
 			tok.next_line(false);
 			val = boost::lexical_cast<unsigned int>(*tok); ++tok;
-			EXPECT_EQ(position_data[index].line_counter(), val);
+			EXPECT_EQ(position_data[index].line_counter_, val);
 	    }
 	    END_TIMER("tokenizer");
 	}
@@ -74,9 +74,9 @@ TEST(TokenizerPosition, compare_speed) {
 		START_TIMER("binary_file");
 		for (unsigned int i=0; i<loop_call_count; i++) {
 			index = (i*line_step_count) % file_line_count;
-			binary_file.seekg( position_data[index].file_position() );
+			binary_file.seekg( position_data[index].file_position_ );
 			binary_file >> val;
-			EXPECT_EQ(position_data[index].line_counter(), val);
+			EXPECT_EQ(position_data[index].line_counter_, val);
 		}
 		END_TIMER("binary_file");
 
