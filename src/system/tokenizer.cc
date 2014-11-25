@@ -126,7 +126,7 @@ string Tokenizer::position_msg() const {
 }
 
 
-const Tokenizer::Position Tokenizer::get_position() const
+const Tokenizer::Position Tokenizer::get_position()
 {
 	position_.file_position_ = in_->tellg();
 	return position_;

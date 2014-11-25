@@ -51,35 +51,24 @@ public:
     typedef boost::tokenizer<Separator> BT;
 
     /**
-     * Class represents actual position of Tokenizer in file.
+     * Struct represents actual position of Tokenizer in file.
      *
-     * It is necessary to check if stored values are correct. Out of Tokenizer values are set
+     * It is necessary to check if stored values are correct. Out of Tokenizer values can be set
      * only during construction. Entered file_position_ must correspond with values line_counter_
      * and line_position_. Unfortunately, any control mechanism of entered values doesn't exist.
      * If Position object is returned out of Tokenizer, value of file_position_ must be set
      * according to the position of Tokenizer.
      */
-    class Position {
-    	friend class Tokenizer;
-    public:
+    struct Position {
+        std::streampos file_position_;     ///< Actual (global) position in file.
+        unsigned int line_counter_;        ///< Actual line in file.
+        unsigned int line_position_;       ///< Actual position in line.
+
     	/// Constructor
-        Position(int file_pos, unsigned int line, unsigned int line_pos):
+        Position(std::streampos file_pos, unsigned int line, unsigned int line_pos):
         	file_position_(file_pos), line_counter_(line), line_position_(line_pos) {}
-
-        inline std::streampos file_position()
-        	{ return file_position_; }
-
-        inline unsigned int line_counter()
-        	{ return line_counter_; }
-
-        inline unsigned int line_position()
-        	{ return line_position_; }
-
-    private:
-        mutable std::streampos file_position_;     ///< Actual (global) position in file.
-        unsigned int line_counter_;                ///< Actual line in file.
-        unsigned int line_position_;               ///< Actual position in line.
     };
+
 
     /**
      * Opens a file given by file path @p fp. And construct the tokenizer over the
@@ -193,7 +182,7 @@ public:
     /**
      * Returns actual position in file.
      */
-    const Tokenizer::Position get_position() const;
+    const Tokenizer::Position get_position();
 
     /**
      * Set new position of tokenizer in file.
