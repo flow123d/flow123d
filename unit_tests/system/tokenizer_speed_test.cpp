@@ -17,82 +17,70 @@
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
 
+#include "boost/lexical_cast.hpp"
 
-static const unsigned int loop_call_count = 100000;
-static const unsigned int file_line_count = 100;
+
+static const unsigned int loop_call_count =  500000;
+static const unsigned int file_line_count = 1000000;
+static const unsigned int line_step_count =  345001;
 static const std::string file_line_text = "\"some_text_line\"";
-
-struct TestData {
-	Tokenizer::Position pos;
-	char val;
-
-	TestData(Tokenizer::Position p, char v)
-	: pos(p), val(v) {}
-};
 
 
 TEST(TokenizerPosition, compare_speed) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
+	std::vector<Tokenizer::Position> position_data;
 
-	/* // create file
-	ofstream fout( FilePath("tokenizer_speed.txt", FilePath::output_file) );
-	//fout << "1" << " " << "text" << std::endl;
-	for (unsigned int i=0; i<file_line_count; i++) {
-		fout << "1" << " " << file_line_text << std::endl;
-	}
-	fout << flush;
-	fout.close(); */
-
-	FilePath tok_file("/fields/simplest_cube_data.msh", FilePath::input_file);
-
-	std::vector<TestData> test_data;
-
-	// prepare positions in file and read test data
+	// create file, fill vector of positions
 	{
-	    Tokenizer tok(tok_file);
 
-	    while (!tok.eof()) {
-	    	Tokenizer::Position pos = tok.get_position();
-	    	tok.next_line(false);
-	    	test_data.push_back(TestData(pos, (*tok)[0]));
-	    }
-	    test_data.pop_back();
+		ofstream fout( FilePath("tokenizer_speed.txt", FilePath::output_file) );
+		for (unsigned int i=0; i<file_line_count; i++) {
+			position_data.push_back( Tokenizer::Position(fout.tellp(), (i+1), 0) );
+			fout << (i+1) << " " << file_line_text << std::endl;
+		}
+		fout << flush;
+		fout.close();
 	}
+	EXPECT_EQ(position_data.size(), file_line_count);
 
 	Profiler::initialize();
+	FilePath in_file("/system/tokenizer_speed.txt", FilePath::input_file);
 
+	// read data by tokenizer
 	{
-	    Tokenizer tok(tok_file);
-	    unsigned int index;
+		Tokenizer tok(in_file);
+		unsigned int index;
+		unsigned int val;
 
 	    START_TIMER("tokenizer");
 	    for (unsigned int i=0; i<loop_call_count; i++) {
-			index = (i*101) % test_data.size();
-			tok.set_position( test_data[index].pos );
+			index = (i*line_step_count) % file_line_count;
+			tok.set_position( position_data[index] );
 			tok.next_line(false);
-			EXPECT_EQ(test_data[index].val, (*tok)[0]);
+			val = boost::lexical_cast<unsigned int>(*tok); ++tok;
+			EXPECT_EQ(position_data[index].line_counter(), val);
 	    }
 	    END_TIMER("tokenizer");
 	}
 
+	// read data same as from binary file
 	{
-		std::ifstream * binary_file = new ifstream;
-		binary_file->open( string(tok_file).c_str(), ios::in | ios::binary );
+		std::ifstream binary_file( string(in_file).c_str() );
 		unsigned int index;
-		char * c;
+		unsigned int val;
 
 		START_TIMER("binary_file");
 		for (unsigned int i=0; i<loop_call_count; i++) {
-			index = (i*101) % test_data.size();
-			binary_file->seekg( test_data[index].pos.file_position() );
-			binary_file->read(c, 1);
-			if (c[0] >= '0' && c[0] <= '9') EXPECT_EQ(test_data[index].val, c[0]);
+			index = (i*line_step_count) % file_line_count;
+			binary_file.seekg( position_data[index].file_position() );
+			binary_file >> val;
+			EXPECT_EQ(position_data[index].line_counter(), val);
 		}
 		END_TIMER("binary_file");
 
-		binary_file->close();
+		binary_file.close();
 	}
 
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
