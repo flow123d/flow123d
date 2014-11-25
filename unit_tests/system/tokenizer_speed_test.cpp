@@ -63,6 +63,14 @@ TEST(TokenizerPosition, compare_speed) {
 			EXPECT_EQ(position_data[index].line_counter_, val);
 	    }
 	    END_TIMER("tokenizer");
+
+	    // test of reading after reaching the EOF
+	    tok.set_position( position_data[file_line_count-1] );
+	    while (tok.next_line(false)) {}
+	    tok.set_position( position_data[0] );
+	    tok.next_line(false);
+	    val = boost::lexical_cast<unsigned int>(*tok); ++tok;
+	    EXPECT_EQ(position_data[0].line_counter_, val);
 	}
 
 	// read data same as from binary file
