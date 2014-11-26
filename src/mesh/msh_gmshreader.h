@@ -81,6 +81,8 @@ struct GMSH_DataHeader {
     unsigned int n_entities;
     /// ?? Currently ont used
     unsigned int partition_index;
+    /// Position of data in mesh file
+    Tokenizer::Position position;
 };
 
 
@@ -150,12 +152,18 @@ private:
      *
      */
     void read_data_header(Tokenizer &tok, GMSH_DataHeader &head);
+    /**
+     *
+     */
+    void make_header_table();
 
 
     /// Tokenizer used for reading ASCII GMSH file format.
     Tokenizer tok_;
     /// Last read header of ElementData section.
     GMSH_DataHeader last_header;
+    /// Table with data of ElementData headers
+    std::multimap<std::string, GMSH_DataHeader> header_table_;
 };
 
 #endif	/* _GMSHMESHREADER_H */
