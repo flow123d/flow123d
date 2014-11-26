@@ -52,6 +52,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 : tok_(file_name)
 {
     tok_.set_comment_pattern( "#");
+    make_header_table();
     last_header.time=-numeric_limits<double>::infinity();
     last_header.actual=false;
 }
@@ -62,6 +63,7 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 : tok_(in)
 {
     tok_.set_comment_pattern( "#");
+    make_header_table();
     last_header.time=-numeric_limits<double>::infinity();
     last_header.actual=false;
 }
@@ -294,6 +296,7 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
             head.n_entities=lexical_cast<unsigned int>(*tok); ++tok;
         }
         for(;n_int>0;n_int--) tok.next_line(false);
+        head.position = tok_.get_position();
     } catch (bad_lexical_cast &) {
                 xprintf(UsrErr, "Wrong format of the $ElementData header, %s.\n", tok.position_msg().c_str());
     }
@@ -390,5 +393,20 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
         last_header.actual=true;
 
     } // time loop
+}
+
+
+
+void GmshMeshReader::make_header_table()
+{
+	header_table_.clear();
+	GMSH_DataHeader header;
+	while ( !tok_.eof() ) {
+        if ( tok_.skip_to("$ElementData") ) {
+            read_data_header(tok_, header);
+            header_table_.insert( std::pair<std::string, GMSH_DataHeader>(header.field_name, header) );
+        }
+	}
+	tok_.set_position( Tokenizer::Position() );
 }
 
