@@ -88,6 +88,8 @@ struct GMSH_DataHeader {
 
 class GmshMeshReader {
 public:
+	typedef typename std::multimap<std::string, GMSH_DataHeader> HeaderTable;
+
     /**
      * Construct the GMSH format reader from given filename.
      * This opens the file for reading.
@@ -156,14 +158,18 @@ private:
      *
      */
     void make_header_table();
+    /**
+     *
+     */
+    void find_header(GMSH_DataHeader &head, double time, std::string field_name);
 
 
     /// Tokenizer used for reading ASCII GMSH file format.
     Tokenizer tok_;
     /// Last read header of ElementData section.
-    GMSH_DataHeader last_header;
+    //GMSH_DataHeader last_header;
     /// Table with data of ElementData headers
-    std::multimap<std::string, GMSH_DataHeader> header_table_;
+    HeaderTable header_table_;
 };
 
 #endif	/* _GMSHMESHREADER_H */
