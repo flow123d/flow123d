@@ -53,8 +53,8 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 {
     tok_.set_comment_pattern( "#");
     make_header_table();
-    last_header.time=-numeric_limits<double>::infinity();
-    last_header.actual=false;
+    //last_header.time=-numeric_limits<double>::infinity();
+    //last_header.actual=false;
 }
 
 
@@ -64,8 +64,8 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 {
     tok_.set_comment_pattern( "#");
     make_header_table();
-    last_header.time=-numeric_limits<double>::infinity();
-    last_header.actual=false;
+    //last_header.time=-numeric_limits<double>::infinity();
+    //last_header.actual=false;
 }
 
 
@@ -310,7 +310,64 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
 
     using namespace boost;
 
-    unsigned int id, idx, n_read;
+    unsigned int id, idx, i_row;
+    unsigned int n_read = 0;
+    vector<int>::const_iterator id_iter = el_ids.begin();
+    double * data_ptr;
+    GMSH_DataHeader actual_header;
+
+    find_header(actual_header, search_header.time, search_header.field_name);
+
+    // check that the header is valid, try to correct
+    if (actual_header.n_components != search_header.n_components) {
+        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
+                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_components, search_header.n_components);
+        actual_header.n_components=search_header.n_components;
+    }
+    if (actual_header.n_entities != search_header.n_entities) {
+        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
+                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_entities, search_header.n_entities);
+        // actual_header.n_entities=search_header.n_entities;
+    }
+
+    // read @p data buffer as we have correct header with already passed time
+    // we assume that @p data buffer is big enough
+    tok_.set_position(actual_header.position);
+    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
+        try {
+            tok_.next_line();
+            id = lexical_cast<unsigned int>(*tok_); ++tok_;
+            while (id_iter != el_ids.end() && *id_iter < (int)id) {
+                ++id_iter; // skip initialization of some rows in data if ID is missing
+            }
+            if (id_iter == el_ids.end()) {
+                xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
+                        tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, id);
+                break;
+            }
+            // save data from the line if ID was found
+            if (*id_iter == (int)id) {
+                idx = id_iter - el_ids.begin();
+                data_ptr = data + idx * search_header.n_components;
+                for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
+                    *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
+                }
+                n_read++;
+            }
+            // skip the line if ID on the line  < actual ID in the map el_ids
+        } catch (bad_lexical_cast &) {
+            xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
+        }
+    // possibly skip remaining lines after break
+    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
+
+    xprintf(Msg, "time: %f; %d entities of field %s read.\n",
+    		actual_header.time, n_read, actual_header.field_name.c_str());
+
+    search_header.actual = true; // use input header to indicate modification of @p data buffer
+
+    // DELETE
+    /*unsigned int id, idx, n_read;
     vector<int>::const_iterator id_iter;
     double * data_ptr;
 
@@ -392,7 +449,7 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
         }
         last_header.actual=true;
 
-    } // time loop
+    } // time loop*/
 }
 
 
@@ -407,6 +464,41 @@ void GmshMeshReader::make_header_table()
             header_table_.insert( std::pair<std::string, GMSH_DataHeader>(header.field_name, header) );
         }
 	}
+
 	tok_.set_position( Tokenizer::Position() );
 }
+
+
+
+void GmshMeshReader::find_header(GMSH_DataHeader &head, double time, std::string field_name)
+{
+	unsigned int section_count = header_table_.count(field_name);
+	switch (section_count) {
+	case 0:
+		// no data found
+        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
+                tok_.f_name().c_str(), field_name.c_str());
+        return;
+	case 1:
+		head = header_table_.find(field_name)->second;
+		if (time < head.time) {
+	        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
+	                tok_.f_name().c_str(), field_name.c_str(), time);
+		}
+		break;
+	default:
+		std::pair<HeaderTable::iterator, HeaderTable::iterator> ret = header_table_.equal_range(field_name);
+		HeaderTable::iterator it=ret.first;
+		if (time < it->second.time) {
+	        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
+	                tok_.f_name().c_str(), field_name.c_str(), time);
+		}
+		for (; it!=ret.second; ++it) {
+			if (time < it->second.time) return;
+			head = it->second;
+		}
+		break;
+	}
+}
+
 
