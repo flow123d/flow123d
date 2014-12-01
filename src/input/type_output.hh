@@ -209,7 +209,6 @@ protected:
         struct Key {
         	unsigned int key_index;          	///< Position inside the record.
         	const void * type_data_;            ///< Pointer to internal data of type.
-        	//mutable bool extensive_doc_;     	///< Flag captures if extensive documentation of type was printed.
         	mutable string reference_;       	///< Reference to type.
         };
         /**
@@ -225,9 +224,6 @@ protected:
          * Interface to mapping key -> index. Returns index (in continuous array) for given type.
          */
         unsigned int type_index(const void * type_data) const;
-
-        //Set reference_ string of key of given type.
-        //void set_reference(const void * type_data, const string& ref);
 
     	/// Destructor, deallocates filter_ if it was allocated.
     	~ProcessedTypes();
@@ -354,8 +350,6 @@ protected:
 	void print_impl(ostream& stream, const String *type, unsigned int depth);
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
-    //void write_description(std::ostream& stream, const string& str, unsigned int hash_count = 1);
-
 private:
     /**
      * Prints value according to DefaultType
@@ -429,11 +423,6 @@ public:
 	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
 protected:
-
-    // Need to implement the resolution function. Just call that in the base class.
-    /*void print(ostream& stream, const TypeBase *type, unsigned int depth) {
-        OutputBase::print( stream, type, depth);
-    }*/
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);

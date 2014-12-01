@@ -16,7 +16,6 @@
 #include "reaction/sorption_base.hh"
 
 class Mesh;
-class Distribution;
 class Isotherm;
 
 /** @brief Simple sorption model without dual porosity.
@@ -68,7 +67,7 @@ protected:
     virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
-    
+
     //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
@@ -120,7 +119,7 @@ protected:
     double porosity_coeff_l(const ElementFullIter &elm) override;
 
     double porosity_coeff_s(const ElementFullIter &elm) override;
-  
+
     //double compute_sorbing_scale(double por_m, double por_imm) override;
 };
 

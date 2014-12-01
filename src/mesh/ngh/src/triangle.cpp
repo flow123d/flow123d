@@ -63,16 +63,6 @@ void TTriangle::update() {
 }
 
 TTriangle::~TTriangle() {
-    /*if (X1 != NULL) {
-        delete X1;
-    }
-    if (X2 != NULL) {
-        delete X2;
-    }
-    if (X3 != NULL) {
-        delete X3;
-    }*/
-
     if (A1 != NULL) {
         delete A1;
     }

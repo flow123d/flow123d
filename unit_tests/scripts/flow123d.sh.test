@@ -97,6 +97,7 @@ done
 
 TEST "memory limit"
 OUT="`./flow123d.sh -t 4 -m 100 -np 3 -- -m 102400 -p `"
+echo ${OUT}
 MEMORY=`echo "${OUT}" | grep "allocated" | tail -n 1 | sed 's/.*\[kB\]://'`
 expect_le "${MEMORY}" 102400
 

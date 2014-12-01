@@ -1,24 +1,21 @@
 #include "reaction/pade_approximant.hh"
-#include "reaction/linear_reaction_base.hh"
+#include "reaction/linear_ode_solver.hh"
+
 #include "system/global_defs.h"
 
-#include <input/accessors.hh>
+#include "input/accessors.hh"
 
 #include "armadillo"
 
-using namespace arma;
 using namespace Input::Type;
-
-AbstractRecord NumericalMethod::input_type
-    = AbstractRecord("NumericalMethod", "Numerical method used in reaction computation.");
     
     
 Record PadeApproximant::input_type
     = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    .derive_from( NumericalMethod::input_type)
-    .declare_key("nominator_degree", Integer(), Default("2"),
+    .derive_from(LinearODESolverBase::input_type)
+    .declare_key("nominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
-    .declare_key("denominator_degree", Integer(), Default("2"),
+    .declare_key("denominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant");
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
@@ -26,23 +23,39 @@ PadeApproximant::PadeApproximant(Input::Record in_rec)
     //DBGMSG("PadeApproximant constructor.\n");
     nominator_degree_ = in_rec.val<int>("nominator_degree");
     denominator_degree_ = in_rec.val<int>("denominator_degree");
-    if(nominator_degree_ < 0) xprintf(UsrErr,"Wrong nominator degree in PadeApproximant.");
-    if(denominator_degree_ < 0) xprintf(UsrErr,"Wrong denominator degree in PadeApproximant.");
+}
+
+PadeApproximant::PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree)
+:   nominator_degree_(nominator_degree), denominator_degree_(denominator_degree)
+{
 }
 
 PadeApproximant::~PadeApproximant()
 {
 }
 
-void PadeApproximant::approximate_matrix(mat &matrix)
+void PadeApproximant::update_solution(arma::vec& init_vector, arma::vec& output_vec)
+{
+    if(step_changed_)
+    {
+        solution_matrix_ = system_matrix_*step_;    //coefficients multiplied by time
+        approximate_matrix(solution_matrix_);
+        step_changed_ = false;
+    }
+    
+    output_vec = solution_matrix_ * init_vector;
+}
+
+
+void PadeApproximant::approximate_matrix(arma::mat &matrix)
 {
     ASSERT(matrix.n_rows == matrix.n_cols, "Matrix is not square.");
     
     unsigned int size = matrix.n_rows;
     
     //compute Pade Approximant
-    mat nominator_matrix(size, size),
-        denominator_matrix(size, size);
+    arma::mat nominator_matrix(size, size),
+              denominator_matrix(size, size);
         
     nominator_matrix.fill(0);
     denominator_matrix.fill(0);
@@ -77,7 +90,6 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
         nominator_coefs[j] = 
             (double)(factorials[nominator_degree + denominator_degree - j] * factorials[nominator_degree]) 
             / (factorials[nominator_degree + denominator_degree] * factorials[j] * factorials[nominator_degree - j]);
-        //DBGMSG("p(%d)=%f\n",j,nominator_coefs[j]);
     }
 
     for(int i = denominator_degree; i >= 0; i--)
@@ -86,34 +98,19 @@ void PadeApproximant::compute_exp_coefs(unsigned int nominator_degree,
         denominator_coefs[i] = sign * 
             (double)(factorials[nominator_degree + denominator_degree - i] * factorials[denominator_degree])
             / (factorials[nominator_degree + denominator_degree] * factorials[i] * factorials[denominator_degree - i]);
-        //DBGMSG("q(%d)=%f\n",i,denominator_coefs[i]);
     } 
 }
 
-void PadeApproximant::evaluate_matrix_polynomial(mat& polynomial_matrix, 
-                                                 const mat& reaction_matrix, 
+void PadeApproximant::evaluate_matrix_polynomial(arma::mat& polynomial_matrix, 
+                                                 const arma::mat& input_matrix, 
                                                  const std::vector< double >& coefs)
 {
-    //DBGMSG("evaluate_matrix_polynomial\n");
-    mat identity = eye(reaction_matrix.n_rows, reaction_matrix.n_cols);
+    arma::mat identity = arma::eye(input_matrix.n_rows, input_matrix.n_cols);
 
     ///Horner scheme for evaluating polynomial a0 + [a1 + [a2 + [a3 +...]*R(t)]*R(t)]*R(t)
     for(int i = coefs.size()-1; i >= 0; i--)
     {
-        polynomial_matrix = coefs[i] * identity + (polynomial_matrix * reaction_matrix);
+        polynomial_matrix = coefs[i] * identity + (polynomial_matrix * input_matrix);
     }
-    polynomial_matrix.print();
+    //polynomial_matrix.print();
 }
-
-// unsigned int PadeApproximant::factorial(int k)
-// {
-//     ASSERT(k >= 0, "Cannot compute factorial of negative number.");
-//     
-//     unsigned int fact = 1;
-//     while(k > 1)
-//     {
-//             fact *= k;
-//             k--;
-//     }
-//     return fact;
-// }

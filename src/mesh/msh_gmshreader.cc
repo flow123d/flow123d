@@ -235,8 +235,7 @@ void GmshMeshReader::read_physical_names(Tokenizer &tok, Mesh * mesh) {
             unsigned int id = lexical_cast<unsigned int>(*tok); ++tok;
             string name = *tok; ++tok;
 
-            bool boundary =  ( name.size() != 0 && name[0] == '.' );
-            mesh->region_db_.add_region(id, name, dim, boundary);
+            mesh->region_db_.add_region(id, name, dim);
         }
 
     } catch (bad_lexical_cast &) {
@@ -325,10 +324,8 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
             for (i_row = 0; i_row < last_header.n_entities; ++i_row)
                 try {
                     tok_.next_line();
-//                    DBGMSG("data line: %d %d '%s'\n", i_row, last_header.n_entities, tok_.line().c_str());
                     id = lexical_cast<unsigned int>(*tok_); ++tok_;
                     while (id_iter != el_ids.end() && *id_iter < (int)id) {
-//                        DBGMSG("get id: %u %d\n", id, *id_iter);
                         ++id_iter; // skip initialization of some rows in data if ID is missing
                     }
                     if (id_iter == el_ids.end()) {

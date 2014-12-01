@@ -37,8 +37,6 @@ BoundingBox::BoundingBox(const vector<Point> &points) {
 
 	auto it = points.begin();
 	max_vertex_ = min_vertex_ = *it;
-	//cout << "points: " << points.size() << endl;
-	//for(int i =0;i<points.size();i++) cout << points[i] << endl;
 	++it;
 	for(; it != points.end(); ++it) expand( *it );
 }

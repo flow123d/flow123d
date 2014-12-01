@@ -103,12 +103,12 @@
   system = {
     output_streams = [
       {
-        file = "test3.pvd", 
+        file = "flow.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
         name = "flow_output_stream"
       }, 
       {
-        file = "test3-transport.pvd", 
+        file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
         time_step = 0.1,
         name = "transport_output_stream"

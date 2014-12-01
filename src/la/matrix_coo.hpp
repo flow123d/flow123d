@@ -85,7 +85,6 @@ public:
 
         // resort if number of new unsorted entries excess a critical value
         if ( (matrixCooVec_.size() - sortedSize_) > ALLOWED_MEM_OVERHEAD ) {
-            //std::cout << " Performing resorting due to the critical value ..." << std::endl;
             this -> finishAssembly();
         }
 
