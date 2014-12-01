@@ -13,6 +13,7 @@
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "mesh/msh_gmshreader.h"
+#include "mesh/reader_instances.hh"
 
 /// Implementation.
 
@@ -45,7 +46,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  internal_raw_data(true), data_(NULL), reader_(NULL), mesh_(NULL)
+  internal_raw_data(true), data_(NULL), reader_file_(NULL), mesh_(NULL)
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
@@ -56,7 +57,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size )
 : FieldAlgorithmBase<spacedim, Value>(n_components),
-  internal_raw_data(false), data_size_(size), data_(data_ptr), reader_(NULL), mesh_(NULL)
+  internal_raw_data(false), data_size_(size), data_(data_ptr), reader_file_(NULL), mesh_(NULL)
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
 }
@@ -66,9 +67,9 @@ FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned i
 template <int spacedim, class Value>
 void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec) {
     ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
-    FilePath input_file = rec.val<FilePath>("gmsh_file");
-    ASSERT( reader_ == NULL, "Multiple call of init_from_input.\n");
-    reader_ = new GmshMeshReader(input_file);
+    ASSERT( reader_file_ == NULL, "Multiple call of init_from_input.\n");
+    reader_file_ = new FilePath( rec.val<FilePath>("gmsh_file") );
+    ReaderInstances::instance()->create_reader(*reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
 }
@@ -92,7 +93,7 @@ template <int spacedim, class Value>
 bool FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
-    if (reader_ == NULL) return false;
+    if (reader_file_ == NULL) return false;
 
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
@@ -106,7 +107,7 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
     search_header.time=time;
 
 
-    reader_->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_) );
+    ReaderInstances::instance()->get_reader(*reader_file_)->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_) );
     return search_header.actual;
 }
 
@@ -183,7 +184,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::~FieldElementwise() {
     if (internal_raw_data && data_ != NULL) delete [] data_;
-    if (reader_ != NULL) delete reader_;
+    if (reader_file_ != NULL) delete reader_file_;
 }
 
 

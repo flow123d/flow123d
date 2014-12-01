@@ -111,7 +111,7 @@ private:
     /// Size of Value
     unsigned int n_components_;
 
-    GmshMeshReader *reader_;
+    const FilePath *reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
 };
