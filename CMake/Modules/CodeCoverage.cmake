@@ -1,4 +1,28 @@
 # Edited https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake
+# This library can be used to collect code coverage and generate HTML or XML report
+# This library uses standard CMAKE variables:
+# - determining CMAKE compiler  (CMAKE_COMPILER_IS_GNUCXX and CMAKE_CXX_COMPILER_ID)
+# - resolving source dir        (CMAKE_SOURCE_DIR)
+# - resolving binary dir        (CMAKE_BINARY_DIR)
+#
+# note: no CMAKE variables are affected
+#
+# usage:
+# 1) call function in your cmakelists which adds custom target (don't forget to include this file)
+#    specify custom target name (_targetname) and XML/HTML report name (_outputname)
+#    example: 
+#       INCLUDE (CodeCoverage)
+#       COVERAGE_SETUP_COBERTURA_COLLECTION (collect-coverage coverage.xml)
+# 2) compile source code with flags supporting code coverage AND without any
+#    optimization (optimization can alter source code in some cases)
+#    example flags: -g -O0 -fprofile-arcs -ftest-coverage
+# 3) run your program, run tests
+# 4) collect coverage
+#    example: 
+#       make collect-coverage
+#
+# coverage.xml should contain cobertura-style XML coverage
+
 
 # Check prereqs
 FIND_PROGRAM( GCOV_PATH gcov )
@@ -7,7 +31,7 @@ FIND_PROGRAM( GENHTML_PATH genhtml )
 FIND_PROGRAM( GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/tests)
 
 IF(NOT GCOV_PATH)
-	MESSAGE(FATAL_ERROR "gcov not found! Aborting...")
+	MESSAGE(STATUS "gcov not found! Aborting...")
 ENDIF() # NOT GCOV_PATH
 
 IF(NOT CMAKE_COMPILER_IS_GNUCXX)
@@ -20,22 +44,21 @@ IF(NOT CMAKE_COMPILER_IS_GNUCXX)
 ENDIF() # NOT CMAKE_COMPILER_IS_GNUCXX
 
 
+
+
+# Function creates HTML report by processing code coverage files
+#
 # Param _targetname     The name of new the custom make target
 # Param _outputname     lcov output is generated as _outputname.info
 #                       HTML report is generated in _outputname/index.html
-# Param _testrunner     The name of the target which runs the tests.
-#						MUST return ZERO always, even on errors. 
-#						If not, no coverage report will be created!
-# Optional fourth parameter is passed as arguments to _testrunner
-#   Pass them in list form, e.g.: "-j;2" for -j 2
-FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _outputname _testrunner)
+FUNCTION(COVERAGE_SETUP_HTML_COLLECTION _targetname _outputname)
 
 	IF(NOT LCOV_PATH)
-		MESSAGE(STATUS "lcov not found! Cannot generate HTML coverage")
+		MESSAGE(FATAL_ERROR "lcov not found! Cannot generate HTML coverage")
 	ENDIF() # NOT LCOV_PATH
 
 	IF(NOT GENHTML_PATH)
-		MESSAGE(STATUS "genhtml not found! Cannot generate HTML coverage")
+		MESSAGE(FATAL_ERROR "genhtml not found! Cannot generate HTML coverage")
 	ENDIF() # NOT GENHTML_PATH
 
 	# Setup target
@@ -43,9 +66,6 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _outputname _testrunner)
 		
 		# Cleanup lcov
 		${LCOV_PATH} --directory . --zerocounters
-		
-		# Run tests
-		COMMAND ${_testrunner} ${ARGV3}
 		
 		# Capturing lcov counters and generating report
 		COMMAND ${LCOV_PATH} --directory . --capture --output-file ${_outputname}.info
@@ -63,45 +83,13 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _outputname _testrunner)
 		COMMENT "Open ./${_outputname}/index.html in your browser to view the coverage report."
 	)
 
-ENDFUNCTION() # SETUP_TARGET_FOR_COVERAGE
-
-# Param _targetname     The name of new the custom make target
-# Param _outputname     cobertura output is generated as _outputname (e.g. coverage.xml)
-# Param _testrunner     The name of the target which runs the tests
-# Optional fourth parameter is passed as arguments to _testrunner
-#   Pass them in list form, e.g.: "-j;2" for -j 2
-FUNCTION(SETUP_TARGET_FOR_COVERAGE_COBERTURA _targetname _outputname _testrunner)
-
-	# IF(NOT PYTHON_EXECUTABLE)
-	# 	MESSAGE(FATAL_ERROR "Python not found! Aborting...")
-	# ENDIF() # NOT PYTHON_EXECUTABLE
-
-	IF(NOT GCOVR_PATH)
-		MESSAGE(FATAL_ERROR "gcovr not found! Aborting...")
-	ENDIF() # NOT GCOVR_PATH
-
-	ADD_CUSTOM_TARGET(${_targetname}
-
-		# Run tests
-		${_testrunner} ${ARGV3}
-
-		# Running gcovr
-		COMMAND ${GCOVR_PATH} -x --xml-pretty -r ${CMAKE_SOURCE_DIR} -e '${CMAKE_SOURCE_DIR}/tests/'  -o ${_outputname}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-		COMMENT "Running gcovr to produce Cobertura code coverage report."
-	)
-
-	# Show info where to find the report
-	ADD_CUSTOM_COMMAND(TARGET ${_targetname} POST_BUILD
-		COMMAND ;
-		COMMENT "Cobertura code coverage report saved in ${_outputname}."
-	)
-
-ENDFUNCTION() # SETUP_TARGET_FOR_COVERAGE_COBERTURA
+ENDFUNCTION() # COVERAGE_SETUP_HTML_COLLECTION
 
 
 
 
+# Function creates XML report by processing code coverage files
+#
 # Param _targetname     The name of new the custom make target
 # Param _outputname     cobertura output is generated as _outputname (e.g. coverage.xml)
 FUNCTION(COVERAGE_SETUP_COBERTURA_COLLECTION _targetname _outputname)
