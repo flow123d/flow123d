@@ -63,9 +63,6 @@ public:
     /// Mask that matches no type of TimeMark.
     static const Type none_type;
     
-    //This mask is replaced by type_fixed_time_ defined in constructor of TimeMarks     //OBSOLETE
-    //static const Type strict;
-
     /**
      * Constructor for a TimeMarks::Mark
      * @param time time of the mark

@@ -152,6 +152,9 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
     ASSERT_EQUAL( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
+        ASSERT( envelope.n_rows()==this->value_.n_rows(),
+                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
+                i, envelope.n_rows(),this->value_.n_rows());
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {

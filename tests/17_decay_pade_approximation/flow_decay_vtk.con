@@ -60,8 +60,8 @@
       },
       
       reaction_term = {
-        TYPE="DecayChain",
-        numerical_method = { 
+        TYPE="RadioactiveDecay",
+        ode_solver = { 
           TYPE = "PadeApproximant",
           nominator_degree = 3,
           denominator_degree = 3
@@ -69,28 +69,28 @@
 
         decays = [
           {
-            parent = "A",
+            radionuclide = "A",
             half_life = 1.3863,
             products = [
               "B"
             ]
           },
           {
-            parent = "B",
+            radionuclide = "B",
             half_life = 2.3105,
             products = [
               "C"
             ]
           },
           {
-            parent = "C",
+            radionuclide = "C",
             half_life = 1.5403,
             products = [
               "D"
             ]
           },
           {
-            parent = "D",
+            radionuclide = "D",
             half_life = 1.1552,
             products = [
               "E"

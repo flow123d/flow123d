@@ -58,16 +58,22 @@
       },
       
       reaction_term = {
-        TYPE="DecayChain",
-
+        TYPE="RadioactiveDecay",
+        /*
+        numerical_method = {
+          TYPE = "PadeApproximant",
+          nominator_degree = 5,
+          denominator_degree = 5
+        },
+        */
         decays = [
           {
-            parent = "A",
+            radionuclide = "A",
             half_life = 2.5,
             products = [
-              "B", "C"
-            ],
-            branch_ratios = [ 0.9, 0.1 ]
+              { name = "B", branching_ratio = 0.9 }, 
+              { name = "C", branching_ratio = 0.1 }
+            ]
           }
         ]
       }

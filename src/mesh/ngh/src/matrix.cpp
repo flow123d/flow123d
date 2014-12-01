@@ -2,9 +2,6 @@
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"
-//#include "mesh/ngh/include/system.h"
-//#include "mesh/ngh/include/problem.h"
-//#include <math.h>
 
 using namespace mathfce;
 
@@ -135,7 +132,6 @@ int TMatrix::NCols() const {
 TNSolutions Gauss(const TMatrix& A, TMVector* X, const TMVector& B) {
 	TMatrix M(A);
     TMVector b(B);
-//    TNSolutions ns;
 
     for (int i = 1; i < M.NRows(); i++) {
         double tmp = fabs(M.Get(i, i));
@@ -146,7 +142,6 @@ TNSolutions Gauss(const TMatrix& A, TMVector* X, const TMVector& B) {
                 row = j;
             }
         if (tmp < epsilon) {
-            //      return badconditioned;
             continue;
         }
 

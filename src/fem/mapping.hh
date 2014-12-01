@@ -203,7 +203,6 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
         const Quadrature<dim - 1> & subq,
         Quadrature<dim> &q)
 {
-//    ASSERT(side.dim()==dim-1, "Side dimension mismatch.");
     q.resize(subq.size());
 
     double lambda;

@@ -137,11 +137,6 @@ public:
 
     /// Postfix. Should not be used since involves iterator copy.
     inline FullIterator operator ++ (int);
-    //{
-    //    //xprinf(Warn, "Postfix advance opeartor should")
-    //    ASSERT( iter==storage.end(), "Can not advance iterator at the end.\n");
-    //    FullIterator x(*this); this->iter++; return x;
-    //}
 
     /// Prefix. Advance to previous operator.
     inline FullIterator &operator -- ()
@@ -152,11 +147,6 @@ public:
 
     /// Postfix. Should not be used since involves iterator copy.
     inline FullIterator operator -- (int);
-    //{
-    //    //xprinf(Warn, "Postfix advance opeartor should")
-    //    ASSERT( iter==storage.begin(), "Can not advance iterator to previous of begin().\n");
-    //    FullIterator x(*this); this->iter--; return x;
-    //}
 
     // + - opeartors is better to define outside if we ever allow them.
 protected:
@@ -380,7 +370,6 @@ public:
     {
         ASSERT( id_map.find(id) == id_map.end(), "Can not add item with id number %d since it already exists.", id);
         id_storage.push_back(id);
-        //DBGMSG("Push id: %d\n",id);
         id_map[id]=this->size();
 
         this->storage.resize( this->storage.size() + 1 );
