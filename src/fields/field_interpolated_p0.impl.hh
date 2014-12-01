@@ -33,6 +33,7 @@
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
+#include "mesh/reader_instances.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
@@ -80,8 +81,8 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	// read mesh, create tree
     {
        source_mesh_ = new Mesh();
-       reader_ = new GmshMeshReader( rec.val<FilePath>("gmsh_file") );
-       reader_->read_mesh( source_mesh_ );
+       reader_file_ = new FilePath( rec.val<FilePath>("gmsh_file") );
+       ReaderInstances::instance()->create_reader(*reader_file_)->read_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_ );
@@ -101,7 +102,7 @@ template <int spacedim, class Value>
 bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
-    if (reader_ == NULL) return false;
+    if (reader_file_ == NULL) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
@@ -118,7 +119,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.time = time;
     
     bool boundary_domain_ = false;
-    reader_->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
+    ReaderInstances::instance()->get_reader(*reader_file_)->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
 
     return search_header.actual;
 }
