@@ -217,14 +217,6 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_C_FLAGS"         ${EXTERNAL_LIBS_C_FLAGS}       
 SET_VALID_VALUE ("EXTERNAL_LIBS_CXX_FLAGS"       ${EXTERNAL_LIBS_CXX_FLAGS}       ${CMAKE_CXX_FLAGS})
 SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS}   ${CMAKE_Fortran_FLAGS})
 
-# set flags for PETSc, user specified are first choice, if not specified external libs flags will be used
-SET_VALID_VALUE ("PETSC_C_FLAGS"        ${PETSC_C_FLAGS}        ${EXTERNAL_LIBS_C_FLAGS}        ${CMAKE_C_FLAGS})
-SET_VALID_VALUE ("PETSC_CXX_FLAGS"      ${PETSC_CXX_FLAGS}      ${EXTERNAL_LIBS_CXX_FLAGS}      ${CMAKE_CXX_FLAGS})
-SET_VALID_VALUE ("PETSC_Fortran_FLAGS"  ${PETSC_Fortran_FLAGS}  ${EXTERNAL_LIBS_Fortran_FLAGS}  ${CMAKE_Fortran_FLAGS})
-
-# set flags for BOOTS, user specified are first choice, if not specified external libs flags will be used
-SET_VALID_VALUE ("BOOTS_CXX_FLAGS"      ${BOOTS_CXX_FLAGS}      ${EXTERNAL_LIBS_CXX_FLAGS}      ${CMAKE_CXX_FLAGS})
-
 
 
 ######################################################################### find libraries

@@ -24,6 +24,12 @@
 # CAUTION: Never use semicolon a part of compiler options or PETSC_INSTALL_OPTIONS.
 
 
+# set flags for PETSc, user specified are first choice, if not specified external libs flags will be used
+SET_VALID_VALUE ("PETSC_C_FLAGS"       ${PETSC_C_FLAGS}       ${EXTERNAL_LIBS_C_FLAGS}       ${CMAKE_C_FLAGS})
+SET_VALID_VALUE ("PETSC_CXX_FLAGS"     ${PETSC_CXX_FLAGS}     ${EXTERNAL_LIBS_CXX_FLAGS}     ${CMAKE_CXX_FLAGS})
+SET_VALID_VALUE ("PETSC_Fortran_FLAGS" ${PETSC_Fortran_FLAGS} ${EXTERNAL_LIBS_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS})
+
+
 
 if (NOT PETSC_INSTALL_DIR)
     set(PETSC_INSTALL_DIR "${EXTERNAL_PROJECT_DIR}/petsc_build")
