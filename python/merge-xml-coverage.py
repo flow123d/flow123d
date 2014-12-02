@@ -8,13 +8,31 @@ from optparse import OptionParser
 
 
 # parse arguments
-parser = OptionParser(usage="%prog [options] [file1 file2 ... filen]", version="%prog 1.0", epilog="If no files are specified all xml files in current directory will be selected. Useful when there is not known precise file name only location")
-parser.add_option("-o", "--output", dest="filename", default="coverage-merged.xml", help="output file xml name", metavar="FILE")
-parser.add_option("-p", "--path", dest="path", default="./", help="xml location, default current directory", metavar="FILE")
-parser.add_option("-l", "--log", dest="loglevel", default="DEBUG", help="Log level DEBUG, INFO, WARNING, ERROR, CRITICAL")
-parser.add_option("-f", "--filteronly", dest="filteronly", default=False, action='store_true', help="If set all files will be filtered by keep rules otherwise all given files will be merged and filtered.")
-parser.add_option("-s", "--suffix", dest="suffix", default='', help="Additional suffix which will be added to filtered files so they original files can be preserved")
-parser.add_option("-k", "--keep", dest="packagefilters", metavar="NAME", default=None, help="preserves only specific packages. I.E. '-k src.la.*' will keep all packgages in folder src/la/ and all subfolders of this folders. There can be mutiple rules I.E. '-k src.la.* -k unit_tests.la'. Format of the rule is simple dot separated location with wildcard * allowed", action="append")
+newline = 10*'\t';
+parser = OptionParser(usage="%prog [options] [file1 file2 ... filen]", version="%prog 1.0",
+    epilog = "If no files are specified all xml files in current directory will be selected. \n" +
+             "Useful when there is not known precise file name only location")
+
+parser.add_option("-o", "--output",     dest="filename",    default="coverage-merged.xml",
+    help="output file xml name", metavar="FILE")
+parser.add_option("-p", "--path",       dest="path",        default="./",
+    help="xml location, default current directory", metavar="FILE")
+parser.add_option("-l", "--log",        dest="loglevel",    default="DEBUG",
+    help="Log level DEBUG, INFO, WARNING, ERROR, CRITICAL")
+parser.add_option("-f", "--filteronly", dest="filteronly",  default=False, action='store_true',
+    help="If set all files will be filtered by keep rules otherwise "+
+		 "all given files will be merged and filtered.")
+parser.add_option("-s", "--suffix",     dest="suffix",      default='',
+    help="Additional suffix which will be added to filtered files so they original files can be preserved")
+parser.add_option("-k", "--keep",       dest="packagefilters", default=None,  metavar="NAME", action="append",
+    help="preserves only specific packages. e.g.: " + newline + 
+         "'python merge.py -k src.la.*'" + newline + 
+         "will keep all packgages in folder " +
+         "src/la/ and all subfolders of this folders. " + newline +
+         "There can be mutiple rules e.g.:" + newline + 
+         "'python merge.py -k src.la.* -k unit_tests.la.'" + newline +
+         "Format of the rule is simple dot (.) separated names with wildcard (*) allowed, e.g: " + newline +
+         "package.subpackage.*")
 (options, args) = parser.parse_args()
 
 
@@ -128,7 +146,8 @@ def get_attributes_chain (obj, attrs):
 
 
 def merge (root, list1, list2, attr, merge_function):
-	""" Groups given lists based on group attributes. Process of merging items with same key is handled by passed merge_function. Returns list1. """
+	""" Groups given lists based on group attributes. Process of merging items with same key is handled by
+		passed merge_function. Returns list1. """
 	for item2 in list2:
 		found = False
 		for item1 in list1:
