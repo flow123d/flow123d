@@ -418,251 +418,16 @@
 
 ####################################################################
 # Multijob  project - (coveragetest)
-- project:
-    name: "Multijob project coveragetest"
-    platform: linux
-    build-type: coveragetest
-    unit-dir: 
-      - $PLACEHOLDER_unit_list$
-    test-dir:
-      - $PLACEHOLDER_test_list$
-
-    jobs:
-      - "Flow123d-{platform}-coveragetest-configure"
-      - "Flow123d-{platform}-coveragetest-unit-test-{unit-dir}"
-      - "Flow123d-{platform}-coveragetest-coverage-unit-test"
-      - "Flow123d-{platform}-coveragetest-test-{test-dir}"
-      - "Flow123d-{platform}-coveragetest-coverage-test"
-      - "Flow123d-{platform}-coveragetest-multijob"
-
-
-####################################################################
-# Flow123d configure (coveragetest)
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-configure"
-    display-name: "{platform} coveragetest / configure "
-    workspace: "F123-{platform}-coveragetest"
-    defaults: flow123d-build
-    builders:
-      - shell: |
-          # configure
-          cd flow123d
-          cp config/config-jenkins-linux-coverage.cmake ./config.cmake
-          make -j 4 all
-          make -j 4 -C build_tree/unit_tests gtest_mpi_obj
-
-
-##################################################################
-# Unit test for given directory (coveragetest)
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-unit-test-{unit-dir}"
-    display-name: "{platform} coveragetest / unit-test / {unit-dir}"
-    workspace: "F123-{platform}-coveragetest"
-    defaults: flow123d-build
-    builders:
-      - shell: |
-          # run test
-          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
-          # generate coverage.xml and delete old files
-          make -C flow123d/build_tree/ cobertura-collect-coverage
-          find . -name *.gcda -type f -delete
-          find . -name *.gcov -type f -delete
-          # restore backup
-          rename .tempcov .gcda *.tempcov | echo "no files found"
-          # run test
-          make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
-          # create backup
-          rename .gcda .tempcov *.gcda | echo "no files found"
-          
-    publishers:
-      - cobertura:
-           report-file: "**/flow123d/build_tree/coverage.xml"
-           only-stable: "false"
-           fail-no-reports: "true"
-           fail-unhealthy: "false"
-           fail-unstable: "false"
-           health-auto-update: "false"
-           stability-auto-update: "false"
-           zoom-coverage-chart: "false"
-           source-encoding: "ASCII"
-           targets:
-                - files:
-                    healthy: 95
-                    unhealthy: 60
-                    failing: 30
-                - method:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-                - line:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-                    
-
-#################################################################
-# Integration test for given directory (coveragetest)
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-test-{test-dir}"
-    display-name: "{platform} coveragetest / test / {test-dir}"
-    defaults: flow123d-build
-    builders:
-      - shell: |
-          make -C flow123d/tests/{test-dir} test-all
-          find . -name *.gcov -type f -delete
-          find . -name *.gcda -type f -delete
-
-
-#################################################################
-# Unit test collect coverage (coveragetest)
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-coverage-unit-test"
-    display-name: "{platform} coveragetest / collect coverage / unit-test"
-    defaults: flow123d-build
-    builders:
-      - shell: |
-          # restore backup
-          rename .tempcov .gcda *.tempcov | echo "no files found"
-          make -C flow123d/build_tree/ cobertura-collect-coverage
-          find . -name *.gcov -type f -delete
-          find . -name *.gcda -type f -delete
-    publishers:
-      - cobertura:
-           report-file: "**/flow123d/build_tree/coverage.xml"
-           only-stable: "false"
-           fail-no-reports: "true"
-           fail-unhealthy: "false"
-           fail-unstable: "false"
-           health-auto-update: "false"
-           stability-auto-update: "false"
-           zoom-coverage-chart: "false"
-           source-encoding: "ASCII"
-           targets:
-                - files:
-                    healthy: 95
-                    unhealthy: 60
-                    failing: 30
-                - method:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-                - line:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-
-
-#################################################################
-# Integration test collect coverage (coveragetest)
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-coverage-test"
-    display-name: "{platform} coveragetest / collect coverage / test"
-    defaults: flow123d-build
-    builders:
-      - shell: |
-          make -C flow123d/build_tree/ cobertura-collect-coverage
-          find . -name \*.gcno -type f -delete
-          find . -name \*.gcda -type f -delete
-    publishers:
-      - cobertura:
-           report-file: "**/flow123d/build_tree/coverage.xml"
-           only-stable: "false"
-           fail-no-reports: "true"
-           fail-unhealthy: "false"
-           fail-unstable: "false"
-           health-auto-update: "false"
-           stability-auto-update: "false"
-           zoom-coverage-chart: "false"
-           source-encoding: "ASCII"
-           targets:
-                - files:
-                    healthy: 95
-                    unhealthy: 60
-                    failing: 30
-                - method:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-                - line:
-                    healthy: 90
-                    unhealthy: 60
-                    failing: 30
-
-
-
-
-########################################################################
-# Main multijob - coveragetest
 #
-# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
-- job-template:
-    name: "Flow123d-{platform}-coveragetest-multijob"
-    display-name: "{platform} coveragetest / Flow123d multijob"
-    workspace: "F123-{platform}-coveragetest"
-    project-type: multijob
-    defaults: flow123d-build
+# To each source code file will be created 3 additional helper files
+#  1) upon compilation are created *.gcno files
+#       - contains additional information about file
+#  2) when source code file is used for the first time *.gcda files are created
+#       - contains information about calling and execution of the file
+#  3) after collection of coverage are *.gcov files created
+#       - contains source code with additional coverage information:
+#         line number and line hit (how many times was line executed) and some additional information
 
-    block-downstream: yes
-    scm:
-      - git:
-          url: https://github.com/flow123d/flow123d.git
-          basedir: flow123d     # workspace/flow123d
-          browser: githubweb
-          browser-url: https://github.com/flow123d/flow123d/
-          branches: 
-            - JHy-coverage
-
-    triggers: 
-      - github
-    wrappers:
-
-      # injection doesn't work under cygwin; see other solution for release multijob
-      - inject:
-          script-content: 
-            "echo \"BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file"
-
-      # set build name different way to have it even at start of the job
-      - build-name:
-          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
-    builders:
-      - shell: "rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"
-      - multijob:
-          name: "Configure Phase"
-          condition: SUCCESSFUL
-          projects:  
-            - name: "Flow123d-{platform}-coveragetest-configure"
-      - multijob:
-          name: "Unit tests"
-          condition: COMPLETED
-          projects:
-            - name: "Flow123d-{platform}-coveragetest-unit-test-$PLACEHOLDER_unit_list$"
-      - multijob:
-          name: "Unit tests coverage"
-          condition: COMPLETED
-          projects:
-            - name: "Flow123d-{platform}-coveragetest-coverage-unit-test"
-      - multijob:
-          name: "Integration tests"
-          condition: COMPLETED
-          projects:
-            - name: "Flow123d-{platform}-coveragetest-test-$PLACEHOLDER_test_list$"
-      - multijob:
-          name: "Integration tests coverage"
-          condition: COMPLETED
-          projects:
-            - name: "Flow123d-{platform}-coveragetest-coverage-test"
-
-
-      # - description-setter:
-      #      regexp: "POST-CHECKOUT\((.*) -> (.+)\):|BUILD_NAME=(.+)@.*"
-      #      regexp-for-failed: "POST-CHECKOUT\((.*) -> (.+)\):|BUILD_NAME=(.+)@.*"
-      #      description: "\1\2"
-      #      description-for-failed: "\1\2"
-      #      set-for-matrix: true
-
-
-####################################################################
-# Multijob  project - (coveragetest)
 - project:
     name: "Multijob project coveragetest"
     platform: linux
@@ -713,9 +478,13 @@
           # run test and generate coverage.xml and delete old files
           make -C flow123d/build_tree/unit_tests/{unit-dir} -k all-test
           make -C flow123d/build_tree/ cobertura-collect-coverage
+          # keep original coverage for overall results and create one copy for package filtering
           cp flow123d/build_tree/coverage.xml flow123d/build_tree/coverage-unit-test-{unit-dir}.cobertura
           cp flow123d/build_tree/coverage.xml flow123d/build_tree/coverage-unit-test-{unit-dir}.xml
+          # remove coverage file 
           rm -f flow123d/build_tree/coverage.xml
+          # delete gcda files and gcov files BUT keep gcno files to reset coverage
+          # can't delete gcno files, otherwise we would have to recompile entire flow
           find . -name *.gcda -type f -delete
           find . -name *.gcov -type f -delete
           # filter out only current package
@@ -756,7 +525,7 @@
     defaults: flow123d-build
     builders:
       - shell: |
-          # merge unit test xml files
+          # merge unit test xml files in specified directory
           python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-unit-test.cobertura
           # create filtered copy of src package only
           python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src -s .filtered coverage-unit-test.cobertura
@@ -809,11 +578,16 @@
           # run test and generate coverage.xml and delete old files
           make -C flow123d/tests/{test-dir} -k test-all 
           make -C flow123d/build_tree/ cobertura-collect-coverage
+          # keep original coverage for overall results and create one copy for package filtering
           cp flow123d/build_tree/coverage.xml flow123d/build_tree/coverage-test-{test-dir}.cobertura
           cp flow123d/build_tree/coverage.xml flow123d/build_tree/coverage-test-{test-dir}.xml
+          # remove coverage file 
           rm -f flow123d/build_tree/coverage.xml
+          # delete gcda files and gcov files BUT keep gcno files to reset coverage
+          # can't delete gcno files, otherwise we would have to recompile entire flow
           find . -name *.gcda -type f -delete
           find . -name *.gcov -type f -delete
+          # integration tests dont test specific package so we can't filter results
 
     publishers:
       - cobertura:
