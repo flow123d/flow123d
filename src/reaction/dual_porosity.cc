@@ -72,7 +72,7 @@ DualPorosity::EqData::EqData()
 	//creating field for cross section that is set later from the governing equation (transport)
 	*this +=cross_section
 			.name("cross_section")
-	        .units("")
+	        .units( UnitSI().m(3).md() )
 	        .flags( FieldFlag::input_copy );
 
 
@@ -300,8 +300,8 @@ void DualPorosity::zero_time_step()
 			  ((SorptionMob *)reaction_mobile)->set_porosity_immobile(data_.porosity_immobile);
 			  reaction_mobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
-	  if (typeid(*reaction_mobile) == typeid(LinearReaction) ||
-		  typeid(*reaction_mobile) == typeid(DecayChain))
+	  if (typeid(*reaction_mobile) == typeid(FirstOrderReaction) ||
+		  typeid(*reaction_mobile) == typeid(RadioactiveDecay))
 	  {
 		  reaction_mobile->data().set_field("porosity", data_["porosity"]);
 		  reaction_mobile->data().set_field("cross_section", data_["cross_section"]);
@@ -315,8 +315,8 @@ void DualPorosity::zero_time_step()
 		  ((SorptionImmob *)reaction_immobile)->set_porosity_immobile(data_.porosity_immobile);
 		  reaction_immobile->data().set_field("cross_section", data_["cross_section"]);
 	  }
-	  if (typeid(*reaction_immobile) == typeid(LinearReaction) ||
-		  typeid(*reaction_immobile) == typeid(DecayChain))
+	  if (typeid(*reaction_immobile) == typeid(FirstOrderReaction) ||
+		  typeid(*reaction_immobile) == typeid(RadioactiveDecay))
 	  {
 		  reaction_immobile->data().set_field("porosity", data_["porosity_immobile"]);
 		  reaction_immobile->data().set_field("cross_section", data_["cross_section"]);

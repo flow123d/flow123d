@@ -809,7 +809,7 @@ void TransportDG<Model>::set_sources()
     vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
     				  sources_density(qsize, arma::vec(n_substances())),
     				  sources_sigma(qsize,  arma::vec(n_substances()));
-    unsigned int dof_indices[ndofs];
+    vector<int> dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
     vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
     double source;

@@ -84,7 +84,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 	//creating field for cross section that is set later from the governing equation (transport)
 	*this +=cross_section
 			.name("cross_section")
-	        .units("")
+	        .units( UnitSI().m(3).md() )
 	        .flags( FieldFlag::input_copy );
 
     output_fields += *this;
@@ -417,8 +417,8 @@ void SorptionBase::zero_time_step()
   
   if(reaction_liquid)
   {
-	  if (typeid(*reaction_liquid) == typeid(LinearReaction) ||
-		  typeid(*reaction_liquid) == typeid(DecayChain))
+	  if (typeid(*reaction_liquid) == typeid(FirstOrderReaction) ||
+		  typeid(*reaction_liquid) == typeid(RadioactiveDecay))
 	  {
 		  reaction_liquid->data().set_field("porosity", data_->porosity);
 		  reaction_liquid->data().set_field("cross_section", data_->cross_section);
@@ -426,8 +426,8 @@ void SorptionBase::zero_time_step()
   }
   if(reaction_solid)
   {
-	  if (typeid(*reaction_solid) == typeid(LinearReaction) ||
-		  typeid(*reaction_solid) == typeid(DecayChain))
+	  if (typeid(*reaction_solid) == typeid(FirstOrderReaction) ||
+		  typeid(*reaction_solid) == typeid(RadioactiveDecay))
 	  {
 		  reaction_solid->data().set_field("porosity", data_->porosity);
 		  reaction_solid->data().set_field("cross_section", data_->cross_section);
@@ -533,11 +533,10 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
     
-    double por, por_coeff_l, por_coeff_s, csection, rock_density, old_conc_l[n_substances_], old_conc_s[n_substances_];
+    double por_coeff_l, por_coeff_s, csection, rock_density, old_conc_l[n_substances_], old_conc_s[n_substances_];
 
     if (balance_ != nullptr)
     {
-		por = data_->porosity.value(elem->centre(), elem->element_accessor());
 		csection = data_->cross_section.value(elem->centre(), elem->element_accessor());
 		rock_density = data_->rock_density.value(elem->centre(), elem->element_accessor());
 		por_coeff_l = porosity_coeff_l(elem);
