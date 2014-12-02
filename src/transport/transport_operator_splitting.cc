@@ -189,11 +189,11 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         
   //coupling - passing fields
   if(reaction)
-  if( typeid(*reaction) == typeid(SorptionSimple) || 
-      typeid(*reaction) == typeid(DualPorosity)
-    )
+  if( typeid(*reaction) == typeid(SorptionSimple) ||
+		  typeid(*reaction) == typeid(DualPorosity)
+		)
   {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+	reaction->data().set_field("porosity", convection->data()["porosity"]);
   }
 
   // initialization of balance object

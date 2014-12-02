@@ -6,6 +6,8 @@
 #include "transport/substance.hh"
 #include "petscmat.h"
 
+class RegionDB;
+
 /**
  * Interface class for equation which implements methods required for mass balance.
  */
