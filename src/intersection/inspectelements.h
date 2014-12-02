@@ -56,6 +56,7 @@ public:
 			 double t2dArea = t2d.GetArea();
 			 double localArea = all_intersections[i].getArea();//il.getArea();
 			 subtotal += 2*localArea*t2dArea;
+			 xprintf(Msg,"Subtotal: %f\n",2*localArea*t2dArea);
 		}
 		return subtotal;
 	}

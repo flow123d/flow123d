@@ -72,6 +72,13 @@ template<int N, int M> class IntersectionPoint{
 			return local_coords2;
 		};
 
+	inline arma::vec::fixed<N+1> getLC1() const{
+		return local_coords1;
+	};
+	inline arma::vec::fixed<M+1> getLC2() const{
+		return local_coords2;
+	};
+
 	inline void setLocalCoords1(const arma::vec::fixed<N+1> lc1){
 			local_coords1 = lc1;
 	};
@@ -118,7 +125,9 @@ template<int N, int M> class IntersectionPoint{
 
 	inline bool isPatological(){
 		return is_patological;
-	}
+	};
+
+	bool operator<(const IntersectionPoint<N,M> &ip) const;
 
 	inline int getDim1(){
 		return N;

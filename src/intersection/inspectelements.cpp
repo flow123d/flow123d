@@ -22,7 +22,8 @@ InspectElements::InspectElements(Simplex<2> sim2, Simplex<3> sim3){
 	CI_23.init();
 	CI_23.compute(il);
 	//il.printTracingTable();
-	il.tracePolygon();
+	xprintf(Msg,"Toto se nesmi spustit\n");
+	il.traceGenericPolygon();
 	all_intersections.push_back(il);
 };
 
@@ -31,6 +32,8 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 
 	ComputeIntersections23();
 	return;
+
+	xprintf(Msg,"Toto se nemelo spustit\n");
 
 	unsigned int elementLimit = 20;
 	unsigned int el2_idx;
@@ -66,7 +69,7 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 		CI_23.compute(il);
 		//CI_23.toStringPluckerCoordinatesTree();
 		il.printTracingTable();
-		il.tracePolygon();
+		il.traceGenericPolygon();
 		all_intersections.push_back(il);
 
 		cout << "Velikost pole s pruseciky:" << all_intersections.size() << endl;
@@ -114,15 +117,26 @@ void InspectElements::ComputeIntersections23(){
 			        	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 			        	CI_23.init();
 			        	CI_23.compute(il);
-			        	//il.printTracingTable();
 			        	//il.tracePolygon();
-			        	//il.tracePolygon2();
-			        	//il.tracePolygon3();
-			        	il.tracePolygon();
+			        	il.traceGenericPolygon();
+
+
 
 			        	xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
-			        	all_intersections.push_back(il);
+			        	if(il.getIPsize() > 0){
+			        		all_intersections.push_back(il);
+			        	}
 
+			        	if(il.getIPsize() > 2){
+			        		// Prodloužení
+			        		// Naplnění front pro 3D elementy
+			        		// Naplnění front pro 2D elementy
+
+			        			// Projetí celé fronty 2D
+			        			// Až bude prázdná -> projet jedno prodloužení
+			        			// z fronty 3D
+			        		//break;
+			        	}
 			        	// Stará metoda pro výpočet obsahu polygonu
 
 			        }

@@ -343,9 +343,29 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			CI12[i].setPluckerProduct(CI12[j].getPluckerProduct(i-1),j);
 		}
 		if(!CI12[i].isComputed() && CI12[i].compute(IP, true)){
+			//xprintf(Msg,"Prunik13\n");
 			if(IP.isPatological()){
-				CI12[IP.getSide2() + 1].setComputed();
-				//IP.setSide2(RefSimplex<3>::side_lines[i][IP.getSide2()]);
+				//xprintf(Msg, "\tPatologicky\n");
+				// Nastavování stěn, které se už nemusí počítat
+				if(i == 0){
+					if(IP.getLocalCoords2()[0] == 1){
+						CI12[1].setComputed();
+						CI12[2].setComputed();
+					}else if(IP.getLocalCoords2()[1] == 1){
+						CI12[1].setComputed();
+						CI12[3].setComputed();
+					}else if(IP.getLocalCoords2()[2] == 1){
+						CI12[2].setComputed();
+						CI12[3].setComputed();
+					}else{
+						CI12[IP.getSide2() + 1].setComputed();
+					}
+				}else if(i == 1 && IP.getLocalCoords2()[2] == 1){
+					CI12[2].setComputed();
+					CI12[3].setComputed();
+				}else{
+					CI12[IP.getSide2() + 1].setComputed();
+				}
 				IP.setSide2(i);
 			}else{
 				IP.setSide2(i);
@@ -659,10 +679,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
 		for(unsigned int i = 0; i < 6;i++){
 			if(CI12[i].compute(IP)){
+				//xprintf(Msg,"Prunik21\n");
 				pocet_pruniku++;
 				IP.setSide1(i);
 				if((IP.getLocalCoords1())[0] <= 1 && (IP.getLocalCoords1())[0] >= 0){
-									//IP.print();
+					if(IP.getLocalCoords1()[0] == 1 || IP.getLocalCoords1()[0] == 0){
+						IP.setIsPatological(true);
+					}
+					//IP.print();
 									IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP);
 									IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
 									//IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,2>(IP22);
