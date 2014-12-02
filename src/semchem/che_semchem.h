@@ -294,12 +294,10 @@ struct S_elm                       // element
 #ifdef SKUPINA_REAKCE
     double      sorpcni_plocha;    /* sorpcni plocha ELM poru       */
     double      *hslo;             /* koncentrace slozek horniny    */
-//    double      *sslo;             /* koncentrace slozek sorbovano  */
     double      *pslo;             /* koncentrace slozek plynny     */
  #ifdef SKUPINA_DUALPOROSITY
     double      sorpcni_plocha_por; /* sorpcni plocha ELM porove horniny*/
     double      *hslo_por;    /* koncentrace slozek porove horniny   */
-//    double      *sslo_por;    /* koncentrace slozek porove sorbovano */
     double      *pslo_por;    /* koncentrace slozek porove plynny    */
  #endif // SKUPINA_DUALPOROSITY
 #endif // SKUPINA_REAKCE
@@ -607,21 +605,6 @@ void pis_Tran( char *fmt, ... );
 /*------------------------------------------------------------------*/
 void cesta_k_souboru_sestav( char *, char *, char * );
 /********************************************************************/
-/*  UTILITY pro sledovani verzi                                     */
-/********************************************************************/
-/*void main_verze( void );
-void ctimmf_verze( struct S_verze * );
-void vypocet_verze( struct S_verze * );
-void df_file_verze( struct S_verze * );
-void pisdf0_verze( struct S_verze * );
-void pisdf1_verze( struct S_verze * );
-void pisdf2_verze( struct S_verze * );
-void s_vody_verze( struct S_verze * );
-void caskrok_verze( struct S_verze * );
-void win_tran_verze( struct S_verze * );
-void slozky_verze( struct S_verze * );
-*/
-/********************************************************************/
 /*  copied from che_head.h to simplify structure of inclusions      */
 /********************************************************************/
 /* vim:  set ts=3 sw=3 expandtab: */
@@ -657,9 +640,7 @@ struct TS_lat //typedef struct
 {
 	  char nazev[ 80 ];      /* Jmeno latky */
 	  double m0;        /* pocatecni molalita *///long double
-//	  double m0_sorb;   /* pocatecni obsah sorbovany *///long double
 	   double m;         /* konecna molalita *///long double
-//	   double m_sorb;    /* konecny obsah sorbovany *///long double
 	   double M;	        /* molarni hmotnost *///long double
 	   double dGf;       /* prispevek ke Gibbsove energii *///long double
 	   double dHf;       /* prispevek k entalpii *///long double

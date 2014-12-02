@@ -14,11 +14,10 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 
 class Isotherm;
 class Mesh;
-class Distribution;
 
 class SorptionBase:  public ReactionTerm
 {
@@ -66,6 +65,7 @@ public:
     
     Field<3, FieldValue<3>::Vector> init_conc_solid;    ///< Initial sorbed concentrations. 
     Field<3, FieldValue<3>::Scalar > porosity;          ///< Porosity field copied from transport.
+    Field<3, FieldValue<3>::Scalar > cross_section; ///< Cross section field.
     
     MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
 
@@ -74,6 +74,9 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
+
+    /// String added to name of output field for concentrations.
+    string output_appendix_;
 
   };
 
@@ -106,6 +109,14 @@ public:
   
   void output_data(void) override;
   
+  void set_balance_object(boost::shared_ptr<Balance> &balance,
+			const std::vector<unsigned int> &subst_idx) override;
+
+  void update_instant_balance() override;
+
+  void update_cumulative_balance() override;
+
+
     
 protected:
   /**
@@ -154,6 +165,13 @@ protected:
    */
   void make_tables(void);
   
+  /// Assembles matrix for calculation of sorbed mass.
+  void assemble_balance_matrix();
+
+  virtual double porosity_coeff_l(const ElementFullIter &elm) = 0;
+
+  virtual double porosity_coeff_s(const ElementFullIter &elm) = 0;
+
 
   /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;
@@ -213,6 +231,15 @@ protected:
   Vec *vconc_solid_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
   double **conc_solid_out; ///< sorbed concentration array output (gathered - sequential)  
   //@}
+
+  vector<unsigned int> subst_idx_l_; ///< Indices for concentrations in liquid in balance.
+  vector<unsigned int> subst_idx_s_; ///< Indices for concentrations in solid in balance.
+  vector<vector<double> > sources_l;
+  vector<vector<double> > sources_in_l;
+  vector<vector<double> > sources_out_l;
+  vector<vector<double> > sources_s;
+  vector<vector<double> > sources_in_s;
+  vector<vector<double> > sources_out_s;
 };
 
 #endif  //SORPTION_BASE_H

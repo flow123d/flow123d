@@ -86,7 +86,7 @@ double wait( double time) {
     return time_in_ms;
 }
 
-// retrun smallest amount of time resoluted by clock() function
+// return smallest amount of time resoluted by clock() function
 double clock_resolution() {
 //    cout << "wait function\n" <<endl;
     clock_t t1,t2;
@@ -141,11 +141,11 @@ TEST(Profiler, one_timer) {
 
 
 
-/* 
+/*
   // This is efficiency test of START_TIMER macro.
   // It will pass only with optimalized build (not debug).
 
-  
+
 TEST(Profiler, efficiency) {
     Profiler::initialize();
     unsigned int cycles = 500000;

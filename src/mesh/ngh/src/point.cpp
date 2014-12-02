@@ -46,14 +46,7 @@ TPoint& TPoint::operator =(const TPoint& P) {
 
     return *this;
 }
-/*
-bool TPoint::operator ==(TPoint* P) const {
-    if (IsEqual(x, P->x) && IsEqual(y, P->y) && IsEqual(z, P->z)) {
-        return true;
-    }
-    return false;
-}
-*/
+
 bool TPoint::operator ==(const TPoint& P) const {
     if (IsEqual(x, P.x) && IsEqual(y, P.y) && IsEqual(z, P.z)) {
         return true;
@@ -72,18 +65,6 @@ TPoint& TPoint::operator =(const TVector& U) {
 TVector TPoint::operator -(const TPoint& P) const {
     return TVector( x - P.x, y - P.y, z - P.z);
 }
-
-/*
-TPoint* TPoint::operator +(TPoint* P) const {
-    TPoint* res = new TPoint();
-
-    res->x = x + P->x;
-    res->y = y + P->y;
-    res->z = z + P->z;
-
-    return res;
-}
-*/
 
 TPoint TPoint::operator +(const TPoint& P) const {
     TPoint res;

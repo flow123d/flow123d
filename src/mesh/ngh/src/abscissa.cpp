@@ -43,14 +43,9 @@ TAbscissa & TAbscissa::operator =(const TAbscissa& a) {
 }
 
 TAbscissa::~TAbscissa() {
-//    delete P0;
-//    delete P1;
 }
 
 void TAbscissa::SetPoints(const TPoint& PP0, const TPoint& PP1) {
-//    *P0 = PP0;
-//    *P1 = PP1;
-
     TBisector::SetPoints(PP0, PP1);
     ComputeLength();
 }

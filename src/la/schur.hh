@@ -141,8 +141,6 @@ protected:
     SchurState state;           // object internal state
     int orig_lsize;             ///< Size of local vector part of original system
 
-                                //                A  B     Sol1      RHS1
-    //LinSys *Orig;               // Original Linear System:  B' C  *  Sol2  =   RHS2
     LinSys_PETSC *Compl;        // Schur complement system: (C - B' IA B) * Sol2 = (B' * IA * RHS1 - RHS2)
 
     Distribution *ds_;          // Distribution of B block

@@ -8,7 +8,7 @@
     name: flow123d-build
     # default template fields
     node: "{platform}"
-    workspace: "Flow123d-{platform}-{build-type}"
+    workspace: "F123-{platform}-{build-type}"
     wrappers:
       - build-name:
           name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
@@ -88,8 +88,6 @@
           cd flow123d
           make ref-doc
           make doxy-doc
-          bin/md_convert.sh README.md
-          bin/md_convert.sh CHANGES.md
 #    publishers:
 #      - cifs: 
 #          site: 'bacula'
@@ -121,10 +119,11 @@
     defaults: flow123d-build
     builders:
       - shell: |
-          # configure
+          # build all common sources for unit tests
           cd flow123d
           make -j 4 all
-          make -j 4 -C unit_tests gtest_mpi_obj         # build all common sources for unit tests
+          make -j 4 -C build_tree/unit_tests gtest_mpi_obj         
+
 #    publishers:
 #      -github-notifier       
 
@@ -189,7 +188,8 @@
           make -C flow123d/tests/{test-dir} test-all
         
 #################################################################
-# Packaging
+# Packaging and publish
+# Use -i option for make to ignore errors comming from NSIS call.
 - job-template:
     name: "Flow123d-{platform}-packages"
     display-name: "{platform} / make packages"
@@ -197,19 +197,23 @@
     builders:
       - shell: |
           cd flow123d/build_tree
-          make package
           rm -rf _CPack_Packages         
           make package_source
           rm -rf _CPack_Packages
+          make -i package
+          make post_package
       - shell: |
+          cd flow123d
           bin/prepare_to_publish.sh
+      - inject:
+          properties-file: prop.file
           
     publishers:
       - cifs: 
           site: 'bacula'
           target: 'jan.brezina/public_html/flow123d_packages'
-          source: 'flow123d/build_tree/publish_dir/**/*'
-          remove-prefix: 'flow123d/build_tree/publish_dir'
+          source: build-${{GIT_BRANCH}}/publish_dir/**/*
+          remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
 
 
@@ -281,7 +285,7 @@
           name: "Integration tests"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
+            - { name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$", kill-phase-on: NEVER }
             
 
 
@@ -307,6 +311,7 @@
             - master
             - 1.8.0_master
             - 1.8.1_patch
+            - 1.8.2_rc
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H * * * *"
@@ -317,7 +322,13 @@
     builders:
       # escaping quotas and double braces are due to YAML format
 #      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-* external_projects; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
-      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+#      - shell: "echo \"BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}\" >prop.file; rm -rf build-*; cd flow123d; git checkout ${{GIT_BRANCH##origin/}}"               
+      - shell: |
+          echo "BUILD_NAME=${{GIT_BRANCH##origin/}}@${{GIT_COMMIT:0:6}}" >prop.file
+          echo "GIT_BRANCH=${{GIT_BRANCH##origin/}}" >>prop.file
+          rm -rf build-*
+          cd flow123d
+          git checkout ${{GIT_BRANCH##origin/}}
       - multijob:
           name: "Configure Phase"
           condition: SUCCESSFUL

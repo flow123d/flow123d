@@ -12,8 +12,6 @@
 #include "input/input_type.hh"
 
 
-//#include <boost/type_traits.hpp>
-
 /// Implementation.
 
 namespace it = Input::Type;
@@ -86,8 +84,15 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
                    std::vector<typename Value::return_type>  &value_list)
 {
     ASSERT_EQUAL( point_list.size(), value_list.size() );
-    for(unsigned int i=0; i< point_list.size(); i++)
+
+    for(unsigned int i=0; i< point_list.size(); i++) {
+        ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
+                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
+                i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+
+
         value_list[i]=this->r_value_;
+    }
 }
 
 

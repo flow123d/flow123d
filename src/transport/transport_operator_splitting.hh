@@ -25,7 +25,6 @@ class Semchem_interface;
 
 
 
-
 class AdvectionProcessBase : public EquationBase, public EquationForMassBalance {
 
 public:
@@ -133,6 +132,9 @@ protected:
 
     /// object for calculation and writing the mass balance to file.
     MassBalance *mass_balance_;
+
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
 };
 
 
@@ -220,6 +222,7 @@ private:
     ConvectionTransport *convection;
     ReactionTerm *reaction;
 
+    double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
 
 };
