@@ -69,7 +69,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
     ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
     ASSERT( reader_file_ == NULL, "Multiple call of init_from_input.\n");
     reader_file_ = new FilePath( rec.val<FilePath>("gmsh_file") );
-    ReaderInstances::instance()->create_reader(*reader_file_);
+    ReaderInstances::instance()->get_reader(*reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
 }

@@ -24,11 +24,6 @@ public:
 	static ReaderInstances * instance();
 
 	/**
-	 * Creates new reader if doesn't exist and returns its.
-	 */
-	std::shared_ptr<GmshMeshReader> create_reader(const FilePath &file_path);
-
-	/**
 	 * Returns mesh reader of get filepath. If reader doesn't exist, creates its.
 	 */
 	std::shared_ptr<GmshMeshReader> get_reader(const FilePath &file_path);
