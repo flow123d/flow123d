@@ -88,7 +88,7 @@ struct GMSH_DataHeader {
 
 class GmshMeshReader {
 public:
-	typedef typename std::multimap<std::string, GMSH_DataHeader> HeaderTable;
+	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
 
     /**
      * Construct the GMSH format reader from given filename.
