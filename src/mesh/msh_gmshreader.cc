@@ -461,7 +461,19 @@ void GmshMeshReader::make_header_table()
 	while ( !tok_.eof() ) {
         if ( tok_.skip_to("$ElementData") ) {
             read_data_header(tok_, header);
-            header_table_.insert( std::pair<std::string, GMSH_DataHeader>(header.field_name, header) );
+            HeaderTable::iterator it = header_table_.find(header.field_name);
+
+            if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
+            	std::vector<GMSH_DataHeader> vec;
+            	vec.push_back(header);
+            	header_table_.insert( std::pair<std::string, std::vector<GMSH_DataHeader> >(header.field_name, vec) );
+            } else if ( header.time <= it->second[it->second.size()-1].time ) {  // time is in wrong order. can't be add
+            	xprintf(Warn,
+            		"In file '%s', '$ElementData' section for field '%s' and time '%d' is in wrong order and can't be add!\n",
+            		tok_.f_name().c_str(), header.field_name.c_str(), header.time);
+            } else {  // add new time step
+            	it->second.push_back(header);
+            }
         }
 	}
 
@@ -472,32 +484,30 @@ void GmshMeshReader::make_header_table()
 
 void GmshMeshReader::find_header(GMSH_DataHeader &head, double time, std::string field_name)
 {
-	unsigned int section_count = header_table_.count(field_name);
-	switch (section_count) {
-	case 0:
+	HeaderTable::iterator table_it = header_table_.find(field_name);
+
+	if (table_it == header_table_.end()) {
 		// no data found
         xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
                 tok_.f_name().c_str(), field_name.c_str());
         return;
-	case 1:
-		head = header_table_.find(field_name)->second;
-		if (time < head.time) {
-	        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
-	                tok_.f_name().c_str(), field_name.c_str(), time);
-		}
-		break;
-	default:
-		std::pair<HeaderTable::iterator, HeaderTable::iterator> ret = header_table_.equal_range(field_name);
-		HeaderTable::iterator it=ret.first;
-		if (time < it->second.time) {
-	        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
-	                tok_.f_name().c_str(), field_name.c_str(), time);
-		}
-		for (; it!=ret.second; ++it) {
-			if (time < it->second.time) return;
-			head = it->second;
-		}
-		break;
+	}
+
+	auto comp = [](double t, const GMSH_DataHeader &a) {
+		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
+	};
+
+	std::vector<GMSH_DataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
+			table_it->second.end(),
+			time,
+			comp);
+
+	if (headers_it == table_it->second.begin()) {
+        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
+                tok_.f_name().c_str(), field_name.c_str(), time);
+	} else {
+		--headers_it;
+		head = *headers_it;
 	}
 }
 
