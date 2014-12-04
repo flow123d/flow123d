@@ -61,8 +61,8 @@ TEST(ReaderInstances, get_reader) {
 	{
 		FilePath mesh1("mesh/test_input.msh", FilePath::input_file);
 		FilePath mesh2("mesh/simplest_cube.msh", FilePath::input_file);
-		ReaderInstances::instance()->create_reader(mesh1);
-		ReaderInstances::instance()->create_reader(mesh2);
+		ReaderInstances::instance()->get_reader(mesh1);
+		ReaderInstances::instance()->get_reader(mesh2);
 	}
 
 	{
