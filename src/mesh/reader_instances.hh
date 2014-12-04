@@ -32,6 +32,7 @@ private:
 	/// Constructor
 	ReaderInstances() {};
 
+	/// Table of readers
 	ReaderTable reader_table_;
 };
 

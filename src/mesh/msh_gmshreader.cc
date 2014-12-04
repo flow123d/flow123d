@@ -53,8 +53,6 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 {
     tok_.set_comment_pattern( "#");
     make_header_table();
-    //last_header.time=-numeric_limits<double>::infinity();
-    //last_header.actual=false;
 }
 
 
@@ -64,8 +62,6 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 {
     tok_.set_comment_pattern( "#");
     make_header_table();
-    //last_header.time=-numeric_limits<double>::infinity();
-    //last_header.actual=false;
 }
 
 
@@ -365,91 +361,6 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
     		actual_header.time, n_read, actual_header.field_name.c_str());
 
     search_header.actual = true; // use input header to indicate modification of @p data buffer
-
-    // DELETE
-    /*unsigned int id, idx, n_read;
-    vector<int>::const_iterator id_iter;
-    double * data_ptr;
-
-    while ( last_header.time <= search_header.time*(1.0 + 2.0*numeric_limits<double>::epsilon()) ) {
-        // @p data buffer is not actual anymore
-
-        if (last_header.actual) {
-            // read @p data buffer as we have correct header with already passed time
-            // we assume that @p data buffer is big enough
-
-            n_read = 0;
-            id_iter=el_ids.begin();
-            unsigned int i_row;
-            for (i_row = 0; i_row < last_header.n_entities; ++i_row)
-                try {
-                    tok_.next_line();
-                    id = lexical_cast<unsigned int>(*tok_); ++tok_;
-                    while (id_iter != el_ids.end() && *id_iter < (int)id) {
-                        ++id_iter; // skip initialization of some rows in data if ID is missing
-                    }
-                    if (id_iter == el_ids.end()) {
-                        xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
-                                tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, id);
-                        break;
-                    }
-                    // save data from the line if ID was found
-                    if (*id_iter == (int)id) {
-                        idx = id_iter - el_ids.begin();
-                        data_ptr = data + idx * search_header.n_components;
-                        for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
-                            *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
-                        }
-                        n_read++;
-                    }
-                    // skip the line if ID on the line  < actual ID in the map el_ids
-                } catch (bad_lexical_cast &) {
-                    xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
-                }
-            // possibly skip remaining lines after break
-            while (i_row < last_header.n_entities) tok_.next_line(false), ++i_row;
-
-            xprintf(Msg, "time: %f; %d entities of field %s read.\n",
-                    last_header.time, n_read, last_header.field_name.c_str());
-
-            search_header.actual = true; // use input header to indicate modification of @p data buffer
-        }
-
-        // find next the data section of corresponding field name
-        last_header.field_name="";
-        while (! tok_.eof() && last_header.field_name != search_header.field_name) {
-            if ( tok_.skip_to("$ElementData") )
-                read_data_header(tok_, last_header);
-        }
-
-        if (tok_.eof()) {
-            if (! last_header.actual) {
-                // first call of the method, no data read
-                xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str());
-                return;
-            } else {
-                // mark data as actual until inf
-                last_header.time=numeric_limits<double>::infinity(); //
-                return;
-            }
-        } else {
-            // check that the header is valid, try to correct
-            if (last_header.n_components != search_header.n_components) {
-                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_components, search_header.n_components);
-                last_header.n_components=search_header.n_components;
-            }
-            if (last_header.n_entities != search_header.n_entities) {
-                xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str(), last_header.time, last_header.n_entities, search_header.n_entities);
-                // last_header.n_entities=search_header.n_entities;
-            }
-
-        }
-        last_header.actual=true;
-
-    } // time loop*/
 }
 
 
