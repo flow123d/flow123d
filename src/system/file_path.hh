@@ -42,10 +42,13 @@ public:
         output_file
     };
 
+    /// Represents empty absolute file path, using in default constructor.
+    static const string uninitialized_path;
+
     /**
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
-    FilePath() : abs_file_path("/__NO_FILE_NAME_GIVEN__") {}
+    FilePath() : abs_file_path(FilePath::uninitialized_path) {}
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
