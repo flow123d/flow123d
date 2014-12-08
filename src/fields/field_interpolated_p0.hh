@@ -82,7 +82,7 @@ protected:
 	Mesh* source_mesh_;
 
 	/// mesh reader file
-	const FilePath *reader_file_;
+	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
     double *data_;
