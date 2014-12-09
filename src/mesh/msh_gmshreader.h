@@ -81,11 +81,21 @@ struct GMSH_DataHeader {
     unsigned int n_entities;
     /// ?? Currently ont used
     unsigned int partition_index;
+    /// Position of data in mesh file
+    Tokenizer::Position position;
 };
 
 
 class GmshMeshReader {
 public:
+	/**
+	 * Map of ElementData sections in GMSH file.
+	 *
+	 * For each field_name contains vector of GMSH_DataHeader.
+	 * Headers are sorted by time in ascending order.
+	 */
+	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
+
     /**
      * Construct the GMSH format reader from given filename.
      * This opens the file for reading.
@@ -147,15 +157,23 @@ private:
      */
     void read_elements(Tokenizer &in, Mesh*, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
     /**
-     *
+     * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
     void read_data_header(Tokenizer &tok, GMSH_DataHeader &head);
+    /**
+     * Reads table of ElementData headers from the tokenizer file.
+     */
+    void make_header_table();
+    /**
+     * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
+     */
+    GMSH_DataHeader & find_header(double time, std::string field_name);
 
 
     /// Tokenizer used for reading ASCII GMSH file format.
     Tokenizer tok_;
-    /// Last read header of ElementData section.
-    GMSH_DataHeader last_header;
+    /// Table with data of ElementData headers
+    HeaderTable header_table_;
 };
 
 #endif	/* _GMSHMESHREADER_H */

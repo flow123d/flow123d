@@ -64,7 +64,11 @@ public:
         unsigned int line_counter_;        ///< Actual line in file.
         unsigned int line_position_;       ///< Actual position in line.
 
-    	/// Constructor
+        /// Empty constructor
+        Position():
+        	file_position_(0), line_counter_(0), line_position_(0) {}
+
+        /// Constructor
         Position(std::streampos file_pos, unsigned int line, unsigned int line_pos):
         	file_position_(file_pos), line_counter_(line), line_position_(line_pos) {}
     };
