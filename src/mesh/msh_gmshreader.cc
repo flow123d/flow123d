@@ -310,9 +310,7 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
     unsigned int n_read = 0;
     vector<int>::const_iterator id_iter = el_ids.begin();
     double * data_ptr;
-    GMSH_DataHeader actual_header;
-
-    find_header(actual_header, search_header.time, search_header.field_name);
+    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
 
     // check that the header is valid, try to correct
     if (actual_header.n_components != search_header.n_components) {
@@ -393,7 +391,7 @@ void GmshMeshReader::make_header_table()
 
 
 
-void GmshMeshReader::find_header(GMSH_DataHeader &head, double time, std::string field_name)
+GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
 {
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
@@ -401,7 +399,6 @@ void GmshMeshReader::find_header(GMSH_DataHeader &head, double time, std::string
 		// no data found
         xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
                 tok_.f_name().c_str(), field_name.c_str());
-        return;
 	}
 
 	auto comp = [](double t, const GMSH_DataHeader &a) {
@@ -416,10 +413,10 @@ void GmshMeshReader::find_header(GMSH_DataHeader &head, double time, std::string
 	if (headers_it == table_it->second.begin()) {
         xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
                 tok_.f_name().c_str(), field_name.c_str(), time);
-	} else {
-		--headers_it;
-		head = *headers_it;
 	}
+
+	--headers_it;
+	return *headers_it;
 }
 
 

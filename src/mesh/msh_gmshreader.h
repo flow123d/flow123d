@@ -88,6 +88,12 @@ struct GMSH_DataHeader {
 
 class GmshMeshReader {
 public:
+	/**
+	 * Map of ElementData sections in GMSH file.
+	 *
+	 * For each field_name contains vector of GMSH_DataHeader.
+	 * Headers are sorted by time in ascending order.
+	 */
 	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
 
     /**
@@ -161,7 +167,7 @@ private:
     /**
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */
-    void find_header(GMSH_DataHeader &head, double time, std::string field_name);
+    GMSH_DataHeader & find_header(double time, std::string field_name);
 
 
     /// Tokenizer used for reading ASCII GMSH file format.
