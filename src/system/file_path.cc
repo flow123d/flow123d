@@ -17,7 +17,6 @@
 map<string,string> FilePath::placeholder;
 string FilePath::output_dir="";
 string FilePath::root_dir="";
-const string FilePath::uninitialized_path="/__NO_FILE_NAME_GIVEN__";
 
 FilePath::FilePath(const string file_path, const  FileType ft) {
     if (output_dir == "") {

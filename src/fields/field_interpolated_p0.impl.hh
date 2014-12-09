@@ -102,7 +102,7 @@ template <int spacedim, class Value>
 bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     ASSERT(data_, "Null data pointer.\n");
-    if (string(reader_file_) == FilePath::uninitialized_path) return false;
+    if ( reader_file_ == FilePath() ) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
