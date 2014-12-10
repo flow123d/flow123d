@@ -329,9 +329,9 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(boost::shared_ptr< Selection> key_type) {
+Record &Record::declare_type_key(const Selection * key_type) {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type.get(), Default::obligatory(),
+	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
@@ -490,7 +490,7 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
   child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
     // declare very first item of any descendant
-	this->declare_type_key(child_data_->selection_of_childs);
+	this->declare_type_key(child_data_->selection_of_childs.get());
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
 }

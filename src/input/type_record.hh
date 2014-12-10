@@ -351,7 +351,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(boost::shared_ptr< Selection> key_type);
+    Record &declare_type_key(const Selection * key_type);
 
     /**
      * Internal data class.
