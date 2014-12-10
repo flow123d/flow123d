@@ -349,6 +349,11 @@ protected:
     void make_copy_keys_all();
 
     /**
+     * Declares a TYPE key of the Record.
+     */
+    Record &declare_type_key(boost::shared_ptr< Selection> key_type);
+
+    /**
      * Internal data class.
      */
     class RecordData  {
