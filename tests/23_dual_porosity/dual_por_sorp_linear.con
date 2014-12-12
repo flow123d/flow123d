@@ -90,9 +90,9 @@
             TYPE="FirstOrderReaction",
             reactions = [
               {
-                reactant = "A",
+                reactants = "A",
                 reaction_rate = 0.277258872,
-                products = [ "B" ]
+                products = "B"
               }
             ]
           }
