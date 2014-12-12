@@ -248,6 +248,9 @@ protected:
     StorageBase * make_storage(JSONPath &p, const Type::Double *double_type);
     StorageBase * make_storage(JSONPath &p, const Type::String *string_type);
 
+    StorageBase * record_automatic_conversion(JSONPath &p, const Type::Record *record);
+    StorageBase * abstract_rec_automatic_conversion(JSONPath &p, const Type::AbstractRecord *abstr_rec);
+
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
      */
