@@ -12,7 +12,7 @@ Record FirstOrderReaction::input_type_reactant
     .allow_auto_conversion("name")
     .declare_key("name", String(), Default::obligatory(), 
                  "The name of the reactant.")
-    //.declare_key("stoichimetric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
+    //.declare_key("stoichiometric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
     ;
     
 Record FirstOrderReaction::input_type_product 
@@ -20,7 +20,7 @@ Record FirstOrderReaction::input_type_product
     .allow_auto_conversion("name")
     .declare_key("name", String(), Default::obligatory(), 
                  "The name of the product.")
-    //.declare_key("stoichimetric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
+    //.declare_key("stoichiometric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
     .declare_key("branching_ratio", Double(0.0), Default("1.0"),
                  "The branching ratio of the product when there is more than one."
                  "Considering only one product, the default ratio 1.0 is used."
