@@ -232,17 +232,12 @@ protected:
     /**
      * Name of base output file
      */
-    string *_base_filename;
+    string _base_filename;
 
     /**
      * Data output stream (could be same as base_file)
      */
     ofstream *_data_file;
-
-    /**
-     * Name of data output file
-     */
-    string *_data_filename;
 
     /**
      * Cached pointer at mesh used by this output stream

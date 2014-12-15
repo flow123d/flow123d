@@ -223,7 +223,8 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->_base_filename->c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     this->write_msh_header();
 
@@ -238,7 +239,8 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->_base_filename->c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
@@ -260,11 +262,11 @@ int OutputMSH::write_data(void)
 void OutputMSH::fix_base_file_name(void)
 {
     // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
-    if(this->_base_filename->compare(this->_base_filename->size()-4, 4, ".msh") != 0) {
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".msh") != 0) {
         xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n",
-                this->_base_filename->c_str(),
-                this->_base_filename->c_str());
-        *this->_base_filename += ".msh";
+                this->_base_filename.c_str(),
+                this->_base_filename.c_str());
+        this->_base_filename += ".msh";
     }
 }
 

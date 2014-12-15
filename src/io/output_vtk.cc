@@ -497,7 +497,7 @@ int OutputVTK::write_data(void)
         return 0;
     }
 
-    strncpy(base_dir_name, this->_base_filename->c_str(), PATH_MAX);
+    strncpy(base_dir_name, this->_base_filename.c_str(), PATH_MAX);
 
     /* Remove last file name from base_name and find position of last directory
      * delimiter: '/' */
@@ -508,7 +508,7 @@ int OutputVTK::write_data(void)
         }
     }
 
-    strncpy(base_file_name, this->_base_filename->c_str(), PATH_MAX);
+    strncpy(base_file_name, this->_base_filename.c_str(), PATH_MAX);
 
     /* Find, where is the '.' character of .pvd suffix of base_name */
     for(i=strlen(base_file_name)-1; i>=0; i--) {
@@ -547,7 +547,8 @@ int OutputVTK::write_data(void)
         /* Set up data file */
         this->_data_file = data_file;
 
-        xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->_base_filename->c_str());
+        xprintf(MsgLog, "%s: Writing output file %s ... ",
+                __func__, this->_base_filename.c_str());
 
         /* Find first directory delimiter */
         for(i=strlen(frame_file_name); i>=0; i--) {
@@ -590,7 +591,7 @@ int OutputVTK::write_head(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-            this->_base_filename->c_str() );
+            this->_base_filename.c_str() );
 
     *this->_base_file << "<?xml version=\"1.0\"?>" << endl;
     *this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
@@ -611,7 +612,7 @@ int OutputVTK::write_tail(void)
     }
 
     xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-            this->_base_filename->c_str() );
+            this->_base_filename.c_str() );
 
     *this->_base_file << "</Collection>" << endl;
     *this->_base_file << "</VTKFile>" << endl;
@@ -625,10 +626,10 @@ int OutputVTK::write_tail(void)
 void OutputVTK::fix_base_file_name(void)
 {
     // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-    if(this->_base_filename->compare(this->_base_filename->size()-4, 4, ".pvd") != 0) {
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".pvd") != 0) {
         xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n",
-                this->_base_filename->c_str(), this->_base_filename->c_str());
-        *this->_base_filename += ".pvd";
+                this->_base_filename.c_str(), this->_base_filename.c_str());
+        this->_base_filename += ".pvd";
     }
 }
 

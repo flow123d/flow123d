@@ -158,9 +158,8 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 
     this->current_step = 0;
     this->_base_file = base_file;
-    this->_base_filename = new string(fname);
+    this->_base_filename = fname;
     this->_data_file = NULL;
-    this->_data_filename = NULL;
     this->_mesh = NULL;
     this->time = -1.0;
     this->write_time = -1.0;
@@ -173,10 +172,6 @@ OutputTime::~OutputTime(void)
      //    /* TODO: do something, when support for Parallel VTK is added */
      //    return;
     // }
-
-     if(this->_base_filename != NULL) {
-         delete this->_base_filename;
-     }
 
      if(this->_base_file != NULL) {
          this->_base_file->close();
@@ -225,13 +220,15 @@ void OutputTime::write_time_frame()
     	// Write data to output stream, when data registered to this output
 		// streams were changed
 		if(write_time < time) {
-			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n", _base_filename->c_str(), time);
+			xprintf(MsgLog, "Write output to output stream: %s for time: %f\n",
+			        this->_base_filename.c_str(), time);
 			write_data();
 			// Remember the last time of writing to output stream
 			write_time = time;
 			current_step++;
 		} else {
-			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n", _base_filename->c_str(), time);
+			xprintf(MsgLog, "Skipping output stream: %s in time: %f\n",
+			        this->_base_filename.c_str(), time);
 		}
     }
     clear_data();
