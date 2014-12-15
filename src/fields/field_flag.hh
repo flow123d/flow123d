@@ -25,7 +25,7 @@ public:
     static constexpr Mask declare_input{2};
     /// The field can output. Is part of generated output selection. (default on)
     static constexpr Mask allow_output{4};
-    /// A field that is input of its equation and cna not read from input, thus muzt be set by copy.
+    /// A field that is input of its equation and can not read from input, thus must be set by copy.
     static constexpr Mask input_copy = ~declare_input & equation_input;
 
     /// A field is part of time term of the equation.
@@ -35,8 +35,12 @@ public:
     /// A field is part of the right hand side of the equation.
     static constexpr Mask in_rhs{32};
 
-    /// Match non-result fields, that are data fields of an equation.
+    /// Match result fields. These are never given by input or copy of input.
     static constexpr Mask equation_result =  allow_output & ~declare_input & ~equation_input;
+
+    /// Match an output field, that can be also copy of other field.
+    static constexpr Mask equation_external_output =  allow_output & input_copy;
+
 };
 
 

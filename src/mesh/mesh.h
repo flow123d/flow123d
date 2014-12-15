@@ -42,6 +42,7 @@
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
 #include "mesh/intersection.hh"
+#include "mesh/partitioning.hh"
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -51,7 +52,7 @@
 template <int spacedim>
 class ElementAccessor;
 class GmshMeshReader;
-class Partitioning;
+
 
 
 #define ELM  0

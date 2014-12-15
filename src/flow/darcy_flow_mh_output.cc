@@ -47,6 +47,7 @@
 
 #include "fem/dofhandler.hh"
 #include "fields/field_fe.hh"
+#include "fields/generic_field.hh"
 
 #include "io/output.h"
 #include "mesh/partitioning.hh"
@@ -80,7 +81,9 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
-	*this += subdomain.name("subdomain").units( UnitSI::dimensionless() );
+	*this += subdomain.name("subdomain")
+					  .units( UnitSI::dimensionless() )
+					  .flags(FieldFlag::equation_external_output);
 
 	fields_for_output += *this;
 
@@ -129,13 +132,15 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"),
 			make_shared< FieldElementwise<3, FieldValue<3>::VectorFixed> >(ele_flux, 3));
 
-	auto &vec_int_sub = mesh_->get_part()->seq_output_partition();
+	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
+
+/*auto &vec_int_sub = mesh_->get_part()->seq_output_partition();
 	subdomains.resize(vec_int_sub.size());
 	for(unsigned int i=0; i<subdomains.size();i++)
 		subdomains[i]=vec_int_sub[i];
 	output_fields.subdomain.set_field(mesh_->region_db().get_region_set("ALL"),
 			make_shared< FieldElementwise<3, FieldValue<3>::Integer> >(subdomains, 1));
-
+*/
 	output_fields.set_limit_side(LimitSide::right);
 
 
