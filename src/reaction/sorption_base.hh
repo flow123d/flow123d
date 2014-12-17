@@ -118,7 +118,8 @@ protected:
    */
   void make_reactions();
   
-  /// Reads names of substances from input and creates indexing to global vector of substance,
+  /// Reads names of substances from input and creates indexing to global vector of substance.
+  /** Also creates the local vector of molar masses. */
   void initialize_substance_ids();
   
   /// Initializes private members of sorption from the input record.

@@ -74,7 +74,6 @@
           TYPE = "SorptionMobile",
           solvent_density= 1.0,
           substances = ["A"],
-          molar_mass= [1.0],
           solubility = [1.0],
           input_fields= [
             {
@@ -90,7 +89,6 @@
           TYPE = "SorptionImmobile",
           solvent_density= { REF="/problem/secondary_equation/reaction_term/reaction_mobile/solvent_density" },
           substances = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/substances" },
-          molar_mass = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/molar_mass" },
           solubility = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
           input_fields= { REF="/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" }
         }

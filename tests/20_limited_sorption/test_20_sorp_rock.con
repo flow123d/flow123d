@@ -63,7 +63,6 @@
       adsorptions = {
         solvent_density= 1.0,
         species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
-        molar_mass= [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         solubility = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         input_fields= [
           {

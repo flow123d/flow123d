@@ -40,8 +40,6 @@ Record SorptionBase::input_type
 				"Density of the solvent.")
 	.declare_key("substeps", Integer(), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
-	.declare_key("molar_mass", Array(Double()), Default::obligatory(),
-							"Specifies molar masses of all the adsorbing species.")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the adsorbing species.")
 	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
@@ -313,7 +311,10 @@ void SorptionBase::initialize_substance_ids()
     }
     
     if(!found)
+    {
       substance_global_idx_.push_back(global_idx);
+      molar_masses_.push_back(substances_[global_idx].molar_mass());
+    }
 
   }  
   n_substances_ = substance_global_idx_.size();
@@ -328,14 +329,6 @@ void SorptionBase::initialize_from_input()
     
     // Common data for all the isotherms loaded bellow
 	solvent_density_ = input_record_.val<double>("solvent_density");
-
-    molar_masses_.resize( n_substances_ );
-  
-	Input::Array molar_mass_array = input_record_.val<Input::Array>("molar_mass");
-
-	if (molar_mass_array.size() == molar_masses_.size() )   molar_mass_array.copy_to( molar_masses_ );
-	  else  xprintf(UsrErr,"Number of molar masses %d has to match number of adsorbing species %d.\n", 
-                    molar_mass_array.size(), molar_masses_.size());
 
 	Input::Iterator<Input::Array> solub_iter = input_record_.find<Input::Array>("solubility");
 	if( solub_iter )
