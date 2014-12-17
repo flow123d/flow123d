@@ -323,6 +323,13 @@ public:
      */
     bool finish();
 
+    /**
+     * Add TYPE key as obligatory.
+     *
+     * This method can't be used for derived record.
+     */
+    Record &has_obligatory_type_key();
+
 
 protected:
 
@@ -351,7 +358,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(const Selection * key_type);
+    Record &declare_type_key(const Selection * key_type, const Default &default_value = Default::obligatory());
 
     /**
      * Internal data class.

@@ -167,7 +167,7 @@ void Record::make_copy_keys_all() {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( ! data_->p_parent_ || ! data_->parent_ptr_ , "Record has been already derived.\n");
+	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_ , "Record has been already derived.\n");
     if (TypeBase::was_constructed(&parent)) {
         data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
         data_->p_parent_ = NULL;
@@ -329,10 +329,18 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(const Selection * key_type) {
+Record &Record::declare_type_key(const Selection * key_type, const Default &default_value) {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, Default::obligatory(),
+	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, default_value,
 			"Sub-record selection.");
+	return *this;
+}
+
+Record &Record::has_obligatory_type_key() {
+	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
+	Selection * sel = new Selection(type_name() + "_TYPE_selection");
+	sel->add_value(0, type_name());
+	declare_type_key( sel );
 	return *this;
 }
 
