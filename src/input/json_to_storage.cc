@@ -334,21 +334,37 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 {
     if (p.head()->type() == json_spirit::obj_type) {
     	const json_spirit::mObject & j_map = p.head()->get_obj();
-    	std::set<string> keys_to_processed;
+    	std::set<string> keys_to_process;
         json_spirit::mObject::const_iterator map_it;
         std::set<string>::iterator set_it;
 
         for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it) {
-           keys_to_processed.insert(map_it->first);
+           keys_to_process.insert(map_it->first);
+        }
+
+        if (keys_to_process.find("TYPE") != keys_to_process.end()) {
+            string value;
+            string ref_address;
+            p.down( record->key_iterator("TYPE")->key_ );
+            if (p.get_ref_from_head(ref_address)) {
+            	JSONPath ref_path = p.find_ref_node(ref_address);
+            	value = ref_path.head()->get_str();
+            } else {
+            	value = p.head()->get_str();
+            }
+            p.up();
+        	if (value != record->type_name()) { // automatic conversion
+        		return record_automatic_conversion(p, record);
+        	}
         }
 
         StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
         for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-        	// remove processed key from keys_to_processed
-        	set_it = keys_to_processed.find(it->key_);
-        	if (set_it != keys_to_processed.end()) {
-        		keys_to_processed.erase(set_it);
+        	// remove processed key from keys_to_process
+        	set_it = keys_to_process.find(it->key_);
+        	if (set_it != keys_to_process.end()) {
+        		keys_to_process.erase(set_it);
         	}
 
             if (p.down(it->key_) != NULL) {
@@ -370,7 +386,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             }
         }
 
-        for( set_it = keys_to_processed.begin(); set_it != keys_to_processed.end(); ++set_it) {
+        for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
         	xprintf(Warn, "Key '%s' in record '%s' was not retrieved from input JSON file.\n", (*set_it).c_str(), record->type_name().c_str() );
         }
 
