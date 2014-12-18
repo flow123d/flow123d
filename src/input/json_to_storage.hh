@@ -189,6 +189,11 @@ public:
             << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
+    TYPEDEF_ERR_INFO( EI_InputErrorMessage, const string);
+    TYPEDEF_ERR_INFO( EI_RecordName, const string);
+    DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
+    		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
+
 
     /**
      * Read a storage from input stream. Parameter @p root_type

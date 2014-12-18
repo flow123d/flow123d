@@ -403,25 +403,28 @@ StorageBase * JSONToStorage::record_automatic_conversion(JSONPath &p, const Type
 {
 	Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
 	if ( auto_key_it != record->end() ) {
-	    // try auto conversion
-	    StorageArray *storage_array = new StorageArray(record->size());
-	    for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-	        if ( it == auto_key_it ) {
-	            // one key is initialized by input
-	            storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
-	        } else if (it->default_.has_value_at_declaration() ) {
-	            // other key from default values
-	            storage_array->new_item(it->key_index,
-	                    make_storage_from_default( it->default_.value(), it->type_.get() ) );
-	         } else { // defalut - optional or default at read time
-	             ASSERT( ! it->default_.is_obligatory() ,
-	                     "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
-	             // set null
-	             storage_array->new_item(it->key_index, new StorageNull() );
-	         }
-	    }
+	    try {
+			StorageArray *storage_array = new StorageArray(record->size());
+			for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+				if ( it == auto_key_it ) {
+					// one key is initialized by input
+					storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+				} else if (it->default_.has_value_at_declaration() ) {
+					// other key from default values
+					storage_array->new_item(it->key_index,
+							make_storage_from_default( it->default_.value(), it->type_.get() ) );
+				 } else { // defalut - optional or default at read time
+					 ASSERT( ! it->default_.is_obligatory() ,
+							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+					 // set null
+					 storage_array->new_item(it->key_index, new StorageNull() );
+				 }
+			}
 
-	    return storage_array;
+			return storage_array;
+	    } catch (ExcInputError &e ) {
+	        THROW( ExcAutomaticConversionError() << EI_RecordName(record->type_name()) << EI_InputErrorMessage(e.what()) );
+	    }
 
 	} else {
 	    THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
