@@ -715,8 +715,9 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
     	const Element * master = intersec.master_iter();
        	const Element * slave = intersec.slave_iter();
 
-       	add_sides(master, 0, dofs, dirichlet);
-       	add_sides(slave, 2, dofs, dirichlet);
+	add_sides(slave, 0, dofs, dirichlet);
+       	add_sides(master, 3, dofs, dirichlet);
+       	
 		double master_sigma=darcy_.data_.sigma.value( master->centre(), master->element_accessor());
 
 /*
