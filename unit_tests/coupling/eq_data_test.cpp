@@ -35,6 +35,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
+#include "fields/unit_si.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -127,24 +128,31 @@ protected:
 
         EqData()  {
             ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
+            anisotropy.units( UnitSI::dimensionless() );
+
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
                       bc_type.input_selection(&bc_type_selection);
             bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+            bc_type.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
             bc_pressure.disable_where( bc_type, {none, neumann} );
         	bc_pressure.read_field_descriptor_hook = bc_piezo_head_hook;
+            bc_pressure.units( UnitSI::dimensionless() );
 
         	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
             bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
         	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+            bc_flux.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
             bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
         	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+            bc_robin_sigma.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_conc, "BC concentration", "0.0" );
             bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+            bc_conc.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -181,6 +189,10 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
+
+            init_pressure.units( UnitSI::dimensionless() );
+            init_conc.units( UnitSI::dimensionless() );
+            bulk_set_field.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;

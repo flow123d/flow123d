@@ -18,6 +18,7 @@ using namespace std;
 #include "coupling/time_governor.hh"
 
 #include "fields/field_flag.hh"
+#include "fields/unit_si.hh"
 #include "io/output_time.hh"
 
 
@@ -99,7 +100,7 @@ public:
      * Possibly this allow using Boost::Units library, however, it seems to introduce lot of boilerplate code.
      * But can increase correctness of the calculations.
      */
-    FieldCommon & units(const string & units)
+    FieldCommon & units(const UnitSI & units)
     { shared_->units_ = units; return *this;}
 
     /**
@@ -183,7 +184,7 @@ public:
     const std::string &input_default() const
     { return shared_->input_default_;}
 
-    const std::string &units() const
+    const UnitSI &units() const
     { return shared_->units_;}
 
     OutputTime::DiscreteSpace output_type() const
@@ -341,7 +342,7 @@ protected:
         /**
          * Units of the field values. Currently just a string description.
          */
-        std::string units_;
+        UnitSI units_;
         /**
          * For Enum valued fields this is the input type selection that should be used
          * to read possible values of the field (e.g. for FieldConstant the key 'value' has this selection input type).

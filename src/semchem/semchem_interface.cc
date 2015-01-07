@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -35,14 +35,14 @@ it::Record Specie::input_type = it::Record("Isotope", "Definition of information
 
 
 it::Record General_reaction::input_type = it::Record("Isotope", "Definition of information about a single isotope.")
-	.derive_from(ReactionTerm::input_type)
 	.declare_key("identifier", it::Integer(), it::Default::obligatory(),
 						"Identifier of the isotope.")
 	.declare_key("half_life", it::Double(), it::Default::obligatory(),
 						"Half life parameter.");
 
 
-it::AbstractRecord Semchem_interface::input_type = it::AbstractRecord("Semchem_module", "Declares infos valid for all reactions.")
+it::Record Semchem_interface::input_type = it::Record("Semchem", "Declares infos valid for all reactions. NOT SUPPORTED!!!.")
+    .derive_from(ReactionTerm::input_type)
 	.declare_key("precision", it::Integer(), it::Default::obligatory(), //(1),
 						"How accurate should the simulation be, decimal places(?).")
 	.declare_key("temperature", it::Double(), it::Default::obligatory(), //(298.0),

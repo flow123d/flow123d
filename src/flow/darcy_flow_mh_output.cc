@@ -76,17 +76,17 @@ it::Record DarcyFlowMHOutput::input_type
 
 DarcyFlowMHOutput::OutputFields::OutputFields()
 {
-	*this += field_ele_pressure.name("pressure_p0").units("L");
-	*this += field_node_pressure.name("pressure_p1").units("L");
-	*this += field_ele_piezo_head.name("piezo_head_p0").units("L");
-	*this += field_ele_flux.name("velocity_p0").units("L/T");
-	*this += subdomain.name("subdomain").units("0");
+	*this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
+	*this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
+	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
+	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
+	*this += subdomain.name("subdomain").units( UnitSI::dimensionless() );
 
 	fields_for_output += *this;
 
-	*this += pressure_diff.name("pressure_diff").units("0");
-	*this += velocity_diff.name("velocity_diff").units("0");
-	*this += div_diff.name("div_diff").units("0");
+	*this += pressure_diff.name("pressure_diff").units(UnitSI().m());
+	*this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
+	*this += div_diff.name("div_diff").units(UnitSI().s(-1));
 
 }
 

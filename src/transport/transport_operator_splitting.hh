@@ -10,6 +10,7 @@
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "transport/mass_balance.hh"
+#include "transport/substance.hh"
 
 
 /// external types:
@@ -17,6 +18,9 @@ class Mesh;
 class ReactionTerm;
 class ConvectionTransport;
 class Semchem_interface;
+
+
+
 
 
 
@@ -39,7 +43,7 @@ public:
 
     virtual unsigned int n_substances() = 0;
 
-    virtual vector<string> &substance_names() = 0;
+    virtual SubstanceList &substances() = 0;
 
 
 	/// Common specification of the input record for secondary equations.
@@ -104,7 +108,7 @@ public:
     inline unsigned int n_substances() override { return n_subst_; }
 
     /// Returns reference to the vector of substnace names.
-    inline vector<string> &substance_names() override { return subst_names_; }
+    inline SubstanceList &substances() override { return substances_; }
 
     virtual void set_concentration_vector(Vec &vec){};
 
@@ -117,8 +121,8 @@ protected:
     /// Number of transported substances.
     unsigned int n_subst_;
 
-    /// Names of transported substances.
-    std::vector<string> subst_names_;
+    /// Transported substances.
+    SubstanceList substances_;
 
     /**
      * Temporary solution how to pass velocity field form the flow model.
@@ -216,6 +220,7 @@ private:
     ConvectionTransport *convection;
     ReactionTerm *reaction;
 
+    double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;
 
 };

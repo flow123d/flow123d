@@ -50,32 +50,37 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 {
     *this+=bc_conc
             .name("bc_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Dirichlet boundary condition (for each substance).")
             .input_default("0.0")
             .flags_add( in_rhs );
     *this+=init_conc
             .name("init_conc")
+            .units( UnitSI().kg().m(-3) )
             .description("Initial concentrations.")
             .input_default("0.0");
     *this+=disp_l
             .name("disp_l")
             .description("Longitudal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
             .description("Transversal dispersivity (for each substance).")
+            .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
     *this+=diff_m
             .name("diff_m")
             .description("Molecular diffusivity (for each substance).")
+            .units( UnitSI().m(2).s(-1) )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
 
 	*this+=output_field
 	        .name("conc")
-	        .units("M/L^3")
+	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 }
 
@@ -106,9 +111,11 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 {}
 
 
-void ConcentrationTransportModel::set_component_names(std::vector<string> &names, const Input::Record &in_rec)
+void ConcentrationTransportModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
+	std::vector<std::string> names;
 	in_rec.val<Input::Array>("substances").copy_to(names);
+	substances.initialize(names);
 }
 
 
