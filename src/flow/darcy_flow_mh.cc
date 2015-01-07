@@ -662,8 +662,10 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		double master_sigma=darcy_.data_.sigma.value( master_->centre(), master_->element_accessor());
 
 		// rows
+		double check_delta_sum=0;
 		for(i = 0; i <= ml_it_->size(); ++i) {
 			pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
+			check_delta_sum+=delta_i;
 			//columns
 			for (j = 0; j <= ml_it_->size(); ++j) {
 				pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
@@ -674,8 +676,12 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				arma::vec rhs(dofs_i.size());
 				rhs.zeros();
 				ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+				auto dofs_i_cp=dofs_i;
+				auto dofs_j_cp=dofs_j;
+				ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
 			}
 		}
+                ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
     } // loop over master elements
 }
 
@@ -791,8 +797,8 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 
             }
         }
-
-		ls.set_values( dofs, dofs, A, rhs, dirichlet, dirichlet);
+        auto dofs_cp=dofs;
+        ls.set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
 
     }
 }
@@ -919,6 +925,8 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    assembly_steady_mh_matrix(); // fill matrix
 	    schur0->finish_assembly();
 	    schur0->set_matrix_changed();
+            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
+            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
 	    	DBGMSG("    setup time term\n");
