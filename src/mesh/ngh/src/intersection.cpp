@@ -775,7 +775,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         insec = NULL;
         return;
     }
-    IntersectionLocal* insec_tmp;
+    IntersectionLocal* insec_tmp=NULL;
     GetIntersection( (const TBisector &)A, T, insec_tmp);
     if (!insec_tmp) {
     	insec = NULL;
