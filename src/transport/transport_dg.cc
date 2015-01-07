@@ -244,8 +244,14 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.
-    Model::set_component_names(subst_names_, in_rec);
-    n_subst_ = subst_names_.size();
+    // TODO: Substances should be held in TransportOperatorSplitting only.
+    // Class TransportDG requires only names of components,
+    // and it may have no sense for Model to define Substances
+    // (e.g. if Model represents heat transfer). This should be
+    // resolved when transport classes are refactored so that DG method
+    // can be combined with reactions under operator splitting.
+    Model::set_components(substances_, in_rec);
+    n_subst_ = substances_.size();
 
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
     if (it)
@@ -305,7 +311,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.init(subst_names_);
+	data_.output_field.init(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
@@ -365,7 +371,6 @@ TransportDG<Model>::~TransportDG()
     if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
-    subst_names_.clear();
     delete output_stream;
 }
 

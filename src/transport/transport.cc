@@ -101,8 +101,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     cfl_max_step = time_->end_time();
 
-    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
-    n_subst_ = subst_names_.size();
+	// Initialize list of substances.
+	substances_.initialize(in_rec.val<Input::Array>("substances"));
+    n_subst_ = substances_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
@@ -122,7 +123,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
-	data_.conc_mobile.init(subst_names_);
+	data_.conc_mobile.init(substances_.names());
 	data_.conc_mobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 

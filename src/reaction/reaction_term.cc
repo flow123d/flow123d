@@ -1,11 +1,9 @@
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
 #include "io/output.h"
 
 using namespace Input::Type;
-using namespace std;
-
         
 AbstractRecord ReactionTerm::input_type
     = AbstractRecord("ReactionTerm", "Equation for reading information about simple chemical reactions.");
@@ -31,12 +29,7 @@ ReactionTerm::~ReactionTerm()
 }
 
 
-double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)
-{
-  ASSERT(0,"double **ReactionTerm::compute_reaction(double **concentrations, int loc_el)" 
-           "needs to be re-implemented in ancestors.\n");
-  return concentrations;
-}
+
 
 void ReactionTerm::choose_next_time(void)
 {

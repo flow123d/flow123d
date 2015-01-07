@@ -287,7 +287,7 @@ void MassBalance::output(double time)
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
 		for (int sbi=0; sbi<n_subst; sbi++) {
 			fprintf(balance_output_file, bc_format.c_str(),2,"",w,reg->id(),wl,reg->label().c_str(),
-					w, equation_->substance_names()[sbi].c_str(),w, bcd_balance[sbi][reg->boundary_idx()],
+					w, equation_->substances().names()[sbi].c_str(),w, bcd_balance[sbi][reg->boundary_idx()],
 					w, bcd_plus_balance[sbi][reg->boundary_idx()],
 					w, bcd_minus_balance[sbi][reg->boundary_idx()]);
 		}
@@ -296,7 +296,7 @@ void MassBalance::output(double time)
 	fprintf(balance_output_file,"# %s\n",s.str().c_str());  // drawing long line
 	for (int sbi=0; sbi<n_subst; sbi++)
 		fprintf(balance_output_file, bc_total_format.c_str(),w+wl,"Total mass flux of substance [M/T]",
-				w,equation_->substance_names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
+				w,equation_->substances().names()[sbi].c_str(),w,bcd_total_balance[sbi], w, bcd_total_outflow[sbi], w, bcd_total_inflow[sbi]);
 	fprintf(balance_output_file, "\n\n");
 
 
@@ -316,7 +316,7 @@ void MassBalance::output(double time)
 		for (int sbi=0; sbi<n_subst; sbi++)
 		{
 			fprintf(balance_output_file, src_format.c_str(), 2,"", w, reg->id(), wl,
-					reg->label().c_str(), w, equation_->substance_names()[sbi].c_str(),
+					reg->label().c_str(), w, equation_->substances().names()[sbi].c_str(),
 					w,mass[sbi][reg->bulk_idx()],
 					w,src_balance[sbi][reg->bulk_idx()]);
 		}
@@ -325,7 +325,7 @@ void MassBalance::output(double time)
 	fprintf(balance_output_file,"# %s\n",s.str().c_str());  //drawing long line
 	for (int sbi=0; sbi<n_subst; sbi++)
 		fprintf(balance_output_file, src_total_format.c_str(),w+wl,"Total mass [M] and sources [M/T]",
-				w,equation_->substance_names()[sbi].c_str(),
+				w,equation_->substances().names()[sbi].c_str(),
 				w,mass_total[sbi],
 				w,src_total_balance[sbi]);
 
@@ -349,7 +349,7 @@ void MassBalance::output(double time)
 		{
 			double denominator = max(fabs(initial_mass[i]+integrated_sources[i]-integrated_fluxes[i]),fabs(mass_total[i]));
 			fprintf(balance_output_file, "  %-*s%-*g%-*g%-*g%-*g%-*g%-*g%-*g\n",
-					w,equation_->substance_names()[i].c_str(),
+					w,equation_->substances().names()[i].c_str(),
 					w,initial_mass[i],
 					w,integrated_sources[i],
 					w,integrated_fluxes[i],

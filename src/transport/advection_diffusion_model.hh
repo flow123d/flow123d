@@ -33,6 +33,8 @@
 #include <armadillo>
 #include <vector>
 
+class SubstanceList;
+
 namespace IT = Input::Type;
 
 /**
@@ -45,7 +47,7 @@ class AdvectionDiffusionModel {
 public:
 
 	/// Read or set names of solution components.
-	virtual void set_component_names(std::vector<string> &names, const Input::Record &in_rec) = 0;
+	virtual void set_components(SubstanceList &substances, const Input::Record &in_rec) = 0;
 
 	/**
 	 * Compute coefficients of mass matrix.

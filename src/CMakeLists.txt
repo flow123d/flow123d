@@ -160,13 +160,17 @@ set(sources_lib_non_system
 
 
     
-    reaction/reaction.cc
-    reaction/linear_reaction.cc
+    reaction/reaction_term.cc
+    reaction/first_order_reaction.cc
+    reaction/first_order_reaction_base.cc
+    reaction/radioactive_decay.cc
     reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
-    reaction/dual_por_exchange.cc
+    reaction/dual_porosity.cc
     reaction/isotherm.cc
+    reaction/linear_ode_solver.cc
+    reaction/linear_ode_analytic.cc
     semchem/semchem_interface.cc
 
     transport/concentration_model.cc
@@ -175,6 +179,7 @@ set(sources_lib_non_system
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
     transport/mass_balance.cc
+    transport/substance.cc
 
     coupling/hc_explicit_sequential.cc
 )

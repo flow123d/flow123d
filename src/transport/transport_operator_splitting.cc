@@ -21,11 +21,11 @@
 #include "mesh/mesh.h"
 #include "flow/old_bcd.hh"
 
-#include "reaction/reaction.hh"
-#include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
+#include "reaction/reaction_term.hh"
+#include "reaction/first_order_reaction.hh"
+#include "reaction/radioactive_decay.hh"
 #include "reaction/sorption.hh"
-#include "reaction/dual_por_exchange.hh"
+#include "reaction/dual_porosity.hh"
 
 #include "semchem/semchem_interface.hh"
 
@@ -58,8 +58,8 @@ Record TransportOperatorSplitting::input_type
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
     .derive_from(AdvectionProcessBase::input_type)
-    .declare_key("substances", Array(String()), Default::obligatory(),
-    		"Names of transported substances.")
+    .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
+    		"Specification of transported substances.")
     	    // input data
     .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
                 "Reaction model involved in transport.")
@@ -71,6 +71,11 @@ Record TransportOperatorSplitting::input_type
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
     		Default("conc"),
        		"List of fields to write to output file.");
+
+
+
+
+
 
 
 TransportBase::TransportEqData::TransportEqData()
@@ -121,8 +126,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Distribution *el_distribution;
 	int *el_4_loc;
 
-    in_rec.val<Input::Array>("substances").copy_to(subst_names_);
-    n_subst_ = subst_names_.size();
+	// Initialize list of substances.
+	substances_.initialize(in_rec.val<Input::Array>("substances"));
+    n_subst_ = substances_.size();
+
 	convection = new ConvectionTransport(*mesh_, in_rec);
 	this->eq_data_ = &(convection->data());
 
@@ -131,46 +138,53 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
-        if ( reactions_it ) {
-            if (reactions_it->type() == LinearReaction::input_type ) {
-                reaction =  new LinearReaction(init_mesh, *reactions_it);
-            } else
-            if (reactions_it->type() == PadeApproximant::input_type) {
-                reaction = new PadeApproximant(init_mesh, *reactions_it);
-            } else
-            if (reactions_it->type() == SorptionSimple::input_type ) {
-                reaction =  new SorptionSimple(init_mesh, *reactions_it);
-            } else
-            if (reactions_it->type() == DualPorosity::input_type ) {
-                reaction =  new DualPorosity(init_mesh, *reactions_it);
-            } else
-            if (reactions_it->type() == Semchem_interface::input_type ) {
-                Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
-                Semchem_reactions->set_el_4_loc(el_4_loc);
-                //Semchem works with phases 0-3; this is not supported no more!
-                semchem_conc_ptr = new double**[1];
-                semchem_conc_ptr[0] = convection->get_concentration_matrix();
-                Semchem_reactions->set_concentration_matrix(semchem_conc_ptr, el_distribution, el_4_loc);
+	if ( reactions_it ) {
+		if (reactions_it->type() == FirstOrderReaction::input_type ) {
+			reaction =  new FirstOrderReaction(init_mesh, *reactions_it);
+		} else
+		if (reactions_it->type() == RadioactiveDecay::input_type) {
+			reaction = new RadioactiveDecay(init_mesh, *reactions_it);
+		} else
+		if (reactions_it->type() == SorptionSimple::input_type ) {
+			reaction =  new SorptionSimple(init_mesh, *reactions_it);
+		} else
+		if (reactions_it->type() == DualPorosity::input_type ) {
+			reaction =  new DualPorosity(init_mesh, *reactions_it);
+		} else
+		if (reactions_it->type() == Semchem_interface::input_type ) {
+// 			Semchem_reactions = new Semchem_interface(0.0, mesh_, n_subst_, false); //false instead of convection->get_dual_porosity
+// 			Semchem_reactions->set_el_4_loc(el_4_loc);
+//                 //Semchem works with phases 0-3; this is not supported no more!
+//                 semchem_conc_ptr = new double**[1];
+//                 semchem_conc_ptr[0] = convection->get_concentration_matrix();
+//                 Semchem_reactions->set_concentration_matrix(semchem_conc_ptr, el_distribution, el_4_loc);
+            THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
 
-            } else {
-                xprintf(UsrErr, "Wrong reaction type.\n");
-            }
-            //temporary, until new mass balance considering reaction term is created
-            xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
-                          "Only the mass flux over boundaries is correct.\n");
+		} else {
+			//This point cannot be reached. The TYPE_selection will throw an error first. 
+            THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
+		}
+		//temporary, until new mass balance considering reaction term is created
+		xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
+					  "Only the mass flux over boundaries is correct.\n");
 
-            reaction->names(subst_names_)
+		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
-                            el_distribution, el_4_loc, convection->get_row_4_el())
-                    .output_stream(*(convection->output_stream()))
-                    .set_time_governor(*(convection->time_));
-            
-            reaction->initialize();
+						el_distribution, el_4_loc, convection->get_row_4_el())
+				.output_stream(*(convection->output_stream()))
+				.set_time_governor(*(convection->time_));
 
-        } else {
-            reaction = nullptr;
-            Semchem_reactions = nullptr;
-        }
+		reaction->initialize();
+
+	} else {
+		reaction = nullptr;
+		Semchem_reactions = nullptr;
+	}
         
   //coupling - passing fields
   if(reaction)
