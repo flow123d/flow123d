@@ -560,14 +560,18 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
+    double mask_vel_error;
     vector<double> pressure_diff;
     vector<double> velocity_diff;
     vector<double> div_diff;
+
 
     double * solution;
     const MH_DofHandler * dh;
     MHFEValues fe_values;
 
+    //std::vector< std::vector<double>  > *ele_flux;
+    std::vector<int> velocity_mask;
     DarcyFlowMH_Steady *darcy;
     DarcyFlowMH_Steady::EqData *data_;
 };
@@ -657,6 +661,9 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
 
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
+    if (dim == 2) {
+    	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+    }
 
     result.pressure_diff[ele.index()] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
@@ -701,6 +708,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     static DiffData result;
 
+    // mask 2d elements crossing 1d
+    result.velocity_mask.resize(mesh_->n_elements(),0);
+    for(Intersection & isec : mesh_->intersections) {
+    	result.velocity_mask[ mesh_->element.index( isec.slave_iter() ) ]++;
+    }
+
     result.pressure_diff.resize( mesh_->n_elements() );
     result.velocity_diff.resize( mesh_->n_elements() );
     result.div_diff.resize( mesh_->n_elements() );
@@ -711,7 +724,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     result.pressure_error[1] = 0;
     result.velocity_error[1] = 0;
     result.div_error[1] = 0;
+    result.mask_vel_error=0;
 
+    //result.ele_flux = &( ele_flux );
 
     auto vel_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.velocity_diff[0]), 1, mesh_->n_elements());
     output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
@@ -747,6 +762,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
     	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
     	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
+    	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
 }
