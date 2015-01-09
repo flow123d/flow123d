@@ -311,7 +311,7 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ(123, storage_->get_item(1)->get_int() );
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON int', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcAutomaticConversionError , "The value should be 'JSON int', but we found:.* 'JSON real'");
     }
 
     {

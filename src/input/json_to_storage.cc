@@ -334,21 +334,37 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 {
     if (p.head()->type() == json_spirit::obj_type) {
     	const json_spirit::mObject & j_map = p.head()->get_obj();
-    	std::set<string> keys_to_processed;
+    	std::set<string> keys_to_process;
         json_spirit::mObject::const_iterator map_it;
         std::set<string>::iterator set_it;
 
         for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it) {
-           keys_to_processed.insert(map_it->first);
+           keys_to_process.insert(map_it->first);
+        }
+
+        if (keys_to_process.find("TYPE") != keys_to_process.end()) {
+            string value;
+            string ref_address;
+            p.down( record->key_iterator("TYPE")->key_ );
+            if (p.get_ref_from_head(ref_address)) {
+            	JSONPath ref_path = p.find_ref_node(ref_address);
+            	value = ref_path.head()->get_str();
+            } else {
+            	value = p.head()->get_str();
+            }
+            p.up();
+        	if (value != record->type_name()) { // automatic conversion
+        		return record_automatic_conversion(p, record);
+        	}
         }
 
         StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
         for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-        	// remove processed key from keys_to_processed
-        	set_it = keys_to_processed.find(it->key_);
-        	if (set_it != keys_to_processed.end()) {
-        		keys_to_processed.erase(set_it);
+        	// remove processed key from keys_to_process
+        	set_it = keys_to_process.find(it->key_);
+        	if (set_it != keys_to_process.end()) {
+        		keys_to_process.erase(set_it);
         	}
 
             if (p.down(it->key_) != NULL) {
@@ -370,45 +386,52 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             }
         }
 
-        for( set_it = keys_to_processed.begin(); set_it != keys_to_processed.end(); ++set_it) {
+        for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
         	xprintf(Warn, "Key '%s' in record '%s' was not retrieved from input JSON file.\n", (*set_it).c_str(), record->type_name().c_str() );
         }
 
         return storage_array;
 
-    } else {
-
-
-        Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
-        if ( auto_key_it != record->end() ) {
-            // try auto conversion
-            StorageArray *storage_array = new StorageArray(record->size());
-            for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-                if ( it == auto_key_it ) {
-                    // one key is initialized by input
-                    storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
-                } else if (it->default_.has_value_at_declaration() ) {
-                    // other key from default values
-                    storage_array->new_item(it->key_index,
-                            make_storage_from_default( it->default_.value(), it->type_.get() ) );
-                 } else { // defalut - optional or default at read time
-                     ASSERT( ! it->default_.is_obligatory() ,
-                             "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
-                     // set null
-                     storage_array->new_item(it->key_index, new StorageNull() );
-                 }
-            }
-
-            return storage_array;
-
-        } else {
-            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
-                    << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType( record->desc()) );
-        }
+    } else { // automatic conversion
+    	return record_automatic_conversion(p, record);
     }
     // possibly construction of reduced record
+}
 
-    return NULL;
+
+StorageBase * JSONToStorage::record_automatic_conversion(JSONPath &p, const Type::Record *record)
+{
+	Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
+	if ( auto_key_it != record->end() ) {
+	    try {
+			StorageArray *storage_array = new StorageArray(record->size());
+			for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+				if ( it == auto_key_it ) {
+					// one key is initialized by input
+					storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+				} else if (it->default_.has_value_at_declaration() ) {
+					// other key from default values
+					storage_array->new_item(it->key_index,
+							make_storage_from_default( it->default_.value(), it->type_.get() ) );
+				 } else { // defalut - optional or default at read time
+					 ASSERT( ! it->default_.is_obligatory() ,
+							 "Obligatory key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+					 // set null
+					 storage_array->new_item(it->key_index, new StorageNull() );
+				 }
+			}
+
+			return storage_array;
+	    } catch (ExcInputError &e ) {
+	        THROW( ExcAutomaticConversionError() << EI_RecordName(record->type_name()) << EI_InputErrorMessage(e.what()) );
+	    }
+
+	} else {
+	    THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
+	            << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType( record->desc()) );
+	}
+
+	return NULL;
 }
 
 
@@ -421,7 +444,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
         if ( type_path.down("TYPE") == NULL ) {
             if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
                 THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
-            } // else auto conversion
+            } else { // auto conversion
+            	return abstract_rec_automatic_conversion(p, abstr_rec);
+            }
         } else {
             try {
                 // convert to base type to force type dispatch and reference chatching
@@ -437,9 +462,18 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
         if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
             THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(abstr_rec->desc()) );
-        } // else auto conversion
+        } else { // auto conversion
+        	return abstract_rec_automatic_conversion(p, abstr_rec);
+        }
     }
 
+    return NULL;
+}
+
+
+
+StorageBase * JSONToStorage::abstract_rec_automatic_conversion(JSONPath &p, const Type::AbstractRecord *abstr_rec)
+{
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
     if (! default_child) THROW(ExcInputError()

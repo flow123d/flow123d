@@ -323,6 +323,13 @@ public:
      */
     bool finish();
 
+    /**
+     * Add TYPE key as obligatory.
+     *
+     * This method can't be used for derived record.
+     */
+    Record &has_obligatory_type_key();
+
 
 protected:
 
@@ -347,6 +354,11 @@ protected:
 
     /// copy keys from all Records pointers in copy_from_ptr using the make_copy_keys method
     void make_copy_keys_all();
+
+    /**
+     * Declares a TYPE key of the Record.
+     */
+    Record &declare_type_key(const Selection * key_type, const Default &default_value = Default::obligatory());
 
     /**
      * Internal data class.
