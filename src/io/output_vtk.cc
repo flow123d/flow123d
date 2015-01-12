@@ -51,9 +51,6 @@ Record OutputVTK::input_type
     .declare_key("variant", input_type_variant, Default("ascii"),
         "Variant of output stream file format.")
     // The parallel or serial variant
-    .declare_key("region_ids", Bool(), Default("false"),
-        "Output IDs of regions.")
-    // The parallel or serial variant
     .declare_key("parallel", Bool(), Default("false"),
         "Parallel or serial version of file format.")
     // Type of compression
@@ -316,13 +313,11 @@ void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
 
 
 void OutputVTK::write_vtk_data_names(ofstream &file,
-        vector<OutputDataBase*> &vec_output_data,
-        bool output_region_ids)
+        vector<OutputDataBase*> &vec_output_data)
 {
     file << "Scalars=\"";
 	for( auto &data : vec_output_data)
 		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
-	if(output_region_ids == true) file << "region_ids";
 	file << "\" ";
 
     file << "Vectors=\"";
@@ -348,7 +343,7 @@ void OutputVTK::write_vtk_node_data(void)
     if( ! node_corner_data.empty() ) {
         /* Write <PointData begin */
         file << "<PointData ";
-        write_vtk_data_names(file, node_corner_data, false);
+        write_vtk_data_names(file, node_corner_data);
         file << ">" << endl;
 
         /* Write data on nodes */
@@ -367,49 +362,18 @@ void OutputVTK::write_vtk_node_data(void)
 }
 
 
-void OutputVTK::write_region_ids(void)
-{
-    ofstream &file = *this->_data_file;
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Int32\" Name=\"region_ids\" format=\"ascii\">" << endl;
-
-    FOR_ELEMENTS(this->_mesh, elm) {
-       file << elm->region().id() << " ";
-    }
-
-    /* Write DataArray end */
-    file << "\n</DataArray>" << endl;
-}
-
-
 void OutputVTK::write_vtk_element_data(void)
 {
     ofstream &file = *this->_data_file;
-    bool output_region_ids;
-
-    ((Input::Record)(this->format_record_)).opt_val("region_ids", output_region_ids);
 
     if(this->elem_data.empty() != true) {
         /* Write CellData begin */
         file << "<CellData ";
-        write_vtk_data_names(file, this->elem_data, output_region_ids);
+        write_vtk_data_names(file, this->elem_data);
         file << ">" << endl;
 
         /* Write own data */
         this->write_vtk_data_ascii(this->elem_data);
-
-        /* When region IDs are requested in configuration file,
-         * then write them too */
-        if(output_region_ids == true) this->write_region_ids();
-
-        /* Write PointData end */
-        file << "</CellData>" << endl;
-    } else if(output_region_ids == true) {
-        /* Write CellData begin */
-        file << "<CellData Scalars=\"region_ids\">" << endl;
-
-        this->write_region_ids();
 
         /* Write PointData end */
         file << "</CellData>" << endl;
