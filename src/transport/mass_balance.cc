@@ -820,7 +820,8 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 
 void Balance::calculate_mass(unsigned int quantity_idx,
-		const Vec &solution)
+		const Vec &solution,
+		vector<double> &output_array)
 {
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec bulk_vec;
@@ -829,7 +830,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 			1,
 			(rank_==0)?regions_.bulk_size():0,
 			PETSC_DECIDE,
-			&(masses_[quantity_idx][0]),
+			&(output_array[0]),
 			&bulk_vec);
 
 	// compute mass on regions: M'.u
@@ -926,6 +927,12 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	VecRestoreArrayRead(temp, &flux_array);
 	VecDestroy(&temp);
 	VecDestroy(&boundary_vec);
+}
+
+void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
+{
+	if (rank_ == 0)
+		integrated_sources_[quantity_idx] += source;
 }
 
 

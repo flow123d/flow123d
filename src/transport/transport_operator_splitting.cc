@@ -270,14 +270,13 @@ void TransportOperatorSplitting::zero_time_step()
 
 void TransportOperatorSplitting::update_solution() {
 
-
+	vector<double> source(n_substances()), region_mass(n_substances());
 
     time_->next_time();
 
-    
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
-        
+
     START_TIMER("TOS-one step");
     int steps=0;
     while ( convection->time().lt(time_->t()) )
@@ -285,21 +284,45 @@ void TransportOperatorSplitting::update_solution() {
         steps++;
 	    // one internal step
 	    convection->update_solution();
-            if(reaction) reaction->update_solution();
+
+	    if (balance_ != nullptr && balance_->cumulative())
+	    {
+			// save mass after transport step
+	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+	    	{
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_concentration_vector()[sbi], region_mass);
+	    		source[sbi] = 0;
+	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
+	    			source[sbi] -= region_mass[ri];
+	    	}
+	    }
+
+        if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
+
 //	    if (convection->mass_balance() != NULL)
 //	    	convection->mass_balance()->calculate(convection->time().t());
+
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
 	    	convection->calculate_cumulative_balance();
+
+	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+	    	{
+	    		// compute mass difference due to reactions
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_concentration_vector()[sbi], region_mass);
+	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
+	    			source[sbi] += region_mass[ri];
+
+	    		// update balance of sources due to reactions
+	    		balance_->add_cumulative_source(sbi, source[sbi]);
+	    	}
+
 	    	END_TIMER("TOS-balance");
 	    }
 	}
 
-
-
-    
     xprintf( MsgLog, "    CONVECTION: steps: %d\n",steps);
 }
 

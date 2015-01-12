@@ -148,6 +148,9 @@ public:
     	subst_idx = balance_->add_quantities(substances_.names());
     }
 
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
     /**
      * Calculate quantities necessary for cumulative balance (over time).
      * This method is called at each (sub)iteration of the time loop.
@@ -178,6 +181,7 @@ public:
 	inline OutputTime *output_stream() { return output_stream_; }
 
 	double **get_concentration_matrix();
+	Vec *get_concentration_vector() { return vconc; }
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	int *get_el_4_loc();
 	int *get_row_4_el();

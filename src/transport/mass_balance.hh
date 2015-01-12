@@ -443,12 +443,25 @@ public:
 			double dt);
 
 	/**
-	 * Calculates actual mass.
+	 * Calculates actual mass and save it to given vector.
+	 * @param quantity_idx  Index of quantity.
+	 * @param solution      Solution vector.
+	 * @param output_array	Vector of output masses per region.
+	 */
+	void calculate_mass(unsigned int quantity_idx,
+			const Vec &solution,
+			vector<double> &output_array);
+
+	/**
+	 * Calculates actual mass and save it to internal vector.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
 	 */
 	void calculate_mass(unsigned int quantity_idx,
-			const Vec &solution);
+			const Vec &solution)
+	{
+		calculate_mass(quantity_idx, solution, masses_[quantity_idx]);
+	}
 
 	/**
 	 * Calculates actual flux.
@@ -465,6 +478,14 @@ public:
 	 */
 	void calculate_source(unsigned int quantity_idx,
 			const Vec &solution);
+
+	/**
+	* Adds provided values to the cumulative sources.
+	* @param quantity_idx Index of quantity.
+	* @param sources Sources per region.
+	* @param dt Actual time step.
+	*/
+	void add_cumulative_source(unsigned int quantity_idx, double source);
 
 	/// Perform output to file for given time instant.
 	void output(double time);
