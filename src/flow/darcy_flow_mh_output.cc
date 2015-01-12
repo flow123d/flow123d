@@ -84,6 +84,9 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
+	*this += region_ids.name("region_ids")
+	        .units( UnitSI::dimensionless())
+	        .flags(FieldFlag::equation_external_output);
 
 	fields_for_output += *this;
 
@@ -133,6 +136,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 			make_shared< FieldElementwise<3, FieldValue<3>::VectorFixed> >(ele_flux, 3));
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
+	output_fields.region_ids = GenericField<3>::region_id(*mesh_);
 
 /*auto &vec_int_sub = mesh_->get_part()->seq_output_partition();
 	subdomains.resize(vec_int_sub.size());
