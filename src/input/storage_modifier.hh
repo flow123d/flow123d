@@ -17,15 +17,15 @@ namespace Input {
 /**
  *
  */
-const StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
-		const StorageBase *source_storage, unsigned int index, unsigned int vec_size);
+StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
+		StorageBase *source_storage, unsigned int index, unsigned int vec_size);
 
-const StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
-		const StorageBase *source_storage, unsigned int index, unsigned int vec_size);
-const StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
-		const StorageBase *source_storage, unsigned int index, unsigned int vec_size);
-const StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
-		const StorageBase *source_storage, unsigned int index, unsigned int vec_size);
+StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
+		StorageBase *source_storage, unsigned int index, unsigned int vec_size);
+StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
+		StorageBase *source_storage, unsigned int index, unsigned int vec_size);
+StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
+		StorageBase *source_storage, unsigned int index, unsigned int vec_size);
 
 } /* namespace Input */
 

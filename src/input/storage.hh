@@ -64,7 +64,7 @@ public:
     virtual bool is_null() const =0;
     virtual unsigned int get_array_size() const;
 
-    virtual StorageBase *deep_copy()=0;
+    virtual StorageBase *deep_copy() const =0;
     virtual void print(std::ostream &stream, int pad=0) const =0;
 
     virtual ~StorageBase();
@@ -83,7 +83,7 @@ public:
     virtual const StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageArray();
 private:
@@ -98,7 +98,7 @@ public:
     StorageBool(bool value);
     virtual bool get_bool() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageBool();
 private:
@@ -110,7 +110,7 @@ public:
     StorageInt(int value);
     virtual int get_int() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageInt();
 
@@ -123,7 +123,7 @@ public:
     StorageDouble(double value);
     virtual double get_double() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageDouble();
 
@@ -136,7 +136,7 @@ public:
     StorageString(const std::string & value);
     virtual const std::string & get_string() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageString();
 
@@ -146,7 +146,7 @@ private:
 
 class StorageNull : public StorageBase {
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageNull();
 

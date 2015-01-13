@@ -79,7 +79,7 @@ StorageArray::StorageArray(unsigned int size)
         *it=NULL;
 }
 
- StorageBase * StorageArray::deep_copy() {
+ StorageBase * StorageArray::deep_copy() const {
     StorageArray *copy = new StorageArray(this->get_array_size());
 
     for(unsigned int i=0; i< array_.size(); i++)
@@ -150,7 +150,7 @@ bool StorageBool::is_null() const {
 
 
 
-StorageBase * StorageBool::deep_copy() {
+StorageBase * StorageBool::deep_copy() const {
     return new StorageBool(value_);
 }
 
@@ -183,7 +183,7 @@ bool StorageInt::is_null() const {
     return false;
 }
 
- StorageBase * StorageInt::deep_copy() {
+ StorageBase * StorageInt::deep_copy() const {
     return new StorageInt(value_);
 }
 
@@ -218,7 +218,7 @@ bool StorageDouble::is_null() const {
     return false;
 }
 
- StorageBase * StorageDouble::deep_copy() {
+ StorageBase * StorageDouble::deep_copy() const {
     return new StorageDouble(value_);
 }
 
@@ -254,7 +254,7 @@ bool StorageString::is_null() const {
 }
 
 
-StorageBase * StorageString::deep_copy() {
+StorageBase * StorageString::deep_copy() const {
     return new StorageString(value_);
 }
 
@@ -279,7 +279,7 @@ bool StorageNull::is_null() const {
 
 
 
- StorageBase * StorageNull::deep_copy() {
+ StorageBase * StorageNull::deep_copy() const {
     return new StorageNull();
 }
 
