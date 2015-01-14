@@ -5,8 +5,8 @@
  *      Author: jb
  */
 
-#ifndef STORAGE_MODIFIER_HH_
-#define STORAGE_MODIFIER_HH_
+#ifndef STORAGE_TRANSPOSE_HH_
+#define STORAGE_TRANSPOSE_HH_
 
 #include "input/storage.hh"
 #include "input/type_base.hh"
@@ -44,4 +44,4 @@ private:
 
 } /* namespace Input */
 
-#endif /* STORAGE_MODIFIER_HH_ */
+#endif /* STORAGE_TRANSPOSE_HH_ */

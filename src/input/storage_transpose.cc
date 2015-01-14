@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include "input/storage_modifier.hh"
+#include "input/storage_transpose.hh"
 
 
 namespace Input {

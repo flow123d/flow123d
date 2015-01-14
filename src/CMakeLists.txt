@@ -62,7 +62,7 @@ set(sources_lib_input
     input/type_output.cc
     
     input/accessors.cc
-    input/storage_modifier.cc
+    input/storage_transpose.cc
 )
 
 
