@@ -131,6 +131,12 @@ public:
     inline const string & value() const
     { return (value_); }
 
+    /**
+     * Compares values type_ of two Default objects.
+     */
+    inline bool has_same_type(const Default &other) const
+        {return type_ == other.type_; }
+
 private:
     string value_;              ///< Stored value.
     enum DefaultType type_;     ///< Type of the Default.

@@ -24,6 +24,10 @@ StorageBase * StorageTranspose::get_item(unsigned int index) {
 StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
 		StorageBase *source_storage, unsigned int index) {
 
+	if (typeid(*source_storage) == typeid(StorageNull)) {
+		return new StorageNull();
+	}
+
 	// dispatch types
     if (typeid(*source_type) == typeid(Type::Record)) {
         return modify_storage(target_type, static_cast<const Type::Record *>(source_type),
@@ -86,6 +90,9 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 	for( Type::Record::KeyIter source_it= source_type->begin();
 			source_it != source_type->end();
 			++source_it, ++target_it) {
+
+		target_it->default_.has_same_type(source_it->default_);
+		ASSERT(target_it->default_.has_same_type(source_it->default_), "Incompatible default value of source type and target type!\n");
 
 		StorageBase * sb = modify_storage( target_it->type_.get(), source_it->type_.get(),
 				const_cast<StorageBase*>(source_storage->get_item(source_it->key_index)), index );
