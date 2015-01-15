@@ -9,6 +9,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
+#include "input/storage_transpose.hh"
 
 
 namespace Input {
@@ -245,6 +246,23 @@ Input::EI_Address AbstractRecord::ei_address() const
 string AbstractRecord::address_string() const
 {
 	return address_.make_full_address();
+}
+
+void AbstractRecord::transpose_to(Input::Record &rec, string key_name, unsigned int vec_size) {
+	Input::Iterator<Array> it = rec.find<Array>(key_name);
+	ASSERT(it, "The key '%s' is not exist in Record.\n", key_name.c_str());
+	Type::Record::KeyIter key_it = rec.record_type_.key_iterator(key_name);
+	const Type::Array *in_arr = static_cast<const Type::Array *>(key_it->type_.get());
+	const Type::TypeBase *target_type = &(in_arr->get_sub_type());
+
+	StorageTranspose trans(target_type, &(this->record_type_), this->address_.storage_head()->deep_copy(), vec_size);
+    StorageArray* result_storage = new StorageArray(vec_size);
+    for(unsigned int i=0; i<vec_size; i++) {
+    	result_storage->new_item(i, trans.get_item(i));
+    }
+    const StorageArray* storage_arr = static_cast<const StorageArray *>(rec.address_.storage_head());
+    StorageBase* storage_ptr = result_storage;
+    storage_arr->set_item(rec.record_type_.key_index(key_name), storage_ptr);
 }
 
 

@@ -88,11 +88,17 @@ StorageArray::StorageArray(unsigned int size)
     return copy;
 }
 
-void StorageArray::new_item(unsigned int index, StorageBase* item) {
-    ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
-    if (array_[index] == NULL) array_[index] = item;
-    else xprintf(PrgErr, "Can not replace non NULL pointer.");
-}
+ void StorageArray::new_item(unsigned int index, StorageBase* item) {
+     ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+     if (array_[index] == NULL) array_[index] = item;
+     else xprintf(PrgErr, "Can not replace non NULL pointer.");
+ }
+
+
+ void StorageArray::set_item(unsigned int index, StorageBase* item) const {
+     ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+     array_[index] = item;
+ }
 
 
 

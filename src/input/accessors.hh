@@ -408,6 +408,7 @@ protected:
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
+    friend class AbstractRecord;
 
     /// Contains address and relationships with record ancestor
     Address address_;
@@ -476,6 +477,11 @@ public:
      * Get address as string.
      */
     string address_string() const;
+
+    /**
+     *
+     */
+    void transpose_to(Input::Record &rec, string key_name, unsigned int vec_size);
 
 
 private:
