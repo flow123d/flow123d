@@ -20,24 +20,24 @@ public:
 	 * Constructor
 	 */
     StorageTranspose(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
-    		StorageBase *source_storage, unsigned int vec_size);
+    		StorageBase const *source_storage, unsigned int vec_size);
 
     StorageBase *get_item(unsigned int index);
 
 private:
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
-    		StorageBase *source_storage, unsigned int index);
+    		StorageBase const *source_storage, unsigned int index);
 
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
-    		StorageBase *source_storage, unsigned int index);
+    		StorageBase const *source_storage, unsigned int index);
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
-    		StorageBase *source_storage, unsigned int index);
+    		StorageBase const *source_storage, unsigned int index);
     StorageBase * modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
-    		StorageBase *source_storage, unsigned int index);
+    		StorageBase const *source_storage, unsigned int index);
 
     const Type::TypeBase *target_type_;
     const Type::TypeBase *source_type_;
-    StorageBase *source_storage_;
+    const StorageBase *source_storage_;
     unsigned int vec_size_;
 };
 

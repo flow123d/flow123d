@@ -479,9 +479,16 @@ public:
     string address_string() const;
 
     /**
+     * Transpose storage of target record.
      *
+     * Replace part representing MultiField in source AbstractRecord with Array of individual items.
+     * *this is source AbstractRecord, target_rec.val(target_key) is Array of target records.
+     *
+     * @param target_rec parent record of MutliField
+     * @param target_key replaced key
+     * @param vec_size size of MultiField data and target Array
      */
-    void transpose_to(Input::Record &rec, string key_name, unsigned int vec_size);
+    void transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size);
 
 
 private:

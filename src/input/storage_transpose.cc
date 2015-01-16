@@ -11,7 +11,7 @@
 namespace Input {
 
 StorageTranspose::StorageTranspose(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
-    		StorageBase *source_storage, unsigned int vec_size)
+		const StorageBase *source_storage, unsigned int vec_size)
 : target_type_(target_type), source_type_(source_type), source_storage_(source_storage), vec_size_(vec_size)
 {}
 
@@ -22,7 +22,7 @@ StorageBase * StorageTranspose::get_item(unsigned int index) {
 
 
 StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::TypeBase *source_type,
-		StorageBase *source_storage, unsigned int index) {
+		const StorageBase *source_storage, unsigned int index) {
 
 	if (typeid(*source_storage) == typeid(StorageNull)) {
 		return new StorageNull();
@@ -78,7 +78,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 }
 
 StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::Record *source_type,
-		StorageBase *source_storage, unsigned int index) {
+		const StorageBase *source_storage, unsigned int index) {
 
 	ASSERT( typeid(*target_type) == typeid(Type::Record), "Incompatible type of target type. Must be Record!\n");
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
@@ -95,7 +95,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 		ASSERT(target_it->default_.has_same_type(source_it->default_), "Incompatible default value of source type and target type!\n");
 
 		StorageBase * sb = modify_storage( target_it->type_.get(), source_it->type_.get(),
-				const_cast<StorageBase*>(source_storage->get_item(source_it->key_index)), index );
+				source_storage->get_item(source_it->key_index), index );
 		storage_array->new_item(source_it->key_index, sb);
 	}
 
@@ -104,7 +104,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 
 
 StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::AbstractRecord *source_type,
-		StorageBase *source_storage, unsigned int index) {
+		const StorageBase *source_storage, unsigned int index) {
 
 	const Type::AbstractRecord *target_arec = dynamic_cast<const Type::AbstractRecord *>(target_type);
 	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be AbstractRecord!\n");
@@ -119,7 +119,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 
 
 StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type, const Type::Array *source_type,
-		StorageBase *source_storage, unsigned int index) {
+		const StorageBase *source_storage, unsigned int index) {
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
 	if ( typeid(*target_type) == typeid(Type::Array) ) { // copy array
@@ -130,7 +130,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 
 		for (unsigned int i=0; i<array_size; i++) {
 			StorageBase * sb = modify_storage( target_array_type, source_array_type,
-					const_cast<StorageBase*>(source_storage->get_item(i)), index );
+					source_storage->get_item(i), index );
 			storage_array->new_item(i, sb);
 		}
 

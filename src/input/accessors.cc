@@ -248,21 +248,23 @@ string AbstractRecord::address_string() const
 	return address_.make_full_address();
 }
 
-void AbstractRecord::transpose_to(Input::Record &rec, string key_name, unsigned int vec_size) {
-	Input::Iterator<Array> it = rec.find<Array>(key_name);
-	ASSERT(it, "The key '%s' is not exist in Record.\n", key_name.c_str());
-	Type::Record::KeyIter key_it = rec.record_type_.key_iterator(key_name);
+void AbstractRecord::transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size) {
+	Input::Iterator<Array> it = target_rec.find<Array>(target_key);
+	if (it) { // target_key is set by user
+		return;
+	}
+
+	Type::Record::KeyIter key_it = target_rec.record_type_.key_iterator(target_key);
 	const Type::Array *in_arr = static_cast<const Type::Array *>(key_it->type_.get());
 	const Type::TypeBase *target_type = &(in_arr->get_sub_type());
 
-	StorageTranspose trans(target_type, &(this->record_type_), this->address_.storage_head()->deep_copy(), vec_size);
+	StorageTranspose trans(target_type, &(this->record_type_), this->address_.storage_head(), vec_size);
     StorageArray* result_storage = new StorageArray(vec_size);
     for(unsigned int i=0; i<vec_size; i++) {
     	result_storage->new_item(i, trans.get_item(i));
     }
-    const StorageArray* storage_arr = static_cast<const StorageArray *>(rec.address_.storage_head());
-    StorageBase* storage_ptr = result_storage;
-    storage_arr->set_item(rec.record_type_.key_index(key_name), storage_ptr);
+    const StorageArray* storage_arr = static_cast<const StorageArray *>(target_rec.address_.storage_head());
+    storage_arr->set_item(target_rec.record_type_.key_index(target_key), result_storage);
 }
 
 
