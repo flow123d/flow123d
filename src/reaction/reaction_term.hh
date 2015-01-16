@@ -12,6 +12,7 @@
 class Mesh;
 class Distribution;
 class OutputTime;
+class Balance;
 
 
 class ReactionTerm: public EquationBase
@@ -81,6 +82,13 @@ public:
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;
 
+  virtual void set_balance_object(boost::shared_ptr<Balance> &balance,
+		  const std::vector<unsigned int> &subst_idx);
+
+  virtual void update_instant_balance() {};
+
+  virtual void update_cumulative_balance() {};
+
 protected:
   /**
    * Communicate parallel concentration vectors into sequential output vector.
@@ -114,6 +122,10 @@ protected:
 
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;
+
+  boost::shared_ptr<Balance> balance_;
+
+  std::vector<unsigned int> subst_idx_;
 
 };
 

@@ -5,6 +5,7 @@
 
 #include "reaction/reaction_term.hh"
 #include "input/accessors.hh"
+#include "fields/field_set.hh"
 
 #include "armadillo"
 
@@ -23,6 +24,20 @@ class LinearODESolverBase;
 class FirstOrderReactionBase: public ReactionTerm
 {
 public:
+
+
+	class EqData : public FieldSet
+	{
+	public:
+
+	    EqData();
+
+	    Field<3, FieldValue<3>::Scalar > cross_section; ///< Cross section field.
+	    Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
+
+	};
+
+
     /// Constructor.
     FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec);
 
@@ -46,6 +61,13 @@ public:
      */
     void update_solution(void) override;
     
+    void set_balance_object(boost::shared_ptr<Balance> &balance,
+    		const std::vector<unsigned int> &subst_idx) override;
+
+    void update_instant_balance() override;
+
+    void update_cumulative_balance() override;
+
 protected:
     /// Assembles the matrix of the ODEs.
     /**
@@ -66,7 +88,10 @@ protected:
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input() = 0;
-    
+
+    /// Computes coefficient for calculating balance of sources. It is assembled only when data change.
+    void assemble_balance_coef();
+            
     /** Help function to create mapping of substance indices. 
      * Finds a position of a string in specified array.
      */
@@ -93,6 +118,15 @@ protected:
     arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.
 
     LinearODESolverBase *linear_ode_solver_;
+    
+    arma::mat balance_matrix_;    ///< Matrix used for calculation of sources.
+    vector<vector<double> > sources;
+    vector<vector<double> > sources_in;
+    vector<vector<double> > sources_out;
+    vector<double> source_bal_coef; ///< Coefficients for calculating sources, assembled only when data change.
+
+
+    EqData data_;
 };
 
 #endif  // FIRST_ORDER_REACTION_BASE_H_

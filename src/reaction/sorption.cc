@@ -5,6 +5,7 @@
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/accessors.hh"
+#include "transport/mass_balance.hh"
 
 /*********************************                 *********************************************************/
 /********************************* SORPTION_SIMPLE *********************************************************/
@@ -73,6 +74,16 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	}
 
 	END_TIMER("SorptionSimple::isotherm_reinit");
+}
+
+double SorptionSimple::porosity_coeff_l(const ElementFullIter &elm)
+{
+    return data_->porosity.value(elm->centre(),elm->element_accessor());
+}
+
+double SorptionSimple::porosity_coeff_s(const ElementFullIter &elm)
+{
+    return 1 - data_->porosity.value(elm->centre(),elm->element_accessor());
 }
 
 
@@ -174,6 +185,21 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 }
 
 
+double SorptionMob::porosity_coeff_l(const ElementFullIter &elm)
+{
+    return data_->porosity.value(elm->centre(),elm->element_accessor());
+}
+
+double SorptionMob::porosity_coeff_s(const ElementFullIter &elm)
+{
+    double por_m = data_->porosity.value(elm->centre(),elm->element_accessor());
+    double por_imm = immob_porosity_.value(elm->centre(),elm->element_accessor());
+    double phi = por_m/(por_m + por_imm);
+
+	return (1-por_m-por_imm)*phi;
+}
+
+
 /***********************************                   *****************************************************/
 /*********************************** SORPTION_IMMOBILE *****************************************************/
 /***********************************                   *****************************************************/
@@ -249,3 +275,20 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 
     END_TIMER("SorptionImmob::isotherm_reinit");
 }
+
+
+double SorptionImmob::porosity_coeff_l(const ElementFullIter &elm)
+{
+    return  immob_porosity_.value(elm->centre(),elm->element_accessor());
+}
+
+double SorptionImmob::porosity_coeff_s(const ElementFullIter &elm)
+{
+    double por_m = data_->porosity.value(elm->centre(),elm->element_accessor());
+    double por_imm = immob_porosity_.value(elm->centre(),elm->element_accessor());
+    double phi = por_m/(por_m + por_imm);
+
+	return (1-por_m-por_imm)*(1-phi);
+}
+
+

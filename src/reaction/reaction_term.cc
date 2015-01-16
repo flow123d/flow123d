@@ -35,3 +35,10 @@ void ReactionTerm::choose_next_time(void)
 {
   ASSERT(0,"ReactionTerm does not change TimeGovernor.\n");
 }
+
+void ReactionTerm::set_balance_object(boost::shared_ptr<Balance> &balance,
+		const std::vector<unsigned int> &subst_idx)
+{
+	balance_ = balance;
+	subst_idx_ = subst_idx;
+}
