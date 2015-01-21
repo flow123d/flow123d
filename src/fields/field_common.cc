@@ -8,7 +8,8 @@
 FieldCommon::FieldCommon()
 : shared_( std::make_shared<SharedData>() ),
   limit_side_(LimitSide::unknown),
-  set_time_result_(TimeStatus::unknown)
+  set_time_result_(TimeStatus::unknown),
+  component_index_(std::numeric_limits<unsigned int>::max())
 {
     shared_->bc_=false;
     shared_->input_default_="";
@@ -22,7 +23,8 @@ FieldCommon::FieldCommon()
 FieldCommon::FieldCommon(const FieldCommon & other)
 : shared_(other.shared_),
   limit_side_(LimitSide::unknown),
-  set_time_result_(TimeStatus::unknown)
+  set_time_result_(TimeStatus::unknown),
+  component_index_(other.component_index_)
 {
      flags_.add( FieldFlag::input_copy );
 }

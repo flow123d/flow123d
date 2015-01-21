@@ -286,6 +286,14 @@ public:
     }
 
     /**
+     * Sets @p component_index_
+     */
+    void set_component_index(unsigned int idx)
+    {
+    	this->component_index_ = idx;
+    }
+
+    /**
      * Virtual destructor.
      */
     virtual ~FieldCommon();
@@ -423,6 +431,11 @@ protected:
      * Output data type used in the output() method. Can be different for different field copies.
      */
     OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
+
+    /**
+     * Specify if the field is part of a MultiField and which component it is
+     */
+    unsigned int component_index_;
 
     /**
      * Maximum number of FieldBase objects we store per one region.
