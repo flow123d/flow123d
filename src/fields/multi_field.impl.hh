@@ -43,14 +43,15 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
-	it::AbstractRecord type= it::AbstractRecord("MultiField", "Abstract record for all time-space functions.")
+it::Record &  MultiField<spacedim,Value>::get_input_type() {
+	static it::Record type= it::Record("MultiField", "Record for all time-space functions.")
+		.has_obligatory_type_key()
 		.declare_key("component_names", it::Array( it::String() ), it::Default::read_time("Can be get from source of MultiField."),
 			"Names of MultiField components.")
-		.declare_key("common", FieldCommon::field_descriptor_record("Multifield"), it::Default::obligatory(),
-			"Supplied to components subtree.")
-		.declare_key("components", it::Array( FieldCommon::field_descriptor_record("Multifield") ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.");
+		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
+			"Components of Multifield.")
+		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
+			"Supplied to components subtree.");
 
 	return type;
 }

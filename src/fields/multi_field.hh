@@ -64,7 +64,7 @@ public:
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() override;
+    IT::Record &get_input_type() override;
 
     void set_limit_side(LimitSide side) override;
 
@@ -128,6 +128,10 @@ public:
 private:
     std::vector< SubFieldType > sub_fields_;
     std::vector< std::string > sub_names_;
+
+    /// Helper class members, used only for input record
+    SubFieldType sub_field_type_;
+    TransposedField transposed_field_;
 };
 
 

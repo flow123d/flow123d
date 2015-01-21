@@ -98,7 +98,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
+it::Record &Field<spacedim,Value>::get_input_type() {
 	/*
 	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
 	 * We have to return reference, which may be reference to not yet initialized static object.
@@ -437,7 +437,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
-    	auto input_type = get_input_type();
+    	auto input_type = static_cast<Input::Type::AbstractRecord &>( get_input_type() );
         Input::JSONToStorage reader( default_input, input_type );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();

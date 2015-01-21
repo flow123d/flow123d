@@ -224,7 +224,7 @@ public:
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
-    virtual IT::AbstractRecord &get_input_type() =0;
+    virtual IT::Record &get_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
