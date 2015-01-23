@@ -48,10 +48,10 @@ it::Record &  MultiField<spacedim,Value>::get_input_type() {
 		.has_obligatory_type_key()
 		.declare_key("component_names", it::Array( it::String() ), it::Default::read_time("Can be get from source of MultiField."),
 			"Names of MultiField components.")
-		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.")
 		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
-			"Supplied to components subtree.");
+			"Supplied to components subtree.")
+		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
+			"Components of Multifield.");
 
 	return type;
 }
@@ -124,6 +124,18 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::Iterator<Input::AbstractRecord> it_common = rec.find<Input::AbstractRecord>("common");
+	Input::Iterator<Input::Array> it_components = rec.find<Input::Array>("components");
+	if (it_common && !it_components) {
+		it_common->transpose_to( rec, "components", spacedim );
+		it_components = rec.find<Input::Array>("components");
+		for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it)
+		{
+			typename Field<spacedim,Value>::FieldBasePtr func =
+					Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+			//TODO: set func to ??
+		}
+	}
 	return NULL;
 }
 
