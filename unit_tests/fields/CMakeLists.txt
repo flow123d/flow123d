@@ -44,6 +44,7 @@ if(CMAKE_HAVE_CXX11)
     define_mpi_test(field_fe 1)
     define_test(unit_si)
     define_mpi_test(field_speed 1)
+    define_test(multi_field)
        
 endif()
 
