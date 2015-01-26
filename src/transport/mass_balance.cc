@@ -47,13 +47,13 @@ using namespace Input::Type;
 Selection Balance::format_selection_input_type
 	= Selection("Balance_output_format", "Format of output file for balance.")
 	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
-	.add_value(Balance::csv, "csv", "Excel format with semicolon delimiter.")
-	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fix column width.");
+	.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")
+	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fixed column width.");
 
 Record MassBalance::input_type
 	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
 	.declare_key("mass_balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
-	.declare_key("format", Balance::format_selection_input_type, Default("csv"), "Format of output file.")
+	.declare_key("format", Balance::format_selection_input_type, Default("txt"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
 	.declare_key("file", FileName::output(), Default::read_time("FileName mass_balance.*"), "File name for output of mass balance.")
@@ -410,8 +410,8 @@ Balance::Balance(const std::vector<unsigned int> &elem_regions,
 		std::string default_file_name;
 		switch (output_format_)
 		{
-		case csv:
-			default_file_name = "mass_balance.csv";
+		case txt:
+			default_file_name = "mass_balance.txt";
 			break;
 		case gnuplot:
 			default_file_name = "mass_balance.dat";
@@ -1041,8 +1041,8 @@ void Balance::output(double time)
 	// perform actual output
 	switch (output_format_)
 	{
-	case csv:
-		output_csv(time, ';', "");
+	case txt:
+		output_csv(time, '\t', "");
 		break;
 	case gnuplot:
 		output_csv(time, ' ', "#", 30);

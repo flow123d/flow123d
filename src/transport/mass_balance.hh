@@ -242,7 +242,7 @@ public:
 	enum OutputFormat
 	{
 		legacy,//!< legacy
-		csv,   //!< csv
+		txt,   //!< csv
 		gnuplot//!< gnuplot
 	};
 
