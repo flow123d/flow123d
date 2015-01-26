@@ -461,21 +461,29 @@ void SorptionBase::update_solution(void)
 
 void SorptionBase::make_tables(void)
 {
-  ElementAccessor<3> elm;
-  BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
-  {
-    int reg_idx = reg_iter.bulk_idx();
-
-    if(data_->is_constant(reg_iter))
+    try
     {
-      ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
-      isotherm_reinit(isotherms[reg_idx],elm);
-      for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        isotherms[reg_idx][i_subst].make_table(n_interpolation_steps_);
-      }
+        ElementAccessor<3> elm;
+        BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+        {
+            int reg_idx = reg_iter.bulk_idx();
+
+            if(data_->is_constant(reg_iter))
+            {
+                ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
+                isotherm_reinit(isotherms[reg_idx],elm);
+                for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
+                {
+                    isotherms[reg_idx][i_subst].make_table(n_interpolation_steps_);
+                }
+            }
+        }
     }
-  }
+    catch(ExceptionBase const &e)
+    {
+        e << input_record_.ei_address();
+        throw;
+    }
 }
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
@@ -486,30 +494,37 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
     
-    // Constant value of rock density and mobile porosity over the whole region 
-    // => interpolation_table is precomputed
-    if (isotherms_vec[0].is_precomputed()) 
-    {
-      for(i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        subst_id = substance_global_idx_[i_subst];
-     
-        isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
-                                           conc_solid[subst_id][loc_el]);
-      }
+    try{
+        // Constant value of rock density and mobile porosity over the whole region 
+        // => interpolation_table is precomputed
+        if (isotherms_vec[0].is_precomputed()) 
+        {
+            for(i_subst = 0; i_subst < n_substances_; i_subst++)
+            {
+                subst_id = substance_global_idx_[i_subst];
+            
+                isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
+                                                conc_solid[subst_id][loc_el]);
+            }
+        }
+        else 
+        {
+            isotherm_reinit(isotherms_vec, elem->element_accessor());
+        
+            for(i_subst = 0; i_subst < n_substances_; i_subst++)
+            {
+                subst_id = substance_global_idx_[i_subst];
+                isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
+                                            conc_solid[subst_id][loc_el]);
+            }
+        }
     }
-    else 
+    catch(ExceptionBase const &e)
     {
-      isotherm_reinit(isotherms_vec, elem->element_accessor());
-      
-      for(i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        subst_id = substance_global_idx_[i_subst];
-        isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
-                                       conc_solid[subst_id][loc_el]);
-      }
+        e << input_record_.ei_address();
+        throw;
     }
-    
+
   return concentrations;
 }
 
