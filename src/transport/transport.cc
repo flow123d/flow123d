@@ -154,7 +154,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
             }
         }
 
-    	balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
+    	balance_ = boost::make_shared<Balance>("mass", edg_regions, region_db(), *it);
 
     	subst_idx = balance_->add_quantities(substances_.names());
 

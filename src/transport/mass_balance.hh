@@ -257,7 +257,8 @@ public:
 	 * @param cumulative   If true, cumulative sums will be calculated.
 	 * @param file         Name of output file.
 	 */
-	Balance(const std::vector<unsigned int> &elem_regions,
+	Balance(const std::string &file_prefix,
+			const std::vector<unsigned int> &elem_regions,
 			const RegionDB *region_db,
 			const Input::Record &in_rec);
 

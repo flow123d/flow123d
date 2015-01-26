@@ -354,7 +354,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
         		edg_regions.push_back(edg->side(0)->cond()->region().boundary_idx());
         }
 
-    	balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
+    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), edg_regions, region_db(), *it);
 
     	subst_idx = balance_->add_quantities(substances_.names());
 

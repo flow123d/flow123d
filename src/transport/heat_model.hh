@@ -114,6 +114,8 @@ public:
 
 	HeatTransferModel();
 
+	static string balance_prefix() { return "energy"; }
+
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,

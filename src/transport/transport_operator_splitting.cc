@@ -213,7 +213,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
           }
       }
 
-	  balance_ = boost::make_shared<Balance>(edg_regions, region_db(), *it);
+	  balance_ = boost::make_shared<Balance>("mass", edg_regions, region_db(), *it);
 
 	  convection->set_balance_object(balance_);
 

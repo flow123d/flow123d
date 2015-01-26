@@ -387,7 +387,8 @@ void MassBalance::output(double time)
 
 
 
-Balance::Balance(const std::vector<unsigned int> &elem_regions,
+Balance::Balance(const std::string &file_prefix,
+		const std::vector<unsigned int> &elem_regions,
 		const RegionDB *region_db,
 		const Input::Record &in_rec)
 	: 	  output_format_(legacy),
@@ -411,13 +412,13 @@ Balance::Balance(const std::vector<unsigned int> &elem_regions,
 		switch (output_format_)
 		{
 		case txt:
-			default_file_name = "mass_balance.txt";
+			default_file_name = file_prefix + "_balance.txt";
 			break;
 		case gnuplot:
-			default_file_name = "mass_balance.dat";
+			default_file_name = file_prefix + "_balance.dat";
 			break;
 		case legacy:
-			default_file_name = "mass_balance.txt";
+			default_file_name = file_prefix + "_balance.txt";
 			break;
 		}
 
