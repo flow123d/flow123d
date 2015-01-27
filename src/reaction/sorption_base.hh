@@ -22,6 +22,10 @@ class Mesh;
 class SorptionBase:  public ReactionTerm
 {
 public:
+    TYPEDEF_ERR_INFO( EI_ArrayName, std::string);
+    DECLARE_INPUT_EXCEPTION( ExcSubstanceCountMatch, << "The size of the input array " << EI_ArrayName::qval 
+                                                     << " does not match the number of substances.");
+    
   /**
    *   Static variable for new input data types input
    */
