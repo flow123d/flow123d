@@ -21,7 +21,9 @@ namespace it = Input::Type;
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
 : FieldCommon()
-{}
+{
+	this->multifield_ = true;
+}
 
 
 
@@ -43,7 +45,16 @@ void MultiField<spacedim, Value>::init( const vector<string> &names) {
 
 
 template<int spacedim, class Value>
-it::Record &  MultiField<spacedim,Value>::get_input_type() {
+it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
+	ASSERT(false, "This method can't be used for MultiField");
+
+	static it::AbstractRecord a_rec = it::AbstractRecord();
+	return a_rec;
+}
+
+
+template<int spacedim, class Value>
+it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
 	static it::Record type= it::Record("MultiField", "Record for all time-space functions.")
 		.has_obligatory_type_key()
 		.declare_key("component_names", it::Array( it::String() ), it::Default::read_time("Can be get from source of MultiField."),

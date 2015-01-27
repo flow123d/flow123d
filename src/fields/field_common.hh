@@ -224,7 +224,13 @@ public:
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */
-    virtual IT::Record &get_input_type() =0;
+    virtual IT::AbstractRecord &get_input_type() =0;
+
+    /**
+     * Returns input type for MultiField instance.
+     * TODO: temporary solution, see @p multifield_
+     */
+    virtual IT::Record &get_multifield_input_type() =0;
 
     /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
@@ -291,6 +297,15 @@ public:
     void set_component_index(unsigned int idx)
     {
     	this->component_index_ = idx;
+    }
+
+    /**
+     * Return @p multifield_ flag.
+     * TODO: temporary solution
+     */
+    inline bool is_multifield() const
+    {
+    	return this->multifield_;
     }
 
     /**
@@ -436,6 +451,12 @@ protected:
      * Specify if the field is part of a MultiField and which component it is
      */
     unsigned int component_index_;
+
+    /**
+     * Flag determining if object is Multifield or Field.
+     * TODO: temporary solution, goal is to make these two classes to behave similarly
+     */
+    bool multifield_;
 
     /**
      * Maximum number of FieldBase objects we store per one region.

@@ -64,7 +64,9 @@ public:
      * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::Record &get_input_type() override;
+    IT::AbstractRecord &get_input_type() override;
+
+    IT::Record &get_multifield_input_type() override;
 
     void set_limit_side(LimitSide side) override;
 

@@ -30,6 +30,8 @@ Field<spacedim,Value>::Field()
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 
 	factories_.get()->push_back( new FactoryBase() );
+
+	this->multifield_ = false;
 }
 
 
@@ -45,6 +47,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->bc_=bc;
 		this->name( name );
 		factories_.get()->push_back( new FactoryBase() );
+		this->multifield_ = false;
 }
 
 
@@ -62,6 +65,7 @@ Field<spacedim,Value>::Field(const Field &other)
 	// shared_is already same as other.shared_
 	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
 
+	this->multifield_ = false;
 }
 
 
@@ -98,7 +102,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-it::Record &Field<spacedim,Value>::get_input_type() {
+it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
 	/*
 	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
 	 * We have to return reference, which may be reference to not yet initialized static object.
@@ -113,6 +117,16 @@ it::Record &Field<spacedim,Value>::get_input_type() {
 	} else {
 		return FieldBaseType::input_type;
 	}
+}
+
+
+
+template<int spacedim, class Value>
+it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+	ASSERT(false, "This method can't be used for Field");
+
+	static it::Record rec = it::Record();
+	return rec;
 }
 
 
@@ -437,7 +451,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
-    	auto input_type = static_cast<Input::Type::AbstractRecord &>( get_input_type() );
+    	auto input_type = get_input_type();
         Input::JSONToStorage reader( default_input, input_type );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();

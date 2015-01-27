@@ -55,7 +55,7 @@ public:
 	    field_.name("test_field");
 	    field_.input_selection(&test_selection);
 
-		auto a_rec_type = static_cast<Input::Type::AbstractRecord &>( this->field_.get_input_type() );
+		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
 				this->field_.field_descriptor_record("any")
 				.declare_key("a", a_rec_type, "")
@@ -176,7 +176,7 @@ TYPED_TEST_CASE(FieldFix, FieldTypes);
 // we shall do it as part of FieldList test.
 //
 TYPED_TEST(FieldFix, get_input_type) {
-	Input::Type::AbstractRecord a_rec_type = static_cast<Input::Type::AbstractRecord &>( this->field_.get_input_type() );
+	Input::Type::AbstractRecord a_rec_type = this->field_.get_input_type();
 }
 
 
@@ -553,9 +553,9 @@ TEST(Field, init_from_input) {
 
     it::Record main_record =
             it::Record("main", "desc")
-            .declare_key("sorption_type", static_cast<Input::Type::AbstractRecord &>(sorption_type.get_input_type()), it::Default::obligatory(), "desc")
-            .declare_key("init_conc", static_cast<Input::Type::AbstractRecord &>(init_conc.get_input_type()), it::Default::obligatory(), "desc")
-            .declare_key("conductivity", static_cast<Input::Type::AbstractRecord &>(conductivity.get_input_type()), it::Default::obligatory(), "desc");
+            .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
 
 
     // read input string
