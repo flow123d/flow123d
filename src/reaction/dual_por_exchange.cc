@@ -208,7 +208,7 @@ void DualPorosity::initialize()
 void DualPorosity::initialize_fields()
 {
   //setting fields in data
-  data_.set_n_components(names_.size());
+  data_.set_components(names_);
 
   //setting fields that are set from input file
   input_data_set_+=data_;

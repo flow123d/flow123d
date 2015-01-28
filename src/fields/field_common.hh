@@ -139,13 +139,16 @@ public:
     { flags().add(mask); return *this; }
 
     /**
+     * Set vector of component names.
      * Set number of components for run-time sized vectors. This is used latter when we construct
      * objects derived from FieldBase<...>.
      *
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
-    void set_n_components( unsigned int n_comp)
-    { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
+    void set_components(const std::vector<string> &names) {
+        shared_->comp_names_ = names;
+        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    }
 
 
     /**
@@ -354,6 +357,10 @@ protected:
          * Number of components for fields that return variable size vectors. Zero in other cases.
          */
         unsigned int n_comp_;
+        /**
+         * Names of field components.
+         */
+        std::vector< std::string > comp_names_;
         /**
          * Name of the particular field. Used to name the key in the Field list Record.
          */

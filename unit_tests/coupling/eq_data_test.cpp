@@ -230,6 +230,7 @@ public:
 protected:
     static Input::Type::Record input_type;
     EqData data;
+    std::vector<string> component_names;
 
     virtual void SetUp() {
         Profiler::initialize();
@@ -240,6 +241,7 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
+        component_names = { "comp_0", "comp_1", "comp_2", "comp_3" };
 
     }
 
@@ -250,8 +252,8 @@ protected:
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.set_n_components(4);        // set number of substances posibly read from elsewhere
-        data.bc_conc.set_n_components(4);
+        data.init_conc.set_components(component_names);        // set number of substances posibly read from elsewhere
+        data.bc_conc.set_components(component_names);
 
         /* Regions in the test mesh:
          * $PhysicalNames

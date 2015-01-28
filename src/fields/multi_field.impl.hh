@@ -30,15 +30,15 @@ MultiField<spacedim, Value>::MultiField()
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::init( const vector<string> &names) {
     sub_fields_.resize( names.size() );
-    sub_names_ = names;
+    this->shared_->comp_names_ = names;
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
     {
     	sub_fields_[i_comp].units( units() );
 
-    	if (sub_names_[i_comp].length() == 0)
+    	if (this->shared_->comp_names_[i_comp].length() == 0)
     		sub_fields_[i_comp].name( name() );
     	else
-    		sub_fields_[i_comp].name( sub_names_[i_comp] + "_" + name());
+    		sub_fields_[i_comp].name( this->shared_->comp_names_[i_comp] + "_" + name());
     }
 }
 

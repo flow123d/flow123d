@@ -297,8 +297,10 @@ void SorptionBase::initialize_substance_ids()
       }
     }
     
-    if(!found)
+    if(!found) {
       substance_global_idx_.push_back(global_idx);
+      substance_names_.push_back("component_" + global_idx);
+    }
 
   }  
   n_substances_ = substance_global_idx_.size();
@@ -354,7 +356,7 @@ void SorptionBase::initialize_from_input()
 void SorptionBase::initialize_fields()
 {
   ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
-  data_->set_n_components(n_substances_);
+  data_->set_components(substance_names_);
 
 
   // read fields from input file

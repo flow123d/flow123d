@@ -253,7 +253,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_n_components(n_subst_);
+    data_.set_components(subst_names_);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
 

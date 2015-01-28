@@ -203,7 +203,7 @@ public:
 	    ifstream in(string(mesh_file).c_str());
 	    my_mesh->read_gmsh_from_stream(in);
 
-
+	    component_names = { "comp_0", "comp_1", "comp_2" };
 	}
 	virtual ~TestOutputTime() {
 		delete my_mesh;
@@ -220,7 +220,7 @@ public:
 		// make field init it form the init string
 		F field("test_field", false); // bulk field
 		field.input_default(init);
-		field.set_n_components(3);
+		field.set_components(component_names);
 		field.input_selection(&test_selection);
 
 		field.set_mesh(*my_mesh);
@@ -283,6 +283,7 @@ public:
 	}
 
 	Mesh * my_mesh;
+	std::vector<string> component_names;
 };
 
 #define FV FieldValue

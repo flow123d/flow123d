@@ -129,7 +129,6 @@ public:
 
 private:
     std::vector< SubFieldType > sub_fields_;
-    std::vector< std::string > sub_names_;
 
     /// Helper class members, used only for input record
     SubFieldType sub_field_type_;

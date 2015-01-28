@@ -548,8 +548,11 @@ TEST(Field, init_from_input) {
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
+    std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+
+
     sorption_type.input_selection(&sorption_type_sel);
-    init_conc.set_n_components(3);
+    init_conc.set_components(component_names);
 
     it::Record main_record =
             it::Record("main", "desc")
