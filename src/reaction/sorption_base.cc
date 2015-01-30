@@ -368,7 +368,7 @@ void SorptionBase::initialize_fields()
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
     //initialization of output
-  data_->conc_solid.set_components(substance_names_);
+  data_->conc_solid.set_components(names_);
   data_->conc_solid.set_mesh(*mesh_);
   data_->conc_solid.set_limit_side(LimitSide::right);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
