@@ -165,9 +165,6 @@ public:
      */
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
-    void set_limit_side(LimitSide side) override
-    { this->limit_side_=side; }
-
     /**
      * Check that whole field list is set, possibly use default values for unset regions
      * and call set_time for every field in the field list.

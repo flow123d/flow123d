@@ -28,23 +28,6 @@ MultiField<spacedim, Value>::MultiField()
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::init( const vector<string> &names) {
-    sub_fields_.resize( names.size() );
-    this->shared_->comp_names_ = names;
-    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-    {
-    	sub_fields_[i_comp].units( units() );
-
-    	if (this->shared_->comp_names_[i_comp].length() == 0)
-    		sub_fields_[i_comp].name( name() );
-    	else
-    		sub_fields_[i_comp].name( this->shared_->comp_names_[i_comp] + "_" + name());
-    }
-}
-
-
-
-template<int spacedim, class Value>
 it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
 	ASSERT(false, "This method can't be used for MultiField");
 
@@ -69,17 +52,32 @@ it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_limit_side(LimitSide side)
-{
-	for ( SubFieldType &field : sub_fields_)
-		field.set_limit_side(side);
-}
-
-
-template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)
 {
+	// initialization of Multifield for first call
+	if (this->last_time_ == -numeric_limits<double>::infinity()) {
+		ASSERT(this->shared_->comp_names_.size(), "Vector of component names is empty!\n");
+		ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+
+	    sub_fields_.resize( this->shared_->comp_names_.size() );
+	    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
+	    {
+	    	sub_fields_[i_comp].units( units() );
+	    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
+	    	sub_fields_[i_comp].set_limit_side(this->limit_side_);
+
+	    	if (this->shared_->comp_names_[i_comp].length() == 0)
+	    		sub_fields_[i_comp].name( name() );
+	    	else
+	    		sub_fields_[i_comp].name( this->shared_->comp_names_[i_comp] + "_" + name());
+	    }
+	    this->last_time_ = time.t(); // temporary - remove this line
+	    return false; // remove this line
+	}
+	this->last_time_ = time.t();
+
+	// set time for sub fields
 	bool any=false;
 	for( SubFieldType &field : sub_fields_) {
 		if (field.set_time(time))
@@ -93,8 +91,6 @@ bool MultiField<spacedim, Value>::set_time(
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
     shared_->mesh_ = &mesh;
-    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].set_mesh(mesh);
 }
 
 

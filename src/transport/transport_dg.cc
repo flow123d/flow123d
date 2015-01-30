@@ -305,10 +305,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.init(subst_names_);
+	data_.output_field.set_components(subst_names_);
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
+    data_.output_field.set_time(*time_);
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions

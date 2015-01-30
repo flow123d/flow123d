@@ -68,14 +68,16 @@ public:
 
     IT::Record &get_multifield_input_type() override;
 
-    void set_limit_side(LimitSide side) override;
-
     /**
      * Abstract method to update field to the new time level.
      * Implemented by in class template Field<...>.
      *
      * Return true if the value of the field was changed on some region.
      * The returned value is also stored in @p changed_during_set_time data member.
+     *
+     * In first call initialize MultiField to the number of components given by the size of @p names
+     * and use this vector  to name individual components. Should be called after the setters derived from
+     * FieldCommonBase.
      */
     bool set_time(const TimeGovernor &time) override;
 
@@ -110,13 +112,6 @@ public:
     { return sub_fields_.size(); }
 
     /**
-     * Initialize MultiField to the number of components given by the size of @p names
-     * and use this vector  to name individual components. Should be called after the setters derived from
-     * FieldCommonBase.
-     */
-    void init( const vector<string> &names);
-
-    /**
      * Allows set Field<dim, Vector> that can be used for alternative initialization in "transposed" form.
      */
     void set_complemented_vector_field( TransposedField &complemented);
@@ -125,7 +120,10 @@ public:
      * Returns reference to the sub-field (component) of given index @p idx.
      */
     inline SubFieldType &operator[](unsigned int idx)
-    { return sub_fields_[idx]; }
+    {
+    	ASSERT(idx < sub_fields_.size(), "Index of subfield is out of range.\n");
+    	return sub_fields_[idx];
+    }
 
 private:
     std::vector< SubFieldType > sub_fields_;

@@ -170,7 +170,8 @@ public:
      * @p changed() so it should be called just before @p set_time.
      * Can be different for different field copies.
      */
-    virtual void set_limit_side(LimitSide side) = 0;
+    void set_limit_side(LimitSide side)
+    { this->limit_side_=side; }
 
     /**
      * Getters.
@@ -349,6 +350,11 @@ protected:
      *  sharing common input field descriptor array and common history.
      */
     struct SharedData {
+    	/**
+    	 * Empty constructor.
+    	 */
+    	SharedData() {};
+
         /**
          * True for boundary fields.
          */

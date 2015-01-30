@@ -125,10 +125,12 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
-	data_.conc_mobile.init(subst_names_);
+	data_.conc_mobile.set_components(subst_names_);
 	data_.conc_mobile.set_mesh(*mesh_);
+	data_.conc_mobile.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
+	data_.conc_mobile.set_time(*time_);
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions

@@ -221,10 +221,12 @@ void DualPorosity::initialize_fields()
   output_array = input_record_.val<Input::Array>("output_fields");
   
   //initialization of output
-  data_.conc_immobile.init(names_);
+  data_.conc_immobile.set_components(names_);
   data_.conc_immobile.set_mesh(*mesh_);
+  data_.conc_immobile.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
 
+  data_.conc_immobile.set_time(*time_);
   for (unsigned int sbi=0; sbi<names_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
