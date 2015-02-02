@@ -119,21 +119,6 @@ public:
         EqData();
 
 
-        /**
-         * Hook for processing "bc_piezo_head" key.
-         */
-        inline static std::shared_ptr< FieldAlgorithmBase<3, FieldValue<3>::Scalar> >
-        	bc_piezo_head_hook(Input::Record rec, const FieldCommon &field)
-        {
-            	auto field_ptr = OldBcdInput::flow_pressure_hook(rec, field);
-                Input::AbstractRecord field_a_rec;
-            	if (! field_ptr && rec.opt_val("bc_piezo_head", field_a_rec)) {
-            		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( gravity_, field_a_rec);
-            	} else {
-            		return field_ptr;
-            	}
-        }
-       
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -153,11 +138,8 @@ public:
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
-         *
-         * TODO: static method bc_piezo_head_hook needs static @p gravity_ vector. Other solution is to
-         * introduce some kind of context pointer into @p FieldCommonBase.
          */
-        static arma::vec4 gravity_;
+        arma::vec4 gravity_;
 
         FieldSet	time_term_fields;
         FieldSet	main_matrix_fields;

@@ -80,7 +80,7 @@ IT::Selection ConvectionTransport::EqData::output_selection =
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+    	bc_conc.add_factory( &(OldBcdInput::instance()->trans_conc_factory) );
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
