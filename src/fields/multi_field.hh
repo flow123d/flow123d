@@ -33,7 +33,6 @@ namespace IT=Input::Type;
  *  - general mechanism how to convert a Field< dim, Vector> to MultiField< dim, Value>
  *  - implement set_from_input
  *  - implement set_Time
- *  - implement set_complemented_vector_field
  *
  *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
  *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
@@ -51,7 +50,13 @@ public:
 
     class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
     public:
+    	/// Constructor.
+    	MultiFieldFactory(unsigned int index)
+    	: index_(index) {}
+
     	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+
+    	unsigned int index_;
     };
 
     /**
@@ -110,11 +115,6 @@ public:
     /// Number of subfields that compose the multi-field.
     inline unsigned int size() const
     { return sub_fields_.size(); }
-
-    /**
-     * Allows set Field<dim, Vector> that can be used for alternative initialization in "transposed" form.
-     */
-    void set_complemented_vector_field( TransposedField &complemented);
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.

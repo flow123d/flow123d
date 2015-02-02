@@ -136,12 +136,15 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	if (it_common && !it_components) {
 		it_common->transpose_to( rec, "components", spacedim );
 		it_components = rec.find<Input::Array>("components");
-		for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it)
-		{
-			typename Field<spacedim,Value>::FieldBasePtr func =
-					Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
-			//TODO: set func to ??
-		}
+	}
+
+	ASSERT(index_ < it_components->size(), "Index of MultiField component is out of range.\n");
+
+	unsigned int position = 0;
+	for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it, ++position)
+	{
+		if (index_ == position)
+			return Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
 	}
 	return NULL;
 }
