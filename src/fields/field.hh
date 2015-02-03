@@ -35,6 +35,10 @@ namespace IT=Input::Type;
  * real vector of fixed (compile time) size, real vector of runtime size, or a matrix of fixed dimensions.
  * Extensions to vectors or matrices of integers, or to variable tensors are possible. For vector and matrix values
  * we use classes provided by Armadillo library for linear algebra.
+ * The @p Value template parameter should FieldValue<> template, usual choices are:
+ * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
+ * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -96,6 +100,8 @@ public:
      * Assignment operator. Same properties as copy constructor.
      *
      * Question: do we really need this, isn't copy constructor enough?
+     * Answer: It is necessary in (usual) case when Field instance is created as the class member
+     * but is filled later by assignment possibly from other class.
      */
     Field &operator=(const Field &other);
 

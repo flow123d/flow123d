@@ -93,11 +93,6 @@ public:
 private:
 
     /**
-     * Was header already written to output file?
-     */
-    bool header_written;
-
-    /**
      * \brief The declaration enumeration used for variant of file VTK format
      */
     typedef enum Variant {
@@ -174,7 +169,7 @@ private:
     void write_vtk_discont_topology(void);
 
     /**
-     *
+     * Write registered data to output stream using ascii format
      */
     void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
 
@@ -182,7 +177,8 @@ private:
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
      * Output is done into stream @p file.
      */
-    void write_vtk_data_names(ofstream &file, vector<OutputDataBase*> &output_data);
+    void write_vtk_data_names(ofstream &file,
+            vector<OutputDataBase*> &output_data);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
@@ -204,6 +200,11 @@ private:
     * to the VTK file (.vtu)
     */
    void write_vtk_vtu(void);
+
+   /**
+    * \brief This method add right suffix to .pvd VTK file
+    */
+   void fix_base_file_name(void);
 };
 
 #endif /* OUTPUT_VTK_HH_ */

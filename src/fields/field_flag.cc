@@ -18,3 +18,4 @@ constexpr FieldFlag::Flags::Mask FieldFlag::in_main_matrix;
 constexpr FieldFlag::Flags::Mask FieldFlag::in_rhs;
 
 constexpr FieldFlag::Flags::Mask FieldFlag::equation_result;
+constexpr FieldFlag::Flags::Mask FieldFlag::equation_external_output;

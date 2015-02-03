@@ -43,7 +43,7 @@ Record OutputMSH::input_type
 
 void OutputMSH::write_msh_header(void)
 {
-    ofstream &file = this->get_base_file();
+    ofstream &file = *this->_base_file;
 
     // Write simple header
     file << "$MeshFormat" << endl;
@@ -53,8 +53,8 @@ void OutputMSH::write_msh_header(void)
 
 void OutputMSH::write_msh_geometry(void)
 {
-    ofstream &file = this->get_base_file();
-    Mesh* mesh = this->get_mesh();
+    ofstream &file = *this->_base_file;
+    Mesh* mesh = this->_mesh;
 
     // Write information about nodes
     file << "$Nodes" << endl;
@@ -67,8 +67,8 @@ void OutputMSH::write_msh_geometry(void)
 
 void OutputMSH::write_msh_topology(void)
 {
-    ofstream &file = this->get_base_file();
-    Mesh* mesh = this->get_mesh();
+    ofstream &file = *this->_base_file;
+    Mesh* mesh = this->_mesh;
     unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
@@ -92,15 +92,13 @@ void OutputMSH::write_msh_topology(void)
 template<class element>
 void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
 {
-    ofstream &file = this->get_base_file();
+    ofstream &file = *this->_base_file;
 
     /* Set precision to max */
-    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
-
     for(unsigned int i=0; i < output_data->n_values; i ++) {
-    	file << vec(i).id() << " ";
+        file << vec(i).id() << " ";
         output_data->print(file, i);
         file << std::endl;
     }
@@ -110,16 +108,15 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 
 void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 {
-    Mesh *mesh = this->get_mesh();
-    ofstream &file = this->get_base_file();
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_base_file;
 
     /* Set precision to max */
-    //file.precision(std::numeric_limits<float>::digits10);
     file.precision(std::numeric_limits<double>::digits10);
 
     /* Write ascii data */
     unsigned int i_node;
-	unsigned int i_corner=0;
+	unsigned int i_corner = 0;
     FOR_ELEMENTS(mesh, ele) {
         file << ele.id() << " " << ele->n_nodes() << " ";
 
@@ -134,8 +131,8 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 
 void OutputMSH::write_msh_node_data(double time, int step)
 {
-    ofstream &file = this->get_base_file();
-    Mesh *mesh = this->get_mesh();
+    ofstream &file = *this->_base_file;
+    Mesh *mesh = this->_mesh;
     OutputDataBase *output_data;
 
     double time_fixed = isfinite(time)?time:0;
@@ -194,9 +191,9 @@ void OutputMSH::write_msh_node_data(double time, int step)
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
 	OutputDataBase* output_data;
-    ofstream &file = this->get_base_file();
+    ofstream &file = *this->_base_file;
 
-    double time_fixed = isfinite(time)?time:0;
+    double time_fixed = isfinite(time) ? time : 0;
 
     if(this->elem_data.empty() == false) {
         for(vector<OutputDataBase*>::iterator data = this->elem_data.begin();
@@ -217,7 +214,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
             file << output_data->n_elem_ << endl;   // number of components
             file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(this->get_mesh()->element, output_data);
+            this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
 
             file << "$EndElementData" << endl;
         }
@@ -226,7 +223,8 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->base_filename()->c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     this->write_msh_header();
 
@@ -241,23 +239,35 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->base_filename()->c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
         this->write_head();
         this->header_written = true;
     }
-        
+
     this->write_msh_node_data(this->time, this->current_step);
     this->write_msh_elem_data(this->time, this->current_step);
 
     // Flush stream to be sure everything is in the file now
-    this->get_base_file().flush();
+    this->_base_file->flush();
 
     xprintf(MsgLog, "O.K.\n");
 
     return 1;
+}
+
+void OutputMSH::fix_base_file_name(void)
+{
+    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".msh") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n",
+                this->_base_filename.c_str(),
+                this->_base_filename.c_str());
+        this->_base_filename += ".msh";
+    }
 }
 
 int OutputMSH::write_tail(void)
@@ -267,7 +277,7 @@ int OutputMSH::write_tail(void)
 
 OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-	this->file_format = OutputTime::GMSH;
+	this->fix_base_file_name();
     this->header_written = false;
 }
 

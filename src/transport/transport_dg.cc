@@ -42,6 +42,8 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 
+#include "fields/generic_field.hh"
+
 using namespace Input::Type;
 
 template<class Model>
@@ -225,6 +227,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
+    *this += region_ids.name("region_ids")
+    	        .units( UnitSI::dimensionless())
+    	        .flags(FieldFlag::equation_external_output);
+
     // add all input fields to the output list
 
 }
@@ -262,6 +268,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.set_n_components(n_subst_);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
+    data_.region_ids = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -324,7 +331,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	}
     data_.set_limit_side(LimitSide::left);
 	output_stream = OutputTime::create_output_stream(output_rec);
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // set time marks for writing the output
     output_stream->mark_output_times(*time_);

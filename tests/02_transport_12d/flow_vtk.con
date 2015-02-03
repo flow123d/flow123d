@@ -37,7 +37,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "region_ids" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -64,6 +64,8 @@
       output_stream = {
         REF = "/system/output_streams/1"
       },
+      
+      output_fields=["conc", "region_ids"],
 
       substances = [
         "A", 

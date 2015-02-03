@@ -395,7 +395,7 @@ void SorptionBase::initialize_fields()
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
   data_->output_fields.set_limit_side(LimitSide::right);
-  output_stream_->add_admissible_field_names(output_array, output_selection);
+  output_stream_->add_admissible_field_names(output_array);
 }
 
 
