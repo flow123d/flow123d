@@ -1,22 +1,22 @@
 # ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0
+# Time of computed water balance: 0.000000
 
 
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  4             .1d                        29.9213       29.9213       0             0           
-  3             .2d_bottom_top             -29.5212      0             -29.5212      0           
-  -3            IMPLICIT BOUNDARY          -3.98387e-10  3.2208e-09    -3.61919e-09  0           
+  4             .1d                        28.987        28.987        0             0             
+  3             .2d_bottom_top             -45.1026      0             -45.1026      0             
+  -3            IMPLICIT BOUNDARY          1.68714e-08   2.76598e-08   -1.07885e-08  0             
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   0.400065      29.9213       -29.5212      
+# total boundary balance                   -16.1156      28.987        -45.1026      
 
 
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  1             1d                         0                                         0           
-  2             2d                         0                                         0           
+  1             1d                         0                                         0             
+  2             2d                         0                                         0             
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
 
