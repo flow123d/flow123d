@@ -22,7 +22,7 @@ template <int spacedim, class Value>
 class Field;
 template <int spacedim, class Value>
 class MultiField;
-
+class TimeGovernor;
 
 /**
  * \brief The class for outputting data during time.
