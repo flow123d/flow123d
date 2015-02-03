@@ -206,9 +206,16 @@ public:
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
-     * Add item to @p factories_
+     * Add a new factory for creating Field algorithms on individual regions.
+     * The last factory is tried first, the last one is always the default implementation
+     * Field<...>::FactoryBase.
+     *
+     * The Field<...> object keeps a list of such factories. When the instance of a new field algorithm
+     * has to be created from the input field descriptor, we pass through the list of factories backward
+     * and let factories to create the field algorithm instance from the actual input field descriptor.
+     * The first instance (non-null pointer) is used.
      */
-    void add_factory(FactoryBase * factory);
+    void add_factory(std::shared_ptr<FactoryBase> factory);
 
 protected:
     /**
@@ -268,7 +275,7 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
-    std::shared_ptr< std::vector<FactoryBase *> > factories_;
+    std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
 
 
