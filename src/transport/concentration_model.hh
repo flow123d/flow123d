@@ -58,7 +58,7 @@ public:
 
 		ModelEqData();
 
-		static string name() { return "SoluteTransport"; }
+		static constexpr const char * name() { return "SoluteTransport"; }
 
 		static string default_output_field() { return "conc"; }
 

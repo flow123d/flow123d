@@ -39,6 +39,7 @@
 #include "io/output_msh.h"
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 
 
 using namespace Input::Type;
@@ -215,6 +216,7 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 
 void OutputTime::write_time_frame()
 {
+	START_TIMER("write_time_frame");
     /* TODO: do something, when support for Parallel VTK is added */
     if (this->rank == 0) {
     	// Write data to output stream, when data registered to this output
