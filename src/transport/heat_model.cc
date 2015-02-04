@@ -177,7 +177,9 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
 IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record(ModelEqData::name() + "_" + implementation, description + " for heat transfer.")
+	static IT::Record input_type = IT::Record(
+				std::string(ModelEqData::name()) + "_" + implementation,
+				description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::input_type);
 
 	return input_type;
@@ -187,7 +189,9 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 
 IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection(ModelEqData::name() + "_" + implementation + "_Output", "Selection for output fields of " + description + " for heat transfer.");
+	static IT::Selection input_type = IT::Selection(
+				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
+				"Selection for output fields of " + description + " for heat transfer.");
 
 	return input_type;
 }

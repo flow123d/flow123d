@@ -72,7 +72,7 @@ Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
+    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
@@ -241,6 +241,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
           mass_matrix(0),
           allocation_done(false)
 {
+	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
+	// due to constexpr optimization.
+	START_TIMER(Model::ModelEqData::name());
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
@@ -405,6 +408,7 @@ void TransportDG<Model>::output_vector_gather()
 template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
+	START_TIMER(Model::ModelEqData::name());
     data_.set_time(*time_);
 
     // set initial conditions
