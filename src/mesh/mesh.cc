@@ -157,7 +157,15 @@ unsigned int Mesh::n_sides()
     return n_sides_;
 }
 
-
+unsigned int Mesh::n_corners() {
+    unsigned int li, count = 0;
+    FOR_ELEMENTS(this, ele) {
+        FOR_ELEMENT_NODES(ele, li) {
+            count++;
+        }
+    }
+    return count;
+}
 
 Partitioning *Mesh::get_part() {
     return part_.get();
@@ -615,7 +623,10 @@ void Mesh::make_intersec_elements() {
 
 		if (ele.dim() == 1) {
 			vector<unsigned int> candidate_list;
-			for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+                        
+			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
+                        for(unsigned int i_elm : candidate_list) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
 					IntersectionLocal *intersection;

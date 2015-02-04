@@ -42,6 +42,8 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 
+#include "fields/generic_field.hh"
+
 using namespace Input::Type;
 
 template<class Model>
@@ -225,6 +227,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
+    *this += region_ids.name("region_ids")
+    	        .units( UnitSI::dimensionless())
+    	        .flags(FieldFlag::equation_external_output);
+
     // add all input fields to the output list
 
 }
@@ -244,8 +250,14 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     time_->fix_dt_until_mark();
 
     // Read names of transported substances.
-    Model::set_component_names(subst_names_, in_rec);
-    n_subst_ = subst_names_.size();
+    // TODO: Substances should be held in TransportOperatorSplitting only.
+    // Class TransportDG requires only names of components,
+    // and it may have no sense for Model to define Substances
+    // (e.g. if Model represents heat transfer). This should be
+    // resolved when transport classes are refactored so that DG method
+    // can be combined with reactions under operator splitting.
+    Model::set_components(substances_, in_rec);
+    n_subst_ = substances_.size();
 
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
     if (it)
@@ -253,9 +265,10 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_components(subst_names_);
+    data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
+    data_.region_ids = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -305,7 +318,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.set_components(subst_names_);
+	data_.output_field.set_components(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
@@ -319,7 +332,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	}
     data_.set_limit_side(LimitSide::left);
 	output_stream = OutputTime::create_output_stream(output_rec);
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // set time marks for writing the output
     output_stream->mark_output_times(*time_);
@@ -366,7 +379,6 @@ TransportDG<Model>::~TransportDG()
     if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
-    subst_names_.clear();
     delete output_stream;
 }
 

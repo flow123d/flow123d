@@ -133,7 +133,19 @@ private:
 */
 class Isotherm {
 public:
-
+    TYPEDEF_ERR_INFO( EI_BoostMessage, std::string);
+    DECLARE_EXCEPTION( ExcBoostSolver, << 
+    "The Boost solver of nonlinear equation did not converge in sorption model.\n" 
+    << "Check input at the following address for possible user error: \t" << Input::EI_Address::val << "\n"
+    "Solver message: \n" << EI_BoostMessage::val);
+    
+    TYPEDEF_ERR_INFO( EI_TotalMass, double);
+    DECLARE_EXCEPTION( ExcNegativeTotalMass, << 
+    "The total mass in sorption model became negative during the computation (value: " 
+    << EI_TotalMass::val << ").\n"
+    << "Check input at the following address for possible user error: \t" << Input::EI_Address::val << "\n");
+    
+    
 	/// Type of adsorption isotherm.
 	enum SorptionType {
 		none = 0,
@@ -339,11 +351,15 @@ inline void Isotherm::interpolate( double &c_aqua, double &c_sorbed ) {
 
 inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pair ) {
   double total_mass = (scale_aqua_* c_pair.fluid + scale_sorbed_ * c_pair.solid);
+  if(total_mass < 0.0)
+      THROW( Isotherm::ExcNegativeTotalMass() 
+                << EI_TotalMass(total_mass)
+                );
+  // total_mass_step_ is set and checked in make_table
   double total_mass_steps = total_mass / total_mass_step_;
-  int total_mass_idx = static_cast <int>(std::floor(total_mass_steps));
+  unsigned int total_mass_idx = static_cast <unsigned int>(std::floor(total_mass_steps));
 
-  if ( total_mass_idx < 0 ) {xprintf(UsrErr,"total_mass %f seems to have negative value.\n", total_mass); }
-  if ((unsigned int)(total_mass_idx) < (interpolation_table.size() - 1) ) {
+  if (total_mass_idx < (interpolation_table.size() - 1) ) {
       double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);
       return ConcPair( (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_),
                        (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_) );
@@ -383,7 +399,17 @@ inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const 
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
 	pair<double,double> solution;
 	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
-		solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
+    {
+        try {
+            solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
+        }
+        catch(boost::exception const & e)
+        {       
+            THROW( Isotherm::ExcBoostSolver() 
+                << EI_BoostMessage(boost::diagnostic_information(e))
+                );
+        }
+    }
 	double difference;
 	difference = (solution.second - solution.first)/2;
 	double c_aqua = solution.first + difference;
@@ -429,10 +455,11 @@ template<class Func>
 void Isotherm::make_table(const Func &isotherm, int n_steps)
 {
     double mass_limit = scale_aqua_ * table_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_);
+    
     if(mass_limit < 0.0)
-    {
-        xprintf(UsrErr,"Isotherm mass_limit has negative value.\n");
-    }
+      THROW( Isotherm::ExcNegativeTotalMass() 
+                << EI_TotalMass(mass_limit)
+                );
     total_mass_step_ = mass_limit / n_steps;
     double mass = 0.0;
     for(int i=0; i<= n_steps; i++) {

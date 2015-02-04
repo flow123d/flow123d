@@ -131,6 +131,7 @@
  *
  */
 
+#include <iostream>
 
 class Intersection {
 public:

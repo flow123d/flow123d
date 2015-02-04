@@ -16,7 +16,6 @@
 #include "reaction/sorption_base.hh"
 
 class Mesh;
-class Distribution;
 class Isotherm;
 
 /** @brief Simple sorption model without dual porosity.

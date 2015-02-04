@@ -7,7 +7,9 @@
 #define TEST_USE_MPI
 #include <flow_gtest_mpi.hh>
 
-#include "io/output.h"
+#include "io/output_time.hh"
+#include "io/output_data_base.hh"
+#include "coupling/time_governor.hh"
 
 #include "mesh/mesh.h"
 
@@ -17,9 +19,8 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 
-#include "fields/field_algo_base.hh"
-#include "fields/field_constant.hh"
-
+//#include "fields/field_constant.hh"
+#include "fields/field.hh"
 
 // Test #1 of input for output stream
 const string output_stream1 = R"JSON(

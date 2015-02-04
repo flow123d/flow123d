@@ -160,6 +160,8 @@ public:
         BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
+        Field<3, FieldValue<3>::Integer> region_ids;
+
 	};
 
 

@@ -35,6 +35,10 @@ namespace IT=Input::Type;
  * real vector of fixed (compile time) size, real vector of runtime size, or a matrix of fixed dimensions.
  * Extensions to vectors or matrices of integers, or to variable tensors are possible. For vector and matrix values
  * we use classes provided by Armadillo library for linear algebra.
+ * The @p Value template parameter should FieldValue<> template, usual choices are:
+ * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
+ * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -103,6 +107,8 @@ public:
      * Assignment operator. Same properties as copy constructor.
      *
      * Question: do we really need this, isn't copy constructor enough?
+     * Answer: It is necessary in (usual) case when Field instance is created as the class member
+     * but is filled later by assignment possibly from other class.
      */
     Field &operator=(const Field &other);
 
@@ -212,9 +218,16 @@ public:
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
-     * Add item to @p factories_
+     * Add a new factory for creating Field algorithms on individual regions.
+     * The last factory is tried first, the last one is always the default implementation
+     * Field<...>::FactoryBase.
+     *
+     * The Field<...> object keeps a list of such factories. When the instance of a new field algorithm
+     * has to be created from the input field descriptor, we pass through the list of factories backward
+     * and let factories to create the field algorithm instance from the actual input field descriptor.
+     * The first instance (non-null pointer) is used.
      */
-    void add_factory(FactoryBase * factory);
+    void add_factory(std::shared_ptr<FactoryBase> factory);
 
 protected:
     /**
@@ -274,7 +287,7 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
-    std::shared_ptr< std::vector<FactoryBase *> > factories_;
+    std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
 
 

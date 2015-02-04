@@ -62,15 +62,13 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
+        TYPE="FirstOrderReaction",
 
-        decays = [
+        reactions = [
           {
-            parent = "D",
-            kinetic = 0.277258872,
-            products = [
-              "E"
-            ]
+            reactants = "D",
+            reaction_rate = 0.277258872,
+            products = "E"
           }
         ]
       } 

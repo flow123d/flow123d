@@ -7,9 +7,9 @@
 #define REACTION_TERM_H
 
 #include "coupling/equation.hh"
+#include "transport/substance.hh"
 
 class Mesh;
-class Element;
 class Distribution;
 class OutputTime;
 
@@ -17,7 +17,11 @@ class OutputTime;
 class ReactionTerm: public EquationBase
 {
 public:
-  
+    TYPEDEF_ERR_INFO( EI_Substance, std::string);
+    TYPEDEF_ERR_INFO( EI_Model, std::string);
+    DECLARE_INPUT_EXCEPTION( ExcUnknownSubstance, << "Unknown substance name: " << EI_Substance::qval);
+    DECLARE_INPUT_EXCEPTION( ExcWrongDescendantModel, << "Impossible descendant model: " << EI_Model::qval);
+    
   /**
    * Static variable for definition of common input record in reaction term.
    */
@@ -43,8 +47,8 @@ public:
   ///@name Setters
   //@{
   ///Sets the names of substances considered in transport.
-  ReactionTerm &names(const std::vector<string> &names)
-  {names_=names; return *this;}
+  ReactionTerm &substances(SubstanceList &substances)
+  {substances_.initialize(substances); return *this;}
 
   ///Sets the output stream which is given from transport class.
   ReactionTerm &output_stream(OutputTime &ostream)
@@ -106,7 +110,7 @@ protected:
   /**  
    * Must be same as in the transport.
    */
-  vector<string> names_;
+  SubstanceList substances_;
 
   /// Pointer to a transport output stream.
   OutputTime *output_stream_;

@@ -63,64 +63,53 @@
       },
       
       reaction_term = {
-        TYPE="LinearReactions",
-
-        decays = [
+        TYPE="FirstOrderReaction", 
+        /*
+        numerical_method = {
+          TYPE = "PadeApproximant",
+          nominator_degree = 3,
+          denominator_degree = 3
+        },*/
+        
+        reactions = [
           {
-            parent = "E",
-            kinetic = 1.3836,
-            products = [
-              "D"
-            ]
+            reactants = "E",
+            reaction_rate = 1.3836,
+            products = "D"
           },
           {
-            parent = "D",
-            half_life = 0.5,
-            products = [
-              "F"
-            ]
+            reactants = "D",
+            reaction_rate = 1.386294361,
+            products = "F"
           },
           {
-            parent = "F",
-            kinetic = 1.3836,
-            products = [
-              "B"
-            ]
+            reactants = "F",
+            reaction_rate = 1.3836,
+            products = "B"
           },
           {
-            parent = "B",
-            half_life = 0.5,
+            reactants = "B",
+            reaction_rate = 1.386294361,
             products = [
-              "A",
-              "G",
-              "H"
-            ],
-            branch_ratios = [
-              0.2,
-              0.2,
-              0.6
+              { name = "A", branching_ratio = 0.2},
+              { name = "G", branching_ratio = 0.2},
+              { name = "H", branching_ratio = 0.6}
             ]
           },
             {
-            parent = "A",
-            half_life = 0.5,
-            products = [
-              "G"
-            ]
+            reactants = "A",
+            reaction_rate = 1.386294361,
+            products = "G"
           },
           {
-            parent = "H",
-            half_life = 0.5,
-            products = [
-              "G"
-            ]
+            reactants = "H",
+            reaction_rate = 1.386294361,
+            products = "G"
           },
           {
-            parent = "G",
-            half_life = 0.5,
-            products = [
-              "C"
-            ]
+            reactants = "G",
+            reaction_rate = 1.386294361,
+            products = "C"
           }
         ]
       },

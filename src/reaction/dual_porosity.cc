@@ -2,11 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "reaction/reaction.hh"
-#include "reaction/dual_por_exchange.hh"
+#include "reaction/dual_porosity.hh"
+#include "reaction/reaction_term.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
-#include <petscmat.h>
 
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
@@ -15,12 +14,11 @@
 #include "fields/field_elementwise.hh" 
 
 #include "reaction/sorption.hh"
-#include "reaction/linear_reaction.hh"
-#include "reaction/pade_approximant.hh"
+#include "reaction/first_order_reaction.hh"
+#include "reaction/radioactive_decay.hh"
 #include "semchem/semchem_interface.hh"
 
 using namespace Input::Type;
-using namespace std;
 
 
 Selection DualPorosity::EqData::output_selection
@@ -95,7 +93,7 @@ DualPorosity::~DualPorosity(void)
   VecDestroy(vconc_immobile);
   VecDestroy(vconc_immobile_out);
 
-  for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
+  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
       //no mpi vectors
       xfree(conc_immobile[sbi]);
@@ -111,25 +109,31 @@ void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == LinearReaction::input_type ) {
-          reaction_mobile =  new LinearReaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == FirstOrderReaction::input_type ) {
+          reaction_mobile =  new FirstOrderReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == PadeApproximant::input_type) {
-          reaction_mobile = new PadeApproximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == RadioactiveDecay::input_type) {
+          reaction_mobile = new RadioactiveDecay(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionMob::input_type ) {
           reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == DualPorosity::input_type ) {
-          xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
       } else
       if (reactions_it->type() == Semchem_interface::input_type )
-      {
-          xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+      { THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
       } else
-      {
-          xprintf(UsrErr, "Wrong reaction type in DualPorosity model.\n");
+      { //This point cannot be reached. The TYPE_selection will throw an error first. 
+        THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
       }
     } else
     {
@@ -139,25 +143,31 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == LinearReaction::input_type ) {
-          reaction_immobile =  new LinearReaction(*mesh_, *reactions_it);
+      if (reactions_it->type() == FirstOrderReaction::input_type ) {
+          reaction_immobile =  new FirstOrderReaction(*mesh_, *reactions_it);
 
       } else
-      if (reactions_it->type() == PadeApproximant::input_type) {
-          reaction_immobile = new PadeApproximant(*mesh_, *reactions_it);
+      if (reactions_it->type() == RadioactiveDecay::input_type) {
+          reaction_immobile = new RadioactiveDecay(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == SorptionImmob::input_type ) {
           reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);
       } else
       if (reactions_it->type() == DualPorosity::input_type ) {
-          xprintf(UsrErr, "Dual porosity model cannot have another descendant dual porosity model.\n");
+        THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
+                << (*reactions_it).ei_address());
       } else
       if (reactions_it->type() == Semchem_interface::input_type )
-      {
-          xprintf(UsrErr, "Semchem chemistry model is not supported at current time.\n");
+      { THROW( ReactionTerm::ExcWrongDescendantModel() 
+                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
+                << EI_Message("This model is not currently supported!") 
+                << (*reactions_it).ei_address());
       } else
-      {
-          xprintf(UsrErr, "Unknown reactions type in DualPorosity model.\n");
+      { //This point cannot be reached. The TYPE_selection will throw an error first. 
+        THROW( ExcMessage() 
+                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
+                << (*reactions_it).ei_address());
       }
     } else
     {
@@ -171,12 +181,12 @@ void DualPorosity::initialize()
   ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, names_.size());
+  ASSERT_LESS(0, substances_.size());
   
   //allocating memory for immobile concentration matrix
-  conc_immobile = (double**) xmalloc(names_.size() * sizeof(double*));
-  conc_immobile_out = (double**) xmalloc(names_.size() * sizeof(double*));
-  for (unsigned int sbi = 0; sbi < names_.size(); sbi++)
+  conc_immobile = (double**) xmalloc(substances_.size() * sizeof(double*));
+  conc_immobile_out = (double**) xmalloc(substances_.size() * sizeof(double*));
+  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_immobile[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));
     conc_immobile_out[sbi] = (double*) xmalloc(distribution_->size() * sizeof(double));
@@ -187,7 +197,7 @@ void DualPorosity::initialize()
 
   if(reaction_mobile != nullptr)
   {
-    reaction_mobile->names(names_)
+    reaction_mobile->substances(substances_)
                 .output_stream(*output_stream_)
                 .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
@@ -196,7 +206,7 @@ void DualPorosity::initialize()
 
   if(reaction_immobile != nullptr)
   {
-    reaction_immobile->names(names_)
+    reaction_immobile->substances(substances_)
                 .output_stream(*output_stream_)
                 .concentration_matrix(conc_immobile, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
@@ -212,25 +222,25 @@ void DualPorosity::initialize_fields()
   input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
   //setting fields in data
-  data_.set_components(names_);
+  data_.set_components(substances_.names());
   data_.set_mesh(*mesh_);
   data_.set_limit_side(LimitSide::right);
   
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
-  data_.output_fields.set_components(names_);
+  data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
   data_.conc_immobile.set_up_components();
-  for (unsigned int sbi=0; sbi<names_.size(); sbi++)
+  for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
     std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-        new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], names_.size(), mesh_->n_elements()));
+        new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], substances_.size(), mesh_->n_elements()));
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  output_stream_->add_admissible_field_names(output_array, data_.output_selection);
+  output_stream_->add_admissible_field_names(output_array);
 }
 
 
@@ -239,7 +249,7 @@ void DualPorosity::zero_time_step()
   ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
   ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
   ASSERT(output_stream_,"Null output stream.");
-  ASSERT_LESS(0, names_.size());
+  ASSERT_LESS(0, substances_.size());
  
   //coupling - passing fields
   if(reaction_mobile)
@@ -279,7 +289,7 @@ void DualPorosity::set_initial_condition()
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
     arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
-    for (unsigned int sbi=0; sbi < names_.size(); sbi++)
+    for (unsigned int sbi=0; sbi < substances_.size(); sbi++)
     {
       conc_immobile[sbi][loc_el] = value(sbi);
     }
@@ -324,7 +334,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
     double exponent,
            temp_exponent = (por_mob + por_immob) / (por_mob * por_immob) * time_->dt();
   
-    for (sbi = 0; sbi < names_.size(); sbi++) //over all substances
+    for (sbi = 0; sbi < substances_.size(); sbi++) //over all substances
     {
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
@@ -367,7 +377,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 void DualPorosity::allocate_output_mpi(void )
 {
     int sbi, n_subst;
-    n_subst = names_.size();
+    n_subst = substances_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
     vconc_immobile_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
@@ -395,7 +405,7 @@ void DualPorosity::output_vector_gather()
 {
     unsigned int sbi;
 
-    for (sbi = 0; sbi < names_.size(); sbi++) {
+    for (sbi = 0; sbi < substances_.size(); sbi++) {
         VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
     }

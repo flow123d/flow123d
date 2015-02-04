@@ -21,15 +21,12 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>()),
-  factories_(std::make_shared< std::vector<FactoryBase *> >())
-
+: data_(std::make_shared<SharedData>())
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
-
-	factories_.get()->push_back( new FactoryBase() );
+	this->add_factory( std::make_shared<FactoryBase>() );
 
 	this->multifield_ = false;
 }
@@ -37,8 +34,7 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>()),
-  factories_(std::make_shared< std::vector<FactoryBase *> >())
+: data_(std::make_shared<SharedData>())
 
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -46,7 +42,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 		shared_->bc_=bc;
 		this->name( name );
-		factories_.get()->push_back( new FactoryBase() );
+		this->add_factory( std::make_shared<FactoryBase>() );
 		this->multifield_ = false;
 }
 
@@ -390,10 +386,9 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 		    
 			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
 
-			// get field instance
-		    std::vector<FactoryBase *> * ftrs = factories_.get();
-		    for (typename std::vector<FactoryBase *>::iterator it = (*ftrs).begin() ; it != (*ftrs).end(); ++it) {
-		    	FieldBasePtr field_instance = (*it)->create_field(*(shared_->list_it_), *this);
+			// get field instance   
+			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
+				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
@@ -467,8 +462,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::add_factory(FactoryBase * factory) {
-	factories_.get()->push_back( factory );
+void Field<spacedim,Value>::add_factory(const std::shared_ptr<FactoryBase> factory) {
+	factories_.push_back( factory );
 }
 
 
