@@ -207,26 +207,22 @@ void DualPorosity::initialize()
 
 void DualPorosity::initialize_fields()
 {
-  //setting fields in data
-  data_.set_components(names_);
-
   //setting fields that are set from input file
   input_data_set_+=data_;
   input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
+  //setting fields in data
+  data_.set_components(names_);
   data_.set_mesh(*mesh_);
   data_.set_limit_side(LimitSide::right);
   
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
-  
-  //initialization of output
-  data_.conc_immobile.set_components(names_);
-  data_.conc_immobile.set_mesh(*mesh_);
-  data_.conc_immobile.set_limit_side(LimitSide::right);
+  data_.output_fields.set_components(names_);
+  data_.output_fields.set_mesh(*mesh_);
+  data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-
-  data_.conc_immobile.set_time(*time_);
+  data_.conc_immobile.set_up_components();
   for (unsigned int sbi=0; sbi<names_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -234,7 +230,6 @@ void DualPorosity::initialize_fields()
         new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], names_.size(), mesh_->n_elements()));
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  data_.output_fields.set_limit_side(LimitSide::right);
   output_stream_->add_admissible_field_names(output_array, data_.output_selection);
 }
 

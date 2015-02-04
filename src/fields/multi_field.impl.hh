@@ -56,26 +56,9 @@ bool MultiField<spacedim, Value>::set_time(
 		const TimeGovernor &time)
 {
 	// initialization of Multifield for first call
-	if (this->last_time_ == -numeric_limits<double>::infinity()) {
-		ASSERT(this->shared_->comp_names_.size(), "Vector of component names is empty!\n");
-		ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
-
-	    sub_fields_.resize( this->shared_->comp_names_.size() );
-	    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-	    {
-	    	sub_fields_[i_comp].units( units() );
-	    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
-	    	sub_fields_[i_comp].set_limit_side(this->limit_side_);
-
-	    	if (this->shared_->comp_names_[i_comp].length() == 0)
-	    		sub_fields_[i_comp].name( name() );
-	    	else
-	    		sub_fields_[i_comp].name( this->shared_->comp_names_[i_comp] + "_" + name());
-	    }
-	    this->last_time_ = time.t(); // temporary - remove this line
-	    return false; // remove this line
+	if (sub_fields_.size() == 0) {
+	    set_up_components();
 	}
-	this->last_time_ = time.t();
 
 	// set time for sub fields
 	bool any=false;
@@ -90,6 +73,11 @@ bool MultiField<spacedim, Value>::set_time(
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
+	// test if mesh is not set
+	if (shared_->mesh_ && shared_->mesh_ != &mesh) {
+		THROW(ExcFieldMeshDifference() << EI_Field(name()) );
+	}
+
     shared_->mesh_ = &mesh;
 }
 
@@ -125,6 +113,29 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 	bool const_all=false;
 	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
 	return const_all;
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_up_components() {
+	ASSERT(this->shared_->comp_names_.size(), "Vector of component names is empty!\n");
+	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+
+	cout << "Multifield set_up_components() - " << name() << endl;
+
+    sub_fields_.resize( this->shared_->comp_names_.size() );
+    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
+    {
+    	sub_fields_[i_comp].units( units() );
+    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
+    	sub_fields_[i_comp].set_limit_side(this->limit_side_);
+
+    	if (this->shared_->comp_names_[i_comp].length() == 0)
+    		sub_fields_[i_comp].name( name() );
+    	else
+    		sub_fields_[i_comp].name( this->shared_->comp_names_[i_comp] + "_" + name());
+    }
 }
 
 

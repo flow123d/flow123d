@@ -309,7 +309,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
-    data_.output_field.set_time(*time_);
+    data_.output_field.set_up_components();
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions

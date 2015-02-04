@@ -193,9 +193,6 @@ protected:
   /// Mapping from local indexing of substances to global.
   std::vector<unsigned int> substance_global_idx_;
   
-  /// Names of substances.
-  std::vector<std::string> substance_names_;
-
   /**
    * Array for storage infos about sorbed species concentrations.
    */

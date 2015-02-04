@@ -125,6 +125,13 @@ public:
     	return sub_fields_[idx];
     }
 
+    /**
+     * Initialize components of MultiField.
+     *
+     * Must be call after setting components, mesh and limit side.
+     */
+    void set_up_components();
+
 private:
     std::vector< SubFieldType > sub_fields_;
 

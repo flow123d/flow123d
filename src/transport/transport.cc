@@ -125,19 +125,17 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
-	data_.conc_mobile.set_components(subst_names_);
-	data_.conc_mobile.set_mesh(*mesh_);
-	data_.conc_mobile.set_limit_side(LimitSide::right);
+	data_.output_fields.set_components(subst_names_);
+	data_.output_fields.set_mesh(*mesh_);
+	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
-
-	data_.conc_mobile.set_time(*time_);
+	data_.conc_mobile.set_up_components();
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[MOBILE][sbi], n_subst_, mesh_->n_elements()));
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	data_.output_fields.set_limit_side(LimitSide::right);
 	output_stream_ = OutputTime::create_output_stream(output_rec);
 	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
 	output_stream_->mark_output_times(*time_);
