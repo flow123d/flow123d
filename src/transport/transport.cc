@@ -99,6 +99,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
+	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
 
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
