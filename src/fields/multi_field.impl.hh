@@ -122,14 +122,13 @@ void MultiField<spacedim, Value>::set_up_components() {
 	ASSERT(this->shared_->comp_names_.size(), "Vector of component names is empty!\n");
 	ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
 
-	cout << "Multifield set_up_components() - " << name() << endl;
-
     sub_fields_.resize( this->shared_->comp_names_.size() );
     for(unsigned int i_comp=0; i_comp < size(); i_comp++)
     {
     	sub_fields_[i_comp].units( units() );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
+    	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
 
     	if (this->shared_->comp_names_[i_comp].length() == 0)
     		sub_fields_[i_comp].name( name() );
