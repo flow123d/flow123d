@@ -8,6 +8,7 @@
 #include <la/schur.hh>
 #include <la/linsys.hh>
 #include "la/linsys_PETSC.hh"
+#include "system/sys_profiler.hh"
 
 #include <petscmat.h>
 #include <math.h>
@@ -90,6 +91,9 @@ public:
 
 
 TEST(schur, complement) {
+    Profiler::initialize();
+   
+
 	IS set;
 	// vytvorit rozdeleni bloku na procesory ve tvaru "part" (tj. indexy prvnich radku na procesorech)
     int np, rank;
