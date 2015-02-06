@@ -107,11 +107,11 @@ template<int N, int M> class IntersectionPoint{
 		is_patological = ip;
 	}
 
-	inline int getSide1(){
+	inline int getSide1() const{
 		return side_idx1;
 	};
 
-	inline int getSide2(){
+	inline int getSide2() const{
 		return side_idx2;
 	};
 

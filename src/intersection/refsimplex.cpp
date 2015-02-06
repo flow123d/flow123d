@@ -113,6 +113,15 @@ template<> const unsigned int RefSimplex<3>::line_sides[][2] = {
 		{2,3}
 };
 
+/**
+ * Indexes of sides for each line - for Simplex<2>, with right orientation
+ */
+template<> const unsigned int RefSimplex<2>::line_sides[][2] = {
+		{1,0},
+		{0,2},
+		{2,1}
+};
+
 
 //template<unsigned int dim>
 //const unsigned int RefElement<dim>::line_nodes[][0] = {};

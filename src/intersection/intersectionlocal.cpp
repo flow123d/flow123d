@@ -36,145 +36,12 @@ void IntersectionLocal::traceGenericPolygon(){
 
 	if(!is_patological){
 		xprintf(Msg,"Tracing opt polygon(%d)", i_points.size());
-
-		//xprintf(Msg,"Min: %f\n",std::numeric_limits<double>::epsilon());
-
-
-
 		this->tracePolygonOpt();
-		return;
+
 	}else{
 		xprintf(Msg,"Tracing traceConvexHull polygon(%d)", i_points.size());
 		this->traceConvexHull();
-		return;
 	}
-	xprintf(Msg,"Tracing generic polygon(%d)", i_points.size());
-
-
-	std::vector<int> pp;
-	std::vector<IntersectionPoint<2,3>> new_points, new_points2;
-
-	double startA,startB,startC = 0.0;
-	arma::vec::fixed<3> min; min.zeros();
-	int min_index = -1;
-
-	min[2] = 1;
-	while(true){
-		for(unsigned int j = 0; j < i_points.size();j++){
-			if(i_points[j].getLocalCoords1()[1] >= startB && i_points[j].getLocalCoords1()[2] <= min[2]){
-				if(i_points[j].getLocalCoords1()[2] == min[2]){
-					if(i_points[j].getLocalCoords1()[1] <= min[1]){
-						min = i_points[j].getLocalCoords1();
-						min_index = j;
-					}
-				}else{
-					min = i_points[j].getLocalCoords1();
-					min_index = j;
-				}
-			}
-		}
-		if(min_index != -1){
-			new_points.push_back(i_points[min_index]);
-			startA = i_points[min_index].getLocalCoords1()[0];
-			startB = i_points[min_index].getLocalCoords1()[1];
-			startC = i_points[min_index].getLocalCoords1()[2];
-			i_points.erase(i_points.begin() + min_index);
-			min.zeros();min[2] = 1;
-			min_index = -1;
-		}else{
-			break;
-		}
-	}
-
-	// Po šikmé hraně
-	min.zeros();min[0] = 1;
-	while(true){
-		for(unsigned int j = 0; j < i_points.size();j++){
-			if(i_points[j].getLocalCoords1()[2] >= startC && i_points[j].getLocalCoords1()[0] <= min[0]){
-				if(i_points[j].getLocalCoords1()[0] == min[0]){
-					if(i_points[j].getLocalCoords1()[2] <= min[2]){
-						min = i_points[j].getLocalCoords1();
-						min_index = j;
-					}
-				}else{
-					min = i_points[j].getLocalCoords1();
-					min_index = j;
-				}
-			}
-		}
-		if(min_index != -1){
-			new_points.push_back(i_points[min_index]);
-			startA = i_points[min_index].getLocalCoords1()[0];
-			startB = i_points[min_index].getLocalCoords1()[1];
-			startC = i_points[min_index].getLocalCoords1()[2];
-			i_points.erase(i_points.begin() + min_index);
-			min.zeros();min[0] = 1;
-			min_index = -1;
-		}else{
-			break;
-		}
-	}
-	// dolu po CA->
-	min.zeros();min[1] = 1;
-	while(true){
-		for(unsigned int j = 0; j < i_points.size();j++){
-			if(i_points[j].getLocalCoords1()[0] >= startA && i_points[j].getLocalCoords1()[1] <= min[1]){
-				if(i_points[j].getLocalCoords1()[1] == min[1]){
-					if(i_points[j].getLocalCoords1()[0] <= min[0]){
-						min = i_points[j].getLocalCoords1();
-						min_index = j;
-					}
-				}else{
-					min = i_points[j].getLocalCoords1();
-					min_index = j;
-				}
-			}
-		}
-		if(min_index != -1){
-			new_points.push_back(i_points[min_index]);
-			startA = i_points[min_index].getLocalCoords1()[0];
-			startB = i_points[min_index].getLocalCoords1()[1];
-			startC = i_points[min_index].getLocalCoords1()[2];
-			i_points.erase(i_points.begin() + min_index);
-			min.zeros();min[1] = 1;
-			min_index = -1;
-		}else{
-			break;
-		}
-	}
-
-		if(new_points.size() > 1){
-
-			new_points2.push_back(new_points[0]);
-
-			double old1 = new_points[0].getLocalCoords1()[0];
-			double old2 = new_points[0].getLocalCoords1()[1];
-
-			for(unsigned int j = 1; j < new_points.size();j++){
-
-				if(new_points[j].getLocalCoords1()[0] != old1 ||
-						new_points[j].getLocalCoords1()[1] != old2){
-					new_points2.push_back(new_points[j]);
-				}
-				old1 = new_points[j].getLocalCoords1()[0];
-				old2 = new_points[j].getLocalCoords1()[1];
-			}
-
-			if(new_points2.size() > 1){
-				if(new_points2[new_points2.size()-1].getLocalCoords1()[0] == new_points2[0].getLocalCoords1()[0] &&
-					new_points2[new_points2.size()-1].getLocalCoords1()[1] == new_points2[0].getLocalCoords1()[1]){
-					new_points2.pop_back();
-				}
-			}
-
-		}else if(new_points.size() == 1){
-			new_points2 = new_points;
-		}
-
-		i_points = new_points2;
-
-
-
 };
 
 void IntersectionLocal::fillTracingTable(){
@@ -226,12 +93,17 @@ void IntersectionLocal::fillTracingTable(){
 
 			if(i_points[m].isVertex()){
 				index1 = 4 + ((i_points[m].getLocalCoords1()[0] == 1) ? 0 : ((i_points[m].getLocalCoords1()[1] == 1) ? 1 : 2));
+				i_points[m].setSide1(index1-4);//uloží se pouze index vrcholu
+				i_points[m].setSide2(-1);
+				// Uložit si o jaky vrchol se jedna
 			}else{
 				index1 = i_points[m].getSide2();
 			}
 
 			if(i_points[n].isVertex()){
 				index2 = 4 + ((i_points[n].getLocalCoords1()[0] == 1) ? 0 : ((i_points[n].getLocalCoords1()[1] == 1) ? 1 : 2));
+				i_points[n].setSide1(index2-4);//uloží se pouze index vrcholu
+				i_points[n].setSide2(-1);
 			}else{
 				index2 = i_points[n].getSide2();
 			}
@@ -310,6 +182,43 @@ void IntersectionLocal::fillTracingTable(){
 
 };
 
+void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const{
+	/* informace index2D, index3D
+	 * typ S-S    -1      int(index 3D hrany)    => bod vznikl na hraně 4stěnu
+	 * typ S-H    int(index 2D hrany)     int(index 3D steny)     => regulerni prunik na stene i hrane
+	 * typ H-H    int(index vrcholu)      -1     => průnik je vrchol trojuhl.
+	 *
+	 * */
+	unsigned int indexHrana;
+	unsigned int indexStena;
+
+	if(a.getSide1() == -1){
+		// vytahnout přes RefSimplex<3> index steny
+		// záleží na orientaci -> podle ní vytáhnout 1. stenu
+	}else if(a.getSide2() == -1){
+		// vytahnout přes RefSimplex<2> index hrany
+		// záleží na orientaci -> podle ní vytáhnout 1. hranu
+	}else{
+		indexHrana = a.getSide1();
+		indexStena = a.getSide2();
+	}
+
+	if(b.getSide1() == -1){
+		// vytáhnout přes RefSimplex<3> index steny
+		// zálěží na orientaci -> podle ní vytáhnout 2. stenu
+	}else if(b.getSide2() == -1){
+		// vytáhnout přes RefSimplex<2> index hrany
+		// záleží na orientaci -> podle ní vytáhnout 2. hranu
+	}else{
+
+	}
+
+	// Podle indexů rozhodnout, zda-li výsledná hrana polygonu
+	// průsečíku je hrana 2D simplexu nebo hrana ve stěně 3D simplexu
+
+
+};
+
 void IntersectionLocal::tracePolygonOpt(){
 
 	//return;
@@ -350,7 +259,69 @@ void IntersectionLocal::tracePolygonOpt(){
 		start = tracing_table(start, 0);
 		//if(start == -1){return;}
 	}
+
+	//xprintf(Msg,"\n");
+	//tracing_table.print();
+
 	i_points = new_points;
+	// Prochazeni polygonem
+	/* informace index2D, index3D
+	 * typ S-S    -1      int(index 3D hrany)    => bod vznikl na hraně 4stěnu
+	 * typ S-H    int(index 2D hrany)     int(index 3D steny)     => regulerni prunik na stene i hrane
+	 * typ H-H    int(index vrcholu)      -1     => průnik je vrchol trojuhl.
+	 *
+	 * */
+
+	if(i_points.size() > 0){
+
+	int last_2D = i_points[i_points.size()-1].getSide1();
+	int last_3D = i_points[i_points.size()-1].getSide2();
+	int last_or = i_points[i_points.size()-1].getOrientation();
+	int next_3D;
+
+	xprintf(Msg, "\nTrasuji\n");
+	xprintf(Msg, "%2d %2d %2d\n", last_2D, last_3D, last_or);
+
+	for(unsigned int i = 0; i < i_points.size();i++){
+		unsigned int type;
+		unsigned int index;
+
+		prolongationType(i_points[i],i_points[(i+1)%i_points.size()], type, index);
+
+		xprintf(Msg, "%2d %2d %2d\n", i_points[i].getSide1(),
+			i_points[i].getSide2(), i_points[i].getOrientation());
+
+		if(last_2D == -1){
+			last_3D = RefSimplex<3>::line_sides[last_3D][(last_or+1)%2];
+		}
+		xprintf(Msg, "      %2d\n",last_3D);
+
+
+		if(i_points[i].getSide1() == -1){
+			next_3D = RefSimplex<3>::line_sides[i_points[i].getSide2()][i_points[i].getOrientation()];
+		}else{
+			next_3D = i_points[i].getSide2();
+		}
+
+		xprintf(Msg, "3D:   %2d\n",next_3D);
+
+		// Pokud se trasuje hranou - maji 2 po sobě jdouci body stejny
+		// index hrany, jinak maji stejny index steny
+		if(last_2D != -1 && last_2D == i_points[i].getSide1()){
+			xprintf(Msg, "\tProdluzuji hranou trojuhleniku\n");
+		}else if(last_3D == next_3D){
+			xprintf(Msg, "\tProdluzuji stenou ctyrstenu\n");
+		}else{
+			xprintf(Msg, "\tChyba pri prodluzovani\n");
+		}
+
+
+		last_2D = i_points[i].getSide1();
+		last_3D = i_points[i].getSide2();
+		last_or = i_points[i].getOrientation();
+	}
+
+	}
 
 
 };

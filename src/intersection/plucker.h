@@ -4,6 +4,9 @@
 using namespace std;
 namespace computeintersection{
 
+#ifndef _PLUCKER_H
+#define _PLUCKER_H
+
 class Plucker{
 private:
 	arma::vec6 coordinates;
@@ -21,7 +24,7 @@ public:
 
 	void setComputed(bool computed);
 	void clear();
-	bool isComputed();
+	bool isComputed() const;
 
 
 	void compute(const arma::vec3 u, const arma::vec3 a);
@@ -32,6 +35,13 @@ public:
 	// get cross product vector UxA
 	arma::vec3 getUA();
 
+	arma::vec6 getPlucker() const;
+
+	void setPlucker(const Plucker &p);
+
 	void toString();
 };
+
+#endif
+
 } // END namespace_close

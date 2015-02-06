@@ -6,7 +6,9 @@
  */
 //#include <algorithm>
 #include "intersectionpoint.h"
+#include "prolongationline.h"
 #include "system/system.hh"
+#include <queue>
 
 
 using namespace std;
@@ -73,6 +75,8 @@ public:
 
     void traceGenericPolygon();
 
+    void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
+
     /**
      * Trasování Polygonu
      *  - po té, co se naplní trasovací tabulka se tato tabulka prochází
@@ -83,6 +87,8 @@ public:
      *  zda-li je na něm 0 - 2 průniků.
      */
     void tracePolygonOpt();
+
+    void prolongatePolygon(std::queue<ProlongationLine> &fronta2D, std::queue<ProlongationLine> &fronta3D);
 
     void traceConvexHull();
 

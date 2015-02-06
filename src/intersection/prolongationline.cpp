@@ -11,8 +11,27 @@ using namespace std;
 namespace computeintersection{
 
 
-ProlongationLine::ProlongationLine() {
+ProlongationLine::ProlongationLine(unsigned int side_old,unsigned int side,unsigned int element_old, unsigned int element,unsigned int type) {
 
+	side_idx = side;
+	side_idx_old = side_old;
+
+	element_idx = element;
+	element_idx_old = element_old;
+
+	if(type == 0){
+		// 2D prolongation
+		pluckerProducts.reserve(6);
+		pluckers.reserve(1);
+
+	}else if(type == 1){
+		// 3D prolongation
+		pluckerProducts.reserve(9);
+		pluckers.reserve(6);
+	}else{
+		//xprintf(Msg,"\n\nUndefined prolongation type!\n\n");
+		//throw std::exception("Undefined prolongation type");
+	}
 }
 
 }

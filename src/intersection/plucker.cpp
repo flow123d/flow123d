@@ -31,7 +31,7 @@ void Plucker::setComputed(bool comp){
 	computed = comp;
 };
 
-bool Plucker::isComputed(){
+bool Plucker::isComputed() const{
 	return computed;
 };
 
@@ -57,6 +57,15 @@ arma::vec3 Plucker::getU(){
 
 arma::vec3 Plucker::getUA(){
 	return coordinates(arma::span(3,5));
+};
+
+arma::vec6 Plucker::getPlucker() const{
+	return coordinates;
+};
+
+void Plucker::setPlucker(const Plucker &p){
+	coordinates = p.getPlucker();
+	computed = p.isComputed();
 };
 
 

@@ -31,52 +31,6 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 	//projeti.assign(sit->n_elements(),false);
 
 	ComputeIntersections23();
-	return;
-
-	xprintf(Msg,"Toto se nemelo spustit\n");
-
-	unsigned int elementLimit = 20;
-	unsigned int el2_idx;
-	unsigned int el3_idx;
-	BIHTree bt(mesh, elementLimit);
-
-		//Profiler::initialize(MPI_COMM_WORLD);
-		 //START_TIMER("Test_bez_BIHtree");
-
-
-		FOR_ELEMENTS(mesh, elm) {
-			// Pouze pro dvojice 2d - 3d
-			if(elm->dim() == 3){
-				el3_idx = elm.index();
-				xprintf(Msg, "-----Nalezen 3D element idx(%d)------ \n", el3_idx);
-
-				this->UpdateTetrahedron(elm);
-
-			}
-
-			if (elm->dim() == 2) {
-				el2_idx = elm.index();
-				xprintf(Msg, "-----Nalezen 2D element idx(%d)------ \n",el2_idx);
-				this->UpdateTriangle(elm);
-
-			 }
-		}
-
-		IntersectionLocal il(el2_idx, el3_idx);
-		ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
-		CI_23.init();
-		//CI_23.toStringPluckerCoordinatesTree();
-		CI_23.compute(il);
-		//CI_23.toStringPluckerCoordinatesTree();
-		il.printTracingTable();
-		il.traceGenericPolygon();
-		all_intersections.push_back(il);
-
-		cout << "Velikost pole s pruseciky:" << all_intersections.size() << endl;
-		//END_TIMER("Test_bez_BIHtree");
-
-		//Profiler::instance()->output(cout);
-		//Profiler::uninitialize();
 
 };
 
@@ -121,13 +75,14 @@ void InspectElements::ComputeIntersections23(){
 			        	il.traceGenericPolygon();
 
 
-
 			        	xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
 			        	if(il.getIPsize() > 0){
 			        		all_intersections.push_back(il);
 			        	}
 
 			        	if(il.getIPsize() > 2){
+
+
 			        		// Prodloužení
 			        		// Naplnění front pro 3D elementy
 			        		// Naplnění front pro 2D elementy

@@ -125,6 +125,7 @@ set(sources_intersection_2_3
 	intersection/plucker.cpp
 	intersection/simplex.cpp
 	intersection/refsimplex.cpp
+	intersection/prolongationline.cpp
 	intersection/intersectionpoint.cpp
 	intersection/intersectionlocal.cpp
 	intersection/computeintersection.cpp
