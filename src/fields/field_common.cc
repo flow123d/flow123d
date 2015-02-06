@@ -60,8 +60,10 @@ void FieldCommon::set_input_list(const Input::Array &list)
     double time,last_time=0.0;
     if (list.size() == 0) return;
     for( auto it = shared_->input_list_.begin<Input::Record>();
-            it != shared_->input_list_.end(); ++it)
-        if (it->find<Input::AbstractRecord>(input_name())) {
+            it != shared_->input_list_.end(); ++it) {
+    	bool found = (this->multifield_) ? it->find<Input::Record>(input_name()) : it->find<Input::AbstractRecord>(input_name());
+    	//if (it->find<Input::AbstractRecord>(input_name())) {
+        if (found) {
             // field descriptor appropriate to the field
             time = it->val<double>("time");
             if (time < last_time) {
@@ -74,6 +76,7 @@ void FieldCommon::set_input_list(const Input::Array &list)
             last_time=time;
 
         }
+    }
 
     shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
 }
