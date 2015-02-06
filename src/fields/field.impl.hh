@@ -21,27 +21,26 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>())
-
+: data_(std::make_shared<SharedData>())
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+	this->add_factory( std::make_shared<FactoryBase>() );
 }
 
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: read_field_descriptor_hook( &read_field_descriptor ),
-  data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>())
 
 {
-		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
-		// this invariant is kept also by n_comp setter
-		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
-		shared_->bc_=bc;
-		this->name( name );
+	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+	// this invariant is kept also by n_comp setter
+	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+	shared_->bc_=bc;
+	this->name( name );
+	this->add_factory( std::make_shared<FactoryBase>() );
 }
 
 
@@ -49,8 +48,8 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
-  read_field_descriptor_hook( other.read_field_descriptor_hook ),
-  data_(other.data_)
+  data_(other.data_),
+  factories_(other.factories_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -77,7 +76,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
     shared_->is_fully_initialized_ = false;
 	set_time_result_ = TimeStatus::unknown;
 
-	read_field_descriptor_hook = other.read_field_descriptor_hook;
+	factories_ = other.factories_;
 	data_ = other.data_;
 
 	if (other.no_check_control_field_) {
@@ -231,18 +230,6 @@ void Field<spacedim, Value>::set_field(
 
 
 
-template<int spacedim, class Value>
-auto Field<spacedim, Value>::read_field_descriptor(Input::Record rec, const FieldCommon &field) -> FieldBasePtr
-{
-	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.input_name(), field_record))
-		return FieldBaseType::function_factory(field_record, field.n_comp() );
-	else
-		return FieldBasePtr();
-}
-
-
-
 
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
@@ -356,12 +343,12 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 				domain = mesh()->region_db().get_region_set(domain_name);
 
 			} else if (shared_->list_it_->opt_val("region", domain_name)) {
-        // try find region by label
-        Region region = mesh()->region_db().find_label(domain_name); 
-        if(region.is_valid())
-          domain.push_back(region);
-        else
-          xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
+				// try find region by label
+				Region region = mesh()->region_db().find_label(domain_name);
+				if(region.is_valid())
+				  domain.push_back(region);
+				else
+				  xprintf(Warn, "Unknown region with label: '%s'\n", domain_name.c_str());
 
 			} else if (shared_->list_it_->opt_val("rid", id)) {
 				try {
@@ -379,23 +366,28 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 						<< shared_->list_it_->ei_address() );
 			}
 		    
-		  if (domain.size() == 0) {
-        ++shared_->list_it_;
-        continue;
-      }
-			// get field instance
-			FieldBasePtr field_instance = read_field_descriptor_hook(*(shared_->list_it_), *this);
-			if (field_instance)  // skip descriptors without related keys
-			{
-				// add to history
-				ASSERT_EQUAL( field_instance->n_comp() , n_comp());
-				field_instance->set_mesh( mesh() , is_bc() );
-				for(const Region &reg: domain) {
-					data_->region_history_[reg.idx()].push_front(
-							HistoryPoint(input_time, field_instance)
-					);
-				}
+			if (domain.size() == 0) {
+				++shared_->list_it_;
+				continue;
 			}
+			// get field instance
+		    //std::vector<FactoryBase *> * ftrs = factories_.get();
+		    //
+			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
+				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
+				if (field_instance)  // skip descriptors without related keys
+				{
+					// add to history
+					ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+					field_instance->set_mesh( mesh() , is_bc() );
+					for(const Region &reg: domain) {
+						data_->region_history_[reg.idx()].push_front(
+								HistoryPoint(input_time, field_instance)
+						);
+					}
+				}
+		    }
+
         	++shared_->list_it_;
         }
     }
@@ -452,6 +444,22 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         }
     }
     shared_->is_fully_initialized_;
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::add_factory(const std::shared_ptr<FactoryBase> factory) {
+	factories_.push_back( factory );
+}
+
+
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::AbstractRecord field_record;
+	if (rec.opt_val(field.input_name(), field_record))
+		return FieldBaseType::function_factory(field_record, field.n_comp() );
+	else
+		return FieldBasePtr();
 }
 
 
@@ -555,6 +563,13 @@ bool MultiField<spacedim, Value>::is_constant(Region reg) {
 	bool const_all=false;
 	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
 	return const_all;
+}
+
+
+
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	return NULL;
 }
 
 

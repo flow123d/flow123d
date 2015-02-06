@@ -42,6 +42,8 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 
+#include "fields/generic_field.hh"
+
 using namespace Input::Type;
 
 template<class Model>
@@ -70,7 +72,7 @@ Record TransportDG<Model>::input_type
 	= Model::get_input_type("DG", "DG solver")
     .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
             "Linear solver for MH problem.")
-    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(Model::ModelEqData::name() + "_DG")), IT::Default::obligatory(), "")
+    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
     .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
     		"Variant of interior penalty discontinuous Galerkin method.")
     .declare_key("dg_order", Integer(0,3), Default("1"),
@@ -225,6 +227,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
+    *this += region_ids.name("region_ids")
+    	        .units( UnitSI::dimensionless())
+    	        .flags(FieldFlag::equation_external_output);
+
     // add all input fields to the output list
 
 }
@@ -235,6 +241,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
           mass_matrix(0),
           allocation_done(false)
 {
+	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
+	// due to constexpr optimization.
+	START_TIMER(Model::ModelEqData::name());
 	// Check that Model is derived from AdvectionDiffusionModel.
 	static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
@@ -262,6 +271,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.set_n_components(n_subst_);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
+    data_.region_ids = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -324,7 +334,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	}
     data_.set_limit_side(LimitSide::left);
 	output_stream = OutputTime::create_output_stream(output_rec);
-	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+	output_stream->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     // set time marks for writing the output
     output_stream->mark_output_times(*time_);
@@ -398,6 +408,7 @@ void TransportDG<Model>::output_vector_gather()
 template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
+	START_TIMER(Model::ModelEqData::name());
     data_.set_time(*time_);
 
     // set initial conditions

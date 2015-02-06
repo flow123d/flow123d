@@ -4,5 +4,6 @@ pressure error 1d: 0.0510736
 pressure error 2d: 0.0383578
 velocity error 1d: 0.261247
 velocity error 2d: 2.78397
+masked velocity error 2d: 2.78397
 div error 1d: 45.2166
 div error 2d: 2

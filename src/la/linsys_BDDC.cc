@@ -39,6 +39,7 @@
 
 #include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
+#include "system/sys_profiler.hh"
 
 
 
@@ -248,11 +249,17 @@ int LinSys_BDDC::solve()    // ! params are not currently used
 #ifdef HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
 
-    bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
+    {
+		START_TIMER("BDDC linear solver");
+		START_TIMER("BDDC linear iteration");
+		bddcml_ -> solveSystem( r_tol_, number_of_levels_, numSubAtLevels, bddcml_verbosity_level_, max_it_, max_nondecr_it_, use_adaptive_bddc_ );
 
-    DBGMSG("BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
-    DBGMSG("BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
-    DBGMSG("BDDCML estimated condition number is %f \n", bddcml_ -> giveCondNumber() );
+
+		xprintf(MsgLog,"BDDCML converged reason: %d ( 0 means OK ) \n", bddcml_ -> giveConvergedReason() );
+		xprintf(MsgLog,"BDDCML converged in %d iterations. \n", bddcml_ -> giveNumIterations() );
+		xprintf(MsgLog,"BDDCML estimated condition number is %f \n", bddcml_ -> giveCondNumber() );
+		ADD_CALLS(bddcml_ -> giveNumIterations());
+    }
 
     // download local solution
     bddcml_ -> giveSolution( isngn_, locSolution_ ); 

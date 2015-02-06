@@ -77,6 +77,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Integer> subdomain;
+	    Field<3, FieldValue<3>::Integer> region_ids;
 
 	    Field<3, FieldValue<3>::Scalar> velocity_diff;
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;

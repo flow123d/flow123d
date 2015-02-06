@@ -34,11 +34,11 @@ Selection SorptionBase::EqData::sorption_type_selection = Selection("AdsorptionT
 
 Record SorptionBase::input_type
 	= Record("Adsorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
-    .declare_key("substances", Array(String()), Default::obligatory(),
+    .declare_key("substances", Array(String(),1), Default::obligatory(),
                  "Names of the substances that take part in the adsorption model.")
-	.declare_key("solvent_density", Double(), Default("1.0"),
+	.declare_key("solvent_density", Double(0.0), Default("1.0"),
 				"Density of the solvent.")
-	.declare_key("substeps", Integer(), Default("1000"),
+	.declare_key("substeps", Integer(1), Default("1000"),
 				"Number of equidistant substeps, molar mass and isotherm intersections")
 	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 							"Specifies solubility limits of all the adsorbing species.")
@@ -322,40 +322,50 @@ void SorptionBase::initialize_substance_ids()
 
 void SorptionBase::initialize_from_input()
 {
+    // read number of interpolation steps - value checked by the record definition
     n_interpolation_steps_ = input_record_.val<int>("substeps");
-    if(n_interpolation_steps_ < 1)
-        xprintf(UsrErr,"Number of 'substeps'=%d in isotherm interpolation table must be be >0.\n", 
-                n_interpolation_steps_);
     
-    // Common data for all the isotherms loaded bellow
+    // read the density of solvent - value checked by the record definition
 	solvent_density_ = input_record_.val<double>("solvent_density");
 
+    // read the solubility vector
 	Input::Iterator<Input::Array> solub_iter = input_record_.find<Input::Array>("solubility");
 	if( solub_iter )
 	{
-		solub_iter->copy_to(solubility_vec_);
-		if (solubility_vec_.size() != n_substances_)
+		if (solub_iter->Array::size() != n_substances_)
 		{
-			xprintf(UsrErr,"Number of given solubility limits %d has to match number of adsorbing species %d.\n", 
-                    solubility_vec_.size(), n_substances_);
+            THROW(SorptionBase::ExcSubstanceCountMatch() 
+                << SorptionBase::EI_ArrayName("solubility") 
+                << input_record_.ei_address());
+            // there is no way to get ei_address from 'solub_iter', only as a string
 		}
-	}else{
-		// fill solubility_vec_ with zeros or resize it at least
-		solubility_vec_.resize(n_substances_);
+		
+		else solub_iter->copy_to(solubility_vec_);
+	}
+	else{
+		// fill solubility_vec_ with zeros
+        solubility_vec_.clear();
+		solubility_vec_.resize(n_substances_,0.0);
 	}
 
+	// read the interpolation table limits
 	Input::Iterator<Input::Array> interp_table_limits = input_record_.find<Input::Array>("table_limits");
 	if( interp_table_limits )
 	{
-		interp_table_limits->copy_to(table_limit_);
-		if (table_limit_.size() != n_substances_)
+		if (interp_table_limits->Array::size() != n_substances_)
 		{
-			xprintf(UsrErr,"Number of given table limits %d has to match number of adsorbing species %d.\n", 
-                    table_limit_.size(), n_substances_);
+            THROW(SorptionBase::ExcSubstanceCountMatch() 
+                << SorptionBase::EI_ArrayName("table_limits") 
+                << input_record_.ei_address());
+            // there is no way to get ei_address from 'interp_table_limits', only as a string
 		}
-	}else{
-		// fill table_limit_ with zeros or resize it at least
-		table_limit_.resize(n_substances_);
+		
+		else interp_table_limits->copy_to(table_limit_);
+	}
+	else{
+		// fill table_limit_ with zeros
+        table_limit_.clear();
+		table_limit_.resize(n_substances_,0.0);
 	}
 }
 
@@ -385,7 +395,7 @@ void SorptionBase::initialize_fields()
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
   data_->output_fields.set_limit_side(LimitSide::right);
-  output_stream_->add_admissible_field_names(output_array, output_selection);
+  output_stream_->add_admissible_field_names(output_array);
 }
 
 
@@ -451,21 +461,29 @@ void SorptionBase::update_solution(void)
 
 void SorptionBase::make_tables(void)
 {
-  ElementAccessor<3> elm;
-  BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
-  {
-    int reg_idx = reg_iter.bulk_idx();
-
-    if(data_->is_constant(reg_iter))
+    try
     {
-      ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
-      isotherm_reinit(isotherms[reg_idx],elm);
-      for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        isotherms[reg_idx][i_subst].make_table(n_interpolation_steps_);
-      }
+        ElementAccessor<3> elm;
+        BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+        {
+            int reg_idx = reg_iter.bulk_idx();
+
+            if(data_->is_constant(reg_iter))
+            {
+                ElementAccessor<3> elm(this->mesh_, reg_iter); // constant element accessor
+                isotherm_reinit(isotherms[reg_idx],elm);
+                for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
+                {
+                    isotherms[reg_idx][i_subst].make_table(n_interpolation_steps_);
+                }
+            }
+        }
     }
-  }
+    catch(ExceptionBase const &e)
+    {
+        e << input_record_.ei_address();
+        throw;
+    }
 }
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
@@ -476,30 +494,37 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
     
-    // Constant value of rock density and mobile porosity over the whole region 
-    // => interpolation_table is precomputed
-    if (isotherms_vec[0].is_precomputed()) 
-    {
-      for(i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        subst_id = substance_global_idx_[i_subst];
-     
-        isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
-                                           conc_solid[subst_id][loc_el]);
-      }
+    try{
+        // Constant value of rock density and mobile porosity over the whole region 
+        // => interpolation_table is precomputed
+        if (isotherms_vec[0].is_precomputed()) 
+        {
+            for(i_subst = 0; i_subst < n_substances_; i_subst++)
+            {
+                subst_id = substance_global_idx_[i_subst];
+            
+                isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
+                                                conc_solid[subst_id][loc_el]);
+            }
+        }
+        else 
+        {
+            isotherm_reinit(isotherms_vec, elem->element_accessor());
+        
+            for(i_subst = 0; i_subst < n_substances_; i_subst++)
+            {
+                subst_id = substance_global_idx_[i_subst];
+                isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
+                                            conc_solid[subst_id][loc_el]);
+            }
+        }
     }
-    else 
+    catch(ExceptionBase const &e)
     {
-      isotherm_reinit(isotherms_vec, elem->element_accessor());
-      
-      for(i_subst = 0; i_subst < n_substances_; i_subst++)
-      {
-        subst_id = substance_global_idx_[i_subst];
-        isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
-                                       conc_solid[subst_id][loc_el]);
-      }
+        e << input_record_.ei_address();
+        throw;
     }
-    
+
   return concentrations;
 }
 
