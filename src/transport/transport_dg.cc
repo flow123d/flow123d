@@ -965,7 +965,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 				// set up the parameters for DG method
 				set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), dg_penalty[sbi], gamma_l);
 				gamma[sbi][side->cond_idx()] = gamma_l;
-				if (bc_type[sbi] == EqData::dirichlet || side_flux < -mh_dh->precision())
+				if (bc_type[sbi] == EqData::dirichlet || side_flux < 0)
 					transport_flux += gamma_l;
 			}
 
@@ -985,7 +985,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 						local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
 
 						// flux due to diffusion (only on dirichlet and inflow boundary)
-						if (bc_type[sbi] == EqData::dirichlet || (bc_type[sbi] == EqData::inflow && side_flux < -mh_dh->precision()))
+						if (bc_type[sbi] == EqData::dirichlet || (bc_type[sbi] == EqData::inflow && side_flux < 0))
 							local_matrix[i*ndofs+j] -= (arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(j,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
 									+ arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
 									)*fe_values_side.JxW(k);
@@ -1167,12 +1167,16 @@ void TransportDG<Model>::set_boundary_conditions()
         {
         	for (unsigned int i=0; i<ndofs; i++) local_rhs[i] = 0;
 
+    		double side_flux = 0;
+    		for (unsigned int k=0; k<qsize; k++)
+    			side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+
         	for (unsigned int k=0; k<qsize; k++)
         	{
         		double bc_term = 0;
         		arma::vec3 bc_grad;
         		bc_grad.zeros();
-                if ((bc_type[sbi] == EqData::inflow && mh_dh->side_flux( *edg->side(0) ) < -mh_dh->precision())
+                if ((bc_type[sbi] == EqData::inflow && side_flux < 0)
                 		|| (bc_type[sbi] == EqData::dirichlet))
                 {
                 	bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
@@ -1513,7 +1517,7 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
 				// flux due to advection
 				mass_flux += water_flux*conc*fe_values.JxW(k);
 
-				if (bc_type[sbi] == EqData::dirichlet || (bc_type[sbi] == EqData::inflow && water_flux*side->measure() < -mh_dh->precision()))
+				if (bc_type[sbi] == EqData::dirichlet || (bc_type[sbi] == EqData::inflow && water_flux*side->measure() < 0))
 				{
 					// flux due to diffusion
 					mass_flux -= arma::dot(dif_coef[sbi][k]*conc_grad,fe_values.normal_vector(k))*fe_values.JxW(k);
