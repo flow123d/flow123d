@@ -15,9 +15,14 @@ at files doc/LICENSE and doc/GPL3.
 
 ## Build Flow123d ##
 
+The sources of released versions can be downloaded from the project [web page](http://flow123d.github.com). The sources of
+development branches can be obtained by 
+
+    > git clone https://github.com/flow123d/flow123d.git
+
 ### Windows OS prerequisities ###
 
-If you are running Windows, you have to install 'cygwin' for emulation of
+If you are running Windows, you have to install [cygwin](http://www.cygwin.org) for emulation of
 POSIX unix environment. Then all work has to be done in the directories under
 cygwin, e.g "C:\cygwin\home\user\". In addition to the packages mentioned for the Linux you will need:
 
