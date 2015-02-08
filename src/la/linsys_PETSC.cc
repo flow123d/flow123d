@@ -34,8 +34,10 @@
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "system/sys_profiler.hh"
 
-#include <boost/bind.hpp>
+
+//#include <boost/bind.hpp>
 
 namespace it = Input::Type;
 
@@ -345,10 +347,14 @@ int LinSys_PETSC::solve()
     		KSPSetInitialGuessNonzero(system, PETSC_TRUE);
     }
 
-    KSPSolve(system, rhs_, solution_ );
-    KSPGetConvergedReason(system,&reason);
-    KSPGetIterationNumber(system,&nits);
-
+    {
+		START_TIMER("PETSC linear solver");
+		START_TIMER("PETSC linear iteration");
+		KSPSolve(system, rhs_, solution_ );
+		KSPGetConvergedReason(system,&reason);
+		KSPGetIterationNumber(system,&nits);
+		ADD_CALLS(nits);
+    }
     // substitute by PETSc call for residual
     VecNorm(rhs_, NORM_2, &residual_norm_);
     
