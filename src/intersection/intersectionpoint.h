@@ -115,7 +115,7 @@ template<int N, int M> class IntersectionPoint{
 		return side_idx2;
 	};
 
-	inline unsigned int getOrientation(){
+	inline unsigned int getOrientation() const{
 		return orientation;
 	};
 

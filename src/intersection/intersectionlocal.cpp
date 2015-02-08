@@ -189,15 +189,20 @@ void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const 
 	 * typ H-H    int(index vrcholu)      -1     => průnik je vrchol trojuhl.
 	 *
 	 * */
-	unsigned int indexHrana;
-	unsigned int indexStena;
+	int indexHrana = -1;
+	int indexStena = -1;
+	int indexHrana2 = -1;
+	int indexStena2 = -1;
 
 	if(a.getSide1() == -1){
 		// vytahnout přes RefSimplex<3> index steny
 		// záleží na orientaci -> podle ní vytáhnout 1. stenu
+		indexStena = RefSimplex<3>::line_sides[a.getSide2()][(a.getOrientation()+1)%2];
 	}else if(a.getSide2() == -1){
 		// vytahnout přes RefSimplex<2> index hrany
 		// záleží na orientaci -> podle ní vytáhnout 1. hranu
+		//indexHrana = RefSimplex<2>::line_sides[a.getSide1()][(a.getOrientation()+1)%2];
+		indexHrana = b.getSide1();
 	}else{
 		indexHrana = a.getSide1();
 		indexStena = a.getSide2();
@@ -206,11 +211,31 @@ void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const 
 	if(b.getSide1() == -1){
 		// vytáhnout přes RefSimplex<3> index steny
 		// zálěží na orientaci -> podle ní vytáhnout 2. stenu
+		indexStena2 = RefSimplex<3>::line_sides[b.getSide2()][b.getOrientation()];
 	}else if(b.getSide2() == -1){
 		// vytáhnout přes RefSimplex<2> index hrany
 		// záleží na orientaci -> podle ní vytáhnout 2. hranu
+		//indexHrana2 = RefSimplex<2>::line_sides[b.getSide1()][b.getOrientation()];
+		indexHrana2 = a.getSide1();
 	}else{
+		indexHrana2 = b.getSide1();
+		indexStena2 = b.getSide2();
+	}
 
+	if(a.getSide2() == -1 && b.getSide2() == -1){
+		indexHrana = indexHrana2 = (a.getSide1() + b.getSide1())-1;
+	}
+
+	xprintf(Msg,"Původní index hran[%d %d], sten[%d %d], orientace[%d %d]\n",a.getSide1(), b.getSide1(), a.getSide2(), b.getSide2(), a.getOrientation(), b.getOrientation());
+	xprintf(Msg, "INDEX hran[%d %d], sten[%d %d]\n", indexHrana, indexHrana2,indexStena, indexStena2);
+	//xprintf(Msg, "nebo hran[%d %d], sten[%d %d]\n",);
+
+	if(indexStena != -1 && (indexStena == indexStena2)){
+		xprintf(Msg,"Nové - prodlužování hranou stěny čtyřstěnu\n");
+	}else if(indexHrana != -1 && (indexHrana == indexHrana2)){
+		xprintf(Msg,"Nové - prodlužování hranou trojúhelníku\n");
+	}else{
+		xprintf(Msg,"Nové - chyba - toto se nemělo stát\n");
 	}
 
 	// Podle indexů rozhodnout, zda-li výsledná hrana polygonu

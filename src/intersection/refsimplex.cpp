@@ -117,9 +117,9 @@ template<> const unsigned int RefSimplex<3>::line_sides[][2] = {
  * Indexes of sides for each line - for Simplex<2>, with right orientation
  */
 template<> const unsigned int RefSimplex<2>::line_sides[][2] = {
-		{1,0},
-		{0,2},
-		{2,1}
+		{0,2},//{1,0},
+		{2,1},//{0,2},
+		{1,0}//{2,1}
 };
 
 
