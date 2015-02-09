@@ -145,14 +145,17 @@ void MultiField<spacedim, Value>::set_up_components() {
 
 
 template<int spacedim, class Value>
-typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record rec, const FieldCommon &field) {
-	Input::Iterator<Input::AbstractRecord> it_common = rec.find<Input::AbstractRecord>("common");
-	Input::Iterator<Input::Array> it_components = rec.find<Input::Array>("components");
+typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {
+	Input::Record multifield_rec;
+	if (descriptor_rec.opt_val(field.input_name(), multifield_rec));
+	Input::Iterator<Input::AbstractRecord> it_common = multifield_rec.find<Input::AbstractRecord>("common");
+	Input::Iterator<Input::Array> it_components = multifield_rec.find<Input::Array>("components");
 	if (it_common && !it_components) {
-		it_common->transpose_to( rec, "components", spacedim );
-		it_components = rec.find<Input::Array>("components");
+		it_common->transpose_to( multifield_rec, "components", spacedim );
+		it_components = multifield_rec.find<Input::Array>("components");
 	}
 
+	ASSERT(it_components, "Failed to fill 'components' arrayof multifield: %s.", field.input_name());
 	ASSERT(index_ < it_components->size(), "Index of MultiField component is out of range.\n");
 
 	unsigned int position = 0;
