@@ -155,7 +155,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 		it_components = multifield_rec.find<Input::Array>("components");
 	}
 
-	ASSERT(it_components, "Failed to fill 'components' arrayof multifield: %s.", field.input_name());
+	ASSERT(it_components, "Failed to fill 'components' array of multifield: %s.", field.input_name().c_str());
 	ASSERT(index_ < it_components->size(), "Index of MultiField component is out of range.\n");
 
 	unsigned int position = 0;
