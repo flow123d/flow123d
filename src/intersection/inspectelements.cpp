@@ -23,8 +23,8 @@ InspectElements::InspectElements(Simplex<2> sim2, Simplex<3> sim3){
 	CI_23.compute(il);
 	//il.printTracingTable();
 	xprintf(Msg,"Toto se nesmi spustit\n");
-	il.traceGenericPolygon();
-	all_intersections.push_back(il);
+	//il.traceGenericPolygon();
+	//all_intersections.push_back(il);
 };
 
 InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
@@ -72,7 +72,7 @@ void InspectElements::ComputeIntersections23(){
 			        	CI_23.init();
 			        	CI_23.compute(il);
 			        	//il.tracePolygon();
-			        	il.traceGenericPolygon();
+			        	il.traceGenericPolygon(elm, ele);
 
 
 			        	xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());

@@ -8,6 +8,7 @@
 #include "intersectionpoint.h"
 #include "prolongationline.h"
 #include "system/system.hh"
+#include "mesh/mesh.h"
 #include <queue>
 
 
@@ -73,7 +74,7 @@ public:
     	return tracing_table(rows, cols);
     };
 
-    void traceGenericPolygon();
+    void traceGenericPolygon(const ElementFullIter &element_2D, const ElementFullIter &element_3D);
 
     void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
 
@@ -86,7 +87,7 @@ public:
      *  každý řádek má údaj o tom, do kterého řádku má pokračovat a
      *  zda-li je na něm 0 - 2 průniků.
      */
-    void tracePolygonOpt();
+    void tracePolygonOpt(const ElementFullIter &element_2D, const ElementFullIter &element_3D);
 
     void prolongatePolygon(std::queue<ProlongationLine> &fronta2D, std::queue<ProlongationLine> &fronta3D);
 
