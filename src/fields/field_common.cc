@@ -61,8 +61,20 @@ void FieldCommon::set_input_list(const Input::Array &list)
     if (list.size() == 0) return;
     for( auto it = shared_->input_list_.begin<Input::Record>();
             it != shared_->input_list_.end(); ++it) {
-    	bool found = (this->multifield_) ? it->find<Input::Record>(input_name()) : it->find<Input::AbstractRecord>(input_name());
-    	//if (it->find<Input::AbstractRecord>(input_name())) {
+    	bool found;
+    	if (this->multifield_) {
+    		found = it->find<Input::Record>(input_name());
+    	}
+    	else if (this->component_index_ == std::numeric_limits<unsigned int>::max()) {
+    		found = it->find<Input::AbstractRecord>(input_name());
+    	}
+    	else {
+    		Input::Record mutlifield_rec;
+    		if (it->opt_val(input_name(), mutlifield_rec)) {
+    			found = mutlifield_rec.find<Input::Array>("components");
+    		}
+    		else found = false;
+    	}
         if (found) {
             // field descriptor appropriate to the field
             time = it->val<double>("time");

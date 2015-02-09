@@ -291,6 +291,9 @@ protected:
 
 
 
+    template<int dim, class Val>
+    friend class MultiField;
+
 };
 
 
