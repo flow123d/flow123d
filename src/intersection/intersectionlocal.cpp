@@ -229,6 +229,8 @@ void IntersectionLocal::fillTracingTable2(){
 				//i_points[m].setSide1(index1-4);//uloží se pouze index vrcholu
 				i_points[m].setSide2(-1);
 				// Uložit si o jaky vrchol se jedna
+				// přepíšu poslední vrchol
+				tracing_table(index1,1) = m;
 			}else{
 				index1 = i_points[m].getSide2();
 			}
@@ -237,6 +239,7 @@ void IntersectionLocal::fillTracingTable2(){
 				index2 = 4 + ((i_points[n].getLocalCoords1()[0] == 1) ? 0 : ((i_points[n].getLocalCoords1()[1] == 1) ? 1 : 2));
 				//i_points[n].setSide1(index2-4);//uloží se pouze index vrcholu
 				i_points[n].setSide2(-1);
+				tracing_table(index2,2) = n;
 			}else{
 				index2 = i_points[n].getSide2();
 			}
@@ -341,14 +344,68 @@ void IntersectionLocal::tracePolygonOpt(){
 	xprintf(Msg, "\n TRASOVACÍ TABULKA \n");
 	tracing_table.print();
 
-	return;
 
 	std::vector<IntersectionPoint<2,3>> new_points;
-	unsigned int start = -1;
-	unsigned int end = -1;
-	bool vrchol = false;
+	unsigned int start_idx = -1;
+	unsigned int start_point_idx = -1;
 
-	for(unsigned int i = 0; i < 7; i++){
+	// Nalezení prvního neprázdného řádku
+	for(unsigned int i = 0; i < 7;i++){
+
+		if(tracing_table(i,0) != -1){
+			start_idx = i;
+			start_point_idx = tracing_table(i,1);
+			break;
+		}
+
+	}
+
+	// trasování - max 7 iterací, kvůli eliminaci smyčky
+	for(unsigned int i = 0; i < 7;i++){
+
+		if(start_idx < 4){
+			// Jedná se o průsečíky na stěnách čtyřstěnu
+
+
+
+
+			if(tracing_table(start_idx,1) == start_point_idx && i > 0){
+				break;
+			}else{
+				xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,1));
+				new_points.push_back(i_points[tracing_table(start_idx,1)]);
+			}
+
+			xprintf(Msg, "\t Prodlužuji stěnou(%d) - body[%d,%d]\n", start_idx,(int)tracing_table(start_idx,1),(int)tracing_table(start_idx,2));
+			// Prodloužení -> podle indexu steny vratim sousedni 3D element
+
+		}
+
+		if(tracing_table(start_idx,3) != -1){
+			// body jsou spojeny hranou trojúhelníka
+
+
+			if(tracing_table(start_idx,2) == start_point_idx && i > 0){
+
+				break;
+			}else{
+				xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,2));
+				new_points.push_back(i_points[tracing_table(start_idx,2)]);
+			}
+			xprintf(Msg, "\t Prodlužuji hranou(%d) - body[%d,%d]\n", (int)tracing_table(start_idx,3),(int)tracing_table(start_idx,2),(int)tracing_table(tracing_table(start_idx,0),1));
+			// Prodloužení -> podle indexu hrany vratim sousedni 2D element
+
+		}
+
+
+		start_idx = tracing_table(start_idx,0);
+
+	}
+
+
+
+
+	/*for(unsigned int i = 0; i < 7; i++){
 		if(tracing_table(i,0) != -1){
 			end = i;
 			start = tracing_table(i,0);
@@ -361,11 +418,11 @@ void IntersectionLocal::tracePolygonOpt(){
 			}
 			break;
 		}
-	}
+	}*/
 
 
 
-	while(start != end){
+	/*while(start != end){
 		vrchol = false;
 		if(tracing_table(start,1) != -1){
 			new_points.push_back(i_points[tracing_table(start,1)]);
@@ -377,7 +434,7 @@ void IntersectionLocal::tracePolygonOpt(){
 		}
 		start = tracing_table(start, 0);
 		//if(start == -1){return;}
-	}
+	}*/
 
 	//xprintf(Msg,"\n");
 	//tracing_table.print();
@@ -391,7 +448,7 @@ void IntersectionLocal::tracePolygonOpt(){
 	 *
 	 * */
 
-	if(i_points.size() > 0){
+	/*if(i_points.size() > 0){
 
 	int last_2D = i_points[i_points.size()-1].getSide1();
 	int last_3D = i_points[i_points.size()-1].getSide2();
@@ -440,7 +497,7 @@ void IntersectionLocal::tracePolygonOpt(){
 		last_or = i_points[i].getOrientation();
 	}
 
-	}
+	}*/
 
 
 };
