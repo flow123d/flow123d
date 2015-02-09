@@ -40,6 +40,7 @@
 
 #include "system/tokenizer.hh"
 #include "mesh/region.hh"
+#include "input/accessors.hh"
 
 class Mesh;
 class FilePath;
@@ -88,6 +89,14 @@ struct GMSH_DataHeader {
 
 class GmshMeshReader {
 public:
+	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
+	TYPEDEF_ERR_INFO(EI_Time, double);
+	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
+			<< "No data for field: "<< EI_FieldName::qval
+			<< " and time: "<< EI_Time::val
+			<< " in the input file: "<< EI_GMSHFile::qval);
+
 	/**
 	 * Map of ElementData sections in GMSH file.
 	 *
@@ -177,4 +186,5 @@ private:
 };
 
 #endif	/* _GMSHMESHREADER_H */
+
 

@@ -355,7 +355,7 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
     // possibly skip remaining lines after break
     while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-    xprintf(Msg, "time: %f; %d entities of field %s read.\n",
+    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
     		actual_header.time, n_read, actual_header.field_name.c_str());
 
     search_header.actual = true; // use input header to indicate modification of @p data buffer
@@ -375,10 +375,11 @@ void GmshMeshReader::make_header_table()
             if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
             	std::vector<GMSH_DataHeader> vec;
             	vec.push_back(header);
-            	header_table_.insert( std::pair<std::string, std::vector<GMSH_DataHeader> >(header.field_name, vec) );
-            } else if ( header.time <= it->second[it->second.size()-1].time ) {  // time is in wrong order. can't be add
+            	//header_table_.insert( std::pair<std::string, std::vector<GMSH_DataHeader> >(header.field_name, vec) );
+            	header_table_[header.field_name]=vec;
+            } else if ( header.time <= it->second.back().time ) {  // time is in wrong order. can't be add
             	xprintf(Warn,
-            		"In file '%s', '$ElementData' section for field '%s' and time '%d' is in wrong order and can't be add!\n",
+            		"Non-ascending time series detected in file '%s', '$ElementData' section, quantity: '%s', time: '%d'. Skipping this time.\n",
             		tok_.f_name().c_str(), header.field_name.c_str(), header.time);
             } else {  // add new time step
             	it->second.push_back(header);
@@ -397,8 +398,7 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
-                tok_.f_name().c_str(), field_name.c_str());
+        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_GMSHFile(tok_.f_name()));
 	}
 
 	auto comp = [](double t, const GMSH_DataHeader &a) {
@@ -411,8 +411,8 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 			comp);
 
 	if (headers_it == table_it->second.begin()) {
-        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
-                tok_.f_name().c_str(), field_name.c_str(), time);
+		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
+				                      << EI_GMSHFile(tok_.f_name()) << EI_Time(time));
 	}
 
 	--headers_it;
