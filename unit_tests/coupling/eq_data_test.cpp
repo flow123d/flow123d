@@ -37,6 +37,7 @@
 #include "fields/field_add_potential.hh"
 #include "fields/unit_si.hh"
 #include "fields/bc_field.hh"
+#include "fields/multi_field.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -57,7 +58,13 @@ const string eq_data_input = R"JSON(
             TYPE="FieldConstant",
             value=1.1
           },
-        init_conc = [ 1, 2, 3, 4]  
+        init_conc = [ 1, 2, 3, 4],
+        conc_mobile = {
+            TYPE="MultiField",
+            component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+            common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+            components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+          }
       },
       { region="2D XY diagonal",
         init_pressure=2.2
@@ -211,15 +218,18 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
+            //ADD_FIELD(conc_mobile, "", "1.0");
 
             init_pressure.units( UnitSI::dimensionless() );
             init_conc.units( UnitSI::dimensionless() );
             bulk_set_field.units( UnitSI::dimensionless() );
+            //conc_mobile.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
+        MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
 
 protected:
@@ -247,8 +257,8 @@ protected:
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.set_components(component_names);        // set number of substances posibly read from elsewhere
-        data.bc_conc.set_components(component_names);
+        data.set_components(component_names);        // set number of substances posibly read from elsewhere
+        //data.bc_conc.set_components(component_names);
 
         /* Regions in the test mesh:
          * $PhysicalNames
