@@ -110,7 +110,7 @@ file (WRITE "${cmakelists_fname}"
     URL ${PETSC_INSTALL_URL}
     SOURCE_DIR ${PETSC_INSTALL_DIR}/src
     BINARY_DIR ${PETSC_INSTALL_DIR}/src
-    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh
+    CONFIGURE_COMMAND bash ${PETSC_INSTALL_DIR}/conf.sh --with-make-np ${MAKE_NUMCPUS}
     BUILD_COMMAND make all
     INSTALL_COMMAND \"\"
   )  
