@@ -17,7 +17,7 @@ IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):el
 	is_patological = false;
 
 	for(unsigned int i = 0; i < 7;i++){
-		for(unsigned int j = 0; j < 3;j++){
+		for(unsigned int j = 0; j < 4;j++){
 			tracing_table(i,j) = -1;
 		}
 	}
@@ -182,6 +182,95 @@ void IntersectionLocal::fillTracingTable(){
 
 };
 
+void IntersectionLocal::fillTracingTable2(){
+
+	for(unsigned int i = 0; i < i_points.size();i++){
+
+		if(i_points[i].getSide1() != -1){
+			unsigned int index1, index2;
+			unsigned int j = 0;
+			/* Orientace přímek podle orientace stěn
+			 *
+			 *  Stěny  --- Přímky
+			 *  0 -> 1    0,0
+			 *  0 -> 2    0,1
+			 *  0 -> 3    0,0
+			 *  1 -> 2    1,1
+			 *  1 -> 3    1,0
+			 *  2 -> 3    0,0
+			 *
+			 *  Zajímá nás pouze první průnik:
+			 *  0 = 0
+			 *  0 = 0
+			 *  0 = 0
+			 *  1 = 1
+			 *  1 = 1
+			 *  2 = 0
+			 *  => stena % 2 = orientace přímky
+			 *  pokud ano, primka je obracene a jen si prohodime pruniky
+			 *  + pokud je hrana troj. 1, také prohodíme
+			 */
+
+
+			if((i_points[i].getSide2()%2) == (int)i_points[i].getOrientation()){
+				j = 1;
+			}
+
+			if(i_points[i].getSide1() == 1){
+				j = 1 - j;
+			}
+
+			 // pro potřebu otáčet
+			unsigned int m = i + j;
+			unsigned int n = i + 1 - j;
+
+			if(i_points[m].isVertex()){
+				index1 = 4 + ((i_points[m].getLocalCoords1()[0] == 1) ? 0 : ((i_points[m].getLocalCoords1()[1] == 1) ? 1 : 2));
+				//i_points[m].setSide1(index1-4);//uloží se pouze index vrcholu
+				i_points[m].setSide2(-1);
+				// Uložit si o jaky vrchol se jedna
+			}else{
+				index1 = i_points[m].getSide2();
+			}
+
+			if(i_points[n].isVertex()){
+				index2 = 4 + ((i_points[n].getLocalCoords1()[0] == 1) ? 0 : ((i_points[n].getLocalCoords1()[1] == 1) ? 1 : 2));
+				//i_points[n].setSide1(index2-4);//uloží se pouze index vrcholu
+				i_points[n].setSide2(-1);
+			}else{
+				index2 = i_points[n].getSide2();
+			}
+
+			if(tracing_table(index1,0) == -1){
+				tracing_table(index1,0) = index2;
+			}else{
+				xprintf(Msg, "PROBLEM - na stenu(%d) s indexem další stěny(%d) se chce zapsat nova stena(%d)\n",
+						index1, tracing_table(index1,0),index2);
+			}
+
+
+			tracing_table(index1,2) = m; // vždy výstupní bod
+			tracing_table(index2,1) = n; // vždy vstupní bod
+			tracing_table(index1,3) = i_points[m].getSide1();;
+
+			i++;
+		}else{
+			// jedná se o průniky 2 -> 1
+			//xprintf(Msg,"Orientace(%d), hrana(%d), stena(%d), vrchol(%d),\n", i_points[i].getOrientation(),i_points[i].getSide1(),i_points[i].getSide2(),i_points[i].isVertex());
+			unsigned int hrana = i_points[i].getSide2();
+			unsigned int index1 = RefSimplex<3>::line_sides[hrana][i_points[i].getOrientation()];
+			unsigned int index2 = RefSimplex<3>::line_sides[hrana][1 - i_points[i].getOrientation()];
+			tracing_table(index1,0) = index2;
+			tracing_table(index1,2) = i;
+			tracing_table(index2,1) = i;
+		}
+		}
+
+	//tracing_table.print();
+
+
+};
+
 void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const{
 	/* informace index2D, index3D
 	 * typ S-S    -1      int(index 3D hrany)    => bod vznikl na hraně 4stěnu
@@ -247,7 +336,12 @@ void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const 
 void IntersectionLocal::tracePolygonOpt(){
 
 	//return;
-	fillTracingTable();
+	fillTracingTable2();
+
+	xprintf(Msg, "\n TRASOVACÍ TABULKA \n");
+	tracing_table.print();
+
+	return;
 
 	std::vector<IntersectionPoint<2,3>> new_points;
 	unsigned int start = -1;

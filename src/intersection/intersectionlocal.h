@@ -21,7 +21,7 @@ class IntersectionLocal {
 	bool is_patological;
 
 	std::vector<IntersectionPoint<2,3>> i_points; //vektor ukazatelu na dvojice lokal. souradnic
-	arma::mat::fixed<7,3> tracing_table;
+	arma::mat::fixed<7,4> tracing_table;
 
 	unsigned int element_2D_idx;
 	unsigned int element_3D_idx;
@@ -114,6 +114,12 @@ public:
      * 	 průnik pokračuje
      * */
     void fillTracingTable();
+
+    /*
+     * Optimalizovanější verze
+     * */
+
+    void fillTracingTable2();
 
     /*
      * Vrací IntersectionPoint s prohozenými dimenzemi i daty.
