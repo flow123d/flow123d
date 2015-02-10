@@ -3,7 +3,7 @@ RANLIB = ranlib
 
 cc = @CMAKE_C_COMPILER@
 AR_LIB_SUFFIX = a
-CFLAGS = @CMAKE_C_FLAGS@
+CFLAGS = @PETSC_VAR_CC_FLAGS@
 
 # for blopex_serial_double
 LOBPCG_ROOT_DIR =  ../../blopex_abstract
