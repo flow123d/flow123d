@@ -29,6 +29,10 @@ class IntersectionLocal {
 
 
 public:
+
+	static const unsigned int PROLONGATION_TYPE_TRIANGLE_SIDE = 0;
+	static const unsigned int PROLONGATION_TYPE_TETRAHEDRON_SIDE = 1;
+
     IntersectionLocal();
     IntersectionLocal(unsigned int elem2D,unsigned int elem3D);
     ~IntersectionLocal();
@@ -74,7 +78,7 @@ public:
     	return tracing_table(rows, cols);
     };
 
-    void traceGenericPolygon(const ElementFullIter &element_2D, const ElementFullIter &element_3D);
+    void traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
 
     void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
 
@@ -87,7 +91,7 @@ public:
      *  každý řádek má údaj o tom, do kterého řádku má pokračovat a
      *  zda-li je na něm 0 - 2 průniků.
      */
-    void tracePolygonOpt(const ElementFullIter &element_2D, const ElementFullIter &element_3D);
+    void tracePolygonOpt(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
 
     void prolongatePolygon(std::queue<ProlongationLine> &fronta2D, std::queue<ProlongationLine> &fronta3D);
 

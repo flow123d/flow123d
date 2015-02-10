@@ -10,6 +10,10 @@
 using namespace std;
 namespace computeintersection{
 
+ProlongationLine::ProlongationLine(unsigned int element_2D, unsigned int dictionary){
+	elm_2D_idx = element_2D;
+	dictionary_idx = dictionary;
+}
 
 ProlongationLine::ProlongationLine(unsigned int side_old,unsigned int side,unsigned int element_old, unsigned int element,unsigned int type) {
 

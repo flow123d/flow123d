@@ -32,11 +32,11 @@ void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
 	i_points.push_back(InPoint);
 };
 
-void IntersectionLocal::traceGenericPolygon(const ElementFullIter &element_2D, const ElementFullIter &element_3D){
+void IntersectionLocal::traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table){
 
 	if(!is_patological){
 		xprintf(Msg,"Tracing opt polygon(%d)", i_points.size());
-		this->tracePolygonOpt(element_2D,element_3D);
+		this->tracePolygonOpt(prolongation_table);
 
 	}else{
 		xprintf(Msg,"Tracing traceConvexHull polygon(%d)", i_points.size());
@@ -336,7 +336,7 @@ void IntersectionLocal::prolongationType(const IntersectionPoint<2,3> &a, const 
 
 };
 
-void IntersectionLocal::tracePolygonOpt(const ElementFullIter &element_2D, const ElementFullIter &element_3D){
+void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table){
 
 	//return;
 	fillTracingTable2();
@@ -374,9 +374,11 @@ void IntersectionLocal::tracePolygonOpt(const ElementFullIter &element_2D, const
 			}
 
 			xprintf(Msg, "\t Prodlužuji stěnou(%d) - body[%d,%d]\n", start_idx,(int)tracing_table(start_idx,1),(int)tracing_table(start_idx,2));
+
+			prolongation_table.push_back(std::make_pair(start_idx, 1));//IntersectionLocal::PROLONGATION_TYPE_TETRAHEDRON_SIDE));
 			// Prodloužení -> podle indexu steny vratim sousedni 3D element
 
-			SideIter elm_side = element_3D->side(start_idx);
+			/*SideIter elm_side = element_3D->side(start_idx);
 			Edge *edg = elm_side->edge();
 
 			if(edg == NULL){
@@ -388,7 +390,7 @@ void IntersectionLocal::tracePolygonOpt(const ElementFullIter &element_2D, const
 						xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)",element_3D->index(),start_idx,other_side->element()->index(),other_side->el_idx());
 					}
 				}
-			}
+			}*/
 
 
 
@@ -407,7 +409,9 @@ void IntersectionLocal::tracePolygonOpt(const ElementFullIter &element_2D, const
 			}
 			xprintf(Msg, "\t Prodlužuji hranou(%d) - body[%d,%d]\n", (int)tracing_table(start_idx,3),(int)tracing_table(start_idx,2),(int)tracing_table(tracing_table(start_idx,0),1));
 			// Prodloužení -> podle indexu hrany vratim sousedni 2D element
-			SideIter elm_side = element_2D->side(tracing_table(start_idx,3));
+			prolongation_table.push_back(std::make_pair(tracing_table(start_idx,3), 0));
+
+			/*SideIter elm_side = element_2D->side(tracing_table(start_idx,3));
 			Edge *edg = elm_side->edge();
 
 			if(edg == NULL){
@@ -419,7 +423,7 @@ void IntersectionLocal::tracePolygonOpt(const ElementFullIter &element_2D, const
 						xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",element_2D->index(),(int)tracing_table(start_idx,3),other_side->element()->index(),other_side->el_idx());
 					}
 				}
-			}
+			}*/
 		}
 
 

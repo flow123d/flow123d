@@ -23,6 +23,11 @@ class InspectElements {
 
 	std::vector<IntersectionLocal> all_intersections;
 
+	std::map<unsigned int, std::vector<IntersectionLocal>> intersection_list;
+	std::map<unsigned int, bool> closed_elements;
+
+	std::queue<ProlongationLine> prolongation_line_queue;
+
 	IntersectionLocal temporary_intersection;
 
 	Simplex<1> abscissa;
@@ -39,6 +44,12 @@ public:
 	InspectElements(Simplex<2> sim2, Simplex<3> sim3);
 	InspectElements(Mesh *_mesh);
 	~InspectElements();
+
+	// dopnit implementaci do .cpp
+	void computeIntersections2d3d();
+	void computeIntersections2d3dInit();
+	void computeIntersections2d3dProlongation();
+
 
 	void ComputeIntersections23();
 	void ComputeIntersections13();

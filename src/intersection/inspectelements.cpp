@@ -36,13 +36,26 @@ InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
 
 InspectElements::~InspectElements(){};
 
+void InspectElements::computeIntersections2d3dInit(){
+
+	FOR_ELEMENTS(mesh, elm) {
+		if (elm->dim() == 2) {
+			intersection_list[elm.index()] = std::vector<IntersectionLocal>();
+			closed_elements[elm.index()] = false;
+		}
+	}
+
+}
+
 void InspectElements::ComputeIntersections23(){
+
+		computeIntersections2d3dInit();
 
 		unsigned int elementLimit = 20;
 		BIHTree bt(mesh, elementLimit);
 
 		FOR_ELEMENTS(mesh, elm) {
-			if (elm->dim() == 2) {
+			if (elm->dim() == 2 && !closed_elements[elm.index()]) {
 
 				this->UpdateTriangle(elm);
 
@@ -51,9 +64,9 @@ void InspectElements::ComputeIntersections23(){
 			    TTriangle tt;
 			    //ElementFullIter efi = mesh->element(elm.index());
 			    //FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(efi, ta);
-	tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-				 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-				 TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
+				tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+							 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+							 TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
 
 			    //FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_triangle(efi,tt);
 			    //BoundingBox elementBoundingBox = ta.get_bounding_box();
@@ -72,7 +85,8 @@ void InspectElements::ComputeIntersections23(){
 			        	CI_23.init();
 			        	CI_23.compute(il);
 			        	//il.tracePolygon();
-			        	il.traceGenericPolygon(elm, ele);
+			        	std::vector<std::pair<unsigned int, unsigned int>> prolongation_table;
+			        	il.traceGenericPolygon(prolongation_table);
 
 
 			        	xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
@@ -82,20 +96,29 @@ void InspectElements::ComputeIntersections23(){
 
 			        	if(il.getIPsize() > 2){
 
+			        		intersection_list[elm.index()].push_back(il);
+			        		xprintf(Msg,"Velikost intersection_list(%d), pocet IL v konkretnim listu(%d)\n", intersection_list.size(), intersection_list[elm.index()].size());
 
-			        		// Prodloužení
-			        		// Naplnění front pro 3D elementy
-			        		// Naplnění front pro 2D elementy
+			        		// PRODLUŽOVÁNÍ
+			        		xprintf(Msg, "========PRODLUZUJI========\n");
+			        		for(unsigned int i = 0; i < prolongation_table.size();i++){
 
-			        			// Projetí celé fronty 2D
-			        			// Až bude prázdná -> projet jedno prodloužení
-			        			// z fronty 3D
-			        		//break;
+			        			if(std::get<1>(prolongation_table[i]) == 0){
+			        				// prodlužuji hranou
+			        				xprintf(Msg,"Procházím hranu(%d)\n", std::get<0>(prolongation_table[i]));
+			        			}else{
+			        				// prodlužuji stěnou
+			        				xprintf(Msg,"Procházím stěnu(%d)\n", std::get<0>(prolongation_table[i]));
+			        			}
+
+			        		}
+
 			        	}
-			        	// Stará metoda pro výpočet obsahu polygonu
 
 			        }
 			    }
+			    // Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
+			    closed_elements[elm.index()] = true;
 			}
 		}
 };
