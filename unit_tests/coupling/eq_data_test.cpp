@@ -218,7 +218,7 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
-            //ADD_FIELD(conc_mobile, "", "1.0");
+            //ADD_FIELD(conc_mobile, "");
 
             init_pressure.units( UnitSI::dimensionless() );
             init_conc.units( UnitSI::dimensionless() );
@@ -229,11 +229,12 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
-        MultiField<3, FieldValue<3>::Scalar > conc_mobile;
+        //MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
 
 protected:
     static Input::Type::Record input_type;
+    static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
     std::vector<string> component_names;
 
@@ -289,6 +290,8 @@ protected:
 
 
 
+MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
+
 IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
         .declare_key("data", IT::Array(
@@ -297,6 +300,7 @@ IT::Record SomeEquation::input_type=
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
                 .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
                 .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::input_type, "" )
+				.declare_key("conc_mobile", SomeEquation::empty_mf.get_multifield_input_type(), "" )
                 ), IT::Default::obligatory(), ""  );
 
 
