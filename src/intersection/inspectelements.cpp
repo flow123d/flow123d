@@ -59,6 +59,7 @@ void InspectElements::ComputeIntersections23(){
 
 				this->UpdateTriangle(elm);
 
+
 				std::vector<unsigned int> searchedElements;
 			    //TAbscissa ta;
 			    TTriangle tt;
@@ -103,12 +104,46 @@ void InspectElements::ComputeIntersections23(){
 			        		xprintf(Msg, "========PRODLUZUJI========\n");
 			        		for(unsigned int i = 0; i < prolongation_table.size();i++){
 
-			        			if(std::get<1>(prolongation_table[i]) == 0){
+			        			unsigned int stena = std::get<0>(prolongation_table[i]);
+			        			unsigned int typ_elm = std::get<1>(prolongation_table[i]);
+
+			        			if(typ_elm == 0){
 			        				// prodlužuji hranou
-			        				xprintf(Msg,"Procházím hranu(%d)\n", std::get<0>(prolongation_table[i]));
+			        				xprintf(Msg,"Procházím hranu(%d)\n", stena);
+
+			        				SideIter elm_side = elm->side(2-stena);
+			        				xprintf(Msg, "element(%d,%d) stena element(%d,%d)\n",elm->index(), stena, elm_side->element()->index(),elm_side->el_idx());
+
+									Edge *edg = elm_side->edge();//&mesh->edges[elm_side->edge_idx()];//
+
+									if(edg == NULL){
+										// žádný soused
+									}else{
+										xprintf(Msg, "nalezen soused!!!!!!!!\n");
+										for(int j=0; j < edg->n_sides;j++) {
+											SideIter other_side=edg->side(j);
+											if (other_side != elm_side) {
+												xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
+											}
+										}
+									}
 			        			}else{
 			        				// prodlužuji stěnou
-			        				xprintf(Msg,"Procházím stěnu(%d)\n", std::get<0>(prolongation_table[i]));
+			        				xprintf(Msg,"Procházím stěnu(%d)\n", stena);
+
+			        				SideIter elm_side = ele->side(3-stena);
+									Edge *edg = elm_side->edge();
+
+									if(edg == NULL){
+										// Není už žádný soused
+									}else{
+										for(int j=0; j < edg->n_sides;j++) {
+											SideIter other_side=edg->side(j);
+											if (other_side != elm_side) {
+												xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
+											}
+										}
+									}
 			        			}
 
 			        		}
