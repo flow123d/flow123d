@@ -161,8 +161,11 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	unsigned int position = 0;
 	for (auto it = it_components->begin<Input::AbstractRecord>(); it != it_components->end(); ++it, ++position)
 	{
-		if (index_ == position)
-			return Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+		if (index_ == position) {
+			typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), field.n_comp() );
+			field_algo_base->set_component_idx(index_);
+			return field_algo_base;
+		}
 	}
 	return NULL;
 }

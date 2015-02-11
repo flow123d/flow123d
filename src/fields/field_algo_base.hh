@@ -117,6 +117,12 @@ public:
        virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
 
        /**
+        * Sets @p component_idx_
+        */
+       void set_component_idx(unsigned int idx)
+       { this->component_idx_ = idx; }
+
+       /**
         * Returns number of rows, i.e. number of components for variable size vectors. For values of fixed size returns zero.
         */
        unsigned int n_comp() const;
@@ -180,6 +186,8 @@ protected:
        typename Value::return_type r_value_;
        /// Indicator of particular values (zero, one) constant over space.
        FieldResult field_result_;
+       /// Specify if the field is part of a MultiField and which component it is
+       unsigned int component_idx_;
 };
 
 
