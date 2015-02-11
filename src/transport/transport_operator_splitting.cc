@@ -88,7 +88,7 @@ TransportBase::TransportEqData::TransportEqData()
 	cross_section.flags( FieldFlag::input_copy );
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
-	sources_density.units( UnitSI().kg().m(-3) );
+	sources_density.units( UnitSI().kg().m(-3).s(-1) );
 
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
 	sources_sigma.units( UnitSI().s(-1) );
