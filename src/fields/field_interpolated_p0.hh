@@ -81,8 +81,8 @@ protected:
 	/// mesh, which is interpolated
 	Mesh* source_mesh_;
 
-	/// mesh reader
-	GmshMeshReader *reader_;
+	/// mesh reader file
+	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
     double *data_;

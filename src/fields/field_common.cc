@@ -56,23 +56,24 @@ void FieldCommon::set_input_list(const Input::Array &list)
 
     // check that times forms ascending sequence
     double time,last_time=0.0;
+
     if (list.size() == 0) return;
-    for( auto it = shared_->input_list_.begin<Input::Record>();
-            it != shared_->input_list_.end(); ++it)
-        if (it->find<Input::AbstractRecord>(input_name())) {
+    for( auto it = list.begin<Input::Record>();
+            it != list.end(); ++it) {
+        //if (it->find<Input::AbstractRecord>(input_name())) {
             // field descriptor appropriate to the field
+
             time = it->val<double>("time");
             if (time < last_time) {
-                cout << shared_->input_list_.address_string();
                 THROW( ExcNonascendingTime()
                         << EI_Time(time)
                         << EI_Field(input_name())
-                        << shared_->input_list_.ei_address());
+                        << it->ei_address());
             }
             last_time=time;
 
-        }
-
+        //}
+    }
     shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
 }
 
