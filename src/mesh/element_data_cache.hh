@@ -8,44 +8,68 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <mesh/mesh.h>
+#include <vector>
+#include <string>
+#include <memory>
 
 
-class ElementDataCache {
+class ElementDataCacheBase {
 public:
-	class QuantityStorageBase {
+	/// Constructor.
+	ElementDataCacheBase()
+	: time_(-std::numeric_limits<double>::infinity()),
+	  quantity_name_("") {}
 
-	};
+	/// Getter for time of cache
+	double get_time()
+	{ return time_; }
 
-	template <class T>
-	class QuantityStorage : public QuantityStorageBase {
-	public:
-		typedef std::shared_ptr< std::vector<T> > ComponentData;
-	    typedef unsigned int VectorSize; // number of T type values per element
+	/// Getter for quantity name of cache
+	std::string get_quantity_name()
+	{ return quantity_name_; }
 
-	    QuantityStorage(Mesh &mesh, VectorSize vals_per_element)
-	    : data_( std::make_shared< std::vector<T> >() ),
-	      vals_per_element_(vals_per_element)
-	    {
-	    	data_.reserve(mesh.n_elements() * vals_per_element_);
-	    }
+	/// Check if cache stored actual data
+	bool is_actual(double time, std::string quantity_name) {
+		return (time_ == time) && (quantity_name_ == quantity_name);
+	}
 
-	    ComponentData data_;
-	    VectorSize vals_per_element_;
-	};
+protected:
+	/// time step stored in cache
+	double time_;
+	/// name of quantity stored in cache
+	std::string quantity_name_;
+};
 
-    typedef std::string QuantityName;    
-    typedef std::map<QuantityName, QuantityStorageBase*> TimeStep;
-    typedef std::circular_buffer<TimeStep> DataHistory;
-    typedef std::map<FileName, DataHistory> FileHistory; 
-    
-    /**
-     * Returns data, possibly call reading the file with appropriate reader.
-     */
-    QunatityStorage<T> *get_quantity_data<T>(string file_name, double time, string quantity_name);
-    
-    
-    
+
+template <typename T>
+class ElementDataCache : public ElementDataCacheBase {
+public:
+	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
+	typedef std::vector< ComponentDataPtr > DataCache;
+
+	/// Constructor.
+	ElementDataCache() : ElementDataCacheBase() {}
+
+	/// Set full data of cache (time, name of quantity, table of element data).
+	void set_data(double time, std::string quantity_name, DataCache data) {
+		this->time_ = time;
+		this->quantity_name_ = quantity_name;
+		this->data_ = data;
+	}
+
+	/// Return vector of element data for get component.
+	ComponentDataPtr get_component_data(unsigned int component_idx) {
+		ASSERT(component_idx < data_.size(), "Index of component is out of range.\n");
+		return data_[component_idx];
+	}
+
+protected:
+	/**
+	 * Table of element data.
+	 *
+	 * For every components contains vector of element data.
+	 */
+	DataCache data_;
     
 };
 
