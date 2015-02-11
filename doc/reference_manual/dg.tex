@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discontinuous Galerkin method}
+
+\def\Eh{\mathcal E_h}       % edges of \Th
+\def\Ehb{\mathcal E_{h,B}}  % edges of \Th on boundary
+\def\Ehcom{\mathcal E_{h,C}}         % edges of \Th on interface with lower dimension
+\def\Ehdir{\mathcal E_{h,D}}         % Dirichlet edges of \Th
+\def\Ehint{\mathcal E_{h,I}}       % interior edges of \Th
+\def\Ehneu{\mathcal E_{h,N}}         % Neumann or Robin edges of \Th
+\def\avg#1{\left\{#1\right\}}
+\def\wavg#1{\avg{#1}_{\omega}}
+
+
+Models mentioned in sections \ref{sc:transport_model} and \ref{sc:heat} are summary described
+ as abstract set of advection-diffusion equations on domains $\Omega_d$, $d=1,2,3$,
+ connected by the communication terms.
+Consider the equation for $d=1,2,3$
+\begin{subequations}
+ \label{eq:abstr_system}
+ \begin{equation}
+  \partial_t u_d + \div(\vec b u_d) - \div(\tn A\nabla u_d) = f + q(u_{d+1},u_d) \mbox{ v }\Omega_d
+ \end{equation}
+ with initial and boundary conditions
+ \begin{align}
+  u_d(0,\cdot) &= u^0 &&\mbox{ v }\Omega_d,\\
+  \label{eq:bc_abstr_dir} u_d &= u^D &&\mbox{ na }\Gamma^D_d,\\
+  \label{eq:bc_abstr_neu} (\vec b u_d-\tn A\nabla u_d)\cdot\vec n &= f^N + \sigma^R(u_d - u^D) &&\mbox{ na }\Gamma^N_d,\\
+  (\vec b u_d-\tn A\nabla u_d)\cdot\vec n &= q(u_d,u_{d-1}) &&\mbox{ na } \Gamma^C_d:=\overline\Omega_d\cap\overline\Omega_{d-1}.
+ \end{align}
+ Communication term $q(u_{d+1},u_d)$ has the form
+ \begin{equation}
+  q(u_{d+1},u_d) =
+  \begin{cases}
+      \alpha u_{d+1} + \beta u_d
+    & \mbox{ v }\Gamma^C_{d+1},~d=1,2,\\ 0
+    & \mbox{ mimo }\Gamma^C_{d+1}\mbox{ a pro }d=0,3.
+  \end{cases}
+ \end{equation}
+\end{subequations}
+Set of equations \eqref{eq:abstr_system} is spatial discretized by discontinuous Galerkin method
+ with weighted average,
+ which was derived for one domain case in \cite{ern_stephansen_zunino}
+ (for aposterior estimate see \cite{ern2010guaranteed}).
+For time discretization is used implicit Euler method.
+
+Let $\tau$ for length of time step and $h$ for spatial diskretization parameter.
+For regular splitting $\Th^d$ domains $\Omega^d$, $d=1,2,3$, on simplexes,
+ which norm (the longest edge) is $h$, we define the following sets of element sides:
+\begin{align*}
+ &\Eh^d &&\mbox{sides of all elements in $\Th^d$ (i.e. triangles for $d=3$, lines for $d=2$ and nodes for $d=1$)},\\
+ &\Ehint^d &&\mbox{interior sides},\\
+ &\Ehb^d &&\mbox{outer sides},\\
+ &\Ehdir^d(t) &&\mbox{sides, where is given Dirichlet condition \eqref{eq:bc_abstr_dir}},\\
+ &\Ehneu^d(t) &&\mbox{sides, where is given Neumann or Robin condition \eqref{eq:bc_abstr_neu}},\\
+ &\Ehcom^d &&\mbox{sides coincidenced with $\Gamma^C_d$}.
+\end{align*}
+For interior side $E$ we denote by symbols $T^-(E)$ a $T^+(E)$ elements which share $E$.
+Symbol $\n$ is unit normal vector to $E$ pointing from $T^-(E)$ to $T^+(E)$.
+Value diferences of function $f$ between adjacent elements we defined like $\jmp{f}=f_{|T^-(E)}-f_{|T^+(E)}$,
+ similarly average $\avg{f}=\frac12(f_{|T^-(E)} + f_{|T^+(E)})$
+ and weighted average $\wavg{f}=\omega f_{|T^-(E)} + (1-\omega) f_{|T^+(E)}$.
+Weight $\omega$ is selected be specific way (see \cite{ern_stephansen_zunino})
+ with respect on possible nehomogenity of tenzor $\tn A$.
+
+% Let us fix one substance and the space dimension $d$.
+For every time step $t_k=k\tau$ we looking for diskrete solution $u^{h,k}=(u_1^{h,k},u_2^{h,k},u_3^{h,k})\in V^h=\prod_{d=1}^3 V_d^h$,
+ where
+$$ V_d^h = \{v:\overline{\Omega^d}\to\R\where v_{|T}\in P_p(T)~\forall T\in\Th^d\} $$
+is piecewise continuous space of polynom functions up to the degree $p$ on elements $\Th^d$,
+ generally discontinued on interfaces of elements.
+Initial condition for $u_d^{h,0}$ is set like $L^2$-projection of function $u^0$ on $V_d^h$.
+For $k=1,2,\ldots$ is $u^{h,k}$ given as solution of task
+\begin{equation*}
+ \frac1\tau\sc{u^{h,k}-u^{h,k-1}}{v}_{V^h} + a^{h,k}(u^{h,k},v) = b^{h,k}(v) \quad \forall v\in V^h.
+\end{equation*}
+Where $\sc{f}{g}_{V^h}=\sum_{d=1}^d\sc{f}{g}_{\Omega^d}$, $\sc{f}{g}_{\Omega^d}=\int_{\Omega^d} f g$,
+ and forms $a^{h,k}$, $b^{h,k}$
+ are defined as follows:
+% \begin{multline*}
+\[
+  a^{h,k}((u_1,u_2,u_3),(v_1,v_2,v_3))
+   = \sum_{d=1}^3\bigg( a^{h,k}_d(u_d,v_d)
+    - \sc{q(u_{d+1},u_d)}{v_d}_{\Omega^d}
+    - \sum_{E\in\Ehcom^d(t_k)}\sc{q(u_d,u_{d-1})}{v_d}_E \bigg),
+\]
+% \end{multline*}
+\[ b^{h,k}((v_1,v_2,v_3)) = \sum_{d=1}^3 b^{h,k}_d(v_d), \mbox{\hspace{11.7cm}} \]
+\begin{align*}
+ a^{h,k}_d(u,v) = &\sc{\tn A\nabla u}{\nabla v}_{\Omega^d}
+ - \sc{\vec b u}{\nabla v}_{\Omega^d}\\
+ &- \sum_{E\in\Ehint^d}\bigg(\sc{\wavg{\tn A\nabla u}\cdot\n}{\jmp{v}}_E + \Theta\sc{\wavg{\tn A\nabla v}\cdot\n}{\jmp{u}}_E
+ + \sc{\vec b\cdot\n\avg{u}}{\jmp{v}}_E
+ + \gamma_E\sc{\jmp{u}}{\jmp{v}}_E\bigg)\\
+ &+ \sum_{E\in\Ehb^d}\sc{\vec b\cdot\n u}{v}_E
+ + \sum_{E\in\Ehneu^d(t_k)}\sc{\sigma^R u}{v}_E\\
+ &+ \sum_{E\in\Ehdir^d(t_k)}\bigg(\gamma_E\sc{u}{v}_E - \sc{\tn A\nabla u\cdot\vec n}{v}_E - \Theta\sc{\tn A\nabla v\cdot\vec n}{u}_E\bigg),\\
+% \end{multline*}
+% 
+% \begin{equation*}
+ b^{h,k}_d(v) = &\sc{f}{v}_{\Omega^d} + \sum_{E\in\Ehdir^d(t_k)}\bigg(\gamma_E\sc{u^D}{v}_E - \Theta\sc{u^D}{\tn A\nabla v\cdot\vec n}_E\bigg)
+ + \sum_{E\in\Ehneu^d(t_k)}\sc{f^N+\sigma^R u^D}{v}_E.
+\end{align*}
+Dirichlet condition is here enforced be penalty, while penalty parametr $\gamma_E>0$ is optional;
+ value of penalty parametr influences the degree of solution discontinuity.
+For $\gamma_E\to+\infty$ we obtain asymptotic (at least formally) finite elements method.
+Constant $\Theta$ can take values $-1$, $0$ or $1$,
+ which corresponds to nonsymetric, incomplete and symetric variant of discontinuous Galerkin method.
+
+??? NENÍ PŘEDCHOZÍ VĚTA BLBOST ???
+
+% \paragraph{Communication between regions of the same dimension.}
+In lower dimension cases ($\Omega^1$, $\Omega^2$) we can consider more complex topology,
+ where one side is shared more than 2 elements.
+For this situation, this method is generalized provided so-called ideal blending.
+Let, side $E$ is shared by elements $T_1,\ldots,T_n$.
+Denote $q_i:=(\vec b\cdot\vec n)_{|T_i}$ outflow from $T_i$, $I=1,\ldots,n$
+ and define $I^-:=\{i\where q_i\le 0\}$ a $I^+:=\{i\where q_i>0\}$
+ set of indexes of all outflow, respectively inflow elements.
+
+For every pair $(i,j)\in I^+\times I^-$ then we defined flow from $T_i$ to $T_j$ as
+$$ q_{i\to j} := \frac{q_i q_j}{\sum_{k\in I^-}{q_k}}.$$
+In bilinear form $a_d^{h,k}$ then expression $\sc{\vec b\cdot\vec n\avg{u}}{\jmp{v}}_E$ substitute by expression
+$$ \sum_{(i,j)\in I^+\times I^-}\sc{q_{i\to j}\avg{u}}{\jmp{v}}_E, $$
+where operators $\avg{\cdot}$ and $\jmp{\cdot}$ are considered relative to element pairs $(T_i,T_j)$.
