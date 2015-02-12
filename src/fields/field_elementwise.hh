@@ -117,7 +117,7 @@ private:
     /// Size of Value
     unsigned int n_components_;
 
-    GmshMeshReader *reader_;
+    FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
     /// Registrar of class to factory

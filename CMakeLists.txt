@@ -117,6 +117,19 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
     add_definitions(-DFlow123d_DEBUG)
+  elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
+    # Coverage mode creates instrumented binary
+    SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+
+    # set external libs flags
+    SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
+    SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+    add_definitions(-DFlow123d_DEBUG)
+    INCLUDE(CodeCoverage)
+    # add custom target to collect coverage into xml file
+    COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
   
@@ -196,6 +209,13 @@ if (EXEC_INFO_H)
     
 endif(EXEC_INFO_H)
 
+
+
+# set value for external libs flags if specified, otherwise use default cmake flags
+INCLUDE (MacroValidValue)
+SET_VALID_VALUE ("EXTERNAL_LIBS_C_FLAGS"         ${EXTERNAL_LIBS_C_FLAGS}         ${CMAKE_C_FLAGS})
+SET_VALID_VALUE ("EXTERNAL_LIBS_CXX_FLAGS"       ${EXTERNAL_LIBS_CXX_FLAGS}       ${CMAKE_CXX_FLAGS})
+SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS}   ${CMAKE_Fortran_FLAGS})
 
 
 
