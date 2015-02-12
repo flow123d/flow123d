@@ -71,13 +71,16 @@
         scheme_tolerance = 0.0,
         
         reaction_mobile = {
-          TYPE="PadeApproximant",
-          nom_pol_deg = 3,
-          den_pol_deg = 3,
+          TYPE="RadioactiveDecay",
+          ode_solver = {
+            TYPE="PadeApproximant",
+            nom_pol_deg = 3,
+            den_pol_deg = 3
+          },
       
           decays = [
             {
-              parent = "A",
+              radionuclide = "A",
               half_life = 1.3863,
               products = [ "B" ]
             }

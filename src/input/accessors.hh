@@ -64,6 +64,11 @@ public:
  *  Declaration of error info class for passing Input::Address through exceptions.
  *  Is returned by input accessors : Input::Record, Input::Array, etc.
  *
+ *  Use case example:
+ *  Input::Record input = ...;
+ *  string name=input.val("name");
+ *  if (name.size() > STR_LIMIT) THROW(ExcToLongStr() << EI_Address( input.address_string() ));
+ *
  *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
  *  see also ei_address methods.
  */
@@ -75,6 +80,8 @@ TYPEDEF_ERR_INFO( EI_Address, const std::string);
  *
  * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
  * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * Reports input address provided through EI_Address object, see above.
  *
  * @ingroup exceptions
  */
@@ -148,6 +155,17 @@ private:
     int val_;
 };
 
+class FullEnum {
+public:
+    FullEnum() : val_(0) {}
+    FullEnum(int v, Input::Type::Selection sel) :val_(v), sel_(sel) { this->sel_ = sel; }
+    operator int() const {return this->val_;}
+    operator unsigned int() const {return this->val_;}
+    operator string() const {return this->sel_.int_to_name(this->val_); }
+private:
+    int val_;
+    Input::Type::Selection sel_;
+};
 
 // Forward declaration
 class IteratorBase;
@@ -392,6 +410,11 @@ public:
      * Get address as string.
      */
     string address_string() const;
+
+    /**
+     * Get name of record_type_
+     */
+    string record_type_name();
 
 
 
@@ -798,20 +821,24 @@ namespace internal {
 /**
  *  Template specializations for primary type dispatch.
  */
+template<> struct TD<char> { typedef int OT; };
+template<> struct TD<unsigned char> { typedef int OT; };
 template<> struct TD<short int> { typedef int OT; };
 template<> struct TD<unsigned short int> { typedef int OT; };
+template<> struct TD<int> { typedef int OT; };
 template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<char> { typedef int OT; };
 template<> struct TD<float> { typedef double OT; };
+template<> struct TD<double> { typedef double OT; };
 
 /**
  *  Template specializations for secondary type dispatch.
  */
 
-// generic implementation accepts only enum types
+// Generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
+
+    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
 
     typedef T TmpType;
 
@@ -820,6 +847,21 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
+template<>
+struct TypeDispatch<Enum> {
+    typedef Enum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+};
+
+template<>
+struct TypeDispatch<FullEnum> {
+    typedef FullEnum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
+};
 
 template<>
 struct TypeDispatch<int> {

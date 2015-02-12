@@ -2,6 +2,7 @@
 #define MASS_BALANCE_HH_
 
 
+#include "transport/substance.hh"
 
 /**
  * Interface class for equation which implements methods required for mass balance.
@@ -26,7 +27,7 @@ public:
     virtual unsigned int n_substances() = 0;
 
     /// Returns reference to the vector of substnace names.
-    virtual vector<string> &substance_names() = 0;
+    virtual SubstanceList &substances() = 0;
 
     /// Returns the time integration scheme of the equation.
 	virtual TimeIntegrationScheme time_scheme() = 0;

@@ -14,15 +14,18 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
-#include "reaction/reaction.hh"
+#include "reaction/reaction_term.hh"
 
 class Isotherm;
 class Mesh;
-class Distribution;
 
 class SorptionBase:  public ReactionTerm
 {
 public:
+    TYPEDEF_ERR_INFO( EI_ArrayName, std::string);
+    DECLARE_INPUT_EXCEPTION( ExcSubstanceCountMatch, << "The size of the input array " << EI_ArrayName::qval 
+                                                     << " does not match the number of substances.");
+    
   /**
    *   Static variable for new input data types input
    */
@@ -119,7 +122,8 @@ protected:
    */
   void make_reactions();
   
-  /// Reads names of substances from input and creates indexing to global vector of substance,
+  /// Reads names of substances from input and creates indexing to global vector of substance.
+  /** Also creates the local vector of molar masses. */
   void initialize_substance_ids();
   
   /// Initializes private members of sorption from the input record.

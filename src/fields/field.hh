@@ -35,6 +35,10 @@ namespace IT=Input::Type;
  * real vector of fixed (compile time) size, real vector of runtime size, or a matrix of fixed dimensions.
  * Extensions to vectors or matrices of integers, or to variable tensors are possible. For vector and matrix values
  * we use classes provided by Armadillo library for linear algebra.
+ * The @p Value template parameter should FieldValue<> template, usual choices are:
+ * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
+ * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed
+ * deprecated choices: FieldValue<spacedim>::Vector, FieldValue<spacedim>::VectorEnum.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however
@@ -57,18 +61,27 @@ public:
 
 
     /**
-     * Pointer to function that creates an instance of FieldBase for
-     * field with name @p field_name based on data in field descriptor @p rec.
+     * Factory class that creates an instance of FieldBase for field
+     * with name @p field_name based on data in field descriptor @p rec.
      *
-     * Default implementation in method @p read_field_descriptor  just reads key given by
+     * Default implementation in method @p create_field just reads key given by
      * @p field_name and creates instance using @p FieldBase<...>::function_factory.
      * Function should return empty SharedField (that is shared_ptr to FieldBase).
      *
-     * Hooks are necessary to implement:
-     * 1) backward compatibility with old BCD input files
-     * 2) setting pressure values are piezometric head values
+     * Implementation of these descendants is necessary:
+     * 1) for backward compatibility with old BCD input files
+     * 2) for setting pressure values are piezometric head values
      */
-    FieldBasePtr (*read_field_descriptor_hook)(Input::Record rec, const FieldCommon &field);
+    class FactoryBase {
+    public:
+    	/**
+    	 * Default method that creates an instance of FieldBase for field.
+    	 *
+    	 * Reads key given by @p field_name and creates the field instance using
+    	 * @p FieldBase<...>::function_factory.
+    	 */
+    	virtual FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+    };
 
     /**
      * Default constructor.
@@ -87,6 +100,8 @@ public:
      * Assignment operator. Same properties as copy constructor.
      *
      * Question: do we really need this, isn't copy constructor enough?
+     * Answer: It is necessary in (usual) case when Field instance is created as the class member
+     * but is filled later by assignment possibly from other class.
      */
     Field &operator=(const Field &other);
 
@@ -147,14 +162,6 @@ public:
      */
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
-    /**
-     * Default implementation of @p read_field_descriptor_hook.
-     *
-     * Reads key given by @p field_name and creates the field instance using
-     * @p FieldBase<...>::function_factory.
-     */
-    static FieldBasePtr read_field_descriptor(Input::Record rec, const FieldCommon &field);
-
     void set_limit_side(LimitSide side) override
     { this->limit_side_=side; }
 
@@ -203,6 +210,18 @@ public:
      */
     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list) const;
+
+    /**
+     * Add a new factory for creating Field algorithms on individual regions.
+     * The last factory is tried first, the last one is always the default implementation
+     * Field<...>::FactoryBase.
+     *
+     * The Field<...> object keeps a list of such factories. When the instance of a new field algorithm
+     * has to be created from the input field descriptor, we pass through the list of factories backward
+     * and let factories to create the field algorithm instance from the actual input field descriptor.
+     * The first instance (non-null pointer) is used.
+     */
+    void add_factory(std::shared_ptr<FactoryBase> factory);
 
 protected:
     /**
@@ -262,6 +281,8 @@ protected:
      */
     std::vector< FieldBasePtr > region_fields_;
 
+    std::vector<std::shared_ptr<FactoryBase> >  factories_;
+
 
 
 };
@@ -311,6 +332,11 @@ public:
     //typedef FieldBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
+
+    class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
+    public:
+    	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
+    };
 
     /**
      * Default constructor.

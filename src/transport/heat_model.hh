@@ -86,7 +86,7 @@ public:
 
 		ModelEqData();
 
-		static string name() { return "HeatTransfer"; }
+		static  constexpr const char *  name() { return "HeatTransfer"; }
 
 		static string default_output_field() { return "temperature"; }
 
@@ -114,7 +114,7 @@ public:
 
 	HeatTransferModel();
 
-	void set_component_names(std::vector<string> &names, const Input::Record &in_rec) override;
+	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,

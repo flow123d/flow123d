@@ -24,6 +24,10 @@
  * - move raw access resolution functions from FieldValues_ into FieldElementwise
  * - allow elementwise int or FieldEnum data with optimal storage buffer, this needs
  *   templated GMSH reader
+ * - After this do following cleanup:
+ *   Partitioning::subdomain_id_field_data should return vector<int>
+ *   pertitioning_test.cpp should make correct test.
+ *
  * - allow initialization of multiple fields by one reader
  * - allow common storage for more elementwise fields to have values for one element on one place
  */
@@ -113,7 +117,7 @@ private:
     /// Size of Value
     unsigned int n_components_;
 
-    GmshMeshReader *reader_;
+    FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
     /// Registrar of class to factory

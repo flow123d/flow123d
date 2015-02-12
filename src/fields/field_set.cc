@@ -6,6 +6,7 @@
  */
 
 #include "fields/field_set.hh"
+#include "system/sys_profiler.hh"
 
 
 
@@ -50,8 +51,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
     Input::Type::Record rec = FieldCommon::field_descriptor_record(equation_name + "_Data");
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
-            string units = field->units();
-            string description =  field->description();
+            string description =  field->description() + " " + field->units().format();
 
             // Adding units is not so simple.
             // 1) It must be correct for Latex.
@@ -77,7 +77,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     {
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
-            string desc = "Output of the field " + field->name(); //  + " [" + field->units() + "]";
+            string desc = "Output of the field " + field->name() + " " + field->units().format();
             if (field->description().length() > 0)
                 desc += " (" + field->description() + ").";
             else
@@ -135,6 +135,7 @@ bool FieldSet::is_constant(Region reg) const {
 
 
 void FieldSet::output(OutputTime *stream) {
+	START_TIMER("Fill OutputData");
     for(auto field : field_list)
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
             field->output(stream);

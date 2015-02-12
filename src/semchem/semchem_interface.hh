@@ -95,7 +95,7 @@ class Semchem_interface
 		/*
 		* Static variable for new input data types input
 		*/
-		static Input::Type::AbstractRecord input_type;
+		static Input::Type::Record input_type;
 		/**
 		*	Semchem interface is the tool to call a simulation of chemical reactions as a part of transport model. timeStep defines the length of time step for simulation of chemical reactions. nrOfSpecies is the number of transported species. dualPorosity defines type of porosity in examinated soil.
 		*/

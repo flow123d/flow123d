@@ -40,6 +40,7 @@
 
 #include "system/tokenizer.hh"
 #include "mesh/region.hh"
+#include "input/accessors.hh"
 
 class Mesh;
 class FilePath;
@@ -47,7 +48,7 @@ class FilePath;
 
 
 /***********************************
- * Structure to store the information from a header of $ElementData section.
+ * Structure to store the information from a header of \\$ElementData section.
  *
  * Format of GMSH ASCII data sections
  *
@@ -81,11 +82,29 @@ struct GMSH_DataHeader {
     unsigned int n_entities;
     /// ?? Currently ont used
     unsigned int partition_index;
+    /// Position of data in mesh file
+    Tokenizer::Position position;
 };
 
 
 class GmshMeshReader {
 public:
+	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
+	TYPEDEF_ERR_INFO(EI_Time, double);
+	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
+			<< "No data for field: "<< EI_FieldName::qval
+			<< " and time: "<< EI_Time::val
+			<< " in the input file: "<< EI_GMSHFile::qval);
+
+	/**
+	 * Map of ElementData sections in GMSH file.
+	 *
+	 * For each field_name contains vector of GMSH_DataHeader.
+	 * Headers are sorted by time in ascending order.
+	 */
+	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
+
     /**
      * Construct the GMSH format reader from given filename.
      * This opens the file for reading.
@@ -105,11 +124,13 @@ public:
 
     /**
      *  Reads @p mesh from the GMSH file.
+     *  Optional map el_to_reg_map can be used to override region of some elements provided by GMSH file.
+     *  Input of the mesh allows changing regions within the input CON file.
      */
     void read_mesh(Mesh* mesh, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
 
     /**
-     *  Reads ElementData sections of opened GMSH file. The file is serached for the $ElementData section with header
+     *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
      *  that match the given @p search_header (same field_name, time of the next section is the first greater then
      *  that given in the @p search_header). If such section has not been yet read, we read the data section into
      *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into
@@ -138,20 +159,32 @@ private:
      */
     void read_nodes(Tokenizer &in, Mesh*);
     /**
-     * private method for reading of elements - in process of implementation
+     *  Method for reading of elements.
+     *  Optional map el_to_reg_map can be used to override region of some elements provided by GMSH file.
+     *  Input of the mesh allows changing regions within the input CON file.
+     *
      */
     void read_elements(Tokenizer &in, Mesh*, const RegionDB::MapElementIDToRegionID *el_to_reg_map=NULL);
     /**
-     *
+     * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
     void read_data_header(Tokenizer &tok, GMSH_DataHeader &head);
+    /**
+     * Reads table of ElementData headers from the tokenizer file.
+     */
+    void make_header_table();
+    /**
+     * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
+     */
+    GMSH_DataHeader & find_header(double time, std::string field_name);
 
 
     /// Tokenizer used for reading ASCII GMSH file format.
     Tokenizer tok_;
-    /// Last read header of ElementData section.
-    GMSH_DataHeader last_header;
+    /// Table with data of ElementData headers
+    HeaderTable header_table_;
 };
 
 #endif	/* _GMSHMESHREADER_H */
+
 

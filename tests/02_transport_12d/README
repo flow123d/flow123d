@@ -8,12 +8,7 @@ verification of:
 -multidimensional connection (1D-2D)
 
 preparing input:
-- run the script
-  - ngh (finding neighbours in mesh)
-  - bcd (defining boundary conditions)
+Current reference data are computed on mesh input/test2.msh, we have no GEO file for it.
+GEO file compatible.geo was created as qualitative eqivalent of the mesh, but the mesh file and reference data
+has to be recreated, yet.
 
-
-pozn.: 
-- materialovy soubor mtr je zakomentovany, aby se pri dalsim spusteni BCD nesmazaly mat. konstanty
-- pretransformovany con odlehcen od pozustatku z ini
-- v zz_old_con_ini pozustatky (pretransformovane con, stare ini), 

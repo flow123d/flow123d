@@ -21,7 +21,7 @@ Tokenizer::Tokenizer(const FilePath &fp)
 : f_name_(fp),
   own_stream_(NULL),
   comment_pattern_(""),
-  line_counter_(0), position_(0),
+  position_(0, 0, 0),
   separator_("\\"," \t","\""),
   line_tokenizer_(line_,  separator_)
 {
@@ -39,7 +39,7 @@ Tokenizer::Tokenizer( std::istream &in)
   own_stream_(NULL),
   in_( &in ),
   comment_pattern_(""),
-  line_counter_(0), position_(0),
+  position_(0, 0, 0),
   separator_("\\"," \t","\""),
   line_tokenizer_(line_,  separator_)
 {}
@@ -71,7 +71,7 @@ bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_searc
 bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // input assert about remaining tokens
     if (assert_for_remaining_tokens && (! eol() )) {
-        xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_);
+        xprintf(Warn, "Remaining tokens, file '%s', line '%d', after token #%d.\n", f_name_.c_str(), line_num(), position_.line_position_);
     }
 
     if (eof()) return false; // we are sure that at least one getline will occur
@@ -80,7 +80,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // skip empty lines
     while ( ! eof() && line_ == "") {
         std::getline( *in_, line_);
-        line_counter_++;
+        position_.line_counter_++;
         // check failure bits
         if (in_->bad()) xprintf(Err, "Can not read from stream, file: '%s', line: '%d'\n", f_name_.c_str(), line_num());
         boost::trim( line_ );
@@ -101,7 +101,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
 
 const std::string & Tokenizer::operator *() const
 {
-    if ( eol() ) xprintf(UsrErr, "Missing token, file: '%s', line: '%d', position: '%d'.\n", f_name_.c_str(), line_num(), position_);
+    if ( eol() ) xprintf(UsrErr, "Missing token, file: '%s', line: '%d', position: '%d'.\n", f_name_.c_str(), line_num(), position_.line_position_);
     return *tok_;
 }
 
@@ -111,9 +111,9 @@ void Tokenizer::set_tokenizer()
 {
         line_tokenizer_.assign(line_);
         tok_ = line_tokenizer_.begin();
-        position_ = 0;   
+        position_.line_position_ = 0;
         // skip leading separators
-        while (! eol() && (*tok_).size()==0 ) {position_++; ++tok_;}
+        while (! eol() && (*tok_).size()==0 ) {position_.line_position_++; ++tok_;}
 
 }
 
@@ -123,6 +123,21 @@ string Tokenizer::position_msg() const {
     stringstream ss;
     ss << "token: " << pos() << ", line: " << line_num() << ", in file '" << f_name() << "'";
     return ss.str();
+}
+
+
+const Tokenizer::Position Tokenizer::get_position()
+{
+	position_.file_position_ = in_->tellg();
+	return position_;
+}
+
+
+void Tokenizer::set_position(const Tokenizer::Position pos)
+{
+	in_->clear();
+	in_->seekg(pos.file_position_);
+	position_ = pos;
 }
 
 

@@ -355,6 +355,10 @@ public:
      * 3) If there are entries on global diagonal. We determine value K either from diagonal of local matrix, or (if it is zero) from
      *    diagonal average.
      *
+     * Caveats:
+     * - can not set dirichlet condition on zero dof 
+     * - Armadillo stores matrix in column first form (Fortran like) which makes it not well suited 
+     *   for passing local matrices.
      *
      */
     void set_values(std::vector<int> &row_dofs, std::vector<int> &col_dofs,
@@ -362,23 +366,25 @@ public:
     		        const arma::vec &row_solution, const arma::vec &col_solution)
 
     {
-    	arma::mat tmp = matrix;
+    	arma::mat tmp = matrix.t();
     	arma::vec tmp_rhs = rhs;
     	bool negative_row = false;
     	bool negative_col = false;
 
     	for(unsigned int l_row = 0; l_row < row_dofs.size(); l_row++)
     		if (row_dofs[l_row] < 0) {
-    			tmp.row(l_row).zeros();
-    			tmp_rhs(l_row)=0.0;
+                        tmp_rhs(l_row)=0.0;
+    			tmp.col(l_row).zeros();
     			negative_row=true;
     		}
 
     	for(unsigned int l_col = 0; l_col < col_dofs.size(); l_col++)
     		if (col_dofs[l_col] < 0) {
-    			tmp_rhs -= tmp.col(l_col) * col_solution[l_col];
-    			negative_col=true;
+    			tmp_rhs -= matrix.col(l_col) * col_solution[l_col];
+    			tmp.row(l_col).zeros();
+                        negative_col=true;
     		}
+    		
 
     	if (negative_row && negative_col) {
     		// look for diagonal entry
@@ -394,7 +400,7 @@ public:
         	    					new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
         	    				}
         	    			}
-        	    			tmp.at(l_row, l_col) = new_diagonal;
+        	    			tmp.at(l_col, l_row) = new_diagonal;
         	    			tmp_rhs(l_row) = new_diagonal * row_solution[l_row];
         	    		}
 

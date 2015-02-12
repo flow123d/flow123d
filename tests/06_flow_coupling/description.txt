@@ -60,3 +60,12 @@ flow_21d.con:
   
   the pressure is p1 = -2.5.
     
+
+1D2D.con, 1D2D.geo:
+- fracture with declination
+
+
+2D2D.con, 2D2D.geo:
+- fracture with declination as 2D elements
+
+

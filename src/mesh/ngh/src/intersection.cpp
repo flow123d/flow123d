@@ -730,8 +730,10 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         			   break;
         		   }
         	   }
+        	   return;
            }
            if (cit != 2) {
+        	   cout << "cit = " << cit << endl;
         	   THROW( ExcAssertMsg() << EI_Message("Error - pocet bodu pruniku != 2.\n") );
         	   return;
            } else {
@@ -773,7 +775,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         insec = NULL;
         return;
     }
-    IntersectionLocal* insec_tmp;
+    IntersectionLocal* insec_tmp=NULL;
     GetIntersection( (const TBisector &)A, T, insec_tmp);
     if (!insec_tmp) {
     	insec = NULL;

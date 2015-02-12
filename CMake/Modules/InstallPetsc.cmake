@@ -24,6 +24,12 @@
 # CAUTION: Never use semicolon a part of compiler options or PETSC_INSTALL_OPTIONS.
 
 
+# set flags for PETSc, user specified are first choice, if not specified external libs flags will be used
+SET_VALID_VALUE ("PETSC_C_FLAGS"       ${PETSC_C_FLAGS}       ${EXTERNAL_LIBS_C_FLAGS}       ${CMAKE_C_FLAGS})
+SET_VALID_VALUE ("PETSC_CXX_FLAGS"     ${PETSC_CXX_FLAGS}     ${EXTERNAL_LIBS_CXX_FLAGS}     ${CMAKE_CXX_FLAGS})
+SET_VALID_VALUE ("PETSC_Fortran_FLAGS" ${PETSC_Fortran_FLAGS} ${EXTERNAL_LIBS_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS})
+
+
 
 if (NOT PETSC_INSTALL_DIR)
     set(PETSC_INSTALL_DIR "${EXTERNAL_PROJECT_DIR}/petsc_build")
@@ -34,9 +40,9 @@ endif()
 # A temporary CMakeLists.txt
 
 # set compilers
-set(PETSC_CONF_LINE --CC=${CMAKE_C_COMPILER} --CFLAGS='${CMAKE_C_FLAGS}' --CXX=${CMAKE_CXX_COMPILER} --CXXFLAGS='${CMAKE_CXX_FLAGS}' --with-clanguage=C)
+set(PETSC_CONF_LINE --CC=${CMAKE_C_COMPILER} --CFLAGS='${PETSC_C_FLAGS}' --CXX=${CMAKE_CXX_COMPILER} --CXXFLAGS='${PETSC_CXX_FLAGS}' --with-clanguage=C)
 if (CMAKE_Fortran_COMPILER)
-    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --FC=${CMAKE_Fortran_COMPILER} --FFLAGS=${CMAKE_Fortran_FLAGS})
+    set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --FC=${CMAKE_Fortran_COMPILER} --FFLAGS=${PETSC_Fortran_FLAGS})
 endif()
 
 # set debugging

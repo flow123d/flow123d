@@ -1,47 +1,52 @@
 /*
  * pade_approximant.h
  *
- *  Created on: Apr 2, 2012
- *      Author: lukas
+ * Author: PavelExner
  */
 
 #ifndef PADE_APPROXIMANT_H_
 #define PADE_APPROXIMANT_H_
 
-#include <input/input_type.hh>
+#include "input/accessors.hh"
+#include "reaction/linear_ode_solver.hh"
 #include "armadillo"
 
-using namespace arma;
-
-class Mesh;
-class LinearReaction;
-
-class PadeApproximant: public LinearReaction
+/** @brief This class implements the Pade approximation of exponential function. 
+ *
+ * The exponential function is considered in the form \f$ e^{At} \f$ where \f$ A \f$ is a constant matrix.
+ * It is then approximated by a fraction of polynomials
+ * \f[ e^{At} = \frac{P(t)}{Q(t)},\f]
+ * where the degrees of polynomials in nominator and denominator, \f$ P(t) \f$ and \f$ Q(t) \f$, are
+ * set from the input record.
+ * 
+ */
+class PadeApproximant : public LinearODESolver<PadeApproximant>
 {
 public:
     /**
      * Input record for class PadeApproximant.
      */
     static Input::Type::Record input_type;
-    /**
-     * Input record which defines particular decay step.
-     */
-    static Input::Type::Record input_type_one_decay_substep;
-   
+    
+    /// Constructor from input record.
+    PadeApproximant(Input::Record in_rec);
+    
     /// Constructor.
-    PadeApproximant(Mesh &mesh, Input::Record in_rec);
+    PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree);
 
     /// Destructor.
     ~PadeApproximant(void);
-
-    void initialize() override;
-    void zero_time_step() override;
-
+    
+    void update_solution(arma::vec &init_vector, arma::vec &output_vec) override;
+    
 protected:
+    ///Hide default constructor.
+    PadeApproximant(){};
+    
     /**
-    *   Evaluates Pade approximant from Reaction_matrix.
-    */
-    void modify_reaction_matrix(void) override;
+     *   Approximate the matrix function.
+     */
+    void approximate_matrix(arma::mat &matrix);
     
     /// Evaluates nominator and denominator coeficients of PadeApproximant for exponencial function.
     /** @param nominator_degree is the degree of polynomial in the nominator
@@ -54,15 +59,17 @@ protected:
     
     /// Evaluates the matrix polynomial by Horner scheme.
     /** @param polynomial_matrix is the output matrix
-     * @param reaction_matrix is the reaction matrix (with elements -kt)
+     * @param input_matrix is the input matrix (with elements -kt)
      * @param coefs is the vector of coeficients of the polynomial
      */
-    void evaluate_matrix_polynomial(mat &polynomial_matrix, 
-                                    const mat &reaction_matrix, 
+    void evaluate_matrix_polynomial(arma::mat &polynomial_matrix, 
+                                    const arma::mat &input_matrix, 
                                     const std::vector<double> &coefs);
     
     int nominator_degree_;      ///< Degree of the polynomial in the nominator.
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
+    
+    arma::mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
 };
 
 #endif // PADE_APPROXIMANT_H_
