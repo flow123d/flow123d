@@ -51,13 +51,13 @@ Selection Balance::format_selection_input_type
 	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fixed column width.");
 
 Record MassBalance::input_type
-	= Record("MassBalance", "Balance of mass, boundary fluxes and sources for transport of substances.")
-	.declare_key("mass_balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
+	= Record("Balance", "Balance of a conservative quantity, boundary fluxes and sources.")
+	.declare_key("balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
 	.declare_key("format", Balance::format_selection_input_type, Default("txt"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
-	.declare_key("file", FileName::output(), Default::read_time("FileName mass_balance.*"), "File name for output of mass balance.")
-	.allow_auto_conversion("mass_balance_on")
+	.declare_key("file", FileName::output(), Default::read_time("FileName balance.*"), "File name for output of balance.")
+	.allow_auto_conversion("balance_on")
 ;
 
 
@@ -1259,7 +1259,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
 					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
-					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_out_[qi][reg->boundary_idx()], delimiter)
 					<< csv_zero_vals(7, delimiter) << endl;
 			++output_line_counter_;
 		}

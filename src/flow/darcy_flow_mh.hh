@@ -74,6 +74,7 @@ class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
 class DarcyFlowMHOutput;
+class Balance;
 
 
 /**
@@ -223,6 +224,11 @@ protected:
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
+
+    /// object for calculation and writing the water balance to file.
+    boost::shared_ptr<Balance> balance_;
+    /// index of water balance within the Balance object.
+    unsigned int water_balance_idx_;
 };
 
 

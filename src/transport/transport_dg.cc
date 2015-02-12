@@ -344,7 +344,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // initialization of balance object
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-    if (it->val<bool>("mass_balance_on"))
+    if (it->val<bool>("balance_on"))
     {
     	vector<unsigned int> edg_regions;
         for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)

@@ -66,8 +66,8 @@ it::Record DarcyFlowMHOutput::input_type
                     "Parameters of output stream.")
     .declare_key("output_fields", it::Array(OutputFields::output_selection),
     		it::Default::obligatory(), "List of fields to write to output file.")
-    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
-                    "Output file for water balance table.")
+//    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
+//                    "Output file for water balance table.")
     .declare_key("compute_errors", it::Bool(), it::Default("false"),
     				"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
@@ -148,7 +148,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
 	if (rank == 0) {
         // temporary solution for balance output
-        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+//        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
         // optionally open raw output file
         FilePath raw_output_file_path;
@@ -192,7 +192,7 @@ void DarcyFlowMHOutput::output()
 
       make_node_scalar_param();
 
-      water_balance();
+//      water_balance();
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
