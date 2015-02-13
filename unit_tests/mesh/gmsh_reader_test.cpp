@@ -52,6 +52,58 @@ TEST(GMSHReader, read_mesh_from_file) {
     EXPECT_EQ(216, mesh.n_elements());
 }
 
+
+TEST(GMSHReader, get_element_data) {
+	Profiler::initialize();
+	unsigned int i, j;
+
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    FilePath mesh_file("fields/simplest_cube_data.msh", FilePath::input_file);
+
+    Mesh mesh;
+    ReaderInstances::instance()->get_reader(mesh_file)->read_mesh(&mesh);
+
+    std::vector<int> el_ids;
+    for (i=1; i<14; ++i) el_ids.push_back(i);
+
+
+    // read data by components for MultiField
+    GMSH_DataHeader search_header;
+    search_header.actual=false;
+    search_header.field_name="vector_fixed";
+    search_header.n_components=1;
+    search_header.n_entities=13;
+    search_header.time=0.0;
+    ElementDataCache<int> * multifield_cache =
+    		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids);
+
+    EXPECT_DOUBLE_EQ(0.0, multifield_cache->get_time());
+    for (i=0; i<3; ++i) {
+    	std::vector<int> &vec = *( multifield_cache->get_component_data(i).get() );
+    	EXPECT_EQ(13, vec.size());
+    	for (j=0; j<mesh.element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
+    	for ( ; j<vec.size(); j++) EXPECT_EQ( i+4, vec[j] ); // boundary elements
+    }
+
+
+    // read data to one vector for Field
+    search_header.actual=false;
+    search_header.n_components=3;
+    search_header.time=1.0;
+    ElementDataCache<int> * field_cache =
+    		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids);
+
+    EXPECT_DOUBLE_EQ(1.0, field_cache->get_time());
+    {
+    	std::vector<int> &vec = *( multifield_cache->get_component_data(0).get() );
+    	EXPECT_EQ(39, vec.size());
+    	for (j=0; j<3*mesh.element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
+    	for ( ; j<vec.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] ); // boundary elements
+    }
+}
+
+
 TEST(ReaderInstances, get_reader) {
 	Profiler::initialize();
 

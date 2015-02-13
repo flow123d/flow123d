@@ -40,6 +40,7 @@
 
 #include "system/tokenizer.hh"
 #include "mesh/region.hh"
+#include "mesh/element_data_cache.hh"
 
 class Mesh;
 class FilePath;
@@ -136,6 +137,9 @@ public:
     void read_element_data( GMSH_DataHeader &search_header,
             double *data, std::vector<int> const & el_ids);
 
+    template<typename T>
+    ElementDataCache<T> *get_element_data( GMSH_DataHeader &search_header, std::vector<int> const & el_ids);
+
 private:
     /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
@@ -174,6 +178,8 @@ private:
     Tokenizer tok_;
     /// Table with data of ElementData headers
     HeaderTable header_table_;
+    /// Cache with last read element data
+    ElementDataCacheBase *current_cache_;
 };
 
 #endif	/* _GMSHMESHREADER_H */

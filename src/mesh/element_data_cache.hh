@@ -45,16 +45,13 @@ template <typename T>
 class ElementDataCache : public ElementDataCacheBase {
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
-	typedef std::vector< ComponentDataPtr > DataCache;
+	typedef std::vector< ComponentDataPtr > CacheData;
 
 	/// Constructor.
-	ElementDataCache() : ElementDataCacheBase() {}
-
-	/// Set full data of cache (time, name of quantity, table of element data).
-	void set_data(double time, std::string quantity_name, DataCache data) {
+	ElementDataCache(double time, std::string quantity_name, CacheData data)
+	: data_(data) {
 		this->time_ = time;
 		this->quantity_name_ = quantity_name;
-		this->data_ = data;
 	}
 
 	/// Return vector of element data for get component.
@@ -69,7 +66,7 @@ protected:
 	 *
 	 * For every components contains vector of element data.
 	 */
-	DataCache data_;
+	CacheData data_;
     
 };
 
