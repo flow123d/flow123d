@@ -250,7 +250,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	this->eq_data_ = &data_;
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    time_->fix_dt_until_mark();
+
 
     // Read names of transported substances.
     // TODO: Substances should be held in TransportOperatorSplitting only.
@@ -409,7 +409,9 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
-    data_.set_time(*time_);
+	data_.mark_input_times(time_->equation_fixed_mark_type());
+	data_.set_time(*time_);
+
 
     // set initial conditions
     set_initial_condition();
