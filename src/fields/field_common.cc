@@ -80,6 +80,7 @@ void FieldCommon::set_input_list(const Input::Array &list)
 
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
+    if (! flags().match(FieldFlag::declare_input)) return;
     ASSERT_LESS( 0, shared_->input_list_.size());
 
     // pass through field descriptors containing key matching field name.
