@@ -32,7 +32,7 @@ time = {
 }
 )JSON";
 
-
+/*
 const string json_with_init_dt = R"JSON(
 {
 time = { 
@@ -42,7 +42,7 @@ time = {
   }
 }
 )JSON";
-
+*/
 
 const double inf_time = TimeGovernor::inf_time;
 
