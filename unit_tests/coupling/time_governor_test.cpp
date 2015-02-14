@@ -18,11 +18,7 @@
 #include <limits>
 
 
-/**
- * In place input file.
- * CXX flags needs to be added for reading multiple line string
- * "-std=gnu++0x" (Use C++11 for auto and multiline raw strings)
- */
+
 const string flow_json = R"JSON(
 {
 time = { 
@@ -47,7 +43,9 @@ time = {
 const double inf_time = TimeGovernor::inf_time;
 
 
-
+/**
+ * Auxiliary function to declare and read test input.
+ */
 Input::Record read_input(const string &json_input)
 {
 	static Input::Type::Record in_rec("RootInput", "Root record.");
@@ -61,36 +59,11 @@ Input::Record read_input(const string &json_input)
 	Input::JSONToStorage json_reader(json_input, in_rec);
 
 	//getting root record
-	return json_reader.get_root_interface<Input::Record>().val<Input::Record>("time");
+	static Input::Record rec = json_reader.get_root_interface<Input::Record>();
+	return rec.val<Input::Record>("time");
 }
 
 
-
-/**
- * Test for class TimeMark only
- */
-TEST (TimeMark, time_mark)
-{
-    TimeMark tm1(-1.0, 0x01);
-    TimeMark tm2(0.0, TimeMark::every_type);
-    TimeMark tm3(10.0,0x05);
-    TimeMark::Type my_type = 0x0a;	
-    
-    //checking time values
-    EXPECT_EQ(tm1.time(), -1.0);
-    EXPECT_EQ(tm2.mark_type(), TimeMark::Type(~0x0));
-    
-    //checking type values - comparing masks
-    EXPECT_TRUE(tm1.match_mask(0x01));
-    EXPECT_TRUE(tm2.match_mask(~0x00));
-    
-    //adding type and checking mask
-    tm3.add_to_type(my_type);
-    EXPECT_TRUE(tm3.match_mask(0x0f));		//0x05 + 0x0a = 0x0f
-    
-    //comparing times
-    EXPECT_TRUE( (tm1<tm2) && (tm2<tm3) );
-}
 
 
 /**
@@ -122,22 +95,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(3.0, your_mark_type));
     
     //constructing Time Governor from json input string
-    
-    static Input::Type::Record in_rec("RootInput", "Root record.");
-    
-    if (! in_rec.is_finished()) {
-    in_rec.declare_key("time", TimeGovernor::input_type, Input::Type::Default::obligatory(), "");
-    in_rec.finish();
-    }
-    
-    //json reading according to keys defined in in_rec
-    Input::JSONToStorage json_reader(flow_json, in_rec);
-    
-    //getting root record
-    Input::Record input = json_reader.get_root_interface<Input::Record>();
-    
-    //constructing time governor with time record read from input
-    TimeGovernor *tm_tg = new TimeGovernor(  input.val<Input::Record>("time"), my_mark_type  );
+    TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
     
     cout << tm;
     
