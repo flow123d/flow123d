@@ -33,6 +33,8 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <boost/circular_buffer.hpp>
+
 
 #include "system/global_defs.h"
 #include "system/system.hh"
@@ -45,6 +47,52 @@ namespace Input {
         class Record;
     }
 }
+
+
+
+
+/**
+ * Structure to store and provide information about
+ * one time step.
+ */
+
+struct TimeStep {
+public:
+    /**
+     * Create subsequent time step.
+     */
+    TimeStep make_next(double lenght)
+    { return make_next(length, this->end+lenght); }
+
+    /**
+     * Create subsequent time step, with the @end_time
+     * explicitly specified. This allow slight discrepancy to
+     * overcome rounding errors in the case of fixed time step.
+     * Otherwise using small fixed time step, we may miss long term fixed
+     * goal time.
+     *
+     */
+    TimeStep make_next(double lenght, double end_time) {
+        TimeStep ts;
+        ts.index=this->index+1;
+        ts.length=lenght;
+        ts.begin=this->end;
+        ts.end=end_time;
+        return ts;
+    }
+
+    /// Index of the step is index if the end time. Zero time step is artificial.
+    unsigned int index;
+    /// Length of the time step. Theoretically @p end minus @p begin.
+    /// However may be slightly different due to rounding errors.
+    double length;
+    /// Beginning of the time step (equal to the
+    double begin;
+    /// End time point of the time step.
+    double end;
+};
+
+
 
 /**
  * @brief
@@ -223,6 +271,19 @@ public:
 
 
     /**
+     *  Returns reference to required time step in the
+     *  recent history. Without parameter the actual time step is returned.
+     *  To get previous time steps you have to use negative values of  @p index.
+     *  This is to provide better readability.
+     */
+    inline const TimeStep &step(int index=0) const {
+        ASSERT_LE(index, 0);
+        unsigned int back_idx = static_cast<unsigned int>(-index);
+        ASSERT_LESS(back_idx, recent_steps_.size());
+        return recent_steps_[back_idx];
+    }
+
+    /**
      *	Specific time mark of the equation owning the time governor.
      */
     inline TimeMark::Type equation_mark_type() const
@@ -287,26 +348,28 @@ public:
      * End of actual time interval; i.e. where the solution is computed.
      */
     inline double t() const
-        {return time_;}
+        {return step().end;}
 
     /**
      * Previous time step.
      */
     inline double last_dt() const
-        {return last_time_step_;}
+        {if (step().index >0) return step(-1).length;
+        else return step(0).length;
+        }
 
     /**
      * Previous time.
      */
     inline double last_t() const
-        { return last_time_; }
+        { return step().begin; }
 
 
     /**
      * Length of actual time interval; i.e. the actual time step.
      */
     inline double dt() const
-        {return time_step_;}
+        {return step().length;}
 
     /**
      * @brief Estimate choice of next time step according to actual setting of constraints.
@@ -326,7 +389,7 @@ public:
      * Estimate next time.
      */
     inline double estimate_time() const
-        {return time_+estimate_dt();}
+        {return t()+estimate_dt();}
 
     /// End time.
     inline double end_time() const
@@ -334,7 +397,7 @@ public:
 
     /// Returns true if the actual time is greater than or equal to the end time.
     inline bool is_end() const
-        { return (this->ge(end_time_) || time_ == inf_time); }
+        { return (this->ge(end_time_) || t() == inf_time); }
         
     /// Returns true if the time governor is used for steady problem.
     inline bool is_steady() const
@@ -347,8 +410,8 @@ public:
      */
     inline bool gt(double other_time) const
         {
-            return ! (time_ <= other_time
-            + 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time)) );
+            return ! (t() <= other_time
+            + 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time)) );
         }
 
     /**
@@ -356,8 +419,8 @@ public:
      */
     inline bool ge(double other_time) const
     {
-        return time_ >= other_time
-        - 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
+        return t() >= other_time
+        - 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
     }
 
     /**
@@ -366,8 +429,8 @@ public:
     inline bool lt(double other_time) const
     {
         double b=other_time
-                - 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
-        return ! (time_ >= b);
+                - 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
+        return ! (t() >= b);
     }
 
     /**
@@ -375,15 +438,15 @@ public:
      */
     inline bool le(double other_time) const
     {
-        return time_ <= other_time
-        + 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
+        return t() <= other_time
+        + 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
     }
 
     /**
      * Returns the time level.
      */
     inline int tlevel() const
-        {return time_level_;}
+        {return step().index;}
 
     /**
      * Prints output of TimeGovernor.
@@ -414,23 +477,25 @@ private:
     static const double round_n_steps_precision;
 
     /// Number of time_next calls, i.e. total number of performed time steps.
-    int time_level_;
+    //int time_level_;
 
+    ///
+    boost::circular_buffer<TimeStep> recent_steps_;
     /// Initial time.
     double init_time_;
     /// End of actual time interval; i.e. where the solution is computed.
-    double time_;
+    //double time_;
     /// Beginning of the actual time interval; i.e. the time of last computed solution.
-    double last_time_;
+    //double last_time_;
     /// End of interval if fixed time step.
     double end_of_fixed_dt_interval_;
     /// End time of the simulation.
     double end_time_;
 
     /// Length of actual time interval; i.e. the actual time step.
-    double time_step_;
+    //double time_step_;
     /// Time step just before last_time.
-    double last_time_step_;
+    //double last_time_step_;
     /// Next fixed time step.
     double fixed_time_step_;
     /// Flag that is set when the fixed step is set (lasts only one time step).

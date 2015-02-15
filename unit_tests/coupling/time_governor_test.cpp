@@ -104,7 +104,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->t(), 0.0 );
     EXPECT_EQ( tm_tg->end_time(), 20.0 );
     EXPECT_EQ( tm_tg->end_of_fixed_dt(), 0.0);
-    EXPECT_EQ( tm_tg->dt(), 20.0);
+    EXPECT_EQ( tm_tg->dt(), 20.0);                                  // FAILURE
     EXPECT_EQ( tm_tg->last_dt(), inf_time);
     EXPECT_EQ( tm_tg->tlevel(), 0 );
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed from ZERO
@@ -178,7 +178,9 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->t(), 0.5 );
     EXPECT_EQ( tm_tg->tlevel(), 1 );
     EXPECT_FALSE(tm_tg->is_end());
-    EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed from 20.0
+    EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed from 20.0     // FAILURE
+
+    // FAILURE
     EXPECT_FALSE(tm_tg->is_current(TimeMark::every_type)); // time 0.5 (of tg) is not lt time 0.5 (of last timemark + dt = 0.0+0.5 = 0.5)
     //no time mark is in interval (0;0.5]
     
@@ -200,6 +202,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->tlevel(), 3 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
+
+    // FAILURE
     EXPECT_FALSE(tm_tg->is_current(tm.type_fixed_time())); // time 1.5 (of tg) is NOT lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
     //no time mark is in interval (1.0;1.5]
     
@@ -225,9 +229,13 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->t(), 4.0 );
     EXPECT_EQ( tm_tg->tlevel(), 5 );
     EXPECT_FALSE(tm_tg->is_end());
+    // FAILURE
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//is changed from 0.5 to 1.5
+    // FAILURE
     EXPECT_FALSE(tm_tg->is_current(TimeMark::every_type)); // time 3.5 (of tg) is NOT lt time 1.5 (of last timemark + dt =0.0+1.5 = 1.5)
+    // FAILURE
     EXPECT_TRUE(tm_tg->is_current(my_mark_type));
+    // FAILURE
     EXPECT_TRUE(tm_tg->is_current(your_mark_type)); // time 3.5 (of tg) is lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     // time mark 0x18 (0x08 included) in time 3.0 is the last in interval (2.0;3.5]
     // time mark 0x18 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
@@ -239,8 +247,10 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     EXPECT_EQ( tm_tg->tlevel(), 6 );
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 1.5
+    // FAILURE
     EXPECT_FALSE(tm_tg->is_current(tm.type_fixed_time())); // time 5.0 (of tg) is NOT lt time 4.5 (of last timemark + dt =3.0+1.5 = 4.5)
     //no time mark 0x08 is in interval (3.5;5.0]
+    // FAILURE
     EXPECT_FALSE(tm_tg->is_current(your_mark_type)); // time 5.0 (of tg) is lt time 6.5 (of last timemark + dt =5.0+1.5 = 6.5)
     // time mark 0x11 (0x10 included) in time 3.0 is the last in interval (2.0;3.5]
      
@@ -296,10 +306,11 @@ TEST (TimeGovernor, steady_time_governor)
     
     EXPECT_EQ( steady_tg->t(), 0.0 );
     EXPECT_EQ( steady_tg->end_time(), inf_time );
-    EXPECT_EQ( steady_tg->end_of_fixed_dt(), 0.0);
-    EXPECT_EQ( steady_tg->dt(), inf_time);
+    EXPECT_EQ( 0.0, steady_tg->end_of_fixed_dt() );
+    EXPECT_EQ( inf_time, steady_tg->dt());
     EXPECT_EQ( steady_tg->last_dt(), inf_time);
     EXPECT_EQ( steady_tg->tlevel(), 0 );
+
     EXPECT_TRUE(steady_tg->is_changed_dt()); 	//changed from ZERO
     EXPECT_EQ( steady_tg->estimate_dt(), 100);
     
@@ -308,9 +319,11 @@ TEST (TimeGovernor, steady_time_governor)
     EXPECT_EQ( steady_tg->t(), 100 );
     EXPECT_EQ( steady_tg->end_time(), inf_time );
     EXPECT_EQ( steady_tg->end_of_fixed_dt(), 0.0);
-    EXPECT_EQ( steady_tg->dt(), 100);
+    // FAILURE
+    EXPECT_EQ( 100, steady_tg->dt());
     EXPECT_EQ( steady_tg->last_dt(), inf_time);
     EXPECT_EQ( steady_tg->tlevel(), 1 );
+    // FAILURE
     EXPECT_TRUE(steady_tg->is_changed_dt());
     EXPECT_EQ( steady_tg->estimate_dt(), inf_time);
     

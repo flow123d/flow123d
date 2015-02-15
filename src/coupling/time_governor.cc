@@ -83,7 +83,6 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
         // set permanent limits
     	init_common(input.val<double>("start_time"),
     				input.val<double>("end_time", inf_time),
-
     				eq_mark_type);
         set_permanent_constraint(
             input.val<double>("min_dt", min_time_step_),
@@ -93,13 +92,13 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
         double init_dt=input.val<double>("init_dt");
         if (init_dt > 0.0) {
             // set first time step suggested by user
-            time_step_=min(init_dt, time_step_);
+            //time_step_=min(init_dt, time_step_);
             lower_constraint_=init_dt;
             upper_constraint_=init_dt;
         } else {
             // apply constraints
-            time_step_=min(time_step_, upper_constraint_);
-            time_step_=max(time_step_, lower_constraint_);
+            //time_step_=min(time_step_, upper_constraint_);
+            //time_step_=max(time_step_, lower_constraint_);
         }
 
 
@@ -124,7 +123,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
 
     upper_constraint_=max_time_step_=dt;
     lower_constraint_=min_time_step_=dt;
-    time_step_=dt;
+    //time_step_=dt;
 }
 
 
@@ -143,7 +142,7 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 // common part of constructors
 void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type type)
 {
-	time_level_=0;
+
 
     if (init_time < 0.0) {
 		THROW(ExcTimeGovernorMessage()
@@ -152,32 +151,35 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 				);
     }
 
-	init_time_  = time_ = init_time;
-	last_time_ = -inf_time;
-	last_time_step_ = inf_time;
-
+    recent_steps_.set_capacity(2);
+    TimeStep ts;
+    ts.index=0;
+    ts.end=init_time_=init_time;
+    ts.begin=-inf_time;
+    ts.length=inf_time;
+    recent_steps_.push_front(ts);
 
 	if (end_time < init_time) {
 		THROW(ExcTimeGovernorMessage()	<< EI_Message("End time must be greater than start time.\n") );
+    } else {
+        end_time_ = end_time;
     }
-
-    end_time_ = end_time;
 
     //if (dt == 0.0) {
     	// variable time step
     	fixed_time_step_=0.0;
     	is_time_step_fixed_=false;
     	time_step_changed_=true;
-    	end_of_fixed_dt_interval_ = time_;
+    	end_of_fixed_dt_interval_ = init_time_;
 
     	min_time_step_=lower_constraint_=time_step_lower_bound;
     	if (end_time_ == inf_time) {
         	max_time_step_=upper_constraint_=inf_time;
     	} else {
-    		max_time_step_=upper_constraint_= end_time - time_;
+    		max_time_step_=upper_constraint_= end_time - init_time_;
     	}
     	// choose maximum possible time step
-    	time_step_=max_time_step_;
+    	//time_step_=max_time_step_;
     /*} else {
     	// fixed time step
     	if (dt < time_step_lower_bound)
@@ -196,7 +198,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 
 	eq_mark_type_=type;
 	steady_=false;
-    time_marks_.add( TimeMark(time_, equation_fixed_mark_type()) );
+    time_marks_.add( TimeMark(init_time_, equation_fixed_mark_type()) );
     if (end_time_ != inf_time)
     	time_marks_.add( TimeMark(end_time_, equation_fixed_mark_type()) );
 }
@@ -216,7 +218,7 @@ void TimeGovernor::set_permanent_constraint( double min_dt, double max_dt)
     }
 
     lower_constraint_ = min_time_step_ = max(min_dt, time_step_lower_bound);
-    upper_constraint_ = max_time_step_ = min(max_dt, end_time_-time_);
+    upper_constraint_ = max_time_step_ = min(max_dt, end_time_-t());
 }
 
 
@@ -300,7 +302,7 @@ double TimeGovernor::estimate_dt() const {
     // jump to the first future fix time
     TimeMarks::iterator fix_time_it = time_marks_.next(*this, equation_fixed_mark_type());
     // compute step to next fix time and apply constraints
-    double full_step = fix_time_it->time() - time_;
+    double full_step = fix_time_it->time() - t();
     
     double step_estimate = min(full_step, upper_constraint_);
     step_estimate = max(step_estimate, lower_constraint_); //these two must be in this order
@@ -331,7 +333,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
-    ASSERT_LE(0.0, time_);
+    ASSERT_LE(0.0, t());
     if (is_end()) return;
     
     if (this->lt(end_of_fixed_dt_interval_)) {
@@ -339,11 +341,10 @@ void TimeGovernor::next_time()
         // make tiny correction of time step in order to avoid big rounding errors
         // tiny correction means that dt_changed 'is NOT changed'
     	if (end_of_fixed_dt_interval_ < inf_time) {
-    		fixed_time_step_ = (end_of_fixed_dt_interval_-time_) / round( (end_of_fixed_dt_interval_-time_) / fixed_time_step_ );
+    		fixed_time_step_ = (end_of_fixed_dt_interval_-t()) / round( (end_of_fixed_dt_interval_-t()) / fixed_time_step_ );
     	}
 
-    	last_time_step_ = time_step_;
-        time_step_ = fixed_time_step_;
+        recent_steps_.push_front(recent_steps_.front().make_next(fixed_time_step_));
         
         //checking whether fixed time step has been changed (by fix_dt_until_mark() method) since last time
         if (is_time_step_fixed_)
@@ -351,7 +352,7 @@ void TimeGovernor::next_time()
             is_time_step_fixed_ = false;       
             
             //is true unless new fixed_dt is not equal previous time_step
-            time_step_changed_ = (last_time_step_ != time_step_); 
+            time_step_changed_ = (step(-1).length != step().length);
         }
         else
             time_step_changed_ = false;
@@ -359,16 +360,13 @@ void TimeGovernor::next_time()
     else
     {
         // this is done if end_of_fixed_dt_interval is not set (means it is equal to -infinity)
-        last_time_step_ = time_step_;
-        time_step_ = estimate_dt();
-        time_step_changed_= (last_time_step_ != time_step_);
+        recent_steps_.push_front(recent_steps_.front().make_next(
+                estimate_dt()));
+        time_step_changed_= (step(-1).length != step().length);
     }
 
-    last_time_ = time_;
-    time_+=time_step_;
-    time_level_++;
     // refreshing the upper_constraint_
-    upper_constraint_ = min(end_time_ - time_, max_time_step_);
+    upper_constraint_ = min(end_time_ - t(), max_time_step_);
     lower_constraint_ = min_time_step_;
 
 }
@@ -378,7 +376,7 @@ void TimeGovernor::next_time()
 void TimeGovernor::view(const char *name) const
 {
     xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
-            name, time_level_, time_, time_step_, lower_constraint_, upper_constraint_ );
+            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #ifdef DEBUG_MESSAGES
     xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
 #else
