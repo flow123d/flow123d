@@ -64,7 +64,6 @@
       ], 
       time = {
         end_time = 10
-        init_dt = 1
       },
       mass_balance = {
         cumulative = true
