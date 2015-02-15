@@ -5,6 +5,7 @@
  *      Author: jb
  */
 
+#define DEBUG_ASSERTS_WITHOUT_MPI
 
 #include <flow_gtest.hh>
 
