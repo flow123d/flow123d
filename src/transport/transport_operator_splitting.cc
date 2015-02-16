@@ -124,6 +124,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   reaction(nullptr),
   Semchem_reactions(NULL)
 {
+	START_TIMER("TransportOperatorSpliting");
+
 	Distribution *el_distribution;
 	int *el_4_loc;
 

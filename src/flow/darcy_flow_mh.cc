@@ -109,7 +109,9 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
                 "Method for coupling Darcy flow between dimensions." )
 		.declare_key("water_balance", MassBalance::input_type, it::Default::obligatory(),
-				"Settings for computing mass balance.");
+				"Settings for computing mass balance.")
+        .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
+        		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
 
 
 it::Record DarcyFlowMH_Steady::input_type
@@ -140,14 +142,8 @@ it::Record DarcyFlowLMH_Unsteady::input_type
 
 
 
-// gravity vector + constant shift of values
-arma::vec4 DarcyFlowMH::EqData::gravity_=arma::vec4("0 0 -1 0");
-
-
 DarcyFlowMH::EqData::EqData()
 {
-    gravity_ = arma::vec4("0 0 -1 0");
-
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
 
@@ -165,22 +161,21 @@ DarcyFlowMH::EqData::EqData()
     
     ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
         bc_type.input_selection(&bc_type_selection);
-        bc_type.read_field_descriptor_hook = OldBcdInput::flow_type_hook;
+        bc_type.add_factory( OldBcdInput::instance()->flow_type_factory );
         bc_type.units( UnitSI::dimensionless() );
 
     ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure.");
     	bc_pressure.disable_where(bc_type, {none, neumann} );
-    	bc_pressure.read_field_descriptor_hook = DarcyFlowMH::EqData::bc_piezo_head_hook;
         bc_pressure.units( UnitSI().m() );
 
     ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition.");
     	bc_flux.disable_where(bc_type, {none, dirichlet, robin} );
-    	bc_flux.read_field_descriptor_hook = OldBcdInput::flow_flux_hook;
+    	bc_flux.add_factory( OldBcdInput::instance()->flow_flux_factory );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
     ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, neumann} );
-    	bc_robin_sigma.read_field_descriptor_hook = OldBcdInput::flow_sigma_hook;
+    	bc_robin_sigma.add_factory( OldBcdInput::instance()->flow_sigma_factory );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     //these are for unsteady
@@ -233,6 +228,11 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
+    data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
+    data_.bc_pressure.add_factory(
+    		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+    		(data_.gravity_, "bc_piezo_head") );
     
     solution = NULL;
     schur0   = NULL;
@@ -667,12 +667,13 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 	}
 
 	dofs.resize(ele->n_sides());
+        dirichlet.resize(ele->n_sides());
+        dirichlet.zeros();
 
 	for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
 		dofs[i_side]=darcy_.row_4_edge[ele->side(i_side)->edge_idx()];
 		Boundary * bcd = ele->side(i_side)->cond();
-		if (bcd) {
-			dirichlet.resize(ele->n_sides());
+		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
 			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
@@ -682,7 +683,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
 				dirichlet[i_side] = bc_pressure;
 			}
-		}
+		} 
 	}
 
 }
@@ -723,8 +724,10 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		double master_sigma=darcy_.data_.sigma.value( master_->centre(), master_->element_accessor());
 
 		// rows
+		double check_delta_sum=0;
 		for(i = 0; i <= ml_it_->size(); ++i) {
 			pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
+			check_delta_sum+=delta_i;
 			//columns
 			for (j = 0; j <= ml_it_->size(); ++j) {
 				pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
@@ -735,8 +738,12 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				arma::vec rhs(dofs_i.size());
 				rhs.zeros();
 				ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+				auto dofs_i_cp=dofs_i;
+				auto dofs_j_cp=dofs_j;
+				ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
 			}
 		}
+                ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
     } // loop over master elements
 }
 
@@ -765,19 +772,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 
 /**
- * P1 coonection of different dimensions
- * - demonstrated convergence, but still major open questions:
- * ? in all test cases the error on the fracture is less on the left and greater on the right
- *   with incresing trend
- *   tried:
- *   - changed order of 1d elements (no change)
- *   - higher precision of ngh output and linear solver (no change)
- * ? seems that there should be some factor 6.0 in the communication term
- * ? in the case of infinite k2 -> simplest 1d-constant communication, the biggest difference on borders,
- *   numerical solution greater then analytical
+ * P1 connection of different dimensions
  *
- * TODO:
- * * full implementation of Dirichlet BC ( also for 2d sides)
+ * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
 void P1_CouplingAssembler::assembly(LinSys &ls) {
@@ -786,8 +783,9 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
     	const Element * master = intersec.master_iter();
        	const Element * slave = intersec.slave_iter();
 
-       	add_sides(master, 0, dofs, dirichlet);
-       	add_sides(slave, 2, dofs, dirichlet);
+	add_sides(slave, 0, dofs, dirichlet);
+       	add_sides(master, 3, dofs, dirichlet);
+       	
 		double master_sigma=darcy_.data_.sigma.value( master->centre(), master->element_accessor());
 
 /*
@@ -861,8 +859,8 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 
             }
         }
-
-		ls.set_values( dofs, dofs, A, rhs, dirichlet, dirichlet);
+        auto dofs_cp=dofs;
+        ls.set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
 
     }
 }
@@ -989,6 +987,8 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    assembly_steady_mh_matrix(); // fill matrix
 	    schur0->finish_assembly();
 	    schur0->set_matrix_changed();
+            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
+            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
 	    	DBGMSG("    setup time term\n");

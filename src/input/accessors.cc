@@ -193,6 +193,11 @@ string Record::address_string() const
 	return address_.make_full_address();
 }
 
+string Record::record_type_name()
+{
+	return record_type_.type_name();
+}
+
 
 
 /*****************************************************************************

@@ -60,9 +60,12 @@
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_elementwise.hh" 
+#include "fields/generic_field.hh"
+
 #include "reaction/isotherm.hh" // SorptionType enum
 
 namespace IT = Input::Type;
+
 
 IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selection("TransportSorptionType")
     .add_value(none,"none","No sorption considered")
@@ -80,19 +83,23 @@ IT::Selection ConvectionTransport::EqData::output_selection =
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 {
 	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.read_field_descriptor_hook = OldBcdInput::trans_conc_hook;
+    	bc_conc.add_factory( OldBcdInput::instance()->trans_conc_factory );
     	bc_conc.units( UnitSI().kg().m(-3) );
 	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
+	output_fields += region_ids.name("region_ids")
+	        .units( UnitSI::dimensionless())
+	        .flags(FieldFlag::equation_external_output);
 }
 
 
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
 : TransportBase(init_mesh, in_rec)
 {
+	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
 
     //mark type of the equation of convection transport (created in EquationBase constructor) and it is fixed
@@ -126,6 +133,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	data_.conc_mobile.init(substances_.names());
 	data_.conc_mobile.set_mesh(*mesh_);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
+	data_.region_ids = GenericField<3>::region_id(*mesh_);
 
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
@@ -135,7 +143,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	}
 	data_.output_fields.set_limit_side(LimitSide::right);
 	output_stream_ = OutputTime::create_output_stream(output_rec);
-	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"), data_.output_selection);
+	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 	output_stream_->mark_output_times(*time_);
 
     // initialization of balance object

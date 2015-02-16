@@ -21,7 +21,7 @@ Record RadioactiveDecay::input_type_product
                  "The branching ratio of the product when there is more than one."
                  "Considering only one product, the default ratio 1.0 is used."
                  "Its value must be positive. Further, the branching ratios of all products are normalized" 
-                 "by their sum, so the sum then gives 1.0 (this also resolves possible rouding errors).");
+                 "by their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).");
 
 Record RadioactiveDecay::input_type_single_decay
     = Record("Decay", "A model of a radioactive decay.")

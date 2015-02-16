@@ -8,6 +8,7 @@
     
     primary_equation = {
       TYPE = "Steady_MH", 
+      
       input_fields= [
       ],
       input_fields= [
@@ -15,7 +16,6 @@
           flow_old_bcd_file = "./input/sit_decay.fbc"
         }
       ],
-      
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -73,81 +73,64 @@
         
         reactions = [
           {
-            reactant = "E",
+            reactants = "E",
             reaction_rate = 1.3836,
-            products = [
-              "D"
-            ]
+            products = "D"
           },
           {
-            reactant = "D",
+            reactants = "D",
+            reaction_rate = 1.386294361,
+            products = "F"
+          },
+          {
+            reactants = "F",
+            reaction_rate = 1.3836,
+            products = "B"
+          },
+          {
+            reactants = "B",
             reaction_rate = 1.386294361,
             products = [
-              "F"
-            ]
-          },
-          {
-            reactant = "F",
-            reaction_rate = 1.3836,
-            products = [
-              "B"
-            ]
-          },
-          {
-            reactant = "B",
-            reaction_rate = 1.386294361,
-            products = [
-              "A",
-              "G",
-              "H"
-            ],
-            branching_ratios = [
-              0.2,
-              0.2,
-              0.6
+              { name = "A", branching_ratio = 0.2},
+              { name = "G", branching_ratio = 0.2},
+              { name = "H", branching_ratio = 0.6}
             ]
           },
             {
-            reactant = "A",
+            reactants = "A",
             reaction_rate = 1.386294361,
-            products = [
-              "G"
-            ]
+            products = "G"
           },
           {
-            reactant = "H",
+            reactants = "H",
             reaction_rate = 1.386294361,
-            products = [
-              "G"
-            ]
+            products = "G"
           },
           {
-            reactant = "G",
+            reactants = "G",
             reaction_rate = 1.386294361,
-            products = [
-              "C"
-            ]
+            products = "C"
           }
         ]
       },
       output_stream = {
         REF = "/system/output_streams/1"
       }
-    } 
+    }
   }, 
   
   system = {
     output_streams = [
       {
-        file = "./flow.msh", 
+        file = "./flow.pvd", 
         format = {
-          TYPE = "gmsh", 
+          TYPE = "vtk", 
           variant = "ascii"
         }, 
         name = "flow_output_stream"
       }, 
       {
-        file = "./transport.msh", 
+        file = "./transport.pvd", 
         format = {
           TYPE = {
             REF = "/system/output_streams/0/format/TYPE"

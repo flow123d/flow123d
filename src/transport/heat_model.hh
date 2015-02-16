@@ -86,7 +86,7 @@ public:
 
 		ModelEqData();
 
-		static string name() { return "HeatTransfer"; }
+		static  constexpr const char *  name() { return "HeatTransfer"; }
 
 		static string default_output_field() { return "temperature"; }
 

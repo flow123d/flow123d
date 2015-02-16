@@ -97,7 +97,9 @@ public:
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
 
+		Field<3, FieldValue<3>::Integer> region_ids;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         FieldSet output_fields;

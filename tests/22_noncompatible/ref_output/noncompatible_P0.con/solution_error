@@ -1,8 +1,9 @@
 l2 norm output
 
-pressure error 1d: 0.446062
-pressure error 2d: 0.562044
-velocity error 1d: 1.96926
-velocity error 2d: 10.9256
+pressure error 1d: 0.222271
+pressure error 2d: 0.406617
+velocity error 1d: 1.61027
+velocity error 2d: 8.75342
+masked velocity error 2d: 5.83555
 div error 1d: 1.41421
 div error 2d: 2

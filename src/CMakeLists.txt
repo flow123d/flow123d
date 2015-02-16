@@ -139,6 +139,7 @@ set (sources_lib_coupling
     fields/field_flag.cc
     fields/field_set.cc
     fields/unit_si.cc
+    fields/generic_field.cc
     
     coupling/time_marks.cc
     coupling/time_governor.cc
