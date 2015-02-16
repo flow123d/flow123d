@@ -15,12 +15,14 @@ cmake_minimum_required(VERSION 2.8)
        convection.tex
        darcy_flow.tex
        decay.tex
+       dg.tex
   #    flow_ini.tex
        flow_version.tex
        heat.tex
        input_files.tex
        input_reference.tex
        JSON_input.tex
+       lumped_mh.tex
        numerical.tex
        output.tex
        pos_12.tex
