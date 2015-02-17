@@ -69,9 +69,18 @@ public:
 
 	inline ~ProlongationLine(){};
 
-	inline unsigned int getDictionaryIdx(){
+	inline unsigned int getDictionaryIdx() const{
 		return dictionary_idx;
-	}
+	};
+
+	inline unsigned int getElement2DIdx() const{
+		return elm_2D_idx;
+	};
+
+	inline unsigned int getElement3DIdx() const{
+		return elm_3D_idx;
+	};
+
 };
 
 }

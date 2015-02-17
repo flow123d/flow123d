@@ -50,7 +50,8 @@ public:
 	// dopnit implementaci do .cpp
 	void computeIntersections2d3d();
 	void computeIntersections2d3dInit();
-	void computeIntersections2d3dProlongation();
+	void computeIntersections2d3dProlongation(const ProlongationLine &pl);
+	void computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
 
 
 	void ComputeIntersections23();
