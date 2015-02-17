@@ -30,3 +30,11 @@ MACRO (GENERATE_CONFIG_H file_path)
     # write definitions to tmp file
     FILE (WRITE "${file_path}" "${DEFINITIONS_CONTENT}")
 ENDMACRO (GENERATE_CONFIG_H)
+
+# SENSITIVE DEFINITIONS
+# add_definitions(-DHAVE_PETSC)
+# add_definitions(-DHAVE_MPI)
+# add_definitions(-DARMA_NO_DEBUG)
+# add_definitions(-DHAVE_CXX11_FULL)
+# add_definitions(-DHAVE_CXX11_FULL)
+# add_definitions(-DHAVE_CXX11_DRAFT)

@@ -1,5 +1,4 @@
-###
-# CMake script for creating config header file
+### CMake script for creating config header file
 MESSAGE (STATUS "CREATING CONFIG.H")
 
 # get tmp file path from given FILE_PATH variable (-DFILE_PATH=path/to/file.extension)

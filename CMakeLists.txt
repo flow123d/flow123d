@@ -111,7 +111,7 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
     # armadillo is configured using this definition
-    add_definitions (-DARMA_NO_DEBUG)    # no bound checks in armadillo 
+    add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
     flow_define(DEBUG_PROFILER)
     flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
@@ -146,21 +146,21 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       if (CYGWIN)
           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-            flow_define("CYGWIN")
-            flow_define("HAVE_CXX11_FULL")
+            flow_define(CYGWIN)
+            add_definitions(-DHAVE_CXX11_FULL)
             set(CMAKE_HAVE_CXX11 "true")
           else ()
             message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
           endif ()
       elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-          flow_define("HAVE_CXX11_FULL")    
+          add_definitions(-DHAVE_CXX11_FULL)    
           set(CMAKE_HAVE_CXX11 "true")
       else()
               message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
               if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-          flow_define("HAVE_CXX11_DRAFT")
+          add_definitions(-DHAVE_CXX11_DRAFT)
           set(CMAKE_HAVE_CXX11 "true")   
               elseif (GCC_VERSION VERSION_GREATER 4.4)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -170,7 +170,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
     # Necessary for FParser - TODO: move to better place
     # ?? what about Clang
-    flow_define("HAVE_SINCOS")
+    flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
@@ -180,7 +180,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
     set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
-    #flow_define("HAVE_CXX11")
+    #flow_define(HAVE_CXX11)
     set(CMAKE_HAVE_CXX11 "true")
     # 
     # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
@@ -194,7 +194,7 @@ endif()
 include(CheckIncludeFile)
 check_include_file("execinfo.h" EXEC_INFO_H)
 if (EXEC_INFO_H) 
-    flow_define("HAVE_EXEC_INFO")
+    flow_define(HAVE_EXEC_INFO)
     
     MESSAGE(STATUS "Looking for abi::__cxa_demangle")
     TRY_COMPILE(HAVE_DEMAGLER
@@ -204,7 +204,7 @@ if (EXEC_INFO_H)
     
     IF(HAVE_DEMAGLER)
       MESSAGE(STATUS "Looking for abi::__cxa_demangle - found")
-      flow_define("HAVE_DEMAGLER")
+      flow_define(HAVE_DEMAGLER)
     ELSE(HAVE_DEMAGLER)
       MESSAGE(STATUS "Looking for abi::__cxa_demangle - not found")
     ENDIF(HAVE_DEMAGLER)
@@ -413,8 +413,8 @@ if (NOT PETSC_FOUND)
 endif(NOT PETSC_FOUND)
 
 if(PETSC_FOUND)
-    flow_define(HAVE_PETSC)
-    flow_define(HAVE_MPI)
+    add_definitions(-DHAVE_PETSC)
+    add_definitions(-DHAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
     
@@ -620,7 +620,7 @@ set_source_files_properties(${CONFIG_FILE_REV_NUM}
 set(CONFIG_FILE_HEADER "${CONFIG_FILE_INCLUDES_DIRECTORY}/config.h")
 GENERATE_CONFIG_H (${CONFIG_FILE_HEADER})
 add_custom_target(config_h_always 
-    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_HEADER} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_config_header_create.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_HEADER} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_config_header_create.cmake
 )
 # config.h is a generated file
 set_source_files_properties(${CONFIG_FILE_HEADER}
@@ -652,7 +652,7 @@ else()
       find_program(SYSTEM_MPIEXEC mpiexec)
       if(SYSTEM_MPIEXEC)
         message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.") 
-  get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
+        get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
         set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
       else()
         message(WARNING "Missing any mpiexec.")
@@ -737,8 +737,8 @@ if( PETSC_FOUND )
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always config_h_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
-  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM} ) 
-  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER} ) 
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
