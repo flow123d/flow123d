@@ -138,7 +138,8 @@ public:
             double *data, std::vector<int> const & el_ids);
 
     template<typename T>
-    ElementDataCache<T> *get_element_data( GMSH_DataHeader &search_header, std::vector<int> const & el_ids);
+    typename ElementDataCache<T>::ComponentDataPtr get_element_data( GMSH_DataHeader &search_header,
+    		std::vector<int> const & el_ids, unsigned int component_idx);
 
 private:
     /**

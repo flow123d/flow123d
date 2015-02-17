@@ -75,12 +75,11 @@ TEST(GMSHReader, get_element_data) {
     search_header.n_components=1;
     search_header.n_entities=13;
     search_header.time=0.0;
-    ElementDataCache<int> * multifield_cache =
-    		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids);
 
-    EXPECT_DOUBLE_EQ(0.0, multifield_cache->get_time());
     for (i=0; i<3; ++i) {
-    	std::vector<int> &vec = *( multifield_cache->get_component_data(i).get() );
+        typename ElementDataCache<int>::ComponentDataPtr multifield_data =
+        		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids, i);
+    	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(13, vec.size());
     	for (j=0; j<mesh.element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
     	for ( ; j<vec.size(); j++) EXPECT_EQ( i+4, vec[j] ); // boundary elements
@@ -91,12 +90,11 @@ TEST(GMSHReader, get_element_data) {
     search_header.actual=false;
     search_header.n_components=3;
     search_header.time=1.0;
-    ElementDataCache<int> * field_cache =
-    		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids);
 
-    EXPECT_DOUBLE_EQ(1.0, field_cache->get_time());
     {
-    	std::vector<int> &vec = *( multifield_cache->get_component_data(0).get() );
+    	typename ElementDataCache<int>::ComponentDataPtr field_data =
+        		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids, 0);
+    	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(39, vec.size());
     	for (j=0; j<3*mesh.element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
     	for ( ; j<vec.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] ); // boundary elements
