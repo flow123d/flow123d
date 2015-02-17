@@ -753,7 +753,7 @@ message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
-message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "===========================================")
 
 
@@ -773,15 +773,15 @@ endif()
 
 
 # install bin directory
-install(DIRECTORY bin/config      DESTINATION bin/)
-install(DIRECTORY bin/ndiff       DESTINATION bin/)
-install(DIRECTORY bin/paraview      DESTINATION bin/)
-install(DIRECTORY bin/py      DESTINATION bin/)
-install(PROGRAMS   bin/tests/run_test.sh  DESTINATION bin/tests)
+install(DIRECTORY bin/config              DESTINATION bin/)
+install(DIRECTORY bin/ndiff               DESTINATION bin/)
+install(DIRECTORY bin/paraview            DESTINATION bin/)
+install(DIRECTORY bin/py                  DESTINATION bin/)
+install(PROGRAMS  bin/tests/run_test.sh   DESTINATION bin/tests)
 
-install(PROGRAMS   bin/flow123d.sh    DESTINATION bin/)
-install(PROGRAMS   bin/ini2json.sh    DESTINATION bin/)
-install(PROGRAMS   bin/time_limit.sh    DESTINATION bin/)
+install(PROGRAMS  bin/flow123d.sh         DESTINATION bin/)
+install(PROGRAMS  bin/ini2json.sh         DESTINATION bin/)
+install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 
 # install shared libraries
 if (CYGWIN)
@@ -814,14 +814,14 @@ endif()
 
 install(TARGETS    bin/flow123d  
   RUNTIME DESTINATION bin)
-install(PROGRAMS   ${MPIEXEC_PATH}    DESTINATION bin/)
+install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
 # make manual optional until we have Latex on Windows build machine
 install(DIRECTORY doc/con_syntax                DESTINATION doc/)
 install(FILES ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf 
-            DESTINATION doc/)
-install(FILES doc/petsc_options_help    DESTINATION doc/)
+                                                DESTINATION doc/)
+install(FILES doc/petsc_options_help            DESTINATION doc/)
 install(FILES doc/LICENSE                       DESTINATION doc/)
 install(FILES doc/GPL3                          DESTINATION doc/)
 install(FILES doc/README                        DESTINATION doc/)
