@@ -36,7 +36,7 @@
 #include <stdlib.h>
 
 #include "system/exc_common.hh"
-
+#include "config.h"
 
 /*! @brief Debugging macros.
  *
