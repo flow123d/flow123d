@@ -17,6 +17,7 @@ private:
 	// elemnt nebo 3D element
 
 	unsigned int elm_2D_idx;
+	unsigned int elm_3D_idx;
 	unsigned int dictionary_idx;
 
 
@@ -47,7 +48,7 @@ private:
 	// and 6 Plucker products
 
 public:
-	ProlongationLine(unsigned int element_2D, unsigned int dictionary);
+	ProlongationLine(unsigned int element_2D,unsigned int element_3D, unsigned int dictionary);
 	ProlongationLine(unsigned int side_old,unsigned int side, unsigned int element_old, unsigned int element, unsigned int type);
 
 	inline void setPluckerProducts(double pp, unsigned int index){
@@ -67,6 +68,10 @@ public:
 	};
 
 	inline ~ProlongationLine(){};
+
+	inline unsigned int getDictionaryIdx(){
+		return dictionary_idx;
+	}
 };
 
 }

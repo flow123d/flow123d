@@ -10,8 +10,9 @@
 using namespace std;
 namespace computeintersection{
 
-ProlongationLine::ProlongationLine(unsigned int element_2D, unsigned int dictionary){
+ProlongationLine::ProlongationLine(unsigned int element_2D,unsigned int element_3D, unsigned int dictionary){
 	elm_2D_idx = element_2D;
+	elm_3D_idx = element_3D;
 	dictionary_idx = dictionary;
 }
 

@@ -25,8 +25,10 @@ class InspectElements {
 
 	std::map<unsigned int, std::vector<IntersectionLocal>> intersection_list;
 	std::map<unsigned int, bool> closed_elements;
+	std::vector<int> flag_for_3D_elements;
 
-	std::queue<ProlongationLine> prolongation_line_queue;
+	std::queue<ProlongationLine> prolongation_line_queue_2D;
+	std::queue<ProlongationLine> prolongation_line_queue_3D;
 
 	IntersectionLocal temporary_intersection;
 

@@ -38,6 +38,8 @@ InspectElements::~InspectElements(){};
 
 void InspectElements::computeIntersections2d3dInit(){
 
+	flag_for_3D_elements.assign(mesh->n_elements(), -1);
+
 	FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 2) {
 			intersection_list[elm.index()] = std::vector<IntersectionLocal>();
@@ -129,31 +131,50 @@ void InspectElements::ComputeIntersections23(){
 									}
 			        			}else{
 			        				// prodlužuji stěnou
-			        				xprintf(Msg,"Procházím stěnu(%d)\n", stena);
+			        				xprintf(Msg,"Procházím stěnu(%d) na id elementu(%d), stěna(%d)\n"
+			        						, stena,ele->index(),ele->side(3-stena)->el_idx());
 
-			        				SideIter elm_side = ele->side(3-stena);
+
+			        				SideIter elm_side = ele->side((unsigned int)(3-stena)); //ele->side(3-stena);
 									Edge *edg = elm_side->edge();
 
-									if(edg == NULL){
-										// Není už žádný soused
-									}else{
-										for(int j=0; j < edg->n_sides;j++) {
-											SideIter other_side=edg->side(j);
-											if (other_side != elm_side) {
-												xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
+									for(int j=0; j < edg->n_sides;j++) {
+										SideIter other_side=edg->side(j);
+										if (other_side != elm_side) {
+											xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)\n",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
+
+											// kontrola indexu pro ctyrsten -> pokud je tam neidentifikovaný příznak (-1), můžeme souseda přidat do fronty zpracování a nastavíme mu příznak trojuhelniku, kterému náleží
+											// pokud už má index nastaven -> byl nebo bude průnik v sousedním čtyřstěnu spočten
+											// vytvoří se pár a průnik IL pro sousedník čtyřstěn a konkrétní trojuhlenik
+											// index IL se zařadí do fronty zpracování a obdobně se dál pokračuje
+
+											unsigned int sousedni_element = other_side->element()->index();
+											if(flag_for_3D_elements[sousedni_element] != elm->index()){
+												flag_for_3D_elements[sousedni_element] = elm->index();
+												// Jedná se o vnitřní čtyřstěny v trojúhelníku
+
+												// Vytvoření průniku bez potřeby počítání
+												IntersectionLocal il_other(elm.index(), sousedni_element);
+												intersection_list[elm.index()].push_back(il_other);
+
+												ProlongationLine pl(elm.index(), sousedni_element, intersection_list[elm.index()].size() - 1);
+												prolongation_line_queue_3D.push(pl);
+
 											}
 										}
 									}
+
 			        			}
 
 			        		}
-
+			        		break;
 			        	}
 
 			        }
 			    }
 			    // Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
 			    closed_elements[elm.index()] = true;
+			    break;
 			}
 		}
 };
