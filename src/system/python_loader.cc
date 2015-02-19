@@ -90,7 +90,7 @@ string from_py_string(const wstring &wstr) {
 
 // currently we support only Python 2.7
 //
-#if PYTHONLIBS_VERSION_MAJOR<3
+#if FLOW123D_PYTHONLIBS_VERSION_MAJOR<3
     #define to_py_string      string
     #define from_py_string    string
     #define PY_STRING string
@@ -126,7 +126,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
         Py_GetPath();
 
         static PY_STRING our_py_path;
-        string python_subdir("/lib/python" + STR(PYTHONLIBS_VERSION_MAJOR) + "." + STR(PYTHONLIBS_VERSION_MINOR));
+        string python_subdir("/lib/python" + STR(FLOW123D_PYTHONLIBS_VERSION_MAJOR) + "." + STR(FLOW123D_PYTHONLIBS_VERSION_MINOR));
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/plat-cygwin:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/lib-dynload:");
