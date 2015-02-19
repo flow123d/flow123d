@@ -56,13 +56,36 @@ namespace Input {
  * one time step.
  */
 
-struct TimeStep {
+class TimeStep {
 public:
+    /**
+     * Constructor of the zero time step.
+     */
+    TimeStep(double init_time) :
+        index_(0),
+        length_(1.0),
+        begin_(-numeric_limits<double>::infinity()), //TimeGovernor::inf_time
+        end_(init_time)
+        {}
+    /**
+     * Deafult constructor.
+     */
+    TimeStep() {}
+
+    /**
+     * Copy constructor.
+     */
+    TimeStep(const TimeStep &other):
+            index_(other.index_),
+            length_(other.length_),
+            begin_(other.begin_), //TimeGovernor::inf_time
+            end_(other.end_)
+            {}
     /**
      * Create subsequent time step.
      */
-    TimeStep make_next(double lenght)
-    { return make_next(length, this->end+lenght); }
+    TimeStep make_next(double new_length) const
+    { return make_next(new_length, this->end_+new_length); }
 
     /**
      * Create subsequent time step, with the @end_time
@@ -72,24 +95,33 @@ public:
      * goal time.
      *
      */
-    TimeStep make_next(double lenght, double end_time) {
+    TimeStep make_next(double new_lenght, double end_time) const {
         TimeStep ts;
-        ts.index=this->index+1;
-        ts.length=lenght;
-        ts.begin=this->end;
-        ts.end=end_time;
+        ts.index_=this->index_ +1;
+        ts.length_=new_lenght;
+        ts.begin_=this->end_;
+        ts.end_=end_time;
         return ts;
     }
 
+    /**
+     * Getters.
+     */
+    unsigned int index() const {return index_;}
+    double length() const { return length_;}
+    double end() const { return end_;}
+    double begin() const {return begin_;}
+
+private:
     /// Index of the step is index if the end time. Zero time step is artificial.
-    unsigned int index;
+    unsigned int index_;
     /// Length of the time step. Theoretically @p end minus @p begin.
     /// However may be slightly different due to rounding errors.
-    double length;
+    double length_;
     /// Beginning of the time step (equal to the
-    double begin;
+    double begin_;
     /// End time point of the time step.
-    double end;
+    double end_;
 };
 
 
@@ -348,28 +380,28 @@ public:
      * End of actual time interval; i.e. where the solution is computed.
      */
     inline double t() const
-        {return step().end;}
+        {return step().end();}
 
     /**
      * Previous time step.
      */
     inline double last_dt() const
-        {if (step().index >0) return step(-1).length;
-        else return step(0).length;
+        {if (step().index() >0) return step(-1).length();
+        else return inf_time;
         }
 
     /**
      * Previous time.
      */
     inline double last_t() const
-        { return step().begin; }
+        { return step().begin(); }
 
 
     /**
      * Length of actual time interval; i.e. the actual time step.
      */
     inline double dt() const
-        {return step().length;}
+        {return step().length();}
 
     /**
      * @brief Estimate choice of next time step according to actual setting of constraints.
@@ -411,7 +443,7 @@ public:
     inline bool gt(double other_time) const
         {
             return ! (t() <= other_time
-            + 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time)) );
+            + 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time))) );
         }
 
     /**
@@ -420,7 +452,7 @@ public:
     inline bool ge(double other_time) const
     {
         return t() >= other_time
-        - 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
+        - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
     }
 
     /**
@@ -429,7 +461,7 @@ public:
     inline bool lt(double other_time) const
     {
         double b=other_time
-                - 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
+                - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
         return ! (t() >= b);
     }
 
@@ -439,14 +471,14 @@ public:
     inline bool le(double other_time) const
     {
         return t() <= other_time
-        + 16*numeric_limits<double>::epsilon()*max(abs(t()),abs(other_time));
+        + 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
     }
 
     /**
      * Returns the time level.
      */
     inline int tlevel() const
-        {return step().index;}
+        {return step().index();}
 
     /**
      * Prints output of TimeGovernor.

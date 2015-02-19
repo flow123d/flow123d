@@ -58,9 +58,9 @@ public:
      */
     typedef unsigned long int Type;
 
-    /// Mask that matches every type of TimeMark.
+    /// Mark Type with all bits set.
     static const Type every_type;
-    /// Mask that matches no type of TimeMark.
+    /// Mark Type with all bits unset.
     static const Type none_type;
     
     /**

@@ -152,12 +152,8 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     }
 
     recent_steps_.set_capacity(2);
-    TimeStep ts;
-    ts.index=0;
-    ts.end=init_time_=init_time;
-    ts.begin=-inf_time;
-    ts.length=inf_time;
-    recent_steps_.push_front(ts);
+    recent_steps_.push_front(TimeStep(init_time));
+    init_time_=init_time;
 
 	if (end_time < init_time) {
 		THROW(ExcTimeGovernorMessage()	<< EI_Message("End time must be greater than start time.\n") );
@@ -303,7 +299,8 @@ double TimeGovernor::estimate_dt() const {
     TimeMarks::iterator fix_time_it = time_marks_.next(*this, equation_fixed_mark_type());
     // compute step to next fix time and apply constraints
     double full_step = fix_time_it->time() - t();
-    
+
+    DBGMSG("full: %f, upper: %f\n", full_step, upper_constraint_);
     double step_estimate = min(full_step, upper_constraint_);
     step_estimate = max(step_estimate, lower_constraint_); //these two must be in this order
 
@@ -340,19 +337,20 @@ void TimeGovernor::next_time()
         // this is done for fixed step
         // make tiny correction of time step in order to avoid big rounding errors
         // tiny correction means that dt_changed 'is NOT changed'
+        DBGMSG("fdt:%f\n", fixed_time_step_);
     	if (end_of_fixed_dt_interval_ < inf_time) {
     		fixed_time_step_ = (end_of_fixed_dt_interval_-t()) / round( (end_of_fixed_dt_interval_-t()) / fixed_time_step_ );
     	}
 
-        recent_steps_.push_front(recent_steps_.front().make_next(fixed_time_step_));
-        
+    	recent_steps_.push_front(recent_steps_.front().make_next(fixed_time_step_));
+
         //checking whether fixed time step has been changed (by fix_dt_until_mark() method) since last time
         if (is_time_step_fixed_)
         {
             is_time_step_fixed_ = false;       
             
             //is true unless new fixed_dt is not equal previous time_step
-            time_step_changed_ = (step(-1).length != step().length);
+            time_step_changed_ = (step(-1).length() != step().length());
         }
         else
             time_step_changed_ = false;
@@ -360,9 +358,12 @@ void TimeGovernor::next_time()
     else
     {
         // this is done if end_of_fixed_dt_interval is not set (means it is equal to -infinity)
-        recent_steps_.push_front(recent_steps_.front().make_next(
-                estimate_dt()));
-        time_step_changed_= (step(-1).length != step().length);
+        double dt=estimate_dt();
+        TimeStep step_ = recent_steps_.front().make_next(dt);
+        DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
+        recent_steps_.push_front(step_);
+        DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
+        time_step_changed_= (step(-1).length() != step().length());
     }
 
     // refreshing the upper_constraint_
