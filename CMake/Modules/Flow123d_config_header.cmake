@@ -28,6 +28,7 @@ ENDMACRO (FLOW_DEFINE variable_name)
 # after that python script will expand this file into valid header file config.h
 MACRO (GENERATE_CONFIG_H file_path)
     # write definitions to tmp file
+    MESSAGE ("GENERATING CONFIG_H_TMP")
     FILE (WRITE "${file_path}" "${DEFINITIONS_CONTENT}")
 ENDMACRO (GENERATE_CONFIG_H)
 
@@ -36,5 +37,10 @@ ENDMACRO (GENERATE_CONFIG_H)
 # FLOW123D_HAVE_MPI usage:
 #       CMakeLists.txt
 # ARMA_NO_DEBUG
-# HAVE_CXX11_FULL
-# HAVE_CXX11_DRAFT
+# FLOW123D_FLOW123D_HAVE_CXX11_FULL
+#       CMakeLists.txt
+#       system.hh (src/system)
+#       sys_profiler.hh (src/system)
+# FLOW123D_HAVE_CXX11_DRAFT
+#       CMakeLists.txt
+#       sys_profiler.hh (src/system)

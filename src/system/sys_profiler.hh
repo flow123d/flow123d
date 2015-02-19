@@ -77,7 +77,7 @@ public:
 };
 
 // Workaround for older compilers, that do not support constexpr feature
-#if defined(HAVE_CXX11_FULL) || defined(HAVE_CXX11_DRAFT)
+#if defined(FLOW123D_HAVE_CXX11_FULL) || defined(FLOW123D_HAVE_CXX11_DRAFT)
     #define CONSTEXPR_ constexpr
 #else
     #define CONSTEXPR_

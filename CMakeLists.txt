@@ -147,20 +147,20 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
             flow_define(CYGWIN)
-            add_definitions(-DHAVE_CXX11_FULL)
+            flow_define(HAVE_CXX11_FULL)
             set(CMAKE_HAVE_CXX11 "true")
           else ()
             message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
           endif ()
       elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-          add_definitions(-DHAVE_CXX11_FULL)    
+          flow_define(HAVE_CXX11_FULL)    
           set(CMAKE_HAVE_CXX11 "true")
       else()
               message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
               if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-          add_definitions(-DHAVE_CXX11_DRAFT)
+          flow_define(HAVE_CXX11_DRAFT)
           set(CMAKE_HAVE_CXX11 "true")   
               elseif (GCC_VERSION VERSION_GREATER 4.4)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -396,13 +396,13 @@ if (NOT PETSC_FOUND)
 #    find_package(MPI)
 #  
 #    if (MPI_CXX_FOUND)
-#        flow_define(FLOW123D_HAVE_MPI)
+#        flow_define(HAVE_MPI)
 #    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
 #        set(mpiuni_sources    system/mpiuni/mpi.c)
 #        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        flow_define(FLOW123D_HAVE_MPI)
-#        flow_define(FLOW123D_HAVE_MPIUNI)
+#        flow_define(HAVE_MPI)
+#        flow_define(HAVE_MPIUNI)
 #    
         # overwrite NOTFOUND status
 #        set(MPI_CXX_LIBRARIES mpiuni_lib)
@@ -414,7 +414,7 @@ endif(NOT PETSC_FOUND)
 
 if(PETSC_FOUND)
     add_definitions(-DHAVE_PETSC)
-    flow_define(FLOW123D_HAVE_MPI)
+    flow_define(HAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
     
@@ -618,7 +618,7 @@ set_source_files_properties(${CONFIG_FILE_REV_NUM}
 ### create config.h - file containing definitions flags and other information
 # called everytime
 set(CONFIG_FILE_HEADER "${CONFIG_FILE_INCLUDES_DIRECTORY}/config.h")
-GENERATE_CONFIG_H (${CONFIG_FILE_HEADER})
+GENERATE_CONFIG_H ("${CONFIG_FILE_HEADER}.tmp")
 add_custom_target(config_h_always 
     COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_HEADER} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_config_header_create.cmake
 )
