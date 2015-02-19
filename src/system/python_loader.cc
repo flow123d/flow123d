@@ -105,7 +105,7 @@ namespace internal {
 
 PythonRunning::PythonRunning(const std::string& program_name)
 {
-#ifdef PYTHON_PREFIX
+#ifdef FLOW123D_PYTHON_PREFIX
         static PY_STRING _python_program_name = to_py_string(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         PY_STRING full_program_name = Py_GetProgramFullPath();
@@ -116,7 +116,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
         ASSERT(pos != PY_STRING::npos, "non flow123d binary");
         PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
         cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-        PY_STRING default_py_prefix(to_py_string(STR(PYTHON_PREFIX)));
+        PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
         cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
 
         static PY_STRING our_py_home(full_flow_prefix + ":" +default_py_prefix);
