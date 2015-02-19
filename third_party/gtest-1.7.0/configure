@@ -622,8 +622,8 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 acx_pthread_config
-FLOW123D_HAVE_PYTHON_FALSE
-FLOW123D_HAVE_PYTHON_TRUE
+HAVE_PYTHON_FALSE
+HAVE_PYTHON_TRUE
 PYTHON
 CXXCPP
 CPP
@@ -14941,7 +14941,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 # TODO(chandlerc@google.com): Currently we aren't running the Python tests
 # against the interpreter detected by AM_PATH_PYTHON, and so we condition
-# FLOW123D_HAVE_PYTHON by requiring "python" to be in the PATH, and that interpreter's
+# HAVE_PYTHON by requiring "python" to be in the PATH, and that interpreter's
 # version to be >= 2.3. This will allow the scripts to use a "/usr/bin/env"
 # hashbang.
 PYTHON=  # We *do not* allow the user to specify a python interpreter
@@ -15007,11 +15007,11 @@ else
 fi
 fi
  if test "$PYTHON" != ":"; then
-  FLOW123D_HAVE_PYTHON_TRUE=
-  FLOW123D_HAVE_PYTHON_FALSE='#'
+  HAVE_PYTHON_TRUE=
+  AVE_PYTHON_FALSE='#'
 else
-  FLOW123D_HAVE_PYTHON_TRUE='#'
-  FLOW123D_HAVE_PYTHON_FALSE=
+  HAVE_PYTHON_TRUE='#'
+  HAVE_PYTHON_FALSE=
 fi
 
 
@@ -15702,8 +15702,8 @@ if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${FLOW123D_HAVE_PYTHON_TRUE}" && test -z "${FLOW123D_HAVE_PYTHON_FALSE}"; then
-  as_fn_error $? "conditional \"FLOW123D_HAVE_PYTHON\" was never defined.
+if test -z "${HAVE_PYTHON_TRUE}" && test -z "${HAVE_PYTHON_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PYTHON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PTHREADS_TRUE}" && test -z "${HAVE_PTHREADS_FALSE}"; then

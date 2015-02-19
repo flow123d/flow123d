@@ -31,14 +31,14 @@ AC_PROG_LIBTOOL
 
 # TODO(chandlerc@google.com): Currently we aren't running the Python tests
 # against the interpreter detected by AM_PATH_PYTHON, and so we condition
-# FLOW123D_HAVE_PYTHON by requiring "python" to be in the PATH, and that interpreter's
+# HAVE_PYTHON by requiring "python" to be in the PATH, and that interpreter's
 # version to be >= 2.3. This will allow the scripts to use a "/usr/bin/env"
 # hashbang.
 PYTHON=  # We *do not* allow the user to specify a python interpreter
 AC_PATH_PROG([PYTHON],[python],[:])
 AS_IF([test "$PYTHON" != ":"],
       [AM_PYTHON_CHECK_VERSION([$PYTHON],[2.3],[:],[PYTHON=":"])])
-AM_CONDITIONAL([FLOW123D_HAVE_PYTHON],[test "$PYTHON" != ":"])
+AM_CONDITIONAL([HAVE_PYTHON],[test "$PYTHON" != ":"])
 
 # Configure pthreads.
 AC_ARG_WITH([pthreads],
