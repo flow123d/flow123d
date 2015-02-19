@@ -35,16 +35,58 @@ ENDMACRO (GENERATE_CONFIG_H)
 # SENSITIVE DEFINITIONS
 # FLOW123D_HAVE_PETSC:
 #       CMakeLists.txt
-#       application_base.cc (src/system)
-#       application_base.hh (src/system)
+#       application_base.cc         src/system
+#       application_base.hh         src/system
 # FLOW123D_HAVE_MPI:
 #       CMakeLists.txt
 # ARMA_NO_DEBUG
 #       
 # FLOW123D_HAVE_CXX11_FULL:
 #       CMakeLists.txt
-#       system.hh (src/system)
-#       sys_profiler.hh (src/system)
+#       system.hh                   src/system
+#       sys_profiler.hh             src/system
 # FLOW123D_HAVE_CXX11_DRAFT:
 #       CMakeLists.txt
-#       sys_profiler.hh (src/system)
+#       sys_profiler.hh             src/system
+
+
+# Other definitions
+# FLOW123D_DEBUG_PROFILER 
+#       CMakeLists.txt
+#       config.cmake.template
+#       global_defs.h               src/system
+#       profiler_test.cpp           unit_tests/system
+#       sys_profiler.cc             src/system
+#       sys_profiler.hh             src/system
+# FLOW123D_RUN_UNIT_BENCHMARKS
+#       CMakeLists.txt
+#       config.cmake.template 
+#       field_speed_test.cpp        unit_tests/fields
+#       region_test.cpp             unit_tests/mesh
+#       tokenizer_speed_test.cpp    unit_tests/system
+# FLOW123D_HAVE_SINCOS
+#       CMakeLists.txt
+#       fpaux.hh                    third_party/fparser-4.5.1/extrasrc
+# FLOW123D_CYGWIN
+#       CMakeLists.txt
+#       equation.cc                 src/coupling
+#       file_path.cc                src/system
+# HAVE_EXEC_INFO
+#       CMakeLists.txt
+#       exceptions.cc               src/system
+# HAVE_DEMAGLER
+#       CMakeLists.txt
+# HAVE_PYTHON
+#       configure                   third_party/gtest-1.7.0
+#       configure.ac                third_party/gtest-1.7.0
+#       field_algo_base.impl.hh     src/fields
+#       field_python.hh             src/fields
+#       field_python.impl.hh        src/fields
+#       field_python_test.cpp       unit_tests/fields
+#       field_speed_test.cpp        unit_tests/fields
+#       main.cc                     src
+#       Makefile.am                 third_party/gtest-1.7.0
+#       python_loader.cc            src/system
+#       python_loader.hh            src/system
+
+

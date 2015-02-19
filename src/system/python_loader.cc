@@ -6,7 +6,7 @@
  */
 
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
 #include "global_defs.h"
@@ -200,4 +200,4 @@ PythonRunning::~PythonRunning() {
 
 } // close namespace internal
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON

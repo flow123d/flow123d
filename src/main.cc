@@ -87,7 +87,7 @@ Application::Application( int argc,  char ** argv)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PythonLoader::initialize(argv[0]);
 #endif
 

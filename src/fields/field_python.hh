@@ -87,12 +87,12 @@ private:
      */
     inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PyObject *p_func_;
     PyObject *p_module_;
     mutable PyObject *p_args_;
     mutable PyObject *p_value_;
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 };
 
