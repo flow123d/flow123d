@@ -9,7 +9,7 @@
 
 #include <flow_gtest_mpi.hh>
 
-#ifdef RUN_UNIT_BENCHMARKS
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
@@ -464,5 +464,5 @@ TEST(FieldValue_, speed_test_direct) {
    cout << val << endl;
 }
 
-#endif // RUN_UNIT_BENCHMARKS
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
 
