@@ -109,9 +109,9 @@
 
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags:          "-g -DFlow123d_DEBUG"
+# "debug" set flags:          "-g -DFLOW123D_DEBUG"
 # "release" set flags:        "-O3 -DFLOW123D_DEBUG_PROFILER -DARMA_NO_DEBUG "
-# "coverage" set flags:       "-g -O0 -DFlow123d_DEBUG -fprofile-arcs -ftest-coverage"
+# "coverage" set flags:       "-g -O0 -DFLOW123D_DEBUG -fprofile-arcs -ftest-coverage"
 #      and for external libs: "-g -O0"
 #
 # To change flags for external libs use following self-explanatory variables
@@ -126,16 +126,16 @@ set(FLOW_BUILD_TYPE debug)
 # you can override these settings through variable FLOW_CC_FLAGS
 #
 # Flow recognize  following definitions:
-# Flow123d_NODEBUG					- all debug options off
-# Flow123d_DEBUG					- all debug options on
-# DEBUG_MESSAGES
-# DEBUG_ASSERTS
+# FLOW123D_NODEBUG					- all debug options off
+# FLOW123D_DEBUG					- all debug options on
+# FLOW123D_DEBUG_MESSAGES
+# FLOW123D_DEBUG_ASSERTS
 # FLOW123D_DEBUG_PROFILER
-# FLOW123D_RUN_UNIT_BENCHMARKS       - build benchmark unit tests
-# HAVE_CXX11				- support for requested C++11 features (constexpr)
+# FLOW123D_RUN_UNIT_BENCHMARKS      - build benchmark unit tests
+# FLOW123D_HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:
-#set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
+#set(FLOW_CC_FLAGS "-O3 -DFLOW123D_NODEBUG -pg")
 
 ### Install package platform ###
 # This string is used as part of package name to distinguish 
