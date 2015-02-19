@@ -110,7 +110,7 @@
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
 # "debug" set flags:          "-g -DFlow123d_DEBUG"
-# "release" set flags:        "-O3 -DDEBUG_PROFILER -DARMA_NO_DEBUG "
+# "release" set flags:        "-O3 -DFLOW123D_DEBUG_PROFILER -DARMA_NO_DEBUG "
 # "coverage" set flags:       "-g -O0 -DFlow123d_DEBUG -fprofile-arcs -ftest-coverage"
 #      and for external libs: "-g -O0"
 #
@@ -130,7 +130,7 @@ set(FLOW_BUILD_TYPE debug)
 # Flow123d_DEBUG					- all debug options on
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
-# DEBUG_PROFILER
+# FLOW123D_DEBUG_PROFILER
 # RUN_UNIT_BENCHMARKS       - build benchmark unit tests
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #

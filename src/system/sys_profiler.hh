@@ -108,7 +108,7 @@ using namespace std;
  *      if (some_condition) START_TIMER(tag);
  * @endcode
  */
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 #define START_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
 #else
 #define START_TIMER(tag)
@@ -121,7 +121,7 @@ using namespace std;
  *
  * Use only if you want to end timer before the end of block. Again this expands into two lines, see ATTENTION in previous macro.
  */
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 #define END_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); Profiler::instance()->stop_timer( PASTE(cp_,__LINE__) )
 #else
 #define END_TIMER(tag)
@@ -132,7 +132,7 @@ using namespace std;
  *
  * Ends current timer and starts the new one with given tag.  Again this expands into two lines, see ATTENTION in previous macro.
  */
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 #define END_START_TIMER(tag) Profiler::instance()->stop_timer(); START_TIMER(tag);
 #else
 #define END_START_TIMER(tag)
@@ -158,7 +158,7 @@ using namespace std;
  * In the profiler report you get the total time spent in the cycle, and time per one call which will be average
  * time spent in the body of the cycle.
  */
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 #define ADD_CALLS(n_calls) Profiler::instance()->add_calls(n_calls)
 #else
 #define ADD_CALLS(n_calls)
@@ -168,7 +168,7 @@ using namespace std;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 
 /**
  * @brief Function for compile-time hash computation.  (Needs C++x11 standard.)
@@ -486,7 +486,7 @@ public:
     void output(MPI_Comm comm, ostream &os);
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
-     * Empty body if macro DEBUG_PROFILER is not defined.
+     * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      *
      * TODO: move this outside to minimize dependencies
      */
@@ -602,7 +602,7 @@ public:
     }
 };
 
-#else // DEBUG_PROFILER
+#else // FLOW123D_DEBUG_PROFILER
 
 
 // dummy declaration of Profiler class

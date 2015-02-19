@@ -64,7 +64,7 @@
  * Actually there are following debugging switches
  * DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
  * DEBUG_ASSERTS - use assertion checks introduced by ASSERT
- * DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
+ * FLOW123D_DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
  *
  * You can turn all off defining: Flow123d_NODEBUG
  * or turn all on defining: Flow123d_DEBUG
@@ -77,7 +77,7 @@
 
 #undef  DEBUG_MESSAGES
 #undef  DEBUG_ASSERTS
-#undef  DEBUG_PROFILER
+#undef  FLOW123D_DEBUG_PROFILER
 
 #endif
 
@@ -86,7 +86,7 @@
 
 #define  DEBUG_MESSAGES
 #define  DEBUG_ASSERTS
-#define  DEBUG_PROFILER
+#define  FLOW123D_DEBUG_PROFILER
 
 #endif
 
