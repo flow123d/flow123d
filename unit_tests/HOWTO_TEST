@@ -3,7 +3,7 @@ How to make unit tests for Flow123d
 
 Basic structure of test that need not to use MPI is:
 ----------------------------------------
-#include "gtest/gtest.hh"
+#include "flow_gtest.hh"
 
 TEST( class_name, test_name ) {
 	...
