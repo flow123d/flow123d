@@ -525,4 +525,5 @@ template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_e
 	std::vector<int> const & el_ids, unsigned int component_idx)
 
 READER_GET_ELEMENT_DATA(int);
+READER_GET_ELEMENT_DATA(unsigned int);
 READER_GET_ELEMENT_DATA(double);

@@ -51,7 +51,7 @@ public:
     /**
      * Creates and returns vector with element partitioning for output.
      */
-    vector<double> &subdomain_id_field_data();
+    vector<int> &subdomain_id_field_data();
 
     /**
      * Obsolete see source file for doc.
@@ -97,7 +97,7 @@ private:
     /// Original distribution of elements. Depends on type of partitioner
     Distribution *init_el_ds_;
     /// Sequential partitioning for output.
-    vector<double> seq_part_;
+    vector<int> seq_part_;
 
     /**
      * Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_

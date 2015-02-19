@@ -46,7 +46,7 @@ Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  internal_raw_data(true), data_(NULL), mesh_(NULL)
+  internal_raw_data(true), mesh_(NULL)
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
@@ -57,10 +57,22 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 template <int spacedim, class Value>
 FieldElementwise<spacedim, Value>::FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size )
 : FieldAlgorithmBase<spacedim, Value>(n_components),
-  internal_raw_data(false), data_size_(size), data_(data_ptr), mesh_(NULL)
+  internal_raw_data(false), mesh_(NULL)
 {
-    n_components_ = this->value_.n_rows() * this->value_.n_cols();
+	n_components_ = this->value_.n_rows() * this->value_.n_cols();
+	data_ = std::make_shared<std::vector<typename Value::element_type> >(data_ptr, data_ptr + size);
 }
+
+
+template <int spacedim, class Value>
+FieldElementwise<spacedim, Value>::FieldElementwise(std::vector<typename Value::element_type> &data, unsigned int n_components)
+: FieldAlgorithmBase<spacedim, Value>(n_components),
+  internal_raw_data(false), mesh_(NULL)
+{
+	n_components_ = this->value_.n_rows() * this->value_.n_cols();
+	data_ = std::shared_ptr<std::vector<typename Value::element_type> >(&data);
+}
+
 
 
 
@@ -83,17 +95,18 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
     ASSERT( this->value_.n_cols() == ref.n_cols(), "Size of variable vectors do not match.\n" );
     ASSERT( mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     ASSERT( boundary_domain_ , "Method set_data_row can be used only for boundary fields.");
-    typename Value::element_type *ptr=(typename Value::element_type *) ( data_+(boundary_idx)*n_components_);
+    unsigned int vec_pos = boundary_idx * n_components_;
+    std::vector<typename Value::element_type> &vec = *( data_.get() );
     for(unsigned int row=0; row < ref.n_rows(); row++)
-        for(unsigned int col=0; col < ref.n_cols(); col++, ptr++)
-            *ptr = ref(row,col);
+        for(unsigned int col=0; col < ref.n_cols(); col++, vec_pos++)
+        	vec[vec_pos] = ref(row,col);
+
 }
 
 
 template <int spacedim, class Value>
 bool FieldElementwise<spacedim, Value>::set_time(double time) {
     ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
-    ASSERT(data_, "Null data pointer.\n");
     if ( reader_file_ == FilePath() ) return false;
 
     //walkaround for the steady time governor - there is no data to be read in time==infinity
@@ -108,7 +121,8 @@ bool FieldElementwise<spacedim, Value>::set_time(double time) {
     search_header.time=time;
 
 
-    ReaderInstances::instance()->get_reader(reader_file_)->read_element_data(search_header, data_, mesh_->elements_id_maps(boundary_domain_) );
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     return search_header.actual;
 }
 
@@ -128,10 +142,9 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     }
 
     // allocate
-    if (data_ == NULL) {
-        data_size_ = n_entities_ * n_components_;
-        data_ = new double[data_size_];
-        std::fill(data_, data_ + data_size_, 0.0);
+    if (!data_) {
+    	data_ = std::make_shared<std::vector<typename Value::element_type>>();
+    	data_->resize(n_entities_ * n_components_);
     }
 
 }
@@ -148,8 +161,9 @@ typename Value::return_type const & FieldElementwise<spacedim, Value>::value(con
         ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
 
         unsigned int idx = n_components_*elm.idx();
+        std::vector<typename Value::element_type> &vec = *( data_.get() );
 
-        return Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
+        return Value::from_raw(this->r_value_, (typename Value::element_type *)(&vec[idx]));
 }
 
 
@@ -166,8 +180,9 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
     ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
         unsigned int idx = n_components_*elm.idx();
+        std::vector<typename Value::element_type> &vec = *( data_.get() );
 
-        typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(data_+idx));
+        typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(&vec[idx]));
         for(unsigned int i=0; i< value_list.size(); i++) {
             ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
                     "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
@@ -183,9 +198,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 
 
 template <int spacedim, class Value>
-FieldElementwise<spacedim, Value>::~FieldElementwise() {
-    if (internal_raw_data && data_ != NULL) delete [] data_;
-}
+FieldElementwise<spacedim, Value>::~FieldElementwise() {}
 
 
 

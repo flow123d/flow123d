@@ -204,7 +204,7 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 
 
-vector<double> &Partitioning::subdomain_id_field_data() {
+vector<int> &Partitioning::subdomain_id_field_data() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
     if (seq_part_.size() == 0) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;

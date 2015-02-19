@@ -54,9 +54,7 @@ public:
     /**
      * Alternative to previous constructor.
      */
-    FieldElementwise(vector<double> &data, unsigned int n_components)
-    : FieldElementwise(&(data[0]), n_components, data.size() )
-    {}
+    FieldElementwise(std::vector<typename Value::element_type> &data, unsigned int n_components);
 
     static Input::Type::Record input_type;
 
@@ -106,10 +104,8 @@ private:
      * TODO: temporary solution until we have separate mesh for the boundary part
      */
     bool boundary_domain_;
-    /// Allocated size of data_ buffer
-    unsigned int data_size_;
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+    std::shared_ptr< std::vector<typename Value::element_type> > data_;
     /// Number of rows in @p data_ buffer.
     unsigned int n_entities_;
     /// Size of Value
