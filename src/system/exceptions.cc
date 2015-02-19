@@ -15,7 +15,7 @@
 #include <execinfo.h>
 #endif
 
-#ifdef HAVE_DEMAGLER
+#ifdef FLOW123D_HAVE_DEMAGLER
 #include <cxxabi.h>
 #endif
 
@@ -96,7 +96,7 @@ void ExceptionBase::print_stacktrace(std::ostream &out) const {
         int status=-1;
         char *demagled_f_name = {0};
 
-#ifdef HAVE_DEMAGLER
+#ifdef FLOW123D_HAVE_DEMAGLER
         demagled_f_name = abi::__cxa_demangle(magled_fname.c_str(), 0, 0, &status);
 #endif
         if (status == 0) {
