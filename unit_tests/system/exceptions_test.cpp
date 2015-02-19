@@ -5,10 +5,10 @@
  *      Author: jb
  */
 
+#define DEBUG_ASSERTS_WITHOUT_MPI
 
 #include "system/exceptions.hh"
-#include <gtest/gtest.h>
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 
 #include <string>
 #include <iostream>
@@ -160,16 +160,6 @@ TEST(Exceptions, GettingValue) {
 
 
 
-//------------------------------------------------------------------------
-//Test InputException
-
-DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
-
-TEST(InputException, all) {
-
-
-    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
-}
 
 //------------------------------------------------------------------------
 // Test stack trace

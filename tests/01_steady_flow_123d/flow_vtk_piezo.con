@@ -8,7 +8,8 @@
     mesh = {
       mesh_file = "./input/test1_new.msh",
       sets=[
-         {name="all_2d", labels=[ "2d_fracture_1", "2d_fracture_2" ]}
+         {name="all_2d", 
+          region_labels=[ "2d_fracture_1", "2d_fracture_2" ]}
         ]
     }, 
 
@@ -16,19 +17,18 @@
       TYPE = "Steady_MH", 
       n_schurs = 2, 
 
-      bulk_data = [
+      input_fields= [
         { region = "1d_channel",
-          anisotropy = 10
+          anisotropy = 10,
+          sigma = 0.05
         },
         { r_set = "all_2d",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         },
         { region = "3d_cube",
           anisotropy = 0.1
-        }
-      ],
-      
-      bc_data = [
+        },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_piezo_head = {
@@ -43,14 +43,12 @@
         output_stream = {
           REF = "/system/output_stream"
         }, 
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        r_tol = 1.0e-10,
+        a_tol = 1.0e-10
       } 
     }
   }, 

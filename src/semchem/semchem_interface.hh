@@ -5,8 +5,7 @@
 #include "la/distribution.hh"
 #include <string.h>
 #include <./input/input_type.hh>
-#include "fields/field_base.hh"
-#include "fields/field_values.hh"
+#include "fields/field.hh"
 
 class Distribution;
 
@@ -15,7 +14,7 @@ enum type_of_reaction{kinetics = 1, slow_kinetics, equilibrium};
 
 class Specie
 {
-	public:
+public:
 	/*
 	* Static variable for new input data types input
 	*/
@@ -24,7 +23,7 @@ class Specie
 	* Constructor.
 	*/
 	Specie();
-	private:
+private:
 	/*
 	* Identifier.
 	*/
@@ -53,7 +52,7 @@ class Specie
 
 class General_reaction
 {
-	public:
+public:
 	/*
 	* Static variable for new input data types input
 	*/
@@ -62,7 +61,7 @@ class General_reaction
 	 * Constructor.
 	 */
 	General_reaction();
-	private:
+private:
 	/*
 	* Specification of type of reaction.
 	*/
@@ -96,7 +95,7 @@ class Semchem_interface
 		/*
 		* Static variable for new input data types input
 		*/
-		static Input::Type::AbstractRecord input_type;
+		static Input::Type::Record input_type;
 		/**
 		*	Semchem interface is the tool to call a simulation of chemical reactions as a part of transport model. timeStep defines the length of time step for simulation of chemical reactions. nrOfSpecies is the number of transported species. dualPorosity defines type of porosity in examinated soil.
 		*/
@@ -115,9 +114,9 @@ class Semchem_interface
 		*/
 		void compute_reaction(bool porTyp, ElementIter ppelm, int poradi, double ***conc);
 		/**
-		*	The function compute_one_step(..) calls compute_reaction(..) for every single element in the mesh.
+		*	The function update_solution(..) calls compute_reaction(..) for every single element in the mesh.
 		*/
-		void compute_one_step(void);
+		void update_solution(void);
 		/**
 		*	This method reads from ini-file the information if a simulation of chemical raections is switched on.
 		*/

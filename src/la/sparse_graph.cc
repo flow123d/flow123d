@@ -55,12 +55,10 @@ SparseGraph::SparseGraph(const Distribution &distr)
       part_to_check(NULL),
       adj_of_proc( vtx_distr.np() )
 {
-    F_ENTRY;
-
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
-    for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
+    for(unsigned int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;
 }
 
 
@@ -72,18 +70,14 @@ SparseGraph::SparseGraph(int loc_size, MPI_Comm comm)
       adj_weights(NULL),
       adj_of_proc( vtx_distr.np() )
 {
-    F_ENTRY;
-
     // positions only of local vertexes
     vtx_XYZ= new float[vtx_distr.lsize()+1];
     vtx_weights= new int[vtx_distr.lsize()+1];
-    for(int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;    
+    for(unsigned int i=0; i<vtx_distr.lsize(); i++) vtx_weights[i]=1;
 }
 
 void SparseGraph::set_edge(const int a, const int b,int weight)
 {
-    F_ENTRY;
-
     Edge e={a,b, weight};
 
     adj_of_proc[vtx_distr.get_proc(a)].push(e);
@@ -116,10 +110,9 @@ bool operator <(const SparseGraph::Edge &a,const SparseGraph::Edge  &b)
 // check trivial case : Localized distribution
 void SparseGraph::finalize()
 {
-   F_ENTRY;
    ASSERT( adj==NULL, "Graph is already finalized\n");
 
-   int proc;
+   unsigned int proc;
    int total_size;
    vector< stack<Edge> >::iterator s;
    unsigned int edge_size=3;   // 3 = number of integers in Edge to send
@@ -183,16 +176,11 @@ void SparseGraph::finalize()
 
    /////////////////////////////////////
    // construct local adj and rows arrays
-   //DBGMSG("construct adj\n");
    Edge *edges= (Edge *) recvbuf;
    int size=total_size/edge_size;
    std::sort(edges, edges + size);
 
    allocate_sparse_graph(vtx_distr.lsize() + 1, size+1);
-/*   adj = (int *) xmalloc( (size+1) * sizeof(int) );
-   rows = (int *) xmalloc( (vtx_distr.lsize() + 1) * sizeof(int) );
-   adj_weights = (int *) xmalloc( (size+1) * sizeof(int) );
-*/
    rows[0]=0;
 
    if (size != 0) {
@@ -232,8 +220,6 @@ void SparseGraph::finalize()
  */
 bool SparseGraph::check_subgraph_connectivity(int *part)
 {
-    F_ENTRY;
-
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size() , "Check of graph continuity not yet implemented for paralel case.\n");
     if (vtx_distr.myp()!=0) return(true);
 
@@ -241,7 +227,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
     checked_vtx.resize(vtx_distr.size(), 0);
     std::vector<bool> checked_proc(vtx_distr.np(), false);
 
-    int n_proc=0;
+    unsigned int n_proc=0;
     for(unsigned int vtx=0; n_proc<vtx_distr.np() && vtx<vtx_distr.size(); vtx++) {
         if (checked_vtx[vtx] != 2) {
             proc_to_check=part_to_check[vtx];
@@ -282,7 +268,7 @@ void SparseGraph::DFS(int vtx)
 
 void SparseGraph::view()
 {
-    ASSERT(NONULL(adj),"Can not view non finalized graph.\n");
+    ASSERT( adj,"Can not view non finalized graph.\n");
     int row,col;
     xprintf(Msg,"SparseGraph\n");
     for(row=0; row < (int) vtx_distr.lsize(); row++) {
@@ -296,7 +282,7 @@ void SparseGraph::view()
 
 bool SparseGraph::is_symmetric()
 {
-    ASSERT( NONULL(rows) && NONULL(adj), "Graph is not yet finalized.");
+    ASSERT( rows && adj, "Graph is not yet finalized.");
 
     int loc_row, row, row_pos;
     int col_pos,col,loc_col;
@@ -353,7 +339,7 @@ void SparseGraphPETSC::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphPETSC::partition(int *loc_part)
 {
-    ASSERT(NONULL(adj) && NONULL(rows),"Can not make partition of non finalized graph.\n");
+    ASSERT( adj && rows,"Can not make partition of non finalized graph.\n");
 
     MatCreateMPIAdj(vtx_distr.get_comm(), vtx_distr.lsize(),vtx_distr.size(),
             rows, adj,adj_weights, &petsc_adj_mat);
@@ -398,14 +384,12 @@ void SparseGraphMETIS::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphMETIS::partition(int *part)
 {
-    F_ENTRY;
-
     ASSERT( vtx_distr.lsize(0)==vtx_distr.size(),
             "METIS could be used only with localized distribution.\n");
 
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;
-
+        return;
     } else {
         if (vtx_distr.myp()==0) {
                   int n_vtx=vtx_distr.size();
@@ -421,11 +405,9 @@ void SparseGraphMETIS::partition(int *part)
                     printf("ERROR in GRAPH_DIVIDE_C: Wrong type of integers for METIS.\n");
                     abort();
                   }
-                  /*printf(" METIS >=5.0 recognized.\n");*/
                   int ncon = 1;
                   real_t ubvec[1];
                   ubvec[0] = 1.001;
-                  /*int *options = NULL;*/
                   int options[METIS_NOPTIONS];
 
                   for (unsigned int i = 0;i < METIS_NOPTIONS;i++) options[i] = -1;
@@ -447,16 +429,11 @@ void SparseGraphMETIS::partition(int *part)
                   /*options[METIS_OPTION_DBGLVL]    = METIS_DBG_INFO;*/
                   options[METIS_OPTION_DBGLVL]    = 0;
 #else
-                  /*printf(" METIS < 5.0 recognized.\n");*/
                   /* weights */
                   int wgtflag=3;
                   int options[5];
                   for (unsigned int  i = 0; i < 5; i++ )  options[i] = 0;
               
-              //                options[0]=0;
-              //            options[4]=255;  //dbg_lvl
-
-
 #endif
                   
 
@@ -491,7 +468,7 @@ void SparseGraphMETIS::partition(int *part)
                                           ubvec, options, &edgecut, part);
 #else
                       METIS_PartGraphKway(&n_vtx,rows,adj, //vtx distr, local vtx begins, edges of local vtxs
-                                  vtx_weights,adj_weights,&wght_flag,&num_flag, // vertex, edge weights, ...
+                                  vtx_weights,adj_weights,&wgtflag,&num_flag, // vertex, edge weights, ...
                                   &n_proc,options,&edgecut,part);
 #endif
                   }     

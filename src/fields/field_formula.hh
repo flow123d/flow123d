@@ -10,8 +10,9 @@
 
 
 #include "system/system.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -29,16 +30,18 @@ class FunctionParser;
  *
  */
 template <int spacedim, class Value>
-class FieldFormula : public FieldBase<spacedim, Value>
+class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldFormula(unsigned int n_comp=0);
 
 
     static Input::Type::Record input_type;
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -50,12 +53,12 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 
@@ -77,6 +80,10 @@ private:
     // Full address of the FiledFormula 'value' key.
     // Necessary in the case of an error during parsing.
     std::string value_input_address_;
+
+    /// Registrar of class to factory
+    static const int registrar;
+
 
 };
 

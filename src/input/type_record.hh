@@ -215,6 +215,11 @@ public:
     Record &derive_from(AbstractRecord &parent);
 
     /**
+     * Copy keys from other record. If @p other record is not yet constructed, we postpone copy to the finish phase.
+     */
+    Record &copy_keys(const Record &other);
+
+    /**
      * Allows shorter input of the Record providing only value of the \p from_key given as the parameter.
      * All other keys of the Record must have default values specified at declaration. This is checked when the
      * \p finish method is called.
@@ -318,6 +323,7 @@ public:
      */
     bool finish();
 
+
 protected:
 
 
@@ -328,16 +334,19 @@ protected:
      * Assertion for finished Type::Record.
      */
     inline void finished_check() const {
-        if (! is_finished()) {
-            DBGMSG("Record not finished!\n");
-        }
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
     /**
      * Actually perform registration in the parent AbstractRecord and copy keys from it.
      */
-    void make_derive_from(AbstractRecord &parent) const;
+    void make_derive_from(AbstractRecord &parent);
+
+    /// Auxiliary method that actually makes the copy of keys.
+    void make_copy_keys(Record &origin);
+
+    /// copy keys from all Records pointers in copy_from_ptr using the make_copy_keys method
+    void make_copy_keys_all();
 
     /**
      * Internal data class.
@@ -378,6 +387,11 @@ protected:
          */
         AbstractRecord *p_parent_;
 
+        /**
+         * List of pointers to copy keys from at finish phase.
+         */
+        vector<const Record *> copy_from_ptr;
+
         /// Permanent pointer to parent AbstractRecord, necessary for output.
         boost::shared_ptr<AbstractRecord> parent_ptr_;
 
@@ -405,6 +419,7 @@ protected:
     /// Data handle.
     boost::shared_ptr<RecordData> data_;
 };
+
 
 /**
  * @brief Class for declaration of polymorphic Record.
@@ -445,8 +460,6 @@ protected:
  *
  * @ingroup input_types
  */
-
-
 class AbstractRecord : public Record {
 	friend class OutputBase;
 	friend class AdHocAbstractRecord;

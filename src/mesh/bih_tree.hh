@@ -33,6 +33,8 @@
 #include "mesh/point.hh"
 #include <armadillo>
 
+
+
 /**
  * @brief Class for O(log N) lookup for intersections with a set of bounding boxes.
  *
@@ -40,24 +42,22 @@
  * Assumes spacedim=3. Implementation was designed for arbitrary number of childs per node, but
  * currently it supports max 2 childs per node (binary tree).
  *
- * TODO:
- * - rename method find_element, radeji find_bounding_box
- * - new method find_point parametr Point<3> , #include "mesh/point.hh"
- *
  */
 class BIHTree {
 public:
     /// count of dimensions
     static const unsigned int dimension = 3;
+    /// max count of elements to estimate median - value must be even
+    static const unsigned int max_median_sample_size = 5;
 
     /**
 	 * Constructor
 	 *
 	 * Set class members and call functions which create tree
-	 * @param mesh Mesh is used for creation the tree
-	 * @param areaElementLimit limit of elements in area
+	 * @param mesh  - Mesh used for creation the tree
+	 * @param soft_leaf_size_limit - Maximal number of elements stored in a leaf node of BIH tree.
 	 */
-	BIHTree(Mesh* mesh, unsigned int areaElementLimit = 0);
+	BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit = 20);
 
 	/**
 	 * Destructor
@@ -71,13 +71,18 @@ public:
 	 */
     unsigned int get_element_count();
 
+    /**
+     * Main bounding box of the whole tree.
+     */
+    const BoundingBox &tree_box();
+
 	/**
 	 * Gets elements which can have intersection with bounding box
 	 *
 	 * @param boundingBox Bounding box which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_bounding_box(BoundingBox &boundingBox, std::vector<unsigned int> &searchedElements);
+    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list);
 
 	/**
 	 * Gets elements which can have intersection with point
@@ -85,21 +90,7 @@ public:
 	 * @param point Point which is tested if has intersection
 	 * @param searchedElements vector of ids of suspect elements
 	 */
-    void find_point(Point<3> &point, std::vector<unsigned int> &searchedElements);
-
-    /**
-     * Browse tree and get its typical parameters
-     * Method for gtests
-     *
-     * @param maxDepth Gets maximal depth of tree
-     * @param minDepth Gets minimal depth of tree
-     * @param avgDepth Gets average depth of tree
-     * @param leafNodesCount Gets count of all leaf nodes of tree
-     * @param innerNodesCount Gets count of all inner nodes of tree
-     * @param elementLeafCount Gets sum of elements contained in all leaf nodes
-     */
-    void get_tree_params(unsigned int &maxDepth, unsigned int &minDepth, double &avgDepth, unsigned int &leafNodesCount,
-    		unsigned int &innerNodesCount, unsigned int &sumElements);
+    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list);
 
     /**
      * Get vector of mesh elements bounding boxes
@@ -108,45 +99,27 @@ public:
      */
     std::vector<BoundingBox> &get_elements() { return elements_; }
 
-private:
-    /// max count of elements of which is selected median - value must be even
-    static const unsigned int max_median_count = 1023;
-    /// value indicates ratio of the number of element in node and number of elements of its child
-    static const double max_elements_in_child;
-    /// value indicates ratio of the number of element in node and number of elements of its children
-    static const double max_elements_in_children;
+protected:
+    /// required reduction in size of box to allow further splitting
+    static const double size_reduce_factor;
 
     /// create bounding boxes of element
     void element_boxes();
-    /// create tree
-    void create_tree(unsigned int areaElementLimit);
-    /// Creates root node of tree, finds its bounding coordinations
-    /// and pushes elements to the vector using for creating tree
-    void create_root_node();
-    /// Set axes_ class member (select maximal dimension) of actually processed node
-    void set_axes();
-    /// Set median_ class member of actually processed node
-    void set_median();
-    /// Put indexes of elements to in_leaves_ vector if node is marked as leaf
-    void put_leaf_elements();
-    /// Deallocate memory reserved by vectors
-    void free_memory();
-    /// Test if processed node is at the end of level during creating of tree
-    void test_new_level();
+
+    /// split tree node given by node_idx, distribute elements to child nodes
+    void split_node(const BoundingBox &node_box, unsigned int node_idx);
+
+    /// create child nodes of node given by node_idx
+    void make_node(const BoundingBox &box, unsigned int node_idx);
+
     /**
-     * Sort elements in node to 3 groups (contained only in left child, in both children, only in right child)
-     *
-     * @param bound1 Bound of sorting between first and second group
-     * @param bound2 Bound of sorting between second and third group
+     * For given node takes projection of centers of bounding boxes of its elements to axis given by
+     * @p node::axis()
+     * and estimate median of these values. That is optimal split point.
+     * Precise median is computed for sets smaller then @p max_median_sample_size
+     * estimate from random sample is used for larger sets.
      */
-    void sort_elements(unsigned int &bound1, unsigned int &bound2);
-    /**
-     * Distribute elements into subareas
-     *
-     * @param leftChild Left child of actually processed node
-     * @param rightChild Right child of actually processed node
-     */
-    void distribute_elements(BIHNode &left_child, BIHNode &right_child);
+    double estimate_median(unsigned char axis, const BIHNode &node);
 
     /// mesh
     Mesh* mesh_;
@@ -154,18 +127,20 @@ private:
     std::vector<BoundingBox> elements_;
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
-    /// vector stored elements for level-order walk of tree
-    std::deque<unsigned int> queue_;
-	// temporary vector keeps coordinations of elements stored in queue_
-	std::deque<arma::vec6> queue_coors_;
+    /// Main bounding box.
+    BoundingBox main_box_;
+    /// Maximal number of elements stored in a leaf node of BIH tree.
+    unsigned int leaf_size_limit;
+    /// Maximal count of BIH tree levels
+    unsigned int max_n_levels;
+
     /// vector stored element indexes in leaf nodes
     std::vector<unsigned int> in_leaves_;
-    /// temporary vector stored element indexes in last complete level of the BFS tree
-    std::vector<unsigned int> list_element_index_;
-    /// temporary vector stored element indexes in actually constructed level of the BFS tree
-    std::vector<unsigned int> list_element_index_next_;
     /// temporary vector stored values of coordinations for calculating median
     std::vector<double> coors_;
+
+    // random generator
+    std::mt19937	r_gen;
 
 };
 

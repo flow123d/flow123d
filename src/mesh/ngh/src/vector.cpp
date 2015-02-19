@@ -1,12 +1,9 @@
 #include <cmath>
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/myvector.h"
-//#include <math.h>
 #include "mesh/ngh/include/mathfce.h"
 
 using namespace mathfce;
-
-double epsilon = 1e-6;
 
 int TVector::numberInstance = 0;
 
@@ -215,12 +212,6 @@ double TVector::X3() const {
 
 bool AreParallel(const TVector &U, const TVector &V) {
     // if vector W is zero, then these two bisectors are parallel or same
-    /*  TVector W;
-      W = (TVector)U - Dot(U, V) / Dot(V, V) * V;
-      if (W.IsZero())
-        return true;
-      else
-        return false;*/
     TVector W;
     W = Cross(U, V);
     if ((W.Length() < epsilon * 1 * U.Length())

@@ -48,6 +48,7 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
+#include <memory>
 #include "input/input_type.hh"
 
 #include <petscmat.h>
@@ -55,9 +56,11 @@
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
+#include "la/linsys_BDDC.hh"
+#include "la/linsys_PETSC.hh"
 
-#include "fields/field_base.hh"
-#include "fields/field_values.hh"
+#include "fields/field.hh"
+#include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
 
@@ -70,7 +73,7 @@ class SchurComplement;
 class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
-
+class DarcyFlowMHOutput;
 
 
 /**
@@ -97,7 +100,7 @@ public:
     /** @brief Data for Darcy flow equation.
      *  
      */
-    class EqData : public EqDataBase {
+    class EqData : public FieldSet {
     public:
 
         /**
@@ -113,21 +116,9 @@ public:
         static Input::Type::Selection bc_type_selection;
 
         /// Collect all fields
-        EqData(const std::string &name="");
+        EqData();
 
-        /**
-         * Overrides EqDataBase::read_boundary_list_item, implements reading of
-         * - bc_piezo_head key
-         * - flow_old_bcd_file
-         */
-        RegionSet read_boundary_list_item(Input::Record rec);
-        
-        /**
-         * Overrides EqDataBase::read_bulk_list_item, implements reading of
-         * - init_piezo_head key
-         */
-        RegionSet read_bulk_list_item(Input::Record rec);
-       
+
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -144,7 +135,15 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         */
         arma::vec4 gravity_;
+
+        FieldSet	time_term_fields;
+        FieldSet	main_matrix_fields;
+        FieldSet	rhs_fields;
     };
 
 
@@ -156,9 +155,6 @@ public:
      *   we want to make this class see values in
      *
      */
-    //class
-
-
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
@@ -177,12 +173,20 @@ public:
         unsigned int size;
         get_solution_vector(array, size);
 
+        // here assume that velocity field is extended as constant
+        // to the previous time, so here we set left bound of the interval where the velocity
+        // has current value; this may not be good for every transport !!
+        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
+        // let every equation set time according to nature of the time scheme
+
+        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
+        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
     
-    //returns reference to equation data
-    virtual EqData &get_data() = 0;
+    virtual void set_concentration_vector(Vec &vc){};
+
 
 protected:
     void setup_velocity_vector() {
@@ -194,22 +198,13 @@ protected:
 
     }
 
-    virtual void postprocess() =0;
-
     virtual double solution_precision() const = 0;
 
-    //virtual void balance();
-    //virtual void integrate_sources();
-
-protected:  
-    
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
-    // value of sigma used in mortar couplings (TODO: make space depenedent and unify with compatible sigma, both given on lower dim domain)
-    double mortar_sigma_;
 };
 
 
@@ -246,11 +241,11 @@ public:
     class EqData : public DarcyFlowMH::EqData {
     public:
       
-      EqData() : DarcyFlowMH::EqData("DarcyFlowMH_Steady")
+      EqData() : DarcyFlowMH::EqData()
       {}
     };
     
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
 
     static Input::Type::Record input_type;
 
@@ -258,45 +253,67 @@ public:
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
     virtual void get_parallel_solution_vector(Vec &vector);
     
-    //returns reference to equation data
-    virtual DarcyFlowMH::EqData &get_data()
-    {return data;}
-
     /// postprocess velocity field (add sources)
     virtual void postprocess();
+    virtual void output_data() override;
+
     ~DarcyFlowMH_Steady();
 
 
 protected:
-    virtual void modify_system() {};
-    void set_R() {};
-    void prepare_parallel();
+    void make_serial_scatter();
+    virtual void modify_system()
+    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
+    virtual void setup_time_term()
+    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+
+
+    void prepare_parallel( const Input::AbstractRecord in_rec);
     void make_row_numberings();
-    void preallocate_mh_matrix();
+
+    /**
+     * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
+     */
+    void create_linear_system();
+
+    /**
+     * Read initial condition into solution vector.
+     * Must be called after create_linear_system.
+     *
+     */
+    virtual void read_init_condition() {};
+
+    /**
+     * Abstract assembly method used for both assembly and preallocation.
+     * Assembly only steady part of the equation.
+     * TODO:
+     * - use general preallocation methods in DofHandler
+     * - include alos time term
+     * - add support for Robin type sources
+     * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
+     *
+     */
     void assembly_steady_mh_matrix();
-    void coupling_P0_mortar_assembly();
-    void mh_abstract_assembly_intersection();
-    //void coupling_P1_submortar(Intersection &intersec,arma::Mat &local_mat);
-    void make_schur0();
-    void make_schur1();
-    void make_schur2();
+
+    /**
+     * Assembly or update whole linear system.
+     */
+    void assembly_linear_system();
+
+    void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     double solution_precision() const;
+
+
+    DarcyFlowMHOutput *output_object;
 
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	struct Solver *solver;
 
 	LinSys *schur0;  		//< whole MH Linear System
-	SchurComplement *schur1;  	//< first schur compl.
-	SchurComplement *schur2;	//< second ..
-
 
 	// parallel
-	int np;                         //< number of procs
-	int myp;                        //< my proc number
-	int	 lsize;	                //< local size of whole MH matrix
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
 	Distribution *side_ds;          //< optimal distribution of elements
@@ -308,32 +325,92 @@ protected:
 	int	*side_row_4_id;		//< side id to matrix row
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
-	//int *old_4_new;               //< aux. array should be only part of parallel LinSys
-
-
 
 	// MATIS related arrays
-    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
-	ISLocalToGlobalMapping map_side_local_to_global; //< PETSC mapping form local SIDE indices of subdomain to global indices
+        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-
-        Mat IA1;                                         //< inverse of matrix IA1
-        Mat IA2;                                         //< inverse of matrix IA2
-
-        Vec diag_schur1, diag_schur1_b;               //< auxiliary vectors for IA2 construction
         
-        double mortar_sigma;
-        
-  EqData data;
+  EqData data_;
+
+  friend class DarcyFlowMHOutput;
+  friend class P0_CouplingAssembler;
+  friend class P1_CouplingAssembler;
 };
 
 
-//void make_element_connection_graph(Mesh *mesh, SparseGraph * &graph,bool neigh_on = false);
-//void id_maps(int n_ids, int *id_4_old, const Distribution &old_ds,
-//        int *loc_part, Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+class P0_CouplingAssembler {
+public:
+	P0_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  master_list_(darcy.mesh_->master_elements),
+	  intersections_(darcy.mesh_->intersections),
+	  master_(nullptr),
+	  tensor_average(2)
+	{
+		arma::mat master_map(1,2), slave_map(1,3);
+		master_map.fill(1.0 / 2);
+		slave_map.fill(1.0 / 3);
+
+		tensor_average[0].push_back( trans( master_map ) * master_map );
+		tensor_average[0].push_back( trans( master_map ) * slave_map );
+		tensor_average[1].push_back( trans( slave_map ) * master_map );
+		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+	}
+
+	void assembly(LinSys &ls);
+	void pressure_diff(int i_ele,
+			vector<int> &dofs,
+			unsigned int &ele_type,
+			double &delta,
+			arma::vec &dirichlet);
+private:
+	typedef vector<unsigned int> IsecList;
+
+	const DarcyFlowMH_Steady &darcy_;
+
+	const vector<IsecList> &master_list_;
+	const vector<Intersection> &intersections_;
+
+	vector<IsecList>::const_iterator ml_it_;
+	const Element *master_;
+
+	/// Row matrices to compute element pressure as average of boundary pressures
+	vector< vector< arma::mat > > tensor_average;
+	/// measure of master element, should be sum of intersection measures
+	double delta_0;
+};
+
+
+
+class P1_CouplingAssembler {
+public:
+	P1_CouplingAssembler(const DarcyFlowMH_Steady &darcy)
+	: darcy_(darcy),
+	  intersections_(darcy.mesh_->intersections),
+	  rhs(5),
+	  dofs(5),
+	  dirichlet(5)
+	{
+		rhs.zeros();
+	}
+
+	void assembly(LinSys &ls);
+	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+private:
+
+	const DarcyFlowMH_Steady &darcy_;
+	const vector<Intersection> &intersections_;
+
+	arma::vec rhs;
+	vector<int> dofs;
+	vector<double> dirichlet;
+};
+
+
+
 void mat_count_off_proc_values(Mat m, Vec v);
 
 
@@ -350,26 +427,13 @@ class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    //returns reference to equation data
-    //virtual DarcyFlowMH::DarcyFlowMH::EqData &get_data()
-    //{return data;}
-    
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     
 private:
@@ -397,27 +461,13 @@ class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
   
-    /* TODO: this can be applied when Unstedy is no longer descendant from Steady
-    class EqData : public DarcyFlowMH::EqData{
-    public:
-      
-      EqData();
-        
-      Field<3, FieldValue<3>::Scalar > init_pressure;
-      Field<3, FieldValue<3>::Scalar > storativity;
-    };
-    //*/
-    
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
-
-    //returns reference to equation data
-    //virtual DarcyFlowMH::EqData &get_data()
-    //{return data;}
     
     static Input::Type::Record input_type;
 protected:
-    virtual void modify_system();
+    void read_init_condition() override;
+    void modify_system() override;
     void setup_time_term();
     virtual void postprocess();
 private:
@@ -425,9 +475,10 @@ private:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
-    Vec time_term;
+    //Vec time_term;
 };
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------
 // vim: set cindent:
+

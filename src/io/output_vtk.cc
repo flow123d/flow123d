@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
+ * $Id: output_vtk.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
  * $Revision$
  * $LastChangedBy$
  * $LastChangedDate$
@@ -29,51 +29,55 @@
 
 #include <limits.h>
 #include <mpi.h>
-
-#include "system/xio.h"
-#include "io/output.h"
-#include "io/output_vtk.h"
-#include "mesh/mesh.h"
+#include <boost/any.hpp>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <assert.h>
+
+#include "system/xio.h"
+#include "io/output_data.hh"
+#include "io/output_vtk.h"
+#include "mesh/mesh.h"
+#include "system/sys_profiler.hh"
 
 
 using namespace Input::Type;
 
 Record OutputVTK::input_type
-	= Record("vtk", "Parameters of vtk output format.")
-	// It is derived from abstract class
-	.derive_from(OutputFormat::input_type)
-	.declare_key("variant", input_type_variant, Default("ascii"),
-			"Variant of output stream file format.")
-	// The parallel or serial variant
-	.declare_key("parallel", Bool(), Default("false"),
-			"Parallel or serial version of file format.")
-	.declare_key("compression", input_type_compression, Default("none"),
-			"Compression used in output stream file format.");
+    = Record("vtk", "Parameters of vtk output format.")
+    // It is derived from abstract class
+    .derive_from(OutputTime::input_format_type)
+    .declare_key("variant", input_type_variant, Default("ascii"),
+        "Variant of output stream file format.")
+    // The parallel or serial variant
+    .declare_key("parallel", Bool(), Default("false"),
+        "Parallel or serial version of file format.")
+    // Type of compression
+    .declare_key("compression", input_type_compression, Default("none"),
+        "Compression used in output stream file format.");
 
 
 Selection OutputVTK::input_type_variant
-	= Selection("VTK variant (ascii or binary)")
-	.add_value(OutputVTK::VARIANT_ASCII, "ascii",
-		"ASCII variant of VTK file format")
-	.add_value(OutputVTK::VARIANT_BINARY, "binary",
-		"Binary variant of VTK file format (not supported yet)");
+    = Selection("VTK variant (ascii or binary)")
+    .add_value(OutputVTK::VARIANT_ASCII, "ascii",
+        "ASCII variant of VTK file format")
+    .add_value(OutputVTK::VARIANT_BINARY, "binary",
+        "Binary variant of VTK file format (not supported yet)");
 
 
 Selection OutputVTK::input_type_compression
-	= Selection("Type of compression of VTK file format")
-	.add_value(OutputVTK::COMPRESSION_NONE, "none",
-		"Data in VTK file format are not compressed")
-	.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-		"Data in VTK file format are compressed using zlib (not supported yet)");
+    = Selection("Type of compression of VTK file format")
+    .add_value(OutputVTK::COMPRESSION_NONE, "none",
+        "Data in VTK file format are not compressed")
+    .add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
+        "Data in VTK file format are compressed using zlib (not supported yet)");
 
 
 
 void OutputVTK::write_vtk_vtu_head(void)
 {
-    ofstream &file = this->output_time->get_data_file();
+    ofstream &file = *this->_data_file;
 
     file << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
@@ -84,10 +88,9 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 void OutputVTK::write_vtk_geometry(void)
 {
-    Mesh *mesh = this->output_time->get_mesh();
-    ofstream &file = this->output_time->get_data_file();
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_data_file;
 
-    //NodeIter node;
     int tmp;
 
     /* Write Points begin*/
@@ -97,7 +100,7 @@ void OutputVTK::write_vtk_geometry(void)
     /* Write own coordinates */
     tmp = 0;
     /* Set floating point precision */
-    this->output_time->get_data_file().precision(std::numeric_limits<double>::digits10);
+    this->_data_file->precision(std::numeric_limits<double>::digits10);
     FOR_NODES(mesh, node) {
         node->aux = tmp;   /* store index in the auxiliary variable */
 
@@ -115,8 +118,8 @@ void OutputVTK::write_vtk_geometry(void)
 
 void OutputVTK::write_vtk_topology(void)
 {
-    Mesh *mesh = this->output_time->get_mesh();
-    ofstream &file = this->output_time->get_data_file();
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_data_file;
 
     Node* node;
     //ElementIter ele;
@@ -183,8 +186,8 @@ void OutputVTK::write_vtk_topology(void)
 
 void OutputVTK::write_vtk_discont_geometry(void)
 {
-    Mesh *mesh = this->output_time->get_mesh();
-    ofstream &file = this->output_time->get_data_file();
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_data_file;
 
     NodeIter node;
     unsigned int li;
@@ -194,7 +197,7 @@ void OutputVTK::write_vtk_discont_geometry(void)
     /* Write DataArray begin */
     file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
     /* Set floating point precision */
-    this->output_time->get_data_file().precision(std::numeric_limits<double>::digits10);
+    this->_data_file->precision(std::numeric_limits<double>::digits10);
     FOR_ELEMENTS(mesh, ele) {
         FOR_ELEMENT_NODES(ele, li) {
             node = ele->node[li];
@@ -212,8 +215,8 @@ void OutputVTK::write_vtk_discont_geometry(void)
 
 void OutputVTK::write_vtk_discont_topology(void)
 {
-    Mesh *mesh = this->output_time->get_mesh();
-    ofstream &file = this->output_time->get_data_file();
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_data_file;
 
     //Node* node;
     //ElementIter ele;
@@ -278,211 +281,79 @@ void OutputVTK::write_vtk_discont_topology(void)
     file << "</Cells>" << endl;
 }
 
-void OutputVTK::write_vtk_ascii_cont_data(OutputData *data)
-{
-    ofstream &file = this->output_time->get_data_file();
 
-    switch(data->type) {
-    case OutputData::OUT_VECTOR_INT_SCA:
-        for( std::vector<int>::iterator item = ((std::vector<int>*)data->data)->begin();
-                item != ((std::vector<int>*)data->data)->end();
-                ++item) {
-            file << *item << " ";
+
+
+void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
+{
+    ofstream &file = *this->_data_file;
+
+    for( OutputDataBase* data : vec_output_data)
+    {
+        file 	<< "<DataArray type=\"Float64\" "
+        		<< "Name=\"" << data->output_field_name <<"\" ";
+        if (data->n_elem_ > 1)
+        {
+        	file
+        		<< "NumberOfComponents=\"" << data->n_elem_ << "\" ";
         }
-        break;
-    case OutputData::OUT_VECTOR_INT_VEC:
-        for( std::vector< vector<int> >::iterator vec = ((std::vector< vector<int> >*)data->data)->begin();
-                vec != ((std::vector< vector<int> >*)data->data)->end();
-                ++vec) {
-            for (std::vector<int>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << *item << " ";
-            }
-            file << "  ";
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        for( std::vector<float>::iterator item = ((std::vector<float>*)data->data)->begin();
-                item != ((std::vector<float>*)data->data)->end();
-                ++item) {
-            file << scientific << *item << " ";
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_VEC:
-        file.precision(std::numeric_limits<float>::digits10);
-        for( std::vector< vector<float> >::iterator vec = ((std::vector< vector<float> >*)data->data)->begin();
-                vec != ((std::vector< vector<float> >*)data->data)->end();
-                ++vec) {
-            for (std::vector<float>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << scientific << *item << " ";
-            }
-            file << "  ";
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_SCA:
+        file	<< "format=\"ascii\">"
+                << endl;
+
+        /* Set precision to max */
         file.precision(std::numeric_limits<double>::digits10);
-        for( std::vector<double>::iterator item = ((std::vector<double>*)data->data)->begin();
-                item != ((std::vector<double>*)data->data)->end();
-                ++item) {
-            file << scientific << *item << " ";
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_VEC:
-        file.precision(std::numeric_limits<double>::digits10);
-        for( std::vector< vector<double> >::iterator vec = ((std::vector< vector<double> >*)data->data)->begin();
-                vec != ((std::vector< vector<double> >*)data->data)->end();
-                ++vec) {
-            for (std::vector<double>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << scientific << *item << " ";
-            }
-            file << "  ";
-        }
-        break;
-    case OutputData::OUT_ARRAY_INT_SCA:
-        for(int i=0; i<data->num; i++) {
-            file << ((int*)data->data)[i] << " ";
-        }
-        break;
-    case OutputData::OUT_ARRAY_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        for(int i=0; i<data->num; i++) {
-            file << scientific << ((float*)data->data)[i] << " ";
-        }
-        break;
-    case OutputData::OUT_ARRAY_DOUBLE_SCA:
-        file.precision(std::numeric_limits<double>::digits10);
-        for(int i=0; i<data->num; i++) {
-            file << scientific << ((double*)data->data)[i] << " ";
-        }
-        break;
-    default:
-        xprintf(Err, "This type of data: %d is not supported by VTK file format\n", data->type);
-        break;
+
+        data->print_all(file);
+
+        file << "\n</DataArray>" << endl;
     }
 }
 
-void OutputVTK::write_vtk_ascii_data(OutputData *data)
+
+
+
+void OutputVTK::write_vtk_data_names(ofstream &file,
+        vector<OutputDataBase*> &vec_output_data)
 {
-    this->write_vtk_ascii_cont_data(data);
+    file << "Scalars=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
+	file << "\" ";
+
+    file << "Vectors=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::N_VECTOR) file << data->output_field_name << ",";
+	file << "\" ";
+
+    file << "Tensors=\"";
+	for( auto &data : vec_output_data)
+		if (data->n_elem_ == OutputDataBase::N_TENSOR) file << data->output_field_name << ",";
+	file << "\"";
 }
 
-void OutputVTK::write_vtk_scalar_ascii(OutputData *data)
-{
-    ofstream &file = this->output_time->get_data_file();
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() <<"]\" format=\"ascii\">" << endl;//, name);
-    /* Write own data */
-    this->write_vtk_ascii_data(data);
-
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-}
-
-void OutputVTK::write_vtk_vector_ascii(OutputData *data)
-{
-    ofstream &file = this->output_time->get_data_file();
-
-    /* Write DataArray begin */
-    file << "<DataArray type=\"Float64\" Name=\"" << *data->getName() << "_[" << *data->getUnits() << "]\" NumberOfComponents=\"" << data->getCompNum() << "\" format=\"ascii\">" << endl;
-
-    /* Write own data */
-    this->write_vtk_ascii_data(data);
-
-    /* Write DataArray end */
-    file << endl << "</DataArray>" << endl;
-}
-
-void OutputVTK::write_vtk_data_ascii(std::vector<OutputData> *data)
-{
-    /* Write data on nodes or elements */
-    if(data != NULL) {
-        for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); ++dta) {
-            if((*dta).getCompNum()==1) {
-                this->write_vtk_scalar_ascii(&(*dta));
-            } else {
-                this->write_vtk_vector_ascii(&(*dta));
-            }
-        }
-    }
-}
-
-void OutputVTK::write_vtk_scalar_data_names(vector<OutputData> *data)
-{
-    ofstream &file = this->output_time->get_data_file();
-
-    /* Write names of scalars */
-    for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); ++dta) {
-        if(dta->getCompNum() == 1) {
-            file << *dta->getName() << "_[" << *dta->getUnits() << "]";
-            file << ",";
-        }
-    }
-}
-
-void OutputVTK::write_vtk_vector_data_names(vector<OutputData> *data)
-{
-    ofstream &file = this->output_time->get_data_file();
-
-    /* Write names of vectors */
-    for(OutputDataVec::iterator dta = data->begin();
-                dta != data->end(); ++dta) {
-        if(dta->getCompNum() == 3) {
-            file << *dta->getName() << "_[" << *dta->getUnits() << "]";
-            file << ",";
-        }
-    }
-}
 
 void OutputVTK::write_vtk_node_data(void)
 {
-    ofstream &file = this->output_time->get_data_file();
-    std::vector<OutputData> *node_data = this->output_time->get_node_data();
-    std::vector<OutputData> *corner_data = this->output_time->get_corner_data();
+    ofstream &file = *this->_data_file;
 
-    if((node_data != NULL && node_data->empty()==false) ||
-            (corner_data != NULL && corner_data->empty()==false)) {
+    // merge node and corner data
+    vector<OutputDataBase*> node_corner_data(this->node_data);
+    node_corner_data.insert(node_corner_data.end(), this->corner_data.begin(), this->corner_data.end());
+
+    if( ! node_corner_data.empty() ) {
         /* Write <PointData begin */
         file << "<PointData ";
-
-        /* Write names of scalars */
-        file << "Scalars=\"";
-        if(node_data != NULL && node_data->empty()==false) {
-            this->write_vtk_scalar_data_names(node_data);
-        }
-        if(corner_data != NULL && corner_data->empty()==false) {
-            this->write_vtk_scalar_data_names(corner_data);
-        }
-        file << "\" ";
-
-        /* Write names of vectors */
-        file << "Vectors=\"";
-        if(node_data != NULL && node_data->empty()==false) {
-            this->write_vtk_vector_data_names(node_data);
-        }
-        if(corner_data != NULL && corner_data->empty()==false) {
-            this->write_vtk_vector_data_names(corner_data);
-        }
-        file << "\"";
-
-        /* Write right bracket of <PointData */
+        write_vtk_data_names(file, node_corner_data);
         file << ">" << endl;
 
-        /* Write own data */
-        if(node_data != NULL) {
-            this->write_vtk_data_ascii(node_data);
+        /* Write data on nodes */
+        if( ! this->node_data.empty() ) {
+            this->write_vtk_data_ascii(this->node_data);
         }
 
-        if(corner_data != NULL) {
-            this->write_vtk_data_ascii(corner_data);
+        /* Write data in corners of elements */
+        if( ! this->corner_data.empty() ) {
+            this->write_vtk_data_ascii(this->corner_data);
         }
 
         /* Write PointData end */
@@ -490,54 +361,48 @@ void OutputVTK::write_vtk_node_data(void)
     }
 }
 
+
 void OutputVTK::write_vtk_element_data(void)
 {
-    ofstream &file = this->output_time->get_data_file();
-    std::vector<OutputData> *elem_data = this->output_time->get_elem_data();
+    ofstream &file = *this->_data_file;
 
-    if(elem_data != NULL && elem_data->empty()==false) {
-        /* Write PointData begin */
+    if(this->elem_data.empty() != true) {
+        /* Write CellData begin */
         file << "<CellData ";
-        /* Write names of scalars */
-        file << "Scalars=\"";
-        this->write_vtk_scalar_data_names(elem_data);
-        file << "\" ";
-
-        file << "Vectors=\"";
-        this->write_vtk_vector_data_names(elem_data);
-        file << "\"";
+        write_vtk_data_names(file, this->elem_data);
         file << ">" << endl;
 
         /* Write own data */
-        this->write_vtk_data_ascii(elem_data);
+        this->write_vtk_data_ascii(this->elem_data);
 
         /* Write PointData end */
         file << "</CellData>" << endl;
     }
 }
 
+
 void OutputVTK::write_vtk_vtu_tail(void)
 {
-    ofstream &file = this->output_time->get_data_file();
+    ofstream &file = *this->_data_file;
 
     file << "</UnstructuredGrid>" << endl;
     file << "</VTKFile>" << endl;
 }
 
+
 void OutputVTK::write_vtk_vtu(void)
 {
-    ofstream &file = this->output_time->get_data_file();
-    Mesh *mesh = this->output_time->get_mesh();
+    ofstream &file = *this->_data_file;
+    Mesh *mesh = this->_mesh;
 
     /* Write header */
     this->write_vtk_vtu_head();
 
     /* When there is no discontinuous data, then write classical vtu */
-    if(this->output_time->get_corner_data() != NULL &&
-            this->output_time->get_corner_data()->empty()==true)
+    if(this->corner_data.empty() == true)
     {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << mesh->node_vector.size() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         this->write_vtk_geometry();
@@ -556,7 +421,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     } else {
         /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << this->output_time->get_corner_count() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
+        file << "<Piece NumberOfPoints=\"" << mesh->n_corners() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;
 
         /* Write VTK Geometry */
         this->write_vtk_discont_geometry();
@@ -566,9 +431,6 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK scalar and vector data on nodes to the file */
         this->write_vtk_node_data();
-
-        /* Write VTK scalar and vector data in corners to the file */
-        //this->write_vtk_corner_data();
 
         /* Write VTK data on elements */
         this->write_vtk_element_data();
@@ -581,19 +443,9 @@ void OutputVTK::write_vtk_vtu(void)
     this->write_vtk_vtu_tail();
 }
 
+
 int OutputVTK::write_data(void)
 {
-    /* Serial VTK file format uses only one file */
-    this->output_time->set_data_file( &this->output_time->get_base_file() );
-
-    write_vtk_vtu();
-
-    return 1;
-}
-
-int OutputVTK::write_data(double time)
-{
-    //Mesh *mesh = this->output_time->get_mesh();
     char base_dir_name[PATH_MAX];
     char new_dir_name[PATH_MAX];
     char base_file_name[PATH_MAX];
@@ -602,22 +454,14 @@ int OutputVTK::write_data(double time)
     ofstream *data_file = new ofstream;
     DIR *dir;
     int i, j, ret;
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
-    // Write header with mesh, when it hasn't been written to output file yet
-    if(this->header_written == false) {
-        this->write_head();
-        this->header_written = true;
-    }
-
-    strncpy(base_dir_name, this->output_time->get_base_filename().c_str(), PATH_MAX);
+    strncpy(base_dir_name, this->_base_filename.c_str(), PATH_MAX);
 
     /* Remove last file name from base_name and find position of last directory
      * delimiter: '/' */
@@ -628,7 +472,7 @@ int OutputVTK::write_data(double time)
         }
     }
 
-    strncpy(base_file_name, this->output_time->get_base_filename().c_str(), PATH_MAX);
+    strncpy(base_file_name, this->_base_filename.c_str(), PATH_MAX);
 
     /* Find, where is the '.' character of .pvd suffix of base_name */
     for(i=strlen(base_file_name)-1; i>=0; i--) {
@@ -657,7 +501,7 @@ int OutputVTK::write_data(double time)
         closedir(dir);
     }
 
-    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->output_time->current_step);
+    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->current_step);
 
     data_file->open(frame_file_name);
     if(data_file->is_open() == false) {
@@ -665,9 +509,10 @@ int OutputVTK::write_data(double time)
         return 0;
     } else {
         /* Set up data file */
-        this->output_time->set_data_file(data_file);
+        this->_data_file = data_file;
 
-        xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+        xprintf(MsgLog, "%s: Writing output file %s ... ",
+                __func__, this->_base_filename.c_str());
 
         /* Find first directory delimiter */
         for(i=strlen(frame_file_name); i>=0; i--) {
@@ -677,22 +522,22 @@ int OutputVTK::write_data(double time)
         }
 
         /* Set floating point precision to max */
-        this->output_time->get_base_file().precision(std::numeric_limits<double>::digits10);
+        this->_base_file->precision(std::numeric_limits<double>::digits10);
 
         /* Strip out relative path and add "base/" string */
-        this->output_time->get_base_file() << scientific << "<DataSet timestep=\"" << time << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+        *this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0) << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 
         xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
-                this->output_time->current_step, frame_file_name);
+                this->current_step, frame_file_name);
 
         this->write_vtk_vtu();
 
         /* Close stream for file of current frame */
         data_file->close();
         delete data_file;
-        this->output_time->set_data_file(NULL);
+        this->_data_file = NULL;
 
         xprintf(MsgLog, "O.K.\n");
     }
@@ -700,64 +545,64 @@ int OutputVTK::write_data(double time)
     return 1;
 }
 
+
 int OutputVTK::write_head(void)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
     xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
-            this->output_time->get_base_filename().c_str() );
+            this->_base_filename.c_str() );
 
-    this->output_time->get_base_file() << "<?xml version=\"1.0\"?>" << endl;
-    this->output_time->get_base_file() << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
-    this->output_time->get_base_file() << "<Collection>" << endl;
+    *this->_base_file << "<?xml version=\"1.0\"?>" << endl;
+    *this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
+    *this->_base_file << "<Collection>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
 
+
 int OutputVTK::write_tail(void)
 {
-    int rank=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     /* It's possible now to do output to the file only in the first process */
-    if(rank!=0) {
+    if(this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
     xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
-            this->output_time->get_base_filename().c_str() );
+            this->_base_filename.c_str() );
 
-    this->output_time->get_base_file() << "</Collection>" << endl;
-    this->output_time->get_base_file() << "</VTKFile>" << endl;
+    *this->_base_file << "</Collection>" << endl;
+    *this->_base_file << "</VTKFile>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
     return 1;
 }
 
-OutputVTK::OutputVTK(OutputTime *_output_time, const Input::Record &in_rec)
-{
-    this->output_time = _output_time;
 
-    this->header_written = false;
+void OutputVTK::fix_base_file_name(void)
+{
+    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".pvd") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n",
+                this->_base_filename.c_str(), this->_base_filename.c_str());
+        this->_base_filename += ".pvd";
+    }
 }
 
-OutputVTK::OutputVTK(OutputTime *_output_time)
+OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-    this->output_time = _output_time;
-
-    this->header_written = false;
+	this->fix_base_file_name();
+	this->write_head();
 }
+
 
 OutputVTK::~OutputVTK()
 {

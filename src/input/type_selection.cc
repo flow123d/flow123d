@@ -23,7 +23,7 @@ Selection::Selection()
 Selection::Selection(const Selection& other)
 : Scalar(other), data_(other.data_)
 {
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
+    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Selection.\n");
 }
 
 
@@ -90,6 +90,29 @@ int Selection::name_to_int(const string &key) const {
         return (data_->keys_[it->second].value);
     else
         throw ExcSelectionKeyNotFound() << EI_KeyName(key) << EI_Selection(*this);
+}
+
+
+string Selection::int_to_name(const int &val) const {
+	finished_check();
+	auto it = data_->value_to_index_.find(val);
+	if (it != data_->value_to_index_.end())
+		return data_->keys_[it->second].key_;
+	else
+		throw ExcSelectionValueNotFound() << EI_Value(val) << EI_Selection(*this);
+}
+
+
+Selection &Selection::copy_values(const Selection &sel)
+{
+	for (auto it = sel.begin(); it != sel.end(); ++it)
+	{
+		int value = it->value;
+		while (data_->value_to_index_.find(value) != data_->value_to_index_.end()) value++;
+		add_value(value, it->key_, it->description_);
+	}
+
+	return *this;
 }
 
 

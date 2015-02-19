@@ -36,7 +36,6 @@ void MHFEValues::update(ElementFullIter ele, FieldType &anisotropy, FieldType_Sc
     ASSERT(!( ele == NULL ),"NULL as argument of function local_matrix()\n");
 
     double scale = 1/ conductivity.value( ele->centre(), ele->element_accessor() ) / cross_section.value( ele->centre(), ele->element_accessor() );
-    //DBGMSG("scale: %g\n", scale);
     switch( ele->dim() ) {
         case 1:
             local_matrix_line( ele, anisotropy , scale);
@@ -117,6 +116,8 @@ arma::vec3 MHFEValues::RT0_value(ElementFullIter ele, arma::vec3 point, unsigned
             return bas_delta[ face ]*(point - RT0_Y);
         }
     }
+
+    return arma::vec3("0 0 0");
 }
 
 
@@ -207,7 +208,6 @@ void MHFEValues::local_matrix_triangle( ElementFullIter ele, FieldType &anisotro
                 bas_beta[ i ] = beta[ i ];
                 bas_gama[ i ] = gama[ i ];
         }
-    //check_local( ele );
 }
 
 

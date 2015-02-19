@@ -8,6 +8,7 @@
 #ifndef ELEMENT_IMPLS_HH_
 #define ELEMENT_IMPLS_HH_
 
+#include "elements.h"
 #include "sides.h"
 #include "side_impl.hh"
 
@@ -34,6 +35,10 @@ inline unsigned int Element::n_sides() const {
 
 
 inline SideIter Element::side(const unsigned int loc_index) {
+    return SideIter( Side(this, loc_index) );
+}
+
+inline const SideIter Element::side(const unsigned int loc_index) const {
     return SideIter( Side(this, loc_index) );
 }
 #endif /* ELEMENT_IMPLS_HH_ */

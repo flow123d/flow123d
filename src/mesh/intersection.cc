@@ -14,9 +14,9 @@
 
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
-Intersection::Intersection(unsigned int dimension, ElementFullIter ele_master,
-		ElementFullIter ele_slave, boost::tokenizer<boost::char_separator<char> >::iterator &tok) :
-	dim(dimension),
+Intersection::Intersection(const  ElementFullIter ele_master, const ElementFullIter ele_slave,
+    			 const IntersectionLocal *isec)
+:	dim(isec->n_points() - 1),
 	master(ele_master), slave(ele_slave),
 	master_map(master->dim(), dim), slave_map(slave->dim(), dim),
 	master_shift(master->dim()), slave_shift(slave->dim())
@@ -27,13 +27,13 @@ Intersection::Intersection(unsigned int dimension, ElementFullIter ele_master,
 		cout << "Exception: master->dim() > slave->dim()" << endl;
 		//throw((char*) "master->dim > slave->dim");
 	}
-	//arma::vec vertex(master->dim);
-	read_intersection_point(master_shift, slave_shift, tok);
+
+	intersection_point_to_vectors(isec->get_point(0),master_shift, slave_shift);
 
 	arma::vec master_tmp(master_shift), slave_tmp(slave_shift);
 	// cyklus pres body pruniku
 	for (unsigned int i = 1; i < (dim + 1); ++i) {
-		read_intersection_point(master_tmp, slave_tmp, tok);
+		intersection_point_to_vectors(isec->get_point(i),master_tmp, slave_tmp);
 		master_tmp -= master_shift;
 		slave_tmp -= slave_shift;
 
@@ -54,31 +54,17 @@ unsigned int Intersection::slave_dim()
 
 
 
-void Intersection::read_intersection_point(arma::vec &vec1, arma::vec &vec2,
-		boost::tokenizer<boost::char_separator<char> >::iterator &tok) {
+void Intersection::intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2)
+{
+	const vector<double> &coord_el1 = point->el1_coord();
+	ASSERT_EQUAL(coord_el1.size() , vec1.n_elem);
+	vec1=arma::vec(coord_el1);
 
-using boost::lexical_cast;
-
-	// pocet lokalnich souradnic 1. elementu
-	unsigned int n_insec_points_el1 = lexical_cast<unsigned int> (*tok);
-	++tok;
-	INPUT_CHECK(n_insec_points_el1 == vec1.n_elem, "Exception: n_insec_points_el1 != vec1.n_elem");
-
-	for (unsigned int j = 0; j < n_insec_points_el1; ++j) {
-		double coords1 = lexical_cast<double> (*tok); ++tok;
-		vec1[j] = coords1;
-	}
-
-	// pocet lokalnich souradnic 2. elementu
-	unsigned int n_insec_points_el2 = lexical_cast<unsigned int> (*tok);
-	++tok;
-	INPUT_CHECK(n_insec_points_el2 == vec2.n_elem, "Exception: n_insec_points_el2 != vec2.n_elem");
-
-	for (unsigned int k = 0; k < n_insec_points_el2; ++k) {
-		double coords2 = lexical_cast<double> (*tok); ++tok;
-		vec2[k] = coords2;
-	}
+	const vector<double> &coord_el2 = point->el2_coord();
+	ASSERT_EQUAL(coord_el2.size() , vec2.n_elem);
+	vec2=arma::vec(coord_el2);
 }
+
 
 arma::vec Intersection::map_to_master(const arma::vec &point) const
 {
@@ -97,12 +83,11 @@ arma::vec Intersection::map_to_slave(const arma::vec &point) const
 	int result_dim = slave->dim();
 	arma::vec result(result_dim+1);
 	result(0)=1.0;
-	//DBGMSG("s dim: %d dim:%d\n", master->dim, )
 	result.subvec(1, result_dim) = (slave_map * point + slave_shift);
 	return result;
 }
 
-double Intersection::intersection_true_size() {
+double Intersection::intersection_true_size() const {
 
     static const double factorial[4] = {1.0, 1.0, 2.0, 6.0};
 	return (master->measure() * det(master_map) / factorial[dim]);

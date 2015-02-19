@@ -137,11 +137,6 @@ public:
 
     /// Postfix. Should not be used since involves iterator copy.
     inline FullIterator operator ++ (int);
-    //{
-    //    //xprinf(Warn, "Postfix advance opeartor should")
-    //    ASSERT( iter==storage.end(), "Can not advance iterator at the end.\n");
-    //    FullIterator x(*this); this->iter++; return x;
-    //}
 
     /// Prefix. Advance to previous operator.
     inline FullIterator &operator -- ()
@@ -152,11 +147,6 @@ public:
 
     /// Postfix. Should not be used since involves iterator copy.
     inline FullIterator operator -- (int);
-    //{
-    //    //xprinf(Warn, "Postfix advance opeartor should")
-    //    ASSERT( iter==storage.begin(), "Can not advance iterator to previous of begin().\n");
-    //    FullIterator x(*this); this->iter--; return x;
-    //}
 
     // + - opeartors is better to define outside if we ever allow them.
 protected:
@@ -287,6 +277,14 @@ public:
          return storage[idx];
      }
 
+     /// Gets reference to the element specified by index.
+     inline const T & operator[](unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return storage[idx];
+     }
+
+
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
@@ -372,7 +370,6 @@ public:
     {
         ASSERT( id_map.find(id) == id_map.end(), "Can not add item with id number %d since it already exists.", id);
         id_storage.push_back(id);
-        //DBGMSG("Push id: %d\n",id);
         id_map[id]=this->size();
 
         this->storage.resize( this->storage.size() + 1 );
@@ -411,11 +408,27 @@ public:
          return storage[idx];
      }
 
+
+     /// Gets reference to the element specified by index.
+     inline const T & operator[](unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return storage[idx];
+     }
+
+
      /// Gets iterator of the element specified by index.
      inline FullIter operator()(unsigned int idx)
      {
          ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return FullIter( *this, begin()+idx );
+     }
+
+     /// Gets iterator of the element specified by index.
+     inline const Iter operator()(unsigned int idx) const
+     {
+         ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
+         return Iter( &(storage[idx]) );
      }
 
 
@@ -437,12 +450,29 @@ public:
              return FullIter(*this, this->storage.begin() + iter->second);
      }
 
+     /**
+      * Returns FullIter of the element with given id. This is implemented by std::map which use balanced trees and ensure access in O(nlog n) time.
+      */
+     inline const T * find_id(const int id) const
+     {
+         map<int,unsigned int>::const_iterator iter = id_map.find(id);
+         if ( iter == id_map.end() ) {
+             return &(*(this->storage.end()));
+         } else
+             return &(*(this->storage.begin() + iter->second));
+     }
+
     /** Returns Id of the element given by pointer i.e. Iter. FullIter i.e. FullIteratorId<T>
      * provides its own method for the same.
      */
-    inline int get_id(Iter it)
+    inline int get_id(const T * it) const
     {
         return *(id_storage.begin() + this->index(it));
+    }
+
+    inline int get_id(int idx) const
+    {
+        return *(id_storage.begin() + idx);
     }
 
     /// Reallocates the container space.

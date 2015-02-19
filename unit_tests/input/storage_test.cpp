@@ -5,15 +5,12 @@
  *      Author: jb
  */
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "input/storage.hh"
 
-//use namespace std;
-
 TEST(Storage, all) {
 using namespace Input;
-::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     StorageArray array(7);
     array.new_item(0, new StorageNull());
@@ -31,9 +28,7 @@ using namespace Input;
     sub_array1->new_item(1, new StorageInt(231));
     array.new_item(6, sub_array1);
 
-#ifdef DEBUG_ASSERTS
-    EXPECT_DEATH( {array.new_item(7, sub_array1);}, "out of array of size:");
-#endif
+    EXPECT_ASSERT_DEATH( {array.new_item(7, sub_array1);}, "out of array of size:");
 
     EXPECT_TRUE(array.get_item(0)->is_null());
     EXPECT_FALSE(array.get_item(1)->is_null());
@@ -45,11 +40,10 @@ using namespace Input;
     EXPECT_EQ(7,array.get_array_size());
 
     EXPECT_TRUE(array.get_item(5)->get_item(0)->is_null());
-    //EXPECT_EQ(NULL, array.get_item(5)->get_item(1) );
     EXPECT_EQ(321, array.get_item(6)->get_item(0)->get_int());
     EXPECT_EQ(231, array.get_item(6)->get_item(1)->get_int());
 
-    EXPECT_DEATH( {array.get_item(7);} , "out of array of size:");
+    EXPECT_THROW_WHAT( {array.get_item(7);} , ExcXprintfMsg, "out of array of size:");
 
     // StorageArray
     EXPECT_THROW( {array.get_int();}, ExcStorageTypeMismatch);
@@ -66,11 +60,11 @@ using namespace Input;
     EXPECT_THROW( {array.get_item(0)->get_array_size();}, ExcStorageTypeMismatch);
 
     //StorageBool
-     EXPECT_THROW( {array.get_item(1)->get_int();}, ExcStorageTypeMismatch);
-     EXPECT_THROW( {array.get_item(1)->get_double();}, ExcStorageTypeMismatch);
-     EXPECT_THROW( {array.get_item(1)->get_string();}, ExcStorageTypeMismatch);
-     EXPECT_THROW( {array.get_item(1)->get_item(0);}, ExcStorageTypeMismatch);
-     EXPECT_THROW( {array.get_item(1)->get_array_size();}, ExcStorageTypeMismatch);
+    EXPECT_THROW( {array.get_item(1)->get_int();}, ExcStorageTypeMismatch);
+    EXPECT_THROW( {array.get_item(1)->get_double();}, ExcStorageTypeMismatch);
+    EXPECT_THROW( {array.get_item(1)->get_string();}, ExcStorageTypeMismatch);
+    EXPECT_THROW( {array.get_item(1)->get_item(0);}, ExcStorageTypeMismatch);
+    EXPECT_THROW( {array.get_item(1)->get_array_size();}, ExcStorageTypeMismatch);
 
     //StorageInt
     EXPECT_THROW( {array.get_item(2)->get_bool();}, ExcStorageTypeMismatch);

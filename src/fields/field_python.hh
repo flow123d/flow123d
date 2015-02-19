@@ -14,8 +14,9 @@
 
 #include "system/system.hh"
 #include "system/python_loader.hh"
-#include "fields/field_base.hh"
+#include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -33,9 +34,11 @@ using namespace std;
  *
  */
 template <int spacedim, class Value>
-class FieldPython : public FieldBase<spacedim, Value>
+class FieldPython : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldPython(unsigned int n_comp=0);
 
@@ -43,7 +46,7 @@ public:
 
     virtual void init_from_input(const Input::Record &rec);
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     /**
      * Set the file and field to be called.
@@ -59,18 +62,21 @@ public:
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 
     virtual ~FieldPython();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     /**
      * Common part of set_python_field_from_* methods
      */
@@ -79,7 +85,7 @@ private:
     /**
      * Implementation.
      */
-    inline void set_value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm, Value &value);
+    inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
 
 #ifdef HAVE_PYTHON
     PyObject *p_func_;

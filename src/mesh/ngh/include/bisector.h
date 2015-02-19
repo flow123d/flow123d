@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+#include "system/global_defs.h"
+#include "mesh/element_impls.hh"
+
 #include "point.h"
 #include "myvector.h"
 
@@ -20,7 +23,8 @@ public:
     TBisector();
     TBisector(const TPoint&, const TVector&);
     TBisector(const TPoint&, const TPoint&);
-    TBisector(const  TBisector &);
+    TBisector(const TBisector &);
+    TBisector(const Element &);
     ~TBisector();
 
     TBisector & operator =(const TBisector&);

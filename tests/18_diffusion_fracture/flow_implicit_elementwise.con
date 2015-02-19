@@ -9,19 +9,14 @@
     primary_equation = {
       TYPE = "Steady_MH", 
       
-      bc_data = [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test18.fbc"
-        }
-      ],
-      
-      bulk_data = [
+        },
         { rid = 20,
-          anisotropy = 10,
-          cross_section = 1e-1
+          cross_section = 1e-2
         },
         { rid = 24,
-          anisotropy = 1,
           cross_section = 1
         }
       ],
@@ -30,9 +25,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -42,15 +35,12 @@
     }, 
  
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
 
-      bc_data = [
+      input_fields= [
         { region = "IMPLICIT BOUNDARY",
           bc_conc=0
-        }
-      ],
-      
-      bulk_data = [
+        },
         {
           r_set="ALL",
           init_conc = { 
@@ -58,20 +48,14 @@
             gmsh_file = "./input/test18_init.msh",
             field_name = "concentration"
           },
-          por_m = 0.25,
-          sigma_c = 1e1
+          diff_m = 1e-1,
+          dg_penalty = 100
         }
       ],
 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.001
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
-
-      dual_porosity = true, 
 
       substances = [
         "A"
@@ -109,6 +93,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.001,
         name = "transport_output_stream"
       }
     ] 

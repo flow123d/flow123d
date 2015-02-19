@@ -120,6 +120,16 @@ inline bool Record::opt_val(const string &key, Ret &value) const {
 
 
 /******************************************************************************************
+ * Implementation of Input::AbstractRecord
+ */
+
+template<class Type, class... Arguments>
+const std::shared_ptr<Type> AbstractRecord::factory(Arguments... arguments) const {
+	return Input::Factory<Type, Arguments...>::instance()->create(this->type().type_name(), arguments...);
+}
+
+
+/******************************************************************************************
  * Implementation of Input::Array
  */
 
@@ -196,11 +206,19 @@ inline Iterator<T> & Iterator<T>::operator ++() {
     return *this;
 }
 
+
+
+template<class T>
+inline Iterator<T> & Iterator<T>::operator --() {
+    index_--;
+    return *this;
+}
+
+
+
 template<class T>
 inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
-	//Address a( address_ );
-    //a.down( index_, address_ );
 	Address a( * const_cast<Address *> (address_.down(index_)) );
 
     ASSERT(a.storage_head(), "NULL pointer to storage in address object!!! \n");

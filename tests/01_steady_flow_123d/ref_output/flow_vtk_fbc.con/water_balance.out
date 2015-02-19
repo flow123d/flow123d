@@ -1,22 +1,22 @@
 # ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: inf
+# Time of computed water balance: 0
 
 
 # Boundary water balance:
 # [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
 # -----------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY          1.98664e-10   2.21069       -2.21069      inf           
+  -3            IMPLICIT BOUNDARY          1.86047e-12   2.21069       -2.21069      0           
 # -----------------------------------------------------------------------------------------------
-# total boundary balance                   1.98664e-10   2.21069       -2.21069      
+# total boundary balance                   1.86047e-12   2.21069       -2.21069      
 
 
 # Source fluxes over material subdomains:
 # [region_id]   [label]                  [total_balance]                            [time]        
 # -----------------------------------------------------------------------------------------------
-  1             1d_channel                 0                                         inf           
-  2             2d_fraction_1              0                                         inf           
-  3             2d_fraction_2              0                                         inf           
-  4             3d_cube                    0                                         inf           
+  1             1d_channel                 0                                         0           
+  2             2d_fracture_1              0                                         0           
+  3             2d_fracture_2              0                                         0           
+  4             3d_cube                    0                                         0           
 # -----------------------------------------------------------------------------------------------
 # total sources balance                    0             
 

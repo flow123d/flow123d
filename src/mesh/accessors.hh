@@ -45,14 +45,14 @@ public:
     /**
      * Regional accessor.
      */
-    ElementAccessor(Mesh *mesh, RegionIdx r_idx)
-    : mesh_(mesh), dim_(undefined_dim_), r_idx_(r_idx)
+    ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
+    : dim_(undefined_dim_), mesh_(mesh), r_idx_(r_idx)
     {}
 
     /**
      * Element accessor.
      */
-    ElementAccessor(Mesh *mesh, unsigned int idx, bool boundary)
+    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary)
     : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
@@ -73,9 +73,9 @@ public:
     inline unsigned int dim() const
         { return dim_; }
 
-    inline const ElementIter element() const {
-        if (boundary_) return &(mesh_->bc_elements[element_idx_]);
-        else return &(mesh_->element[element_idx_]);
+    inline const Element * element() const {
+        if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
+        else return  (Element *)(mesh_->element(element_idx_)) ;
     }
 
     inline arma::vec::fixed<spacedim> centre() const {
@@ -96,8 +96,6 @@ public:
     //    return region().id();
     //}
 
-    //const BoundingBox &bounding_box();
-
     inline bool is_boundary() const {
         return boundary_;
     }
@@ -116,7 +114,7 @@ private:
     unsigned int dim_;
 
     /// Pointer to the mesh owning the element.
-    Mesh *mesh_;
+    const Mesh *mesh_;
     /// True if the element is boundary, i.e. stored in Mesh::bc_elements, bulk elements are stored in Mesh::element
     bool boundary_;
 

@@ -12,8 +12,6 @@
 
 #include "system/exceptions.hh"
 
-//#include "input/json_to_storage.hh"
-
 using namespace std;
 
 
@@ -93,12 +91,39 @@ public:
      */
     static void add_placeholder(string key,string value);
 
+    /**
+     * Return absolute path of actual working directory.
+     */
+    static const string get_absolute_working_dir();
+
+    /// Equality comparison operators for regions.
+    inline bool operator ==(const FilePath &other) const
+        {return abs_file_path == string(other); }
+
 
 private:
     /**
      * Substitutes placeholders in @p abs_file_path.
      */
     void substitute_value();
+
+
+    /**
+     * Test if get path is absolute for used operating system.
+     */
+    static bool is_absolute_path(const string path);
+
+
+    /**
+     * Check if directory stored in output_dir doesn't exist and create its
+     */
+    static bool create_output_dir();
+
+
+    /**
+     * Create canonical path of output directory given by relative path.
+     */
+    static void create_canonical_path(const string working_dir, const string output);
 
 
     /// Final absolute path to the file.

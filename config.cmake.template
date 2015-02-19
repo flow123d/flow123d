@@ -1,5 +1,5 @@
 ### PETSC library ###################################################################
-# The Flow123 requires PETSC library (3.2.x), you have to set 
+# The Flow123 requires PETSC library (3.4.x), you have to set 
 # the location of PETSC and used PETSC architecture unless you
 # would to use system wide settings.
 # e.g.
@@ -16,20 +16,23 @@
 # If PETSC are not found we try to install them automatically.
 # Options for PETSC installer:
 #
-#     PETSC_MPI_DIR      - pass MPI to PETSC configure 
-#     PETSC_LAPACK_DIR   - pass Lapack to PETSC configure
+#     PETSC_INSTALL_MPI_DIR      - pass MPI to PETSC configure 
+#     PETSC_INSTALL_LAPACK_DIR   - pass Lapack to PETSC configure
 #
-#     PETSC_CONFIG - possible values:
+#     PETSC_INSTALL_CONFIG - possible values:
 #       mini             - only petsc + necessary MPI, BLAS, LAPACK
 #       flow123d_mini    - mini + metis + parmetis
 #       bddcml           - flow123d_mini + mumps + scalapack + blacs
 #       full             - bddcml + hypre + blopex + umfpack + sundials
 #
-#     INSTALL_PETSC_OPTIONS - additional options used as parameters to configure.py,
+#     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
 #
 # example:
-# set(PETSC_CONFIG "bddcml")
-# set(INSTALL_PETSC_OPTIONS "--download-hypre=yes")
+# set(PETSC_INSTALL_CONFIG "bddcml")
+# set(PETSC_INSTALL_OPTIONS "--download-hypre=yes")
+
+
+
 
 ### BDDCML library #############################################################
 # BDDCML_ROOT - root directory of BDDCML library
@@ -40,13 +43,17 @@
 # if you set PETSC_CONFIG=bddcml.
 #
 # example:
-# set(BDDCML_ROOT "$(HOME)/local/BDDCML/bddcml-2.2")
+# set(BDDCML_ROOT "$ENV{HOME}/local/BDDCML/bddcml-2.2")
 
 ### Python setting ###############################################################
 # USE_PYTHON - only use python if this is set to "yes"
 # We add python library only on explicit request since it leads to tons of errors when debugging with valgrind.
 #
 # set(USE_PYTHON "yes")
+
+# PYTHON_COPY - make copy of python files, necessary for release builds
+# set(PYTHON_COPY "yes")
+
 
 ### Boost ######################
 # Boost_FORCE_REBUILD - if set, force to build Boost even if there are some in the system
@@ -64,13 +71,18 @@
 
 ### Build setting ####################################################################
 
+#### parallel builds ####
+# Set number of threads to use when performing automatic build of necessary libraries.
+# If the variable is not set we try to get it from system environment, i.e. default value is
+# set(MAKE_NUMCPUS $ENV{MAKE_NUMCPUS})
+
 ### verbose mode ####
 # option to produce more verbose compiling
 # for the same result you can call make with VERBOSE=1
 # e.g.
 # make VERBOSE=1 all
 
-#set(CMAKE_VERBOSE_MAKEFILE on)
+#set(CMAKE_VERBOSE_MAKEFILE true)
 
 
 ### set compiler ###
@@ -97,9 +109,16 @@
 
 ### Compiler flags  ####
 # There are two predefined configurations: "debug" and "release"
-# "debug" set flags: "-g -DFlow123d_DEBUG"
-# "release" set flags: "-O3 -DDEBUG_PROFILER"
+# "debug" set flags:          "-g -DFlow123d_DEBUG"
+# "release" set flags:        "-O3 -DDEBUG_PROFILER -DARMA_NO_DEBUG "
+# "coverage" set flags:       "-g -O0 -DFlow123d_DEBUG -fprofile-arcs -ftest-coverage"
+#      and for external libs: "-g -O0"
 #
+# To change flags for external libs use following self-explanatory variables
+#    EXTERNAL_LIBS_C_FLAGS
+#    EXTERNAL_LIBS_CXX_FLAGS
+#    EXTERNAL_LIBS_Fortran_FLAGS
+# if these variables are not set, global flags such will be used
 
 set(FLOW_BUILD_TYPE debug)
 
@@ -112,13 +131,17 @@ set(FLOW_BUILD_TYPE debug)
 # DEBUG_MESSAGES
 # DEBUG_ASSERTS
 # DEBUG_PROFILER
-# DEBUG_FUNCTION_STACK
+# RUN_UNIT_BENCHMARKS       - build benchmark unit tests
 # HAVE_CXX11				- support for requested C++11 features (constexpr)
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFlow123d_NODEBUG -pg")
 
-
+### Install package platform ###
+# This string is used as part of package name to distinguish 
+# packages for different platforms.
+# e.g. linux_x86_64, windows_x86_64, windows_x86_32
+# set(PLATFORM_NAME linux_x86_64)
 
 ### External Projects directory ##########################################################
 #

@@ -1,9 +1,11 @@
 #include <iostream>
 
+#include "system/global_defs.h"
+#include "mesh/elements.h"
+
 #include "mesh/ngh/include/bisector.h"
 #include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -34,6 +36,14 @@ TBisector::TBisector(const TPoint &P0, const TPoint &P1) {
     U = new TVector(P0, P1);
 }
 
+TBisector::TBisector(const Element & ele) {
+    id = generateId();
+    ASSERT_EQUAL(ele.dim(), 1);
+
+    X0 = new TPoint(ele.node[0]->point()(0), ele.node[0]->point()(1), ele.node[0]->point()(2));
+    U = new TVector(*X0, TPoint(ele.node[1]->point()(0), ele.node[1]->point()(1), ele.node[1]->point()(2)) );
+}
+
 TBisector::TBisector(const  TBisector &x)
 {
     id = generateId();
@@ -48,8 +58,6 @@ TBisector::~TBisector() {
 }
 
 TBisector & TBisector::operator =(const TBisector &b) {
-    //  U = new TVector();
-    //  X0 = new TPoint();
     *(*this).U = *b.U;
     *(*this).X0 = *b.X0;
 

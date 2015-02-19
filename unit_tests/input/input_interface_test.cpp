@@ -9,7 +9,7 @@
  */
 
 
-#include <gtest_throw_what.hh>
+#include <flow_gtest.hh>
 #include <vector>
 
 #include <input/accessors.hh>
@@ -17,6 +17,28 @@
 #include <input/type_record.hh>
 
 #include "system/file_path.hh"
+
+#include "factory_base.h"
+#include "factory_descendant_a.h"
+#include "factory_descendant_b.h"
+
+
+
+
+//------------------------------------------------------------------------
+//Test InputException
+
+DECLARE_INPUT_EXCEPTION(ExcInput, << "Error on input.\n");
+
+TEST(InputException, all) {
+    EXPECT_THROW_WHAT( { THROW(ExcInput()); }, ExcInput, "User Error.*Error on input.");
+}
+
+
+
+
+
+
 
     enum SelectionToRead {
         value_a = 0,
@@ -34,7 +56,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("/json_root_dir","/json_root_dir","variant_input","/output_root");
+        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
         abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
         abstr_rec_ptr->finish();
@@ -151,7 +173,6 @@ protected:
 
     virtual void TearDown() {
         delete main;
-        delete storage;
         delete desc_a_ptr;
         delete desc_b_ptr;
         delete abstr_rec_ptr;
@@ -167,6 +188,13 @@ protected:
 
     ::Input::Type::Selection *selection_ptr;
 };
+
+TEST_F(InputInterfaceTest, RecordDefaultConstructor) {
+	Input::Record ir=Input::Record();
+	EXPECT_TRUE(ir.is_empty());
+	Input::Record ir2=ir;
+	EXPECT_TRUE(ir2.is_empty());
+}
 
 TEST_F(InputInterfaceTest, RecordVal) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -196,7 +224,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ("/output_root/output_subdir/output.vtk", (string) record.val<FilePath>("file_output") );
+    EXPECT_EQ(FilePath::get_absolute_working_dir()+"/json_root_dir/output_root/output_subdir/output.vtk",
+    			(string) record.val<FilePath>("file_output") );
     EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
 
     // read enum from selection
@@ -233,10 +262,7 @@ TEST_F(InputInterfaceTest, RecordFind) {
     const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( main->begin()->type_.get() );
     Record record_child_rec(addr_child_rec, *child_type_rec );
 
-    Address addr_child_int( *(record_child_rec.get_address().down(1)) );
-
-    EXPECT_EQ("/some_record", record_child_rec.get_address().make_full_address());
-    EXPECT_EQ("/some_record/some_integer", addr_child_int.make_full_address());
+    EXPECT_EQ("/some_record", record_child_rec.address_string() );
 
     // read scalar keys
 
@@ -285,7 +311,7 @@ struct Data {
 };
 
 TEST_F(InputInterfaceTest, ReadFromArray) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -306,10 +332,17 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
     EXPECT_EQ(2, vec_int[1]);
 
     Iterator<int> it = array.begin<int>();
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
+    --it;
+    EXPECT_EQ(1, *it);
     ++it;
+    EXPECT_EQ(2, *it);
     ++it;
-    EXPECT_DEATH( {int ii = *it;}, "out of array of size:");
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
+    ++it;
+    EXPECT_THROW_WHAT( {*it;}, ExcXprintfMsg, "out of array of size:");
 
 
 
@@ -324,11 +357,11 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 
 //        if (it->has_key("some_int", data_array[idx].i) ) {
 //            EXPECT_EQ(123,data_array[idx].i);
- //       }
- //       it->has_key("some_double", data_array[idx].d);
- //       EXPECT_EQ(1.23, data_array[idx].d);
- //       it->has_key("some_string", data_array[idx].s);
- //       EXPECT_EQ("123", data_array[idx].s);
+//        }
+//        it->has_key("some_double", data_array[idx].d);
+//        EXPECT_EQ(1.23, data_array[idx].d);
+//        it->has_key("some_string", data_array[idx].s);
+//        EXPECT_EQ("123", data_array[idx].s);
     }
 
     // check creation of empty accessor and defautl iterator
@@ -342,7 +375,7 @@ TEST_F(InputInterfaceTest, ReadFromArray) {
 }
 
 TEST_F(InputInterfaceTest, ReadFromAbstract) {
-    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
     using namespace Input;
 
     Address addr(storage, main);
@@ -380,4 +413,29 @@ TEST_F(InputInterfaceTest, ReadFromAbstract) {
     }
 }
 
+
+template class Base<3>;
+template class DescendantA<3>;
+template class DescendantB<3>;
+
+
+TEST_F(InputInterfaceTest, AbstractFromFactory) {
+    using namespace Input;
+
+    Address addr(storage, main);
+    Record record(addr, *main);
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_1");
+    	EXPECT_STREQ("Constructor of DescendantA class with spacedim = 3, n_comp = 3, time = 0.25",
+    			( a_rec.factory< Base<3> >(3, 0.25) )->get_infotext().c_str() );
+    }
+
+    {
+    	AbstractRecord a_rec = record.val<AbstractRecord>("abstr_rec_2");
+    	EXPECT_STREQ("Constructor of DescendantB class with spacedim = 3",
+    			a_rec.factory< Base<3> >()->get_infotext().c_str());
+    }
+
+}
 

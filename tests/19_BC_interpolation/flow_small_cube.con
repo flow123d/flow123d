@@ -7,7 +7,7 @@
     }, 
     primary_equation = {
       TYPE = "Steady_MH", 
-      bc_data=[
+      input_fields=[
         {
           region = "IMPLICIT BOUNDARY",
           bc_type = "dirichlet",
@@ -16,12 +16,11 @@
             gmsh_file = "${INPUT}/large_cube_solution.msh",
             field_name = "piezo_head_elements_[L]"
           }
-        }
-      ],
-      bulk_data=[
+        },
         {
           r_set = "BULK",
-          anisotropy = 1
+          anisotropy = 1,
+          sigma = 0.5
         }
       ],
       n_schurs = 2, 
@@ -30,11 +29,8 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        piezo_head_p0 = "flow_output_stream", 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
         //raw_flow_output = "./raw_output_small.txt", 
-        velocity_p0 = "flow_output_stream"
       }, 
       solver = {
         TYPE = "Petsc", 

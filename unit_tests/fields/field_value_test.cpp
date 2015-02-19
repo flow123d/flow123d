@@ -6,7 +6,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include <fields/field_values.hh>
 
 #include <iostream>
@@ -30,45 +30,6 @@ TEST(FieldValue_, all) {
 
 }
 
-
-/**
- * Speed results:
- * debug (-g -O0 -NODEBUG) (100 M steps):
- * interface: 1747ms
- * direct   :  361ms
- *
- * optimized -O3 (100 M steps):
- * interface: 123ms
- * direct   : 121ms
- */
-
-#define STEPS (100*1000*1000)
-
-TEST(FieldValue_, speed_test_interface) {
-
-    typedef FieldValue_<1,1, double> T;
-   double r_val;
-
-
-   for(int step=0;step < STEPS; step++) {
-       T val(r_val);
-
-       for(int row=0;row< val.n_cols(); ++row)
-           for(int col=0;col< val.n_rows(); ++col)
-               val(row,col)+=step;
-   }
-   cout << r_val << endl;
-}
-
-TEST(FieldValue_, speed_test_direct) {
-
-   double val;
-
-   for(int step=0;step < STEPS; step++) {
-       val+=step;
-   }
-   cout << val << endl;
-}
 
 TEST(FieldValue_, construction_from_raw) {
 
@@ -160,22 +121,7 @@ double_fix_tensor_cdiag=1.3
 }
 )INPUT";
 
-string formula_input = R"INPUT(
-{   
-double_scalar="x",
 
-double_fix_vector_full=["x", "y", "z"],
-double_fix_vector_const="x",
-
-double_vector_full=["x","y"],
-double_vector_const="x",
-
-double_fix_tensor_full=[ ["x", "y", "z"], ["x*x", "y*y", "z*z"] ],
-double_fix_tensor_symm=[ "x*x", "x*y", "y*y"],
-double_fix_tensor_diag=[ "x*x", "y*y"],
-double_fix_tensor_cdiag="x*y*z"
-}
-)INPUT";
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -212,9 +158,7 @@ TEST(FieldValue_, init_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 
@@ -312,7 +256,22 @@ TEST(FieldValue_, init_from_input) {
     }
 }
 
+string formula_input = R"INPUT(
+{   
+double_scalar="x",
 
+double_fix_vector_full=["x", "y", "z"],
+double_fix_vector_const="x",
+
+double_vector_full=["x","y"],
+double_vector_const="x",
+
+double_fix_tensor_full=[ ["x", "y", "z"], ["x*x", "y*y", "z*z"] ],
+double_fix_tensor_symm=[ "x*x", "x*y", "y*y"],
+double_fix_tensor_diag=[ "x*x", "y*y"],
+double_fix_tensor_cdiag="x*y*z"
+}
+)INPUT";
 
 TEST(FieldValue_, string_values_init_from_input) {
     // setup FilePath directories
@@ -335,9 +294,7 @@ TEST(FieldValue_, string_values_init_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(formula_input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( formula_input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 

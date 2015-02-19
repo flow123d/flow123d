@@ -31,16 +31,13 @@
 #define SYSTEM_H
 
 
-#include "system/sys_function_stack.hh"
 #include <mpi.h>
+#include <iostream>
 
-//instead of #include "mpi.h"
-//typedef int MPI_Comm;
+#include "system/global_defs.h"
+#include "system/exc_common.hh"
 
 
-// for a linux system we assume glibc library
-// with support of ISOC99 functions
-//#define _ISOC99_SOURCE
 #ifndef _BSD_SOURCE
    #define _BSD_SOURCE
 #endif
@@ -94,10 +91,7 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-void system_init( MPI_Comm comm,const  string &log_fname );
 
-
-void    system_set_from_options();
 char * 	get_log_fname( void );
 char * 	get_log_file( void );
 void	resume_log_file( void );
@@ -106,7 +100,6 @@ void	resume_log_file( void );
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-int    	xterminate( bool on_error );
 void *	xmalloc(size_t size);
 void * xrealloc( void * ptr, size_t size );
 
@@ -114,11 +107,8 @@ void * xrealloc( void * ptr, size_t size );
 #ifndef xfree
     #define xfree(p) \
     do { if (p) { free(p); (p)=NULL; } \
-         else {DBGMSG("Free NULL pointer? (in %s, %s(), line %d)\n", __FILE__, __func__, __LINE__); \
-              } \
     } while (0) /// test & free memory
 #endif
-/*        F_STACK_SHOW( stdout ); \ */
 
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
@@ -145,13 +135,6 @@ int     xchdir( const char *s );  ///< Change directory (GLIBC function, origina
 int     xremove( const char *s ); ///< Remove file or directory (function)
 char *  xgetcwd( void );          ///< Get current working directory (GLIBC function, original in <unistd.h>)
 int     xrename( const char * oldname, const char * newname ); ///< Rename file (function)
-//#define tmpfile xtmpfile  NOT_USED    ///< Open a temporary file (function)
-//! @}
-
-//! @brief auxiliary
-/// @{
-bool skip_to( FILE *const in, const char *section );
-bool skip_to( istream &in, const string &pattern );
 //! @}
 
 // string operations
@@ -159,6 +142,22 @@ char * xstrcpy(const char*);
 char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
+
+
+inline void chkerr(unsigned int ierr) {
+	do {
+		if (ierr != 0) THROW( ExcChkErr() << EI_ErrCode(ierr));
+	} while (0);
+}
+
+inline void chkerr_assert(unsigned int ierr) {
+	if (debug_asserts_view) {
+		do {
+			if (ierr != 0) THROW( ExcChkErrAssert() << EI_ErrCode(ierr));
+		} while (0);
+	}
+}
+
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

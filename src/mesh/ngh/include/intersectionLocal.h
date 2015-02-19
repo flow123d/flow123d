@@ -4,22 +4,20 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
-//#include "element.h"
 
 using namespace std;
-class TPoint;
-//class TElement;
 
-//class IntersectionPoint - dva vektory lokalnich souradnic
+
+//class IntersectionPoint - two vectors of local coords
 class IntersectionPoint {
 public:
 	IntersectionPoint(const std::vector<double> &c1, const std::vector<double> &c2)
 		: coord1(c1), coord2(c2) {}
 	IntersectionPoint(const IntersectionPoint &LC)
 		: coord1(LC.coord1), coord2(LC.coord2) {}
-	inline std::vector<double> &el1_coord()
+	inline const std::vector<double> &el1_coord() const
     		{return coord1;}
-	inline std::vector<double> &el2_coord()
+	inline const std::vector<double> &el2_coord() const
 			{return coord2;}
 	bool operator ==(const IntersectionPoint&);
 protected:
@@ -29,7 +27,7 @@ protected:
 	friend class IntersectionLocal;
 	friend IntersectionPoint *interpolate(IntersectionPoint &A1, IntersectionPoint &A2, double t);
 };
-IntersectionPoint *interpolate(IntersectionPoint &A1, IntersectionPoint &A2, double t);
+IntersectionPoint *interpolate(const IntersectionPoint &A1, const  IntersectionPoint &A2, double t);
 
 
 class IntersectionLocal {
@@ -44,20 +42,20 @@ public:
     IntersectionLocal(IntersectionLocal*);
     ~IntersectionLocal();
 
-    //void set_elements(TElement *elem1, TElement *elem2); //metoda na naplneni ele1, ele2
-    void add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2); //metoda na pridani souradnic do i_points
+    void add_local_coord(const std::vector<double> &coordin1, const std::vector<double> &coordin2); //add coords to i_points
     void add_local_point(IntersectionPoint *InPoint);
     void print(FILE *out_file);
-
-    //void AddNewLocalcoord(); //doplnit predavany parametr, pridat novou i_points
 
     static int getNumInstances() {
 		return IntersectionLocal::numberInstance;
 	}
 
-    inline IntersectionType get_type()
+    inline IntersectionType get_type() const
         {return type; }
-    inline IntersectionPoint * get_point(const unsigned int index)
+    inline unsigned int n_points() const {
+    	return i_points.size();
+    }
+    inline const IntersectionPoint * get_point(const unsigned int index) const
     {
           if (index >= i_points.size() ) return NULL;
           else return i_points[index];
@@ -69,8 +67,7 @@ private:
 
     std::vector<IntersectionPoint *> i_points; //vektor ukazatelu na dvojice lokal. souradnic
     IntersectionType type;
-    //TElement *ele1;
-    //TElement *ele2;
+
 
     int generateId();
 };

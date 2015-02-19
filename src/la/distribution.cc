@@ -40,8 +40,6 @@ Distribution::Distribution(const unsigned int size, MPI_Comm comm)
 :communicator(comm),
 lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -66,8 +64,6 @@ Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
 :communicator(comm),
  lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -87,8 +83,6 @@ Distribution::Distribution(const Vec &petsc_vector)
 :communicator(PETSC_COMM_WORLD),
  lsizes(NULL)
 {
-    F_ENTRY;
-
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -111,8 +105,6 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 :communicator(comm),
  lsizes(NULL)
 {
-    F_ENTRY;
-    
     int ierr;
     ierr=MPI_Comm_rank(communicator, &(my_proc));
     ASSERT( ! ierr , "Can not get MPI rank.\n" );
@@ -121,7 +113,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
     ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {
-        int reminder, per_proc;
+        unsigned int reminder, per_proc;
 
         reminder=global_size % np(); per_proc=global_size / np();
         // set perproc rows to each proc, but for first "reminder" procs set one row more
@@ -147,7 +139,6 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 Distribution::Distribution(const Distribution &distr)
 : communicator(distr.communicator)
 {
-    DBGMSG("coping distribution\n");
     num_of_procs=distr.num_of_procs;
     my_proc=distr.my_proc;
     starts=(unsigned int *)xmalloc((np()+1)*sizeof(unsigned int));
@@ -163,7 +154,7 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-    ASSERT(NONULL(starts),"Distribution is not initialized.\n");
+    ASSERT( starts,"Distribution is not initialized.\n");
     ASSERT(idx < size(), "Index %d greater then distribution size %d.\n", idx, size());
 
     for(unsigned int i=0; i<np(); i++) {
@@ -193,9 +184,9 @@ const unsigned int * Distribution::get_starts_array() const {
 
 void Distribution::view(std::ostream &stream) const
 {
-    stream << "[" <<myp() << "]" << "Distribution size: " << size() << " lsize: " << lsize() << " mpi_size: " << np() << endl;
+    stream << "[" <<myp() << "]" << "Distribution size: " << size() << " lsize: " << lsize() << " offset: " << begin() << " mpi_size: " << np() << endl;
     for(unsigned int i=0; i<np();++i)
-        stream << "[" <<myp() << "]" << "proc: " << i << " offset: " << begin(i) << " lsize: " << lsize() << endl;
+        stream << "[" <<myp() << "]" << "proc: " << i << " offset: " << begin(i) << " lsize: " << lsize(i) << endl;
 }
 
 /**

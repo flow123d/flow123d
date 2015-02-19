@@ -1,0 +1,92 @@
+/** 
+ * Should give same results as flow_gmsh.con, but BC condition is given as piezo head.
+ */
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test1 - Steady flow with multidimensional connections 1D-2D-3D", 
+    mesh = {
+      mesh_file = "./input/test1_new.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "1d_channel",
+          anisotropy = 10,
+          sigma = 0.05
+        },
+        { region = "2d_fracture_1",
+          anisotropy = 1,
+          sigma = 0.5
+        },
+        { region = "2d_fracture_2",
+          anisotropy = 1,
+          sigma = 0.5
+        },
+        { region = "3d_cube",
+          anisotropy = 0.1
+        },
+        { region = ".1d_channel",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".2d_fracture_1",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".2d_fracture_2",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        { region = ".3d_cube",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        }
+      ],
+
+      output = {
+        balance_output = "water_balance.out", 
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+        //,subdomains = "flow_output_stream"
+      }, 
+      solver = {
+        TYPE = "Bddc", 
+        r_tol = 1.0e-11,
+        max_it = 10000,
+        max_nondecr_it = 30,
+        number_of_levels = 2,
+        use_adaptive_bddc = false,
+        bddcml_verbosity_level = 0
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./test1.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+}

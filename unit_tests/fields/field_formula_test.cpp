@@ -6,7 +6,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 
 #include "fields/field_constant.hh"
@@ -30,8 +30,8 @@ string input = R"INPUT(
 
 
 TEST(FieldFormula, read_from_input) {
-    typedef FieldBase<2, FieldValue<3>::TensorFixed > TensorField;
-    typedef FieldBase<2, FieldValue<3>::Vector > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -42,15 +42,13 @@ TEST(FieldFormula, read_from_input) {
     rec_type.finish();
 
     // read input string
-    std::stringstream ss(input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, rec_type );
+    Input::JSONToStorage reader( input, rec_type );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    Point<2> point_1, point_2;
-    point_1(0)=1.0; point_1(1)=  2.0;
-    point_2(0)= 2.0; point_2(1)= 4.0;
-    ElementAccessor<2> elm;
+    Space<3>::Point point_1, point_2;
+    point_1(0)=1.0; point_1(1)=2.0; point_1(2)=3.0;
+    point_2(0)=2.0; point_2(1)=4.0; point_2(2)=6.0;
+    ElementAccessor<3> elm;
 
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
     {
@@ -124,7 +122,7 @@ string set_time_input = R"INPUT(
 
 
 TEST(FieldFormula, set_time) {
-    typedef FieldBase<2, FieldValue<3>::Vector > VectorField;
+    typedef FieldAlgorithmBase<2, FieldValue<3>::Vector > VectorField;
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -132,9 +130,7 @@ TEST(FieldFormula, set_time) {
     Input::Type::Array  input_type(VectorField::input_type);
 
     // read input string
-    std::stringstream ss(set_time_input);
-    Input::JSONToStorage reader;
-    reader.read_stream( ss, input_type );
+    Input::JSONToStorage reader( set_time_input, input_type );
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();

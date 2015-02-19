@@ -1,8 +1,7 @@
 #include <iostream>
 
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/config.h"
-#include "mesh/ngh/include/system.h"
 #include "mesh/ngh/include/mathfce.h"
 
 using namespace mathfce;
@@ -47,14 +46,7 @@ TPoint& TPoint::operator =(const TPoint& P) {
 
     return *this;
 }
-/*
-bool TPoint::operator ==(TPoint* P) const {
-    if (IsEqual(x, P->x) && IsEqual(y, P->y) && IsEqual(z, P->z)) {
-        return true;
-    }
-    return false;
-}
-*/
+
 bool TPoint::operator ==(const TPoint& P) const {
     if (IsEqual(x, P.x) && IsEqual(y, P.y) && IsEqual(z, P.z)) {
         return true;
@@ -73,18 +65,6 @@ TPoint& TPoint::operator =(const TVector& U) {
 TVector TPoint::operator -(const TPoint& P) const {
     return TVector( x - P.x, y - P.y, z - P.z);
 }
-
-/*
-TPoint* TPoint::operator +(TPoint* P) const {
-    TPoint* res = new TPoint();
-
-    res->x = x + P->x;
-    res->y = y + P->y;
-    res->z = z + P->z;
-
-    return res;
-}
-*/
 
 TPoint TPoint::operator +(const TPoint& P) const {
     TPoint res;
@@ -122,7 +102,7 @@ double TPoint::Z() const {
 
 double TPoint::Get(int i) const {
     if (!(i >= 1 && i <= 3)) {
-        mythrow((char*) "Invalid specification of the element of the vector.", __LINE__, __FUNC__);
+        THROW( ExcAssertMsg() << EI_Message( "Invalid specification of the element of the vector.") );
     }
 
     switch (i) {

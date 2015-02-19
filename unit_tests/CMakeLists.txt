@@ -2,19 +2,19 @@
 enable_testing()
 
 # Set timeout for one unit test
-set(TEST_TIMEOUT 30) # 30 s
+set(TEST_TIMEOUT 300) # 30 s
 # Set timeout for one unit test running under valgrind
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.6.0")
-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.6.0")
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.7.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.7.0")
 include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension
-set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/gtest_mpi.cc)
+set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/_gtest_extensions/gtest_mpi.cc)
 # object library used by tests, but can be build once
 add_library(gtest_mpi_obj OBJECT ${mpi_gtest_sources})
 add_dependencies(gtest_mpi_obj gtest gtest_main)
@@ -24,6 +24,8 @@ add_dependencies(gtest_mpi_obj gtest gtest_main)
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
 
+# target to make all unit tests
+add_custom_target(all-unit-test)
 
 ######################################################################################################
 # Macro to make default targets and operations in current unit tests subdirectory, namely:
@@ -53,6 +55,8 @@ macro(add_test_directory libs)
                     #DEPENDS ${test_name}
                     )
   endif()
+  
+  add_dependencies(all-unit-test ${super_test})
   
   make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")    
 endmacro()
@@ -96,7 +100,7 @@ macro(define_test class_name)
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind} 
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       
@@ -162,13 +166,14 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
-#add_subdirectory("interpolation")
+add_subdirectory("interpolation")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("fields")
 add_subdirectory("fem")
 add_subdirectory("mesh")
 add_subdirectory("coupling")
+add_subdirectory("output")
 
 
 #################################################################################################
@@ -189,7 +194,7 @@ add_custom_target(test-list
 # Rule to create XML definitions of Jenkins jobs and upload them to the server.
 set(JENKINS_JOBS_FILE ${CMAKE_CURRENT_BINARY_DIR}/jenkins-jobs-config.yaml)
 add_custom_target(jenkins-upload
-                  COMMAND jenkins-jobs update ${JENKINS_JOBS_FILE} 
+                  COMMAND jenkins-jobs --ignore-cache update ${JENKINS_JOBS_FILE} 
                   DEPENDS ${JENKINS_JOBS_FILE}
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )

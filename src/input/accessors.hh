@@ -30,7 +30,12 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "input/storage.hh"
+
+
+
+
 
 
 
@@ -38,8 +43,71 @@ namespace Input {
 
 using std::string;
 
-// exceptions and error_info types
 
+/**
+ * @brief Base of exceptions due to user input.
+ *
+ * Base class for "input exceptions" that are exceptions caused by incorrect input from the user
+ * not by an internal error.
+ *
+ * @ingroup exceptions
+ */
+class Exception : public virtual ExceptionBase
+{
+public:
+    const char * what () const throw ();
+    virtual ~Exception() throw () {};
+};
+
+
+/**
+ *  Declaration of error info class for passing Input::Address through exceptions.
+ *  Is returned by input accessors : Input::Record, Input::Array, etc.
+ *
+ *  Use case example:
+ *  Input::Record input = ...;
+ *  string name=input.val("name");
+ *  if (name.size() > STR_LIMIT) THROW(ExcToLongStr() << EI_Address( input.address_string() ));
+ *
+ *  TODO: if Address class is persistent (every copy is self contented, we can use Address instead of std::string.
+ *  see also ei_address methods.
+ */
+TYPEDEF_ERR_INFO( EI_Address, const std::string);
+
+
+/**
+ * @brief Macro for simple definition of input exceptions.
+ *
+ * Works in the same way as @p DECLARE_EXCEPTION, just define class derived from
+ * @p InputException. Meant to be used for exceptions due to wrong input from user.
+ *
+ * Reports input address provided through EI_Address object, see above.
+ *
+ * @ingroup exceptions
+ */
+#define DECLARE_INPUT_EXCEPTION( ExcName, Format)                             \
+struct ExcName : public virtual ::Input::Exception {                          \
+     virtual void print_info(std::ostringstream &out) const {                 \
+         using namespace internal;                                            \
+         ::internal::ExcStream estream(out, *this);                           \
+         estream Format														  \
+      	  	  	  << "\nAt input address: " 			   					\
+      	  	  	  << ::Input::EI_Address::val; 								\
+      	 out << std::endl;													\
+     }                                                                      \
+     virtual ~ExcName() throw () {}                                         \
+}
+
+/**
+ * Simple input exception that accepts just string message.
+ */
+DECLARE_INPUT_EXCEPTION(ExcInputMessage, << EI_Message::val );
+
+
+
+
+
+// exceptions and error_info types
 // throwed in Iterator<>
 TYPEDEF_ERR_INFO( EI_InputType, const string);
 TYPEDEF_ERR_INFO( EI_RequiredType, const string );
@@ -57,6 +125,9 @@ DECLARE_EXCEPTION( ExcAccessorForNullStorage, << "Can not create " << EI_Accesso
 // throwed in Address
 TYPEDEF_ERR_INFO( EI_ParamName, const string);
 DECLARE_EXCEPTION( ExcAddressNullPointer, << "NULL pointer in " << EI_ParamName::val << " parameter.");
+
+
+
 
 /**
  * Class that works as base type of all enum types. We need it to return integer from a Selection input without
@@ -84,10 +155,23 @@ private:
     int val_;
 };
 
+class FullEnum {
+public:
+    FullEnum() : val_(0) {}
+    FullEnum(int v, Input::Type::Selection sel) :val_(v), sel_(sel) { this->sel_ = sel; }
+    operator int() const {return this->val_;}
+    operator unsigned int() const {return this->val_;}
+    operator string() const {return this->sel_.int_to_name(this->val_); }
+private:
+    int val_;
+    Input::Type::Selection sel_;
+};
 
 // Forward declaration
 class IteratorBase;
 template <class T> class Iterator;
+
+class JSONToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -98,7 +182,7 @@ template <class T> class Iterator;
  *
  * TODO:
  * - allow Address with NULL pointers, allow default constructor
- * - How we can get Address with NULL pointer to storage?
+ * - How we can get Address with NULL pointer to storage? (currently we need Array::empty_storage_)
  *   - default constructor (should be called only by empty accessors)
  *     see if we can not get empty accessor in json_to_storage
  *     => empty address is error in program
@@ -112,25 +196,36 @@ class Address {
 protected:
     struct AddressData {
         /**
-         * Pointer to data of parent node in the tree
+         * Pointer to data of parent node in the address tree
          */
         AddressData * parent_;
         /**
-         * Order what descendant of its parent actual node is.
+         * Index in StorageArray of the parent_ to get actual node.
          */
         unsigned int descendant_order_;
         /**
-         * Root Input::Type.
+         * Root of the Input::Type tree.
          */
         const Input::Type::TypeBase *root_type_;
         /**
-         *
+         * Root of the storage tree.
          */
         const StorageBase *root_storage_;
         /**
-         * Actual storage
+         * Actual storage - tip of the storage tree
          */
         const StorageBase * actual_storage_;
+
+        /**
+         * Delete whole storage tree when last root input accessor is destroyed.
+         */
+        ~AddressData() {
+        	if (	parent_ == nullptr
+        			&& root_storage_ == actual_storage_
+        			&& root_type_ ) {
+        		delete root_storage_;
+        	}
+        }
     };
 
 public:
@@ -175,13 +270,25 @@ public:
      */
     std::string make_full_address() const;
 
-
 protected:
+
     /**
      * Shared part of address.
      */
     boost::shared_ptr<AddressData> data_;
+
+
 };
+
+
+
+/**
+ * Address output operator.
+ */
+inline std::ostream& operator<<(std::ostream& stream, const Address & address) {
+	return stream << address.make_full_address();
+}
+
 
 /**
  * @brief Accessor to the data with type \p Type::Record.
@@ -220,6 +327,7 @@ protected:
 class Record {
 
 public:
+	typedef ::Input::Type::Record InputType;
     /**
      * Default constructor.
      *
@@ -288,22 +396,35 @@ public:
 
     /**
      * Returns true if the accessor is empty (after default constructor).
+     * TODO: have something similar for other accessors.
      */
     inline bool is_empty() const
-    { return (address_.storage_head() == NULL); }
+    { return (address_.storage_head() == Address().storage_head()); }
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const ;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
+
+    /**
+     * Get name of record_type_
+     */
+    string record_type_name();
+
 
 
 protected:
+    /**
+     * Set address (currently necessary for creating root accessor)
+     */
+    void set_address(const Address &address);
+    friend class JSONToStorage;
+
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
 
@@ -325,6 +446,8 @@ protected:
 
 class AbstractRecord {
 public:
+	typedef ::Input::Type::AbstractRecord InputType;
+
     /**
      * Default constructor creates an empty accessor.
      *
@@ -364,14 +487,25 @@ public:
     Input::Type::Record type() const;
 
     /**
-     * Returns address
+     * Returns address error info.
      */
-    const Address &get_address() const;
+    EI_Address ei_address() const ;
 
     /**
-     * Set address
+     * Get address as string.
      */
-    void set_address(const Address &address);
+    string address_string() const;
+
+
+    /**
+     * Construct classes given by TYPE key of AbstractRecord.
+     *
+     * Method uses Input::Factory class. All constructed classes (representing by descendants
+     * of AbstractRecord) must be registered to factory (see Input::Factory class) and must have
+     * constructors with same parameters (given by Arguments).
+     */
+    template<class Type, class... Arguments>
+    const std::shared_ptr<Type> factory(Arguments... arguments) const;
 
 
 private:
@@ -421,6 +555,9 @@ private:
  */
 class Array {
 public:
+
+	typedef ::Input::Type::Array InputType;
+
     /**
      * Default constructor, empty accessor.
      *
@@ -465,14 +602,21 @@ public:
    void copy_to(Container &out) const;
 
    /**
-    * Returns address
+    * Returns true if the accessor is empty (after default constructor).
+    * TODO: have something similar for other accessors.
     */
-   const Address &get_address() const;
+   inline bool is_empty() const
+   { return (address_.storage_head() == Address().storage_head()); }
 
    /**
-    * Set address
+    * Returns address error info.
     */
-   void set_address(const Address &address);
+   EI_Address ei_address() const ;
+
+   /**
+    * Get address as string.
+    */
+   string address_string() const;
 
    /// Need persisting empty instance of StorageArray that can be used to create an empty Address.
    static StorageArray empty_storage_;
@@ -635,6 +779,9 @@ public:
     /// Prefix. Advance operator.
     inline Iterator<T> &operator ++ ();
 
+    /// Prefix. Back operator.
+    inline Iterator<T> &operator -- ();
+
     /**
      *  Dereference operator * ; Shouldn't we return type T, i.e. try to cast from OutputType to T ??
      */
@@ -674,21 +821,24 @@ namespace internal {
 /**
  *  Template specializations for primary type dispatch.
  */
+template<> struct TD<char> { typedef int OT; };
+template<> struct TD<unsigned char> { typedef int OT; };
 template<> struct TD<short int> { typedef int OT; };
 template<> struct TD<unsigned short int> { typedef int OT; };
+template<> struct TD<int> { typedef int OT; };
 template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<char> { typedef int OT; };
 template<> struct TD<float> { typedef double OT; };
+template<> struct TD<double> { typedef double OT; };
 
 /**
  *  Template specializations for secondary type dispatch.
  */
 
-// generic implementation accepts only enum types
+// Generic implementation accepts only enum types
 template< class T>
 struct TypeDispatch {
-    BOOST_STATIC_ASSERT( ( boost::is_enum<T>::value || boost::is_same<T, Enum>::value ) );
-    //BOOST_STATIC_ASSERT_MSG( boost::is_enum<T>::value , "TypeDispatch not specialized for given type." );
+
+    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
 
     typedef T TmpType;
 
@@ -697,6 +847,21 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
+template<>
+struct TypeDispatch<Enum> {
+    typedef Enum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+};
+
+template<>
+struct TypeDispatch<FullEnum> {
+    typedef FullEnum TmpType;
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
+};
 
 template<>
 struct TypeDispatch<int> {

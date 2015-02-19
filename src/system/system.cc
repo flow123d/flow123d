@@ -40,73 +40,17 @@
 #include <string>
 #include "mpi.h"
 
-#include "global_defs.h"
 #include "system/system.hh"
-//#include "io/read_ini.h"
 #include "system/xio.h"
 #include "system/file_path.hh"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
-
+#include <boost/format.hpp>
 
 
 
 SystemInfo sys_info;
-
-static bool petsc_initialized = false;
-
-/*!
- * @brief Read system parameters, open log.
- */
-void system_init( MPI_Comm comm,const  string &log_filename )
-{
-    int ierr;
-
-    //for(int i=0;i<argc;i++) xprintf(Msg,"%s,",argv[i]);
-     petsc_initialized = true;
-    sys_info.comm=comm; 
-
-
-    xio_init(); //Initialize XIO library
-
-    // TODO : otevrit docasne log file jeste pred ctenim vstupu (kvuli zachyceni chyb), po nacteni dokoncit
-    // inicializaci systemu
-
-    ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
-    ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
-    ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
-
-    // determine logfile name or switch it off
-    stringstream log_name;
-
-    if ( log_filename == "\n" ) {
-           // -l option without given name -> turn logging off
-           sys_info.log=NULL;
-    } else
-   if (log_filename != "") {
-      // given log name
-           log_name << log_filename <<  "." << sys_info.my_proc << ".log";
-           sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-           sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    } else {
-        // use default name
-        log_name << "flow123."<< sys_info.my_proc << ".log";
-        sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file );
-        sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    }
-
-    sys_info.verbosity=0;
-    sys_info.pause_after_run=0;
-}
-
-void system_set_from_options()
-{
-    //sys_info.verbosity = OptGetInt( "Run", "Screen_verbosity", "0" );
-
-}
 
 
 /// @brief INTERNAL DEFINITIONS FOR XPRINTF
@@ -133,10 +77,10 @@ static struct MsgFmt msg_fmt[] = {
 	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
-	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},
-	{UsrErr,	true,  false,   SCR_STDERR,	true,	"User Error (%s, %s(), %d):\n"},
-	{Err,		true,  false,   SCR_STDERR,	true,	"Error (%s, %s(), %d):\n"},
-	{PrgErr,	true,  false,   SCR_STDERR, true,	"Internal Error (%s, %s(), %d):\n"}
+	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning (%s, %s(), %d):\n"},
+	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error (%s, %s(), %d):\n"},
+	{Err,		true,  false,   SCR_NONE,	true,	"\nError (%s, %s(), %d):\n"},
+	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error (%s, %s(), %d):\n"}
 };
 
 /// @}
@@ -187,12 +131,28 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
         screen = NULL;
 #endif
 
-    //generate barrier and unique ID for MPI messages
+	{
+		va_list argptr;
+		if (mf.stop) {
+			char format_message[1024];
+			va_start( argptr, fmt );
+			vsprintf(format_message, fmt, argptr);
+			va_end( argptr );
+
+			// explicit flush of all streams
+			fflush(NULL);
+			BOOST_THROW_EXCEPTION( ExcXprintfMsg()
+				<< EI_XprintfHeader( boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line) )
+				<< EI_XprintfMessage( format_message ) );
+		}
+	}
+
+	//generate barrier and unique ID for MPI messages
     if (mf.mpi) {
         ierr = MPI_Barrier(sys_info.comm);
         if (ierr != MPI_SUCCESS ) {
             printf("MPI_Barrier() error in xprintf()\n"); //can not call xprintf() when xprintf() is failing
-            exit(EXIT_FAILURE);
+            exit( EXIT_FAILURE );
         }
 
         // print global msg_id
@@ -202,7 +162,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
             fprintf(sys_info.log,"[msg_id=%d] ", mpi_msg_id );
         mpi_msg_id++;
     }
-
+#ifndef DEBUG_MESSAGES
+    if (type == Warn) mf.head="\nWarning: ";
+#endif
 	// print head
 	if (mf.head) {
 		if (screen) fprintf(screen,mf.head,xprintf_file,xprintf_func,xprintf_line);
@@ -232,69 +194,9 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 		}
 	}
 
-
-	if (mf.stop) {
-	    // explicit flush of all streams
-		fflush(NULL);
-        xterminate(true);
-	}
 	return rc;
 }
 
-/*!
- * @brief     Terminates the program.
- *
- * @param[in] on_error Set true if the function is called as a result of an error. This produce backtrace.
- *
- * TODO: should be destructor of a main program object with pointer to the main application object, through deleting
- * application object it should delete all created objects, namely free all memory and close all files.
- * 
- * More over the application should be derived from ApplicationBase which collects functionality of system.cc
- * In descendants  of ApplicationBase we can call PetscFinalize, and keep ApplicationBase free of petsc.
- *
- */
-
-#ifdef HAVE_PETSC
-
-#include <petsc.h>
-#endif
-
-int xterminate( bool on_error )
-{
-
-
-    if (on_error) { F_STACK_SHOW( stderr ); }
-
-	//TODO: Free memory, close files
-
-#ifdef HAVE_PETSC	
-	if ( petsc_initialized )
-	{
-           PetscErrorCode ierr=0;
- 
-	   ierr = PetscFinalize(); CHKERRQ(ierr);
-           
-           on_error = (ierr != 0);
-	   petsc_initialized = false;
-	}
-#endif
-    if (sys_info.log) xfclose( sys_info.log );
-
-    if (sys_info.pause_after_run) {
-        printf("\nPress <ENTER> for closing the window\n");
-        getchar();
-    }
-
-    //fflush and fclose all files (including stdout, stderr, stdio)
-    //this function is GNU extension
-    fcloseall();
-
-    //select proper Return Code
-    if ( on_error ) //error in program or during PetscFinalize()
-        exit( EXIT_FAILURE );
-    else
-        exit( EXIT_SUCCESS );
-}
 
 /*!
  * @brief Memory allocation with checking.
@@ -310,7 +212,6 @@ void *xmalloc( size_t size )
 
 
 	if (size == 0 ) size++;
-	//ASSERT( size != 0 ,"Bad requested size (%u bytes) for memory allocation\n", size );
 	rc = malloc( size );
 	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
 
@@ -342,8 +243,6 @@ void *xmalloc( size_t size )
 void * xrealloc( void * ptr, size_t size )
 {
     void * rc;
-
-    F_ENTRY;
 
     rc = realloc( ptr, size );
     if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
@@ -379,6 +278,10 @@ void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     return xmalloc(size);
 }
 
+void *operator new[] (std::size_t size, const std::nothrow_t&  ) throw() {
+	return xmalloc(size);
+}
+
 void operator delete( void *p) throw()
 {
     xfree(p);
@@ -398,8 +301,6 @@ int xsystem( const char *cmd )
 {
 	int rc;
 
-	F_ENTRY;
-
 	rc = system( cmd );
 	INPUT_CHECK(!( rc != 0 ),"Error executing external command: %s\n", cmd );
 	return(rc);
@@ -412,8 +313,6 @@ char *xstrcpy( const char *src )
 {
 	char *rc;
 	size_t length;
-
-	F_ENTRY;
 
 	ASSERT(!( src == NULL ),"NULL pointer as argument of function xstrcpy()\n");
 	length = strlen( src ) + 1;
@@ -433,8 +332,6 @@ char *xstrtok(char *s, int position)
     char *rc;
     const char * const whitespace_delim=" \t\r\n";
 
-    F_ENTRY;
-
     rc = xstrtok( s, whitespace_delim, position);
     return(rc);
 }
@@ -453,8 +350,6 @@ char *xstrtok( char *s1, const char *delim, int position )
 	char *rc;
 	static char * full_string = NULL;
 	static int token_count;
-
-	F_ENTRY;
 
 	ASSERT(!( delim == NULL ),"NULL pointer as delimiter in xstrtok()\n");
 
@@ -489,9 +384,7 @@ int xchomp( char * s )
     int no_erased = 0;
     char * p;
 
-    F_ENTRY;
-
-    ASSERT(NONULL(s), "Can not chomp NULL string.");
+    ASSERT( s, "Can not chomp NULL string.");
 
     if ( *s ) //string not empty
     {
@@ -517,8 +410,6 @@ int xmkdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xmkdir()\n");
     rc = mkdir(s, S_IRWXU); // create dir with rwx perm. for user
     if (errno == EEXIST)
@@ -535,8 +426,6 @@ int xrmdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xrmdir()\n");
     rc = rmdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot delete directory %s\n", s );
@@ -550,8 +439,6 @@ int xchdir( const char *s )
 {
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( s == NULL ),"NULL pointer as argument of function xchdir()\n");
     rc = chdir( s );
     INPUT_CHECK(!( rc != 0 ),"Cannot change directory to %s\n", s );
@@ -564,8 +451,6 @@ int xchdir( const char *s )
 int xremove( const char *fname )
 {
     int rc;
-
-    F_ENTRY;
 
     ASSERT(!( fname == NULL ),"NULL pointer as argument of function xremove()\n");
     if( access( fname , F_OK ) == 0 )
@@ -587,60 +472,9 @@ char *xgetcwd( void )
     char tmp[PATH_MAX];
     char * rc;
 
-    F_ENTRY;
-
     rc = getcwd( tmp, PATH_MAX );
-    ASSERT(NONULL(rc),"Cannot get name of current working directory\n");
+    ASSERT( rc,"Cannot get name of current working directory\n");
 
     return(xstrcpy( tmp ));
 }
-
-/*!
- *  @brief Skip to given section in a given file.
- *  @param[in,out]  in          Handle of the file that we search.
- *  @param[in]      section     Section name to find.
- *  @return                     true - if we have found the section, false otherwise
- */
-bool skip_to( FILE *const in, const char *section )
-{
-    char line[ LINE_SIZE ];
-    char string[ LINE_SIZE ];
-
-    F_ENTRY;
-
-    ASSERT( NONULL( in ), "Null input file handle.\n");
-    ASSERT( NONULL( section ), "NULL section.\n");
-
-    while( xfgets( line, LINE_SIZE - 2, in ) != NULL ) {
-        sscanf( line, "%s", string ); // strip spaces
-        if( strcmpi( string, section ) == 0 )
-        {
-            return( true );
-        }
-    }
-
-    return(false);
-}
-
-
-
-/*!
- *  @brief Skip to the first line match  @p pattern up to surrounding spaces and case.
- *  @param[in,out]  in          Input stream to search.
- *  @param[in]      pattern     String to look for.
- *  @return                     true - if we have found the section, false otherwise
- */
-bool skip_to( istream &in, const string &pattern )
-{
-    F_ENTRY;
-    if (! in.good()) xprintf(PrgErr, "Input stream is not ready for i/o operations. Perhaps missing check about correct open.\n");
-
-    for(std::string line; ! in.eof() ; std::getline(in, line) ) {
-        boost::trim(line);
-        if ( boost::iequals( line, pattern ) ) return true;
-    }
-
-    return false;
-}
-
 

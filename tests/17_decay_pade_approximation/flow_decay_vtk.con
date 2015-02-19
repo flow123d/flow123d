@@ -9,13 +9,10 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      input_fields= [
         { rid = 1,
           anisotropy = 0.01
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/flow_decay/sit_decay.fbc"
@@ -26,9 +23,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -39,26 +34,19 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      bulk_data = [
+      input_fields= [
         { rid = 1,
           init_conc = 
             [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000]
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           old_boundary_file = "./input/flow_decay/sit_decay.tbc"
         }
       ],
 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 0.5
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
       substances = [
         "A", 
@@ -71,35 +59,38 @@
         end_time = 10.0
       },
       
-      reactions = {
-        TYPE="PadeApproximant",
-        matrix_exp_on = true,
-        nom_pol_deg = 3,
-        den_pol_deg = 3,
+      reaction_term = {
+        TYPE="RadioactiveDecay",
+        ode_solver = { 
+          TYPE = "PadeApproximant",
+          nominator_degree = 3,
+          denominator_degree = 3
+        },
+
         decays = [
           {
-            parent = "A",
+            radionuclide = "A",
             half_life = 1.3863,
             products = [
               "B"
             ]
           },
           {
-            parent = "B",
+            radionuclide = "B",
             half_life = 2.3105,
             products = [
               "C"
             ]
           },
           {
-            parent = "C",
+            radionuclide = "C",
             half_life = 1.5403,
             products = [
               "D"
             ]
           },
           {
-            parent = "D",
+            radionuclide = "D",
             half_life = 1.1552,
             products = [
               "E"
@@ -129,6 +120,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.5,
         name = "transport_output_stream"
       }
     ]

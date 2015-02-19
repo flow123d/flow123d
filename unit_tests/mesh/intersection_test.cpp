@@ -1,14 +1,12 @@
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 #include "system/system.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
-//#include "mesh/ngh/include/point.h"
 
 
 TEST(intersection, triangle_tetrahedron) {
 	TIntersectionType it;
 	double area;
-	double epsilon =0.0001;
 
 	// create tetrahedron
 	TPoint point0(0.00, 0.00, 0.00);
@@ -48,14 +46,14 @@ TEST(intersection, triangle_tetrahedron) {
 	EXPECT_FLOAT_EQ(area, 0.875);
 
 	// intersection is pentagon
-	pointA.SetCoord(-0.25, -0.25, 0.00);
-	pointB.SetCoord(2.00, 2.00, 0.00);
-	pointC.SetCoord(0.50, 0.50, 1.50);
+	pointA.SetCoord(-1.0, 2.00, 1.00);
+	pointB.SetCoord(1.50, 2.00, 1.00);
+	pointC.SetCoord(1.50,-0.5 , 1.00);
 	triangle.SetPoints(pointA, pointB, pointC);
 
 	xprintf(Msg, "Test - intersection is pentagon\n");
 	GetIntersection(triangle, tetrahedron, it, area);
-	EXPECT_FLOAT_EQ(area, 1.944544);
+	EXPECT_FLOAT_EQ(area, 0.5+0.5+0.5*3.0/4.0);
 
 	// intersection is hexagon (plane parallel to x-y)
 	pointA.SetCoord(2.00, 2.00, 0.50);

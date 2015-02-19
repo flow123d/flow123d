@@ -42,7 +42,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(sources_lib_system
     system/python_loader.cc
     system/math_fce.cc
-    system/sys_function_stack.cpp
     system/sys_profiler.cc
     system/system.cc
     system/xio.cc
@@ -50,6 +49,7 @@ set(sources_lib_system
     io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
+    system/application_base.cc
 )
 
 set(sources_lib_input
@@ -69,8 +69,9 @@ set(sources_lib_la
 	la/distribution.cc
 	la/local_to_global_map.cc
     la/schur.cc
-    la/solve.cc
     la/linsys.cc
+    la/linsys_BDDC.cc
+    la/linsys_PETSC.cc
     la/sparse_graph.cc
 )
 
@@ -82,15 +83,15 @@ set(sources_mesh_lib
     mesh/elements.cc
     mesh/mesh.cc
     mesh/neighbours.cc
-    mesh/nodes.cc
     mesh/sides.cc
     mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    mesh/bih_node.cc
+    # mesh/bih_node.cc
     mesh/bih_tree.cc
+    mesh/reader_instances.cc
     
     mesh/ngh/src/abscissa.cpp
     mesh/ngh/src/bisector.cpp
@@ -101,7 +102,7 @@ set(sources_mesh_lib
     mesh/ngh/src/plain.cpp
     mesh/ngh/src/point.cpp
     mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/system.cpp
+    #mesh/ngh/src/system.cpp
     mesh/ngh/src/tetrahedron.cpp
     mesh/ngh/src/triangle.cpp
     mesh/ngh/src/vector.cpp
@@ -125,22 +126,31 @@ set(sources_lib_interpolation
 )
 
 
-
-set(sources_lib_field
-    fields/field_values.cc
-    fields/field_base.cc
-    fields/field_other.cc
-)
-
-
 set (sources_lib_coupling
-
+   # unfortunatelly field sources depends on output sources
+   # and viceversa
+    io/output_time.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    
+    fields/field_values.cc
+    fields/field_common.cc
+    fields/field.cc
+    fields/field_algo_base.cc    
+    fields/field_flag.cc
+    fields/field_set.cc
+    fields/unit_si.cc
+    fields/generic_field.cc
+    
     coupling/time_marks.cc
     coupling/time_governor.cc
 
    coupling/equation.cc
        flow/old_bcd.cc
    # coupling/hc_explicit_sequential.cc
+   
+
+   
 )
 
 set(sources_lib_non_system
@@ -151,22 +161,27 @@ set(sources_lib_non_system
     flow/darcy_flow_mh.cc
 
 
-    io/output.cc
-    io/output_vtk.cc
-    io/output_msh.cc
     
-    reaction/reaction.cc
-    reaction/linear_reaction.cc
+    reaction/reaction_term.cc
+    reaction/first_order_reaction.cc
+    reaction/first_order_reaction_base.cc
+    reaction/radioactive_decay.cc
     reaction/pade_approximant.cc
+    reaction/sorption_base.cc
     reaction/sorption.cc
-    #reaction/dual_por_exchange.cc
+    reaction/dual_porosity.cc
     reaction/isotherm.cc
+    reaction/linear_ode_solver.cc
+    reaction/linear_ode_analytic.cc
     semchem/semchem_interface.cc
 
+    transport/concentration_model.cc
+    transport/heat_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
     transport/mass_balance.cc
+    transport/substance.cc
 
     coupling/hc_explicit_sequential.cc
 )
@@ -211,7 +226,8 @@ target_link_libraries(input_lib
 add_library(la_lib ${sources_lib_la})
 target_link_libraries(la_lib 
     input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
+    armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
+set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
 
 # mesh_lib
 add_library(mesh_lib ${sources_mesh_lib})
@@ -228,21 +244,17 @@ add_library(interpolation_lib ${sources_lib_interpolation})
 target_link_libraries(interpolation_lib
     system_lib )
 
-# field_lib  
-add_library(field_lib ${sources_lib_field})
-target_link_libraries(field_lib
-    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
- 
+
 # coupling_lib  
 add_library(coupling_lib ${sources_lib_coupling})
 target_link_libraries(coupling_lib
-    system_lib input_lib field_lib mesh_lib)
+    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
   
 # all remaining sources 
 add_library(flow123d_lib ${sources_lib_non_system})
 target_link_libraries(flow123d_lib 
     fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib
-    coupling_lib fparser  armadillo ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
+    coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
 set_target_properties(flow123d_lib PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )

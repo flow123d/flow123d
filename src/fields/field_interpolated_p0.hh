@@ -29,77 +29,62 @@
 #ifndef FIELD_INTERPOLATED_P0_HH_
 #define FIELD_INTERPOLATED_P0_HH_
 
-#include "field_base.hh"
+#include "field_algo_base.hh"
 #include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/tetrahedron.h"
+#include "mesh/ngh/include/ngh_interface.hh"
+#include "input/factory.hh"
 
 
 template <int spacedim, class Value>
-class FieldInterpolatedP0: public FieldBase<spacedim, Value> {
+class FieldInterpolatedP0: public FieldAlgorithmBase<spacedim, Value> {
 public:
+
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
 	/**
 	 * Constructor
 	 */
 	FieldInterpolatedP0(unsigned int n_comp=0);
 
-
 	/**
 	 * Declare Input type.
 	 */
 	static Input::Type::Record input_type;
 
-	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, typename Value::ElementInputType *eit);
+	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
 	/**
 	 * Initialization from the input interface.
 	 */
 	virtual void init_from_input(const Input::Record &rec);
 
-
     /**
      * Update time and possibly update data from GMSH file.
      */
     virtual bool set_time(double time);
 
-
-    /**
-	 * Set sources files of interpolation
-	 *
-	 * @param mesh_file file contained data of mesh
-	 * @param raw_output file contained output
-	 *
-	 * TODO: use streams instead of filenames (better testing)
-	 * TODO: use just one GMSH file for both mesh and data (consistency)
-	 */
-	//void set_source_of_interpolation(const FilePath & mesh_file,
-	//								 const FilePath & raw_output);
-
-
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point<spacedim> &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list(const std::vector< Point<spacedim> >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
 	/// mesh, which is interpolated
 	Mesh* source_mesh_;
 
-	/// mesh reader
-	GmshMeshReader *reader_;
+	/// mesh reader file
+	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
     double *data_;
@@ -114,7 +99,10 @@ protected:
 	BIHTree* bih_tree_;
 
 	/// stored index to last computed element
-	unsigned int computed_elm_idx_;
+	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
+
+	/// stored flag if last computed element is boundary
+	unsigned int computed_elm_boundary_;
 
 	/// 3D (tetrahedron) element, used for computing intersection
 	TTetrahedron tetrahedron_;
@@ -128,54 +116,10 @@ protected:
 	/// 0D (point) element, used for computing intersection
 	TPoint point_;
 
-	/**
-	 * Read scalar element data with name @p field_name using tokenizer @p tok initialized
-	 * over a GMSH file or stream.
-	 *
-	 * This needs lot of work to be general enough to be outside of this class
-	 * TODO:
-	 * - we need concept of Fields so that we can fill corresponding vectors
-	 * - then we should support scalar as well as vector or even tensor data
-	 * - support for time dependent data
-	 * - selective reading on submesh (parallelism - subdomains, or boundary data)
-	 *
-	 */
-	//void read_element_data_from_gmsh(Tokenizer &tok, const  string &field_name);
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 
-
-	/**
-	 * Calculate values in triangle element
-	 */
-	//void calculate_triangle_value(TTriangle &element, unsigned int idx);
-	/**
-	 * Calculate values in abscissa element
-	 */
-	//void calculate_abscissa_value(TAbscissa &element, unsigned int idx);
-	/**
-	 * Calculate values in point element
-	 */
-	//void calculate_point_value(TPoint &point, unsigned int idx);
-
-public:
-	/**
-	 * Create tetrahedron from element
-	 */
-	static void create_tetrahedron(Element *ele, TTetrahedron &te);
-
-	/**
-	 * Create triangle from element
-	 */
-	static void create_triangle(Element *ele, TTriangle &tr);
-
-	/**
-	 * Create abscissa from element
-	 */
-	static void create_abscissa(Element *ele, TAbscissa &ab);
-
-	/**
-	 * Create point from element
-	 */
-	static void create_point(Element *ele, TPoint &p);
 };
 
 

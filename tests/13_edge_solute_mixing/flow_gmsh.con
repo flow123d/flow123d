@@ -10,7 +10,7 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      input_fields= [
         {   rid = 17,
             anisotropy = 1.0
         },
@@ -19,10 +19,7 @@
         },
         {   rid = 19,
             anisotropy = 1.0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test13.fbc"
@@ -33,9 +30,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -47,7 +42,7 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
        
-      bulk_data = [
+      input_fields= [
         { rid = 17,
           init_conc = 0
         },
@@ -56,24 +51,15 @@
         },
         { rid = 19,
           init_conc = 0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test13.tbc"
+          transport_old_bcd_file = "./input/test13.tbc"
         }
       ],
 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = {
-          REF = "/problem/save_step"
-        }
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
 
       substances = [
@@ -87,7 +73,6 @@
       }
     },
     
-    save_step = 0.5, 
     time = {
       end_time = 100.0
     }
@@ -111,6 +96,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 0.5, 
         name = "transport_output_stream"
       }
     ]

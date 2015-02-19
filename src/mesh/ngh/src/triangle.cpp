@@ -1,6 +1,6 @@
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/config.h"
-#include "mesh/ngh/include/system.h"
+
 
 
 int TTriangle::numberInstance = 0;
@@ -28,13 +28,7 @@ TTriangle::TTriangle(const TTriangle& T) {
     X2 = T.X2;
     X3 = T.X3;
 
-    A1 = new TAbscissa(*T.A1);
-    A2 = new TAbscissa(*T.A2);
-    A3 = new TAbscissa(*T.A3);
-
-    pl = new TPlain(*T.pl);
-
-    area = T.area;
+    update();
 }
 
 TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
@@ -44,26 +38,31 @@ TTriangle::TTriangle(const TPoint& P1, const TPoint& P2, const TPoint& P3) {
     X2 = P2;
     X3 = P3;
 
-    A1 = new TAbscissa(P1, P2);
-    A2 = new TAbscissa(P2, P3);
-    A3 = new TAbscissa(P3, P1);
+    update();
+}
 
-    pl = new TPlain(P1, P2, P3);
+
+TTriangle::TTriangle(const Element& ele) {
+    id = generateId();
+
+    X1=TPoint(ele.node[0]->point()(0), ele.node[0]->point()(1), ele.node[0]->point()(2));
+	X2=TPoint(ele.node[1]->point()(0), ele.node[1]->point()(1), ele.node[1]->point()(2));
+	X3=TPoint(ele.node[2]->point()(0), ele.node[2]->point()(1), ele.node[2]->point()(2));
+
+	update();
+}
+
+void TTriangle::update() {
+	A1 = new TAbscissa(X1, X2);
+    A2 = new TAbscissa(X2, X3);
+    A3 = new TAbscissa(X3, X1);
+
+    pl = new TPlain(X1, X2, X3);
 
     ComputeArea();
 }
 
 TTriangle::~TTriangle() {
-    /*if (X1 != NULL) {
-        delete X1;
-    }
-    if (X2 != NULL) {
-        delete X2;
-    }
-    if (X3 != NULL) {
-        delete X3;
-    }*/
-
     if (A1 != NULL) {
         delete A1;
     }
@@ -92,7 +91,7 @@ const TAbscissa &TTriangle::GetAbscissa(const int i) const {
         case 3: return *A3;
             break;
         default:
-            mythrow((char*) "Unknown number of the abscissa of the triangle.",  __LINE__, __FUNC__);
+            THROW( ExcAssertMsg() << EI_Message( "Unknown number of the abscissa of the triangle.") );
 
     }
 }
@@ -105,7 +104,7 @@ const TPoint &TTriangle::GetPoint(int i) const {
             break;
         case 3: return X3;
             break;
-        default: mythrow((char*) "Unknown number of the point of the triangle.", __LINE__, __FUNC__);
+        default: THROW( ExcAssertMsg() << EI_Message( "Unknown number of the point of the triangle.") );
     }
 }
 
@@ -141,7 +140,7 @@ BoundingBox &TTriangle::get_bounding_box() {
 		maxCoor(i) = GetMax(i+1);
 	}
 
-	boundingBox.set_bounds(minCoor, maxCoor);
+	boundingBox=BoundingBox(minCoor, maxCoor);
 	return boundingBox;
 }
 

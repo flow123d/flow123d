@@ -17,7 +17,7 @@
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
  *
  *
- * $Id$
+ * $Id: output_msh.cc 2505 2013-09-13 14:52:27Z jiri.hnidek $
  * $Revision$
  * $LastChangedBy$
  * $LastChangedDate$
@@ -27,7 +27,7 @@
  *
  */
 
-#include "io/output.h"
+#include "io/output_data.hh"
 #include "io/output_msh.h"
 #include "system/xio.h"
 #include "mesh/mesh.h"
@@ -38,21 +38,12 @@ using namespace Input::Type;
 Record OutputMSH::input_type
 	= Record("gmsh", "Parameters of gmsh output format.")
 	// It is derived from abstract class
-	.derive_from(OutputFormat::input_type);
-
-// TODO: Remove or adjust the following code.
-//	// The variant
-//	static Selection variant_sel("GMSH variant");
-//	    variant_sel.add_value(OutputMSH::VARIANT_ASCII, "ascii",
-//	    		"ASCII variant of GMSH file format");
-//	    variant_sel.add_value(OutputMSH::VARIANT_BINARY, "binary",
-//	    		"Binary variant of GMSH file format (not supported yet)");
-//	    variant_sel.finish();
+	.derive_from(OutputTime::input_format_type);
 
 
 void OutputMSH::write_msh_header(void)
 {
-    ofstream &file = this->output_time->get_base_file();
+    ofstream &file = *this->_base_file;
 
     // Write simple header
     file << "$MeshFormat" << endl;
@@ -62,22 +53,22 @@ void OutputMSH::write_msh_header(void)
 
 void OutputMSH::write_msh_geometry(void)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh* mesh = this->output_time->get_mesh();
+    ofstream &file = *this->_base_file;
+    Mesh* mesh = this->_mesh;
 
     // Write information about nodes
     file << "$Nodes" << endl;
     file <<  mesh->node_vector.size() << endl;
     FOR_NODES(mesh, nod) {
-        file << NODE_FULL_ITER(mesh, nod).index() + 1 << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
+        file << NODE_FULL_ITER(mesh, nod).id() << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
     }
     file << "$EndNodes" << endl;
 }
 
 void OutputMSH::write_msh_topology(void)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh* mesh = this->output_time->get_mesh();
+    ofstream &file = *this->_base_file;
+    Mesh* mesh = this->_mesh;
     unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
 
@@ -86,291 +77,111 @@ void OutputMSH::write_msh_topology(void)
     file << mesh->n_elements() << endl;
     FOR_ELEMENTS(mesh, elm) {
         // element_id element_type 3_other_tags material region partition
-        file << ELEM_FULL_ITER(mesh, elm).index() + 1
+        file << ELEM_FULL_ITER(mesh, elm).id()
              << " " << gmsh_simplex_types_[ elm->dim() ]
              << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
 
         FOR_ELEMENT_NODES(elm, i)
-            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).index() + 1;
+            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).id();
         file << endl;
     }
     file << "$EndElements" << endl;
 }
 
-void OutputMSH::write_msh_ascii_cont_data(OutputData *out_data)
-{
-    ofstream &file = this->output_time->get_base_file();
-    long int id = 1;
 
-    switch(out_data->type) {
-    case OutputData::OUT_VECTOR_INT_SCA:
-        for( std::vector<int>::iterator item = ((std::vector<int>*)out_data->data)->begin();
-                item != ((std::vector<int>*)out_data->data)->end();
-                ++item, ++id) {
-            file << id << " " << *item << endl;
+template<class element>
+void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
+{
+    ofstream &file = *this->_base_file;
+
+    /* Set precision to max */
+    file.precision(std::numeric_limits<double>::digits10);
+
+    for(unsigned int i=0; i < output_data->n_values; i ++) {
+        file << vec(i).id() << " ";
+        output_data->print(file, i);
+        file << std::endl;
+    }
+
+}
+
+
+void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
+{
+    Mesh *mesh = this->_mesh;
+    ofstream &file = *this->_base_file;
+
+    /* Set precision to max */
+    file.precision(std::numeric_limits<double>::digits10);
+
+    /* Write ascii data */
+    unsigned int i_node;
+	unsigned int i_corner = 0;
+    FOR_ELEMENTS(mesh, ele) {
+        file << ele.id() << " " << ele->n_nodes() << " ";
+
+        FOR_ELEMENT_NODES(ele, i_node) {
+            output_data->print(file, i_corner++);
         }
-        break;
-    case OutputData::OUT_VECTOR_INT_VEC:
-        for( std::vector< vector<int> >::iterator vec = ((std::vector< vector<int> >*)out_data->data)->begin();
-                vec != ((std::vector< vector<int> >*)out_data->data)->end();
-                ++vec, ++id)
-        {
-            file << id << " ";
-            for (std::vector<int>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << *item << " ";
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_SCA:
-        for( std::vector<float>::iterator item = ((std::vector<float>*)out_data->data)->begin();
-                item != ((std::vector<float>*)out_data->data)->end();
-                ++item, ++id) {
-            file << id << " " << *item << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_VEC:
-        for( std::vector< vector<float> >::iterator vec = ((std::vector< vector<float> >*)out_data->data)->begin();
-                vec != ((std::vector< vector<float> >*)out_data->data)->end();
-                ++vec, ++id)
-        {
-            file << id << " ";
-            for (std::vector<float>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << *item << " ";
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_SCA:
-        for( std::vector<double>::iterator item = ((std::vector<double>*)out_data->data)->begin();
-                item != ((std::vector<double>*)out_data->data)->end();
-                ++item, ++id) {
-            file << id << " " << *item << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_VEC:
-        for( std::vector< vector<double> >::iterator vec = ((std::vector< vector<double> >*)out_data->data)->begin();
-                vec != ((std::vector< vector<double> >*)out_data->data)->end();
-                ++vec, ++id)
-        {
-            file << id << " ";
-            for (std::vector<double>::iterator item = vec->begin();
-                    item != vec->end();
-                    ++item) {
-                file << *item << " ";
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_INT_SCA:
-        for(int i=0; i<out_data->num; i++, id++) {
-            file << id << " " << ((int*)out_data->data)[i] << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_FLOAT_SCA:
-        for(int i=0; i<out_data->num; i++, id++) {
-            file << id << " " << ((float*)out_data->data)[i] << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_DOUBLE_SCA:
-        for(int i=0; i<out_data->num; i++, id++) {
-            file << id << " " << ((double*)out_data->data)[i] << endl;
-        }
-        break;
-    default:
-        xprintf(Err, "This type of data: %d is not supported by MSH file format\n", out_data->type);
-        break;
+
+        file << std::endl;
     }
 }
 
-void OutputMSH::write_msh_ascii_discont_data(OutputData *out_data)
-{
-    ofstream &file = this->output_time->get_base_file();
-    Mesh *mesh = this->output_time->get_mesh();
-    Node* node;
-    unsigned int li, corner_id = 0;
-
-    switch(out_data->type) {
-    case OutputData::OUT_VECTOR_INT_SCA:
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<int>*)out_data->data)->at(corner_id) << " ";
-            }
-            corner_id++;
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_INT_VEC:
-        FOR_ELEMENTS(mesh, ele) {
-            FOR_ELEMENT_NODES(ele, li) {
-                file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-                node = ele->node[li];
-                std::vector<int> &vec = ((std::vector< vector<int> >*)out_data->data)->at(corner_id);
-                for (std::vector<int>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                corner_id++;
-                file << endl;
-            }
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<float>*)out_data->data)->at(corner_id) << " ";
-                corner_id++;
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_FLOAT_VEC:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                std::vector<float> &vec = ((std::vector< vector<float> >*)out_data->data)->at(corner_id);
-                for (std::vector<float>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                corner_id++;
-                file << "  ";
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_SCA:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((std::vector<double>*)out_data->data)->at(corner_id) << " ";
-                corner_id++;
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_VECTOR_DOUBLE_VEC:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                std::vector<double> &vec = ((std::vector< vector<double> >*)out_data->data)->at(corner_id);
-                for (std::vector<double>::iterator item = vec.begin();
-                        item != vec.end();
-                        ++item) {
-                    file << scientific << *item << " ";
-                }
-                corner_id++;
-                file << "  ";
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_INT_SCA:
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << ((int*)out_data->data)[corner_id] << " ";
-                corner_id++;
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_FLOAT_SCA:
-        file.precision(std::numeric_limits<float>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((float*)out_data->data)[corner_id] << " ";
-                corner_id++;
-            }
-            file << endl;
-        }
-        break;
-    case OutputData::OUT_ARRAY_DOUBLE_SCA:
-        file.precision(std::numeric_limits<double>::digits10);
-        FOR_ELEMENTS(mesh, ele) {
-            file << ELEM_FULL_ITER(mesh, ele).index() + 1 << " " << ele->n_nodes() << " ";
-            FOR_ELEMENT_NODES(ele, li) {
-                node = ele->node[li];
-                file << scientific << ((double*)out_data->data)[corner_id] << " ";
-                corner_id++;
-            }
-            file << endl;
-        }
-        break;
-    default:
-        xprintf(Err, "This type of data: %d is not supported by VTK file format\n", out_data->type);
-        break;
-    }
-}
 
 void OutputMSH::write_msh_node_data(double time, int step)
 {
-    ofstream &file = this->output_time->get_base_file();
-    Mesh *mesh = this->output_time->get_mesh();
-    std::vector<OutputData> *node_data = this->output_time->get_node_data();
-    std::vector<OutputData> *corner_data = this->output_time->get_corner_data();
+    ofstream &file = *this->_base_file;
+    Mesh *mesh = this->_mesh;
+    OutputDataBase *output_data;
 
-    if(node_data != NULL && node_data->empty()==false) {
-        for(OutputDataVec::iterator dta = node_data->begin();
-                    dta != node_data->end();
-                    ++dta)
+    double time_fixed = isfinite(time)?time:0;
+
+    if(this->node_data.empty() == false) {
+        for(vector<OutputDataBase*>::iterator data = this->node_data.begin();
+                    data != this->node_data.end();
+                    ++data)
         {
+            output_data = *data;
+
             file << "$NodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << *dta->getName() << "_[" << *dta->getUnits() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << dta->getCompNum() << endl;   // number of components
-            file << dta->getValueNum() << endl;  // number of values
+            file << output_data->n_elem_ << endl;   // number of components
+            file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(&(*dta));
+            this->write_msh_ascii_cont_data(mesh->node_vector, output_data);
 
             file << "$EndNodeData" << endl;
         }
-    } else if(corner_data != NULL && corner_data->empty()==false) {
-        for(OutputDataVec::iterator dta = corner_data->begin();
-                    dta != corner_data->end();
-                    ++dta)
+    } else if(this->corner_data.empty() == false) {
+        for(vector<OutputDataBase*>::iterator data = this->corner_data.begin();
+                    data != this->corner_data.end();
+                    ++data)
         {
+            output_data = *data;
+
             file << "$ElementNodeData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << *dta->getName() << "_[" << *dta->getUnits() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << dta->getCompNum() << endl;   // number of components
+            file << output_data->n_elem_ << endl;   // number of components
             file << mesh->n_elements() << endl; // number of values
 
-            this->write_msh_ascii_discont_data(&(*dta));
+            this->write_msh_ascii_discont_data(output_data);
 
             file << "$EndElementNodeData" << endl;
         }
@@ -379,56 +190,41 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
-    ofstream &file = this->output_time->get_base_file();
-    std::vector<OutputData> *elem_data = this->output_time->get_elem_data();
+	OutputDataBase* output_data;
+    ofstream &file = *this->_base_file;
 
-    if(elem_data != NULL) {
-        for(OutputDataVec::iterator dta = elem_data->begin();
-                    dta != elem_data->end();
-                    ++dta)
+    double time_fixed = isfinite(time) ? time : 0;
+
+    if(this->elem_data.empty() == false) {
+        for(vector<OutputDataBase*>::iterator data = this->elem_data.begin();
+                    data != this->elem_data.end();
+                    ++data)
         {
+            output_data = *data;
             file << "$ElementData" << endl;
 
             file << "1" << endl;     // one string tag
-            file << "\"" << *dta->getName() << "_[" << *dta->getUnits() <<"]\"" << endl;
+            file << "\"" << output_data->output_field_name <<"\"" << endl;
 
             file << "1" << endl;     // one real tag
-            file << time << endl;    // first real tag = time
+            file << time_fixed << endl;    // first real tag = time
 
             file << "3" << endl;     // 3 integer tags
             file << step << endl;    // step number (start = 0)
-            file << dta->getCompNum() << endl;   // number of components
-            file << dta->getValueNum() << endl;  // number of values
+            file << output_data->n_elem_ << endl;   // number of components
+            file << output_data->n_values << endl;  // number of values
 
-            this->write_msh_ascii_cont_data(&(*dta));
+            this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
 
             file << "$EndElementData" << endl;
         }
     }
 }
 
-int OutputMSH::write_data(void)
-{
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
-    
-    this->write_msh_header(); 
-    
-    this->write_msh_geometry();
-
-    this->write_msh_topology();
-    
-    this->write_msh_node_data(0.0, 0);
-    
-    this->write_msh_elem_data(0.0, 0);
-
-    xprintf(MsgLog, "O.K.\n");
-
-    return 1;
-}
-
 int OutputMSH::write_head(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     this->write_msh_header();
 
@@ -441,25 +237,37 @@ int OutputMSH::write_head(void)
     return 1;
 }
 
-int OutputMSH::write_data(double time)
+int OutputMSH::write_data(void)
 {
-    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__, this->output_time->get_base_filename().c_str());
+    xprintf(MsgLog, "%s: Writing output file %s ... ", __func__,
+            this->_base_filename.c_str());
 
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
         this->write_head();
         this->header_written = true;
     }
-        
-    this->write_msh_node_data(time, this->output_time->current_step);
-    this->write_msh_elem_data(time, this->output_time->current_step);
+
+    this->write_msh_node_data(this->time, this->current_step);
+    this->write_msh_elem_data(this->time, this->current_step);
 
     // Flush stream to be sure everything is in the file now
-    this->output_time->get_base_file().flush();
+    this->_base_file->flush();
 
     xprintf(MsgLog, "O.K.\n");
 
     return 1;
+}
+
+void OutputMSH::fix_base_file_name(void)
+{
+    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".msh") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n",
+                this->_base_filename.c_str(),
+                this->_base_filename.c_str());
+        this->_base_filename += ".msh";
+    }
 }
 
 int OutputMSH::write_tail(void)
@@ -467,15 +275,9 @@ int OutputMSH::write_tail(void)
     return 1;
 }
 
-OutputMSH::OutputMSH(OutputTime *_output_time)
+OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-    this->output_time = _output_time;
-    this->write_head();
-}
-
-OutputMSH::OutputMSH(OutputTime *_output_time, const Input::Record &in_rec)
-{
-    this->output_time = _output_time;
+	this->fix_base_file_name();
     this->header_written = false;
 }
 
@@ -483,5 +285,4 @@ OutputMSH::~OutputMSH()
 {
     this->write_tail();
 }
-
 

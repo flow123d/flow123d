@@ -1,3 +1,4 @@
+#include "system/exc_common.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/intersectionLocal.h"
 #include "mesh/ngh/include/matrix.h"
@@ -7,7 +8,7 @@
 #include <iostream>
 #include <armadillo>
 #include "mesh/ngh/include/polygon.h"
-#include "mesh/ngh/include/problem.h"
+//#include "mesh/ngh/include/problem.h"
 
 using namespace mathfce;
 
@@ -175,45 +176,46 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal
     //X2...loc.souradnice X vzhledem k A2
     //Y1...loc.souradnice Y vzhledem k A1
     //Y2...loc.souradnice Y vzhledem k A2
-    	double X1, X2, Y1, Y2;
+    	double X1=0, X2=0, Y1=0, Y2=0;
     //1.possibility - A2 lezi pred A1
     	if ((loc_begin_A2 < 0) && (loc_end_A2 < 0)) {
     		insec=NULL;
     		return;
     	}
    	//2.possibility - prekryvaji se, A2 lezi pred A1
-    	if ((loc_begin_A2 < 0) && (loc_end_A2 > 0) && (loc_end_A2 < 1)) {
+    	if ((loc_begin_A2 < 0) && (loc_end_A2 >= 0) && (loc_end_A2 < 1)) {
     		X1 = 0;
     		X2 = loc_begin_A1;
     		Y1 = loc_end_A2;
     		Y2 = 1;
     	}
     //3.possibility - prekryvaji se, A2 lezi mezi koncovymi body A1
-    	if ((loc_begin_A2 > 0) && (loc_end_A2 > 0) && (loc_end_A2 < 1)) {
+    	if ((loc_begin_A2 >= 0) && (loc_end_A2 >= 0) && (loc_end_A2 < 1)) {
     		X1 = loc_begin_A2;
     		X2 = 0;
     		Y1 = loc_end_A2;
     		Y2 = 1;
     	}
     //4.possibility - prekryvaji se, A2 lezi za A1
-    	if ((loc_begin_A2 > 0) && (loc_begin_A2 < 1) && (loc_end_A2 > 1)) {
+    	if ((loc_begin_A2 >= 0) && (loc_begin_A2 < 1) && (loc_end_A2 >= 1)) {
     		X1 = loc_begin_A2;
     		X2 = 0;
     		Y1 = 1;
     		Y2 = loc_end_A1;
     	}
     //5.possibility - A2 lezi za A1
-    	if ((loc_begin_A2 > 1) && (loc_end_A2 > 1)) {
+    	if ((loc_begin_A2 >= 1) && (loc_end_A2 >= 1)) {
     		insec=NULL;
     		return;
     	}
     //6.possibility - prekryvaji se, A1 lezi mezi koncovymi body A2
-    	if ((loc_begin_A2 < 0) && (loc_end_A2 > 1)) {
+    	if ((loc_begin_A2 < 0) && (loc_end_A2 >= 1)) {
     		X1 = 0;
     		X2 = loc_begin_A1;
     		Y1 = 1;
     		Y2 = loc_end_A1;
     	}
+    	ASSERT(X1==0 && X2==0 && Y1==0 && Y2==0,"Uncovered situation.");
 
     //set local coords:
     	insec=new IntersectionLocal(IntersectionLocal::line);
@@ -728,9 +730,11 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         			   break;
         		   }
         	   }
+        	   return;
            }
            if (cit != 2) {
-        	   mythrow((char*) "Error - pocet bodu pruniku != 2.\n", __LINE__, __FUNC__); //number of intersection points
+        	   cout << "cit = " << cit << endl;
+        	   THROW( ExcAssertMsg() << EI_Message("Error - pocet bodu pruniku != 2.\n") );
         	   return;
            } else {
         	   if (*(insec_point_tmp[0]) == *(insec_point_tmp[1])) { //lezi pres vrchol
@@ -771,7 +775,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         insec = NULL;
         return;
     }
-    IntersectionLocal* insec_tmp;
+    IntersectionLocal* insec_tmp=NULL;
     GetIntersection( (const TBisector &)A, T, insec_tmp);
     if (!insec_tmp) {
     	insec = NULL;
@@ -791,8 +795,8 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
         // A1 i A2 ma byt v intervalu (0,1) -> vrati insec
         // pokud ne tak zkusi zkratit, nebo NULL (delete)
 
-    	IntersectionPoint* A1;
-    	IntersectionPoint* A2;
+    	const IntersectionPoint* A1;
+    	const IntersectionPoint* A2;
     	if (insec_tmp->get_point(0) != NULL) {
     	    if (insec_tmp->get_point(0)->el1_coord()[0] > insec_tmp->get_point(1)->el1_coord()[0]) {
     	    	A2 = insec_tmp->get_point(0);

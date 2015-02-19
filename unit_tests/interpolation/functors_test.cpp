@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <sstream>
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include "interpolation/functors_impl.hh"
 #include "interpolation/interpolant_impl.hh"
@@ -114,7 +114,6 @@ public:
   
   Type operator()(Type x,Type y)
   {
-    //return std::pow(x-this->param(c_x),2) + std::pow(y-this->param(c_y),2) - std::pow(this->param(radius),2);
     return pow(x-this->param(c_x),2) + pow(y-this->param(c_y),2) - pow(this->param(radius),2);
   }    
 };
@@ -208,7 +207,7 @@ TEST (Functors, make_interpolation)
   interpolant->interpolate();
   
   //DBGMSG("Error of interpolation: %f\n", interpolant->error());
-  
+
   EQUAL(interpolant->val(-7), -343);    //out of interval
   EQUAL(interpolant->statistics().min, -7.0);
   EQUAL(interpolant->statistics().max, 11);
@@ -280,7 +279,6 @@ TEST (Functors, make_interpolation)
   
   delete interpolant;
 }
-//*/
 
 TEST(Functors, make_implicit)
 {

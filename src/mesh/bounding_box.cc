@@ -29,43 +29,15 @@
 #include "mesh/bounding_box.hh"
 
 
-BoundingBox::BoundingBox() {
+const double BoundingBox::epsilon = 64*numeric_limits<double>::epsilon();
 
+
+BoundingBox::BoundingBox(const vector<Point> &points) {
+	ASSERT_LESS( 0, points.size() );
+
+	auto it = points.begin();
+	max_vertex_ = min_vertex_ = *it;
+	++it;
+	for(; it != points.end(); ++it) expand( *it );
 }
 
-BoundingBox::BoundingBox(arma::vec3 minCoor, arma::vec3 maxCoor) {
-	minCoordinates_ = minCoor;
-	maxCoordinates_ = maxCoor;
-}
-
-void BoundingBox::set_bounds(arma::vec3 minCoor, arma::vec3 maxCoor) {
-	minCoordinates_ = minCoor;
-	maxCoordinates_ = maxCoor;
-}
-
-const arma::vec3 BoundingBox::get_min() const {
-	return minCoordinates_;
-}
-
-const arma::vec3 BoundingBox::get_max() const {
-	return maxCoordinates_;
-}
-
-arma::vec3 BoundingBox::get_center() const {
-	return (maxCoordinates_ + minCoordinates_) / 2;
-}
-
-bool BoundingBox::contains_point(Point<3> &point) const {
-	for (unsigned int i=0; i<dimension; i++) {
-		if ((point(i) < minCoordinates_(i)) | (point(i) > maxCoordinates_(i))) return false;
-	}
-
-	return true;
-}
-
-bool BoundingBox::intersection(BoundingBox &b2) const {
-	for (unsigned int i=0; i<dimension; i++) {
-		if ((minCoordinates_(i) > b2.get_max()(i)) | (maxCoordinates_(i) < b2.get_min()(i))) return false;
-	}
-	return true;
-}

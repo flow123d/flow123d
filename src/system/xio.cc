@@ -44,7 +44,6 @@
 #include <limits.h>
 
 #include <iostream>
-#include <map>
 #include <algorithm>
 #include <iterator>
 
@@ -52,42 +51,66 @@
 
 using namespace std;
 
-//! @brief XFILE structure holds additional info to generic FILE
-/// @{
-typedef struct xfile {
-    char * filename;  ///< file name in the time of opening
-    char * mode;      ///< opening mode
-    int    lineno;    ///< last read line (only for text files)
-} XFILE;
-//! @}
-
-typedef map< FILE *, XFILE * > XFILEMAP; ///< mapping of ptr to regular file structure to extended structure
-
-static XFILEMAP xfiles_map;    ///< mapping instance
-static int xio_verbosity = 0;  ///< internal XIO debug: print info at each XIO function
 
 //! @brief basic definitions
 /// @{
-static XFILE xstdin  = {strdup("stdin"),strdup("r"),0};
-static XFILE xstdout = {strdup("stdout"),strdup("w"),0};
-static XFILE xstderr = {strdup("stderr"),strdup("w"),0};
+static XFILE xstdin  = {&std::string("stdin")[0], &std::string("r")[0], 0};
+static XFILE xstdout = {&std::string("stdout")[0], &std::string("w")[0], 0};
+static XFILE xstderr = {&std::string("stderr")[0], &std::string("w")[0], 0};
 //! @}
 
 static XFILE * xio_getfptr( FILE * f );
 
 #define XIO_WARN(f) xprintf(Warn, "File pointer '%p' not in xfiles_map. Opened with regular fopen() or already closed?\n", (f) )
 #define XIO_PRINT_INFO(f) printf( "XIO: In function '%s', %s\n", __func__, xio_getfulldescription( f ) )
-#define XIO_DEBUG(f) do { if ( xio_verbosity > 0 ) XIO_PRINT_INFO(f); } while (0)
+#define XIO_DEBUG(f) do { if ( Xio::get_instance()->get_verbosity() > 0 ) XIO_PRINT_INFO(f); } while (0)
 
-/*!
- * @brief XIO library initialization
+
+/*******************************************************************
+ * implementation of Xio
  */
-void xio_init( void )
+
+Xio * Xio::instance = NULL;
+
+Xio::Xio()
+: verbosity_(0)
 {
-    xfiles_map[stdin]  = &xstdin;
-    xfiles_map[stdout] = &xstdout;
-    xfiles_map[stderr] = &xstderr;
+    xfiles_map_[stdin]  = &xstdin;
+    xfiles_map_[stdout] = &xstdout;
+    xfiles_map_[stderr] = &xstderr;
 }
+
+Xio * Xio::get_instance()
+{
+	ASSERT( instance , "XIO library not initialized yet.\n");
+	return instance;
+}
+
+void Xio::init()
+{
+	if (instance == NULL) {
+		instance = new Xio();
+	} else {
+		xprintf(Warn, "The XIO library already initialized.\n");
+	}
+}
+
+void Xio::set_verbosity( int verb )
+{
+	verbosity_ = verb;
+}
+
+int Xio::get_verbosity( void )
+{
+    return verbosity_;
+}
+
+Xio::XFILEMAP &Xio::get_xfile_map()
+{
+	return xfiles_map_;
+}
+
+
 
 /*!
  * @brief Get file name from pointer to FILE structure.
@@ -212,30 +235,12 @@ static XFILE * xio_getfptr( FILE * f )
 {
     XFILE * xf = NULL;
 
-    if ( xfiles_map.find(f) != xfiles_map.end() )
+    if ( Xio::get_instance()->get_xfile_map().find(f) != Xio::get_instance()->get_xfile_map().end() )
     {
-        xf = xfiles_map[f];
+        xf = Xio::get_instance()->get_xfile_map()[f];
     }
 
     return xf;
-}
-
-/*!
- * @brief Enable/Disable XIO debug output for EACH XIO function call
- * @param[in] verb 0 to disable (default), positive int to enable
- */
-void xio_setverbose( int verb )
-{
-    xio_verbosity = verb;
-}
-
-/*!
- * @brief Get current XIO debug verbosity level
- * @return 0 as disabled, positive int as enabled
- */
-int xio_getverbose( void )
-{
-    return xio_verbosity;
 }
 
 FILE *xfopen( const std::string& fname, const char *mode )
@@ -255,8 +260,6 @@ FILE *xfopen( const char *fname, const char *mode )
     XFILE * xf;
     FILE *rc;
 
-    F_ENTRY;
-
     ASSERT(!( (fname == NULL) || (mode == NULL) ),"NULL pointer as argument of function xfopen()\n");
     xprintf(MsgLog,"Opening file: '%s'\n", fname);
     rc = fopen( fname, mode );
@@ -269,7 +272,7 @@ FILE *xfopen( const char *fname, const char *mode )
     xf->mode = (char *)xmalloc(strlen(mode)+1);
     strcpy(xf->mode, mode);
     xf->lineno = 0;
-    xfiles_map[rc] = xf;
+    Xio::get_instance()->get_xfile_map()[rc] = xf;
 
     XIO_DEBUG( rc );
 
@@ -308,8 +311,6 @@ int xfclose( FILE *stream )
     XFILE * xf;
     int rc;
 
-    F_ENTRY;
-
     ASSERT(!( stream == NULL ),"NULL pointer as argument of function xfclose()\n");
 
     XIO_DEBUG( stream );
@@ -323,7 +324,7 @@ int xfclose( FILE *stream )
         xf = xio_getfptr(stream);
         if ( xf )
         {
-            xfiles_map.erase(stream);
+        	Xio::get_instance()->get_xfile_map().erase(stream);
             xfree( xf->filename );
             xfree( xf->mode );
             xfree( xf );
@@ -349,7 +350,6 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
     XFILE * xf;
     FILE *rc;
 
-    F_ENTRY;
     ASSERT(!( (mode == NULL) || (stream == NULL)),"Wrong arguments\n");
 
     rc = freopen( filename, mode, stream );
@@ -381,7 +381,7 @@ FILE * xfreopen( const char * filename, const char * mode, FILE * stream )
         xf->mode = (char *)xmalloc(strlen(mode));
         strcpy(xf->mode, mode);
         xf->lineno = 0;
-        xfiles_map[rc] = xf;
+        Xio::get_instance()->get_xfile_map()[rc] = xf;
     }
 
     XIO_DEBUG( rc );
@@ -396,8 +396,6 @@ int xfprintf( FILE *out, const char *fmt, ... )
 {
     va_list argptr;
     int rc;
-
-    F_ENTRY;
 
     ASSERT(!( (out == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfprintf()\n");
     va_start( argptr, fmt );
@@ -415,8 +413,6 @@ int xfscanf( FILE *in, const char *fmt, ... )
 {
     va_list  argptr;
     int rc;
-
-    F_ENTRY;
 
     ASSERT(!( (in == NULL) || (fmt == NULL) ),"NULL pointer as argument of function xfscanf()\n");
     va_start( argptr , fmt );
@@ -436,7 +432,6 @@ int xgetc( FILE * f )
 {
     int rc;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = xfgetc( f );
@@ -455,7 +450,6 @@ int xfgetc( FILE * f )
     int rc;
     XFILE * xf;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = fgetc( f );
@@ -490,7 +484,6 @@ int xungetc( int c, FILE * f )
     int rc;
     XFILE * xf;
 
-    F_ENTRY;
     ASSERT(!(f == NULL), "NULL file\n");
 
     rc = ungetc( c, f );
@@ -523,7 +516,6 @@ int xrename ( const char * oldname, const char * newname )
 {
     int rc;
 
-    F_ENTRY;
     ASSERT(!(( oldname == NULL) || (newname == NULL)), "NULL file name\n");
 
     rc = rename( oldname, newname );
@@ -544,7 +536,6 @@ size_t xfread( void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    F_ENTRY;
     ASSERT(!( (ptr == NULL) || ( stream == NULL) ),"Incorrect arguments\n");
 
     rc = fread( ptr, size, count, stream );
@@ -568,7 +559,6 @@ size_t xfwrite( const void * ptr, size_t size, size_t count, FILE * stream )
 {
     size_t rc;
 
-    F_ENTRY;
     ASSERT(!( (ptr == NULL) || (stream == NULL) ),"Incorrect arguments\n");
 
     rc = fwrite( ptr, size, count, stream );
@@ -591,8 +581,6 @@ char *xfgets( char *s, int n, FILE *in )
 {
     XFILE * xf;
     char *rc = NULL;
-
-    F_ENTRY;
 
     ASSERT(!( (s == NULL) || (in == NULL) ),"Incorrect arguments of function xfgets()\n");
     rc = fgets( s, n, in );

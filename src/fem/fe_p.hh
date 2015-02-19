@@ -191,6 +191,8 @@ public:
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
 
+    virtual ~FE_P();
+
 private:
 
     /// The auxiliary polynomial space.
@@ -246,6 +248,9 @@ public:
      * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+
+    /// Destructor
+    virtual ~FE_P_disc();
 
 private:
 
@@ -346,9 +351,9 @@ FE_P<degree,dim,spacedim>::FE_P()
     for (int i=0; i<=dim; i++)
     {
         number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +dof_distribution.number_of_pairs[i]
-                         +dof_distribution.number_of_triples[i]
-                         +dof_distribution.number_of_sextuples[i];
+                         +2*dof_distribution.number_of_pairs[i]
+                         +3*dof_distribution.number_of_triples[i]
+                         +6*dof_distribution.number_of_sextuples[i];
 
         number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
         number_of_pairs[i] = dof_distribution.number_of_pairs[i];
@@ -389,6 +394,11 @@ arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const uns
 {
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
 }
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P<degree,dim,spacedim>::~FE_P()
+{}
+
 
 
 
@@ -439,13 +449,20 @@ template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+    return arma::mat::fixed<dim,dim>();
 }
+
+template<unsigned int degree, unsigned int dim, unsigned int spacedim>
+FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
+{}
+
 
 
 
@@ -476,6 +493,11 @@ DofDistribution<1,1>::DofDistribution();
 template<>
 DofDistribution<2,1>::DofDistribution();
 
+// P3 cubic element
+template<>
+DofDistribution<3,1>::DofDistribution();
+
+
 /*** 2D finite elements ***/
 
 // P0 constant element
@@ -490,6 +512,10 @@ DofDistribution<1,2>::DofDistribution();
 // P2 quadratic element
 template<>
 DofDistribution<2,2>::DofDistribution();
+
+// P3 cubic element
+template<>
+DofDistribution<3,2>::DofDistribution();
 
 
 
@@ -508,6 +534,10 @@ DofDistribution<1,3>::DofDistribution();
 // P2 quadratic element
 template<>
 DofDistribution<2,3>::DofDistribution();
+
+// P3 cubic element
+template<>
+DofDistribution<3,3>::DofDistribution();
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 

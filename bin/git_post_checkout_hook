@@ -34,14 +34,14 @@ if [ ! -d ${BUILD_DIR} ]
 then
     mkdir -p ${BUILD_DIR}
     
-    if [ -n CALLED_AS_HOOK -a  ! "${OLD_BRANCH}" == "${NEW_BRANCH}"  ]
-    then
-        if [ -d build_tree ]
-        then
-            echo "Possibly new branch, copy build tree from the previous one."
-            cp -r build_tree/* ${BUILD_DIR}  
-        fi
-    fi    
+#    if [ -n CALLED_AS_HOOK -a  ! "${OLD_BRANCH}" == "${NEW_BRANCH}"  ]
+#    then
+#        if [ -d build_tree ]
+#        then
+#            echo "Possibly new branch, copy build tree from the previous one."
+#            cp -r build_tree/* ${BUILD_DIR}  
+#        fi
+#    fi    
 fi
 
 # check that we have correct link

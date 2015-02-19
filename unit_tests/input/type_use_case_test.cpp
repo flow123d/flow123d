@@ -7,7 +7,7 @@
 
 
 
-#include <gtest/gtest.h>
+#include <flow_gtest.hh>
 
 #include <fstream>
 #include <input/input_type.hh>
@@ -44,18 +44,28 @@ public:
     static Input::Type::Record input_type;
 
     inline Input::Record input()
-    { return  json_reader.get_root_interface<Input::Record>(); }
-    virtual void SetUp();
-    virtual void TearDown();
+    {
+    	root_rec = json_reader->get_root_interface<Input::Record>();
+    	return root_rec;
+    }
+    void SetUp() override {
+    	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
+    	ifstream in(f_name);
+    	json_reader = new Input::JSONToStorage(in, input_type );
+    }
+    void TearDown() override {
+    	delete json_reader;
+    }
 private:
-    Input::JSONToStorage json_reader;
+    Input::JSONToStorage *json_reader;
+    Input::Record root_rec;
 
 };
 
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("/root","/root","variant", "/output");
+    FilePath::set_io_dirs("./root","/root","variant", "./output");
 
     Array eq_arr = input().val<Array>("equations");
 
@@ -134,19 +144,4 @@ EquationB::EquationB(Input::Record rec) {
 }
 
 
-
-
-
-
-void Application::SetUp() {
-    std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
-    std::ifstream in_stream(f_name.c_str());
-    json_reader.read_stream(in_stream, input_type );
-}
-
-
-
-void Application::TearDown() {
-
-}
 

@@ -12,10 +12,10 @@
 #include "mesh/edges.h"
 
 
-inline Side::Side(ElementIter ele, unsigned int set_lnum)
+inline Side::Side(const Element * ele, unsigned int set_lnum)
 : element_(ele), el_idx_(set_lnum)
 {
-    ASSERT(mesh()->element.full_iter( element_ ), "Wrong initialization of the Side.\n");
+    ASSERT(mesh()->element.full_iter( const_cast<Element *>(element_) ), "Wrong initialization of the Side.\n");
 }
 
 
@@ -33,16 +33,14 @@ inline Side::Side(ElementIter ele, unsigned int set_lnum)
     }
 
     inline const Node * Side::node(unsigned int i) const {
-        // cout << "sn dim: " << dim() << "side: " << lnum << "node: "<< i << endl;
         int i_n = mesh()->side_nodes[dim()][el_idx_][i];
-        // cout << "el node: "<< i_n << "nn: " << element->n_nodes << endl;
 
         return element_->node[ i_n ];
     }
 
     inline ElementFullIter Side::element() const {
         ASSERT( valid(), "Wrong use of uninitialized accessor.\n");
-        return mesh()->element.full_iter( element_ );
+        return mesh()->element.full_iter( const_cast<Element *>(element_) );
     }
 
     inline Mesh * Side::mesh() const {

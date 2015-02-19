@@ -9,13 +9,10 @@
     primary_equation = {
       TYPE = "Steady_MH", 
 
-      bulk_data = [
+      input_fields= [
         { rid = 100,
           conductivity = 0.1
-        }
-      ],
-    
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
           flow_old_bcd_file = "./input/test14.fbc"
@@ -27,9 +24,7 @@
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
-        pressure_p0 = "flow_output_stream", 
-        pressure_p1 = "flow_output_stream", 
-        velocity_p0 = "flow_output_stream"
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       solver = {
         TYPE = "Petsc", 
@@ -39,43 +34,36 @@
     }, 
  
     secondary_equation = {
-      TYPE = "AdvectionDiffusion_DG", 
+      TYPE = "SoluteTransport_DG", 
 
-      bulk_data = [
+      input_fields= [
         { rid = 100,
           init_conc = 0
-        }
-      ],
-
-      bc_data = [
+        },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test14_tbc_000",
+          bc_conc = 20,
           time = 1
         },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test14_tbc_001",
+          bc_conc = 0,
           time = 3
         },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test14_tbc_002",
+          bc_conc = 40,
           time = 6
         },
         {
           region = "IMPLICIT BOUNDARY",
-          old_boundary_file = "./input/test14_tbc_003",
+          bc_conc = 0,
           time = 7
         }
       ],
 
-      output = {
-        mobile_p0 = "transport_output_stream", 
-        output_stream = {
-          REF = "/system/output_streams/1"
-        }, 
-        save_step = 1.0
+      output_stream = {
+        REF = "/system/output_streams/1"
       }, 
 
       substances = [
@@ -114,6 +102,7 @@
           }, 
           variant = "ascii"
         }, 
+        time_step = 1.0,
         name = "transport_output_stream"
       }
     ]
