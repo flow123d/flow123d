@@ -11,7 +11,7 @@
 #include <cstring>
 #include <boost/exception/diagnostic_information.hpp>
 
-#ifdef HAVE_EXEC_INFO
+#ifdef FLOW123D_HAVE_EXEC_INFO
 #include <execinfo.h>
 #endif
 
@@ -56,7 +56,7 @@ ExceptionBase::~ExceptionBase() throw () {
 
 void ExceptionBase::fill_stacktrace()
 {
-#ifdef HAVE_EXEC_INFO
+#ifdef FLOW123D_HAVE_EXEC_INFO
     if (! stacktrace && ! n_stacktrace_frames) {
         void * array[25];
         n_stacktrace_frames = backtrace(array, 25);
