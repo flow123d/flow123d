@@ -95,5 +95,3 @@ ENDMACRO (GENERATE_CONFIG_H)
 # PYTHON_PREFIX
 #       CMakeLists.txt
 #       python_loader.cc            src/system
-
-
