@@ -183,7 +183,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     #flow_define(HAVE_CXX11)
     set(CMAKE_HAVE_CXX11 "true")
     # 
-    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
     #
 else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
