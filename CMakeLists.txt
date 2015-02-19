@@ -413,7 +413,7 @@ if (NOT PETSC_FOUND)
 endif(NOT PETSC_FOUND)
 
 if(PETSC_FOUND)
-    add_definitions(-DHAVE_PETSC)
+    flow_define(HAVE_PETSC)
     flow_define(HAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})

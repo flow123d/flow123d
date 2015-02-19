@@ -33,14 +33,18 @@ MACRO (GENERATE_CONFIG_H file_path)
 ENDMACRO (GENERATE_CONFIG_H)
 
 # SENSITIVE DEFINITIONS
-# HAVE_PETSC
-# FLOW123D_HAVE_MPI usage:
+# FLOW123D_HAVE_PETSC:
+#       CMakeLists.txt
+#       application_base.cc (src/system)
+#       application_base.hh (src/system)
+# FLOW123D_HAVE_MPI:
 #       CMakeLists.txt
 # ARMA_NO_DEBUG
-# FLOW123D_FLOW123D_HAVE_CXX11_FULL
+#       
+# FLOW123D_HAVE_CXX11_FULL:
 #       CMakeLists.txt
 #       system.hh (src/system)
 #       sys_profiler.hh (src/system)
-# FLOW123D_HAVE_CXX11_DRAFT
+# FLOW123D_HAVE_CXX11_DRAFT:
 #       CMakeLists.txt
 #       sys_profiler.hh (src/system)
