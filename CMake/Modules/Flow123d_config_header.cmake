@@ -32,9 +32,9 @@ MACRO (GENERATE_CONFIG_H file_path)
 ENDMACRO (GENERATE_CONFIG_H)
 
 # SENSITIVE DEFINITIONS
-# add_definitions(-DHAVE_PETSC)
-# add_definitions(-DHAVE_MPI)
-# add_definitions(-DARMA_NO_DEBUG)
-# add_definitions(-DHAVE_CXX11_FULL)
-# add_definitions(-DHAVE_CXX11_FULL)
-# add_definitions(-DHAVE_CXX11_DRAFT)
+# HAVE_PETSC
+# FLOW123D_HAVE_MPI usage:
+#       CMakeLists.txt
+# ARMA_NO_DEBUG
+# HAVE_CXX11_FULL
+# HAVE_CXX11_DRAFT

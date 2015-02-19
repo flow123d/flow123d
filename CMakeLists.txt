@@ -396,13 +396,13 @@ if (NOT PETSC_FOUND)
 #    find_package(MPI)
 #  
 #    if (MPI_CXX_FOUND)
-#        flow_define(HAVE_MPI)
+#        flow_define(FLOW123D_HAVE_MPI)
 #    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
 #        set(mpiuni_sources    system/mpiuni/mpi.c)
 #        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        flow_define(HAVE_MPI)
-#        flow_define(HAVE_MPIUNI)
+#        flow_define(FLOW123D_HAVE_MPI)
+#        flow_define(FLOW123D_HAVE_MPIUNI)
 #    
         # overwrite NOTFOUND status
 #        set(MPI_CXX_LIBRARIES mpiuni_lib)
@@ -414,7 +414,7 @@ endif(NOT PETSC_FOUND)
 
 if(PETSC_FOUND)
     add_definitions(-DHAVE_PETSC)
-    add_definitions(-DHAVE_MPI)
+    flow_define(FLOW123D_HAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
     
