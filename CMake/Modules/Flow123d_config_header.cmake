@@ -75,8 +75,9 @@ ENDMACRO (GENERATE_CONFIG_H)
 #       CMakeLists.txt
 #       exceptions.cc               src/system
 # HAVE_DEMAGLER
-#       CMakeLists.txt
+#       exceptions.cc               src/system   
 # HAVE_PYTHON
+#       CMakeLists.txt
 #       configure                   third_party/gtest-1.7.0
 #       configure.ac                third_party/gtest-1.7.0
 #       field_algo_base.impl.hh     src/fields
@@ -88,5 +89,11 @@ ENDMACRO (GENERATE_CONFIG_H)
 #       Makefile.am                 third_party/gtest-1.7.0
 #       python_loader.cc            src/system
 #       python_loader.hh            src/system
+# PYTHONLIBS_VERSION_...
+#       CMakeLists.txt
+#       python_loader.cc            src/system
+# PYTHON_PREFIX
+#       CMakeLists.txt
+#       python_loader.cc            src/system
 
 
