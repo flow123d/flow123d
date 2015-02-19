@@ -50,7 +50,7 @@
       substances = [ "A" ], 
       time = {       
         // Initial time step should be used just for the first step.        
-        initial_dt=0.03,
+        init_dt=0.03,
         max_dt=0.07,
         end_time = 0.5
       },

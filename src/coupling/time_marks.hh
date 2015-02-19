@@ -33,7 +33,10 @@
 #ifndef TIME_MARKS_HH_
 #define TIME_MARKS_HH_
 
+#include <ostream>
+#include <vector>
 #include "system/global_defs.h"
+
 
 /**
  * @brief Class used for marking specified times at which some events occur.
@@ -116,7 +119,7 @@ private:
 /**
  * Output to stream operator for TimeMark class.
  */
-ostream& operator<<(ostream& stream, const TimeMark &marks);
+std::ostream& operator<<(std::ostream& stream, const TimeMark &marks);
 
 
 
@@ -254,7 +257,7 @@ public:
     TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
 
     /// Friend output operator.
-    friend ostream& operator<<(ostream& stream, const TimeMarks &marks);
+    friend std::ostream& operator<<(std::ostream& stream, const TimeMarks &marks);
 
 private:
 
@@ -262,7 +265,7 @@ private:
     TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
-    vector<TimeMark> marks_;
+    std::vector<TimeMark> marks_;
 
     /// Predefined type for fixed time.
     TimeMark::Type type_fixed_time_;
@@ -287,7 +290,7 @@ public:
      * @param it is iterator over the vector of TimeMark objects.
      * @param mask is the type of marks over which we iterate.
      */
-    TimeMarksIterator(const vector<TimeMark> &marks,const  vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
+    TimeMarksIterator(const std::vector<TimeMark> &marks,const  std::vector<TimeMark>::const_iterator &it, const TimeMark::Type &mask)
     : marks_(marks), it_(it), mask_(mask) {}
 
     TimeMarksIterator &operator=(const TimeMarksIterator &it)
@@ -343,9 +346,9 @@ public:
 
 private:
     /// Reference to the vector of TimeMark objects.
-    const vector<TimeMark> &marks_;
+    const std::vector<TimeMark> &marks_;
     /// Iterator over the vector of TimeMark objects.
-    vector<TimeMark>::const_iterator it_;
+    std::vector<TimeMark>::const_iterator it_;
     /// Mask type.
     TimeMark::Type mask_;
 };
