@@ -321,8 +321,11 @@ TEST (TimeGovernor, steady_time_governor)
 {
     //DEFAULT CONSTRUCTOR
     TimeGovernor *steady_tg = new TimeGovernor();
+    TimeMarks &tm=steady_tg->marks();
+
     
     steady_tg->view("first_steady");
+    tm.add(TimeMark(0.0, tm.type_output() | steady_tg->equation_mark_type()) );
     
     EXPECT_EQ( steady_tg->t(), 0.0 );
     EXPECT_EQ( steady_tg->end_time(), inf_time );
@@ -330,6 +333,7 @@ TEST (TimeGovernor, steady_time_governor)
 //    EXPECT_EQ( inf_time, steady_tg->dt());
     EXPECT_EQ( steady_tg->last_dt(), inf_time);
     EXPECT_EQ( steady_tg->tlevel(), 0 );
+    EXPECT_TRUE(steady_tg->is_current(TimeGovernor::marks().type_output()));
 
     EXPECT_TRUE(steady_tg->is_changed_dt()); 	//changed from ZERO
     EXPECT_EQ( steady_tg->estimate_dt(), 100);

@@ -110,11 +110,13 @@ bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) c
 {
     if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
+
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
+    // first time mark which does not compare less then then actual tg time
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t(),mask));
     while (  ! tg.lt(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         ++first_ge;
@@ -124,11 +126,11 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
 
 TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
+    // first time mark which does compare strictly greater then actual tg time
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t()+0.01*tg.dt(),mask));
     while ( ! tg.ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         --first_ge;
     }
-    // cout << "TimeMark::last(): " << *first_ge << endl;
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 

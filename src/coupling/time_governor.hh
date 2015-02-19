@@ -61,31 +61,22 @@ public:
     /**
      * Constructor of the zero time step.
      */
-    TimeStep(double init_time) :
-        index_(0),
-        length_(1.0),
-        begin_(-numeric_limits<double>::infinity()), //TimeGovernor::inf_time
-        end_(init_time)
-        {}
+    TimeStep(double init_time);
+
     /**
      * Deafult constructor.
      */
-    TimeStep() {}
+    TimeStep();
 
     /**
      * Copy constructor.
      */
-    TimeStep(const TimeStep &other):
-            index_(other.index_),
-            length_(other.length_),
-            begin_(other.begin_), //TimeGovernor::inf_time
-            end_(other.end_)
-            {}
+    TimeStep(const TimeStep &other);
+
     /**
      * Create subsequent time step.
      */
-    TimeStep make_next(double new_length) const
-    { return make_next(new_length, this->end_+new_length); }
+    TimeStep make_next(double new_length) const;
 
     /**
      * Create subsequent time step, with the @end_time
@@ -95,14 +86,7 @@ public:
      * goal time.
      *
      */
-    TimeStep make_next(double new_lenght, double end_time) const {
-        TimeStep ts;
-        ts.index_=this->index_ +1;
-        ts.length_=new_lenght;
-        ts.begin_=this->end_;
-        ts.end_=end_time;
-        return ts;
-    }
+    TimeStep make_next(double new_lenght, double end_time) const;
 
     /**
      * Getters.
@@ -288,13 +272,7 @@ public:
      * it overwrites previous setting. 
      * @return actual end of fixed time step.
      */
-    inline double fix_dt_until_mark() {
-        if (steady_) return 0.0;
-        end_of_fixed_dt_interval_=-inf_time; // release previous fixed interval
-        fixed_time_step_ = estimate_dt();
-        is_time_step_fixed_ = true;    //flag means fixed step has been set since now
-        return end_of_fixed_dt_interval_ = time_marks_.next(*this, equation_fixed_mark_type())->time();
-    }
+    double fix_dt_until_mark();
 
     /**
      * @brief Proceed to the next time according to current estimated time step.
