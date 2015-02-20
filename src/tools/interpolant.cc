@@ -1,6 +1,6 @@
+#include "adaptivesimpson.hh"
 #include "functors_impl.hh"
 #include "interpolant_impl.hh"
-#include "adaptivesimpson.hh"
 
 #include "system/xio.h"
 //#include "system/sys_profiler.hh"

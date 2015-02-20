@@ -38,8 +38,8 @@
 
 #include "system/global_defs.h"
 #include "system/system.hh"
-#include "time_marks.hh"
 #include "input/accessors.hh"
+#include "tools/time_marks.hh"
 
 namespace Input {
     class Record;

@@ -28,11 +28,14 @@
  * @author Jan Brezina
  */
 
-#include "system/system.hh"
-#include "time_marks.hh"
-#include "time_governor.hh"
+
+
 #include <algorithm>
 #include <limits>
+#include "system/system.hh"
+#include "system/global_defs.h"
+#include "time_governor.hh"
+#include "time_marks.hh"
 
 // ------------------------------------------------------
 // implementation of members of class TimeMark

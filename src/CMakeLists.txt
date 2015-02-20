@@ -103,6 +103,18 @@ set_target_properties(la_lib
 
 
 
+# tools_lib    
+add_library(tools_lib 
+    tools/interpolant.cc
+    tools/adaptivesimpson.cc
+    tools/time_marks.cc
+    tools/time_governor.cc
+)
+target_link_libraries(tools_lib
+    system_lib input_lib )
+
+
+
 # mesh_lib
 add_library(mesh_lib 
         mesh/region.cc
@@ -158,15 +170,6 @@ target_link_libraries(fem_lib
 
 
 
-# tools_lib    
-add_library(tools_lib 
-    interpolation/interpolant.cc
-    interpolation/adaptivesimpson.cc
-    coupling/time_marks.cc
-    coupling/time_governor.cc
-)
-target_link_libraries(tools_lib
-    system_lib )
 
 
 
@@ -191,7 +194,7 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib
+    system_lib input_lib mesh_lib tools_lib
     fparser     
     armadillo
     ${Boost_LIBRARIES})
@@ -242,7 +245,8 @@ add_library(flow123d_lib
     coupling/hc_explicit_sequential.cc
 )    
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib tools_lib coupling_lib 
+    fem_lib mesh_lib la_lib semchem  input_lib 
+    system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
     ${PETSC_LIBRARIES} 

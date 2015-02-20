@@ -49,13 +49,12 @@
 #include <iomanip>
 #include <string>
 
+#include "tools/time_governor.hh"
 // TODO: move partitioning into mesh_ and remove this include
-#include "flow/darcy_flow_mh.hh"
+//#include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
-
-#include "coupling/time_governor.hh"
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"

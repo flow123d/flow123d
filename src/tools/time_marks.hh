@@ -35,6 +35,8 @@
 
 #include <ostream>
 #include <vector>
+
+#include "system/system.hh"
 #include "system/global_defs.h"
 
 
