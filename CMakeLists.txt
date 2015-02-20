@@ -161,7 +161,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
       # version is too low
       else()
-          message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
+          message(SEND_ERROR "Error: Minimal GCC version is 4.7!.") 
       endif()   
 
     # Necessary for FParser - TODO: move to better place
