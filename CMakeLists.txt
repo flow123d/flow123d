@@ -618,10 +618,7 @@ set_source_files_properties(${CONFIG_FILE_REV_NUM}
 ### create config.h - file containing definitions flags and other information
 # called everytime
 set(CONFIG_FILE_HEADER "${CONFIG_FILE_INCLUDES_DIRECTORY}/config.h")
-GENERATE_CONFIG_H ("${CONFIG_FILE_HEADER}.tmp")
-add_custom_target(config_h_always 
-    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_HEADER} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_config_header_create.cmake
-)
+GENERATE_CONFIG_H ("${CONFIG_FILE_HEADER}")
 # config.h is a generated file
 set_source_files_properties(${CONFIG_FILE_HEADER}
     PROPERTIES GENERATED TRUE
@@ -735,7 +732,7 @@ if( PETSC_FOUND )
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always config_h_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
