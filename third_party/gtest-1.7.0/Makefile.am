@@ -263,7 +263,7 @@ FUSED_GTEST_SRC = \
   fused-src/gtest/gtest.h \
   fused-src/gtest/gtest_main.cc
 
-if FLOW123D_HAVE_PYTHON
+if HAVE_PYTHON
 TESTS += test/fused_gtest_test
 check_PROGRAMS += test/fused_gtest_test
 test_fused_gtest_test_SOURCES = $(FUSED_GTEST_SRC) \

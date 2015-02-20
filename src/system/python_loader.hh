@@ -8,6 +8,8 @@
 #ifndef PYTHON_UTILS_HH_
 #define PYTHON_UTILS_HH_
 
+#include "global_defs.h"
+
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "Python.h"

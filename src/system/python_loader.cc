@@ -5,11 +5,12 @@
  *      Author: jb
  */
 
+#include "global_defs.h"
 
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
-#include "global_defs.h"
+
 #include "system/system.hh"
 #include <string>
 #include <iostream>
