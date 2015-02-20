@@ -608,7 +608,7 @@ add_custom_target(update_source_tree
 # pass different variable with source dir, namely FLOW123D_SOURCE_DIR
 set(CONFIG_FILE_REV_NUM "${CONFIG_FILE_INCLUDES_DIRECTORY}/rev_num.h")
 add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_REV_NUM} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DOUTPUT_FILE_PATH=${CONFIG_FILE_REV_NUM} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
 )
 # rev_num.h is a generated file
 set_source_files_properties(${CONFIG_FILE_REV_NUM}
