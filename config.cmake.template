@@ -132,7 +132,6 @@ set(FLOW_BUILD_TYPE debug)
 # FLOW123D_DEBUG_ASSERTS
 # FLOW123D_DEBUG_PROFILER
 # FLOW123D_RUN_UNIT_BENCHMARKS      - build benchmark unit tests
-# FLOW123D_HAVE_CXX11				- support for requested C++11 features (constexpr) ?deprecated
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFLOW123D_NODEBUG -pg")
