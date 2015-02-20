@@ -52,11 +52,11 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
     	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
     	    if ( !(*it).size() ) continue;
     	    if ( !output_dir.size() ) {
-#ifdef FLOW123D_CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     	    	output_dir = (*it);
 #else
     	    	output_dir = DIR_DELIMITER + *it;
-#endif // FLOW123D_CYGWIN
+#endif // FLOW123D_HAVE_CYGWIN
     	    } else {
             	output_dir = output_dir + DIR_DELIMITER + *it;
     	    }
@@ -100,20 +100,20 @@ void FilePath::substitute_value() {
 
 bool FilePath::is_absolute_path(const string path) {
 	if (path.size() == 0) xprintf(UsrErr, "Path can't be empty!\n");
-#ifdef FLOW123D_CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
 	if (path.size() == 1) return false;
 	return isalpha(path[0]) && (path[1] == ':');
 #else
 	return path[0] == DIR_DELIMITER;
-#endif // FLOW123D_CYGWIN
+#endif // FLOW123D_HAVE_CYGWIN
 }
 
 
 const string FilePath::get_absolute_working_dir() {
     string abs_path = boost::filesystem::current_path().string();
-#ifdef FLOW123D_CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     boost::replace_all(abs_path, "\\", "/");
-#endif // FLOW123D_CYGWIN
+#endif // FLOW123D_HAVE_CYGWIN
 	return abs_path;
 }
 
@@ -141,7 +141,7 @@ void FilePath::create_canonical_path(const string working_dir, const string outp
 
     boost::filesystem::path curr = boost::filesystem::current_path();
 	output_dir = full_path.string();
-#ifdef FLOW123D_CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     boost::replace_all(output_dir, "\\", "/");
-#endif // FLOW123D_CYGWIN
+#endif // FLOW123D_HAVE_CYGWIN
 }
