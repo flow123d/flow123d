@@ -55,11 +55,10 @@
 #define strcmpi strcasecmp
 #define DIR_DELIMITER '/'
 
-#ifdef FLOW123D_HAVE_CXX11_FULL
-  #define OPERATOR_NEW_THROW_EXCEPTION
-#else
-  #define OPERATOR_NEW_THROW_EXCEPTION throw(std::bad_alloc)
-#endif
+
+// Assuming all compilers supports CXX11 features
+#define OPERATOR_NEW_THROW_EXCEPTION
+
 
 
 using namespace std;

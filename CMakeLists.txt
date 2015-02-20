@@ -143,30 +143,26 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       execute_process(
           COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
+
+      # is cygwin env?
       if (CYGWIN)
+          # is version 4.8 or higher?
           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
             flow_define(CYGWIN)
-            flow_define(HAVE_CXX11_FULL)
-            set(CMAKE_HAVE_CXX11 "true")
+          # version is too low
           else ()
             message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
           endif ()
+
+      # not cygwin 
+      # is version 4.7 or higher?
       elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-          flow_define(HAVE_CXX11_FULL)    
-          set(CMAKE_HAVE_CXX11 "true")
+      # version is too low
       else()
-              message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
-              if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-          flow_define(HAVE_CXX11_DRAFT)
-          set(CMAKE_HAVE_CXX11 "true")   
-              elseif (GCC_VERSION VERSION_GREATER 4.4)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-        set(CMAKE_HAVE_CXX11 "true")   
-              endif()
-           endif()   
+          message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
+      endif()   
 
     # Necessary for FParser - TODO: move to better place
     # ?? what about Clang
@@ -180,8 +176,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
     set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
-    #flow_define(HAVE_CXX11)
-    set(CMAKE_HAVE_CXX11 "true")
     # 
     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
     #

@@ -76,12 +76,8 @@ public:
     static double max(double* val, MPI_Comm comm);
 };
 
-// Workaround for older compilers, that do not support constexpr feature
-#if defined(FLOW123D_HAVE_CXX11_FULL) || defined(FLOW123D_HAVE_CXX11_DRAFT)
-    #define CONSTEXPR_ constexpr
-#else
-    #define CONSTEXPR_
-#endif
+// Assuming all compilers support constexpr
+#define CONSTEXPR_ constexpr
 
 
 using namespace std;
