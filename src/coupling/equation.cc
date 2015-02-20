@@ -40,19 +40,6 @@
 #include <boost/foreach.hpp>
 
 
-#ifdef FLOW123D_CYGWIN
-#include <sstream>
-
-namespace std {
-	template<typename T>
-	string to_string (T &x) {
-		ostringstream str;
-		str << x;
-		return str.str();
-	}
-}
-#endif // FLOW123D_CYGWIN
-
 
 /*****************************************************************************************
  * Implementation of EqBase
