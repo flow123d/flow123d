@@ -33,7 +33,7 @@ const char * Exception::what() const throw () {
         converter << "--------------------------------------------------------" << std::endl;
         converter << "User Error: ";
         print_info(converter);
-#ifdef DEBUG_MESSAGES
+#ifdef FLOW123D_DEBUG_MESSAGES
         converter << "\n** Diagnosting info **\n" ;
         converter << boost::diagnostic_information_what( *this );
         print_stacktrace(converter);

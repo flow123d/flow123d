@@ -55,7 +55,7 @@
 #define strcmpi strcasecmp
 #define DIR_DELIMITER '/'
 
-#ifdef HAVE_CXX11_FULL
+#ifdef FLOW123D_HAVE_CXX11_FULL
   #define OPERATOR_NEW_THROW_EXCEPTION
 #else
   #define OPERATOR_NEW_THROW_EXCEPTION throw(std::bad_alloc)

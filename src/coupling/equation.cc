@@ -40,7 +40,7 @@
 #include <boost/foreach.hpp>
 
 
-#ifdef CYGWIN
+#ifdef FLOW123D_CYGWIN
 #include <sstream>
 
 namespace std {
@@ -51,7 +51,7 @@ namespace std {
 		return str.str();
 	}
 }
-#endif // CYGWIN
+#endif // FLOW123D_CYGWIN
 
 
 /*****************************************************************************************

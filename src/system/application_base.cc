@@ -3,13 +3,14 @@
  *
  */
 
-#ifdef HAVE_PETSC
+#include "system/application_base.hh"
+#include "system/sys_profiler.hh"
+
+
+#ifdef FLOW123D_HAVE_PETSC
 #include <petsc.h>
 #include <petscsys.h>
 #endif
-
-#include "system/application_base.hh"
-#include "system/sys_profiler.hh"
 
 
 ApplicationBase::ApplicationBase(int argc,  char ** argv)
@@ -55,7 +56,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
 
 FILE *ApplicationBase::petsc_output_ =NULL;
 
-#ifdef HAVE_PETSC
+#ifdef FLOW123D_HAVE_PETSC
 PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_list Argp) {
   PetscErrorCode ierr;
 
@@ -76,7 +77,7 @@ PetscErrorCode ApplicationBase::petscvfprintf(FILE *fd, const char format[], va_
 #endif
 
 void ApplicationBase::petsc_initialize(int argc, char ** argv) {
-#ifdef HAVE_PETSC
+#ifdef FLOW123D_HAVE_PETSC
     if (petsc_redirect_file_ != "") {
         petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
         PetscVFPrintf = this->petscvfprintf;
@@ -94,7 +95,7 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 
 
 int ApplicationBase::petcs_finalize() {
-#ifdef HAVE_PETSC
+#ifdef FLOW123D_HAVE_PETSC
 	if ( petsc_initialized )
 	{
 		PetscErrorCode ierr=0;

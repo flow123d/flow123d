@@ -85,6 +85,7 @@ endif()
 ##############
 # set appropriate compiler flags for debug/release compilation modes
 message(STATUS "Flow build type: ${FLOW_BUILD_TYPE} C++ compiler falgs: ${FLOW_CC_FLAGS}")
+include (Flow123d_config_header)
 
 
 
@@ -104,19 +105,20 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-g -O0")
     set(CMAKE_C_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    add_definitions(-DFlow123d_DEBUG)
+    flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
-    add_definitions(-DDEBUG_PROFILER)
+    # armadillo is configured using this definition
     add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-    add_definitions(-DRUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+    flow_define(DEBUG_PROFILER)
+    flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
   elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
-    add_definitions(-DFlow123d_DEBUG)
+    flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
     SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
@@ -126,7 +128,7 @@ else(FLOW_CC_FLAGS)
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
-    add_definitions(-DFlow123d_DEBUG)
+    flow_define(DEBUG)
     INCLUDE(CodeCoverage)
     # add custom target to collect coverage into xml file
     COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
@@ -138,37 +140,37 @@ endif(FLOW_CC_FLAGS)
 
 # Compiler-specific C++11 activation.
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-	    execute_process(
-	        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
-	    if (CYGWIN)
-	        if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-	          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-	          add_definitions("-DCYGWIN")
-	          add_definitions("-DHAVE_CXX11_FULL")
-	          set(CMAKE_HAVE_CXX11 "true")
-	        else ()
-	          message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
-	        endif ()
-	    elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-	        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	        add_definitions("-DHAVE_CXX11_FULL")    
-	        set(CMAKE_HAVE_CXX11 "true")
-	    else()
-            message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
-            if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-	           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-	           add_definitions("-DHAVE_CXX11_DRAFT")
-	           set(CMAKE_HAVE_CXX11 "true")   
-            elseif (GCC_VERSION VERSION_GREATER 4.4)
-	    	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-	    	  set(CMAKE_HAVE_CXX11 "true")   
-            endif()
-        endif()   
+      execute_process(
+          COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
+      if (CYGWIN)
+          if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+            flow_define(CYGWIN)
+            flow_define(HAVE_CXX11_FULL)
+            set(CMAKE_HAVE_CXX11 "true")
+          else ()
+            message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
+          endif ()
+      elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+          flow_define(HAVE_CXX11_FULL)    
+          set(CMAKE_HAVE_CXX11 "true")
+      else()
+              message(WARNING "Warning: GCC version under 4.7, not supported! Compilation may fail.") 
+              if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+          flow_define(HAVE_CXX11_DRAFT)
+          set(CMAKE_HAVE_CXX11 "true")   
+              elseif (GCC_VERSION VERSION_GREATER 4.4)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+        set(CMAKE_HAVE_CXX11 "true")   
+              endif()
+           endif()   
 
     # Necessary for FParser - TODO: move to better place
     # ?? what about Clang
-    add_definitions("-DHAVE_SINCOS")
+    flow_define(HAVE_SINCOS)
     
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++") # for some reason BOOST doesn't work with option -std=c++11
@@ -178,10 +180,10 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
     set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
     
-    #add_definitions("-DHAVE_CXX11")
+    #flow_define(HAVE_CXX11)
     set(CMAKE_HAVE_CXX11 "true")
     # 
-    # TODO: make test for presence of sincos() function and set HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+    # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
     #
 else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
@@ -192,7 +194,7 @@ endif()
 include(CheckIncludeFile)
 check_include_file("execinfo.h" EXEC_INFO_H)
 if (EXEC_INFO_H) 
-    add_definitions("-DHAVE_EXEC_INFO")
+    flow_define(HAVE_EXEC_INFO)
     
     MESSAGE(STATUS "Looking for abi::__cxa_demangle")
     TRY_COMPILE(HAVE_DEMAGLER
@@ -202,7 +204,7 @@ if (EXEC_INFO_H)
     
     IF(HAVE_DEMAGLER)
       MESSAGE(STATUS "Looking for abi::__cxa_demangle - found")
-      add_definitions("-DHAVE_DEMAGLER")
+      flow_define(HAVE_DEMAGLER)
     ELSE(HAVE_DEMAGLER)
       MESSAGE(STATUS "Looking for abi::__cxa_demangle - not found")
     ENDIF(HAVE_DEMAGLER)
@@ -217,6 +219,9 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_C_FLAGS"         ${EXTERNAL_LIBS_C_FLAGS}       
 SET_VALID_VALUE ("EXTERNAL_LIBS_CXX_FLAGS"       ${EXTERNAL_LIBS_CXX_FLAGS}       ${CMAKE_CXX_FLAGS})
 SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS}   ${CMAKE_Fortran_FLAGS})
 
+
+# store compiler flags (into config.h file)
+flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
 
 
 ######################################################################### find libraries
@@ -391,12 +396,13 @@ if (NOT PETSC_FOUND)
 #    find_package(MPI)
 #  
 #    if (MPI_CXX_FOUND)
-#        add_definitions(-DHAVE_MPI)
+#        flow_define(HAVE_MPI)
 #    else(MPI_CXX_FOUND) 
         # build single processor replacement taken from PETSc
 #        set(mpiuni_sources    system/mpiuni/mpi.c)
 #        set(MPIUNI_INCLUDES src/system/mpiuni)
-#        add_definitions(-DHAVE_MPI -DHAVE_MPIUNI)
+#        flow_define(HAVE_MPI)
+#        flow_define(HAVE_MPIUNI)
 #    
         # overwrite NOTFOUND status
 #        set(MPI_CXX_LIBRARIES mpiuni_lib)
@@ -407,7 +413,8 @@ if (NOT PETSC_FOUND)
 endif(NOT PETSC_FOUND)
 
 if(PETSC_FOUND)
-    add_definitions(-DHAVE_PETSC -DHAVE_MPI)
+    flow_define(HAVE_PETSC)
+    flow_define(HAVE_MPI)
     set(MPI_CXX_LIBRARIES ${PETSC_EXTERNAL_LIB})
     set(MPI_CXX_INCLUDE_PATH ${PETSC_INCLUDES})
     
@@ -436,7 +443,7 @@ if (BDDCML_ROOT)
     endif()
     
     if (BDDCML_FOUND)
-        add_definitions(-DHAVE_BDDCML)
+        flow_define(HAVE_BDDCML)
     endif()
 else()
     # set(BDDCML_LIBRARIES "")
@@ -491,13 +498,13 @@ if (USE_PYTHON)
     find_package(PythonLibs 2.7)
     if (PYTHONLIBS_FOUND)
         include_directories( ${PYTHON_INCLUDE_DIRS})
-        add_definitions(-DHAVE_PYTHON)
+        flow_define(HAVE_PYTHON)
         
         string(REGEX REPLACE "([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
         string(REGEX REPLACE "[0-9]+.([0-9]+).*" "\\1" PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_STRING})
-        add_definitions(-DPYTHONLIBS_VERSION_MAJOR=${PYTHONLIBS_VERSION_MAJOR})
-        add_definitions(-DPYTHONLIBS_VERSION_MINOR=${PYTHONLIBS_VERSION_MINOR})
-        add_definitions(-DPYTHONLIBS_VERSION_STRING=${PYTHONLIBS_VERSION_STRING})
+        flow_define(PYTHONLIBS_VERSION_MAJOR ${PYTHONLIBS_VERSION_MAJOR})
+        flow_define(PYTHONLIBS_VERSION_MINOR ${PYTHONLIBS_VERSION_MINOR})
+        flow_define(PYTHONLIBS_VERSION_STRING ${PYTHONLIBS_VERSION_STRING})
         message(STATUS "Python version: ${PYTHONLIBS_VERSION_STRING}\n")
         message(STATUS "Python major version: ${PYTHONLIBS_VERSION_MAJOR}\n")
         message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
@@ -525,7 +532,7 @@ if (USE_PYTHON)
             endif()
             message(STATUS "Python prefix: ${PY_PREFIX}")
             message(STATUS "Python target prefix: ${TARGET_PREFIX}")
-            add_definitions(-DPYTHON_PREFIX=${PY_PREFIX})
+            flow_define(PYTHON_PREFIX ${PY_PREFIX})
             
             # copy python library
             set(PYTHON_COPY_LIB_TARGET  lib/${PYTHON_SUBDIR_MINOR})
@@ -560,12 +567,16 @@ endif()
 message(STATUS "\n ======================================================= ")
 
 
+# directory containing includes  (header files)
+set(CONFIG_FILE_INCLUDES_DIRECTORY "${CMAKE_BINARY_DIR}/includes")
+
 ######################################################################################################################### 
 # set includes and libraries paths
 
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
     ${CMAKE_SOURCE_DIR}/src
+    ${CONFIG_FILE_INCLUDES_DIRECTORY}
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
@@ -589,20 +600,33 @@ add_custom_target(update_source_tree
 )
    
 
-   
 #### create rev_num.h - file with some info about code origin
 # a custom target - is always built -> call cmake script to generate rev_num.h
 # Get the current working branch
 
 # This command is run from build dir and cmake set CMAKE_SOURCE_DIR to the build dir; thus we have to 
 # pass different variable with source dir, namely FLOW123D_SOURCE_DIR
+set(CONFIG_FILE_REV_NUM "${CONFIG_FILE_INCLUDES_DIRECTORY}/rev_num.h")
 add_custom_target(rev_num_always 
-    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_REV_NUM} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_git_rev_num.cmake 
 )
 # rev_num.h is a generated file
-set_source_files_properties(${CMAKE_BINARY_DIR}/rev_num.h
+set_source_files_properties(${CONFIG_FILE_REV_NUM}
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
+
+### create config.h - file containing definitions flags and other information
+# called everytime
+set(CONFIG_FILE_HEADER "${CONFIG_FILE_INCLUDES_DIRECTORY}/config.h")
+GENERATE_CONFIG_H ("${CONFIG_FILE_HEADER}.tmp")
+add_custom_target(config_h_always 
+    COMMAND ${CMAKE_COMMAND}  -DFLOW123D_SOURCE_DIR=${CMAKE_SOURCE_DIR} -DFILE_PATH=${CONFIG_FILE_HEADER} -P ${CMAKE_SOURCE_DIR}/CMake/Modules/Flow123d_config_header_create.cmake
+)
+# config.h is a generated file
+set_source_files_properties(${CONFIG_FILE_HEADER}
+    PROPERTIES GENERATED TRUE
+    HEADER_FILE_ONLY TRUE)
+
 
 # get git information also through configure phase
 set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
@@ -627,8 +651,8 @@ if(PETSC_MPIEXEC)
 else()
       find_program(SYSTEM_MPIEXEC mpiexec)
       if(SYSTEM_MPIEXEC)
-        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.")	
-	get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
+        message(WARNING "Missing mpiexec in PETSc instalation. Using system wide mpiexec.") 
+        get_filename_component(RESOLVED_MPIEXEC "${SYSTEM_MPIEXEC}" REALPATH)
         set(MPIEXEC_PATH "${RESOLVED_MPIEXEC}")
       else()
         message(WARNING "Missing any mpiexec.")
@@ -711,9 +735,10 @@ if( PETSC_FOUND )
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS}  semchem  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
+  add_dependencies(bin/flow123d update_source_tree rev_num_always config_h_always mpiexec_link)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
-  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rev_num.h ) 
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
+  set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
@@ -728,7 +753,7 @@ message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
-message(STATUS "Python: ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "===========================================")
 
 
@@ -748,15 +773,15 @@ endif()
 
 
 # install bin directory
-install(DIRECTORY bin/config 			DESTINATION bin/)
-install(DIRECTORY bin/ndiff 			DESTINATION bin/)
-install(DIRECTORY bin/paraview 			DESTINATION bin/)
-install(DIRECTORY bin/py			DESTINATION bin/)
-install(PROGRAMS   bin/tests/run_test.sh 	DESTINATION bin/tests)
+install(DIRECTORY bin/config              DESTINATION bin/)
+install(DIRECTORY bin/ndiff               DESTINATION bin/)
+install(DIRECTORY bin/paraview            DESTINATION bin/)
+install(DIRECTORY bin/py                  DESTINATION bin/)
+install(PROGRAMS  bin/tests/run_test.sh   DESTINATION bin/tests)
 
-install(PROGRAMS   bin/flow123d.sh 		DESTINATION bin/)
-install(PROGRAMS   bin/ini2json.sh		DESTINATION bin/)
-install(PROGRAMS   bin/time_limit.sh		DESTINATION bin/)
+install(PROGRAMS  bin/flow123d.sh         DESTINATION bin/)
+install(PROGRAMS  bin/ini2json.sh         DESTINATION bin/)
+install(PROGRAMS  bin/time_limit.sh       DESTINATION bin/)
 
 # install shared libraries
 if (CYGWIN)
@@ -788,15 +813,15 @@ if (PYTHON_COPY)
 endif()
 
 install(TARGETS    bin/flow123d  
-	RUNTIME DESTINATION bin)
-install(PROGRAMS   ${MPIEXEC_PATH} 		DESTINATION bin/)
+  RUNTIME DESTINATION bin)
+install(PROGRAMS   ${MPIEXEC_PATH}              DESTINATION bin/)
 install(FILES bin/README                        DESTINATION bin/)
 
 # make manual optional until we have Latex on Windows build machine
 install(DIRECTORY doc/con_syntax                DESTINATION doc/)
 install(FILES ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf 
-						DESTINATION doc/)
-install(FILES doc/petsc_options_help 		DESTINATION doc/)
+                                                DESTINATION doc/)
+install(FILES doc/petsc_options_help            DESTINATION doc/)
 install(FILES doc/LICENSE                       DESTINATION doc/)
 install(FILES doc/GPL3                          DESTINATION doc/)
 install(FILES doc/README                        DESTINATION doc/)
@@ -1004,6 +1029,3 @@ endif()
 INCLUDE(CPack)
 
 FILE(APPEND ${CMAKE_BINARY_DIR}/CPackConfig.cmake "set(CPACK_WIN_BINARY_DIRECTORY \"${WIN_CMAKE_CURRENT_BINARY_DIR}\")")
-               
-
-

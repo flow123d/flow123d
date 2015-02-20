@@ -112,7 +112,7 @@ EXPECT_THROW_WHAT(statement, exception_type, regex);
                                         message matching 'regex' 
 
 EXPECT_ASSERT_DEATH(statement, regex);  statement involves an assert which throws with message matching 'regex'
-                                        no code if DEBUG_ASSERTS is not defined                                       
+                                        no code if FLOW123D_DEBUG_ASSERTS is not defined                                       
 
 ==================
 Using from Eclipse

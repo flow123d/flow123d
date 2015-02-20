@@ -8,7 +8,7 @@
 #ifndef PYTHON_UTILS_HH_
 #define PYTHON_UTILS_HH_
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "Python.h"
 #include <string>
@@ -68,6 +68,6 @@ public:
 
 
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 #endif /* PYTHON_UTILS_HH_ */

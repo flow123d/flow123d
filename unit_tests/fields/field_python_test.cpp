@@ -12,7 +12,7 @@
 #include <cmath>
 
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
 #include "fields/field_python.hh"
@@ -183,5 +183,5 @@ TEST(FieldPython, read_from_input) {
 
 }
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 

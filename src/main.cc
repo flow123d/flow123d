@@ -60,8 +60,8 @@
     #define _PROGRAM_BRANCH_ "(unknown branch)"
 #endif
 
-#ifndef _COMPILER_FLAGS_
-    #define _COMPILER_FLAGS_ "(unknown compiler flags)"
+#ifndef FLOW123D_COMPILER_FLAGS_
+    #define FLOW123D_COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
 
 
@@ -87,7 +87,7 @@ Application::Application( int argc,  char ** argv)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PythonLoader::initialize(argv[0]);
 #endif
 
@@ -115,7 +115,7 @@ void Application::display_version() {
     string revision(_GIT_REVISION_);
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);
-    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
+    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
     
 
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
