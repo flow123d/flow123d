@@ -209,18 +209,13 @@ vector<int> &Partitioning::subdomain_id_field_data() {
     if (seq_part_.size() == 0) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
     	seq_part_.resize(seq_size);
-    	vector<int> int_seq_part_(seq_size);
 
         MPI_Gatherv(loc_part_, init_el_ds_->lsize(), MPI_INT,
-                &int_seq_part_[0],
+                &seq_part_[0],
                 (int *)(init_el_ds_->get_lsizes_array()),
                 (int *)(init_el_ds_->get_starts_array()),
                 MPI_INT, 0,init_el_ds_->get_comm() );
 
-        // Following is terrible since FieldElementwise stores everything as array of doubles.
-        auto it_2=seq_part_.begin();
-        for(auto it_1=int_seq_part_.begin(); it_1 != int_seq_part_.end(); ++it_1, ++it_2)
-        	*((int *)&(*it_2))=*it_1;
     }
     return seq_part_;
 

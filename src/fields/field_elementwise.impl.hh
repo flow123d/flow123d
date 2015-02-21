@@ -70,7 +70,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise(std::vector<typename Value::
   internal_raw_data(false), mesh_(NULL)
 {
 	n_components_ = this->value_.n_rows() * this->value_.n_cols();
-	data_ = std::shared_ptr<std::vector<typename Value::element_type> >(&data);
+	data_ = std::make_shared<std::vector<typename Value::element_type> >(data);
 }
 
 
