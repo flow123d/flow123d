@@ -53,6 +53,8 @@ public:
 	void computeIntersections2d3dProlongation(const ProlongationLine &pl);
 	void computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
 
+	bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
+
 
 	void ComputeIntersections23();
 	void ComputeIntersections13();

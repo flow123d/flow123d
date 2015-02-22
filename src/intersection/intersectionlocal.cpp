@@ -35,7 +35,7 @@ void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
 void IntersectionLocal::traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table){
 
 	if(!is_patological){
-		xprintf(Msg,"Tracing opt polygon(%d)", i_points.size());
+		xprintf(Msg,"Tracing opt polygon(%d)\n", i_points.size());
 		this->tracePolygonOpt(prolongation_table);
 
 	}else{
@@ -341,8 +341,8 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 	//return;
 	fillTracingTable2();
 
-	xprintf(Msg, "\n TRASOVACÍ TABULKA \n");
-	tracing_table.print();
+	//xprintf(Msg, "\n TRASOVACÍ TABULKA \n");
+	//tracing_table.print();
 
 
 	std::vector<IntersectionPoint<2,3>> new_points;

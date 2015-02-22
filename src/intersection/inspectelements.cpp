@@ -61,20 +61,33 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 			xprintf(Msg,"Procházím hranu(%d) na id elementu(%d), hrana(%d)\n"
 								, stena,elm->index(),elm->side(2-stena)->el_idx());
 
-			SideIter elm_side = elm->side(2-stena);
+			SideIter elm_side = elm->side((unsigned int)(2-stena));
 			Edge *edg = elm_side->edge();
 
 			for(int j=0; j < edg->n_sides;j++) {
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
 					xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
+					unsigned int sousedni_element = other_side->element()->index(); // 2D element
+						if(!intersectionExists(sousedni_element,ele->index())){
+							//flag_for_3D_elements[ele->index()] = sousedni_element;
+							// Jedná se o vnitřní čtyřstěny v trojúhelníku
+
+							// Vytvoření průniku bez potřeby počítání
+							IntersectionLocal il_other(sousedni_element, ele->index());
+							intersection_list[sousedni_element].push_back(il_other);
+
+							ProlongationLine pl2(sousedni_element, ele->index(), intersection_list[sousedni_element].size() - 1);
+							//prolongation_line_queue_3D.push(pl2);
+							prolongation_line_queue_2D.push(pl2);
+						}
 				}
 			}
 
 		}else{
 			// prodlužuji stěnou
-			xprintf(Msg,"Procházím stěnu(%d) na id elementu(%d), stěna(%d)\n"
-					, stena,ele->index(),ele->side(3-stena)->el_idx());
+			//xprintf(Msg,"Procházím stěnu(%d) na id elementu(%d), stěna(%d)\n"
+			//		, stena,ele->index(),ele->side(3-stena)->el_idx());
 
 
 			SideIter elm_side = ele->side((unsigned int)(3-stena)); //ele->side(3-stena);
@@ -83,11 +96,11 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 			for(int j=0; j < edg->n_sides;j++) {
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
-					xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)\n",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
+					//xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)\n",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
 
 
 					unsigned int sousedni_element = other_side->element()->index();
-					if(flag_for_3D_elements[sousedni_element] != (int)elm->index()){
+					if(flag_for_3D_elements[sousedni_element] == -1 || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
 						flag_for_3D_elements[sousedni_element] = elm->index();
 						// Jedná se o vnitřní čtyřstěny v trojúhelníku
 
@@ -123,7 +136,7 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	std::vector<std::pair<unsigned int, unsigned int>> prolongation_table;
 	intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].traceGenericPolygon(prolongation_table);
 
-	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 0){
+	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 2){
 		all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
 	}
 
@@ -179,13 +192,14 @@ void InspectElements::ComputeIntersections23(){
 
 
 					xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
-					if(il.getIPsize() > 0){
+					if(il.getIPsize() > 2){
 						all_intersections.push_back(il);
 					}
 
 					if(il.getIPsize() > 2){
 
 						intersection_list[elm.index()].push_back(il);
+						flag_for_3D_elements[ele->index()] = elm.index();
 						xprintf(Msg,"Velikost intersection_list(%d), pocet IL v konkretnim listu(%d)\n", intersection_list.size(), intersection_list[elm.index()].size());
 
 						// PRODLUŽOVÁNÍ
@@ -193,15 +207,25 @@ void InspectElements::ComputeIntersections23(){
 
 						// Dokončila se trasovací tabulka = fronty jsou naplněny
 
+						while(1){
 						// Zpracování front
-						while(!prolongation_line_queue_3D.empty()){
+							while(!prolongation_line_queue_3D.empty()){
 
-							computeIntersections2d3dProlongation(prolongation_line_queue_3D.front());
-							prolongation_line_queue_3D.pop();
+								computeIntersections2d3dProlongation(prolongation_line_queue_3D.front());
+								prolongation_line_queue_3D.pop();
+
+							}
+
+							if(!prolongation_line_queue_2D.empty()){
+								computeIntersections2d3dProlongation(prolongation_line_queue_2D.front());
+								prolongation_line_queue_2D.pop();
+							}
+
+							if(prolongation_line_queue_2D.empty() && prolongation_line_queue_3D.empty()){
+								break;
+							}
 
 						}
-
-
 						break; // ukončí procházení dalších bounding boxů
 					}
 
@@ -214,6 +238,18 @@ void InspectElements::ComputeIntersections23(){
 	}
 };
 
+
+bool InspectElements::intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx){
+
+	for(unsigned int i; i < intersection_list[elm_2D_idx].size();i++){
+
+		if(intersection_list[elm_2D_idx][i].idx_3D() == elm_3D_idx){
+			return true;
+		}
+
+	}
+	return false;
+};
 
 
 void InspectElements::UpdateTriangle(const ElementFullIter &element_2D){
