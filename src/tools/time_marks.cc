@@ -111,8 +111,10 @@ void TimeMarks::add(const TimeMark &mark) {
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
 	ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
 	ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
-	for (double t = time; t <= end_time*1.001; t += dt) {
-		auto mark = TimeMark(t, type);
+
+	unsigned int n_steps=end_time/dt;
+	for (unsigned int i = 0; i<=n_steps;i++) {
+		auto mark = TimeMark(i*dt, type);
 		add(mark);
 	}
 }

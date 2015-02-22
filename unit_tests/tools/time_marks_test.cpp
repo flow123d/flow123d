@@ -9,7 +9,7 @@
 
 #include <flow_gtest.hh>
 
-#include "  tools/time_marks.hh"
+#include "tools/time_marks.hh"
 
 
 /**
@@ -37,4 +37,12 @@ TEST (TimeMark, time_mark)
 
     //comparing times
     EXPECT_TRUE( (tm1<tm2) && (tm2<tm3) );
+}
+
+TEST(TimeMarks, add_time_marks) {
+    auto tm = TimeMarks();
+    auto mark_type = tm.new_mark_type();
+    tm.add_time_marks(0.0, 0.1, 1.0E3, mark_type);
+    auto mark_it = tm.last(mark_type);
+    EXPECT_FLOAT_EQ(1.0E3, mark_it->time());
 }
