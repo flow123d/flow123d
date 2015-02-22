@@ -26,8 +26,7 @@
       output = {
         output_stream = { 
           file = "flow.pvd", 
-          format = { TYPE = "vtk", variant = "ascii" },
-          name = "flow_output_stream" 
+          format = { TYPE = "vtk", variant = "ascii" }
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
@@ -54,6 +53,9 @@
           bc_conc = [0.0, 1.0]
         }
       ],
+      
+      time = { end_time = 1.0 },
+      mass_balance = { cumulative = true },
       
       reaction_term = {
         TYPE = "DualPorosity",
@@ -100,11 +102,9 @@
       output_stream = { 
         file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.1,
-        name = "transport_output_stream"      
-      }, 
-      time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
+        time_step = 0.1      
+      }
+      
     } // secondary_equation
   } // problem  
 }

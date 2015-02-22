@@ -435,9 +435,8 @@ The fracture width will be $\delta_1=1$ (default value) and the crosswind conduc
 
      output = {
         output_stream = { 
-          file = "test3.pvd", 
-          format = { TYPE = "vtk", variant = "ascii" },
-          name = "flow_output_stream" 
+          file = "flow.pvd", 
+          format = { TYPE = "vtk", variant = "ascii" }
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
@@ -454,7 +453,7 @@ solver for steady problems. On lines 17 -- 24, we set mathematical fields that l
 We use implicitly defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE="FieldFormula"}.
 See Section \ref{sec:Fields} for other field types. 
-On lines 26 -- 33 we specify which output fields should be written to the output stream (that means particular output file, with given format).
+On lines 26 -- 32 we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
 See Section \ref{section_output} for the list of available \hyperlink{DarcyMHOutput::output-fields::B}{\tt output\_fields}.
 Finally, we specify type of the linear solver and its tolerances.
@@ -463,7 +462,7 @@ Finally, we specify type of the linear solver and its tolerances.
 
 \subsubsection{Transport setting}
 We also consider subsequent transport problem with the porosity $\theta = 0.25$, zero initial concentration and concentration source for one of the transported substances. The boundary condition is equal to $1$ for the uranium 235 and $0$ for the age of the water and is automatically applied only on the 
-inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case. Adsorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:sorptions}.%, but we do not discuss this topic here for the sake of simplicity.
+inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case. Adsorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:reactions}.%, but we do not discuss this topic here for the sake of simplicity.
 %see Section \ref{} for the description. 
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -483,6 +482,20 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
         }
       ],
       
+      time = { end_time = 1.0 },
+      mass_balance = { cumulative = true },
+\end{Verbatim}
+
+For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
+the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation.
+On line 43, we set names of transported substances, here it is the age of the water and the uranium 235. On lines 45 -- 54, we set the input fields, in particular the \hyperA{TransportOperatorSplitting::porosity}{\tt porosity}, sources of concentration and the initial concentrations 
+(one for every substance). However, on line 47 we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
+On lines 51 -- 53, we set the boundary fields, namely the concentration on the inflow part of the boundary.
+We need not to specify the type of the condition since currently there is only one type for this transport model.
+We also have to prescribe the time setting, here only the end time of the simulation since the step size is determined from the CFL condition; however a smaller time step can be enforced if necessary.
+
+\subsubsection{Reaction term}\label{subsubsec:reactions}
+\begin{Verbatim}[numbers=left, firstnumber=last]
       reaction_term = {
         TYPE = "DualPorosity",
         
@@ -527,30 +540,22 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
       },
       
       output_stream = { 
-        file = "test3-transport.pvd", 
+        file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.1,
-        name = "transport_output_stream"      
-      }, 
+        time_step = 0.1      
+      } 
 
-      time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
     } // secondary_equation
   }, // problem
 \end{Verbatim}
-For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
-the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation.
-On line 44, we set names of transported substances, here it is the age of the water and the uranium 235. On lines 46 -- 55, we set the input fields, in particular the \hyperA{TransportOperatorSplitting::porosity}{\tt porosity}, sources of concentration and the initial concentrations 
-(one for every substance). However, on line 48 we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
-On lines 52 -- 54, we set the boundary fields, namely the concentration on the inflow part of the boundary.
-We need not to specify the type of the condition since currently there is only one type for this transport model.
-On lines 57 -- 98, we specify the dual porosity and adsorption mechanisms (see comments below).
-On line 95, notice the reference pointing to the definition of input fileds on lines 78 -- 86.
-On lines 100 -- 105 we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
-In the output record for time-dependent process we have to specify the {\tt time\_step} (line 103) which determines the frequency of saving.
-We also have to prescribe the time setting, here only the end time of the simulation since the step size is determined from the CFL condition; however a smaller time step can be enforced if necessary.
 
-\subsubsection{Sorption settings}\label{subsubsec:sorptions}
+On lines 58 -- 99, we specify the dual porosity and adsorption mechanisms (see comments below).
+On line 96, notice the reference pointing to the definition of input fileds on lines 79 -- 87. Only entire records can be referenced which is why we have to repeat parts of the input such as molar mass and solubility (records for reaction mobile and reaction immobile have different types).
+On lines 88 and 97, we define which sorption specific outputs are to be written to the output file. An implicit set of outputs exists. In this case we define an empty set of outputs thus overriding the implicit one. This means that no sorption specific outputs will be written to the output file.
+On lines 101 -- 105 we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
+In the output record for time-dependent process we have to specify the {\tt time\_step} (line 104) which determines the frequency of saving.
+SorptionMobile takes place in the mobile zone of the dual porosity model while SorptionImmobile takes place in its immobile zone.
+
 The input information for dual porosity and equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}. The type of process is determined by {\tt TYPE="DualPorosity"}. The \hyperA{Sorption::solvent-density}{\tt solvent\_density} is supposed to be constant all over the simulated area. The vector \hyperA{Sorption::substances}{\tt substances} contains the list of soluted substances whose concentrations are concidered to be affected by sorptions. Material characteristics of all the sorbing substances can be defined by vectors \hyperA{Sorption::molar-mass}{\tt molar\_mass} and \hyperA{Sorption::solubility}{\tt solubility}. Elements of the vector {\tt solubility} define the upper bound of an aqueous concentration which can appear, because some substances have limited solubility and if the solubility exceeds this limit they start to precipitate. {\tt solubility} is 
 a crucial parameter for solving further described set of nonlinear equations.
 
