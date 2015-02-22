@@ -204,14 +204,18 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 
 
-vector<int> &Partitioning::subdomain_id_field_data() {
+shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
-    if (seq_part_.size() == 0) {
+    cout << "Partitioning::subdomain_id_field_data()" << endl;
+    if (!seq_part_) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
-    	seq_part_.resize(seq_size);
+    	cout << " seq_size_ " << seq_size << endl;
+    	//seq_part_.resize(seq_size);
+    	seq_part_ = make_shared< vector<int> >(seq_size);
+        std::vector<int> &vec = *( seq_part_.get() );
 
         MPI_Gatherv(loc_part_, init_el_ds_->lsize(), MPI_INT,
-                &seq_part_[0],
+                &vec[0],
                 (int *)(init_el_ds_->get_lsizes_array()),
                 (int *)(init_el_ds_->get_starts_array()),
                 MPI_INT, 0,init_el_ds_->get_comm() );

@@ -74,6 +74,17 @@ FieldElementwise<spacedim, Value>::FieldElementwise(std::vector<typename Value::
 }
 
 
+template <int spacedim, class Value>
+FieldElementwise<spacedim, Value>::FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data,
+		unsigned int n_components)
+: FieldAlgorithmBase<spacedim, Value>(n_components),
+internal_raw_data(false), mesh_(NULL)
+{
+	n_components_ = this->value_.n_rows() * this->value_.n_cols();
+	data_ = data;
+}
+
+
 
 
 template <int spacedim, class Value>

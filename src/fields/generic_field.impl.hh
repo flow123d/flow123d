@@ -37,7 +37,7 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 template <int spacedim>
 auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
-	auto &field_subdomain_data= mesh.get_part()->subdomain_id_field_data();
+	auto field_subdomain_data= mesh.get_part()->subdomain_id_field_data();
 
 	IndexField subdomain;
 	subdomain.name("subdomain");
