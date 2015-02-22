@@ -356,7 +356,6 @@ double TimeGovernor::estimate_dt() const {
     // compute step to next fix time and apply constraints
     double full_step = fix_time_it->time() - t();
 
-    DBGMSG("full: %f, upper: %f\n", full_step, upper_constraint_);
     double step_estimate = min(full_step, upper_constraint_);
     step_estimate = max(step_estimate, lower_constraint_); //these two must be in this order
 
@@ -389,11 +388,11 @@ void TimeGovernor::next_time()
     ASSERT_LE(0.0, t());
     if (is_end()) return;
     
+
     if (this->lt(end_of_fixed_dt_interval_)) {
         // this is done for fixed step
         // make tiny correction of time step in order to avoid big rounding errors
         // tiny correction means that dt_changed 'is NOT changed'
-        DBGMSG("fdt:%f\n", fixed_time_step_);
     	if (end_of_fixed_dt_interval_ < inf_time) {
     		fixed_time_step_ = (end_of_fixed_dt_interval_-t()) / round( (end_of_fixed_dt_interval_-t()) / fixed_time_step_ );
     	}
@@ -416,9 +415,9 @@ void TimeGovernor::next_time()
         // this is done if end_of_fixed_dt_interval is not set (means it is equal to -infinity)
         double dt=estimate_dt();
         TimeStep step_ = recent_steps_.front().make_next(dt);
-        DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
+        //DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
         recent_steps_.push_front(step_);
-        DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
+        //DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
         time_step_changed_= (step(-1).length() != step().length());
     }
 
@@ -439,6 +438,13 @@ void TimeGovernor::view(const char *name) const
 #else
     xprintf(Msg,"\n");
 #endif
+}
+
+
+bool TimeGovernor::safe_compare(double t1, double t0) const
+{
+    return t1 >= t0
+            - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t1),abs(t0)));
 }
 
 

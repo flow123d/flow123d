@@ -179,6 +179,12 @@ public:
     TimeMarks();
 
     /**
+     * Reset state after construction (through default constructor).
+     * Useful for unit tests.
+     */
+    void reinit();
+
+    /**
      * Add a new base mark within the context of the particular TimeMarks instance.
      * User should keep the returned value (MarkType is basically a bitmap) for further queries and
      * TimeMark insertions. ATTENTION: You can not use the TimeMark::Type with other TimeMarks instance!

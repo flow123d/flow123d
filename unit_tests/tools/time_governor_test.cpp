@@ -16,14 +16,6 @@
 
 
 
-const string flow_json = R"JSON(
-{
-time = { 
-    start_time = 0.0, 
-    end_time = 20.0
-  }
-}
-)JSON";
 
 /*
 const string json_with_init_dt = R"JSON(
@@ -56,7 +48,8 @@ Input::Record read_input(const string &json_input)
 	Input::JSONToStorage json_reader(json_input, in_rec);
 
 	//getting root record
-	static Input::Record rec = json_reader.get_root_interface<Input::Record>();
+	static Input::Record rec;
+	rec = json_reader.get_root_interface<Input::Record>();
 	return rec.val<Input::Record>("time");
 }
 
@@ -81,11 +74,64 @@ TEST(TimeStep, all) {
 }
 
 
+TEST(TimeGovernor, comparisons)
+{
+    TimeGovernor::marks().reinit();
+    string tg_in="{time = { start_time = 0.0, end_time = 1E10 } }";
+    TimeGovernor tg( read_input(tg_in));
+
+    EXPECT_EQ(1.0, tg.dt());
+    EXPECT_EQ(0.0, tg.t());
+
+    // First we test around zero
+    // test all comparators, later test just one, since other are correctly related
+    EXPECT_TRUE( tg.le(0.0) );
+    EXPECT_TRUE( tg.le(0.5) );
+    EXPECT_TRUE( tg.le(-1E-15) );
+    EXPECT_FALSE( tg.le(-0.1) );
+
+    EXPECT_TRUE( tg.ge(0.0) );
+    EXPECT_TRUE( tg.ge(-0.1) );
+    EXPECT_TRUE( tg.ge(1E-15) );
+    EXPECT_FALSE( tg.ge(0.1) );
+
+    EXPECT_FALSE( tg.lt(0.0) );
+    EXPECT_TRUE( tg.lt(0.5) );
+    EXPECT_FALSE( tg.lt(1E-15) );
+    EXPECT_FALSE( tg.lt(-0.1) );
+
+    EXPECT_FALSE( tg.gt(0.0) );
+    EXPECT_TRUE( tg.gt(-0.1) );
+    EXPECT_FALSE( tg.gt(-1E-15) );
+    EXPECT_FALSE( tg.gt(0.1) );
+
+    double expect_dt=1.0;
+    for(double exp_time=1.0;
+            exp_time<tg.end_time();
+            exp_time*=2) {
+        tg.marks().add(TimeMark(exp_time, tg.equation_fixed_mark_type()));
+        tg.next_time();
+        tg.view("eQ");
+
+
+        EXPECT_EQ(expect_dt, tg.dt());
+        expect_dt=exp_time;
+        EXPECT_EQ(exp_time, tg.t());
+
+        EXPECT_TRUE( tg.ge(exp_time) );
+        EXPECT_TRUE( tg.ge(exp_time-1.0) );
+        EXPECT_TRUE( tg.ge(exp_time*(1+1E-15)) );
+        EXPECT_FALSE( tg.ge(exp_time+1.0) );
+    }
+
+}
+
 /**
  * Test for class TimeMark, TimeMarks, TimeMarkIterator, TimeGovernor
  */
 TEST (TimeGovernor, time_governor_marks_iterator)
 {
+    TimeGovernor::marks().reinit();
     //creating shortcut to static time marks of time governor
     TimeMarks &tm = TimeGovernor::marks();
     
@@ -110,6 +156,14 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm.add(TimeMark(3.0, your_mark_type));
     
     cout << tm;
+    const string flow_json = R"JSON(
+    {
+    time = { 
+        start_time = 0.0, 
+        end_time = 20.0
+      }
+    }
+    )JSON";
     //constructing Time Governor from json input string
     TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
     
@@ -296,6 +350,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
 
 TEST (TimeGovernor, simple_constructor)
 {
+    TimeGovernor::marks().reinit();
+
 	// Test of constructor without JSON input
 	TimeGovernor tg(10, 0.5);
 
@@ -316,9 +372,12 @@ TEST (TimeGovernor, simple_constructor)
  */
 TEST (TimeGovernor, steady_time_governor)
 {
+    TimeGovernor::marks().reinit();
+
     //DEFAULT CONSTRUCTOR
     TimeGovernor *steady_tg = new TimeGovernor();
     TimeMarks &tm=steady_tg->marks();
+    tm.add(TimeMark(100,TimeMark::every_type));
 
     
     steady_tg->view("first_steady");

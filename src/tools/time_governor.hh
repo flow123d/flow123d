@@ -419,38 +419,28 @@ public:
      * TODO: introduce type TimeDouble with overloaded comparison operators, use it consistently in TimeMarks.
      */
     inline bool gt(double other_time) const
-        {
-            return ! (t() <= other_time
-            + 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time))) );
-        }
+        { return ! safe_compare(other_time, t());}
 
     /**
      * Performs rounding safe comparison time >= other_time See @fn gt
      */
     inline bool ge(double other_time) const
-    {
-        return t() >= other_time
-        - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
-    }
+        { return safe_compare(t(), other_time); }
+//        return t() >= other_time
+//        - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
+//    }
 
     /**
      * Performs rounding safe comparison time < other_time. See @fn gt
      */
     inline bool lt(double other_time) const
-    {
-        double b=other_time
-                - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
-        return ! (t() >= b);
-    }
+        { return ! safe_compare(t(), other_time); }
 
     /**
      * Performs rounding safe comparison time <= other_time. See @fn gt
      */
     inline bool le(double other_time) const
-    {
-        return t() <= other_time
-        + 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t()),abs(other_time)));
-    }
+        { return safe_compare(other_time, t()); }
 
     /**
      * Returns the time level.
@@ -469,6 +459,9 @@ public:
     static const double inf_time;
 
 private:
+    /// Returns true if t1-t0 >delta. Where delta is choosen
+    /// ralated to the current time step and magnitude of t1, t0.
+    bool safe_compare(double t1, double t0) const;
 
     /**
      * \brief Common part of the constructors. Set most important parameters, check they are valid and set default values to other.

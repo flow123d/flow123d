@@ -56,8 +56,17 @@ const TimeMark::Type TimeMark::none_type =  0x0;
 // ------------------------------------------------------
 
 TimeMarks::TimeMarks()
-: next_mark_type_(0x1)
 {
+    this->reinit();
+}
+
+
+
+void TimeMarks::reinit()
+{
+    marks_.clear();
+    next_mark_type_ = 0x1;
+
     // add predefined base mark types
     type_fixed_time_ = new_mark_type();
     type_output_ = new_mark_type();
@@ -67,7 +76,6 @@ TimeMarks::TimeMarks()
     marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
     marks_.push_back(TimeMark(+INFINITY, TimeMark::every_type));
 }
-
 
 TimeMark::Type TimeMarks::new_mark_type() {
     ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
