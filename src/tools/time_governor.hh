@@ -355,6 +355,12 @@ public:
 
 
     /**
+     * Initial time getter.
+     */
+    inline double init_time() const
+        {return this->init_time_;}
+
+    /**
      * End of actual time interval; i.e. where the solution is computed.
      */
     inline double t() const
@@ -394,6 +400,7 @@ public:
      *  -# else writes the difference between lower constraint and estimated time step
      */
     double estimate_dt() const;
+
 
     /**
      * Estimate next time.
