@@ -36,7 +36,7 @@
 #include <stdlib.h>
 
 #include "system/exc_common.hh"
-
+#include "config.h"
 
 /*! @brief Debugging macros.
  *
@@ -62,36 +62,36 @@
 
 /**
  * Actually there are following debugging switches
- * DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
- * DEBUG_ASSERTS - use assertion checks introduced by ASSERT
- * DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
+ * FLOW123D_DEBUG_MESSAGES  - use various debugging messages introduced by DBGMSG
+ * FLOW123D_DEBUG_ASSERTS - use assertion checks introduced by ASSERT
+ * FLOW123D_DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
  *
- * You can turn all off defining: Flow123d_NODEBUG
- * or turn all on defining: Flow123d_DEBUG
+ * You can turn all off defining: FLOW123D_NODEBUG
+ * or turn all on defining: FLOW123D_DEBUG
  *
- * Flow123d_DEBUG overrides Flow123d_NODEBUG
+ * FLOW123D_DEBUG overrides FLOW123D_NODEBUG
  */
 
 
-#ifdef Flow123d_NODEBUG
+#ifdef FLOW123D_NODEBUG
 
-#undef  DEBUG_MESSAGES
-#undef  DEBUG_ASSERTS
-#undef  DEBUG_PROFILER
-
-#endif
-
-
-#ifdef Flow123d_DEBUG
-
-#define  DEBUG_MESSAGES
-#define  DEBUG_ASSERTS
-#define  DEBUG_PROFILER
+#undef  FLOW123D_DEBUG_MESSAGES
+#undef  FLOW123D_DEBUG_ASSERTS
+#undef  FLOW123D_DEBUG_PROFILER
 
 #endif
 
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG
+
+#define  FLOW123D_DEBUG_MESSAGES
+#define  FLOW123D_DEBUG_ASSERTS
+#define  FLOW123D_DEBUG_PROFILER
+
+#endif
+
+
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 /**
  * Just quick hack to fix some unit tests.
@@ -100,9 +100,9 @@
  * usage of macros. And make robust "system" part, that
  * is MPI aware, but not MPI dependent.
  */
-#ifdef DEBUG_ASSERTS_WITHOUT_MPI
+#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 #define MPI_Comm_rank(A, B)
-#endif // DEBUG_ASSERTS_WITHOUT_MPI
+#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
 #define ASSERT(i,...)   do {\
     if (!(i))  {\
@@ -125,7 +125,7 @@
 
 
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 #define ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
@@ -139,7 +139,7 @@
 
 
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 #define ASSERT_LESS( a, b) do {\
     stringstream ss; ss << (a) << " >= " << (b); \
@@ -169,7 +169,7 @@
 
 
 
-#ifdef DEBUG_MESSAGES
+#ifdef FLOW123D_DEBUG_MESSAGES
 
 #define DBGMSG(...) do { xprintf(MsgDbg,__VA_ARGS__); fflush(NULL); } while (0)
 
@@ -200,7 +200,7 @@
 #endif
 
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 static const int debug_asserts_view = 1;
 

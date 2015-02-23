@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#define DEBUG_ASSERTS_WITHOUT_MPI
+#define FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
 #include "system/exceptions.hh"
 #include <flow_gtest.hh>
@@ -182,7 +182,7 @@ TEST(Exceptions, stack_trace) {
 TEST(Exceptions, assert_msg) {
 
     int zero=1;
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
     EXPECT_THROW_WHAT( {ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
 #endif
 

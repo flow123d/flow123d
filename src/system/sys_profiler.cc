@@ -81,7 +81,7 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
     }
 
 
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 /*********************************************************************************************
  * Implementation of class Timer
  */
@@ -206,7 +206,7 @@ Profiler::Profiler()
   start_time( time(NULL) )
 
 {
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
@@ -270,7 +270,7 @@ int Profiler::find_child(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(const CodePoint &cp) {
-#ifdef Flow123d_DEBUG
+#ifdef FLOW123D_DEBUG
     // check that all childrens are closed
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
@@ -533,7 +533,7 @@ void Profiler::uninitialize()
     }
 }
 
-#else // def DEBUG_PROFILER
+#else // def FLOW123D_DEBUG_PROFILER
 
 Profiler* Profiler::_instance = NULL;
 
@@ -549,6 +549,6 @@ void Profiler::uninitialize() {
 }
 
 
-#endif // def DEBUG_PROFILER
+#endif // def FLOW123D_DEBUG_PROFILER
 
 

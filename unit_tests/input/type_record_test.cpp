@@ -42,7 +42,7 @@ using namespace Input::Type;
    // errors during declaration
    Record rec_empty;
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
    EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
 #endif
 
@@ -72,7 +72,7 @@ using namespace Input::Type;
    rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
 
    // test correct finishing.
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
    EXPECT_THROW_WHAT( {rec.size();}, ExcAssertMsg , "Asking for information of unfinished Record type");
 #endif
 

@@ -5,11 +5,12 @@
  *      Author: jb
  */
 
+#include "global_defs.h"
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
-#include "global_defs.h"
+
 #include "system/system.hh"
 #include <string>
 #include <iostream>
@@ -90,7 +91,7 @@ string from_py_string(const wstring &wstr) {
 
 // currently we support only Python 2.7
 //
-#if PYTHONLIBS_VERSION_MAJOR<3
+#if FLOW123D_PYTHONLIBS_VERSION_MAJOR<3
     #define to_py_string      string
     #define from_py_string    string
     #define PY_STRING string
@@ -105,7 +106,7 @@ namespace internal {
 
 PythonRunning::PythonRunning(const std::string& program_name)
 {
-#ifdef PYTHON_PREFIX
+#ifdef FLOW123D_PYTHON_PREFIX
         static PY_STRING _python_program_name = to_py_string(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         PY_STRING full_program_name = Py_GetProgramFullPath();
@@ -116,7 +117,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
         ASSERT(pos != PY_STRING::npos, "non flow123d binary");
         PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
         cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-        PY_STRING default_py_prefix(to_py_string(STR(PYTHON_PREFIX)));
+        PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
         cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
 
         static PY_STRING our_py_home(full_flow_prefix + ":" +default_py_prefix);
@@ -126,7 +127,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
         Py_GetPath();
 
         static PY_STRING our_py_path;
-        string python_subdir("/lib/python" + STR(PYTHONLIBS_VERSION_MAJOR) + "." + STR(PYTHONLIBS_VERSION_MINOR));
+        string python_subdir("/lib/python" + STR(FLOW123D_PYTHONLIBS_VERSION_MAJOR) + "." + STR(FLOW123D_PYTHONLIBS_VERSION_MINOR));
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/plat-cygwin:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/lib-dynload:");
@@ -200,4 +201,4 @@ PythonRunning::~PythonRunning() {
 
 } // close namespace internal
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON

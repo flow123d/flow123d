@@ -356,7 +356,7 @@ Type const * EI<Tag, Type>::ptr( ExceptionBase const &e)
  * Assertion that results in an exception.
  */
 /*
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 
 #define ASSERT_THROW( condition, exception ) \
     (condition) ? : throw

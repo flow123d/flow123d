@@ -51,14 +51,14 @@ template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_func_=NULL;
     p_module_=NULL;
     p_args_=NULL;
     p_value_=NULL;
 #else
     xprintf(UsrErr, "Flow123d compiled without support for Python, FieldPython can not be used.\n");
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -66,10 +66,10 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_string(const string &python_source, const string &func_name)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, python_source);
     set_func(func_name);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -93,10 +93,10 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &file_name, const string &func_name)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     set_func(func_name);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -105,7 +105,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &fi
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     char func_char[func_name.size()+2];
     std::strcpy(func_char, func_name.c_str());
     p_func_ = PyObject_GetAttrString(p_module_, func_char );
@@ -150,7 +150,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
                 ,func_name.c_str(), PyModule_GetName(p_module_), size, value_size);
     }
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 }
 
@@ -188,7 +188,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value)
 {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {
         p_value_ = PyFloat_FromDouble( p[i] );
         PyTuple_SetItem(p_args_, i, p_value_);
@@ -206,7 +206,7 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
             if ( boost::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
             else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -214,12 +214,12 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     Py_CLEAR(p_module_);
     Py_CLEAR(p_func_);
     Py_CLEAR(p_value_);
     Py_CLEAR(p_args_);
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 }
 
 

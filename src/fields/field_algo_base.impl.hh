@@ -64,7 +64,7 @@ Input::Type::AbstractRecord FieldAlgorithmBase<spacedim, Value>::get_input_type(
 
     FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
     FieldFormula<spacedim,Value>::get_input_type(type, element_input_type);
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
 #endif
     FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
