@@ -996,6 +996,11 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    	setup_time_term();
 	    	modify_system();
 	    }
+	    else if (balance_ != nullptr)
+	    {
+	    	balance_->start_mass_assembly(water_balance_idx_);
+	    	balance_->finish_mass_assembly(water_balance_idx_);
+	    }
 	    END_TIMER("full assembly");
 	} else {
 		START_TIMER("modify system");
