@@ -26,5 +26,5 @@ configure_file(${FLOW123D_SOURCE_DIR}/CMake/rev_num_h_template ${OUTPUT_TMP_PATH
 
 # copy the file to the final header only if the version changes
 # reduces needless rebuilds
-execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${OUTPUT_TMP_PATH} ${FILE_PATH})
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${OUTPUT_TMP_PATH} ${OUTPUT_FILE_PATH})
 execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_TMP_PATH})
