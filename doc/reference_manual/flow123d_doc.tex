@@ -405,7 +405,7 @@ Having the computational mesh, we can create the main input file with the descri
             region_labels = [ "1d_upper", "1d_lower", "1d_left_branch" ]
           }
         ]
-    },  
+    }, // mesh
 \end{Verbatim}
 The file starts with a selection of problem type (\verb'SequentialCoupling'), and a textual problem description.
 Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one {\it region set} 
@@ -416,8 +416,9 @@ defining boundary regions, and set operations with region sets, see Section \ref
 \subsubsection{Flow setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
-The conductivity will be $k_2=1$ on the 2D domain and $k_1=10$ on the 1D domain.
-The fracture width will be $\delta_1=1$ (default value) and the crosswind conductivity between dimensions will have value $1$, which can be achieved by setting the dimensionless parameter $\sigma_2 = \frac{1}{2k_1}=0.05$. 
+The conductivity will be $k_2=0.1$ on the 2D domain and $k_1=1$ on the 1D domain.
+The fracture width will be $\delta_1=1$ (default value) and the crosswind conductivity between dimensions 
+will have value $1$, which can be achieved by setting the dimensionless parameter $\sigma_2 = \frac{1}{2k_1}=0.5$. 
 % These are currently the default values.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -425,8 +426,8 @@ The fracture width will be $\delta_1=1$ (default value) and the crosswind conduc
       TYPE = "Steady_MH", 
 
       input_fields = [
-        { r_set = "1d_domain", conductivity = 10, sigma = 0.05 },
-        { region = "2d",       conductivity = 1  },
+        { r_set = "1d_domain", conductivity = 1, sigma = 0.5 },
+        { region = "2d",       conductivity = 0.1  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -449,11 +450,12 @@ The fracture width will be $\delta_1=1$ (default value) and the crosswind conduc
     }, // primary equation
 \end{Verbatim}
 On line 15, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
-solver for steady problems. On lines 17 -- 24, we set mathematical fields that live on the computational domain as well as those for boundary conditions, we set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Data}{\tt input\_fields} have appropriate default values.
+solver for steady problems. On lines 17 -- 24, we set both mathematical fields that live on the computational domain 
+and those defining the boundary conditions. We set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Data}{\tt input\_fields} have appropriate default values.
 We use implicitly defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE="FieldFormula"}.
 See Section \ref{sec:Fields} for other field types. 
-On lines 26 -- 32 we specify which output fields should be written to the output stream (that means particular output file, with given format).
+On lines 26 -- 32, we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
 See Section \ref{section_output} for the list of available \hyperlink{DarcyMHOutput::output-fields::B}{\tt output\_fields}.
 Finally, we specify type of the linear solver and its tolerances.
@@ -469,9 +471,12 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      substances = [ "age", "U235" ],
+      substances = [ 
+        {name = "age", molar_mass = 0.018},     // water age
+        {name = "U235", molar_mass = 0.235}     // uranium 235
+      ],
       
-     input_fields= [
+      input_fields= [
         { r_set = "ALL",
           init_conc = 0,
           porosity= 0.25,
@@ -488,7 +493,9 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
 
 For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
 the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation.
-On line 43, we set names of transported substances, here it is the age of the water and the uranium 235. On lines 45 -- 54, we set the input fields, in particular the \hyperA{TransportOperatorSplitting::porosity}{\tt porosity}, sources of concentration and the initial concentrations 
+On lines 43 -- 46, we set the transported \hyperA{TransportOperatorSplitting::substances}{\tt substances}, which are identified by their names. 
+Here the first one is the \verb'age' of the water, with the molar mass of water, and the second one \verb'U235' is the uranium isotope 235. 
+On lines 48 -- 57, we set the input fields, in particular the \hyperA{TransportOperatorSplitting::porosity}{\tt porosity}, sources of concentration and the initial concentrations 
 (one for every substance). However, on line 47 we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
 On lines 51 -- 53, we set the boundary fields, namely the concentration on the inflow part of the boundary.
 We need not to specify the type of the condition since currently there is only one type for this transport model.
@@ -512,15 +519,14 @@ We also have to prescribe the time setting, here only the end time of the simula
         
         reaction_mobile = {
           TYPE = "SorptionMobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           
           input_fields= [
             {
               r_set="ALL",
-              rock_density = 1.0,
+              rock_density = 2800.0,    // granit
               sorption_type =  ["none", "freundlich"],
               isotherm_mult = 0.02, 
               isotherm_other = [0, 0.5]
@@ -530,9 +536,8 @@ We also have to prescribe the time setting, here only the end time of the simula
         },
         reaction_immobile = {
           TYPE = "SorptionImmobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
@@ -547,16 +552,24 @@ We also have to prescribe the time setting, here only the end time of the simula
 
     } // secondary_equation
   }, // problem
+}
 \end{Verbatim}
 
-On lines 58 -- 99, we specify the dual porosity and adsorption mechanisms (see comments below).
-On line 96, notice the reference pointing to the definition of input fileds on lines 79 -- 87. Only entire records can be referenced which is why we have to repeat parts of the input such as molar mass and solubility (records for reaction mobile and reaction immobile have different types).
-On lines 88 and 97, we define which sorption specific outputs are to be written to the output file. An implicit set of outputs exists. In this case we define an empty set of outputs thus overriding the implicit one. This means that no sorption specific outputs will be written to the output file.
-On lines 101 -- 105 we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
-In the output record for time-dependent process we have to specify the {\tt time\_step} (line 104) which determines the frequency of saving.
+On lines 61 -- 100, we specify the dual porosity and adsorption mechanisms (see details in paragraphs below).
+On line 97, notice the reference pointing to the definition of input fields on lines 81 -- 89. Only entire records 
+can be referenced which is why we have to repeat parts of the input such as molar mass and solubility 
+(records for reaction mobile and reaction immobile have different types).
+
+On lines 90 and 98, we define which sorption specific outputs are to be written to the output file. 
+An implicit set of outputs exists. In this case we define an empty set of outputs thus overriding the implicit one. 
+This means that no sorption specific outputs will be written to the output file.
+On lines 102 -- 106 we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
+In the output record for time-dependent process we have to specify the {\tt time\_step} (line 105) which determines the frequency of saving.
 SorptionMobile takes place in the mobile zone of the dual porosity model while SorptionImmobile takes place in its immobile zone.
 
-The input information for dual porosity and equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}. The type of process is determined by {\tt TYPE="DualPorosity"}. The \hyperA{Sorption::solvent-density}{\tt solvent\_density} is supposed to be constant all over the simulated area. The vector \hyperA{Sorption::substances}{\tt substances} contains the list of soluted substances whose concentrations are concidered to be affected by sorptions. Material characteristics of all the sorbing substances can be defined by vectors \hyperA{Sorption::molar-mass}{\tt molar\_mass} and \hyperA{Sorption::solubility}{\tt solubility}. Elements of the vector {\tt solubility} define the upper bound of an aqueous concentration which can appear, because some substances have limited solubility and if the solubility exceeds this limit they start to precipitate. {\tt solubility} is 
+The input information for dual porosity and equilibrial sorption are enclosed in the record \hyperA{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}. 
+The type of process is determined by {\tt TYPE="DualPorosity"}. 
+The \hyperA{Sorption::solvent-density}{\tt solvent\_density} is supposed to be constant all over the simulated area. The vector \hyperA{Sorption::substances}{\tt substances} contains the list of soluted substances whose concentrations are concidered to be affected by sorptions. Material characteristics of all the sorbing substances can be defined by vectors \hyperA{Sorption::molar-mass}{\tt molar\_mass} and \hyperA{Sorption::solubility}{\tt solubility}. Elements of the vector {\tt solubility} define the upper bound of an aqueous concentration which can appear, because some substances have limited solubility and if the solubility exceeds this limit they start to precipitate. {\tt solubility} is 
 a crucial parameter for solving further described set of nonlinear equations.
 
 The record \hyperA{Sorption::input-fields}{\tt input\_fields} colects information about region specific parameters. Particular region (bulk Physical Entity), where one kind of adsorption takes place, can be specified by its label from gmsh-file. All implemented types of adsorption can take the rock density in region into account. The value of \hyperA{Sorption-Data::rock-density}{\tt rock\_density} can be either constant or specified by {\tt FieldFormula}. The \hyperA{Sorption-Data::sorption-type}{\tt sorption\_type} reperesents the empirically determined isotherm and can have one of four possible values: {\tt \{ "none", "linear", "freundlich", "langmuir" \}}. Linear isotherm needs just one parameter to be given whereas Freundlichs' and Langmuirs' isotherm have two parameters. For further details about mathematical description see Section \ref{sec:sorp_math}. Isothermally described sorption simulation can be used in 
@@ -575,7 +588,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
         \centering
         \includegraphics[scale=0.4]{\fig/03_flow.pdf}
         % 03_flow.pdf: 508x402 pixel, 72dpi, 17.92x14.18 cm, bb=0 0 508 402
-        \caption{Elementwise pressure head\\and velocity field (triangles).}
+        \caption{Elementwise pressure head and\\velocity field denoted by triangles.\\ (Steady flow.)}
         \label{fig:tut-flow}
     \end{subfigure}
     ~
@@ -583,7 +596,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
         \centering
         \includegraphics[scale=0.4]{\fig/03_trans.pdf}
         % 03_trans.pdf: 509x402 pixel, 72dpi, 17.96x14.18 cm, bb=0 0 509 402
-        \caption{Propagation of U235 from the inflow part of the boundary.}
+        \caption{Propagation of U235 from the inflow part of the boundary. \\ (At the time 0.9 s.)}
         \label{fig:tut-trans}
     \end{subfigure}
     \caption{Results of the tutorial problem.}
