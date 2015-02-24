@@ -1,0 +1,6 @@
+	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"plane"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".bc_south"	"water_volume"	0.5	0	0.5	0	0	0	0	0	0	0
+	0	".bc_east"	"water_volume"	-0.5	-0.5	0	0	0	0	0	0	0	0
+	0	".bc_north"	"water_volume"	-0.5	-0.5	0	0	0	0	0	0	0	0
+	0	".bc_west"	"water_volume"	0.5	0	0.5	0	0	0	0	0	0	0

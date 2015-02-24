@@ -1,567 +1,85 @@
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  0             0             0             
-  -3            IMPLICIT BOUNDARY        water_volume  0             0             0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  0             0             0             
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  0             -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  0             -128          
-
-
-# Cumulative mass balance on time interval [0,0]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             0             0             0             0             0             0             
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.1
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.1          0             -0.1          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.96444       9.06444       -0.1          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -12.7898      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -12.7898      -128          
-
-
-# Cumulative mass balance on time interval [0,0.1]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -12.8         0.896444      -13.6964      -12.7898      -0.906667     0.0661972     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.2
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.2          0             -0.2          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.86444       9.06444       -0.2          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -25.5696      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -25.5696      -128          
-
-
-# Cumulative mass balance on time interval [0,0.2]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -25.6         1.78289       -27.3829      -25.5696      -1.81333      0.0662214     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.3
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.3          0             -0.3          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.76444       9.06444       -0.3          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -38.3393      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -38.3393      -128          
-
-
-# Cumulative mass balance on time interval [0,0.3]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -38.4         2.65933       -41.0593      -38.3393      -2.72         0.0662456     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.4
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.4          0             -0.4          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.66444       9.06444       -0.4          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -51.0991      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -51.0991      -128          
-
-
-# Cumulative mass balance on time interval [0,0.4]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -51.2         3.52578       -54.7258      -51.0991      -3.62667      0.0662698     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.5
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.5          0             -0.5          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.56444       9.06444       -0.5          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -63.8489      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -63.8489      -128          
-
-
-# Cumulative mass balance on time interval [0,0.5]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -64           4.38222       -68.3822      -63.8489      -4.53333      0.066294      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.6
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.6          0             -0.6          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.46444       9.06444       -0.6          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -76.5887      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -76.5887      -128          
-
-
-# Cumulative mass balance on time interval [0,0.6]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -76.8         5.22867       -82.0287      -76.5887      -5.44         0.0663183     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.7
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.7          0             -0.7          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.36444       9.06444       -0.7          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -89.3184      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -89.3184      -128          
-
-
-# Cumulative mass balance on time interval [0,0.7]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -89.6         6.06511       -95.6651      -89.3184      -6.34667      0.0663425     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.8
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.8          0             -0.8          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.26444       9.06444       -0.8          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -102.038      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -102.038      -128          
-
-
-# Cumulative mass balance on time interval [0,0.8]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -102.4        6.89156       -109.292      -102.038      -7.25333      0.0663668     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.9
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -0.9          0             -0.9          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.16444       9.06444       -0.9          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -114.748      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -114.748      -128          
-
-
-# Cumulative mass balance on time interval [0,0.9]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -115.2        7.708         -122.908      -114.748      -8.16         0.0663911     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1            0             -1            
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  8.06444       9.06444       -1            
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -127.448      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -127.448      -128          
-
-
-# Cumulative mass balance on time interval [0,1]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -128          8.51444       -136.514      -127.448      -9.06667      0.0664154     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.1
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.1          0             -1.1          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.96444       9.06444       -1.1          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -140.138      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -140.138      -128          
-
-
-# Cumulative mass balance on time interval [0,1.1]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -140.8        9.31089       -150.111      -140.138      -9.97333      0.0664398     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.2
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.2          0             -1.2          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.86444       9.06444       -1.2          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -152.817      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -152.817      -128          
-
-
-# Cumulative mass balance on time interval [0,1.2]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -153.6        10.0973       -163.697      -152.817      -10.88        0.0664641     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.3
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.3          0             -1.3          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.76444       9.06444       -1.3          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -165.487      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -165.487      -128          
-
-
-# Cumulative mass balance on time interval [0,1.3]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -166.4        10.8738       -177.274      -165.487      -11.7867      0.0664885     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.4
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.4          0             -1.4          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.66444       9.06444       -1.4          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -178.147      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -178.147      -128          
-
-
-# Cumulative mass balance on time interval [0,1.4]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -179.2        11.6402       -190.84       -178.147      -12.6933      0.0665129     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.5
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.5          0             -1.5          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.56444       9.06444       -1.5          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -190.797      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -190.797      -128          
-
-
-# Cumulative mass balance on time interval [0,1.5]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -192          12.3967       -204.397      -190.797      -13.6         0.0665373     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.6
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.6          0             -1.6          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.46444       9.06444       -1.6          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -203.436      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -203.436      -128          
-
-
-# Cumulative mass balance on time interval [0,1.6]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -204.8        13.1431       -217.943      -203.436      -14.5067      0.0665617     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.7
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.7          0             -1.7          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.36444       9.06444       -1.7          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -216.066      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -216.066      -128          
-
-
-# Cumulative mass balance on time interval [0,1.7]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -217.6        13.8796       -231.48       -216.066      -15.4133      0.0665862     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.8
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.8          0             -1.8          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.26444       9.06444       -1.8          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -228.686      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -228.686      -128          
-
-
-# Cumulative mass balance on time interval [0,1.8]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -230.4        14.606        -245.006      -228.686      -16.32        0.0666106     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.9
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -1.9          0             -1.9          
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.16444       9.06444       -1.9          
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -241.296      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -241.296      -128          
-
-
-# Cumulative mass balance on time interval [0,1.9]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -243.2        15.3224       -258.522      -241.296      -17.2267      0.0666351     
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 2
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  -2            0             -2            
-  -3            IMPLICIT BOUNDARY        water_volume  9.06444       9.06444       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  7.06444       9.06444       -2            
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  -253.896      -128          
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  -253.896      -128          
-
-
-# Cumulative mass balance on time interval [0,2]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  water_volume  0             -256          16.0289       -272.029      -253.896      -18.1333      0.0666596     
-
-
+	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"domain"	"water_volume"	0	0	0	0	-128	-128	0	0	0	0
+	0	".left"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"IMPLICIT BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"ALL"	"water_volume"	0	0	0	0	-128	-128	0	0	0	0
+	0.1	"domain"	"water_volume"	0	0	0	-12.7898	-128	-128	0	0	0	0
+	0.1	".left"	"water_volume"	-0.1	-0.1	0	0	0	0	0	0	0	0
+	0.1	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.1	"ALL"	"water_volume"	8.96444	-0.1	9.06444	-12.7898	-128	-128	0	0.896444	-12.8	0.906667
+	0.2	"domain"	"water_volume"	0	0	0	-25.5696	-128	-128	0	0	0	0
+	0.2	".left"	"water_volume"	-0.2	-0.2	0	0	0	0	0	0	0	0
+	0.2	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.2	"ALL"	"water_volume"	8.86444	-0.2	9.06444	-25.5696	-128	-128	0	1.78289	-25.6	1.81333
+	0.3	"domain"	"water_volume"	0	0	0	-38.3393	-128	-128	0	0	0	0
+	0.3	".left"	"water_volume"	-0.3	-0.3	0	0	0	0	0	0	0	0
+	0.3	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.3	"ALL"	"water_volume"	8.76444	-0.3	9.06444	-38.3393	-128	-128	0	2.65933	-38.4	2.72
+	0.4	"domain"	"water_volume"	0	0	0	-51.0991	-128	-128	0	0	0	0
+	0.4	".left"	"water_volume"	-0.4	-0.4	0	0	0	0	0	0	0	0
+	0.4	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.4	"ALL"	"water_volume"	8.66444	-0.4	9.06444	-51.0991	-128	-128	0	3.52578	-51.2	3.62667
+	0.5	"domain"	"water_volume"	0	0	0	-63.8489	-128	-128	0	0	0	0
+	0.5	".left"	"water_volume"	-0.5	-0.5	0	0	0	0	0	0	0	0
+	0.5	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.5	"ALL"	"water_volume"	8.56444	-0.5	9.06444	-63.8489	-128	-128	0	4.38222	-64	4.53333
+	0.6	"domain"	"water_volume"	0	0	0	-76.5887	-128	-128	0	0	0	0
+	0.6	".left"	"water_volume"	-0.6	-0.6	0	0	0	0	0	0	0	0
+	0.6	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.6	"ALL"	"water_volume"	8.46444	-0.6	9.06444	-76.5887	-128	-128	0	5.22867	-76.8	5.44
+	0.7	"domain"	"water_volume"	0	0	0	-89.3184	-128	-128	0	0	0	0
+	0.7	".left"	"water_volume"	-0.7	-0.7	0	0	0	0	0	0	0	0
+	0.7	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.7	"ALL"	"water_volume"	8.36444	-0.7	9.06444	-89.3184	-128	-128	0	6.06511	-89.6	6.34667
+	0.8	"domain"	"water_volume"	0	0	0	-102.038	-128	-128	0	0	0	0
+	0.8	".left"	"water_volume"	-0.8	-0.8	0	0	0	0	0	0	0	0
+	0.8	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.8	"ALL"	"water_volume"	8.26444	-0.8	9.06444	-102.038	-128	-128	0	6.89156	-102.4	7.25333
+	0.9	"domain"	"water_volume"	0	0	0	-114.748	-128	-128	0	0	0	0
+	0.9	".left"	"water_volume"	-0.9	-0.9	0	0	0	0	0	0	0	0
+	0.9	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	0.9	"ALL"	"water_volume"	8.16444	-0.9	9.06444	-114.748	-128	-128	0	7.708	-115.2	8.16
+	1	"domain"	"water_volume"	0	0	0	-127.448	-128	-128	0	0	0	0
+	1	".left"	"water_volume"	-1	-1	0	0	0	0	0	0	0	0
+	1	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1	"ALL"	"water_volume"	8.06444	-1	9.06444	-127.448	-128	-128	0	8.51444	-128	9.06667
+	1.1	"domain"	"water_volume"	0	0	0	-140.138	-128	-128	0	0	0	0
+	1.1	".left"	"water_volume"	-1.1	-1.1	0	0	0	0	0	0	0	0
+	1.1	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.1	"ALL"	"water_volume"	7.96444	-1.1	9.06444	-140.138	-128	-128	0	9.31089	-140.8	9.97333
+	1.2	"domain"	"water_volume"	0	0	0	-152.817	-128	-128	0	0	0	0
+	1.2	".left"	"water_volume"	-1.2	-1.2	0	0	0	0	0	0	0	0
+	1.2	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.2	"ALL"	"water_volume"	7.86444	-1.2	9.06444	-152.817	-128	-128	0	10.0973	-153.6	10.88
+	1.3	"domain"	"water_volume"	0	0	0	-165.487	-128	-128	0	0	0	0
+	1.3	".left"	"water_volume"	-1.3	-1.3	0	0	0	0	0	0	0	0
+	1.3	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.3	"ALL"	"water_volume"	7.76444	-1.3	9.06444	-165.487	-128	-128	0	10.8738	-166.4	11.7867
+	1.4	"domain"	"water_volume"	0	0	0	-178.147	-128	-128	0	0	0	0
+	1.4	".left"	"water_volume"	-1.4	-1.4	0	0	0	0	0	0	0	0
+	1.4	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.4	"ALL"	"water_volume"	7.66444	-1.4	9.06444	-178.147	-128	-128	0	11.6402	-179.2	12.6933
+	1.5	"domain"	"water_volume"	0	0	0	-190.797	-128	-128	0	0	0	0
+	1.5	".left"	"water_volume"	-1.5	-1.5	0	0	0	0	0	0	0	0
+	1.5	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.5	"ALL"	"water_volume"	7.56444	-1.5	9.06444	-190.797	-128	-128	0	12.3967	-192	13.6
+	1.6	"domain"	"water_volume"	0	0	0	-203.436	-128	-128	0	0	0	0
+	1.6	".left"	"water_volume"	-1.6	-1.6	0	0	0	0	0	0	0	0
+	1.6	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.6	"ALL"	"water_volume"	7.46444	-1.6	9.06444	-203.436	-128	-128	0	13.1431	-204.8	14.5067
+	1.7	"domain"	"water_volume"	0	0	0	-216.066	-128	-128	0	0	0	0
+	1.7	".left"	"water_volume"	-1.7	-1.7	0	0	0	0	0	0	0	0
+	1.7	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.7	"ALL"	"water_volume"	7.36444	-1.7	9.06444	-216.066	-128	-128	0	13.8796	-217.6	15.4133
+	1.8	"domain"	"water_volume"	0	0	0	-228.686	-128	-128	0	0	0	0
+	1.8	".left"	"water_volume"	-1.8	-1.8	0	0	0	0	0	0	0	0
+	1.8	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.8	"ALL"	"water_volume"	7.26444	-1.8	9.06444	-228.686	-128	-128	0	14.606	-230.4	16.32
+	1.9	"domain"	"water_volume"	0	0	0	-241.296	-128	-128	0	0	0	0
+	1.9	".left"	"water_volume"	-1.9	-1.9	0	0	0	0	0	0	0	0
+	1.9	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	1.9	"ALL"	"water_volume"	7.16444	-1.9	9.06444	-241.296	-128	-128	0	15.3224	-243.2	17.2267
+	2	"domain"	"water_volume"	0	0	0	-253.896	-128	-128	0	0	0	0
+	2	".left"	"water_volume"	-2	-2	0	0	0	0	0	0	0	0
+	2	"IMPLICIT BOUNDARY"	"water_volume"	9.06444	0	9.06444	0	0	0	0	0	0	0
+	2	"ALL"	"water_volume"	7.06444	-2	9.06444	-253.896	-128	-128	0	16.0289	-256	18.1333

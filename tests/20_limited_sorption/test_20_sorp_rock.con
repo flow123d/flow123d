@@ -28,9 +28,7 @@
         velocity_p0 = "flow_output_stream"
       }, 
 
-      water_balance = {
-        format = "legacy"
-      },
+      water_balance = true,
 
       solver = { 
         TYPE = "Petsc",
@@ -80,7 +78,6 @@
       },
 
       mass_balance = {
-        format = "legacy",
         cumulative = true
       }
     } 

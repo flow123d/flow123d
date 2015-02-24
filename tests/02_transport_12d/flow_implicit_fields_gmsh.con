@@ -32,9 +32,7 @@
           conductivity = 1
         }
       ],
-      water_balance = {
-        format = "legacy"
-      }
+      water_balance = true
     },
 
     secondary_equation = {
@@ -87,7 +85,6 @@
       ],
       dg_variant = "symmetric",
       mass_balance = {
-        format = "legacy",
         cumulative = true
       }
     }

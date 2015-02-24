@@ -38,10 +38,7 @@
         output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0", "velocity_diff", "pressure_diff", "div_diff" ]
       }, 
 
-      water_balance = {
-        file = "water_balance.out", 
-        format = "legacy"
-      },
+      water_balance = true,
 
       solver = {
         TYPE = "Petsc",         

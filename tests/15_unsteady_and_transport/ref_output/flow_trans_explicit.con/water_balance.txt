@@ -1,0 +1,64 @@
+	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"region_100"	"water_volume"	0	0	0	0	-128	-128	0	0	0	0
+	0	"IMPLICIT BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"ALL"	"water_volume"	0	0	0	0	-128	-128	0	0	0	0
+	0.1	"region_100"	"water_volume"	0	0	0	-12.7943	-128	-128	0	0	0	0
+	0.1	"IMPLICIT BOUNDARY"	"water_volume"	7.88236	-0.100232	7.98259	0	0	0	0	0	0	0
+	0.1	"ALL"	"water_volume"	7.88236	-0.100232	7.98259	-12.7943	-128	-128	0	0.792731	-12.8	0.798435
+	0.2	"region_100"	"water_volume"	0	0	0	-25.5786	-128	-128	0	0	0	0
+	0.2	"IMPLICIT BOUNDARY"	"water_volume"	7.78244	-0.200159	7.98259	0	0	0	0	0	0	0
+	0.2	"ALL"	"water_volume"	7.78244	-0.200159	7.98259	-25.5786	-128	-128	0	1.57547	-25.6	1.59687
+	0.3	"region_100"	"water_volume"	0	0	0	-38.3529	-128	-128	0	0	0	0
+	0.3	"IMPLICIT BOUNDARY"	"water_volume"	7.68248	-0.300118	7.98259	0	0	0	0	0	0	0
+	0.3	"ALL"	"water_volume"	7.68248	-0.300118	7.98259	-38.3529	-128	-128	0	2.34822	-38.4	2.3953
+	0.4	"region_100"	"water_volume"	0	0	0	-51.1172	-128	-128	0	0	0	0
+	0.4	"IMPLICIT BOUNDARY"	"water_volume"	7.5825	-0.400092	7.98259	0	0	0	0	0	0	0
+	0.4	"ALL"	"water_volume"	7.5825	-0.400092	7.98259	-51.1172	-128	-128	0	3.11097	-51.2	3.19374
+	0.5	"region_100"	"water_volume"	0	0	0	-63.8715	-128	-128	0	0	0	0
+	0.5	"IMPLICIT BOUNDARY"	"water_volume"	7.48252	-0.500072	7.98259	0	0	0	0	0	0	0
+	0.5	"ALL"	"water_volume"	7.48252	-0.500072	7.98259	-63.8715	-128	-128	0	3.86372	-64	3.99217
+	0.6	"region_100"	"water_volume"	0	0	0	-76.6159	-128	-128	0	0	0	0
+	0.6	"IMPLICIT BOUNDARY"	"water_volume"	7.38254	-0.600057	7.98259	0	0	0	0	0	0	0
+	0.6	"ALL"	"water_volume"	7.38254	-0.600057	7.98259	-76.6159	-128	-128	0	4.60647	-76.8	4.79061
+	0.7	"region_100"	"water_volume"	0	0	0	-89.3502	-128	-128	0	0	0	0
+	0.7	"IMPLICIT BOUNDARY"	"water_volume"	7.28255	-0.700044	7.98259	0	0	0	0	0	0	0
+	0.7	"ALL"	"water_volume"	7.28255	-0.700044	7.98259	-89.3502	-128	-128	0	5.33923	-89.6	5.58904
+	0.8	"region_100"	"water_volume"	0	0	0	-102.075	-128	-128	0	0	0	0
+	0.8	"IMPLICIT BOUNDARY"	"water_volume"	7.18256	-0.800033	7.98259	0	0	0	0	0	0	0
+	0.8	"ALL"	"water_volume"	7.18256	-0.800033	7.98259	-102.075	-128	-128	0	6.06198	-102.4	6.38748
+	0.9	"region_100"	"water_volume"	0	0	0	-114.789	-128	-128	0	0	0	0
+	0.9	"IMPLICIT BOUNDARY"	"water_volume"	7.08257	-0.900024	7.98259	0	0	0	0	0	0	0
+	0.9	"ALL"	"water_volume"	7.08257	-0.900024	7.98259	-114.789	-128	-128	0	6.77474	-115.2	7.18591
+	1	"region_100"	"water_volume"	0	0	0	-127.493	-128	-128	0	0	0	0
+	1	"IMPLICIT BOUNDARY"	"water_volume"	6.98258	-1.00002	7.98259	0	0	0	0	0	0	0
+	1	"ALL"	"water_volume"	6.98258	-1.00002	7.98259	-127.493	-128	-128	0	7.4775	-128	7.98435
+	1.1	"region_100"	"water_volume"	0	0	0	-140.187	-128	-128	0	0	0	0
+	1.1	"IMPLICIT BOUNDARY"	"water_volume"	6.88259	-1.10001	7.98259	0	0	0	0	0	0	0
+	1.1	"ALL"	"water_volume"	6.88259	-1.10001	7.98259	-140.187	-128	-128	0	8.17025	-140.8	8.78278
+	1.2	"region_100"	"water_volume"	0	0	0	-152.872	-128	-128	0	0	0	0
+	1.2	"IMPLICIT BOUNDARY"	"water_volume"	6.78259	-1.2	7.98259	0	0	0	0	0	0	0
+	1.2	"ALL"	"water_volume"	6.78259	-1.2	7.98259	-152.872	-128	-128	0	8.85301	-153.6	9.58122
+	1.3	"region_100"	"water_volume"	0	0	0	-165.546	-128	-128	0	0	0	0
+	1.3	"IMPLICIT BOUNDARY"	"water_volume"	6.6826	-1.3	7.98259	0	0	0	0	0	0	0
+	1.3	"ALL"	"water_volume"	6.6826	-1.3	7.98259	-165.546	-128	-128	0	9.52577	-166.4	10.3797
+	1.4	"region_100"	"water_volume"	0	0	0	-178.21	-128	-128	0	0	0	0
+	1.4	"IMPLICIT BOUNDARY"	"water_volume"	6.58261	-1.39999	7.98259	0	0	0	0	0	0	0
+	1.4	"ALL"	"water_volume"	6.58261	-1.39999	7.98259	-178.21	-128	-128	0	10.1885	-179.2	11.1781
+	1.5	"region_100"	"water_volume"	0	0	0	-190.865	-128	-128	0	0	0	0
+	1.5	"IMPLICIT BOUNDARY"	"water_volume"	6.48261	-1.49998	7.98259	0	0	0	0	0	0	0
+	1.5	"ALL"	"water_volume"	6.48261	-1.49998	7.98259	-190.865	-128	-128	0	10.8413	-192	11.9765
+	1.6	"region_100"	"water_volume"	0	0	0	-203.509	-128	-128	0	0	0	0
+	1.6	"IMPLICIT BOUNDARY"	"water_volume"	6.38262	-1.59998	7.98259	0	0	0	0	0	0	0
+	1.6	"ALL"	"water_volume"	6.38262	-1.59998	7.98259	-203.509	-128	-128	0	11.4841	-204.8	12.775
+	1.7	"region_100"	"water_volume"	0	0	0	-216.143	-128	-128	0	0	0	0
+	1.7	"IMPLICIT BOUNDARY"	"water_volume"	6.28262	-1.69997	7.98259	0	0	0	0	0	0	0
+	1.7	"ALL"	"water_volume"	6.28262	-1.69997	7.98259	-216.143	-128	-128	0	12.1168	-217.6	13.5734
+	1.8	"region_100"	"water_volume"	0	0	0	-228.768	-128	-128	0	0	0	0
+	1.8	"IMPLICIT BOUNDARY"	"water_volume"	6.18262	-1.79997	7.98259	0	0	0	0	0	0	0
+	1.8	"ALL"	"water_volume"	6.18262	-1.79997	7.98259	-228.768	-128	-128	0	12.7396	-230.4	14.3718
+	1.9	"region_100"	"water_volume"	0	0	0	-241.382	-128	-128	0	0	0	0
+	1.9	"IMPLICIT BOUNDARY"	"water_volume"	6.08263	-1.89997	7.98259	0	0	0	0	0	0	0
+	1.9	"ALL"	"water_volume"	6.08263	-1.89997	7.98259	-241.382	-128	-128	0	13.3523	-243.2	15.1703
+	2	"region_100"	"water_volume"	0	0	0	-253.986	-128	-128	0	0	0	0
+	2	"IMPLICIT BOUNDARY"	"water_volume"	5.98263	-1.99996	7.98259	0	0	0	0	0	0	0
+	2	"ALL"	"water_volume"	5.98263	-1.99996	7.98259	-253.986	-128	-128	0	13.9551	-256	15.9687

@@ -1,23 +1,6 @@
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  2             .left                    water_volume  0             0             0             
-  3             .right                   water_volume  0             0             0             
-  4             .top                     water_volume  0             0             0             
-  5             .bottom                  water_volume  0             0             0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  0             0             0             
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  1             domain                   water_volume  0             0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  0             0             
-
-
+	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"domain"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".left"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".right"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".top"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".bottom"	"water_volume"	0	0	0	0	0	0	0	0	0	0

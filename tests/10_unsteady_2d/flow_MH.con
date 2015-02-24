@@ -35,9 +35,8 @@
       }, 
 
       water_balance = {
-        format = "legacy",
         cumulative = true
-      }
+      },
 
       solver = {
         TYPE = "Petsc", 

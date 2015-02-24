@@ -56,10 +56,7 @@
         }
       ],
       
-      water_balance = {
-        file = "water_balance.out", 
-        format = "legacy"
-      },
+      water_balance = true,
 
       output = {
         output_stream = {

@@ -35,10 +35,7 @@
           cross_section = 1
         }
       ],
-      water_balance = {
-        format = "legacy",
-        cumulative = true
-      }
+      water_balance = true
     },
 
     secondary_equation = {
@@ -74,7 +71,6 @@
         }
       ],
       mass_balance = {
-        format = "legacy",
         cumulative = true
       }
     }

@@ -23,9 +23,7 @@
         output_fields = [ "pressure_p0", "velocity_p0" ]
       },
 
-      water_balance = {
-        format = "legacy"
-      },
+      water_balance = true,
 
       solver = {
         TYPE = "Petsc",
@@ -64,7 +62,6 @@
         max_dt = 0.25
       },
       mass_balance = {
-        format = "legacy",
         cumulative = true
       },
       solver = { 
