@@ -111,6 +111,27 @@ using namespace std;
 #endif
 
 /**
+ * \def START_TIMER_EXT (tag, subtag)
+ *
+ * @brief Starts a timer with specified tag and subtag.
+ *
+ * In fact it creates an static constant expression that identifies the point in the code and
+ * contains tag and subtag of the involved timer and its hash. Then it creates local variable that
+ * calls @p Profiler::start_timer() in constructor and @p Profiler::stop_timer() in destructor.
+ * This way the timer is automatically closed at the end of current block.
+ *
+ * ATTENTION: This macro expands to two statements so following code is illegal:
+ * @code
+ *      if (some_condition) START_TIMER_EXT(tag, subtag);
+ * @endcode
+ */
+#ifdef FLOW123D_DEBUG_PROFILER
+#define START_TIMER_EXT(tag, subtag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT_EXT(tag, subtag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
+#else
+#define START_TIMER_EXT(tag, subtag)
+#endif
+
+/**
  * \def END_TIMER(tag)
  *
  * @brief Ends a timer with specified tag.
@@ -183,6 +204,13 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str) {
  */
 #define CODE_POINT(tag) CodePoint(tag, __FILE__, __func__, __LINE__)
 
+
+/**
+ * Macro to generate constexpr CodePoint object.
+ */
+#define CODE_POINT_EXT(tag, subtag) CodePoint(tag, subtag, __FILE__, __func__, __LINE__)
+
+
 /**
  * @brief Class that represents point in the code.
  *
@@ -196,13 +224,20 @@ public:
     CONSTEXPR_ CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
     : tag_(tag), file_(file), func_(func), line_(line),
       hash_(str_hash(tag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
-    {}
+    {};
+    CONSTEXPR_ CodePoint(const char *tag, const char *subtag, const char * file, const char * func, const unsigned int line)
+    : tag_(tag), subtag_(subtag), file_(file), func_(func), line_(line),
+      hash_(str_hash(tag + subtag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
+    {};
 
     /// Size of child arrays in timer nodes.
     static const unsigned int max_n_timer_childs=13;
 
     /// Tag of the code point.
     const char * const tag_;
+
+    /// Tag of the code point.
+    const char * const subtag_;
 
     /// file name of the code point
     const char * const file_;
