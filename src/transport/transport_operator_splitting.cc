@@ -42,9 +42,7 @@ AbstractRecord AdvectionProcessBase::input_type
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.")
-	.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
-			"Settings for computing mass balance.");
+			"Parameters of output stream.");
 
 
 Record TransportBase::input_type_output_record
@@ -71,7 +69,9 @@ Record TransportOperatorSplitting::input_type
     		), IT::Default::obligatory(), "")
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
     		Default("conc"),
-       		"List of fields to write to output file.");
+       		"List of fields to write to output file.")
+	.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
+			"Settings for computing mass balance.");
 
 
 

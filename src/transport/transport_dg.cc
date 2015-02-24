@@ -83,6 +83,7 @@ Record TransportDG<Model>::input_type
 
 
 
+
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 {
     unsigned int q_order;
@@ -353,7 +354,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 
     // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    Input::Iterator<Input::Record> it;
+	if (typeid(Model) == typeid(HeatTransferModel))
+		it = in_rec.find<Input::Record>("energy_balance");
+	else
+		it = in_rec.find<Input::Record>("mass_balance");
     if (it->val<bool>("balance_on"))
     {
     	vector<unsigned int> edg_regions;

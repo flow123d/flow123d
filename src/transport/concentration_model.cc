@@ -95,7 +95,9 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
-					"Names of transported substances.");
+					"Names of transported substances.")
+			.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
+					"Settings for computing mass balance.");
 
 	return rec;
 }
