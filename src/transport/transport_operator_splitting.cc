@@ -272,7 +272,7 @@ void TransportOperatorSplitting::zero_time_step()
 
 void TransportOperatorSplitting::update_solution() {
 
-	vector<double> source(n_substances()), region_mass(n_substances());
+	vector<double> source(n_substances()), region_mass(mesh_->region_db().bulk_size());
 
     time_->next_time();
 
