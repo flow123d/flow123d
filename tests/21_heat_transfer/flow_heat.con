@@ -86,8 +86,7 @@
         accuracy = 1e-7
       },  
       time = {
-        end_time = 10,
-        init_dt = 1
+        end_time = 10
       }
     }
   },    

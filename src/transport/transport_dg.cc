@@ -250,7 +250,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	this->eq_data_ = &data_;
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    time_->fix_dt_until_mark();
+
 
     // Read names of transported substances.
     // TODO: Substances should be held in TransportOperatorSplitting only.
@@ -430,7 +430,9 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
-    data_.set_time(*time_);
+	data_.mark_input_times(time_->equation_fixed_mark_type());
+	data_.set_time(*time_);
+
 
     // set initial conditions
     set_initial_condition();
@@ -1300,7 +1302,7 @@ void TransportDG<Model>::set_boundary_conditions()
                 }
                 else if (bc_type[sbi] == EqData::neumann)
                 {
-                	bc_term = bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+                	bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
                 }
                 else if (bc_type[sbi] == EqData::robin)
                 {
@@ -1611,11 +1613,8 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
 	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
 	unsigned int dof_indices[ndofs];
 	vector<arma::vec3> side_velocity(qsize);
-    vector<arma::vec> bc_values(qsize);
+    vector<arma::vec> bc_values(qsize, arma::vec(n_subst_)), bc_fluxes(qsize, arma::vec(n_subst_)), bc_sigma(qsize, arma::vec(n_subst_));
 	arma::vec3 conc_grad;
-
-    for (unsigned int k=0; k<qsize; k++)
-    	bc_values[k].resize(n_subst_);
 
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
@@ -1638,6 +1637,8 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
 		calculate_velocity(cell, side_velocity, fsv_rt);
 		Model::compute_advection_diffusion_coefficients(fe_values.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
 		Model::compute_dirichlet_bc(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
+        data_.bc_flux.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_fluxes);
+        data_.bc_robin_sigma.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_sigma);
 		arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
 
 		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
@@ -1671,6 +1672,16 @@ void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vecto
 
 					// the penalty term has to be added otherwise the mass balance will not hold
 					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*fe_values.JxW(k);
+				}
+				else if (bc_type[sbi] == EqData::neumann)
+				{
+					// flux due to Neumann b.c.
+					mass_flux += bc_fluxes[k][sbi]*fe_values.JxW(k);
+				}
+				else if (bc_type[sbi] == EqData::robin)
+				{
+					// flux due to Robin b.c.
+					mass_flux += bc_sigma[k][sbi]*(conc - bc_values[k][sbi])*fe_values.JxW(k);
 				}
 
 			}

@@ -28,6 +28,10 @@ build_tree
 *.backup
 
 doc/reference_manual/*.aux
+doc/reference_manual/flow123d_doc.pdf
+doc/reference_manual/add_to_ref_doc.*
+doc/reference_manual/*.brf
+doc/reference_manual/input_reference_raw.tex
 doc/reference_manual/*.bbl
 doc/reference_manual/*.blg
 doc/reference_manual/*.out

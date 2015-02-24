@@ -91,6 +91,7 @@ set(sources_mesh_lib
     mesh/bounding_box.cc
     # mesh/bih_node.cc
     mesh/bih_tree.cc
+    mesh/reader_instances.cc
     
     mesh/ngh/src/abscissa.cpp
     mesh/ngh/src/bisector.cpp

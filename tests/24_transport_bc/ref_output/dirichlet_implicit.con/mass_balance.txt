@@ -1,0 +1,319 @@
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 0.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        0             0             0             
+  3             .right                   tracer        0             0             0             
+  4             .top                     tracer        0             0             0             
+  5             .bottom                  tracer        0             0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        0             0             0             
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        0             0             
+
+
+# Cumulative mass balance on time interval [0,0]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             0             0             0             0             0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 1.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.304495     0             -0.304495     
+  3             .right                   tracer        0.0258669     0.0258669     0             
+  4             .top                     tracer        -0.0768744    0.00292004    -0.0797944    
+  5             .bottom                  tracer        -0.0770364    0.00294526    -0.0799817    
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.432539     0.0317322     -0.464272     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        0.432539      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        0.432539      0             
+
+
+# Cumulative mass balance on time interval [0,1]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -0.432539     0.432539      0.432539      4.21885e-15   9.75367e-15   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 2.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.230813     0             -0.230813     
+  3             .right                   tracer        0.0435747     0.0435747     0             
+  4             .top                     tracer        -0.0256424    0.00898837    -0.0346308    
+  5             .bottom                  tracer        -0.0258052    0.0090088     -0.034814     
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.238686     0.0615719     -0.300258     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        0.671225      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        0.671225      0             
+
+
+# Cumulative mass balance on time interval [0,2]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -0.671225     0.671225      0.671225      -1.1624e-13   1.73176e-13   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 3.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.214885     0             -0.214885     
+  3             .right                   tracer        0.0563029     0.0563029     0             
+  4             .top                     tracer        -0.00804952   0.0130719     -0.0211214    
+  5             .bottom                  tracer        -0.00820148   0.0130831     -0.0212845    
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.174833     0.0824579     -0.257291     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        0.846058      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        0.846058      0             
+
+
+# Cumulative mass balance on time interval [0,3]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -0.846058     0.846058      0.846058      -8.40439e-14  9.93358e-14   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 4.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.209331     0             -0.209331     
+  3             .right                   tracer        0.0689132     0.0689132     0             
+  4             .top                     tracer        0.00173907    0.0162944     -0.0145554    
+  5             .bottom                  tracer        0.00159878    0.0163014     -0.0147027    
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.13708      0.101509      -0.238589     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        0.983138      0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        0.983138      0             
+
+
+# Cumulative mass balance on time interval [0,4]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -0.983138     0.983138      0.983138      -8.37108e-14  8.51466e-14   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 5.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.206818     0             -0.206818     
+  3             .right                   tracer        0.0817725     0.0817725     0             
+  4             .top                     tracer        0.0083362     0.0190419     -0.0107057    
+  5             .bottom                  tracer        0.00820587    0.0190519     -0.010846     
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.108503     0.119866      -0.228369     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.09164       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.09164       0             
+
+
+# Cumulative mass balance on time interval [0,5]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.09164      1.09164       1.09164       -7.9714e-14   7.30222e-14   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 6.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.205523     0             -0.205523     
+  3             .right                   tracer        0.0943229     0.0943229     0             
+  4             .top                     tracer        0.0130907     0.0214558     -0.00836513   
+  5             .bottom                  tracer        0.0129687     0.0214689     -0.00850028   
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.0851412    0.137248      -0.222389     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.17678       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.17678       0             
+
+
+# Cumulative mass balance on time interval [0,6]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.17678      1.17678       1.17678       -8.52651e-14  7.24562e-14   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 7.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.204805     0             -0.204805     
+  3             .right                   tracer        0.105897      0.105897      0             
+  4             .top                     tracer        0.016593      0.0235623     -0.00696927   
+  5             .bottom                  tracer        0.0164779     0.0235799     -0.00710199   
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.0658371    0.15304       -0.218877     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.24262       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.24262       0             
+
+
+# Cumulative mass balance on time interval [0,7]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.24262      1.24262       1.24262       -8.23785e-14  6.62943e-14   
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 8.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.204387     0             -0.204387     
+  3             .right                   tracer        0.116024      0.116024      0             
+  4             .top                     tracer        0.0191824     0.025332      -0.0061496    
+  5             .bottom                  tracer        0.019073      0.0253574     -0.00628449   
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.050108     0.166713      -0.216821     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.29273       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.29273       0             
+
+
+# Cumulative mass balance on time interval [0,8]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.29273      1.29273       1.29273       -8.10463e-14  6.2694e-14    
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 9.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.204135     0             -0.204135     
+  3             .right                   tracer        0.124494      0.124494      0             
+  4             .top                     tracer        0.0210895     0.0267567     -0.00566724   
+  5             .bottom                  tracer        0.0209845     0.0267859     -0.00580135   
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.0375661    0.178037      -0.215603     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.33029       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.33029       0             
+
+
+# Cumulative mass balance on time interval [0,9]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.33029      1.33029       1.33029       0             0             
+
+
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 10.000000
+
+
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  2             .left                    tracer        -0.203978     0             -0.203978     
+  3             .right                   tracer        0.131324      0.131324      0             
+  4             .top                     tracer        0.0224843     0.0277936     -0.00530928   
+  5             .bottom                  tracer        0.0223829     0.0278321     -0.0054492    
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     tracer        -0.0277865    0.18695       -0.214737     
+
+
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             domain                   tracer        1.35808       0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       tracer        1.35808       0             
+
+
+# Cumulative mass balance on time interval [0,10]
+# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
+# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
+  tracer        0             0             -1.35808      1.35808       1.35808       -9.4591e-14   6.96505e-14   
+
+

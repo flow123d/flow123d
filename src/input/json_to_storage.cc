@@ -5,6 +5,8 @@
  *      Author: jb
  */
 
+#include <boost/cstdint.hpp>
+#include <limits>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
@@ -371,7 +373,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         }
 
         for( set_it = keys_to_processed.begin(); set_it != keys_to_processed.end(); ++set_it) {
-        	xprintf(Warn, "Key '%s' in record '%s' was not retrieved from input JSON file.\n", (*set_it).c_str(), record->type_name().c_str() );
+        	xprintf(Warn, "Unprocessed key '%s' in record '%s'.\n", (*set_it).c_str(), p.str().c_str() );
         }
 
         return storage_array;
@@ -530,9 +532,12 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
 {
     if (p.head()->type() == json_spirit::int_type) {
-        int value = p.head()->get_int();
-        int_type->match(value);
-        if (int_type->match(value)) {
+        boost::int64_t value = p.head()->get_int64();
+
+        if ( value >= std::numeric_limits<int>::min() &&
+             value <= std::numeric_limits<int>::max() &&
+             int_type->match(value) )
+        {
             return new StorageInt( value );
         } else {
             THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(int_type->desc()) );
@@ -552,10 +557,10 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
 {
     double value;
 
-    if (p.head()->type() == json_spirit::real_type) {
+    auto value_type = p.head()->type();
+    if (    value_type== json_spirit::real_type
+         || value_type == json_spirit::int_type) {
         value = p.head()->get_real();
-    } else if (p.head()->type() == json_spirit::int_type) {
-        value = p.head()->get_int();
     } else {
         THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(double_type->desc()) );
