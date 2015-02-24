@@ -353,15 +353,19 @@ void DarcyFlowMH_Steady::output_data() {
 
 	if (balance_ != nullptr)
 	{
-		balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
-		balance_->calculate_source(water_balance_idx_, schur0->get_solution());
-		balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
 		if (balance_->cumulative() && time_->tlevel() > 0)
 		{
 			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
 			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
 		}
-		balance_->output(time_->t());
+
+		if (time_->is_current( TimeGovernor::marks().type_output() ))
+		{
+			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
+			balance_->calculate_source(water_balance_idx_, schur0->get_solution());
+			balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
+			balance_->output(time_->t());
+		}
 	}
 }
 
