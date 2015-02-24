@@ -366,7 +366,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), edg_regions, region_db(), *it);
 
-    	subst_idx = balance_->add_quantities(substances_.names());
+    	// a not very nice workaround for model with single solution component with no name
+    	if (typeid(Model) == typeid(HeatTransferModel))
+    		subst_idx = {balance_->add_quantity("energy")};
+    	else
+    		subst_idx = balance_->add_quantities(substances_.names());
 
 	    balance_->allocate(feo->dh()->distr()->lsize(),
 	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
@@ -1316,7 +1320,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
 					if (balance_ != nullptr)
 					{
-						if ((bc_type[sbi] == EqData::dirichlet))
+						if (bc_type[sbi] == EqData::dirichlet)
 						{
 							local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
 									- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
@@ -1325,6 +1329,16 @@ void TransportDG<Model>::set_boundary_conditions()
 						}
 						else if (bc_type[sbi] == EqData::inflow && side_flux < 0)
 						{
+							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
+						}
+						else if (bc_type[sbi] == EqData::neumann)
+						{
+							local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
+						}
+						else if (bc_type[sbi] == EqData::robin)
+						{
+							local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
 							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
 						}
 						else
