@@ -1,5 +1,5 @@
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.000000
+# Time: 0
 
 
 # Mass flux through boundary [M/T]:
@@ -26,7 +26,7 @@
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.500000
+# Time: 0.5
 
 
 # Mass flux through boundary [M/T]:
@@ -49,11 +49,11 @@
 # Cumulative mass balance on time interval [0,0.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -10.4073      10.4073       10.4073       1.77636e-15   1.70683e-16   
+  A             0             0             -10.4073      10.4073       10.4073       8.88178e-15   8.53417e-16   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.000000
+# Time: 1
 
 
 # Mass flux through boundary [M/T]:
@@ -76,11 +76,11 @@
 # Cumulative mass balance on time interval [0,1]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -18.6368      18.6368       18.6368       7.10543e-15   3.81258e-16   
+  A             0             0             -18.6368      18.6368       18.6368       1.42109e-14   7.62517e-16   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.500000
+# Time: 1.5
 
 
 # Mass flux through boundary [M/T]:
@@ -103,11 +103,11 @@
 # Cumulative mass balance on time interval [0,1.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -24.8454      24.8454       24.8454       7.10543e-15   2.85986e-16   
+  A             0             0             -24.8454      24.8454       24.8454       -1.77636e-14  7.14965e-16   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 2.000000
+# Time: 2
 
 
 # Mass flux through boundary [M/T]:
@@ -130,11 +130,11 @@
 # Cumulative mass balance on time interval [0,2]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -29.4534      29.4534       29.4534       -1.09779e-12  3.7272e-14    
+  A             0             0             -29.4534      29.4534       29.4534       -1.10489e-12  3.75133e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 2.500000
+# Time: 2.5
 
 
 # Mass flux through boundary [M/T]:
@@ -157,11 +157,11 @@
 # Cumulative mass balance on time interval [0,2.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -32.8608      32.8608       32.8608       -1.08002e-12  3.28666e-14   
+  A             0             0             -32.8608      32.8608       32.8608       -1.10134e-12  3.35153e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 3.000000
+# Time: 3
 
 
 # Mass flux through boundary [M/T]:
@@ -184,11 +184,11 @@
 # Cumulative mass balance on time interval [0,3]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -35.3868      35.3868       35.3868       -1.08002e-12  3.05206e-14   
+  A             0             0             -35.3868      35.3868       35.3868       -1.0516e-12   2.97174e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 3.500000
+# Time: 3.5
 
 
 # Mass flux through boundary [M/T]:
@@ -211,11 +211,11 @@
 # Cumulative mass balance on time interval [0,3.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -37.2715      37.2715       37.2715       -1.07292e-12  2.87866e-14   
+  A             0             0             -37.2715      37.2715       37.2715       -1.10134e-12  2.95492e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 4.000000
+# Time: 4
 
 
 # Mass flux through boundary [M/T]:
@@ -238,11 +238,11 @@
 # Cumulative mass balance on time interval [0,4]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -38.6897      38.6897       38.6897       -1.09424e-12  2.82824e-14   
+  A             0             0             -38.6897      38.6897       38.6897       -1.05871e-12  2.73641e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 4.500000
+# Time: 4.5
 
 
 # Mass flux through boundary [M/T]:
@@ -265,11 +265,11 @@
 # Cumulative mass balance on time interval [0,4.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -39.7655      39.7655       39.7655       -1.09424e-12  2.75172e-14   
+  A             0             0             -39.7655      39.7655       39.7655       -1.03029e-12  2.59091e-14   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 5.000000
+# Time: 5
 
 
 # Mass flux through boundary [M/T]:
@@ -292,6 +292,6 @@
 # Cumulative mass balance on time interval [0,5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  A             0             0             -40.5861      40.5861       40.5861       -1.0445e-12   2.57353e-14   
+  A             0             0             -40.5861      40.5861       40.5861       -1.13687e-12  2.80113e-14   
 
 

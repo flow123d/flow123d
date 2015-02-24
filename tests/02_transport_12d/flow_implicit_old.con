@@ -34,7 +34,11 @@
           anisotropy = 1,
           cross_section = 1
         }
-      ]
+      ],
+      water_balance = {
+        format = "legacy",
+        cumulative = true
+      }
     },
 
     secondary_equation = {
@@ -70,6 +74,7 @@
         }
       ],
       mass_balance = {
+        format = "legacy",
         cumulative = true
       }
     }

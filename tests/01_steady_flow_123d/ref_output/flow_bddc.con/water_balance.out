@@ -1,26 +1,26 @@
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 0
 
 
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  8             .1d_channel                2.25456e-05   2.25456e-05   0             0           
-  6             .2d_fracture_1             -2.48261e-05  1.05424       -1.05426      0           
-  7             .2d_fracture_2             -3.3114e-06   1.05426       -1.05427      0           
-  5             .3d_cube                   5.59192e-06   0.102171      -0.102165     0           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -2.44863e-12  2.21069       -2.21069      
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  8             .1d_channel              water_volume  2.25456e-05   2.25456e-05   0             
+  6             .2d_fracture_1           water_volume  -2.48261e-05  1.05424       -1.05426      
+  7             .2d_fracture_2           water_volume  -3.31141e-06  1.05426       -1.05427      
+  5             .3d_cube                 water_volume  5.59192e-06   0.102171      -0.102165     
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     water_volume  5.4609e-14    2.21069       -2.21069      
 
 
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             1d_channel                 0                                         0           
-  2             2d_fracture_1              0                                         0           
-  3             2d_fracture_2              0                                         0           
-  4             3d_cube                    0                                         0           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             1d_channel               water_volume  0             0             
+  2             2d_fracture_1            water_volume  0             0             
+  3             2d_fracture_2            water_volume  0             0             
+  4             3d_cube                  water_volume  0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       water_volume  0             0             
 
 

@@ -26,6 +26,10 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      water_balance = {
+        format = "legacy"
+      },
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -85,8 +89,11 @@
         reaction_immobile = {
           REF = "/problem/secondary_equation/reaction_term/reaction_mobile"
         }
+      },
+      mass_balance = {
+        format = "legacy",
+        cumulative = true
       }
-          
     } 
   }, 
   

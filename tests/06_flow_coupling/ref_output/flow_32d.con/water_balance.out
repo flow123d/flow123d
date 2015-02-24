@@ -1,22 +1,22 @@
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 0
 
 
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  3             .2d_fraction               -3.59699e-09  0             -3.59699e-09  0           
-  4             .3d_cube                   -2            7.8299e-08    -2            0           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -2            7.8299e-08    -2            
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  3             .2d_fraction             water_volume  -3.61098e-10  0             -3.61098e-10  
+  4             .3d_cube                 water_volume  -2            0             -2            
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     water_volume  -2            0             -2            
 
 
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             2d_fraction                -2                                        0           
-  2             3d_cube                    0                                         0           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    -2            
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  1             2d_fraction              water_volume  0             -2            
+  2             3d_cube                  water_volume  0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       water_volume  0             -2            
 
 

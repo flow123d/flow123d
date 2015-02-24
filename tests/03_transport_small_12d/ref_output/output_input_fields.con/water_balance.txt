@@ -1,29 +1,29 @@
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.000000
+# ----------------------------------------------- MASS BALANCE -----------------------------------------------
+# Time: 0
 
 
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  1             .1d_top                    -17.8123      0             -17.8123      0             
-  2             .1d_left                   8.97271       8.97271       0             0             
-  3             .1d_bottom                 8.97796       8.97796       0             0             
-  7             .2d_top                    -1.11365      0             -1.11365      0             
-  8             .2d_right                  -0.901061     0             -0.901061     0             
-  9             .2d_bottom                 0.974874      0.97642       -0.00154626   0             
-  10            .2d_left                   0.901475      0.904477      -0.00300279   0             
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -3.89699e-12  19.8316       -19.8316      
+# Mass flux through boundary [M/T]:
+# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
+# -------------------------------------------------------------------------------------------------------------
+  1             .1d_top                  water_volume  -17.8123      0             -17.8123      
+  2             .1d_left                 water_volume  8.97271       8.97271       0             
+  3             .1d_bottom               water_volume  8.97796       8.97796       0             
+  7             .2d_top                  water_volume  -1.11365      0             -1.11365      
+  8             .2d_right                water_volume  -0.901061     0             -0.901061     
+  9             .2d_bottom               water_volume  0.974874      0.97642       -0.00154626   
+  10            .2d_left                 water_volume  0.901475      0.904477      -0.00300279   
+# -------------------------------------------------------------------------------------------------------------
+# Total mass flux of substance [M/T]     water_volume  -3.91065e-12  19.8316       -19.8316      
 
 
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  4             1d_upper                   0                                         0             
-  5             1d_lower                   0                                         0             
-  6             1d_left_branch             0                                         0             
-  11            2d                         0                                         0             
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
+# Mass [M] and sources [M/T] on regions:
+# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
+# -------------------------------------------------------------------------------------------------------------
+  4             1d_upper                 water_volume  0             0             
+  5             1d_lower                 water_volume  0             0             
+  6             1d_left_branch           water_volume  0             0             
+  11            2d                       water_volume  0             0             
+# -------------------------------------------------------------------------------------------------------------
+# Total mass [M] and sources [M/T]       water_volume  0             0             
 
 

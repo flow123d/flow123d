@@ -34,6 +34,12 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      water_balance = {
+        format = "legacy",
+        cumulative = true
+      }
+
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-07
@@ -82,7 +88,10 @@
         r_tol = 1e-07
       }, 
       
-      mass_balance = { cumulative = true }
+      mass_balance = {
+        format = "legacy",
+        cumulative = true
+      }
     }, 
     
     dg_order = 2,

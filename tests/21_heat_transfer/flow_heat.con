@@ -43,14 +43,21 @@
         output_stream = { REF = "/system/output_streams/0" }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      water_balance = {
+        format = "legacy"
+      },
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-7
+        a_tol = 1e-7
       }
     },
  secondary_equation = {
       TYPE = "HeatTransfer_DG", 
       mass_balance = {
+        file = "mass_balance.txt",
+        format = "legacy",
         cumulative = true
       }
       input_fields= [

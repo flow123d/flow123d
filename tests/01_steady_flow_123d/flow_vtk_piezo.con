@@ -38,8 +38,12 @@
         }
       ],
 
+      water_balance = {
+        file = "water_balance.out", 
+        format = "legacy"
+      },
+
       output = {
-        balance_output = "water_balance.out", 
         output_stream = {
           REF = "/system/output_stream"
         }, 

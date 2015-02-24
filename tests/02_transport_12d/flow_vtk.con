@@ -33,6 +33,11 @@
         }
       ],
 
+      water_balance = {
+        format = "legacy",
+        cumulative = true
+      },
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -74,8 +79,8 @@
       time = {
         end_time = 5.0
       },
-        mass_balance = {
-        cumulative = true
+      mass_balance = {
+        format = "legacy"
       },
       
       reaction_term = {

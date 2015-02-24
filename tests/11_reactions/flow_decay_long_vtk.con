@@ -22,9 +22,14 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      water_balance = {
+        format = "legacy"
+      },
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07
+        a_tol = 1e-07
       }
     }, 
     
@@ -115,6 +120,10 @@
       },
       output_stream = {
         REF = "/system/output_streams/1"
+      },
+      mass_balance = {
+        format = "legacy",
+        cumulative = true
       }
     }
   }, 

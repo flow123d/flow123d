@@ -33,6 +33,10 @@
           flow_old_bcd_file = "./input/test2.fbc"
         }
       ],
+      
+      water_balance = {
+        format = "legacy"
+      },
 
       output = {
         output_stream = {
@@ -72,6 +76,7 @@
         end_time = 5.0
       },
       mass_balance = {
+        format = "legacy",
         cumulative = true
       },
       

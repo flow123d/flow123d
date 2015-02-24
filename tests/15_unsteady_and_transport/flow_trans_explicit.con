@@ -33,9 +33,15 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      water_balance = {
+        format = "legacy",
+        cumulative = true
+      }
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
+        a_tol = 1e-07, 
         parameters = ""
       }, 
  
@@ -96,6 +102,11 @@
       
       time = {
         end_time = 2.0
+      },
+
+      mass_balance = {
+        format = "legacy",
+        cumulative = true
       }
     } 
   }, 

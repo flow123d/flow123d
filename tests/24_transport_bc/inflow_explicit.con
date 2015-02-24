@@ -19,11 +19,16 @@
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
-        }, 
+        },
         output_fields = [ "pressure_p0", "velocity_p0" ]
-      }, 
+      },
+
+      water_balance = {
+        format = "legacy"
+      },
+
       solver = {
-        TYPE = "Petsc", 
+        TYPE = "Petsc",
         a_tol = 1e-12,
         r_tol = 1e-12
       }
@@ -55,6 +60,7 @@
         end_time = 10
       },
       mass_balance = {
+        format = "legacy",
         cumulative = true
       }
     }

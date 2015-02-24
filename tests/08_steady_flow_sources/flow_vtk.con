@@ -23,6 +23,9 @@
         } 
       ],
       
+      water_balance = {
+        format = "legacy"
+      }
 
       output = {
         output_stream = {

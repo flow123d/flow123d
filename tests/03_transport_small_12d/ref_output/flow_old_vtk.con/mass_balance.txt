@@ -1,15 +1,15 @@
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.000000
+# Time: 0
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -4.95678      0             -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -4.95678      0             -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -19.8271      0             -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -19.8271      0             -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -4.95678      0             -4.95678      
-# Total mass flux of substance [M/T]     U235          -4.95678      0             -4.95678      
+# Total mass flux of substance [M/T]     age           -19.8271      0             -19.8271      
+# Total mass flux of substance [M/T]     U235          -19.8271      0             -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -32,17 +32,17 @@
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.100000
+# Time: 0.1
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.32117      4.63561       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.322783     4.63399       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -1.28468      18.5424       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -1.29113      18.536        -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.32117      4.63561       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.322783     4.63399       -4.95678      
+# Total mass flux of substance [M/T]     age           -1.28468      18.5424       -19.8271      
+# Total mass flux of substance [M/T]     U235          -1.29113      18.536        -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -60,22 +60,22 @@
 # Cumulative mass balance on time interval [0,0.1]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.14915      0.14915       0.5831        -0.43395      0.744212      
-  U235          0             0             -0.149263     0.149263      0.582948      -0.433685     0.743952      
+  age           0             -0.0134998    -0.5966       0.5831        0.5831        7.76434e-12   1.33156e-11   
+  U235          0             -0.0141031    -0.597051     0.582948      0.582948      7.76312e-12   1.3317e-11    
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.200000
+# Time: 0.2
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.0831894    4.87359       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.0819744    4.8748        -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.332758     19.4943       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.327898     19.4992       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.0831894    4.87359       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.0819744    4.8748        -4.95678      
+# Total mass flux of substance [M/T]     age           -0.332758     19.4943       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.327898     19.4992       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -93,22 +93,22 @@
 # Cumulative mass balance on time interval [0,0.2]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.167885     0.167885      0.654123      -0.486238     0.743343      
-  U235          0             0             -0.167996     0.167996      0.654419      -0.486423     0.743289      
+  age           0             -0.0174186    -0.671542     0.654123      0.654123      1.66335e-11   2.54287e-11   
+  U235          0             -0.0175662    -0.671986     0.654419      0.654419      1.66328e-11   2.54161e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.300000
+# Time: 0.3
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.0156568    4.94112       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.015273     4.9415        -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0626274    19.7645       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0610921    19.766        -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.0156568    4.94112       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.015273     4.9415        -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0626274    19.7645       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0610921    19.766        -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -126,22 +126,22 @@
 # Cumulative mass balance on time interval [0,0.3]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.17169      0.17169       0.666466      -0.494776     0.742388      
-  U235          0             0             -0.171716     0.171716      0.666534      -0.494818     0.742375      
+  age           0             -0.0202937    -0.68676      0.666466      0.666466      2.55849e-11   3.83888e-11   
+  U235          0             -0.0203294    -0.686863     0.666534      0.666534      2.55844e-11   3.83843e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.400000
+# Time: 0.4
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00785317   4.94892       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00779976   4.94898       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0314127    19.7957       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0311991    19.7959       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00785317   4.94892       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00779976   4.94898       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0314127    19.7957       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0311991    19.7959       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -159,22 +159,22 @@
 # Cumulative mass balance on time interval [0,0.4]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.172725     0.172725      0.667937      -0.495213     0.741406      
-  U235          0             0             -0.172734     0.172734      0.667949      -0.495215     0.741397      
+  age           0             -0.0229609    -0.690898     0.667937      0.667937      3.45499e-11   5.17263e-11   
+  U235          0             -0.0229865    -0.690936     0.667949      0.667949      3.45499e-11   5.17254e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.500000
+# Time: 0.5
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00678016   4.95          -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00677938   4.95          -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0271206    19.8          -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0271175    19.8          -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00678016   4.95          -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00677938   4.95          -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0271206    19.8          -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0271175    19.8          -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -192,22 +192,22 @@
 # Cumulative mass balance on time interval [0,0.5]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.17344      0.17344       0.668164      -0.494724     0.740423      
-  U235          0             0             -0.173447     0.173447      0.668165      -0.494718     0.740413      
+  age           0             -0.0255953    -0.693759     0.668164      0.668164      4.3516e-11    6.51277e-11   
+  U235          0             -0.025624     -0.693789     0.668165      0.668165      4.3516e-11    6.51276e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.600000
+# Time: 0.6
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00658067   4.9502        -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00659256   4.95018       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0263227    19.8008       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0263703    19.8007       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00658067   4.9502        -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00659256   4.95018       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0263227    19.8008       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0263703    19.8007       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -225,22 +225,22 @@
 # Cumulative mass balance on time interval [0,0.6]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.174105     0.174105      0.668204      -0.494099     0.739443      
-  U235          0             0             -0.174113     0.174113      0.668203      -0.494089     0.73943       
+  age           0             -0.0282162    -0.696421     0.668204      0.668204      5.2483e-11    7.85433e-11   
+  U235          0             -0.0282504    -0.696453     0.668203      0.668203      5.24824e-11   7.85426e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.700000
+# Time: 0.7
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.0065275    4.95025       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00654296   4.95023       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.02611      19.801        -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0261718    19.8009       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.0065275    4.95025       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00654296   4.95023       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.02611      19.801        -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0261718    19.8009       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -258,22 +258,22 @@
 # Cumulative mass balance on time interval [0,0.7]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.17476      0.17476       0.668214      -0.493454     0.738467      
-  U235          0             0             -0.17477      0.17477       0.668212      -0.493442     0.738452      
+  age           0             -0.0308262    -0.69904      0.668214      0.668214      6.14513e-11   9.19635e-11   
+  U235          0             -0.0308668    -0.699078     0.668212      0.668212      6.14491e-11   9.19605e-11   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.800000
+# Time: 0.8
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00649791   4.95028       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00651485   4.95026       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0259917    19.8011       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0260594    19.801        -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00649791   4.95028       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00651485   4.95026       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0259917    19.8011       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0260594    19.801        -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -291,22 +291,22 @@
 # Cumulative mass balance on time interval [0,0.8]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.175411     0.175411      0.668219      -0.492808     0.737494      
-  U235          0             0             -0.175422     0.175422      0.668216      -0.492794     0.737477      
+  age           0             -0.033426     -0.701645     0.668219      0.668219      7.04189e-11   1.05383e-10   
+  U235          0             -0.0334733    -0.70169      0.668216      0.668216      7.04163e-11   1.0538e-10    
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.900000
+# Time: 0.9
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00647194   4.9503        -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00648987   4.95029       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0258878    19.8012       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0259595    19.8011       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00647194   4.9503        -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00648987   4.95029       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0258878    19.8012       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0259595    19.8011       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -324,22 +324,22 @@
 # Cumulative mass balance on time interval [0,0.9]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.17606      0.17606       0.668223      -0.492163     0.736526      
-  U235          0             0             -0.176073     0.176073      0.66822       -0.492148     0.736505      
+  age           0             -0.0360156    -0.704239     0.668223      0.668223      7.93856e-11   1.18801e-10   
+  U235          0             -0.0360701    -0.70429      0.66822       0.66822       7.93841e-11   1.18799e-10   
 
 
 # ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.000000
+# Time: 1
 
 
 # Mass flux through boundary [M/T]:
 # [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
 # -------------------------------------------------------------------------------------------------------------
-  -3            IMPLICIT BOUNDARY        age           -0.00644657   4.95033       -4.95678      
-  -3            IMPLICIT BOUNDARY        U235          -0.00646533   4.95031       -4.95678      
+  -3            IMPLICIT BOUNDARY        age           -0.0257863    19.8013       -19.8271      
+  -3            IMPLICIT BOUNDARY        U235          -0.0258613    19.8012       -19.8271      
 # -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           -0.00644657   4.95033       -4.95678      
-# Total mass flux of substance [M/T]     U235          -0.00646533   4.95031       -4.95678      
+# Total mass flux of substance [M/T]     age           -0.0257863    19.8013       -19.8271      
+# Total mass flux of substance [M/T]     U235          -0.0258613    19.8012       -19.8271      
 
 
 # Mass [M] and sources [M/T] on regions:
@@ -357,7 +357,7 @@
 # Cumulative mass balance on time interval [0,1]
 # Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
 # [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             -0.176706     0.176706      0.668227      -0.491522     0.735561      
-  U235          0             0             -0.17672      0.17672       0.668224      -0.491504     0.735537      
+  age           0             -0.0385951    -0.706822     0.668227      0.668227      8.83532e-11   1.3222e-10    
+  U235          0             -0.0386571    -0.706881     0.668224      0.668224      8.83513e-11   1.32218e-10   
 
 

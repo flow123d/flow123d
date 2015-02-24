@@ -30,12 +30,17 @@
 
       output = {
         compute_errors = true,
-        balance_output = "water_balance.out", 
         output_stream = {
           REF = "/system/output_stream"
         }, 
         output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0", "velocity_diff", "pressure_diff", "div_diff" ]
       }, 
+
+      water_balance = {
+        file = "water_balance.out", 
+        format = "legacy"
+      },
+
       solver = {
         TYPE = "Petsc", 
         r_tol = 1.0e-10,

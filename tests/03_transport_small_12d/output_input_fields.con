@@ -30,6 +30,10 @@
         },
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0", "conductivity", "anisotropy" ]
       }, 
+
+      water_balance = {
+        format = "legacy"
+      }
       
       solver = {
         TYPE = "Petsc", 
@@ -102,7 +106,7 @@
       },
 
       time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
+      mass_balance = { format = "legacy", cumulative = true }
     } // secondary_equation
   }, // problem
  
