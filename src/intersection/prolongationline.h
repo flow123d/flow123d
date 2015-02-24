@@ -20,12 +20,9 @@ private:
 	unsigned int elm_3D_idx;
 	unsigned int dictionary_idx;
 
+	int elm_2D_idx_old;
+	int elm_3D_idx_old;
 
-	unsigned int elm_2D_idx_old;
-
-
-	unsigned int element_idx_old;
-	unsigned int element_idx;
 
 	// index of side -> takes C23->C13[:]->C12[side_idx]
 	// every Plucker products
@@ -48,8 +45,8 @@ private:
 	// and 6 Plucker products
 
 public:
-	ProlongationLine(unsigned int element_2D,unsigned int element_3D, unsigned int dictionary);
-	ProlongationLine(unsigned int side_old,unsigned int side, unsigned int element_old, unsigned int element, unsigned int type);
+	ProlongationLine(unsigned int element_2D,unsigned int element_3D, unsigned int dictionary, int element_2D_old = -1, int element_3D_old = -1);
+	ProlongationLine();
 
 	inline void setPluckerProducts(double pp, unsigned int index){
 		pluckerProducts[index] = pp;

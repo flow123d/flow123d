@@ -72,10 +72,25 @@ public:
 			 double t2dArea = t2d.GetArea();
 			 double localArea = all_intersections[i].getArea();//il.getArea();
 			 subtotal += 2*localArea*t2dArea;
-			 xprintf(Msg,"Subtotal: %f\n",2*localArea*t2dArea);
+			 //xprintf(Msg,"Subtotal: %f\n",2*localArea*t2dArea);
 		}
 		return subtotal;
-	}
+	};
+
+	inline double polygonArea2(){
+		double subtotal = 0.0;
+
+		for(unsigned int i = 0; i < intersection_list.size(); i++){
+			for(unsigned int j = 0; j < intersection_list[i].size();j++){
+				Element efi = *mesh->element(intersection_list[i][j].idx_2D());
+				 TTriangle t2d(efi);
+				 double t2dArea = t2d.GetArea();
+				 double localArea = intersection_list[i][j].getArea();//il.getArea();
+				 subtotal += 2*localArea*t2dArea;
+			}
+		}
+		return subtotal;
+	};
 
 };
 

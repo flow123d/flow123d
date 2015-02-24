@@ -35,7 +35,7 @@ void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
 void IntersectionLocal::traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table){
 
 	if(!is_patological){
-		xprintf(Msg,"Tracing opt polygon(%d)\n", i_points.size());
+		//xprintf(Msg,"Tracing opt polygon(%d)\n", i_points.size());
 		this->tracePolygonOpt(prolongation_table);
 
 	}else{
@@ -369,11 +369,11 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 			if(tracing_table(start_idx,1) == start_point_idx && i > 0){
 				break;
 			}else{
-				xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,1));
+				//xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,1));
 				new_points.push_back(i_points[tracing_table(start_idx,1)]);
 			}
 
-			xprintf(Msg, "\t Prodlužuji stěnou(%d) - body[%d,%d]\n", start_idx,(int)tracing_table(start_idx,1),(int)tracing_table(start_idx,2));
+			//xprintf(Msg, "\t Prodlužuji stěnou(%d) - body[%d,%d]\n", start_idx,(int)tracing_table(start_idx,1),(int)tracing_table(start_idx,2));
 
 			prolongation_table.push_back(std::make_pair(start_idx, 1));//IntersectionLocal::PROLONGATION_TYPE_TETRAHEDRON_SIDE));
 			// Prodloužení -> podle indexu steny vratim sousedni 3D element
@@ -404,10 +404,10 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 
 				break;
 			}else{
-				xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,2));
+				//xprintf(Msg,"\t\t přidán bod(%d) -- ", (int)tracing_table(start_idx,2));
 				new_points.push_back(i_points[tracing_table(start_idx,2)]);
 			}
-			xprintf(Msg, "\t Prodlužuji hranou(%d) - body[%d,%d]\n", (int)tracing_table(start_idx,3),(int)tracing_table(start_idx,2),(int)tracing_table(tracing_table(start_idx,0),1));
+			//xprintf(Msg, "\t Prodlužuji hranou(%d) - body[%d,%d]\n", (int)tracing_table(start_idx,3),(int)tracing_table(start_idx,2),(int)tracing_table(tracing_table(start_idx,0),1));
 			// Prodloužení -> podle indexu hrany vratim sousedni 2D element
 			prolongation_table.push_back(std::make_pair(tracing_table(start_idx,3), 0));
 

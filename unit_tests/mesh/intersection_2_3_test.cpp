@@ -1,4 +1,5 @@
-#include <flow_gtest.hh>
+#define TEST_USE_MPI
+#include <flow_gtest_mpi.hh>
 //#define Flow123d_DEBUG
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -19,8 +20,6 @@ using namespace computeintersection;
 
 
 TEST(intersections, all) {
-
-
 
 	/*cout << "================== Testy objektů a potřebných metod ==================" << endl;
 	cout << "========== Includované objekty: =============" << endl;
@@ -108,37 +107,28 @@ TEST(intersections, all) {
 
 
 	cout << "===============" << endl;
-	//FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("/home/viktor/diplomka/flow123d/unit_tests/mesh/site/triangle_tetrahedron12.msh", FilePath::input_file);
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	FilePath mesh_file("mesh/site/velka_sit.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
-
 	Mesh mesh;
+	ifstream ifs(string(mesh_file).c_str());
+	mesh.read_gmsh_from_stream(ifs);
 
-	GmshMeshReader reader(mesh_file);
-
-	reader.read_mesh(&mesh);
-
-
-	 cout << "Síť načtena!" << endl;
+	cout << "Síť načtena!" << endl;
 	cout << "Probíhá výpočet průniku" << endl;
-
-	//Profiler::initialize();
 
 	InspectElements ie(&mesh);
 	ie.print(0);
 	ie.print(1);
+
 	double obsah = ie.polygonArea();
 	xprintf(Msg,"Obsah polygonu: %f\n", obsah);
-	//Profiler::instance()->output(0,cout);//MPI_COMM_WORLD,cout);
+	double obsah2 = ie.polygonArea2();
+	xprintf(Msg,"Obsah2 polygonu: %f\n", obsah2);
+
 	Profiler::uninitialize();
-
-	xprintf(Msg, "test nulových pluckerových souřadnic");
-
-
-
-
 
 	xprintf(Msg, "Test complete!");
 }

@@ -50,7 +50,7 @@ void InspectElements::computeIntersections2d3dInit(){
 };
 
 void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele){
-	xprintf(Msg, "========PRODLUZUJI========\n");
+	//xprintf(Msg, "========PRODLUZUJI========\n");
 	for(unsigned int i = 0; i < prolongation_table.size();i++){
 
 		unsigned int stena = std::get<0>(prolongation_table[i]);
@@ -58,8 +58,8 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 
 		if(typ_elm == 0){
 			// prodlužuji hranou
-			xprintf(Msg,"Procházím hranu(%d) na id elementu(%d), hrana(%d)\n"
-								, stena,elm->index(),elm->side(2-stena)->el_idx());
+			//xprintf(Msg,"Procházím hranu(%d) na id elementu(%d), hrana(%d)\n"
+			//					, stena,elm->index(),elm->side(2-stena)->el_idx());
 
 			SideIter elm_side = elm->side((unsigned int)(2-stena));
 			Edge *edg = elm_side->edge();
@@ -67,7 +67,7 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 			for(int j=0; j < edg->n_sides;j++) {
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
-					xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
+					//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
 					unsigned int sousedni_element = other_side->element()->index(); // 2D element
 						if(!intersectionExists(sousedni_element,ele->index())){
 							//flag_for_3D_elements[ele->index()] = sousedni_element;
@@ -138,13 +138,8 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 
 	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 2){
 		all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
-	}
-
-	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 2){
-
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 	}
-
 };
 
 
@@ -174,6 +169,7 @@ void InspectElements::ComputeIntersections23(){
 			//BoundingBox elementBoundingBox = ta.get_bounding_box();
 			BoundingBox elementBoundingBox = tt.get_bounding_box();
 			bt.find_bounding_box(elementBoundingBox, searchedElements);
+			bool prunik = false;
 
 			for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
 				int idx = *it;
@@ -191,12 +187,10 @@ void InspectElements::ComputeIntersections23(){
 					il.traceGenericPolygon(prolongation_table);
 
 
-					xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
-					if(il.getIPsize() > 2){
-						all_intersections.push_back(il);
-					}
+					//xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
 
 					if(il.getIPsize() > 2){
+						all_intersections.push_back(il);
 
 						intersection_list[elm.index()].push_back(il);
 						flag_for_3D_elements[ele->index()] = elm.index();
@@ -215,7 +209,7 @@ void InspectElements::ComputeIntersections23(){
 								prolongation_line_queue_3D.pop();
 
 							}
-
+							// Pridat priznak trojuhleniku, ze je projity
 							if(!prolongation_line_queue_2D.empty()){
 								computeIntersections2d3dProlongation(prolongation_line_queue_2D.front());
 								prolongation_line_queue_2D.pop();
@@ -226,6 +220,7 @@ void InspectElements::ComputeIntersections23(){
 							}
 
 						}
+						prunik = true;
 						break; // ukončí procházení dalších bounding boxů
 					}
 
@@ -233,9 +228,19 @@ void InspectElements::ComputeIntersections23(){
 			}
 			// Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
 			closed_elements[elm.index()] = true;
-			break; // do budoucna odstranit break - tady ho mam, abych měl jistotu, že se provádí průchod
+			if(prunik){
+				break; // do budoucna odstranit break - tady ho mam, abych měl jistotu, že se provádí průchod
+			}
 		}
 	}
+
+	/*xprintf(Msg,"Element(3616) - velikost(%d)\n", intersection_list[3616].size());
+	for(unsigned int i = 0;i < intersection_list[3616].size();i++){
+		IntersectionLocal il = intersection_list[3616][i];
+		xprintf(Msg,"elementy(%d,%d) - obsah(%f), bodu(%d)\n", il.idx_2D(), il.idx_3D(), il.getArea(), il.getIPsize());
+		il.printTracingTable();
+	}
+	xprintf(Msg,"Element(3617) - velikost(%d)\n", intersection_list[3617].size());*/
 };
 
 
