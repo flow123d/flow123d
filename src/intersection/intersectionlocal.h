@@ -80,6 +80,7 @@ public:
 
     void traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
 
+    // Už k ničemu (možná ale byla se dala využít k prodlužování patologického polygonu, uvidíme)
     void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
 
     /**
@@ -118,8 +119,6 @@ public:
      * 	 z referenčního elementu, ke které průnik patří a do které
      * 	 průnik pokračuje
      * */
-    void fillTracingTable();
-
     /*
      * Optimalizovanější verze
      * */

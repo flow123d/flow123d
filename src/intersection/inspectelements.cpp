@@ -8,31 +8,9 @@
 #include "inspectelements.h"
 namespace computeintersection {
 
-InspectElements::InspectElements(){
+InspectElements::InspectElements(){};
 
-
-};
-
-InspectElements::InspectElements(Simplex<2> sim2, Simplex<3> sim3){
-	triangle = sim2;
-	tetrahedron = sim3;
-
-	IntersectionLocal il(1,2);
-	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
-	CI_23.init();
-	CI_23.compute(il);
-	//il.printTracingTable();
-	xprintf(Msg,"Toto se nesmi spustit\n");
-	//il.traceGenericPolygon();
-	//all_intersections.push_back(il);
-};
-
-InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
-	//projeti.assign(sit->n_elements(),false);
-
-	ComputeIntersections23();
-
-};
+InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){};
 
 InspectElements::~InspectElements(){};
 
@@ -71,14 +49,12 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 					unsigned int sousedni_element = other_side->element()->index(); // 2D element
 						if(!intersectionExists(sousedni_element,ele->index())){
 							//flag_for_3D_elements[ele->index()] = sousedni_element;
-							// Jedná se o vnitřní čtyřstěny v trojúhelníku
 
 							// Vytvoření průniku bez potřeby počítání
 							IntersectionLocal il_other(sousedni_element, ele->index());
 							intersection_list[sousedni_element].push_back(il_other);
 
 							ProlongationLine pl2(sousedni_element, ele->index(), intersection_list[sousedni_element].size() - 1);
-							//prolongation_line_queue_3D.push(pl2);
 							prolongation_line_queue_2D.push(pl2);
 						}
 				}
@@ -157,16 +133,12 @@ void InspectElements::ComputeIntersections23(){
 
 
 			std::vector<unsigned int> searchedElements;
-			//TAbscissa ta;
 			TTriangle tt;
-			//ElementFullIter efi = mesh->element(elm.index());
-			//FieldInterpolatedP0<3,FieldValue<3>::Scalar>::createAbscissa(efi, ta);
 			tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
 						 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
 						 TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
 
 			//FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_triangle(efi,tt);
-			//BoundingBox elementBoundingBox = ta.get_bounding_box();
 			BoundingBox elementBoundingBox = tt.get_bounding_box();
 			bt.find_bounding_box(elementBoundingBox, searchedElements);
 			bool prunik = false;

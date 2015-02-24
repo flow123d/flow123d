@@ -30,7 +30,7 @@ class InspectElements {
 	std::queue<ProlongationLine> prolongation_line_queue_2D;
 	std::queue<ProlongationLine> prolongation_line_queue_3D;
 
-	IntersectionLocal temporary_intersection;
+	//IntersectionLocal temporary_intersection;
 
 	Simplex<1> abscissa;
 	Simplex<2> triangle;
@@ -38,12 +38,11 @@ class InspectElements {
 
 	Mesh *mesh;
 
-	ComputeIntersection<Simplex<1>,Simplex<3> > CI13;
-	ComputeIntersection<Simplex<2>,Simplex<3> > CI23;
+	//ComputeIntersection<Simplex<1>,Simplex<3> > CI13;
+	//ComputeIntersection<Simplex<2>,Simplex<3> > CI23;
 
 public:
 	InspectElements();
-	InspectElements(Simplex<2> sim2, Simplex<3> sim3);
 	InspectElements(Mesh *_mesh);
 	~InspectElements();
 

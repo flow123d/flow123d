@@ -569,21 +569,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 				lokalni_mnohouhelnik.addIP(IP23);
 
 			}else if(pocet_13_pruniku == 2){
-				//cout << "Stena:" << IP13s[IP13s.size() - 2].getSide2();
-				// pokud se jedná o druhou hranu (index 1) - je opačná orientace
-
-				//if((IP13s[IP13s.size() - 2].getOrientation() == 1)){
-				//if((i != 1 && IP13s[IP13s.size() - 2].getOrientation() == 1) || (i == 1 && IP13s[IP13s.size() - 2].getOrientation() == 0)){
-				//cout << "HOOOODOOROROORORODO" << endl;
-					/*if(IP13s[IP13s.size() - 2].getSide2() == 1 || IP13s[IP13s.size() - 2].getSide2() == 3 || i != 1){
-
-						IntersectionPoint<1,3> sw = IP13s[IP13s.size() - 2];
-						IP13s[IP13s.size() - 2] = IP13s[IP13s.size() - 1];
-						IP13s[IP13s.size() - 1] = sw;
-
-					}*/
-				//}
-
 
 				IP13s[IP13s.size() - 2].setSide1((3-i)%3);
 				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 2]);
@@ -591,81 +576,18 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
 				lokalni_mnohouhelnik.addIP(IP23);
 
-				/*unsigned int tracing_index_1;
-				if(IP13s[IP13s.size() - 2].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - 2].getLocalCoords1()[1] == 1){
-					// První průnik je vrchol
-					tracing_index_1 = 4 + (3-i)%3;
-				}else{
-					// Průnik je na stěně
-					tracing_index_1 = IP13s[IP13s.size() - 2].getSide2();
-				}
-				if(i == 1){
-				lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
-				}else{
-					if(lokalni_mnohouhelnik.getTracingTableValue(tracing_index_1, 1) == -1){
-						lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,1,lokalni_mnohouhelnik.getIPsize() - 1);
-					}else{
-						lokalni_mnohouhelnik.setTracingTable(tracing_index_1 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
-					}
-				}*/
-
-
 				IP13s[IP13s.size() - 1].setSide1((3-i)%3);
 				IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - 1]);
 				IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
 				IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
 				lokalni_mnohouhelnik.addIP(IP23);
 
-				/*unsigned int tracing_index_2;
-				if(IP13s[IP13s.size() - 1].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - 1].getLocalCoords1()[1] == 1){
-					// První průnik je vrchol
-					tracing_index_2 = 4 + (4-i)%3;
-				}else{
-					// Průnik je na stěně
-					tracing_index_2 = IP13s[IP13s.size() - 1].getSide2();
-				}
-				if(i == 1){
-				lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
-				}else{
-					if(lokalni_mnohouhelnik.getTracingTableValue(tracing_index_2, 1) == -1){
-					lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,1,lokalni_mnohouhelnik.getIPsize() - 1);
-					}else{
-						lokalni_mnohouhelnik.setTracingTable(tracing_index_2 ,2,lokalni_mnohouhelnik.getIPsize() - 1);
-					}
-				}*/
-
-
-					//lokalni_mnohouhelnik.setTracingTable(tracing_index_2,0,tracing_index_1);
-
 			}
 
-			/*for(unsigned int j = pocet_13_pruniku; j > 0; j--){
-				// Možné optimalizace => pokud je spočten vrchol u 2. hrany a 1. bodu => bod byl spočten již dříve
-				// pokud je spočten vrchol u 3. hrany -> oba vrcholy byly již spočteny dříve
-				if(i == 1 && j == 1 && IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0){
-					continue;
-				}
-				if(i == 2 && (IP13s[IP13s.size() - j].getLocalCoords1()[1] == 0 || IP13s[IP13s.size() - j].getLocalCoords1()[1] == 1)){
-					continue;
-				}
 
-				IP13s[IP13s.size() - j].setSide1(i);
-				IntersectionPoint<3,1> IP31 = IntersectionLocal::flipDimension<3,1>(IP13s[IP13s.size() - j]);
-				IntersectionPoint<3,2> IP32 = IntersectionLocal::interpolateDimension<3,2>(IP31);
-				IntersectionPoint<2,3> IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
-				//IP23.print();
-				lokalni_mnohouhelnik.addIP(IP23);
-			}*/
 		}
 	// Optimalizace: znovu použití již vypočítaných součinů
-	/*for(unsigned int i = 0; i < 3;i++){
-		CI13[i].setPluckerProduct(CI12[0].getPluckerProduct(i),0,0);
-		CI13[i].setPluckerProduct(CI12[1].getPluckerProduct(i),0,1);
-		CI13[i].setPluckerProduct(CI12[2].getPluckerProduct(i),0,2);
-		CI13[i].setPluckerProduct(CI12[3].getPluckerProduct(i),1,1);
-		CI13[i].setPluckerProduct(CI12[4].getPluckerProduct(i),1,2);
-		CI13[i].setPluckerProduct(CI12[5].getPluckerProduct(i),2,2);
-	}*/
+
 
 	for(unsigned int i = 0; i < 3;i++){
 		CI12[0].setPluckerProduct(CI13[i].getPluckerProduct(0,0),i);
@@ -693,19 +615,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 									//IP23.print();
 									lokalni_mnohouhelnik.addIP(IP23);
 
-									/*cout << "PPPPPPPPPPPPPPPPPPPP" << endl;
 
-									unsigned int side1 = RefSimplex<3>::line_sides[IP.getSide1()][IP.getOrientation()];
-									unsigned int side2 = RefSimplex<3>::line_sides[IP.getSide1()][1-IP.getOrientation()];
-
-									lokalni_mnohouhelnik.setTracingTable(side1, 0, side2);
-									if(lokalni_mnohouhelnik.getTracingTableValue(side1,2) == -1){
-										lokalni_mnohouhelnik.setTracingTable(side1, 2, lokalni_mnohouhelnik.getIPsize() - 1);
-									}else{
-										lokalni_mnohouhelnik.setTracingTable(side1, 1, lokalni_mnohouhelnik.getTracingTableValue(side1, 2));
-										lokalni_mnohouhelnik.setTracingTable(side1, 2, lokalni_mnohouhelnik.getIPsize() - 1);
-
-									}*/
 				}
 			}
 		}
