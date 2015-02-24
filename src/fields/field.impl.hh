@@ -399,6 +399,7 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 								HistoryPoint(input_time, field_instance)
 						);
 					}
+					break;
 				}
 		    }
 
