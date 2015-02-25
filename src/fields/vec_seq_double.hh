@@ -62,6 +62,14 @@ public:
 		return field_ptr;
 	}
 
+    /**
+     * Returns reference to the sub-field (component) of given index @p idx.
+     */
+    inline double &operator[](unsigned int idx)
+    {
+    	return (*data_ptr_)[idx];
+    }
+
 private:
 	/// shared pointer to vector of data
 	VectorSeq data_ptr_;
