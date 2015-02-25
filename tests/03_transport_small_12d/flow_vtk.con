@@ -15,8 +15,8 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "1d_domain", conductivity = 1, sigma = 0.5 },
-        { region = "2d",       conductivity = 0.1  },
+        { r_set = "1d_domain", conductivity = 1e-6, sigma = 5e5 },
+        { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -57,7 +57,7 @@
         }
       ],
       
-      time = { end_time = 1.0 },
+      time = { end_time = 1e6 },
       mass_balance = { cumulative = true },
       
       reaction_term = {
@@ -85,8 +85,8 @@
               r_set="ALL",
               rock_density = 2800.0,    // granit
               sorption_type =  ["none", "freundlich"],
-              isotherm_mult = 0.02, 
-              isotherm_other = [0, 0.5]
+              isotherm_mult = [0, 0.68],
+              isotherm_other = [0, 1.0]
             }
           ],
           output_fields = []
@@ -96,14 +96,15 @@
           solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
           solubility = [1.0, 1.0],
-          input_fields = { REF="../../reaction_mobile/input_fields" }
+          input_fields = { REF="../../reaction_mobile/input_fields" },
+          output_fields = []
         }
       },
       
       output_stream = { 
         file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.1      
+        time_step = 1e5    
       }
       
     } // secondary_equation
