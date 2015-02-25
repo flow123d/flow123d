@@ -164,7 +164,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] >0);
-        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag() );
+        ASSERT(i!=idx, "Too many children of the timer with tag '%s'\n", tag().c_str());
         idx=i;
     }
     child_timers[idx] = child_index;
@@ -275,7 +275,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] >0)
-            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag(), timer.tag() );
+            ASSERT( ! timers_[timer.child_timers[i]].running() , "Child timer '%s' running while closing timer '%s'.\n", timers_[timer.child_timers[i]].tag().c_str(), timer.tag().c_str());
 #endif
     if ( cp.hash_ != timers_[actual_node].full_hash_) {
         // timer to close is not actual - we search for it above actual
@@ -283,7 +283,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
             if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -314,7 +314,7 @@ void Profiler::stop_timer(int timer_index) {
             if ( (unsigned int)(timer_index) == node) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag(), timers_[actual_node].tag());
+                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", timers_[timer_index].tag().c_str(), timers_[actual_node].tag().c_str());
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -526,7 +526,7 @@ void Profiler::uninitialize()
 {
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
-                _instance->timers_[_instance->actual_node].tag());
+                _instance->timers_[_instance->actual_node].tag().c_str());
         _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
