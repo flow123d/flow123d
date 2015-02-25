@@ -211,6 +211,8 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str) {
 #define CODE_POINT_EXT(tag, subtag) CodePoint(tag, subtag, __FILE__, __func__, __LINE__)
 
 
+
+
 /**
  * @brief Class that represents point in the code.
  *
