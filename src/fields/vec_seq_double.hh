@@ -54,11 +54,12 @@ public:
 	}
 
 	/// Create and return shared pointer to FieldElementwise object
-	std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > create_field(unsigned int n_comp)
+	template <int spacedim, class Value> //3, FieldValue<3>::Scalar
+	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
 	{
 		// TODO: use constructor FieldElementwise(shared_ptr, unsigned int) after the implementation of data cache
-		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > field_ptr(
-		          new FieldElementwise<3, FieldValue<3>::Scalar>( *(data_ptr_.get()), n_comp ));
+		std::shared_ptr<FieldElementwise<spacedim, Value> > field_ptr(
+		          new FieldElementwise<spacedim, Value>( *(data_ptr_.get()), n_comp ));
 		return field_ptr;
 	}
 
@@ -67,6 +68,7 @@ public:
      */
     inline double &operator[](unsigned int idx)
     {
+    	ASSERT(idx < data_ptr_->size(), "Index is out of range.\n");
     	return (*data_ptr_)[idx];
     }
 
