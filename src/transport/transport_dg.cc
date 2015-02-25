@@ -354,11 +354,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 
     // initialization of balance object
-    Input::Iterator<Input::Record> it;
-	if (typeid(Model) == typeid(HeatTransferModel))
-		it = in_rec.find<Input::Record>("energy_balance");
-	else
-		it = in_rec.find<Input::Record>("mass_balance");
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
     	vector<unsigned int> edg_regions;
@@ -451,6 +447,8 @@ void TransportDG<Model>::zero_time_step()
     // during preallocation we assemble the matrices and vectors required for mass balance
     if (balance_ != nullptr)
     {
+    	balance_->units(Model::balance_units());
+
         if (!allocation_done) preallocate();
 
 		for (unsigned int sbi=0; sbi<n_subst_; ++sbi)

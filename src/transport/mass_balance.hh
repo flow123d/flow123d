@@ -5,6 +5,7 @@
 #include "la/distribution.hh"
 #include "transport/substance.hh"
 #include "petscmat.h"
+#include "fields/unit_si.hh"
 
 class RegionDB;
 
@@ -251,11 +252,9 @@ public:
 
 	/**
 	 * Constructor.
-	 * @param quantities   Names of conserved quantities.
+	 * @param file_prefix  Prefix of output file name.
 	 * @param elem_regions Vector of region numbers for each boundary edge.
 	 * @param region_db    Region database.
-	 * @param cumulative   If true, cumulative sums will be calculated.
-	 * @param file         Name of output file.
 	 */
 	Balance(const std::string &file_prefix,
 			const std::vector<unsigned int> &elem_regions,
@@ -263,6 +262,9 @@ public:
 			const Input::Record &in_rec);
 
 	~Balance();
+
+	/// Setter for units of conserved quantities.
+	void units(const UnitSI &unit) { units_ = unit; units_.undef(false); }
 
 	/// Getter for cumulative_.
 	inline bool cumulative() const { return cumulative_; }
@@ -525,6 +527,9 @@ private:
 
     /// Database of bulk and boundary regions.
     const RegionDB &regions_;
+
+    /// Units of conserved quantities.
+    UnitSI units_;
 
 
     /// Matrices for calculation of mass (n_dofs x n_bulk_regions).

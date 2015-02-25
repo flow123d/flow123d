@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
+#include "fields/unit_si.hh"
 
 
 
@@ -175,14 +176,18 @@ HeatTransferModel::ModelEqData::ModelEqData()
 }
 
 
+UnitSI HeatTransferModel::balance_units()
+{
+	return data().cross_section.units()*data().output_field.units()
+			*data().porosity.units()*data().fluid_density.units()*data().fluid_heat_capacity.units();
+}
+
 IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
 	static IT::Record input_type = IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::input_type)
-			.declare_key("energy_balance", MassBalance::input_type, Default::obligatory(),
-					"Settings for computing energy balance.");
+			.derive_from(AdvectionProcessBase::input_type);
 
 	return input_type;
 

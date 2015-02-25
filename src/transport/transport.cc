@@ -147,7 +147,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	output_stream_->mark_output_times(*time_);
 
     // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
     	vector<unsigned int> edg_regions;
@@ -536,6 +536,7 @@ void ConvectionTransport::zero_time_step()
     if (balance_ != nullptr)
     {
     	START_TIMER("Convection balance zero time step");
+    	balance_->units(data_.cross_section.units()*data_.porosity.units()*data_.conc_mobile.units());
     	create_transport_matrix_mpi();
     	set_boundary_conditions();
     	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)

@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
+#include "fields/unit_si.hh"
 
 
 
@@ -86,6 +87,10 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
+UnitSI ConcentrationTransportModel::balance_units()
+{
+	return data().cross_section.units()*data().porosity.units()*data().output_field.units();
+}
 
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
@@ -95,9 +100,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
-					"Names of transported substances.")
-			.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
-					"Settings for computing mass balance.");
+					"Names of transported substances.");
 
 	return rec;
 }

@@ -41,6 +41,8 @@ AbstractRecord AdvectionProcessBase::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
+	.declare_key("balance", MassBalance::input_type, Default::obligatory(),
+			"Settings for computing balance.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.");
 
@@ -69,9 +71,7 @@ Record TransportOperatorSplitting::input_type
     		), IT::Default::obligatory(), "")
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
     		Default("conc"),
-       		"List of fields to write to output file.")
-	.declare_key("mass_balance", MassBalance::input_type, Default::obligatory(),
-			"Settings for computing mass balance.");
+       		"List of fields to write to output file.");
 
 
 
@@ -199,7 +199,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   }
 
   // initialization of balance object
-  Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
+  Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
   if (it->val<bool>("balance_on"))
   {
 	  convection->get_par_info(el_4_loc, el_distribution);
@@ -264,7 +264,10 @@ void TransportOperatorSplitting::zero_time_step()
     if(reaction) reaction->zero_time_step();
     convection->output_stream_->write_time_frame();
     if (balance_ != nullptr)
+    {
+    	balance_->units(convection->data_.cross_section.units()*convection->data_.porosity.units()*convection->data_.conc_mobile.units());
     	balance_->output(time_->t());
+    }
 
 }
 

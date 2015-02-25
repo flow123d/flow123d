@@ -41,6 +41,7 @@
 #include "mesh/mesh.h"
 
 #include "transport/mass_balance.hh"
+#include "fields/unit_si.hh"
 
 using namespace Input::Type;
 
@@ -391,15 +392,13 @@ Balance::Balance(const std::string &file_prefix,
 		const std::vector<unsigned int> &elem_regions,
 		const RegionDB *region_db,
 		const Input::Record &in_rec)
-	: 	  output_format_(legacy),
-	  	  regions_(*region_db),
+	: 	  regions_(*region_db),
 	  	  be_regions_(elem_regions),
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
 	  	  allocation_done_(false),
 	  	  output_line_counter_(0)
-
 {
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
 
@@ -1304,7 +1303,7 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 
 	output_ << comment_string << ss.str()
 			<< format_csv_val("region", delimiter)
-			<< format_csv_val("quantity", delimiter)
+			<< format_csv_val("quantity [" + units_.to_string() + "]", delimiter)
 			<< format_csv_val("flux", delimiter)
 			<< format_csv_val("flux_in", delimiter)
 			<< format_csv_val("flux_out", delimiter)
