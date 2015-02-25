@@ -138,6 +138,50 @@ std::string UnitSI::format() const {
 	return output.str();
 }
 
+std::string UnitSI::to_string() const {
+	// Values represent symbols of base SI units in same order as units are stored in exponents_ vector
+	static std::vector<std::string> unit_symbols={"m","kg","s","A","K","mol","cd","d" };
+
+	ASSERT(is_def(), "UnitSI object must be defined!");
+	std::stringstream output;
+
+	// format of meter (can be m^{n} or m^{n-d})
+	if (exponents_[ UnitSI::order_m ] || exponents_[ UnitSI::order_md ]) {
+		output << unit_symbols[ UnitSI::order_m ];
+		if (exponents_[ UnitSI::order_m ]!=1 || exponents_[ UnitSI::order_md ]) {
+			output << "(";
+			if (exponents_[ UnitSI::order_m ]) {
+				output << exponents_[ UnitSI::order_m ];
+				if (exponents_[ UnitSI::order_md ]>0) output << "+";
+			}
+			if (exponents_[ UnitSI::order_md ]) {
+				if (exponents_[ UnitSI::order_md ]==-1) output << "-";
+				else if (exponents_[ UnitSI::order_md ]!=1) output << exponents_[ UnitSI::order_md ];
+				output << unit_symbols[ UnitSI::order_md ];
+			}
+			output << ")";
+		}
+	}
+
+	// format of other units
+	for (unsigned int i=1; i<7; i++)
+		if (exponents_[i]) {
+			if (output.str().size()>0) output << ".";
+
+			if (exponents_[i] == 1) {
+				output << unit_symbols[i];
+			} else {
+				output << unit_symbols[i] << "(" << exponents_[i] << ")";
+			}
+		}
+
+	if (output.str().size()==0) { //dimensionless quantity, contains only "$["
+		output << "-";
+	}
+
+	return output.str();
+}
+
 void UnitSI::undef(bool val) {
 	undef_ = val;
 }

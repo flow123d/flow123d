@@ -63,6 +63,8 @@ public:
 	 */
 	std::string format() const;
 
+	std::string to_string() const;
+
 	/**
 	 * Set flag that unit is undefined.
 	 *
