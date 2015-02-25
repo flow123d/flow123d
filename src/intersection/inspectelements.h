@@ -32,6 +32,8 @@ class InspectElements {
 
 	//IntersectionLocal temporary_intersection;
 
+	int element_2D_index;
+
 	Simplex<1> abscissa;
 	Simplex<2> triangle;
 	Simplex<3> tetrahedron;

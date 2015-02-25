@@ -25,28 +25,40 @@ void InspectElements::computeIntersections2d3dInit(){
 		}
 	}
 
+	element_2D_index = -1;
+
 };
 
 void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele){
+
 	//xprintf(Msg, "========PRODLUZUJI========\n");
 	for(unsigned int i = 0; i < prolongation_table.size();i++){
 
 		unsigned int stena = std::get<0>(prolongation_table[i]);
 		unsigned int typ_elm = std::get<1>(prolongation_table[i]);
 
+
 		if(typ_elm == 0){
 			// prodlužuji hranou
+
 			//xprintf(Msg,"Procházím hranu(%d) na id elementu(%d), hrana(%d)\n"
 			//					, stena,elm->index(),elm->side(2-stena)->el_idx());
 
-			SideIter elm_side = elm->side((unsigned int)(2-stena));
+
+			SideIter elm_side = elm->side((3-stena)%3);
+
+
 			Edge *edg = elm_side->edge();
 
 			for(int j=0; j < edg->n_sides;j++) {
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
-					//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
 					unsigned int sousedni_element = other_side->element()->index(); // 2D element
+
+							//xprintf(Msg, "Naleznut sousedni element elementu(3030) s ctyrstenem(%d)\n", ele->index());
+							//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
+
+
 						if(!intersectionExists(sousedni_element,ele->index())){
 							//flag_for_3D_elements[ele->index()] = sousedni_element;
 
@@ -62,6 +74,7 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 
 		}else{
 			// prodlužuji stěnou
+
 			//xprintf(Msg,"Procházím stěnu(%d) na id elementu(%d), stěna(%d)\n"
 			//		, stena,ele->index(),ele->side(3-stena)->el_idx());
 
@@ -72,10 +85,11 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 			for(int j=0; j < edg->n_sides;j++) {
 				SideIter other_side=edg->side(j);
 				if (other_side != elm_side) {
-					//xprintf(Msg, "\t\t Idx původního elementu a jeho stěny(%d,%d) - Idx sousedního elementu a jeho stěny(%d,%d)\n",ele->index(),stena,other_side->element()->index(),other_side->el_idx());
-
+					//
 
 					unsigned int sousedni_element = other_side->element()->index();
+
+
 					if(flag_for_3D_elements[sousedni_element] == -1 || (flag_for_3D_elements[sousedni_element] != (int)elm->index() && !intersectionExists(elm->index(),sousedni_element))){
 						flag_for_3D_elements[sousedni_element] = elm->index();
 						// Jedná se o vnitřní čtyřstěny v trojúhelníku
@@ -105,6 +119,15 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	this->UpdateTriangle(elm);
 	this->UpdateTetrahedron(ele);
 
+	element_2D_index = pl.getElement2DIdx();
+
+	/*if(element_2D_index == 3030){
+		xprintf(Msg, "OU YEAH - 3030 a 3D(%d)\n",pl.getElement3DIdx());
+		if(pl.getElement3DIdx() == 36762){
+			xprintf(Msg, "no sakra\n");
+		}
+	}*/
+
 	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 	CI_23.init();
 	CI_23.compute(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
@@ -129,6 +152,10 @@ void InspectElements::ComputeIntersections23(){
 	FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 2 && !closed_elements[elm.index()]) {
 
+			if(elm->index() == 3616){
+				xprintf(Msg, "OU YEAH\n");
+			}
+
 			this->UpdateTriangle(elm);
 
 
@@ -141,12 +168,12 @@ void InspectElements::ComputeIntersections23(){
 			//FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_triangle(efi,tt);
 			BoundingBox elementBoundingBox = tt.get_bounding_box();
 			bt.find_bounding_box(elementBoundingBox, searchedElements);
-			bool prunik = false;
+			//bool prunik = false;
 
 			for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
 				int idx = *it;
 				ElementFullIter ele = mesh->element( idx );
-				if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)elm->index()) {
+				if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index())) {
 
 					this->UpdateTetrahedron(ele);
 
@@ -162,6 +189,8 @@ void InspectElements::ComputeIntersections23(){
 					//xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
 
 					if(il.getIPsize() > 2){
+
+
 						all_intersections.push_back(il);
 
 						intersection_list[elm.index()].push_back(il);
@@ -181,18 +210,30 @@ void InspectElements::ComputeIntersections23(){
 								prolongation_line_queue_3D.pop();
 
 							}
+
+							if(element_2D_index >= 0){
+								closed_elements[element_2D_index] = true;
+							}
+
+							element_2D_index = -1;
 							// Pridat priznak trojuhleniku, ze je projity
 							if(!prolongation_line_queue_2D.empty()){
 								computeIntersections2d3dProlongation(prolongation_line_queue_2D.front());
 								prolongation_line_queue_2D.pop();
 							}
 
+							if(element_2D_index >= 0){
+								closed_elements[element_2D_index] = true;
+							}
+
+							element_2D_index = -1;
+
 							if(prolongation_line_queue_2D.empty() && prolongation_line_queue_3D.empty()){
 								break;
 							}
 
 						}
-						prunik = true;
+						//prunik = true;
 						break; // ukončí procházení dalších bounding boxů
 					}
 
@@ -200,19 +241,14 @@ void InspectElements::ComputeIntersections23(){
 			}
 			// Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
 			closed_elements[elm.index()] = true;
-			if(prunik){
-				break; // do budoucna odstranit break - tady ho mam, abych měl jistotu, že se provádí průchod
-			}
+			//if(prunik){
+				//break; // do budoucna odstranit break - tady ho mam, abych měl jistotu, že se provádí průchod
+			//}
 		}
 	}
 
-	/*xprintf(Msg,"Element(3616) - velikost(%d)\n", intersection_list[3616].size());
-	for(unsigned int i = 0;i < intersection_list[3616].size();i++){
-		IntersectionLocal il = intersection_list[3616][i];
-		xprintf(Msg,"elementy(%d,%d) - obsah(%f), bodu(%d)\n", il.idx_2D(), il.idx_3D(), il.getArea(), il.getIPsize());
-		il.printTracingTable();
-	}
-	xprintf(Msg,"Element(3617) - velikost(%d)\n", intersection_list[3617].size());*/
+	//xprintf(Msg,"Element(3030) - velikost(%d)\n", intersection_list[3030].size());
+	//xprintf(Msg,"Element(3617) - velikost(%d)\n", intersection_list[3617].size());
 };
 
 
