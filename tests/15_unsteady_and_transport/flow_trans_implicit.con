@@ -35,7 +35,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = {
+      balance = {
         cumulative = true
       },
 
@@ -87,7 +87,7 @@
         r_tol = 1e-07
       }, 
       
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }, 

@@ -1,4 +1,4 @@
-	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
 	0	"region_48"	"A"	0	0	0	10.2221	0	0	0	0	0	0
 	0	"region_48"	"B"	0	0	0	9.64028	0	0	0	0	0	0
 	0	"region_184"	"A"	0	0	0	11.5564	0	0	0	0	0	0

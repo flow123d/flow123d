@@ -23,7 +23,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = true,
+      balance = true,
 
       solver = {
         TYPE = "Petsc", 
@@ -119,7 +119,7 @@
       output_stream = {
         REF = "/system/output_streams/1"
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }

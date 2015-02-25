@@ -26,7 +26,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = true,
+      balance = true,
 
       solver = { 
         TYPE = "Petsc",
@@ -108,7 +108,7 @@
           reaction_liquid = { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/reaction_liquid" }
         }
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     } 

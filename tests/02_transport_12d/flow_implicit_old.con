@@ -35,7 +35,7 @@
           cross_section = 1
         }
       ],
-      water_balance = true
+      balance = true
     },
 
     secondary_equation = {
@@ -70,7 +70,7 @@
           porosity= 0.25
         }
       ],
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }

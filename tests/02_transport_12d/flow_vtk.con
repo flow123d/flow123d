@@ -33,7 +33,7 @@
         }
       ],
 
-      water_balance = true,
+      balance = true,
 
       output = {
         output_stream = {
@@ -76,7 +76,7 @@
       time = {
         end_time = 5.0
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       },
       

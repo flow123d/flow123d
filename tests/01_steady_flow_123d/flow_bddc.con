@@ -59,7 +59,7 @@
         }
       ],
 
-      water_balance = true,
+      balance = true,
 
       output = {
         output_stream = {

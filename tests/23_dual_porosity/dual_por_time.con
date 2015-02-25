@@ -26,7 +26,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = true,
+      balance = true,
 
       solver = { 
         TYPE = "Petsc",
@@ -79,7 +79,7 @@
         ],
         output_fields = ["conc_immobile", "porosity_immobile"]
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     } 

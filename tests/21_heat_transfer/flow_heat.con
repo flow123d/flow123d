@@ -44,7 +44,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = true,
+      balance = true,
 
       solver = {
         TYPE = "Petsc", 
@@ -54,7 +54,7 @@
     secondary_equation = {
       TYPE = "HeatTransfer_DG", 
 
-      energy_balance = {
+      balance = {
         cumulative = true
       }
       input_fields= [

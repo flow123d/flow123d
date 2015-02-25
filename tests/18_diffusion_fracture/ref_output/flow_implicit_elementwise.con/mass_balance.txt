@@ -1,4 +1,4 @@
-	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
 	0	"region_20"	"A"	0	0	0	0	0	0	0	0	0	0
 	0	"region_24"	"A"	0	0	0	0.00676582	0	0	0	0	0	0
 	0	"IMPLICIT BOUNDARY"	"A"	0	0	0	0	0	0	0	0	0	0

@@ -1,4 +1,4 @@
-	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
 	0	"domain"	"water_volume"	0	0	0	0	0	0	0	0	0	0
 	0	".left"	"water_volume"	-0.1	-0.1	0	0	0	0	0	0	0	0
 	0	".right"	"water_volume"	0.1	0	0.1	0	0	0	0	0	0	0

@@ -1,4 +1,4 @@
-	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
 	0	"domain"	"tracer"	0	0	0	0	0	0	0	0	0	0
 	0	".left"	"tracer"	0	0	0	0	0	0	0	0	0	0
 	0	".right"	"tracer"	0	0	0	0	0	0	0	0	0	0

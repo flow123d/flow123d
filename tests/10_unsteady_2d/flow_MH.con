@@ -34,7 +34,7 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
-      water_balance = {
+      balance = {
         cumulative = true
       },
 
