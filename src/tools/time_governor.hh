@@ -481,10 +481,11 @@ private:
     void init_common(double init_time, double end_time, TimeMark::Type type);
 
 
-    /// Technical bound for the time step given by finite precision.
-    static const double time_step_lower_bound;
-    /// Rounding precision for computing number of steps. Used in estimate_dt().
-    static const double round_n_steps_precision;
+    /**
+     *  Rounding precision for computing time_step.
+     *  Used as technical lower bound for the time step.
+     */
+    static const double time_step_precision;
 
     /// Number of time_next calls, i.e. total number of performed time steps.
     //int time_level_;

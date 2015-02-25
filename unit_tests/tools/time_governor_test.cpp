@@ -111,7 +111,7 @@ TEST(TimeGovernor, comparisons)
             exp_time*=2) {
         tg.marks().add(TimeMark(exp_time, tg.equation_fixed_mark_type()));
         tg.next_time();
-        tg.view("eQ");
+        //tg.view("eQ");
 
 
         EXPECT_EQ(expect_dt, tg.dt());
@@ -125,6 +125,35 @@ TEST(TimeGovernor, comparisons)
     }
 
 }
+
+
+TEST(TimeGovernor, estimate_dt)
+{
+    TimeGovernor::marks().reinit();
+    string tg_in="{time = { start_time = 0.0, end_time = 100.0 } }";
+    TimeGovernor tg( read_input(tg_in));
+    tg.marks().add(TimeMark(0.5, tg.equation_fixed_mark_type()));
+    EXPECT_FLOAT_EQ(0.5, tg.estimate_dt());
+    tg.set_upper_constraint(0.15);
+    EXPECT_FLOAT_EQ(0.125, tg.estimate_dt());
+    tg.next_time();
+    EXPECT_FLOAT_EQ(0.375, tg.estimate_dt());
+    tg.next_time();
+
+    // test slight rounding up, violating upper constraint
+    tg.marks().add(TimeMark(1.0, tg.equation_fixed_mark_type()));
+    tg.set_upper_constraint(0.1+1E-14);
+    EXPECT_FLOAT_EQ(0.1, tg.estimate_dt());
+    double epsilon = 0.4*numeric_limits<double>::epsilon();
+    EXPECT_FALSE( 0.1 == (0.1-epsilon) );
+    tg.set_upper_constraint(0.1-epsilon);
+    EXPECT_EQ(0.1, tg.estimate_dt());
+    tg.set_upper_constraint(0.1 - 2*epsilon);
+    EXPECT_TRUE(0.1 > tg.estimate_dt());
+}
+
+
+
 
 /**
  * Test for class TimeMark, TimeMarks, TimeMarkIterator, TimeGovernor
@@ -171,12 +200,12 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
 	 
     //testing if TimeGovernor was correctly constructed
-    EXPECT_EQ( tm_tg->t(), 0.0 );
-    EXPECT_EQ( tm_tg->end_time(), 20.0 );
+    EXPECT_EQ(0.0 ,tm_tg->t());
+    EXPECT_EQ(20.0 ,tm_tg->end_time());
     EXPECT_FLOAT_EQ( 0.0, tm_tg->end_of_fixed_dt());
-//    EXPECT_EQ( tm_tg->dt(), 20.0);                                  // FAILURE
-    EXPECT_EQ( tm_tg->last_dt(), inf_time);
-    EXPECT_EQ( tm_tg->tlevel(), 0 );
+//    EXPECT_EQ(20.0,tm_tg->dt());                                  // FAILURE
+    EXPECT_EQ(inf_time,tm_tg->last_dt());
+    EXPECT_EQ(0 ,tm_tg->tlevel());
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed from ZERO
 	 
     //----------------- first testing of TimeMarks with TimeGovernor
@@ -184,37 +213,37 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     TimeMarks::iterator it = tm.begin();
     
 
-    EXPECT_EQ( it->mark_type(), TimeMark::every_type ); //begins with ~0x0
-    EXPECT_EQ( (++it)->time(), 100 );
-    EXPECT_EQ( (--it)->time(), -inf_time );
+    EXPECT_EQ(TimeMark::every_type ,it->mark_type()); //begins with ~0x0
+    EXPECT_EQ(100 ,(++it)->time());
+    EXPECT_EQ(-inf_time ,(--it)->time());
     
     it = tm_tg->next(tm.type_fixed_time());
-    EXPECT_EQ( (it)->time(), 5.0 );		//this goes from start time 0.0 not from -inf
+    EXPECT_EQ(5.0 ,(it)->time());		//this goes from start time 0.0 not from -inf
     
     it = tm_tg->next(my_mark_type);
-    EXPECT_EQ( (it)->time(), 0.8 );		//is included in every_type
-    EXPECT_EQ( (++it)->time(), 1.0 );
-    EXPECT_EQ( (++it)->time(), 2.0 );
-    EXPECT_EQ( (++it)->time(), 2.25 );
-    EXPECT_EQ( (++it)->time(), 2.5 );
-    EXPECT_EQ( (++it)->time(), 2.75 );
-    EXPECT_EQ( (++it)->time(), 3.0 );	//is included in 0x18
+    EXPECT_EQ(0.8 ,(it)->time());		//is included in every_type
+    EXPECT_EQ(1.0 ,(++it)->time());
+    EXPECT_EQ(2.0 ,(++it)->time());
+    EXPECT_EQ(2.25 ,(++it)->time());
+    EXPECT_EQ(2.5 ,(++it)->time());
+    EXPECT_EQ(2.75 ,(++it)->time());
+    EXPECT_EQ(3.0 ,(++it)->time());	//is included in 0x18
     
     it = tm_tg->next(your_mark_type);
-    EXPECT_EQ( (it)->time(), 3.0 );	//is included in your_mark_type
+    EXPECT_EQ(3.0 ,(it)->time());	//is included in your_mark_type
     
     it = tm_tg->next(tm.type_fixed_time());
-    EXPECT_EQ( (it)->time(), 5.0 );
-    EXPECT_EQ( (++it)->time(), 20.0 );	//end_time = 20.0
+    EXPECT_EQ(5.0 ,(it)->time());
+    EXPECT_EQ(20.0 ,(++it)->time());	//end_time = 20.0
     
-    EXPECT_EQ( (--it)->time(), 5.0 );
+    EXPECT_EQ(5.0 ,(--it)->time());
     EXPECT_FLOAT_EQ( 0.0, (--it)->time());
-    EXPECT_EQ( (--it)->time(), -1.0 );
-    EXPECT_EQ( (--it)->time(), -inf_time );	//is included in every_type
+    EXPECT_EQ(-1.0 ,(--it)->time());
+    EXPECT_EQ(-inf_time ,(--it)->time());	//is included in every_type
     
     it = tm_tg->next( TimeMark::every_type);
-    EXPECT_EQ( it->time(), 100 );
-    EXPECT_EQ( (++it)->time(), inf_time );
+    EXPECT_EQ(100 ,it->time());
+    EXPECT_EQ(inf_time ,(++it)->time());
     //-----------------
     
     //set permanent min_dt and max_dt
@@ -222,19 +251,19 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
     //testing setting of upper constraint
     //if out of allowed interval, cannot change the user constraints
-    EXPECT_EQ( tm_tg->set_upper_constraint(25.0), -1);
-    EXPECT_EQ( tm_tg->upper_constraint(), 20.0);
-    EXPECT_EQ( tm_tg->set_upper_constraint(1e-4), 1);
-    EXPECT_EQ( tm_tg->upper_constraint(), 20.0);
+    EXPECT_EQ(-1,tm_tg->set_upper_constraint(25.0));
+    EXPECT_EQ(20.0,tm_tg->upper_constraint());
+    EXPECT_EQ(1,tm_tg->set_upper_constraint(1e-4));
+    EXPECT_EQ(20.0,tm_tg->upper_constraint());
     
     //testing setting of lower constraint
-    EXPECT_EQ( tm_tg->set_lower_constraint(25.0), -1);
-    EXPECT_EQ( tm_tg->lower_constraint(), 0.01);
-    EXPECT_EQ( tm_tg->set_lower_constraint(1e-4), 1);
-    EXPECT_EQ( tm_tg->lower_constraint(), 0.01);
+    EXPECT_EQ(-1,tm_tg->set_lower_constraint(25.0));
+    EXPECT_EQ(0.01,tm_tg->lower_constraint());
+    EXPECT_EQ(1,tm_tg->set_lower_constraint(1e-4));
+    EXPECT_EQ(0.01,tm_tg->lower_constraint());
     
     //upper time step constraint fot next change of time_step
-    EXPECT_EQ( tm_tg->set_upper_constraint(0.5), 0);
+    EXPECT_EQ(0,tm_tg->set_upper_constraint(0.5));
     
     //cout << "Estimated time (t+dt): " << tm_tg->estimate_time() << endl;
     //fixing time_step until next fixed mark_type (in time 5.0)
@@ -245,9 +274,9 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
    
-    EXPECT_EQ( tm_tg->dt(), 0.5 );
-    EXPECT_EQ( tm_tg->t(), 0.5 );
-    EXPECT_EQ( tm_tg->tlevel(), 1 );
+    EXPECT_EQ(0.5 ,tm_tg->dt());
+    EXPECT_EQ(0.5 ,tm_tg->t());
+    EXPECT_EQ(1 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//changed to 20.0     // FAILURE
 
@@ -258,8 +287,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 1.0 );
-    EXPECT_EQ( tm_tg->tlevel(), 2 );
+    EXPECT_EQ(1.0 ,tm_tg->t());
+    EXPECT_EQ(2 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
     EXPECT_TRUE(tm_tg->is_current(my_mark_type) ); // time 1.0 (of tg) is lt time 1.5 (of last timemark + dt = 1.0+0.5 = 1.5)
@@ -269,8 +298,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 1.5 );
-    EXPECT_EQ( tm_tg->tlevel(), 3 );
+    EXPECT_EQ(1.5 ,tm_tg->t());
+    EXPECT_EQ(3 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
 
@@ -281,8 +310,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 2.0 );
-    EXPECT_EQ( tm_tg->tlevel(), 4 );
+    EXPECT_EQ(2.0 ,tm_tg->t());
+    EXPECT_EQ(4 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 0.5
     EXPECT_TRUE(tm_tg->is_current(my_mark_type)); // time 2.0 (of tg) is lt time 2.5 (of last timemark + dt = 2.0+0.5 = 2.5)
@@ -297,8 +326,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 4.0 );
-    EXPECT_EQ( tm_tg->tlevel(), 5 );
+    EXPECT_EQ(4.0 ,tm_tg->t());
+    EXPECT_EQ(5 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     // FAILURE
     EXPECT_TRUE(tm_tg->is_changed_dt()); 	//is changed from 0.5 to 1.5
@@ -314,8 +343,8 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     tm_tg->next_time();
     //tm_tg->view();
 
-    EXPECT_EQ( tm_tg->t(), 6.0 );
-    EXPECT_EQ( tm_tg->tlevel(), 6 );
+    EXPECT_EQ(6.0 ,tm_tg->t());
+    EXPECT_EQ(6 ,tm_tg->tlevel());
     EXPECT_FALSE(tm_tg->is_end());
     EXPECT_FALSE(tm_tg->is_changed_dt()); 	//is still 1.5
     // FAILURE
@@ -330,19 +359,19 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     
     //-----------------testing TimeMarks, TimeMarkIterator and last()
     it = tm_tg->next(TimeMark::every_type);
-    EXPECT_EQ( (it)->time(), 100 );
+    EXPECT_EQ(100 ,(it)->time());
     
     it = tm_tg->last(TimeMark::every_type);
-    EXPECT_EQ( (it)->time(), -inf_time );
+    EXPECT_EQ(-inf_time ,(it)->time());
     
     it = tm_tg->last(my_mark_type);	//is included there
-    EXPECT_EQ( (it)->time(), 3.0 );
+    EXPECT_EQ(3.0 ,(it)->time());
     
     it = tm_tg->last(your_mark_type);	//is equal to time of TimeGovernor
-    EXPECT_EQ( (it)->time(), 5.0 );
+    EXPECT_EQ(5.0 ,(it)->time());
     
     it = tm_tg->last(tm.type_fixed_time());	//is included
-    EXPECT_EQ( (it)->time(), 5.0 );
+    EXPECT_EQ(5.0 ,(it)->time());
     
     delete tm_tg;
 }
