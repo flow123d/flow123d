@@ -1397,7 +1397,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
-	time_->fix_dt_until_mark();
+	//time_->fix_dt_until_mark();
 	create_linear_system();
 
 	VecDuplicate(schur0->get_solution(), &previous_solution);
@@ -1498,7 +1498,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
-	time_->fix_dt_until_mark();
+	//time_->fix_dt_until_mark();
 	create_linear_system();
 	VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
@@ -1550,6 +1550,7 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	// modify matrix diagonal
 	// cycle over local element rows
 	ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+	DBGMSG("setup time term with dt: %f\n", time_->dt());
 
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 		ele = mesh_->element(el_4_loc[i_loc_el]);
@@ -1576,13 +1577,21 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 
 void DarcyFlowLMH_Unsteady::modify_system() {
     START_TIMER("modify system");
-    if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
+    if (time_->step().index()>0)
+        DBGMSG("dt: %f dt-1: %f indexchanged: %d matrix: %d\n", time_->step().length(), time_->step(-1).length(), time_->is_changed_dt(), schur0->is_matrix_changed() );
+
+    if (time_->is_changed_dt() && time_->step().index()>0) {
     	// if time step has changed and setup_time_term not called
 
-        MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
-        VecScale(new_diagonal, time_->last_dt()/time_->dt());
-        MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-        schur0->set_matrix_changed();
+        double scale_factor=time_->step(-2).length()/time_->step().length();
+        if (scale_factor != 1.0) {
+            MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
+
+            DBGMSG("Scale factor: %f\n",scale_factor);
+            VecScale(new_diagonal, scale_factor);
+            MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
+            schur0->set_matrix_changed();
+        }
     }
 
     // modify RHS - add previous solution

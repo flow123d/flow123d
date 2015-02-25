@@ -439,7 +439,7 @@ const TimeStep &TimeGovernor::step(int index) const {
         back_idx = static_cast<unsigned int>(recent_steps_[0].index() - index);
     }
     if ( back_idx >= recent_steps_.size())
-        THROW(ExcMissingTimeStep() << EI_Index(index) << EI_HistorySize(recent_steps_.size()));
+        THROW(ExcMissingTimeStep() << EI_Index(index) << EI_BackIndex(back_idx) << EI_HistorySize(recent_steps_.size()));
 
     return recent_steps_[back_idx];
 }

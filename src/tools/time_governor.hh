@@ -186,9 +186,11 @@ public:
 
 	DECLARE_INPUT_EXCEPTION(ExcTimeGovernorMessage, << EI_Message::val);
 	TYPEDEF_ERR_INFO( EI_Index, int);
+	TYPEDEF_ERR_INFO( EI_BackIndex, unsigned int);
 	TYPEDEF_ERR_INFO( EI_HistorySize, unsigned int);
 	DECLARE_EXCEPTION(ExcMissingTimeStep,
 	        << "Time step index: " << EI_Index::val
+	        << ", history index: " << EI_BackIndex::val
 	        << " out of history of size: " << EI_HistorySize::val);
 
     static Input::Type::Record input_type;
