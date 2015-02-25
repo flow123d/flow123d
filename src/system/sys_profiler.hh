@@ -214,7 +214,6 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_v
  */
 #define CODE_POINT(tag) CodePoint(tag, __FILE__, __func__, __LINE__)
 
-
 /**
  * Macro to generate constexpr CodePoint object.
  */
@@ -250,7 +249,7 @@ public:
     /// Tag of the code point.
     const char * const tag_;
 
-    /// Tag of the code point.
+    /// Subtag of the code point.
     const char * const subtag_;
 
     /// file name of the code point
@@ -331,14 +330,11 @@ public:
 
 
     /// Getter for the 'tag'.
-    inline const char *tag() const
-        {   
-            char result[100];   
-
-            strcpy(result,code_point_->tag_);
-            strcat(result,code_point_->subtag_);
-            return result;
-        }
+    inline string tag() const {   
+        string buf(code_point_->tag_);
+        buf.append(code_point_->subtag_);
+        return buf;
+    }
 
     /// Returns true if the timer is open, number of starts (recursions) is nonzero.
     inline bool running() const
@@ -510,7 +506,7 @@ public:
      * Returns tag of current timer.
      */
     inline const char *actual_tag() const
-        { return timers_[actual_node].tag(); }
+        { return timers_[actual_node].tag().c_str(); }
     /**
      * Returns total number of calls of current timer.
      */
