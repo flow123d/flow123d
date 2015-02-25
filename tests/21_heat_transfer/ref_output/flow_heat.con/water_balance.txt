@@ -1,26 +1,9 @@
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .fracture_bottom         water_volume  -0.01         0             -0.01         
-  2             .fracture_top            water_volume  0.01          0.01          0             
-  4             .left                    water_volume  5.13641e-18   7.37257e-17   -6.85893e-17  
-  5             .right                   water_volume  6.0878e-17    1.08474e-16   -4.75965e-17  
-  6             .rock_bottom             water_volume  -0.002        0             -0.002        
-  7             .rock_top                water_volume  0.002         0.002         0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     water_volume  -3.47146e-09  0.012         -0.012        
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  3             fracture                 water_volume  0             0             
-  8             rock                     water_volume  0             0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       water_volume  0             0             
-
-
+	"time"	"region"	"quantity"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"fracture"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".fracture_bottom"	"water_volume"	-0.01	-0.01	0	0	0	0	0	0	0	0
+	0	".fracture_top"	"water_volume"	0.01	0	0.01	0	0	0	0	0	0	0
+	0	".left"	"water_volume"	5.13641e-18	-6.85893e-17	7.37257e-17	0	0	0	0	0	0	0
+	0	".right"	"water_volume"	6.0878e-17	-4.75965e-17	1.08474e-16	0	0	0	0	0	0	0
+	0	".rock_bottom"	"water_volume"	-0.002	-0.002	0	0	0	0	0	0	0	0
+	0	".rock_top"	"water_volume"	0.002	0	0.002	0	0	0	0	0	0	0
