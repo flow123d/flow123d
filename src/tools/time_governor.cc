@@ -407,7 +407,7 @@ void TimeGovernor::next_time()
             is_time_step_fixed_ = false;       
             
             //is true unless new fixed_dt is not equal previous time_step
-            time_step_changed_ = (step(-1).length() != step().length());
+            time_step_changed_ = (step(-2).length() != step().length());
         }
         else
             time_step_changed_ = false;
@@ -420,7 +420,7 @@ void TimeGovernor::next_time()
         //DBGMSG("step: %f, end: %f\n", step_.length(), step_.end());
         recent_steps_.push_front(step_);
         //DBGMSG("last:%f, new: %f\n",step(-1).length(),step().length());
-        time_step_changed_= (step(-1).length() != step().length());
+        time_step_changed_= (step(-2).length() != step().length());
     }
 
     // refreshing the upper_constraint_
@@ -428,6 +428,22 @@ void TimeGovernor::next_time()
     lower_constraint_ = min_time_step_;
 
 }
+
+
+
+const TimeStep &TimeGovernor::step(int index) const {
+    unsigned int back_idx;
+    if (index < 0) {
+        back_idx = static_cast<unsigned int>(-index-1);
+    } else {
+        back_idx = static_cast<unsigned int>(recent_steps_[0].index() - index);
+    }
+    if ( back_idx >= recent_steps_.size())
+        THROW(ExcMissingTimeStep() << EI_Index(index) << EI_HistorySize(recent_steps_.size()));
+
+    return recent_steps_[back_idx];
+}
+
 
 
 

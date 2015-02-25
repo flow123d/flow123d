@@ -185,6 +185,11 @@ class TimeGovernor
 public:
 
 	DECLARE_INPUT_EXCEPTION(ExcTimeGovernorMessage, << EI_Message::val);
+	TYPEDEF_ERR_INFO( EI_Index, int);
+	TYPEDEF_ERR_INFO( EI_HistorySize, unsigned int);
+	DECLARE_EXCEPTION(ExcMissingTimeStep,
+	        << "Time step index: " << EI_Index::val
+	        << " out of history of size: " << EI_HistorySize::val);
 
     static Input::Type::Record input_type;
 
@@ -281,17 +286,14 @@ public:
 
 
     /**
-     *  Returns reference to required time step in the
-     *  recent history. Without parameter the actual time step is returned.
-     *  To get previous time steps you have to use negative values of  @p index.
-     *  This is to provide better readability.
+     *  Returns reference to required time step in the recent history.
+     *  Without parameter the actual time step is returned.
+     *  Use negative indices to get recent time steps: step(-1) the actual step, step(-2) the last one.
+     *  Use positive index to get time step by its index: step(0) the first time step.
+     *  However only limited number of last time steps is stored.
+     *  If the time step is not accessible any more, we throw an exception ExcMissingTimeStep.
      */
-    inline const TimeStep &step(int index=0) const {
-        ASSERT_LE(index, 0);
-        unsigned int back_idx = static_cast<unsigned int>(-index);
-        ASSERT_LESS(back_idx, recent_steps_.size());
-        return recent_steps_[back_idx];
-    }
+    const TimeStep &step(int index=-1) const;
 
     /**
      *	Specific time mark of the equation owning the time governor.
@@ -370,7 +372,7 @@ public:
      * Previous time step.
      */
     inline double last_dt() const
-        {if (step().index() >0) return step(-1).length();
+        {if (step().index() >0) return step(-2).length();
         else return inf_time;
         }
 

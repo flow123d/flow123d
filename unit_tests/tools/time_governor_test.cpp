@@ -74,6 +74,40 @@ TEST(TimeStep, all) {
 }
 
 
+TEST(TimeGovernor, step) {
+    TimeGovernor::marks().reinit();
+    string tg_in="{time = { start_time = 0.0, end_time = 10.0 } }";
+    TimeGovernor tg( read_input(tg_in));
+    tg.marks().add_time_marks(0.0, 1.0, 10.0, tg.equation_fixed_mark_type());
+    EXPECT_EQ(0, tg.step().index());
+    EXPECT_EQ(0, tg.step(-1).index());
+    EXPECT_EQ(0, tg.step(0).index());
+
+    EXPECT_THROW( {tg.step(1);}, TimeGovernor::ExcMissingTimeStep);
+    EXPECT_THROW( {tg.step(-2);}, TimeGovernor::ExcMissingTimeStep);
+
+    tg.next_time();
+    EXPECT_EQ(1, tg.step().index());
+    EXPECT_EQ(1, tg.step(-1).index());
+    EXPECT_EQ(1, tg.step(1).index());
+    EXPECT_EQ(0, tg.step(0).index());
+    EXPECT_EQ(0, tg.step(-2).index());
+
+    EXPECT_THROW( {tg.step(2);}, TimeGovernor::ExcMissingTimeStep);
+    EXPECT_THROW( {tg.step(-3);}, TimeGovernor::ExcMissingTimeStep);
+
+    tg.next_time();
+    EXPECT_EQ(2, tg.step().index());
+    EXPECT_EQ(2, tg.step(-1).index());
+    EXPECT_EQ(2, tg.step(2).index());
+    EXPECT_EQ(1, tg.step(1).index());
+    EXPECT_EQ(1, tg.step(-2).index());
+
+    EXPECT_THROW( {tg.step(0);}, TimeGovernor::ExcMissingTimeStep);
+    EXPECT_THROW( {tg.step(3);}, TimeGovernor::ExcMissingTimeStep);
+
+}
+
 TEST(TimeGovernor, comparisons)
 {
     TimeGovernor::marks().reinit();
