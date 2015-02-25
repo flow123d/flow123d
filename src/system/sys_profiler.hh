@@ -188,15 +188,25 @@ using namespace std;
 #ifdef FLOW123D_DEBUG_PROFILER
 
 /**
+ * Variable which represents value when no subtag was specified in CodePoint class
+ */
+#define PROFILER_EMPTY_SUBTAG ""
+
+/**
+ * Variable used for default value in hash process
+ */
+#define PROFILER_HASH_DEFAULT 0
+
+/**
  * @brief Function for compile-time hash computation.  (Needs C++x11 standard.)
  * Input, @p str, is constant null terminated string, result is unsigned int (usually 4 bytes).
  * Function has to be recursive, since standard requires that the body consists only from the return statement.
  *
  * SALT is hash for the empty string. Currently zero for simpler testing.
  */
-inline CONSTEXPR_ unsigned int str_hash(const char * str) {
+inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_value) {
     #define SALT 0 //0xef50e38f
-    return (*str == 0 ? SALT : str_hash(str+1) * 101 + (unsigned int)(*str) );
+    return (*str == 0 ? SALT : default_value + str_hash(str+1, PROFILER_HASH_DEFAULT) * 101 + (unsigned int)(*str) );
 }
 
 /**
@@ -224,12 +234,14 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str) {
 class CodePoint {
 public:
     CONSTEXPR_ CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
-    : tag_(tag), file_(file), func_(func), line_(line),
-      hash_(str_hash(tag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
+    : tag_(tag), file_(file), func_(func), line_(line), subtag_(PROFILER_EMPTY_SUBTAG),
+      hash_(str_hash(tag, PROFILER_HASH_DEFAULT)),
+      hash_idx_( str_hash(tag, PROFILER_HASH_DEFAULT)%max_n_timer_childs )
     {};
     CONSTEXPR_ CodePoint(const char *tag, const char *subtag, const char * file, const char * func, const unsigned int line)
     : tag_(tag), subtag_(subtag), file_(file), func_(func), line_(line),
-      hash_(str_hash(tag + subtag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
+      hash_(str_hash(subtag, str_hash(tag, PROFILER_HASH_DEFAULT))),
+      hash_idx_( str_hash(subtag, str_hash(tag, PROFILER_HASH_DEFAULT))%max_n_timer_childs )
     {};
 
     /// Size of child arrays in timer nodes.
@@ -320,7 +332,13 @@ public:
 
     /// Getter for the 'tag'.
     inline const char *tag() const
-        { return code_point_->tag_; }
+        {   
+            char result[100];   
+
+            strcpy(result,code_point_->tag_);
+            strcat(result,code_point_->subtag_);
+            return result;
+        }
 
     /// Returns true if the timer is open, number of starts (recursions) is nonzero.
     inline bool running() const
