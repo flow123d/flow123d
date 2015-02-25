@@ -41,8 +41,19 @@ TEST (TimeMark, time_mark)
 
 TEST(TimeMarks, add_time_marks) {
     auto tm = TimeMarks();
+
+    {
     auto mark_type = tm.new_mark_type();
     tm.add_time_marks(0.0, 0.1, 1.0E3, mark_type);
     auto mark_it = tm.last(mark_type);
     EXPECT_FLOAT_EQ(1.0E3, mark_it->time());
+    }
+
+    {
+    auto mark_type = tm.new_mark_type();
+    tm.add_time_marks(1.0, 0.1, 2.0, mark_type);
+
+    EXPECT_FLOAT_EQ(1.0, (++tm.begin(mark_type))->time());
+    EXPECT_FLOAT_EQ(2.0, tm.last(mark_type)->time());
+    }
 }
