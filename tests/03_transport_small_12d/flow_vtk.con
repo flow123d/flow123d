@@ -26,6 +26,9 @@
       output = {
         output_stream = { 
           file = "flow.pvd", 
+          format = { TYPE = "vtk", variant = "ascii" },
+        output_stream = { REF = "/system/output_streams/0" }, 
+          file = "flow.pvd", 
           format = { TYPE = "vtk", variant = "ascii" }
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
