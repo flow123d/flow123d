@@ -372,12 +372,11 @@ void SorptionBase::initialize_from_input()
 void SorptionBase::initialize_fields()
 {
   ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
-  const std::vector<std::string> substance_names(n_substances_);
 
   // read fields from input file
   data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
-  data_->set_components(substance_names);
+  data_->set_components( std::vector<std::string>(n_substances_, "") );
   data_->set_mesh(*mesh_);
   data_->set_limit_side(LimitSide::right);
 

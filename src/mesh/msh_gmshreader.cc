@@ -375,11 +375,11 @@ void GmshMeshReader::make_header_table()
             if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
             	std::vector<GMSH_DataHeader> vec;
             	vec.push_back(header);
-            	header_table_.insert( std::pair<std::string, std::vector<GMSH_DataHeader> >(header.field_name, vec) );
-            } else if ( header.time <= it->second[it->second.size()-1].time ) {  // time is in wrong order. can't be add
+            	header_table_[header.field_name]=vec;
+            } else if ( header.time <= it->second.back().time ) { // time is in wrong order. can't be add
             	xprintf(Warn,
-            		"In file '%s', '$ElementData' section for field '%s' and time '%d' is in wrong order and can't be add!\n",
-            		tok_.f_name().c_str(), header.field_name.c_str(), header.time);
+            		"Wrong time order: field '%s', time '%d', file '%s'. Skipping this '$ElementData' section.\n",
+            		header.field_name.c_str(), header.time, tok_.f_name().c_str() );
             } else {  // add new time step
             	it->second.push_back(header);
             }
