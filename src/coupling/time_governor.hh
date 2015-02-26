@@ -402,11 +402,10 @@ private:
      *
      * Set main parameters to given values.
      * Check they are correct.
-     * Distinguish fixed time step and variable time step case.
      * Set soft and permanent constrains to the same, the least restricting values.
      * Set time marks for the start time and end time (if finite).
      */
-    void init_common(double dt, double init_time, double end_time, TimeMark::Type type);
+    void init_common(double init_time, double end_time, TimeMark::Type type);
 
 
     /// Technical bound for the time step given by finite precision.

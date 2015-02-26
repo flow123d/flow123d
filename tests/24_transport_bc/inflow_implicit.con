@@ -55,8 +55,8 @@
         "tracer"
       ], 
       time = {
-        end_time = 10
-        init_dt = 0.25
+        end_time = 10,
+        max_dt = 0.25
       },
       mass_balance = {
         cumulative = true
