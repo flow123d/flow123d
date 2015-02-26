@@ -61,9 +61,9 @@ public:
 	 *
 	 * Have assert for undefined units.
 	 */
-	std::string format() const;
+	std::string format_latex() const;
 
-	std::string to_string() const;
+	std::string format_text() const;
 
 	/**
 	 * Set flag that unit is undefined.
@@ -81,14 +81,23 @@ private:
 	/// Values determine positions of exponents in exponents_ vector
 	enum UnitOrder {
 		order_m=0,
-		order_kg=1,
-		order_s=2,
-		order_A=3,
-		order_K=4,
-		order_mol=5,
-		order_cd=6,
-		order_md=7
+		order_md=1,
+		order_kg=2,
+		order_s=3,
+		order_A=4,
+		order_K=5,
+		order_mol=6,
+		order_cd=7,
+		n_base_units=8
 	};
+
+	/// Variable parts of output format. Used in the @p format method.
+	struct OutputFormat {
+	    std::string exp_open, exp_close, delimiter;
+	};
+
+	/// Generic output formating mtehod.
+	std::string format(OutputFormat form) const;
 
 	/**
 	 * Stores exponents of base SI units in this order:
@@ -97,6 +106,11 @@ private:
 	 * where md represents value of exponent depended on dimension (m^{-d})
 	 */
 	std::vector<int> exponents_;
+
+	/**
+	 * Symbols for base SI units.
+	 */
+	static std::vector<std::string> unit_symbols_;
 
 	/**
 	 * Flag if object is undefined.

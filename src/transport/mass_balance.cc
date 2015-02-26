@@ -1318,7 +1318,7 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 
 	output_ << comment_string << ss.str()
 			<< format_csv_val("region", delimiter)
-			<< format_csv_val("quantity [" + units_.to_string() + "]", delimiter)
+			<< format_csv_val("quantity [" + units_.format_text() + "]", delimiter)
 			<< format_csv_val("flux", delimiter)
 			<< format_csv_val("flux_in", delimiter)
 			<< format_csv_val("flux_out", delimiter)
