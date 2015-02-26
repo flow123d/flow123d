@@ -15,7 +15,7 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "1d_domain", conductivity = 1e-6, sigma = 5e5 },
+        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
         { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
