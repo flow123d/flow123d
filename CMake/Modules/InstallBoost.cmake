@@ -4,6 +4,11 @@
 #     Author: jb
 #
 
+
+# set flags for BOOTS, user specified are first choice, if not specified external libs flags will be used
+SET_VALID_VALUE ("BOOTS_CXX_FLAGS" ${BOOTS_CXX_FLAGS} ${EXTERNAL_LIBS_CXX_FLAGS} ${CMAKE_CXX_FLAGS})
+
+
 if (NOT EXTERNAL_BOOST_DIR)
     set(EXTERNAL_BOOST_DIR "${PROJECT_BINARY_DIR}/boost_build")
 endif()    

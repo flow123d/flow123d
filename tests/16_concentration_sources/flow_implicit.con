@@ -93,7 +93,8 @@
     }, 
     time = {
       end_time = 5.7,
-      init_dt = 1e0
+      max_dt = 1e0,
+      min_dt = 1e0
     }
   }, 
   system = {

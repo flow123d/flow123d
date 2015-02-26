@@ -73,9 +73,11 @@ The first part $\Gamma_I$ is further divided into two segments:
 \end{align*}
 where $\vc n$ stands for the unit outward normal vector to $\partial\Omega_d$.
 We prescribe the following boundary conditions:
-On the inflow parts $\Gamma_I^+\cup\Gamma_D$, the user must provide \hyperA{SoluteTransport-DG-Data::bc-conc}{Dirichlet boundary condition} $c_D^i$ for concentrations:
-$$ c^i = c^i_D \mbox{ on }\Gamma_I^+\cup\Gamma_D. $$
-On $\Gamma_I^-$ we impose homogeneous Neumann boundary condition:
+On $\Gamma_D$, the user must provide \hyperA{SoluteTransport-DG-Data::bc-conc}{Dirichlet boundary condition} $c_D^i$ for concentrations:
+$$ c^i = c^i_D \mbox{ on }\Gamma_D. $$
+On the inflow $\Gamma_I^+$ the \hyperA{SoluteTransport-DG-Data::bc-conc}{reference concentration} $c_D^i$ is enforced through total flux:
+$$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \vc q\cdot\vc n c_D^i \mbox{ on }\Gamma_I^+, $$
+on $\Gamma_I^-$ we impose homogeneous Neumann boundary condition:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-, $$
 on $\Gamma_N$ we impose Neumann boundary condition with user-defined \hyperA{SoluteTransport-DG-Data::bc-flux}{concentration flux} $f^i_N$:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = f^i_N \mbox{ on }\Gamma_N, $$

@@ -96,6 +96,10 @@ public:
      */
     static const string get_absolute_working_dir();
 
+    /// Equality comparison operators for regions.
+    inline bool operator ==(const FilePath &other) const
+        {return abs_file_path == string(other); }
+
 
 private:
     /**
