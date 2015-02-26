@@ -19,7 +19,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 
 /*************************
  * We test collisions of hash function on strings with max length 13.
@@ -231,7 +231,7 @@ TEST(Profiler, structure) {
 
 }
 
-#else // DEBUG_PROFILER
+#else // FLOW123D_DEBUG_PROFILER
 
 
 TEST(Profiler, test_calls_only) {
@@ -244,6 +244,6 @@ TEST(Profiler, test_calls_only) {
 }
 
 
-#endif // DEBUG_PROFILER
+#endif // FLOW123D_DEBUG_PROFILER
 
 

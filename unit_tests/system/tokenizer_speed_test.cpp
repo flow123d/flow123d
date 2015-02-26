@@ -9,7 +9,7 @@
 
 #include <flow_gtest_mpi.hh>
 
-#ifdef RUN_UNIT_BENCHMARKS
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include <fstream>
 
@@ -95,4 +95,4 @@ TEST(TokenizerPosition, compare_speed) {
 	Profiler::uninitialize();
 }
 
-#endif // RUN_UNIT_BENCHMARKS
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS

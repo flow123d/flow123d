@@ -818,7 +818,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::input_type) {
-#ifdef HAVE_BDDCML
+#ifdef FLOW123D_HAVE_BDDCML
             xprintf(Warn, "For BDDC is using no Schur complements.");
             n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
@@ -834,7 +834,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
             END_TIMER("BDDC set mesh data");
 #else
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
-#endif
+#endif // FLOW123D_HAVE_BDDCML
         } 
         else if (in_rec.type() == LinSys_PETSC::input_type) {
         // use PETSC for serial case even when user wants BDDC
@@ -1310,7 +1310,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
     // prepare global_row_4_sub_row
 
-#ifdef HAVE_BDDCML
+#ifdef FLOW123D_HAVE_BDDCML
     if (in_rec.type() ==  LinSys_BDDC::input_type) {
         // auxiliary
         Element *el;
@@ -1345,7 +1345,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
         }
         global_row_4_sub_row->finalize();
     }
-#endif // HAVE_BDDCML
+#endif // FLOW123D_HAVE_BDDCML
 
 }
 
