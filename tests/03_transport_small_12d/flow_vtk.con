@@ -9,14 +9,14 @@
             region_labels = [ "1d_upper", "1d_lower", "1d_left_branch"]
           }
         ]
-    }, 
+    }, // mesh
 
     primary_equation = {
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "1d_domain", conductivity = 10, sigma = 0.05 },
-        { region = "2d",       conductivity = 1  },
+        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
+        { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -27,7 +27,9 @@
         output_stream = { 
           file = "flow.pvd", 
           format = { TYPE = "vtk", variant = "ascii" },
-          name = "flow_output_stream" 
+        output_stream = { REF = "/system/output_streams/0" }, 
+          file = "flow.pvd", 
+          format = { TYPE = "vtk", variant = "ascii" }
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
@@ -42,7 +44,10 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      substances = [ "age", "U235" ],
+      substances = [ 
+        {name = "age", molar_mass = 0.018},     // water age
+        {name = "U235", molar_mass = 0.235}     // uranium 235
+      ],
       
       input_fields= [
         { r_set = "ALL",
@@ -54,6 +59,9 @@
           bc_conc = [0.0, 1.0]
         }
       ],
+      
+      time = { end_time = 1e6 },
+      mass_balance = { cumulative = true },
       
       reaction_term = {
         TYPE = "DualPorosity",
@@ -71,27 +79,25 @@
         
         reaction_mobile = {
           TYPE = "SorptionMobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           
           input_fields= [
             {
               r_set="ALL",
-              rock_density = 1.0,
+              rock_density = 2800.0,    // granit
               sorption_type =  ["none", "freundlich"],
-              isotherm_mult = 0.02, 
-              isotherm_other = [0, 0.5]
+              isotherm_mult = [0, 0.68],
+              isotherm_other = [0, 1.0]
             }
           ],
           output_fields = []
         },
         reaction_immobile = {
           TYPE = "SorptionImmobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
@@ -101,11 +107,9 @@
       output_stream = { 
         file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.1,
-        name = "transport_output_stream"      
-      }, 
-      time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
+        time_step = 1e5    
+      }
+      
     } // secondary_equation
   } // problem  
 }
