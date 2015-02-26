@@ -357,15 +357,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-    	vector<unsigned int> edg_regions;
-        for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
-        {
-        	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-        	if (edg->n_sides == 1 && edg->side(0)->cond() != nullptr)
-        		edg_regions.push_back(edg->side(0)->cond()->region().boundary_idx());
-        }
-
-    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), edg_regions, region_db(), *it);
+    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), mesh_, feo->dh()->el_ds(), feo->dh()->get_el_4_loc(), *it);
 
     	// a not very nice workaround for model with single solution component with no name
     	if (typeid(Model) == typeid(HeatTransferModel))
@@ -1253,113 +1245,121 @@ void TransportDG<Model>::set_boundary_conditions()
     		bc_fluxes(qsize, arma::vec(n_substances())),
 			bc_sigma(qsize, arma::vec(n_substances()));
 	vector<arma::vec3> velocity;
-    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+
+    for (unsigned int loc_el = 0; loc_el < feo->dh()->el_ds()->lsize(); loc_el++)
     {
-    	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-    	if (edg->n_sides > 1) continue;
-    	if (edg->side(0)->dim() != dim-1)
-    	{
-    		if (edg->side(0)->cond() != nullptr) ++loc_b;
-    		continue;
-    	}
-    	// skip edges lying not on the boundary
-    	if (edg->side(0)->cond() == NULL) continue;
+        ElementFullIter elm = mesh_->element(feo->dh()->el_index(loc_el));
+        if (elm->boundary_idx_ == nullptr) continue;
 
-    	SideIter side = edg->side(0);
-    	typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
-        ElementAccessor<3> ele_acc = side->cond()->element_accessor();
-
-        arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), ele_acc);
-
-        fe_values_side.reinit(cell, side->el_idx());
-		fsv_rt.reinit(cell, side->el_idx());
-		calculate_velocity(cell, velocity, fsv_rt);
-
-        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element()->element_accessor(), ad_coef, dif_coef);
-        Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
-        data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
-        data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
-
-        feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
-
-        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+        FOR_ELEMENT_SIDES(elm,si)
         {
-        	fill_n(local_rhs, ndofs, 0);
-        	local_flux_balance_vector.assign(ndofs, 0);
-        	local_flux_balance_rhs = 0;
+			Edge *edg = elm->side(si)->edge();
+			if (edg->n_sides > 1) continue;
+			// skip edges lying not on the boundary
+			if (edg->side(0)->cond() == NULL) continue;
 
-    		double side_flux = 0;
-    		for (unsigned int k=0; k<qsize; k++)
-    			side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-    		double transport_flux = side_flux/side->measure();
+			if (edg->side(0)->dim() != dim-1)
+			{
+				if (edg->side(0)->cond() != nullptr) ++loc_b;
+				continue;
+			}
 
-        	for (unsigned int k=0; k<qsize; k++)
-        	{
-        		double bc_term = 0;
-        		arma::vec3 bc_grad;
-        		bc_grad.zeros();
-                if (bc_type[sbi] == EqData::inflow && side_flux < 0)
-                {
-                	bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == EqData::dirichlet)
-                {
-                	bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
-                	bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
-                }
-                else if (bc_type[sbi] == EqData::neumann)
-                {
-                	bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == EqData::robin)
-                {
-                	bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
-                }
+			SideIter side = edg->side(0);
+			typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
+			ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
-        		for (unsigned int i=0; i<ndofs; i++)
-        		{
-					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
-							+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
+			arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), ele_acc);
 
-					if (balance_ != nullptr)
+			fe_values_side.reinit(cell, side->el_idx());
+			fsv_rt.reinit(cell, side->el_idx());
+			calculate_velocity(cell, velocity, fsv_rt);
+
+			Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element()->element_accessor(), ad_coef, dif_coef);
+			Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
+			data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
+			data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
+
+			feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
+
+			for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+			{
+				fill_n(local_rhs, ndofs, 0);
+				local_flux_balance_vector.assign(ndofs, 0);
+				local_flux_balance_rhs = 0;
+
+				double side_flux = 0;
+				for (unsigned int k=0; k<qsize; k++)
+					side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+				double transport_flux = side_flux/side->measure();
+
+				for (unsigned int k=0; k<qsize; k++)
+				{
+					double bc_term = 0;
+					arma::vec3 bc_grad;
+					bc_grad.zeros();
+					if (bc_type[sbi] == EqData::inflow && side_flux < 0)
 					{
-						if (bc_type[sbi] == EqData::dirichlet)
+						bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
+					}
+					else if (bc_type[sbi] == EqData::dirichlet)
+					{
+						bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
+					}
+					else if (bc_type[sbi] == EqData::neumann)
+					{
+						bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+					}
+					else if (bc_type[sbi] == EqData::robin)
+					{
+						bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
+					}
+
+					for (unsigned int i=0; i<ndofs; i++)
+					{
+						local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
+								+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
+
+						if (balance_ != nullptr)
 						{
-							local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
-									- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
-									+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
-							local_flux_balance_rhs -= (time_->tlevel() == 0?0:1)*bc_term*fe_values_side.shape_value(i,k);
-						}
-						else if (bc_type[sbi] == EqData::inflow && side_flux < 0)
-						{
-							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-						}
-						else if (bc_type[sbi] == EqData::neumann)
-						{
-							local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-						}
-						else if (bc_type[sbi] == EqData::robin)
-						{
-							local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-						}
-						else
-						{
-							local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							if (bc_type[sbi] == EqData::dirichlet)
+							{
+								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
+										- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
+										+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
+								local_flux_balance_rhs -= (time_->tlevel() == 0?0:1)*bc_term*fe_values_side.shape_value(i,k);
+							}
+							else if (bc_type[sbi] == EqData::inflow && side_flux < 0)
+							{
+								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
+							}
+							else if (bc_type[sbi] == EqData::neumann)
+							{
+								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
+							}
+							else if (bc_type[sbi] == EqData::robin)
+							{
+								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
+							}
+							else
+							{
+								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							}
 						}
 					}
-        		}
-			}
-			ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
+				}
+				ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
-			if (balance_ != nullptr)
-			{
-				balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
-				balance_->add_flux_vec_value(subst_idx[sbi], loc_b, local_flux_balance_rhs);
+				if (balance_ != nullptr)
+				{
+					balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
+					balance_->add_flux_vec_value(subst_idx[sbi], loc_b, local_flux_balance_rhs);
+				}
 			}
+			++loc_b;
         }
-        ++loc_b;
     }
 }
 

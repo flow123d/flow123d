@@ -150,19 +150,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-    	vector<unsigned int> edg_regions;
-        for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-            Element *elm = mesh_->element(el_4_loc[loc_el]);
-            if (elm->boundary_idx_ != NULL) {
-                FOR_ELEMENT_SIDES(elm,si) {
-                    Boundary *b = elm->side(si)->cond();
-                    if (b != NULL)
-                    	edg_regions.push_back(b->region().boundary_idx());
-                }
-            }
-        }
-
-    	balance_ = boost::make_shared<Balance>("mass", edg_regions, region_db(), *it);
+    	balance_ = boost::make_shared<Balance>("mass", mesh_, el_ds, el_4_loc, *it);
 
     	subst_idx = balance_->add_quantities(substances_.names());
 

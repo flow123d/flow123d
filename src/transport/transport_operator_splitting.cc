@@ -202,20 +202,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
   if (it->val<bool>("balance_on"))
   {
-	  convection->get_par_info(el_4_loc, el_distribution);
-	  vector<unsigned int> edg_regions;
-      for (unsigned int loc_el = 0; loc_el < el_distribution->lsize(); loc_el++) {
-          Element *elm = mesh_->element(el_4_loc[loc_el]);
-          if (elm->boundary_idx_ != NULL) {
-              FOR_ELEMENT_SIDES(elm,si) {
-                  Boundary *b = elm->side(si)->cond();
-                  if (b != NULL)
-                  	edg_regions.push_back(b->region().boundary_idx());
-              }
-          }
-      }
+//	  convection->get_par_info(el_4_loc, el_distribution);
 
-	  balance_ = boost::make_shared<Balance>("mass", edg_regions, region_db(), *it);
+	  balance_ = boost::make_shared<Balance>("mass", mesh_, el_distribution, el_4_loc, *it);
 
 	  convection->set_balance_object(balance_);
 

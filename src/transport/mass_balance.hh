@@ -253,12 +253,15 @@ public:
 	/**
 	 * Constructor.
 	 * @param file_prefix  Prefix of output file name.
-	 * @param elem_regions Vector of region numbers for each boundary edge.
-	 * @param region_db    Region database.
+	 * @param mesh         Mesh.
+	 * @param el_ds        Distribution of elements.
+	 * @param el_4_loc     Local to global element numbering.
+	 * @param in_rec       Input record of balance.
 	 */
 	Balance(const std::string &file_prefix,
-			const std::vector<unsigned int> &elem_regions,
-			const RegionDB *region_db,
+			const Mesh *mesh,
+			const Distribution *el_ds,
+			const int *el_4_loc,
 			const Input::Record &in_rec);
 
 	~Balance();
@@ -560,7 +563,7 @@ private:
     Vec ones_, ones_be_;
 
     /// Number of boundary region for each local boundary edge.
-    const std::vector<unsigned int> be_regions_;
+    std::vector<unsigned int> be_regions_;
 
     /// Offset for local part of vector of boundary edges.
     int be_offset_;

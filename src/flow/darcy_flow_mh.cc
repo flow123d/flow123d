@@ -271,19 +271,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
     {
-    	vector<unsigned int> edg_regions;
-        for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-            Element *elm = mesh_->element(el_4_loc[loc_el]);
-            if (elm->boundary_idx_ != NULL) {
-                FOR_ELEMENT_SIDES(elm,si) {
-                    Boundary *b = elm->side(si)->cond();
-                    if (b != NULL)
-                    	edg_regions.push_back(b->region().boundary_idx());
-                }
-            }
-        }
-
-    	balance_ = boost::make_shared<Balance>("water", edg_regions, &mesh_->region_db(), *it);
+    	balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
     	if (time_ != nullptr && time_->is_steady()) balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
 
     	water_balance_idx_ = balance_->add_quantity("water_volume");
