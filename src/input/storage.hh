@@ -80,7 +80,7 @@ public:
     StorageArray(unsigned int size);
     StorageArray(const StorageArray &); // deep copy for test purpose
     void new_item(unsigned int index, StorageBase* item);
-    void set_item(unsigned int index, StorageBase* item) const;
+    void set_item(unsigned int index, StorageBase* item);
     virtual const StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
@@ -90,7 +90,7 @@ public:
 private:
     /// Forbids default constructor to have array set to NULL.
     StorageArray();
-    mutable std::vector<StorageBase *> array_;
+    std::vector<StorageBase *> array_;
 };
 
 

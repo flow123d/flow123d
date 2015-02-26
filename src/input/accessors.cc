@@ -263,7 +263,9 @@ void AbstractRecord::transpose_to(Input::Record &target_rec, string target_key, 
     for(unsigned int i=0; i<vec_size; i++) {
     	result_storage->new_item(i, trans.get_item(i));
     }
-    const StorageArray* storage_arr = static_cast<const StorageArray *>(target_rec.address_.storage_head());
+    StorageArray* storage_arr =
+            const_cast<StorageArray *>(
+            static_cast<const StorageArray *>(target_rec.address_.storage_head()));
     storage_arr->set_item(target_rec.record_type_.key_index(target_key), result_storage);
 }
 
