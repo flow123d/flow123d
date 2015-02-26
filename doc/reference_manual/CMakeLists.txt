@@ -28,6 +28,7 @@ cmake_minimum_required(VERSION 2.8)
        sorpce.tex
        tests.tex
        transport_model.tex
+       tutorial.tex
        version_comparision.tex
        
        # Also add latex table or image if you have it in a separate file.
