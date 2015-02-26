@@ -355,7 +355,7 @@ void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
     // possibly skip remaining lines after break
     while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-    xprintf(Msg, "time: %f; %d entities of field %s read.\n",
+    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
     		actual_header.time, n_read, actual_header.field_name.c_str());
 
     search_header.actual = true; // use input header to indicate modification of @p data buffer
@@ -397,8 +397,7 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s'.\n",
-                tok_.f_name().c_str(), field_name.c_str());
+        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_GMSHFile(tok_.f_name()));
 	}
 
 	auto comp = [](double t, const GMSH_DataHeader &a) {
@@ -411,12 +410,13 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 			comp);
 
 	if (headers_it == table_it->second.begin()) {
-        xprintf(UsrErr, "In file '%s', missing '$ElementData' section for field '%s' and time '%d'.\n",
-                tok_.f_name().c_str(), field_name.c_str(), time);
+		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
+				                      << EI_GMSHFile(tok_.f_name()) << EI_Time(time));
 	}
 
 	--headers_it;
 	return *headers_it;
 }
+
 
 

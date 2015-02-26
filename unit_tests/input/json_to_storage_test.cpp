@@ -99,6 +99,7 @@ protected:
 TEST_F(InputJSONToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Integer int_type(1,10);
+    Type::Integer any_int;
 
     {
         stringstream ss("5");
@@ -106,7 +107,10 @@ TEST_F(InputJSONToStorageTest, Integer) {
 
         EXPECT_EQ(5, storage_->get_int());
     }
-
+    {
+        stringstream ss("5000000000");
+        EXPECT_THROW_WHAT( {read_stream(ss, any_int);} , ExcInputError, "Value out of bounds.");
+    }
     {
         stringstream ss("0");
         EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "Value out of bounds.");
@@ -120,12 +124,20 @@ TEST_F(InputJSONToStorageTest, Integer) {
 TEST_F(InputJSONToStorageTest, Double) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Double dbl_type(1.1,10.1);
+    Type::Double any_double;
 
     {
         stringstream ss("5.5");
         read_stream(ss, dbl_type);
 
         EXPECT_EQ(5.5, storage_->get_double());
+    }
+
+    {
+        stringstream ss("5000000000000");
+        read_stream(ss, any_double);
+
+        EXPECT_EQ(5e12, storage_->get_double());
     }
 
     {
