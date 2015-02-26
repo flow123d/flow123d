@@ -21,7 +21,7 @@
 \def\where{\,|\,}
 %***************************************************************************
 
-\section{Reaction term in transport}
+\section{Reaction Term in Transport}
 \label{sec:reaction_term}
 
 The {\tt TransportOperatorSplitting} method supports the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
@@ -58,7 +58,7 @@ and the exchange of concentrations from/to immobile zone is governed by molecula
 additional output.
 
 
-\subsection{Dual porosity}
+\subsection{Dual Porosity}
 \label{sec:dual_porosity}
 
 Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into 
@@ -114,7 +114,7 @@ If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied, then the 
 solution is used.
  
 
-\subsection{Equilibrial sorption}
+\subsection{Equilibrial Sorption}
 \label{sec:sorp_math}
 
 The simulation of monolayer, equilibrial sorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
@@ -268,12 +268,12 @@ isotherm under consideration. Following steps must be taken.
 \end{enumerate}
 
 
-\subsection{Limited solubility}\label{subsec:lim_solub}
+\subsection{Limited Solubility}\label{subsec:lim_solub}
 When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ neither iterative 
 solver nor interpolation table is used. The aqueous concentration is set to be $\bar{c}_l$ and sorbed 
 concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdot \bar{c}_l)/\mu_s$.
 
-\subsection{Sorption in dual porosity model} 
+\subsection{Sorption in Dual Porosity Model} 
 \label{subsec:sorp_dual_por}
 There are two parameters $\mu_l$ and $\mu_s$, scale of aqueous concentration and scale of sorbed concentration, respectively.  
 There is a difference in computation of these in the dual porosity model because both work on different concentrations
