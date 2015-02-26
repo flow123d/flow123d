@@ -62,7 +62,7 @@ it::Record HC_ExplicitSequential::input_type
 			"Simulation time frame and time step.")
 	.declare_key("primary_equation", DarcyFlowMH::input_type, it::Default::obligatory(),
 			"Primary equation, have all data given.")
-	.declare_key("secondary_equation", TransportBase::input_type,
+	.declare_key("secondary_equation", AdvectionProcessBase::input_type,
 			"The equation that depends (the velocity field) on the result of the primary equation.");
 
 

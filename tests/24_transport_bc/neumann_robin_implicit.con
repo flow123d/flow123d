@@ -19,11 +19,14 @@
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
-        }, 
+        },
         output_fields = [ "pressure_p0", "velocity_p0" ]
-      }, 
+      },
+
+      balance = true,
+
       solver = {
-        TYPE = "Petsc", 
+        TYPE = "Petsc",
         a_tol = 1e-12,
         r_tol = 1e-12
       }
@@ -67,7 +70,7 @@
       time = {
         end_time = 10
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       },
       solver = { 

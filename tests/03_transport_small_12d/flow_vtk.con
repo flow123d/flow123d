@@ -34,6 +34,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
       
+      balance = true,
+      
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-12,
@@ -61,7 +63,7 @@
       ],
       
       time = { end_time = 1e6 },
-      mass_balance = { cumulative = true },
+      balance = { cumulative = true },
       
       reaction_term = {
         TYPE = "DualPorosity",
@@ -111,7 +113,6 @@
         format = { TYPE = "vtk", variant = "ascii" },
         time_step = 1e5    
       }
-      
     } // secondary_equation
   } // problem  
 }
