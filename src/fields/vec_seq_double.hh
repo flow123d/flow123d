@@ -23,7 +23,7 @@
  *
  * Stores data in two formats:
  *  - shared pointer to std::vector of double
- *  - pointer to PETSC vector
+ *  - pointer to PETSC vector that use same data
  *
  * Allows the following functionalities:
  *  - return shared pointer to std::vector of double
@@ -34,27 +34,28 @@ class VectorSeqDouble {
 public:
 	typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
-	/// Constructor.
-	VectorSeqDouble(unsigned int size)
+	/// Create shared pointer and PETSC vector with given size.
+	void resize(unsigned int size)
 	{
 		data_ptr_ = std::make_shared< std::vector<double> >(size);
-		data_petsc_ = (Vec *)&data_ptr_;
+		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, size, &((*data_ptr_)[0]), &data_petsc_);
+		VecZeroEntries( data_petsc_ );
 	}
 
-	/// Return shared pointer to output data.
+	/// Getter for shared pointer of output data.
 	VectorSeq get_data_ptr()
 	{
 		return data_ptr_;
 	}
 
-	/// Return shared pointer to PETSC vector.
-	Vec *get_data_petsc()
+	/// Getter for PETSC vector of output data (e.g. can be used by scatters).
+	Vec &get_data_petsc()
 	{
 		return data_petsc_;
 	}
 
 	/// Create and return shared pointer to FieldElementwise object
-	template <int spacedim, class Value> //3, FieldValue<3>::Scalar
+	template <int spacedim, class Value>
 	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
 	{
 		// TODO: use constructor FieldElementwise(shared_ptr, unsigned int) after the implementation of data cache
@@ -63,8 +64,14 @@ public:
 		return field_ptr;
 	}
 
+	/// Destructor.
+	~VectorSeqDouble()
+	{
+		if (data_ptr_) VecDestroy(&data_petsc_);
+	}
+
     /**
-     * Returns reference to the sub-field (component) of given index @p idx.
+     * Access to the vector element on index @p idx.
      */
     inline double &operator[](unsigned int idx)
     {
@@ -76,7 +83,7 @@ private:
 	/// shared pointer to vector of data
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
-	Vec *data_petsc_;
+	Vec data_petsc_;
 };
 
 

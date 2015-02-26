@@ -112,8 +112,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.set_mesh(*mesh_);
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-	ele_pressure = new VectorSeqDouble(mesh_->n_elements());
-	auto ele_pressure_ptr=ele_pressure->create_field<3, FieldValue<3>::Scalar>(1);
+	ele_pressure.resize(mesh_->n_elements());
+	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh = new DOFHandlerMultiDim(*mesh_);
@@ -127,12 +127,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
-	ele_piezo_head = new VectorSeqDouble(mesh_->n_elements());
-	auto ele_piezo_head_ptr=ele_piezo_head->create_field<3, FieldValue<3>::Scalar>(1);
+	ele_piezo_head.resize(mesh_->n_elements());
+	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-	ele_flux = new VectorSeqDouble(3*mesh_->n_elements());
-	auto ele_flux_ptr=ele_flux->create_field<3, FieldValue<3>::VectorFixed>(3);
+	ele_flux.resize(3*mesh_->n_elements());
+	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
@@ -220,11 +220,9 @@ void DarcyFlowMHOutput::make_element_scalar() {
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
     unsigned int i = 0;
-    typename VectorSeqDouble::VectorSeq ele_pressure_data_ptr = ele_pressure->get_data_ptr();
-    typename VectorSeqDouble::VectorSeq ele_piezo_head_data_ptr = ele_piezo_head->get_data_ptr();
     FOR_ELEMENTS(mesh_,ele) {
-        (*ele_pressure_data_ptr)[i] = sol[ soi];
-        (*ele_piezo_head_data_ptr)[i] = sol[soi ] + ele->centre()[Mesh::z_coord];
+        ele_pressure[i] = sol[ soi];
+        ele_piezo_head[i] = sol[soi ] + ele->centre()[Mesh::z_coord];
         i++; soi++;
     }
 }
@@ -240,7 +238,6 @@ void DarcyFlowMHOutput::make_element_vector() {
     MHFEValues fe_values;
 
     int i_side=0;
-    typename VectorSeqDouble::VectorSeq ele_flux_data_ptr = ele_flux->get_data_ptr();
     FOR_ELEMENTS(mesh_, ele) {
         arma::vec3 flux_in_centre;
         flux_in_centre.zeros();
@@ -257,7 +254,7 @@ void DarcyFlowMHOutput::make_element_vector() {
         }
 
         for(unsigned int j=0; j<3; j++) 
-            (*ele_flux_data_ptr)[3*i_side+j]=flux_in_centre[j];
+            ele_flux[3*i_side+j]=flux_in_centre[j];
         
         i_side++;
     }
@@ -375,7 +372,7 @@ void DarcyFlowMHOutput::make_node_scalar_param() {
                         ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
                         ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
                 );
-                scalars[node_index] += (*ele_pressure)[ele.index()] *
+                scalars[node_index] += ele_pressure[ele.index()] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
@@ -530,9 +527,9 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
         xfprintf( raw_output_file, "%d ", ele.id());
-        xfprintf( raw_output_file, dbl_fmt, (*ele_pressure)[cit]);
+        xfprintf( raw_output_file, dbl_fmt, ele_pressure[cit]);
         for (i = 0; i < 3; i++)
-            xfprintf( raw_output_file, dbl_fmt, (*ele_flux)[3*cit+i]);
+            xfprintf( raw_output_file, dbl_fmt, ele_flux[3*cit+i]);
 
         xfprintf( raw_output_file, " %d ", ele->n_sides());
         for (i = 0; i < ele->n_sides(); i++)
