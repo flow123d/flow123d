@@ -33,7 +33,7 @@ separately on each element.
 
 We move now to the description of the reaction models which can be seen again in Figure \ref{fig:reaction_term}. 
 The convected quantity is considered to be the concentration of substances. 
-Up to now we can have \emph{dual porosity}, \emph{adsorption} (these two are more of a physical nature) and (chemical) \emph{reaction} models in the reaction term. 
+Up to now we can have \emph{dual porosity}, \emph{sorption} (these two are more of a physical nature) and (chemical) \emph{reaction} models in the reaction term. 
 
 \begin{figure}
   \centering
@@ -47,14 +47,14 @@ The \emph{reaction} model acts only on the specified substances and computes exc
 among them. It does not have its own output because it only changes the concentration of substances 
 in the specified zone where the reaction takes place. See \ref{sec:linear_reactions} for thorough description.
 
-The \emph{adsorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
+The \emph{sorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
 followed by another \emph{reaction} that can run in both phases. The concentration in solid is an additional output 
 of this model. See Subsection \ref{sec:sorp_math}.
 
 
 The \emph{dual porosity} model, described in Subsection \ref{sec:dual_porosity}, introduces the so called immobile (or dead-end) pores in the matrix. The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
 and the exchange of concentrations from/to immobile zone is governed by molecular diffusion. This process can be followed by 
-\emph{adsorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is an
+\emph{sorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is an
 additional output.
 
 
@@ -114,15 +114,15 @@ If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied, then the 
 solution is used.
  
 
-\subsection{Equilibrial adsorption}
+\subsection{Equilibrial sorption}
 \label{sec:sorp_math}
 
-The simulation of monolayer, equilibrial adsorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
+The simulation of monolayer, equilibrial sorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
 \begin{equation}
 \label{eq:mass_balance_sorption}
 \th \varrho_l c_l + (1-\th) \varrho_s M_s c_s = c_T = const.
 \end{equation}
-and an empirical adsorption law
+and an empirical sorption law
 \begin{equation}
 \label{eq:relation_cs_cl}
 c_s = f(c_l),
@@ -130,13 +130,13 @@ c_s = f(c_l),
 given in terms of the so-called isotherm $f$.
 Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{\tt sorption\_type}:
 \begin{itemize}
- \item ``$none$'': $f(c_l)=0$ (the adsorption model returns zero concentration in solid);
+ \item ``$none$'': $f(c_l)=0$ (the sorption model returns zero concentration in solid);
  \item ``$linear$'': $f(c_l) = k_l c_l$;
  \item ``$freundlich$'': $f(c_l) = k_F c_l^{\alpha}$;
  \item ``$langmuir$'': $f(c_l) = k_L \frac{\alpha c_l}{1 + \alpha c_l}$.
        Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount 
        of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is 
-       a fraction of adsorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
+       a fraction of sorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
 \end{itemize}
 
 Notation:

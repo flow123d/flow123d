@@ -52,7 +52,7 @@
      id="desc6">
 Creator: GL2PS 1.3.8, (C) 1999-2012 C. Geuzaine
 For: VTK
-CreationDate: Wed Feb 25 15:20:10 2015
+CreationDate: Thu Feb 26 11:38:17 2015
 </desc>
   <defs
      id="defs8" />
@@ -62,15 +62,15 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="501.968,394.705 453.029,305.067 417.419,376.484 "
        id="polygon12"
-       style="fill:#3d51ae" />
+       style="fill:#3c4eab" />
     <polygon
        points="453.029,305.067 501.968,394.705 521.98,310.777 "
        id="polygon14"
-       style="fill:#4f68bf" />
+       style="fill:#4a61ba" />
     <polygon
        points="519.18,235.973 583.452,261.472 582.339,204.394 "
        id="polygon16"
-       style="fill:#a5b6d0" />
+       style="fill:#99afd4" />
     <polygon
        points="342.002,591.638 270.782,520.417 235.172,591.638 "
        id="polygon18"
@@ -78,15 +78,15 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="585.97,358.129 662.492,306.757 583.452,261.472 "
        id="polygon20"
-       style="fill:#da9c7f" />
+       style="fill:#d9a58a" />
     <polygon
        points="583.223,448.021 501.968,394.705 500.162,502.094 "
        id="polygon22"
-       style="fill:#6481cd" />
+       style="fill:#5e7aca" />
     <polygon
        points="521.98,310.777 585.97,358.129 583.452,261.472 "
        id="polygon24"
-       style="fill:#bbbec1" />
+       style="fill:#b1bbca" />
     <polygon
        points="448.832,591.638 403.113,510.057 342.002,591.638 "
        id="polygon26"
@@ -94,43 +94,43 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="619.764,185.681 662.492,211.797 662.492,164.317 "
        id="polygon28"
-       style="fill:#c95e47" />
+       style="fill:#cc664d" />
     <polygon
        points="662.492,401.717 583.223,448.021 662.492,496.677 "
        id="polygon30"
-       style="fill:#ca6048" />
+       style="fill:#cd684e" />
     <polygon
        points="500.162,502.094 403.113,510.057 448.832,591.638 "
        id="polygon32"
-       style="fill:#3646a5" />
+       style="fill:#3545a4" />
     <polygon
        points="500.162,502.094 448.832,591.638 555.662,591.638 "
        id="polygon34"
-       style="fill:#506ac0" />
+       style="fill:#4e67bf" />
     <polygon
        points="582.339,204.394 583.452,261.472 662.492,211.797 "
        id="polygon36"
-       style="fill:#daa387" />
+       style="fill:#d8aa90" />
     <polygon
        points="582.339,204.394 662.492,211.797 619.764,185.681 "
        id="polygon38"
-       style="fill:#daa387" />
+       style="fill:#d8aa90" />
     <polygon
        points="501.968,394.705 585.97,358.129 521.98,310.777 "
        id="polygon40"
-       style="fill:#7e9ad5" />
+       style="fill:#7592d4" />
     <polygon
        points="583.452,261.472 662.492,306.757 662.492,211.797 "
        id="polygon42"
-       style="fill:#c35440" />
+       style="fill:#ca6048" />
     <polygon
        points="503.247,243.94 521.98,310.777 583.452,261.472 "
        id="polygon44"
-       style="fill:#7491d4" />
+       style="fill:#6986cf" />
     <polygon
        points="503.247,243.94 583.452,261.472 519.18,235.973 "
        id="polygon46"
-       style="fill:#7491d4" />
+       style="fill:#6986cf" />
     <polygon
        points="342.002,591.638 337.04,503.578 270.782,520.417 "
        id="polygon48"
@@ -138,11 +138,11 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="592.405,525.509 583.223,448.021 500.162,502.094 "
        id="polygon50"
-       style="fill:#a5b6cf" />
+       style="fill:#9db2d3" />
     <polygon
        points="662.492,306.757 585.97,358.129 662.492,401.717 "
        id="polygon52"
-       style="fill:#c04d3b" />
+       style="fill:#c55742" />
     <polygon
        points="417.419,376.484 377.612,306.757 342.002,377.977 "
        id="polygon54"
@@ -150,23 +150,23 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="501.968,394.705 440.904,444.921 500.162,502.094 "
        id="polygon56"
-       style="fill:#465db7" />
+       style="fill:#445ab5" />
     <polygon
        points="501.968,394.705 583.223,448.021 585.97,358.129 "
        id="polygon58"
-       style="fill:#a3b5d1" />
+       style="fill:#98afd5" />
     <polygon
        points="585.97,358.129 583.223,448.021 662.492,401.717 "
        id="polygon60"
-       style="fill:#da987a" />
+       style="fill:#daa083" />
     <polygon
        points="592.405,525.509 500.162,502.094 555.662,591.638 "
        id="polygon62"
-       style="fill:#819dd6" />
+       style="fill:#7c99d5" />
     <polygon
        points="662.492,591.638 592.405,525.509 555.662,591.638 "
        id="polygon64"
-       style="fill:#d9a68b" />
+       style="fill:#d8a88e" />
     <polygon
        points="403.113,510.057 337.04,503.578 342.002,591.638 "
        id="polygon66"
@@ -174,31 +174,31 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="417.419,376.484 453.029,305.067 377.612,306.757 "
        id="polygon68"
-       style="fill:#3443a3" />
+       style="fill:#3442a1" />
     <polygon
        points="592.405,525.509 662.492,591.638 662.492,496.677 "
        id="polygon70"
-       style="fill:#cd684e" />
+       style="fill:#cf6c52" />
     <polygon
        points="483.325,253.901 436.997,277.065 453.029,305.067 "
        id="polygon72"
-       style="fill:#3c4eab" />
+       style="fill:#384aa8" />
     <polygon
        points="440.904,444.921 501.968,394.705 417.419,376.484 "
        id="polygon74"
-       style="fill:#3545a4" />
+       style="fill:#3443a3" />
     <polygon
        points="440.904,444.921 403.113,510.057 500.162,502.094 "
        id="polygon76"
-       style="fill:#384aa8" />
+       style="fill:#3748a7" />
     <polygon
        points="483.325,253.901 453.029,305.067 521.98,310.777 "
        id="polygon78"
-       style="fill:#526cc2" />
+       style="fill:#4b65bc" />
     <polygon
        points="483.325,253.901 521.98,310.777 503.247,243.94 "
        id="polygon80"
-       style="fill:#526cc2" />
+       style="fill:#4b65bc" />
     <polygon
        points="374.521,442.066 417.419,376.484 342.002,377.977 "
        id="polygon82"
@@ -206,7 +206,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="453.029,305.067 436.997,277.065 377.612,306.757 "
        id="polygon84"
-       style="fill:#3545a4" />
+       style="fill:#3442a1" />
     <polygon
        points="374.521,442.066 342.002,377.977 306.392,449.197 "
        id="polygon86"
@@ -214,7 +214,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="583.223,448.021 592.405,525.509 662.492,496.677 "
        id="polygon88"
-       style="fill:#da9577" />
+       style="fill:#da9c7f" />
     <polygon
        points="374.521,442.066 440.904,444.921 417.419,376.484 "
        id="polygon90"
@@ -238,23 +238,23 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="377.612,306.757 306.392,342.367 342.002,377.977 "
        id="polygon100"
-       style="fill:#d8a88e" />
+       style="fill:#d9a78c" />
     <polygon
        points="150.173,484.034 229.696,453.819 163.952,413.587 "
        id="polygon102"
-       style="fill:#465db7" />
+       style="fill:#445ab5" />
     <polygon
        points="197.583,527.977 163.952,591.638 235.172,591.638 "
        id="polygon104"
-       style="fill:#465db7" />
+       style="fill:#4054b0" />
     <polygon
        points="270.782,520.417 197.583,527.977 235.172,591.638 "
        id="polygon106"
-       style="fill:#6a87d0" />
+       style="fill:#5d79ca" />
     <polygon
        points="235.172,377.977 285.422,398.948 306.392,342.367 "
        id="polygon108"
-       style="fill:#a0b3d2" />
+       style="fill:#a1b4d1" />
     <polygon
        points="342.002,377.977 285.422,398.948 306.392,449.197 "
        id="polygon110"
@@ -262,15 +262,15 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="229.696,453.819 150.173,484.034 197.583,527.977 "
        id="polygon112"
-       style="fill:#3646a5" />
+       style="fill:#3545a4" />
     <polygon
        points="306.392,449.197 229.696,453.819 270.782,520.417 "
        id="polygon114"
-       style="fill:#6b88d0" />
+       style="fill:#6986cf" />
     <polygon
        points="163.952,413.587 229.696,453.819 235.172,377.977 "
        id="polygon116"
-       style="fill:#6c8ad1" />
+       style="fill:#6a87d0" />
     <polygon
        points="285.422,398.948 229.696,453.819 306.392,449.197 "
        id="polygon118"
@@ -278,19 +278,19 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="229.696,453.819 285.422,398.948 235.172,377.977 "
        id="polygon120"
-       style="fill:#5a75c7" />
+       style="fill:#5973c6" />
     <polygon
        points="92.7318,449.197 150.173,484.034 163.952,413.587 "
        id="polygon122"
-       style="fill:#6f8cd2" />
+       style="fill:#617dcb" />
     <polygon
        points="229.696,453.819 197.583,527.977 270.782,520.417 "
        id="polygon124"
-       style="fill:#465db7" />
+       style="fill:#445ab5" />
     <polygon
        points="306.392,342.367 285.422,398.948 342.002,377.977 "
        id="polygon126"
-       style="fill:#9cb0d4" />
+       style="fill:#9db1d3" />
     <polygon
        points="140.792,542.381 92.7318,520.417 92.7318,591.638 "
        id="polygon128"
@@ -302,11 +302,11 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="150.173,484.034 92.7318,449.197 92.7318,520.417 "
        id="polygon132"
-       style="fill:#4960ba" />
+       style="fill:#4156b2" />
     <polygon
        points="197.583,527.977 140.792,542.381 163.952,591.638 "
        id="polygon134"
-       style="fill:#3443a3" />
+       style="fill:#3442a1" />
     <polygon
        points="140.792,542.381 150.173,484.034 92.7318,520.417 "
        id="polygon136"
@@ -4218,19 +4218,19 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polyline
        points="377.612,306.757 342.002,377.977"
        id="polyline2090"
-       style="fill:none;stroke:#c43132;stroke-width:0.71399999" />
+       style="fill:none;stroke:#c32e31;stroke-width:0.71399999" />
     <polyline
        points="342.002,377.977 306.392,449.197"
        id="polyline2092"
-       style="fill:none;stroke:#ce433b;stroke-width:0.71399999" />
+       style="fill:none;stroke:#cb3e38;stroke-width:0.71399999" />
     <polyline
        points="306.392,449.197 270.782,520.417"
        id="polyline2094"
-       style="fill:none;stroke:#dc5d4a;stroke-width:0.71399999" />
+       style="fill:none;stroke:#da5947;stroke-width:0.71399999" />
     <polyline
        points="270.782,520.417 235.172,591.638"
        id="polyline2096"
-       style="fill:none;stroke:#ee8669;stroke-width:0.71399999" />
+       style="fill:none;stroke:#ed8366;stroke-width:0.71399999" />
     <polyline
        points="92.7318,587.839 92.7318,591.638"
        id="polyline2098"
@@ -5040,19 +5040,19 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polyline
        points="92.7318,449.197 163.952,413.587"
        id="polyline2492"
-       style="fill:none;stroke:#ee8468;stroke-width:0.71399999" />
+       style="fill:none;stroke:#ec8165;stroke-width:0.71399999" />
     <polyline
        points="163.952,413.587 235.172,377.977"
        id="polyline2494"
-       style="fill:none;stroke:#dc5d4a;stroke-width:0.71399999" />
+       style="fill:none;stroke:#d85646;stroke-width:0.71399999" />
     <polyline
        points="235.172,377.977 306.392,342.367"
        id="polyline2496"
-       style="fill:none;stroke:#cc403a;stroke-width:0.71399999" />
+       style="fill:none;stroke:#ca3b37;stroke-width:0.71399999" />
     <polyline
        points="306.392,342.367 377.612,306.757"
        id="polyline2498"
-       style="fill:none;stroke:#c32e31;stroke-width:0.71399999" />
+       style="fill:none;stroke:#c12b30;stroke-width:0.71399999" />
     <polygon
        points="328.579,246.572 243.447,297.849 306.392,342.367 "
        id="polygon2500"
@@ -5060,7 +5060,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="377.612,306.757 328.579,246.572 306.392,342.367 "
        id="polygon2502"
-       style="fill:#3646a5" />
+       style="fill:#3442a1" />
     <polygon
        points="163.952,413.587 92.7318,342.367 92.7318,449.197 "
        id="polygon2504"
@@ -5072,11 +5072,11 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="249.926,215.26 243.447,297.849 328.579,246.572 "
        id="polygon2508"
-       style="fill:#3646a5" />
+       style="fill:#3545a4" />
     <polygon
        points="171.933,177.887 249.926,215.26 252.196,116.214 "
        id="polygon2510"
-       style="fill:#5570c4" />
+       style="fill:#526cc2" />
     <polygon
        points="177.792,337.622 172.091,264.938 92.7318,342.367 "
        id="polygon2512"
@@ -5092,15 +5092,15 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="252.196,116.214 348.709,104.121 306.392,21.8771 "
        id="polygon2518"
-       style="fill:#da9d80" />
+       style="fill:#da9f82" />
     <polygon
        points="199.562,21.8771 252.196,116.214 306.392,21.8771 "
        id="polygon2520"
-       style="fill:#ce6c50" />
+       style="fill:#d06e53" />
     <polygon
        points="249.926,215.26 310.017,169.795 252.196,116.214 "
        id="polygon2522"
-       style="fill:#7894d5" />
+       style="fill:#7592d4" />
     <polygon
        points="348.709,104.121 416.228,109.038 413.222,21.8771 "
        id="polygon2524"
@@ -5112,7 +5112,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="328.579,246.572 377.612,306.757 413.222,235.537 "
        id="polygon2528"
-       style="fill:#4257b3" />
+       style="fill:#3b4caa" />
     <polygon
        points="163.952,413.587 177.792,337.622 92.7318,342.367 "
        id="polygon2530"
@@ -5120,7 +5120,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="92.7318,128.707 165.149,95.4058 92.7318,21.8771 "
        id="polygon2532"
-       style="fill:#d8a88e" />
+       style="fill:#d8a88f" />
     <polygon
        points="243.447,297.849 235.172,377.977 306.392,342.367 "
        id="polygon2534"
@@ -5128,7 +5128,7 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="92.7318,21.8771 165.149,95.4058 199.562,21.8771 "
        id="polygon2536"
-       style="fill:#ce6a4f" />
+       style="fill:#ce6c50" />
     <polygon
        points="92.7318,235.537 171.933,177.887 92.7318,128.707 "
        id="polygon2538"
@@ -5140,23 +5140,23 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="171.933,177.887 172.091,264.938 249.926,215.26 "
        id="polygon2542"
-       style="fill:#3f52af" />
+       style="fill:#3d51ae" />
     <polygon
        points="252.196,116.214 310.017,169.795 348.709,104.121 "
        id="polygon2544"
-       style="fill:#b2bcc9" />
+       style="fill:#afbbca" />
     <polygon
        points="165.149,95.4058 171.933,177.887 252.196,116.214 "
        id="polygon2546"
-       style="fill:#a9b8ce" />
+       style="fill:#a7b6cf" />
     <polygon
        points="378.443,171.868 328.579,246.572 413.222,235.537 "
        id="polygon2548"
-       style="fill:#5973c6" />
+       style="fill:#4b65bc" />
     <polygon
        points="165.149,95.4058 252.196,116.214 199.562,21.8771 "
        id="polygon2550"
-       style="fill:#d9a488" />
+       style="fill:#d9a68b" />
     <polygon
        points="243.447,297.849 177.792,337.622 235.172,377.977 "
        id="polygon2552"
@@ -5168,19 +5168,19 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="448.832,164.317 378.443,171.868 413.222,235.537 "
        id="polygon2556"
-       style="fill:#8ea8d6" />
+       style="fill:#7b98d5" />
     <polygon
        points="378.443,171.868 310.017,169.795 328.579,246.572 "
        id="polygon2558"
-       style="fill:#475eb8" />
+       style="fill:#465db7" />
     <polygon
        points="416.228,109.038 448.832,164.317 484.442,93.0971 "
        id="polygon2560"
-       style="fill:#da9072" />
+       style="fill:#da9679" />
     <polygon
        points="416.228,109.038 378.443,171.868 448.832,164.317 "
        id="polygon2562"
-       style="fill:#c2c0ba" />
+       style="fill:#bbbec1" />
     <polygon
        points="172.091,264.938 171.933,177.887 92.7318,235.537 "
        id="polygon2564"
@@ -5188,11 +5188,11 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="310.017,169.795 249.926,215.26 328.579,246.572 "
        id="polygon2566"
-       style="fill:#4257b3" />
+       style="fill:#4156b2" />
     <polygon
        points="171.933,177.887 165.149,95.4058 92.7318,128.707 "
        id="polygon2568"
-       style="fill:#8aa4d6" />
+       style="fill:#87a2d6" />
     <polygon
        points="172.091,264.938 177.792,337.622 243.447,297.849 "
        id="polygon2570"
@@ -5204,99 +5204,99 @@ CreationDate: Wed Feb 25 15:20:10 2015
     <polygon
        points="310.017,169.795 378.443,171.868 348.709,104.121 "
        id="polygon2574"
-       style="fill:#6c8ad1" />
+       style="fill:#6b88d0" />
     <polygon
        points="519.18,235.973 582.339,204.394 581.517,162.304 "
        id="polygon2576"
-       style="fill:#a5b6d0" />
+       style="fill:#99afd4" />
     <polygon
        points="519.18,235.973 581.517,162.304 498.742,227.864 "
        id="polygon2578"
-       style="fill:#a5b6d0" />
+       style="fill:#99afd4" />
     <polygon
        points="513.544,148.724 498.742,227.864 581.517,162.304 "
        id="polygon2580"
-       style="fill:#6885cf" />
+       style="fill:#617dcb" />
     <polygon
        points="581.517,162.304 609.151,77.6647 551.691,86.1967 "
        id="polygon2582"
-       style="fill:#d6af97" />
+       style="fill:#d2b4a0" />
     <polygon
        points="609.151,77.6647 581.517,162.304 662.492,116.837 "
        id="polygon2584"
-       style="fill:#d68164" />
+       style="fill:#d88769" />
     <polygon
        points="619.764,185.681 662.492,164.317 662.492,116.837 "
        id="polygon2586"
-       style="fill:#c95e47" />
+       style="fill:#cc664d" />
     <polygon
        points="619.764,185.681 662.492,116.837 581.517,162.304 "
        id="polygon2588"
-       style="fill:#c95e47" />
+       style="fill:#cc664d" />
     <polygon
        points="582.339,204.394 619.764,185.681 581.517,162.304 "
        id="polygon2590"
-       style="fill:#daa387" />
+       style="fill:#d8aa90" />
     <polygon
        points="609.151,77.6647 662.492,116.837 662.492,21.8771 "
        id="polygon2592"
-       style="fill:#ae2d2b" />
+       style="fill:#b0312d" />
     <polygon
        points="503.247,243.94 519.18,235.973 498.742,227.864 "
        id="polygon2594"
-       style="fill:#7491d4" />
+       style="fill:#6986cf" />
     <polygon
        points="498.742,227.864 448.832,164.317 413.222,235.537 "
        id="polygon2596"
-       style="fill:#4358b4" />
+       style="fill:#4054b0" />
     <polygon
        points="551.691,86.1967 520.052,21.8771 484.442,93.0971 "
        id="polygon2598"
-       style="fill:#d47c5f" />
+       style="fill:#d98d6e" />
     <polygon
        points="520.052,21.8771 551.691,86.1967 591.272,21.8771 "
        id="polygon2600"
-       style="fill:#bc4739" />
+       style="fill:#c3523f" />
     <polygon
        points="483.325,253.901 498.742,227.864 413.222,235.537 "
        id="polygon2602"
-       style="fill:#3c4eab" />
+       style="fill:#384aa8" />
     <polygon
        points="483.325,253.901 413.222,235.537 436.997,277.065 "
        id="polygon2604"
-       style="fill:#3c4eab" />
+       style="fill:#384aa8" />
     <polygon
        points="483.325,253.901 503.247,243.94 498.742,227.864 "
        id="polygon2606"
-       style="fill:#526cc2" />
+       style="fill:#4b65bc" />
     <polygon
        points="498.742,227.864 513.544,148.724 448.832,164.317 "
        id="polygon2608"
-       style="fill:#5a75c7" />
+       style="fill:#526cc2" />
     <polygon
        points="436.997,277.065 413.222,235.537 377.612,306.757 "
        id="polygon2610"
-       style="fill:#3545a4" />
+       style="fill:#3442a1" />
     <polygon
        points="513.544,148.724 581.517,162.304 551.691,86.1967 "
        id="polygon2612"
-       style="fill:#acb9cc" />
+       style="fill:#a3b5d1" />
     <polygon
        points="513.544,148.724 551.691,86.1967 484.442,93.0971 "
        id="polygon2614"
-       style="fill:#c3bfb9" />
+       style="fill:#babec2" />
     <polygon
        points="591.272,21.8771 609.151,77.6647 662.492,21.8771 "
        id="polygon2616"
-       style="fill:#b2332e" />
+       style="fill:#b43730" />
     <polygon
        points="448.832,164.317 513.544,148.724 484.442,93.0971 "
        id="polygon2618"
-       style="fill:#96add5" />
+       style="fill:#88a3d6" />
     <polygon
        points="551.691,86.1967 609.151,77.6647 591.272,21.8771 "
        id="polygon2620"
-       style="fill:#d07055" />
+       style="fill:#d2765a" />
     <polygon
        points="15.7147,332.396 15.7931,334.442 22.1142,334.408 "
        id="polygon2622"

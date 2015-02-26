@@ -187,7 +187,7 @@ We support both steady and unsteady water flow. The water flow model can be sequ
 
 The first solute transport model can deal only with pure advection of several substances without any diffusion-dispersion term. It uses 
 explicit Euler method for time discretization and finite volume method for space discretization and operator splitting method to 
-couple with various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity, adsorptions, decays and linear reactions.
+couple with various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity, sorptions, decays and linear reactions.
 Alternatively, one can use interface to the experimental SEMCHEM package for more complex geochemistry.
 
 The second solute transport model describes general advection with hydrodynamic dispersion for several substances. It uses implicit Euler method for time discretization and discontinuous Galerkin method of
@@ -419,16 +419,17 @@ setting the Dirichlet boundary condition on the whole boundary with the pressure
 The \hyperlink{DarcyFlowMH-Data::conductivity::B}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
 Both 2D domain and 1D domain \hyperlink{DarcyFlowMH-Data::cross-section::B}{\tt cross\_section} will be set by default,
 meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{} and the fracture cross section is $\delta_1=1$ \unitss{}{2}{}.
-The crosswind conductivity between dimensions will have value $1$, which is achieved by setting the 
-dimensionless parameter \hyperlink{DarcyFlowMH-Data::sigma::B}{\tt sigma} $\sigma_{21} = \frac{1}{2k_1}=5\cdot10^5$. 
-% These are currently the default values.
+The transition coefficient $\sigma_2$ between dimensions can be scaled by setting the dimensionless parameter 
+$\sigma_{21}$ (\hyperlink{DarcyFlowMH-Data::sigma::B}{\tt sigma}). This can be used for simulating additional
+effects which prevent the liquid transition from/to a fracture, like a thin resistance layer. Read Section 
+\ref{sec:darcy_flow} for more details.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
     primary_equation = {
       TYPE = "Steady_MH", 
 
       input_fields = [
-        { r_set = "1d_domain", conductivity = 1e-6, sigma = 5e5 },
+        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
         { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
@@ -466,7 +467,7 @@ Finally, we specify type of the linear solver and its tolerances.
 
 \subsubsection{Transport setting}
 We also consider subsequent transport problem with the porosity $\theta = 0.25$, zero initial concentration and concentration source for one of the transported substances. The boundary condition is equal to $1$ for the uranium 235 and $0$ for the age of the water and is automatically applied only on the 
-inflow part of the boundary. There are also some adsorption and dual porosity models in this particular test case. Adsorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:reactions}.%, but we do not discuss this topic here for the sake of simplicity.
+inflow part of the boundary. There are also some sorption and dual porosity models in this particular test case. Sorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:reactions}.%, but we do not discuss this topic here for the sake of simplicity.
 %see Section \ref{} for the description. 
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -494,7 +495,7 @@ inflow part of the boundary. There are also some adsorption and dual porosity mo
 \end{Verbatim}
 
 For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
-the operator splitting is used for the equilibrium adsorption as well as for the dual porosity model and first order reactions simulation.
+the operator splitting is used for the equilibrium sorption as well as for the dual porosity model and first order reactions simulation.
 On lines 43 -- 46, we set the transported \hyperlink{TransportOperatorSplitting::substances::B}{\tt substances}, which are identified by their names. 
 Here the first one is the \verb'age' of the water, with the molar mass of water, and the second one \verb'U235' is the uranium isotope 235. 
 On lines 48 -- 57, we set the input fields, in particular the \hyperlink{TransportOperatorSplitting-Data::porosity::B}{\tt porosity}, sources of concentration and the initial concentrations 
@@ -589,7 +590,7 @@ Linear isotherm needs just one parameter given whereas Freundlichs' and Langmuir
 We will use Freundlich's isotherm for demonstration but we will set the other parameter (exponent) $\alpha=1$ 
 which means it will be the same as the linear type. 
 
-Let suppose we have a sorption coefficient for uranium $K_d=1.6\cdot10^{-4} m^3kg^{-1}$ (www.skb.se, report R-10-48 by James Crawford, 2010) 
+Let suppose we have a sorption coefficient for uranium $K_d=1.6\cdot10^{-4}$ \unitss{-1}{3}{} (www.skb.se, report R-10-48 by James Crawford, 2010) 
 and we want to use. We need to convert it to dimensionless value of \hyperlink{Sorption-Data::isotherm-mult::B}{\tt isotherm\_mult}
 in the following way: $k_l = K_dM_s^{-1}\rho_l = K_d\frac{1000}{0.235}\approx0.68$. For further details, see 
 mathematical description in Section \ref{sec:sorp_math}. 
@@ -611,9 +612,11 @@ In the output record for time-dependent process we have to specify the {\tt time
 
 
 \subsubsection{Results}
-In Figure \ref{fig:tutorial} one can see the results: the pressure and the velocity field on the left and the concentration of U235 at time $t=0.9$ on the right. Even if the pressure gradient is
-the same in the 2D domain and in the fracture, due to higher conductivity the velocity field is ten times faster in the fracture. Since porosity is the same, the substance is transported faster by the fracture and
-then appears in the bottom left 2D domain before the main wave propagating solely through the 2D domain.
+In Figure \ref{fig:tutorial} one can see the results: the pressure and the velocity field on the left and the 
+concentration of U235 at time $t=9\cdot10^{5}$ s on the right. Even if the pressure gradient is the same in the 
+2D domain and in the fracture, due to higher conductivity the velocity field is ten times faster in the fracture. 
+Since porosity is the same, the substance is transported faster by the fracture and then appears in the bottom 
+left 2D domain before the main wave propagating solely through the 2D domain.
 
 
 
@@ -631,7 +634,7 @@ then appears in the bottom left 2D domain before the main wave propagating solel
         \centering
         \includegraphics[width=\textwidth]{\fig/03_trans.pdf}
         % 03_trans.pdf: no raster
-        \caption{Propagation of U235 from the inflow part of the boundary. \\ (At the time 0.9 s.)}
+        \caption{Propagation of U235 from the inflow part of the boundary. \\ (At the time $9\cdot10^{5}$ s.)}
         \label{fig:tut-trans}
     \end{subfigure}
     \caption{Results of the tutorial problem.}
