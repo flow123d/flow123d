@@ -78,18 +78,18 @@
       },
       solver = {
         TYPE = "Petsc", 
-        a_tol = 1e-07
+        a_tol = 1e-07,
         r_tol = 1e-07
-      } 
+      }, 
       
       mass_balance = { cumulative = true }
     }, 
     
-    dg_order = 2
+    dg_order = 2,
 
     time = {
       end_time = 2.0, 
-      init_dt = 0.1
+      max_dt = 0.1
     }
   },
  

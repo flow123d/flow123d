@@ -44,7 +44,8 @@
 
     time = {
       end_time = 0.5, 
-      init_dt = 0.01
+      max_dt = 0.01,
+      min_dt = 0.01
     }
   }, 
 

@@ -32,6 +32,7 @@ if(CMAKE_HAVE_CXX11)
     
     define_mpi_test(eq_data 1)
     define_test(time_governor)
+    define_test(time_marks)
     
 endif()
 

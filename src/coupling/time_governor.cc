@@ -51,19 +51,25 @@ using namespace Input::Type;
 
 Record TimeGovernor::input_type = Record("TimeGovernor",
             "Setting of the simulation time. (can be specific to one equation)")
-	.allow_auto_conversion("init_dt")
+	.allow_auto_conversion("max_dt")
     .declare_key("start_time", Double(), Default("0.0"),
                 "Start time of the simulation.")
     .declare_key("end_time", Double(), Default::read_time("Infinite end time."),
                 "End time of the simulation.")
     .declare_key("init_dt", Double(0.0), Default("0.0"),
             "Initial guess for the time step.\n"
-    		"The time step is fixed if the hard time step limits are not set.\n"
-            "If set to 0.0, the time step is determined in fully autonomous way if the equation supports it.")
-    .declare_key("min_dt", Double(0.0), Default::read_time("Machine precision or 'init_dt' if specified"),
-                                    "Hard lower limit for the time step.")
-    .declare_key("max_dt", Double(0.0), Default::read_time("Whole time of the simulation or 'init_dt' if specified"),
-                                    "Hard upper limit for the time step.");
+    		"Only useful for equations that use adaptive time stepping."
+    		"If set to 0.0, the time step is determined in fully autonomous"
+    		" way if the equation supports it.")
+    .declare_key("min_dt", Double(0.0),
+            Default::read_time("Machine precision."),
+            "Soft lower limit for the time step. Equation using adaptive time stepping can not"
+            "suggest smaller time step, but actual time step could be smaller in order to match "
+            "prescribed input or output times.")
+    .declare_key("max_dt", Double(0.0),
+            Default::read_time("Whole time of the simulation if specified, infinity else."),
+            "Hard upper limit for the time step. Actual length of the time step is also limited"
+            "by input and output times.");
 
 
 
@@ -74,16 +80,29 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
     try {
-    	init_common(input.val<double>("init_dt"),
-    				input.val<double>("start_time"),
+        // set permanent limits
+    	init_common(input.val<double>("start_time"),
     				input.val<double>("end_time", inf_time),
-    				eq_mark_type);
 
-    	// possibly overwrite limits
-    	set_permanent_constraint(
-    		input.val<double>("min_dt", min_time_step_),
-    		input.val<double>("max_dt", max_time_step_)
-    		);
+    				eq_mark_type);
+        set_permanent_constraint(
+            input.val<double>("min_dt", min_time_step_),
+            input.val<double>("max_dt", max_time_step_)
+            );
+
+        double init_dt=input.val<double>("init_dt");
+        if (init_dt > 0.0) {
+            // set first time step suggested by user
+            time_step_=min(init_dt, time_step_);
+            lower_constraint_=init_dt;
+            upper_constraint_=init_dt;
+        } else {
+            // apply constraints
+            time_step_=min(time_step_, upper_constraint_);
+            time_step_=max(time_step_, lower_constraint_);
+        }
+
+
     } catch(ExcTimeGovernorMessage &exc) {
     	exc << input.ei_address();
     	throw;
@@ -93,7 +112,19 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
 {
-	init_common(dt, init_time, inf_time, TimeMark::none_type);
+	init_common( init_time, inf_time, TimeMark::none_type);
+    // fixed time step
+    if (dt < time_step_lower_bound)
+        THROW(ExcTimeGovernorMessage() << EI_Message("Fixed time step smaller then machine precision. \n") );
+
+    fixed_time_step_=dt;
+    is_time_step_fixed_=true;
+    time_step_changed_=true;
+    end_of_fixed_dt_interval_ = inf_time;
+
+    upper_constraint_=max_time_step_=dt;
+    lower_constraint_=min_time_step_=dt;
+    time_step_=dt;
 }
 
 
@@ -103,14 +134,14 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
-	init_common(0.0, init_time, inf_time, eq_mark_type);
+	init_common(init_time, inf_time, eq_mark_type);
 	steady_ = true;
 }
 
 
 
 // common part of constructors
-void TimeGovernor::init_common(double dt, double init_time, double end_time, TimeMark::Type type)
+void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type type)
 {
 	time_level_=0;
 
@@ -132,7 +163,7 @@ void TimeGovernor::init_common(double dt, double init_time, double end_time, Tim
 
     end_time_ = end_time;
 
-    if (dt == 0.0) {
+    //if (dt == 0.0) {
     	// variable time step
     	fixed_time_step_=0.0;
     	is_time_step_fixed_=false;
@@ -147,10 +178,10 @@ void TimeGovernor::init_common(double dt, double init_time, double end_time, Tim
     	}
     	// choose maximum possible time step
     	time_step_=max_time_step_;
-    } else {
+    /*} else {
     	// fixed time step
     	if (dt < time_step_lower_bound)
-    		THROW(ExcTimeGovernorMessage() << EI_Message("Fixed time step small then machine precision. \n") );
+    		THROW(ExcTimeGovernorMessage() << EI_Message("Fixed time step smaller then machine precision. \n") );
 
     	fixed_time_step_=dt;
     	is_time_step_fixed_=true;
@@ -161,7 +192,7 @@ void TimeGovernor::init_common(double dt, double init_time, double end_time, Tim
     	lower_constraint_=min_time_step_=dt;
     	time_step_=dt;
 
-    }
+    }*/
 
 	eq_mark_type_=type;
 	steady_=false;
@@ -227,14 +258,14 @@ int TimeGovernor::set_lower_constraint (double lower)
         return -1;
     }
     
-    if (min_time_step_ <= lower) 
+    if (min_time_step_ <= lower)
     {
         //change lower_constraint_ to lower
         lower_constraint_ = lower;
         return 0;
     }
     
-    if (min_time_step_ > lower) 
+    if (min_time_step_ > lower)
     {
         //do not change lower_constraint_
         return 1;
