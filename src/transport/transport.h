@@ -45,6 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/vec_seq_double.hh"
 
 
 class SorptionImmob;
@@ -253,8 +254,7 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    Vec *vconc_out; // concentration vector output (gathered)
-    double **out_conc;
+    std::vector<VectorSeqDouble> out_conc;
 
 	/// Record with output specification.
 	Input::Record output_rec;
