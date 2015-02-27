@@ -78,7 +78,6 @@
           TYPE = "SorptionMobile",
           solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           
           input_fields= [
@@ -96,7 +95,6 @@
           TYPE = "SorptionImmobile",
           solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
