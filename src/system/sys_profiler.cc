@@ -40,6 +40,14 @@
 #include "system/file_path.hh"
 
 
+#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+    #include <windows.h>
+#else
+    //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+    #include <chrono>
+#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+
+
 #include "mpi.h"
 /*
  * These should be replaced by using boost MPI interface
@@ -99,6 +107,10 @@ Timer::Timer(const CodePoint &cp, int parent)
   total_deallocated_(0)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        // set frequency
+        QueryPerformanceFrequency (&frequency);
+    #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 }
 
 
@@ -112,20 +124,36 @@ Timer::Timer(const CodePoint &cp, int parent)
  * cout << "Time elapsed: " << difftime(end, begin) << " seconds"<< endl;
  */
 Timer::TimeData Timer::get_time() {
-    return clock();
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        QueryPerformanceCounter(&time);
+    #else
+        time = chrono::high_resolution_clock::now ();
+    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+
+    return time;
 }
 
 
 
-double Timer::cumulative_time() const
-{
+double Timer::cumulative_time() const {
     return 1000.0 * double(cumul_time) / CLOCKS_PER_SEC;
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        TimeData time;
+        time.QuadPart *= 1000;
+        time.QuadPart /= Frequency.QuadPart;
+        return time.QuadPart;
+    #else
+        return (chrono::duration_cast<chrono::nanoseconds>
+               (cumul_time - chrono::duration::zero())) / 1000.0;
+    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 }
 
 
 
 void Timer::start() {
-    if (start_count == 0) start_time = get_time();
+    if (start_count == 0) {
+        start_time = get_time();
+    }
     call_count++;
     start_count++;
 }
@@ -133,8 +161,13 @@ void Timer::start() {
 
 
 void Timer::update() {
-    TimeData time = get_time();
-    cumul_time += time - start_time;
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        TimeData time = get_time();
+        cumul_time.QuadPart = cumul_time.QuadPart + time.QuadPart - start_time.QuadPart;
+    #else
+        TimeData time = get_time();
+        cumul_time = cumul_time + time - start_time;
+    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 }
 
 
@@ -144,8 +177,7 @@ bool Timer::stop(bool forced) {
     if (forced) start_count=1;
 
     if (start_count == 1) {
-        TimeData time = get_time();
-        cumul_time += time - start_time;
+        update ();
         start_count--;
         return true;
     } else {

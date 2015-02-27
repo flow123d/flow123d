@@ -293,7 +293,12 @@ public:
      * TimeData is a type returned by method get_time and used to store time data in timer nodes.
      * Timer node also provides method @p cumulative_time to retrieve true cumulative time in ms.
      */
-    typedef clock_t TimeData;
+
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        typedef LARGE_INTEGER TimeData;
+    #else
+        typedef chrono::time_point<chrono::high_resolution_clock> TimeData;
+    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 
     /**
      * Creates the timer node object. Should not be called directly, but through the START_TIMER macro.
@@ -360,6 +365,10 @@ protected:
      */
     TimeData start_time;
     /**
+     *   Variable for storing time frames
+     */
+    TimeData time;
+    /**
      * Cumulative time spent in the frame.
      */
     TimeData cumul_time;
@@ -372,6 +381,14 @@ protected:
      */
     unsigned int start_count;
 
+
+    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+        /**
+         * The frequency of the performance counter is fixed at
+         * system boot and is consistent across all processors
+         */
+        LARGE_INTEGER frequency;
+    #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 
     /**
      * Code point of the first START_TIMER for the particular tag. The 'tag' identifies timer
