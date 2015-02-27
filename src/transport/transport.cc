@@ -524,7 +524,11 @@ void ConvectionTransport::zero_time_step()
     if (balance_ != nullptr)
     {
     	START_TIMER("Convection balance zero time step");
-    	balance_->units(data_.cross_section.units()*data_.porosity.units()*data_.conc_mobile.units());
+    	balance_->units(
+    	        data_.cross_section.units()*UnitSI().md(1)
+    	        *data_.porosity.units()
+    	        *data_.conc_mobile.units());
+
     	create_transport_matrix_mpi();
     	set_boundary_conditions();
     	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)

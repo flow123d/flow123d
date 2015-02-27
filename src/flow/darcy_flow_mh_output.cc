@@ -52,6 +52,7 @@
 #include "io/output.h"
 #include "mesh/partitioning.hh"
 
+#include "transport/mass_balance.hh"
 
 
 namespace it = Input::Type;
@@ -167,6 +168,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
         }
 
     }
+
+	flow->balance_->units(
+	        get_output_fields().field_ele_pressure.units()
+	        *flow->data_.cross_section.units()*UnitSI().md(1)
+	        *flow->data_.storativity.units());
 }
 
 

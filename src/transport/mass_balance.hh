@@ -103,7 +103,7 @@ public:
     void calculate(double time);
 
 
-    static Input::Type::Record input_type;
+
 
 
 protected:
@@ -246,6 +246,9 @@ public:
 		txt,   //!< csv
 		gnuplot//!< gnuplot
 	};
+
+	/// Main balance input record type.
+	static Input::Type::Record input_type;
 
 	/// Input selection for file format.
 	static Input::Type::Selection format_selection_input_type;

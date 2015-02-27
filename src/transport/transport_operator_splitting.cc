@@ -41,7 +41,7 @@ AbstractRecord AdvectionProcessBase::input_type
 	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
-	.declare_key("balance", MassBalance::input_type, Default::obligatory(),
+	.declare_key("balance", Balance::input_type, Default::obligatory(),
 			"Settings for computing balance.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.");
@@ -254,7 +254,10 @@ void TransportOperatorSplitting::zero_time_step()
     convection->output_stream_->write_time_frame();
     if (balance_ != nullptr)
     {
-    	balance_->units(convection->data_.cross_section.units()*convection->data_.porosity.units()*convection->data_.conc_mobile.units());
+    	balance_->units(
+    	        convection->data_.cross_section.units()*UnitSI().md(1)
+    	        *convection->data_.porosity.units()
+    	        *convection->data_.conc_mobile.units());
     	balance_->output(time_->t());
     }
 

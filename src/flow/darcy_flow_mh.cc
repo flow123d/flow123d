@@ -108,7 +108,7 @@ it::AbstractRecord DarcyFlowMH::input_type=
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
                 "Method for coupling Darcy flow between dimensions." )
-		.declare_key("balance", MassBalance::input_type, it::Default::obligatory(),
+		.declare_key("balance", Balance::input_type, it::Default::obligatory(),
 				"Settings for computing mass balance.")
         .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
         		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
@@ -253,6 +253,15 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //rows_ds->view( std::cout );
     
 
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+        balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
+        //if (time_ != nullptr && time_->is_steady())
+        water_balance_idx_ = balance_->add_quantity("water_volume");
+        balance_->allocate(rows_ds->lsize(), 1);
+    }
 
 
     if (make_tg) {
@@ -262,22 +271,11 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     	data_.set_limit_side(LimitSide::right);
     	data_.set_time(*time_);
 
-    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     	create_linear_system();
+    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     }
 
 
-    // initialization of balance object
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
-    if (it->val<bool>("balance_on"))
-    {
-    	balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
-    	if (time_ != nullptr && time_->is_steady()) balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
-
-    	water_balance_idx_ = balance_->add_quantity("water_volume");
-
-	    balance_->allocate(rows_ds->lsize(), 1);
-    }
 
 }
 
@@ -1457,7 +1455,7 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 	data_.set_time(*time_);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-	balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
+	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
 
 	time_->fix_dt_until_mark();
 	create_linear_system();
@@ -1571,7 +1569,7 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 	data_.set_time(*time_);
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-	balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
+	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
 
 	time_->fix_dt_until_mark();
 	create_linear_system();

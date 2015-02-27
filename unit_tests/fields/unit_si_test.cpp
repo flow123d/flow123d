@@ -41,6 +41,11 @@ TEST(UnitSI, format_latex) {
 	UnitSI unit_6 = UnitSI().kg().md(1);
 	EXPECT_EQ("m^{d}kg", unit_6.format_latex());
 	EXPECT_EQ("m(d).kg", unit_6.format_text());
+
+	UnitSI unit_8 = UnitSI().kg();
+    EXPECT_EQ("kg", unit_8.format_latex());
+    EXPECT_EQ("kg", unit_8.format_text());
+
 }
 
 TEST(UnitSI, static_defined_units) {
