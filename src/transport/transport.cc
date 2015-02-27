@@ -68,7 +68,7 @@ namespace IT = Input::Type;
 
 
 IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selection("TransportSorptionType")
-    .add_value(none,"none","No sorption considered")
+    .add_value(Isotherm::none,"none","No sorption considered")
     .add_value(Isotherm::linear,"linear","Linear isotherm described sorption considered.")
     .add_value(Isotherm::freundlich,"freundlich","Freundlich isotherm described sorption considered")
     .add_value(Isotherm::langmuir,"langmuir","Langmuir isotherm described sorption considered")

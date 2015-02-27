@@ -188,8 +188,6 @@ public:
 	int *get_el_4_loc();
 	int *get_row_4_el();
 
-	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
-
 private:
 
     /**

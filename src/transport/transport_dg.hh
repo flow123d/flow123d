@@ -224,8 +224,6 @@ public:
 	 */
 	virtual EqData *get_data() { return &data_; }
 
-	TimeIntegrationScheme time_scheme() { return implicit_euler; }
-
 	/**
 	 * @brief Destructor.
 	 */

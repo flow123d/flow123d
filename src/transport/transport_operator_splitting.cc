@@ -101,8 +101,7 @@ TransportBase::TransportEqData::TransportEqData()
 
 TransportBase::TransportBase(Mesh &mesh, const Input::Record in_rec)
 : AdvectionProcessBase(mesh, in_rec ),
-  mh_dh(nullptr),
-  mass_balance_(nullptr)
+  mh_dh(nullptr)
 {
 }
 
@@ -334,11 +333,6 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 };
 
 
-void TransportOperatorSplitting::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
-{}
-
-void TransportOperatorSplitting::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
-{}
 
 
 
