@@ -33,11 +33,13 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <boost/circular_buffer.hpp>
+
 
 #include "system/global_defs.h"
 #include "system/system.hh"
-#include "time_marks.hh"
 #include "input/accessors.hh"
+#include "tools/time_marks.hh"
 
 namespace Input {
     class Record;
@@ -45,6 +47,64 @@ namespace Input {
         class Record;
     }
 }
+
+
+
+
+/**
+ * Structure to store and provide information about
+ * one time step.
+ */
+class TimeStep {
+public:
+    /**
+     * Constructor of the zero time step.
+     */
+    TimeStep(double init_time);
+
+    /**
+     * Deafult constructor.
+     */
+    TimeStep();
+
+    /**
+     * Copy constructor.
+     */
+    TimeStep(const TimeStep &other);
+
+    /**
+     * Create subsequent time step.
+     */
+    TimeStep make_next(double new_length) const;
+
+    /**
+     * Create subsequent time step, with the @end_time
+     * explicitly specified. This allow slight discrepancy to
+     * overcome rounding errors in the case of fixed time step.
+     * Otherwise using small fixed time step, we may miss long term fixed
+     * goal time.
+     *
+     */
+    TimeStep make_next(double new_lenght, double end_time) const;
+
+    /**
+     * Getters.
+     */
+    unsigned int index() const {return index_;}
+    double length() const { return length_;}
+    double end() const { return end_;}
+
+private:
+    /// Index of the step is index if the end time. Zero time step is artificial.
+    unsigned int index_;
+    /// Length of the time step. Theoretically @p end minus end of the previous time step.
+    /// However may be slightly different due to rounding errors.
+    double length_;
+    /// End time point of the time step.
+    double end_;
+};
+
+
 
 /**
  * @brief
@@ -55,30 +115,25 @@ namespace Input {
  * This class provides algorithm for selecting next time step, and information about current time step frame.
  * Step estimating is constrained by several bounds (permanent maximal and minimal time step, upper 
  * and lower constraint of time step). The permanent constraints are set in the constructor from the input 
- * record so that user can set the time step constraints for the whole model. 
+ * record so that user can set the time step constraints for the whole simulation.
  * Function set_permanent_constraint() should be used only in very specific cases and possibly right after 
  * the constructor before using other functions of TG.
  * 
- * Choice of the very next time step can be constrained using functions set_upper_constraint() and set_lower_constraint(). 
+ * Choice of the very next time step can be constrained using functions set_upper_constraint()
+ * and set_lower_constraint().
  * Lower and upper constraints are set equal to permanent ones in the constructor and can only 
  * become stricter. If one tries to set these constraints outside the interval of the previous constraints,
  * nothing is changed and a specified value is returned. Upper and lower constraints are reset in function
  * next_time() to the permanent constraints.
  * 
- * 
- * The later one can be called multiple times with various
- * constraint values and we use the minimum of them. Function next_time() choose the next time step in such a way that it meets actual constraints and
+ * The later one can be called multiple times with various constraint values and we use the minimum of them.
+ * Function next_time() choose the next time step in such a way that it meets actual constraints and
  * a uniform discrete time grid with this step hits the nearest fixed time in lowest possible number of steps.
  *
  * The fixed times are time marks of TimeMarks object passed at construction time with particular mask.
  *
  * There is just one set of time marks for the whole problem. Therefore TimeMarks object is static and is shared umong
  * all the equations and time governors. Each equation creates its own specific time mark type.
- * 
- * Solution of the next time step proceeds in following steps:
- * -# Estimate next time step and set constraints (this can be usefull in hc_seq_explicit for estimating next transport time)
- * -# Fix next time step up to the next time mark (this is necessary for ConvectionTransport)
- * -# Proceed to the next time when solution is available. (this can replace solved flag in equation classes)
  *
  * Information provided by TG includes:
  * - actual time, last time, end time
@@ -108,12 +163,6 @@ namespace Input {
  * is done.
  * 
  *
- * TODO:
- * - still we have problems with time comparisons
- * 1) TimeMarks can merge marks only with fixed precision, since they are shared by several equations with possibly different timesteps.
- * 2) On the other hand comparing of times by time governor can be done relatively to the current time step.
- *
- *
  */
 
 class TimeGovernor
@@ -121,6 +170,13 @@ class TimeGovernor
 public:
 
 	DECLARE_INPUT_EXCEPTION(ExcTimeGovernorMessage, << EI_Message::val);
+	TYPEDEF_ERR_INFO( EI_Index, int);
+	TYPEDEF_ERR_INFO( EI_BackIndex, unsigned int);
+	TYPEDEF_ERR_INFO( EI_HistorySize, unsigned int);
+	DECLARE_EXCEPTION(ExcMissingTimeStep,
+	        << "Time step index: " << EI_Index::val
+	        << ", history index: " << EI_BackIndex::val
+	        << " out of history of size: " << EI_HistorySize::val);
 
     static Input::Type::Record input_type;
 
@@ -130,7 +186,6 @@ public:
     static inline TimeMarks &marks()
             {return time_marks_;}
     
-
     /**
      * @brief Constructor for unsteady solvers.
      *
@@ -141,7 +196,6 @@ public:
      */
    TimeGovernor(const Input::Record &input,
                 TimeMark::Type fixed_time_mask = TimeMark::none_type);
-
 
    /**
     * @brief Default constructor - steady time governor.
@@ -167,9 +221,6 @@ public:
     */
    TimeGovernor(double init_time, double dt);
 
-
-
-
    /**
     * @brief Sets permanent constraints for time step.
     * 
@@ -179,7 +230,6 @@ public:
     * @param max_dt is the maximal value allowed for time step
     */
    void set_permanent_constraint( double min_dt, double max_dt);
-
     
     /**
      * @brief Sets upper constraint for the next time step estimating.
@@ -208,19 +258,22 @@ public:
      * it overwrites previous setting. 
      * @return actual end of fixed time step.
      */
-    inline double fix_dt_until_mark() {
-        if (steady_) return 0.0;
-        end_of_fixed_dt_interval_=-inf_time; // release previous fixed interval
-        fixed_time_step_ = estimate_dt();
-        is_time_step_fixed_ = true;    //flag means fixed step has been set since now
-        return end_of_fixed_dt_interval_ = time_marks_.next(*this, equation_fixed_mark_type())->time();
-    }
+    double fix_dt_until_mark();
 
     /**
      * @brief Proceed to the next time according to current estimated time step.
      */
     void next_time();
 
+    /**
+     *  Returns reference to required time step in the recent history.
+     *  Without parameter the actual time step is returned.
+     *  Use negative indices to get recent time steps: step(-1) the actual step, step(-2) the last one.
+     *  Use positive index to get time step by its index: step(0) the first time step.
+     *  However only limited number of last time steps is stored.
+     *  If the time step is not accessible any more, we throw an exception ExcMissingTimeStep.
+     */
+    const TimeStep &step(int index=-1) const;
 
     /**
      *	Specific time mark of the equation owning the time governor.
@@ -284,29 +337,39 @@ public:
 
 
     /**
+     * Initial time getter.
+     */
+    inline double init_time() const
+        {return this->init_time_;}
+
+    /**
      * End of actual time interval; i.e. where the solution is computed.
      */
     inline double t() const
-        {return time_;}
+        {return step().end();}
 
     /**
      * Previous time step.
      */
     inline double last_dt() const
-        {return last_time_step_;}
+        {if (step().index() >0) return step(-2).length();
+        else return inf_time;
+        }
 
     /**
      * Previous time.
      */
     inline double last_t() const
-        { return last_time_; }
+        {if (step().index() >0) return step(-2).end();
+        else return step().end() - step().length();
+        }
 
 
     /**
      * Length of actual time interval; i.e. the actual time step.
      */
     inline double dt() const
-        {return time_step_;}
+        {return step().length();}
 
     /**
      * @brief Estimate choice of next time step according to actual setting of constraints.
@@ -319,6 +382,8 @@ public:
      *  -# lower constraint (satisfied if not in conflict with 1.)
      *  -# permanent lower constraint (satisfied if 4.)
      *  -# else writes the difference between lower constraint and estimated time step
+     *  -# If there are more then one step to the next fixed time, try to
+     *     use the last time step if it is nearly the same.
      */
     double estimate_dt() const;
 
@@ -326,7 +391,7 @@ public:
      * Estimate next time.
      */
     inline double estimate_time() const
-        {return time_+estimate_dt();}
+        {return t()+estimate_dt();}
 
     /// End time.
     inline double end_time() const
@@ -334,7 +399,7 @@ public:
 
     /// Returns true if the actual time is greater than or equal to the end time.
     inline bool is_end() const
-        { return (this->ge(end_time_) || time_ == inf_time); }
+        { return (this->ge(end_time_) || t() == inf_time); }
         
     /// Returns true if the time governor is used for steady problem.
     inline bool is_steady() const
@@ -346,44 +411,31 @@ public:
      * TODO: introduce type TimeDouble with overloaded comparison operators, use it consistently in TimeMarks.
      */
     inline bool gt(double other_time) const
-        {
-            return ! (time_ <= other_time
-            + 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time)) );
-        }
+        { return ! safe_compare(other_time, t());}
 
     /**
      * Performs rounding safe comparison time >= other_time See @fn gt
      */
     inline bool ge(double other_time) const
-    {
-        return time_ >= other_time
-        - 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
-    }
+        { return safe_compare(t(), other_time); }
 
     /**
      * Performs rounding safe comparison time < other_time. See @fn gt
      */
     inline bool lt(double other_time) const
-    {
-        double b=other_time
-                - 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
-        return ! (time_ >= b);
-    }
+        { return ! safe_compare(t(), other_time); }
 
     /**
      * Performs rounding safe comparison time <= other_time. See @fn gt
      */
     inline bool le(double other_time) const
-    {
-        return time_ <= other_time
-        + 16*numeric_limits<double>::epsilon()*max(abs(time_),abs(other_time));
-    }
+        { return safe_compare(other_time, t()); }
 
     /**
      * Returns the time level.
      */
     inline int tlevel() const
-        {return time_level_;}
+        {return step().index();}
 
     /**
      * Prints output of TimeGovernor.
@@ -396,6 +448,9 @@ public:
     static const double inf_time;
 
 private:
+    /// Returns true if t1-t0 >delta. Where delta is choosen
+    /// ralated to the current time step and magnitude of t1, t0.
+    bool safe_compare(double t1, double t0) const;
 
     /**
      * \brief Common part of the constructors. Set most important parameters, check they are valid and set default values to other.
@@ -407,37 +462,27 @@ private:
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
 
+    /**
+     *  Rounding precision for computing time_step.
+     *  Used as technical lower bound for the time step.
+     */
+    static const double time_step_precision;
 
-    /// Technical bound for the time step given by finite precision.
-    static const double time_step_lower_bound;
-    /// Rounding precision for computing number of steps. Used in estimate_dt().
-    static const double round_n_steps_precision;
-
-    /// Number of time_next calls, i.e. total number of performed time steps.
-    int time_level_;
-
+    /// Circular buffer of recent time steps. Implicit size is 2.
+    boost::circular_buffer<TimeStep> recent_steps_;
     /// Initial time.
     double init_time_;
-    /// End of actual time interval; i.e. where the solution is computed.
-    double time_;
-    /// Beginning of the actual time interval; i.e. the time of last computed solution.
-    double last_time_;
     /// End of interval if fixed time step.
     double end_of_fixed_dt_interval_;
     /// End time of the simulation.
     double end_time_;
 
-    /// Length of actual time interval; i.e. the actual time step.
-    double time_step_;
-    /// Time step just before last_time.
-    double last_time_step_;
     /// Next fixed time step.
     double fixed_time_step_;
     /// Flag that is set when the fixed step is set (lasts only one time step).
     bool is_time_step_fixed_;
     /// Flag is set if the time step has been changed (lasts only one time step).
     bool time_step_changed_;
-
     
     /// Upper constraint for the choice of the next time step.
     double upper_constraint_;
@@ -465,7 +510,7 @@ private:
 };
 
 /**
- * \brief Redirection operator for TimeGovernor.
+ * \brief Stream output operator for TimeGovernor.
  *
  * Currently for debugging purposes.
  * In the future it should be customized for use in combination with

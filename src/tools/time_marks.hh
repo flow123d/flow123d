@@ -35,6 +35,8 @@
 
 #include <ostream>
 #include <vector>
+
+#include "system/system.hh"
 #include "system/global_defs.h"
 
 
@@ -61,9 +63,9 @@ public:
      */
     typedef unsigned long int Type;
 
-    /// Mask that matches every type of TimeMark.
+    /// Mark Type with all bits set.
     static const Type every_type;
-    /// Mask that matches no type of TimeMark.
+    /// Mark Type with all bits unset.
     static const Type none_type;
     
     /**
@@ -175,6 +177,12 @@ public:
      * Default constructor.
      */
     TimeMarks();
+
+    /**
+     * Reset state after construction (through default constructor).
+     * Useful for unit tests.
+     */
+    void reinit();
 
     /**
      * Add a new base mark within the context of the particular TimeMarks instance.

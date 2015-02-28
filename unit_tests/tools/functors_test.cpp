@@ -11,8 +11,8 @@
 
 #include <flow_gtest.hh>
 
-#include "interpolation/functors_impl.hh"
-#include "interpolation/interpolant_impl.hh"
+#include "tools/functors_impl.hh"
+#include "tools/interpolant_impl.hh"
 
 #define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 

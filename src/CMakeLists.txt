@@ -34,12 +34,19 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #include_directories(${flow123d_includes})
 
 
+# add individual libraries and object groups
 
+if (mpiuni_sources) 
+  add_library(mpiuni_lib ${mpiuni_sources})
+endif()
 
-# select source files that compose whole flow123d library
-# todo: split into parts, e.g. system, output, input, mesh, darcy_mh, transport, .. 
-# every library then can be testetd independently
-set(sources_lib_system
+# when the precompiled headers are used in the future
+#if (${PRECOMPILED_HEADERS})
+#    ADD_PRECOMPILED_HEADER(system_lib "pre_system.hh")
+#endif()
+
+# system_lib
+add_library(system_lib 
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
@@ -51,9 +58,16 @@ set(sources_lib_system
     system/tokenizer.cc
     system/application_base.cc
 )
+target_link_libraries(system_lib 
+    ${PETSC_LIBRARIES}  
+    ${PETSC_EXTERNAL_LIB} 
+    ${Boost_LIBRARIES} 
+    ${PYTHON_LIBRARIES})
+add_dependencies(system_lib update_source_tree)
 
-set(sources_lib_input
-  
+
+# input_lib
+add_library(input_lib 
     input/type_base.cc
     input/type_record.cc
     input/type_selection.cc
@@ -63,20 +77,47 @@ set(sources_lib_input
     
     input/accessors.cc
 )
+target_link_libraries(input_lib 
+    system_lib json_spirit)
 
 
-set(sources_lib_la
-	la/distribution.cc
-	la/local_to_global_map.cc
+# la_lib
+add_library(la_lib 
+    la/distribution.cc
+    la/local_to_global_map.cc
     la/schur.cc
     la/linsys.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
 )
+target_link_libraries(la_lib 
+    input_lib system_lib
+    armadillo 
+    ${PETSC_LIBRARIES}  
+    ${BDDCML_LIBRARIES} 
+    ${PETSC_EXTERNAL_LIB}  
+    ${Boost_LIBRARIES})
+set_target_properties(la_lib 
+    PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
 
-set(sources_mesh_lib
-    mesh/region.cc
+
+
+# tools_lib    
+add_library(tools_lib 
+    tools/interpolant.cc
+    tools/adaptivesimpson.cc
+    tools/time_marks.cc
+    tools/time_governor.cc
+)
+target_link_libraries(tools_lib
+    system_lib input_lib )
+
+
+
+# mesh_lib
+add_library(mesh_lib 
+        mesh/region.cc
     mesh/msh_gmshreader.cc
     mesh/boundaries.cc
     mesh/edges.cc
@@ -89,7 +130,6 @@ set(sources_mesh_lib
     mesh/partitioning.cc
     
     mesh/bounding_box.cc
-    # mesh/bih_node.cc
     mesh/bih_tree.cc
     mesh/reader_instances.cc
     
@@ -102,31 +142,39 @@ set(sources_mesh_lib
     mesh/ngh/src/plain.cpp
     mesh/ngh/src/point.cpp
     mesh/ngh/src/polygon.cpp
-    #mesh/ngh/src/system.cpp
     mesh/ngh/src/tetrahedron.cpp
     mesh/ngh/src/triangle.cpp
     mesh/ngh/src/vector.cpp
     mesh/ngh/src/vertex.cpp
 )
+target_link_libraries(mesh_lib
+    input_lib system_lib la_lib 
+    armadillo 
+    ${Boost_LIBRARIES})
 
-set(sources_fem_lib
+
+
+# fem_lib    
+add_library(fem_lib 
     quadrature/quadrature_lib.cc
-
     fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
     fem/mapping_p1.cc
-    
 )
+target_link_libraries(fem_lib
+    system_lib mesh_lib 
+    armadillo 
+    ${Boost_LIBRARIES})
 
-set(sources_lib_interpolation
-    interpolation/interpolant.cc
-    interpolation/adaptivesimpson.cc
-)
 
 
-set (sources_lib_coupling
+
+
+
+# coupling_lib  
+add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
     io/output.cc
@@ -141,27 +189,38 @@ set (sources_lib_coupling
     fields/field_set.cc
     fields/unit_si.cc
     fields/generic_field.cc
-    
-    coupling/time_marks.cc
-    coupling/time_governor.cc
+    coupling/equation.cc
+    flow/old_bcd.cc
+    # coupling/hc_explicit_sequential.cc
+)
+target_link_libraries(coupling_lib
+    system_lib input_lib mesh_lib tools_lib
+    fparser     
+    armadillo
+    ${Boost_LIBRARIES})
 
-   coupling/equation.cc
-       flow/old_bcd.cc
-   # coupling/hc_explicit_sequential.cc
-   
 
-   
+
+# make separate library for Semchem (God save us!)
+add_library(semchem 
+    semchem/che_semchem.cc
+    semchem/che_read.cc
+)
+set_target_properties(semchem 
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 
-set(sources_lib_non_system
 
+
+set(sources_lib_non_system
+)
+# all remaining sources 
+add_library(flow123d_lib 
     flow/mh_fe_values.cc
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
 
-
-    
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc
     reaction/first_order_reaction_base.cc
@@ -184,93 +243,20 @@ set(sources_lib_non_system
     transport/substance.cc
 
     coupling/hc_explicit_sequential.cc
-)
-
-
-
-# make separate library for Semchem (God save us!)
-set(sources_lib_semchem
-    semchem/che_semchem.cc
-    semchem/che_read.cc
-#    semchem/cti_ichnew.c
-)
-
-
-
-# add individual libraries
-
-if (mpiuni_sources) 
-  add_library(mpiuni_lib ${mpiuni_sources})
-endif()
-
-# system_lib
-add_library(system_lib ${sources_lib_system})
-target_link_libraries(system_lib ${PETSC_LIBRARIES}  ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
-add_dependencies(system_lib update_source_tree)
-
-
-# when the precompiled headers are used in the future
-#if (${PRECOMPILED_HEADERS})
-#    ADD_PRECOMPILED_HEADER(system_lib "pre_system.hh")
-#endif()
-
-
-
-# input_lib
-add_library(input_lib ${sources_lib_input})
-target_link_libraries(input_lib 
-    system_lib json_spirit)
-
-    
-# la_lib
-add_library(la_lib ${sources_lib_la})
-target_link_libraries(la_lib 
-    input_lib system_lib
-    armadillo ${PETSC_LIBRARIES}  ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB}  ${Boost_LIBRARIES})
-set_target_properties(la_lib PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
-
-# mesh_lib
-add_library(mesh_lib ${sources_mesh_lib})
-target_link_libraries(mesh_lib
-    input_lib system_lib la_lib armadillo ${Boost_LIBRARIES})
-    
-# fem_lib    
-add_library(fem_lib ${sources_fem_lib})
-target_link_libraries(fem_lib
-    system_lib mesh_lib armadillo ${Boost_LIBRARIES})
-    
-# interpolation_lib    
-add_library(interpolation_lib ${sources_lib_interpolation})
-target_link_libraries(interpolation_lib
-    system_lib )
-
-
-# coupling_lib  
-add_library(coupling_lib ${sources_lib_coupling})
-target_link_libraries(coupling_lib
-    system_lib input_lib fparser mesh_lib armadillo ${Boost_LIBRARIES})
-  
-# all remaining sources 
-add_library(flow123d_lib ${sources_lib_non_system})
+)    
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib semchem  input_lib system_lib interpolation_lib
-    coupling_lib fparser  armadillo ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
-set_target_properties(flow123d_lib PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+    fem_lib mesh_lib la_lib semchem  input_lib 
+    system_lib tools_lib coupling_lib  tools_lib
+    fparser  
+    armadillo 
+    ${PETSC_LIBRARIES} 
+    ${BDDCML_LIBRARIES} 
+    ${PETSC_EXTERNAL_LIB} 
+    ${Boost_LIBRARIES}
+)
+set_target_properties(flow123d_lib 
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 
-# add target for libsemchem
-add_library(semchem ${sources_lib_semchem})
-set_target_properties(semchem PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-)
-
-
-
-
-
-
-
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/bin/current_flow;${CMAKE_BINARY_DIR}/bin/mpiexec")
 
 
