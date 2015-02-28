@@ -33,6 +33,8 @@
         }
       ],
 
+      balance = true,
+
       output = {
         output_stream = {
           REF = "/system/output_streams/0"
@@ -74,7 +76,7 @@
       time = {
         end_time = 5.0
       },
-        mass_balance = {
+      balance = {
         cumulative = true
       },
       

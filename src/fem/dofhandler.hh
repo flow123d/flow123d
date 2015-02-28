@@ -305,6 +305,8 @@ public:
      */
     inline Distribution *el_ds() const { return el_ds_; }
 
+    inline int *get_el_4_loc() const { return el_4_loc; }
+
     /**
      * @brief Returns the global index of local element.
      *

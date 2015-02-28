@@ -33,6 +33,8 @@
           flow_old_bcd_file = "./input/test2.fbc"
         }
       ],
+      
+      balance = true,
 
       output = {
         output_stream = {
@@ -71,7 +73,7 @@
       time = {
         end_time = 5.0
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       },
       

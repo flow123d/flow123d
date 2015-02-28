@@ -25,8 +25,7 @@ class Semchem_interface;
 
 
 
-
-class AdvectionProcessBase : public EquationBase, public EquationForMassBalance {
+class AdvectionProcessBase : public EquationBase {
 
 public:
 
@@ -99,10 +98,6 @@ public:
     	mh_dh=&dh;
     }
 
-    /**
-     * Getter for mass balance class
-     */
-    MassBalance *mass_balance() { return mass_balance_; }
 
     /// Returns number of trnasported substances.
     inline unsigned int n_substances() override { return n_subst_; }
@@ -131,8 +126,8 @@ protected:
      */
     const MH_DofHandler *mh_dh;
 
-    /// object for calculation and writing the mass balance to file.
-    MassBalance *mass_balance_;
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
 };
 
 
@@ -155,12 +150,6 @@ public:
 
     inline virtual void output_data() override {};
 
-    TimeIntegrationScheme time_scheme() override { return none; }
-
-private:
-
-    inline void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override {};
-    inline void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override {};
 
 };
 
@@ -204,18 +193,8 @@ public:
     void output_data() override ;
 
    
-    TimeIntegrationScheme time_scheme() override { return none; }
-
 
 private:
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_fluxes().
-     */
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance) override;
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
-     */
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance) override;
 
     ConvectionTransport *convection;
     ReactionTerm *reaction;

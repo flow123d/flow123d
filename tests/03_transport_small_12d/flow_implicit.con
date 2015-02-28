@@ -30,6 +30,9 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = true,
+
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-12,
@@ -72,7 +75,7 @@
         a_tol = 1e-12,
         r_tol = 1e-12
       },
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }

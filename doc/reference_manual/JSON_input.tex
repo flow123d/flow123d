@@ -1,6 +1,6 @@
 
 
-\section{Main input file (CON file format)}
+\section{Main Input File (CON File Format)}
 \label{sec:CONformat}
 
 \begin{figure}
@@ -27,7 +27,7 @@ the data for initialization of the C++ data structures are coded in particular w
 what we call CON (C++ object notation) file format.
 
 
-\subsection{JSON for humans}
+\subsection{JSON for Humans}
 
 Basic syntax of the CON file is very close to the JSON file format with only few extensions, namely:
 \begin{itemize}
@@ -39,7 +39,7 @@ Basic syntax of the CON file is very close to the JSON file format with only few
 The aim of these extensions is to simplify writing input files manually. However these extensions can be easily filtered out and converted to 
 the generic JSON format. For the description of the JSON format we refer to \url{http://www.json.org/}. 
 
-\subsection{CON constructs}
+\subsection{CON Constructs}
 The CON file format constructs are designed for initialization of C++ strongly typed variables. The primitive data types can be initialized from 
 the primitive CON constructs: 
 \begin{itemize}
@@ -55,7 +55,7 @@ which can be printed out in several formats, in particular description of ITT fo
 In order to allow certain kind of polymorphism, we introduce also the {\it AbstractRecord} construct, where the type of the record is not given by ITT but 
 can be chosen as part of the input. 
 
-\subsection{CON special keys}
+\subsection{CON Special Keys}
 All keys in Records should be in lower case, possibly using digits and underscore. The keys all in upper case are reserved for special function in the 
 CON file. These are:
 \begin{description}
@@ -145,7 +145,7 @@ outer_record={
 \end{verbatim}
 \end{description}
 
-\subsection{Record types}
+\subsection{Record Types}
 A Record type is given by the set of key specifications, which in turn consist from: key name, type of value and default value specification.
 Default value specification can be:
 \begin{description} 
@@ -156,7 +156,7 @@ Default value specification can be:
  there is only textual description where the default value comes from.
 \end{description}
 
-\subsubsection{Implicit creation of composed entities}
+\subsubsection{Implicit Creation of Composed Entities}
 Consider a Record type in which all keys have default values (possibly except one). Then the specification
 of the Record can contain a {\it key for default construction}. User can specify only the value of this particular key instead of the whole record, all other keys are initialized from its default values.
 Moreover, an AbstractRecord type may have a default value for the \verb'TYPE' key.
@@ -164,10 +164,10 @@ This allows to express simple tasks by simple inputs but still make complex inpu
 Similar functionality holds for arrays. If the user sets a non-array value where an array is expected the reader provides an array with a unique element holding the given value.
 
 
-\section{Important Record types of Flow123d input}
+\section{Important Record Types of Flow123d Input}
 
 
-\subsection{Mesh record}
+\subsection{Mesh Record}
 \label{sec:Mesh}
 The \hyperlink{IT::Mesh}{mesh record} provides initialization for the computational mesh consisting of points, lines, triangles and tetrahedrons in 3D space.
 Currently, we support only GMSH mesh file format \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII}. 
@@ -180,7 +180,7 @@ The key \hyperA{Mesh::sets}{{\tt sets}} allows specification of sets of regions 
 regions form disjoint covering of elements, the sets, however, may overlap. There are three predefined region sets: ``ALL'', ``BOUNDARY'', ``BULK''.
 
 
-\subsection{Field records}
+\subsection{Field Records}
 \label{sec:Fields}
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
 Field $R^m -> \mathcal{S}$, where $m$ is currently always $m=3$ and $\mathcal{S}$ is a specification of the target space, which can be:
@@ -241,7 +241,7 @@ concentration = {
 }       
 \end{verbatim}
 
-\subsection{Field data for equations}
+\subsection{Field Data for Equations}
 Every equation record has key \verb'input_fields', intended to set both the bulk and boundary fields. These keys contain an array of region-time initialization records
 like the \hyperlink{IT::DarcyFlowMH-Data}{\tt Data} record of the DarcyFlow equation. Every such record specifies fields on particular region 
 (keys \hyperA{DarcyFlowMH-Steady-BulkData::region}{{\tt region}} and \hyperA{DarcyFlowMH-Steady-BulkData::rid}{{\tt rid}} ) or on a region set 

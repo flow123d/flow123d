@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
+#include "fields/unit_si.hh"
 
 
 
@@ -86,6 +87,12 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
+UnitSI ConcentrationTransportModel::balance_units()
+{
+	return data().cross_section.units()*UnitSI().md(1)
+	        *data().porosity.units()
+	        *data().output_field.units();
+}
 
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)

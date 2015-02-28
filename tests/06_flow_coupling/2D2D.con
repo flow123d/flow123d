@@ -68,7 +68,7 @@
       ],
 
       output = {
-        balance_output = "water_balance.out", 
+        balance_output = "balance.out", 
         output_stream = {
           REF = "/system/output_stream"
         }, 

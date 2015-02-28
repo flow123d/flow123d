@@ -26,6 +26,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -92,8 +94,10 @@
           solubility = { REF="/problem/secondary_equation/reaction_term/reaction_mobile/solubility" },
           input_fields= { REF="/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" }
         }
+      },
+      balance = {
+        cumulative = true
       }
-          
     } 
   }, 
   
