@@ -76,7 +76,6 @@ Record TimeGovernor::input_type = Record("TimeGovernor",
 TimeStep::TimeStep(double init_time) :
 index_(0),
 length_(1.0),
-begin_(-numeric_limits<double>::infinity()), //TimeGovernor::inf_time
 end_(init_time)
 {}
 
@@ -90,7 +89,6 @@ TimeStep::TimeStep() {}
 TimeStep::TimeStep(const TimeStep &other):
 index_(other.index_),
 length_(other.length_),
-begin_(other.begin_), //TimeGovernor::inf_time
 end_(other.end_)
 {}
 
@@ -108,7 +106,6 @@ TimeStep TimeStep::make_next(double new_lenght, double end_time) const
     TimeStep ts;
     ts.index_=this->index_ +1;
     ts.length_=new_lenght;
-    ts.begin_=this->end_;
     ts.end_=end_time;
     return ts;
 }

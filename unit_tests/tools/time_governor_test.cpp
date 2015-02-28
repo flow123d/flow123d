@@ -17,17 +17,6 @@
 
 
 
-/*
-const string json_with_init_dt = R"JSON(
-{
-time = { 
-    start_time = 10.0, 
-    end_time   = 30.0,
-    init_dt    = 15
-  }
-}
-)JSON";
-*/
 
 const double inf_time = TimeGovernor::inf_time;
 
@@ -61,13 +50,11 @@ TEST(TimeStep, all) {
     EXPECT_EQ(0, step.index());
 
     TimeStep step1=step.make_next(1.5);
-    EXPECT_EQ(2.0, step1.begin());
     EXPECT_EQ(3.5, step1.end());
     EXPECT_EQ(1.5, step1.length());
     EXPECT_EQ(1, step1.index());
 
     TimeStep step2=step1.make_next(1.0, 10 );
-    EXPECT_EQ(3.5, step2.begin());
     EXPECT_EQ(10, step2.end());
     EXPECT_EQ(1.0, step2.length());
     EXPECT_EQ(2, step2.index());
