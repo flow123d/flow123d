@@ -344,20 +344,22 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
            keys_to_process.insert(map_it->first);
         }
 
-        if (keys_to_process.find("TYPE") != keys_to_process.end()) {
+        Type::Record::KeyIter key_it;
+        if ( record->has_key_iterator("TYPE", key_it) ) {
             string value;
             string ref_address;
-            p.down( record->key_iterator("TYPE")->key_ );
-            if (p.get_ref_from_head(ref_address)) {
-            	JSONPath ref_path = p.find_ref_node(ref_address);
-            	value = ref_path.head()->get_str();
-            } else {
-            	value = p.head()->get_str();
+            JSONPath type_path(p);
+            if (type_path.down( "TYPE" ) != NULL) {
+                try {
+                    // convert to base type to force type dispatch and reference chatching
+                    unsigned int descendant_index = make_storage(type_path, key_it->type_.get() )->get_int();
+                } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
+                	return record_automatic_conversion(p, record);
+                }
             }
-            p.up();
-        	if (value != record->type_name()) { // automatic conversion
-        		return record_automatic_conversion(p, record);
-        	}
+            else {  // automatic conversion
+            	return record_automatic_conversion(p, record);
+            }
         }
 
         StorageArray *storage_array = new StorageArray(record->size());
