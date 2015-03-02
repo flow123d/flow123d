@@ -364,7 +364,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(const Selection * key_type, const Default &default_value = Default::obligatory());
+    Record &declare_type_key(const Selection * key_type);
 
     /**
      * Internal data class.

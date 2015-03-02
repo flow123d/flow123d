@@ -329,9 +329,9 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(const Selection * key_type, const Default &default_value) {
+Record &Record::declare_type_key(const Selection * key_type) {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, default_value,
+	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
