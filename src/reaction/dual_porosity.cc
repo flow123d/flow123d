@@ -255,14 +255,14 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-          reaction_mobile->data().set_field("porosity", data_["porosity"]);
-          reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_mobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-      reaction_immobile->data().set_field("porosity", data_["porosity"]);
-      reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_immobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
   data_.set_time(*time_);
