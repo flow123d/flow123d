@@ -22,12 +22,13 @@
 #
 
 
-set(libs interpolation_lib)
+set(libs tools_lib)
 add_test_directory("${libs}")
-
     
 define_test(functors)
-
+define_test(time_governor)
+define_test(time_marks)
+     
 
 
 

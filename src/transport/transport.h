@@ -45,6 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/vec_seq_double.hh"
 
 
 class SorptionImmob;
@@ -188,8 +189,6 @@ public:
 	int *get_el_4_loc();
 	int *get_row_4_el();
 
-	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
-
 private:
 
     /**
@@ -277,8 +276,7 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    Vec *vconc_out; // concentration vector output (gathered)
-    double **out_conc;
+    std::vector<VectorSeqDouble> out_conc;
 
 	/// Record with output specification.
 	Input::Record output_rec;

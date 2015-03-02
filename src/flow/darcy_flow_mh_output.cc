@@ -52,6 +52,7 @@
 #include "io/output.h"
 #include "mesh/partitioning.hh"
 
+#include "transport/mass_balance.hh"
 
 
 namespace it = Input::Type;
@@ -113,7 +114,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(ele_pressure, 1);
+	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh = new DOFHandlerMultiDim(*mesh_);
@@ -128,23 +129,16 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
 	ele_piezo_head.resize(mesh_->n_elements());
-	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(ele_piezo_head, 1));
+	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
+	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
-	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::VectorFixed> >(ele_flux, 3));
+	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_ids = GenericField<3>::region_id(*mesh_);
 
-/*auto &vec_int_sub = mesh_->get_part()->seq_output_partition();
-	subdomains.resize(vec_int_sub.size());
-	for(unsigned int i=0; i<subdomains.size();i++)
-		subdomains[i]=vec_int_sub[i];
-	output_fields.subdomain.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::Integer> >(subdomains, 1));
-*/
 	output_fields.set_limit_side(LimitSide::right);
 
 
@@ -167,6 +161,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
         }
 
     }
+
+	flow->balance_->units(
+	        get_output_fields().field_ele_pressure.units()
+	        *flow->data_.cross_section.units()*UnitSI().md(1)
+	        *flow->data_.storativity.units());
 }
 
 

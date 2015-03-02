@@ -146,6 +146,6 @@ set(FLOW_BUILD_TYPE debug)
 ### External Projects directory ##########################################################
 #
 # The directory where possible external projects should be stored and built.
-# The default location is ${PROJECT_SOURCE_DIR}/external_projects.
+# The default location is ${PROJECT_SOURCE_DIR}/../external_projects.
 
 #set(EXTERNAL_PROJECT_DIR "") 

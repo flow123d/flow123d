@@ -1,7 +1,7 @@
 #ifndef FUNCTORBASE_IMPL_H
 #define FUNCTORBASE_IMPL_H
 
-#include "functors.hh"
+#include "tools/functors.hh"
 #include "system/xio.h"
 
 /**************************************** FunctorCommon *****************************************/

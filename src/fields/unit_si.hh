@@ -107,10 +107,7 @@ private:
 	 */
 	std::vector<int> exponents_;
 
-	/**
-	 * Symbols for base SI units.
-	 */
-	static std::vector<std::string> unit_symbols_;
+
 
 	/**
 	 * Flag if object is undefined.

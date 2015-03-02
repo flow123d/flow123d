@@ -28,11 +28,14 @@
  * @author Jan Brezina
  */
 
-#include "system/system.hh"
-#include "time_marks.hh"
-#include "time_governor.hh"
+
+
 #include <algorithm>
 #include <limits>
+#include "system/system.hh"
+#include "system/global_defs.h"
+#include "time_governor.hh"
+#include "time_marks.hh"
 
 // ------------------------------------------------------
 // implementation of members of class TimeMark
@@ -53,8 +56,17 @@ const TimeMark::Type TimeMark::none_type =  0x0;
 // ------------------------------------------------------
 
 TimeMarks::TimeMarks()
-: next_mark_type_(0x1)
 {
+    this->reinit();
+}
+
+
+
+void TimeMarks::reinit()
+{
+    marks_.clear();
+    next_mark_type_ = 0x1;
+
     // add predefined base mark types
     type_fixed_time_ = new_mark_type();
     type_output_ = new_mark_type();
@@ -64,7 +76,6 @@ TimeMarks::TimeMarks()
     marks_.push_back(TimeMark(-INFINITY, TimeMark::every_type));
     marks_.push_back(TimeMark(+INFINITY, TimeMark::every_type));
 }
-
 
 TimeMark::Type TimeMarks::new_mark_type() {
     ASSERT(next_mark_type_ != 0, "Can not allocate new mark type. The limit is 32 mark types.\n");
@@ -100,8 +111,10 @@ void TimeMarks::add(const TimeMark &mark) {
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
 	ASSERT(end_time != TimeGovernor::inf_time, "Can not add time marks on infinite interval.\n");
 	ASSERT(dt > numeric_limits<double>::epsilon(), "TimeMark's step less then machine precision.\n");
-	for (double t = time; t <= end_time*1.001; t += dt) {
-		auto mark = TimeMark(t, type);
+
+	unsigned int n_steps=(end_time-time)/dt;
+	for (unsigned int i = 0; i<=n_steps;i++) {
+		auto mark = TimeMark(time+i*dt, type);
 		add(mark);
 	}
 }
@@ -110,11 +123,13 @@ bool TimeMarks::is_current(const TimeGovernor &tg, const TimeMark::Type &mask) c
 {
     if (tg.t() == TimeGovernor::inf_time) return tg.is_end();
     const TimeMark &tm = *last(tg, mask);
+
     return tg.lt(tm.time() + tg.dt()); // last_t + dt < mark_t + dt
 }
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
+    // first time mark which does not compare less then then actual tg time
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t(),mask));
     while (  ! tg.lt(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         ++first_ge;
@@ -124,11 +139,11 @@ TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type
 
 TimeMarks::iterator TimeMarks::last(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
+    // first time mark which does compare strictly greater then actual tg time
     vector<TimeMark>::const_iterator first_ge = std::lower_bound(marks_.begin(), marks_.end(), TimeMark(tg.t()+0.01*tg.dt(),mask));
     while ( ! tg.ge(first_ge->time()) || ! first_ge->match_mask(mask) ) {
         --first_ge;
     }
-    // cout << "TimeMark::last(): " << *first_ge << endl;
     return TimeMarksIterator(marks_, first_ge, mask);
 }
 
