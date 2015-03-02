@@ -166,7 +166,7 @@ endmacro()
 
 add_subdirectory("scripts")
 add_subdirectory("input")
-add_subdirectory("interpolation")
+add_subdirectory("tools")
 add_subdirectory("la")
 add_subdirectory("system")
 add_subdirectory("fields")

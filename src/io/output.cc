@@ -57,6 +57,7 @@ Record OutputTime::input_type
 			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
 			"The start time and the end time are always added. ")
 	.declare_key("time_list", Array(Double(0.0)),
+	        Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
 			"Explicit array of output time points (can be combined with 'time_step'.")
 	.declare_key("add_input_times", Bool(), Default("false"),
 			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
@@ -197,6 +198,8 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 		vector<double> list;
 		time_list.copy_to(list);
 		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
+	} else {
+	    tg.marks().add( TimeMark(tg.init_time(), output_mark_type) );
 	}
 
 	bool add_flag;
