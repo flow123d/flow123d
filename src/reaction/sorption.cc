@@ -42,8 +42,8 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 		Isotherm & isotherm = isotherms_vec[i_subst];
 
 		//scales are different for the case of sorption in mobile and immobile pores
-		double scale_aqua = por_m, 
-               scale_sorbed = (1 - por_m) * rock_density * molar_masses_[i_subst];
+		double scale_aqua = por_m,
+               scale_sorbed = (1 - por_m) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
 
 		bool limited_solubility_on = false;
 		double table_limit;
@@ -141,7 +141,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_m,
-               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses_[i_subst];
+               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
                
         bool limited_solubility_on;
         double table_limit;
@@ -218,7 +218,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_imm,
-               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses_[i_subst];
+               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
                
         bool limited_solubility_on;
         double table_limit;

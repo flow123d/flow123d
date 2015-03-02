@@ -167,10 +167,6 @@ protected:
    */
   unsigned int n_interpolation_steps_;
   /**
-   * Molar masses of dissolved species (substances)
-   */
-  std::vector<double> molar_masses_;
-  /**
    * Density of the solvent. 
    *  TODO: Could be done region dependent, easily.
    */
