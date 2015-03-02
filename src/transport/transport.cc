@@ -137,7 +137,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-		std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldElementwise<3, FieldValue<3>::Scalar>(out_conc[sbi], n_subst_, mesh_->n_elements()));
+		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_subst_);
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
 	data_.output_fields.set_limit_side(LimitSide::right);
@@ -201,7 +201,6 @@ ConvectionTransport::~ConvectionTransport()
     VecDestroy(bcvcorr);
     VecDestroy(vpconc);
     VecDestroy(vcumulative_corr);
-    VecDestroy(vconc_out);
     
     for (sbi = 0; sbi < n_subst_; sbi++) {
       //no mpi vectors
@@ -267,15 +266,13 @@ void ConvectionTransport::alloc_transport_vectors() {
     }
 
     conc = (double**) xmalloc(n_subst * sizeof(double*));
-    out_conc = (double**) xmalloc(n_subst * sizeof(double*));
+    out_conc.clear();
+    out_conc.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
         conc[sbi] = (double*) xmalloc(el_ds->lsize() * sizeof(double));
-        out_conc[sbi] = (double*) xmalloc(el_ds->size() * sizeof(double));
+        out_conc[sbi].resize( el_ds->size() );
         for (i = 0; i < el_ds->lsize(); i++) {
             conc[sbi][i] = 0.0;
-        }
-        for (i = 0; i < el_ds->size(); i++) {
-            out_conc[sbi][i] = 0.0;
         }
     }
 }
@@ -298,9 +295,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     vcumulative_corr = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
 
 
-    vconc_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
-    
-
     VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), PETSC_DECIDE,
             sources_corr, &v_sources_corr);
 
@@ -318,10 +312,8 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
         		cumulative_corr[sbi],&vcumulative_corr[sbi]);
 
-        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), out_conc[sbi], &vconc_out[sbi]);
-
         VecZeroEntries(vcumulative_corr[sbi]);
-        VecZeroEntries(vconc_out[sbi]);
+        VecZeroEntries(out_conc[sbi].get_data_petsc());
     }
 
 
@@ -780,10 +772,10 @@ void ConvectionTransport::output_vector_gather() {
     IS is;
 
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc[0], is, vconc_out[0], PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc[0], is, out_conc[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < n_subst_; sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc[sbi], vconc_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
     VecScatterDestroy(&(vconc_out_scatter));
     ISDestroy(&(is));
