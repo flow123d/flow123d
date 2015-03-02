@@ -291,7 +291,9 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem sys
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
-set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+if (NOT BOOST_ROOT)
+	set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
+endif()
 if (NOT Boost_FORCE_REBUILD)
     find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 endif()    
