@@ -345,14 +345,14 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
         }
 
         Type::Record::KeyIter key_it;
-        if ( record->has_key_iterator("TYPE", key_it) ) {
-            string value;
-            string ref_address;
+        if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
             JSONPath type_path(p);
             if (type_path.down( "TYPE" ) != NULL) {
                 try {
-                    // convert to base type to force type dispatch and reference chatching
-                    unsigned int descendant_index = make_storage(type_path, key_it->type_.get() )->get_int();
+                	if ( type_path.head()->get_str() != record->type_name() ) {
+                		xprintf(UsrErr, "Invalid value of TYPE key of record %s.", record->type_name().c_str());
+                	}
+                    make_storage(type_path, key_it->type_.get() )->get_int();
                 } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
                 	return record_automatic_conversion(p, record);
                 }
