@@ -32,7 +32,7 @@ TimerData::TimerData () :
  * Public methods
  */
 
-double TimerData::toTime (void) {
+double TimerData::toTime (void) const {
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
     return ((double)this->getTicks()) / (TimerData::Frequency.QuadPart);
 #else
@@ -84,7 +84,7 @@ void TimerData::init () {
  * Private methods
  */
 
-long long TimerData::getTicks () {
+long long TimerData::getTicks () const {
     return this->ticks_;
 }
 

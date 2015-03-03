@@ -61,7 +61,7 @@ class TimerData {
         /**
          * Method returns time in seconds in double precision
          */
-        double toTime (void);
+        double toTime (void) const;
 
         /**
          * Debug-only method returning double value from 'toTime' method as string
@@ -98,7 +98,7 @@ class TimerData {
          * Method which returns current time ticks. Depending on used timer value may represent
          * nanoseconds or internal ticks / CPU frequency
          */
-        long long getTicks (void);
+        long long getTicks (void) const;
 
         /**
          * Setter for ticks variable
