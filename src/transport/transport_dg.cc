@@ -263,10 +263,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     Model::set_components(substances_, in_rec);
     n_subst_ = substances_.size();
 
-//    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-//    if (it)
-//    	mass_balance_ = new MassBalance(this, *it);
-
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.set_n_components(n_subst_);
@@ -396,7 +392,6 @@ TransportDG<Model>::~TransportDG()
     delete[] stiffness_matrix;
     delete[] rhs;
     delete feo;
-//    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
     delete output_stream;
@@ -590,8 +585,6 @@ void TransportDG<Model>::update_solution()
     }
     END_TIMER("solve");
 
-//    if (mass_balance() != NULL)
-//    	mass_balance()->calculate(time_->t());
     if (balance_ != nullptr)
     {
     	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
@@ -636,8 +629,6 @@ void TransportDG<Model>::output_data()
     data_.output(output_stream);
 	output_stream->write_time_frame();
 
-//	if (mass_balance() != NULL)
-//		mass_balance()->output(time_->t());
 	if (balance_ != nullptr)
 		balance_->output(time_->t());
 
