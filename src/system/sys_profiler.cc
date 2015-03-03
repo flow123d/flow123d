@@ -88,8 +88,8 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
  */
 
 Timer::Timer(const CodePoint &cp, int parent)
-: start_time(0),
-  cumul_time(0),
+: start_time(TimerData::getTime()),
+  cumul_time(TimerData::getTime()),
   call_count(0),
   start_count(0),
   code_point_(&cp),
