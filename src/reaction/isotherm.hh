@@ -375,6 +375,9 @@ inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pai
 
 
 inline Isotherm::ConcPair Isotherm::precipitate( Isotherm::ConcPair c_pair) {
+    if(adsorption_type_ == 0) // none
+        return c_pair;
+    
 	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
 	return ConcPair(	table_limit_,
 						(total_mass - scale_aqua_ * table_limit_)/scale_sorbed_  );
