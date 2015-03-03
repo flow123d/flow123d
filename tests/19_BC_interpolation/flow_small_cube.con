@@ -25,13 +25,13 @@
       ],
       n_schurs = 2, 
       output = {
-        balance_output = "water_balance.out", 
         output_stream = {
           REF = "/system/output_streams/0"
         }, 
         output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
         //raw_flow_output = "./raw_output_small.txt", 
       }, 
+      balance = true,
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-07

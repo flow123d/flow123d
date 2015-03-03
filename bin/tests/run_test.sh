@@ -266,7 +266,8 @@ function check_outputs {
 	
 	# If an update should be performed 
 	NEED_UPDATE=
-
+        RETURN_STATUS=
+        
 	# For every file in reference directory try to find generated file
 	# and do ndiff
 	for file in `ls "${REF_OUTPUT_DIR}/${INI_FILE}/"`
@@ -291,7 +292,7 @@ function check_outputs {
 							then
 								NEED_UPDATE=1
 							else
-								return 1
+								RETURN_STATUS=1
 							fi
 						fi
 					else
@@ -309,7 +310,7 @@ function check_outputs {
 					then
 						NEED_UPDATE=1
 					else
-						return 1
+						RETURN_STATUS=1
 					fi
 				fi
 			fi
@@ -329,6 +330,8 @@ function check_outputs {
 			update_ref_results ${REF_OUTPUT_DIR}/${INI_FILE} ${TEST_RESULTS}/${INI_FILE}.${NP}
 		fi
 	fi
+	
+	return ${RETURN_STATUS}
 }
 
 
