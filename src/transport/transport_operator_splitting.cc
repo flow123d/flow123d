@@ -303,9 +303,6 @@ void TransportOperatorSplitting::update_solution() {
         if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
 
-//	    if (convection->mass_balance() != NULL)
-//	    	convection->mass_balance()->calculate(convection->time().t());
-
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
