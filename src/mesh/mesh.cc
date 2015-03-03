@@ -148,6 +148,12 @@ void Mesh::reinit(Input::Record in_record)
 }
 
 
+Mesh::~Mesh() {
+    for(Edge &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+}
+
+
 unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
