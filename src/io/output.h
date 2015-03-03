@@ -308,7 +308,9 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
 
     // TODO: remove const_cast after resolving problems with const Mesh.
-    this->_mesh = const_cast<Mesh *>(field.mesh());
+    Mesh *field_mesh = const_cast<Mesh *>(field.mesh());
+    ASSERT(!this->_mesh || this->_mesh==field_mesh, "Overwriting non-null mesh pointer.\n");
+    this->_mesh=field_mesh;
     ASSERT(this->_mesh, "Null mesh pointer.\n");
 
     // get possibly existing data for the same field, check both name and type
