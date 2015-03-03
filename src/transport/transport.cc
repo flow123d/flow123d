@@ -924,7 +924,7 @@ void ConvectionTransport::calculate_instant_balance()
 
 		balance_->calculate_mass(sbi, vconc[sbi]);
 		balance_->calculate_source(sbi, vconc_diff);
-		balance_->calculate_flux(sbi, vpconc[sbi]);
+		balance_->calculate_flux(sbi, vconc[sbi]);
 
 		VecRestoreArray(vconc_diff, &conc_diff);
 		VecRestoreArrayRead(vconc[sbi], &conc);
