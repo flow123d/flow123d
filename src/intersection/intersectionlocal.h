@@ -15,6 +15,18 @@
 using namespace std;
 namespace computeintersection{
 
+/**
+ * Class doc.
+ * Naming convention.
+ *
+ * Rename IntersectionPolygon use only for output (traced) polygon.
+ *
+ * Have distinguished class for incomplete intersection polygon
+ * (How it is related to ProlongationLine?)
+ *
+ *
+ *
+ */
 class IntersectionLocal {
 
 	//static int numberInstance;

@@ -23,6 +23,10 @@ class InspectElements {
 
 	std::vector<IntersectionLocal> all_intersections;
 
+	/* Possibly replace IntersectionLocal by index of ProlongationLine
+	 * in the prolongation_line_queue, which should rather be std::deque
+	 * to support both queue and random access operations.
+	 */
 	std::map<unsigned int, std::vector<IntersectionLocal>> intersection_list;
 	std::map<unsigned int, bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;

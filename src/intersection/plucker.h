@@ -7,6 +7,12 @@ namespace computeintersection{
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
 
+/**
+ *  TODO:
+ *  Class Documentation.
+ *  Naming notation.
+ */
+
 class Plucker{
 private:
 	arma::vec6 coordinates;
@@ -21,6 +27,7 @@ public:
 
 	double operator*(Plucker b);
 	void operator*(double number);
+
 
 	void setComputed(bool computed);
 	void clear();
@@ -37,6 +44,7 @@ public:
 
 	arma::vec6 getPlucker() const;
 
+	/// TODO: Should be assign operator ??
 	void setPlucker(const Plucker &p);
 
 	void toString();

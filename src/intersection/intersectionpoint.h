@@ -8,8 +8,17 @@ namespace computeintersection{
 
 //class ProlongationPoint;
 
-
-template<int N, int M> class IntersectionPoint{
+/**
+ * Class doc.
+ * Naming convention.
+ *
+ * Have separate class template for IntersectionPoint as it appears at output
+ * and other internal class template e.g. TriangleLineIntersection for internal
+ * intersections with additional info.
+ *
+ * Describe data attributes.
+ */
+template<int N, int M> class IntersectionPoint {
 
 	arma::vec::fixed<N+1> local_coords1;
 	arma::vec::fixed<M+1> local_coords2;
@@ -24,6 +33,8 @@ template<int N, int M> class IntersectionPoint{
 
 	public:
 
+
+	// Possibly just call clear()
 	inline IntersectionPoint(){
 		side_idx1 = -1;
 		side_idx2 = -1;
@@ -65,9 +76,12 @@ template<int N, int M> class IntersectionPoint{
 		cout << "Orientation: " << orientation << " Vertex: " << is_vertex << " Patological: " << is_patological << endl;
 	};
 
+	/// Possibly can remove.
 	inline arma::vec::fixed<N+1> getLocalCoords1(){
 			return local_coords1;
 		};
+
+	/// Possibly can remove.
 	inline arma::vec::fixed<M+1> getLocalCoords2(){
 			return local_coords2;
 		};
@@ -79,10 +93,12 @@ template<int N, int M> class IntersectionPoint{
 		return local_coords2;
 	};
 
+	/// Try to avoid.
 	inline void setLocalCoords1(const arma::vec::fixed<N+1> lc1){
 			local_coords1 = lc1;
 	};
 
+	/// Try to avoid.
 	inline void setLocalCoords2(const arma::vec::fixed<M+1> lc2){
 			local_coords2 = lc2;
 	};
