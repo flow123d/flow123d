@@ -62,6 +62,7 @@
 
 #include "global_defs.h"
 #include "system/system.hh"
+#include "system/TimerData.hh"
 #include <mpi.h>
 
 //instead of #include "mpi.h"
@@ -290,30 +291,10 @@ public:
     static const unsigned int max_n_childs=CodePoint::max_n_timer_childs;
 
     /**
-     * TimeData is a type returned by method get_time and used to store time data in timer nodes.
-     * Timer node also provides method @p cumulative_time to retrieve true cumulative time in ms.
-     */
-
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        typedef LARGE_INTEGER TimeData;
-    #else
-        typedef chrono::time_point<chrono::high_resolution_clock> TimeData;
-    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-
-    /**
      * Creates the timer node object. Should not be called directly, but through the START_TIMER macro.
      */
     Timer(const CodePoint &cp, int parent);
 
-
-    /**
-     * @brief Returns measure of the time spent in the process since the start.
-     *
-     * TODO: We should detect precision of the clock() command and report it with timing data.
-     * It is usually about 10ms. If this is not enough one is forced to use high-resolution timers
-     * which are system dependent.
-     */
-    static TimeData get_time();
 
     /**
      * Start the timer. If it is already started, just increase number of starts (recursions) and calls.
@@ -363,15 +344,11 @@ protected:
     /**
      *   Start time when frame opens.
      */
-    TimeData start_time;
-    /**
-     *   Variable for storing time frames
-     */
-    TimeData time;
+    TimerData start_time;
     /**
      * Cumulative time spent in the frame.
      */
-    TimeData cumul_time;
+    TimerData cumul_time;
     /**
      * Total number of opening of the frame.
      */

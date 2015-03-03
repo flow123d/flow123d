@@ -38,14 +38,7 @@
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
-
-
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-    #include <windows.h>
-#else
-    //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-    #include <chrono>
-#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+#include "system/TimerData.hh"
 
 
 #include "mpi.h"
@@ -107,52 +100,20 @@ Timer::Timer(const CodePoint &cp, int parent)
   total_deallocated_(0)
 {
     for(unsigned int i=0; i< max_n_childs ;i++)   child_timers[i]=-1;
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        // set frequency
-        QueryPerformanceFrequency (&frequency);
-    #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-}
-
-
-/*
- * Standard C++ clock() function measure the time spent in calling process, not the wall time,
- * that is exactly what I want. Disadvantage is that it has small resolution about 10 ms.
- *
- * For more precise wall clock timer one can use:
- * time(&begin);
- * time(&end);
- * cout << "Time elapsed: " << difftime(end, begin) << " seconds"<< endl;
- */
-Timer::TimeData Timer::get_time() {
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        QueryPerformanceCounter(&time);
-    #else
-        time = chrono::high_resolution_clock::now ();
-    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-
-    return time;
 }
 
 
 
 double Timer::cumulative_time() const {
-    return 1000.0 * double(cumul_time) / CLOCKS_PER_SEC;
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        TimeData time;
-        time.QuadPart *= 1000;
-        time.QuadPart /= Frequency.QuadPart;
-        return time.QuadPart;
-    #else
-        return (chrono::duration_cast<chrono::nanoseconds>
-               (cumul_time - chrono::duration::zero())) / 1000.0;
-    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+    return cumul_time.toTime();
 }
 
 
 
 void Timer::start() {
     if (start_count == 0) {
-        start_time = get_time();
+        TimerData::init();
+        start_time = TimerData::getTime();
     }
     call_count++;
     start_count++;
@@ -161,13 +122,7 @@ void Timer::start() {
 
 
 void Timer::update() {
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        TimeData time = get_time();
-        cumul_time.QuadPart = cumul_time.QuadPart + time.QuadPart - start_time.QuadPart;
-    #else
-        TimeData time = get_time();
-        cumul_time = cumul_time + time - start_time;
-    #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+    cumul_time = (cumul_time + TimerData::getTime()) - start_time;
 }
 
 
