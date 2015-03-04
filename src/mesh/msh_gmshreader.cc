@@ -371,13 +371,13 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 {
     using namespace boost;
 
-    if ( !current_cache_->is_actual(search_header.time, search_header.field_name) ) {
+    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
+    if ( !current_cache_->is_actual(actual_header.time, search_header.field_name) ) {
 
 	    unsigned int id, idx, i_row;
 	    unsigned int n_read = 0;
     	unsigned int size_of_cache; // count of vectors stored in cache
 	    vector<int>::const_iterator id_iter = el_ids.begin();
-	    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
 
 	    // check that the header is valid, try to correct
 	    if (actual_header.n_entities != search_header.n_entities) {

@@ -115,7 +115,7 @@ TEST(GMSHReader, find_header) {
     GmshMeshReader reader(mesh_file);
     unsigned int n_elements=13;
     unsigned int n_comp=3;
-    std::vector<double> data(n_comp*n_elements);
+    std::shared_ptr< std::vector<double> > data;
     std::vector<int> element_id_map(n_elements);
     for(unsigned int i=0;i<n_elements;i++)
     	element_id_map[i]=i+1;
@@ -126,60 +126,60 @@ TEST(GMSHReader, find_header) {
     header.n_entities=n_elements;
 
     header.time=0.0;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(1.0, data[0]);
-    EXPECT_EQ(2.0, data[1]);
-    EXPECT_EQ(3.0, data[2]);
-    EXPECT_EQ(3.0, data[3*8+2]);
-    EXPECT_EQ(4.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(1.0, (*data)[0]);
+    EXPECT_EQ(2.0, (*data)[1]);
+    EXPECT_EQ(3.0, (*data)[2]);
+    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    EXPECT_EQ(4.0, (*data)[3*9]);
 
     header.time=0.1;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(1.0, data[0]);
-    EXPECT_EQ(2.0, data[1]);
-    EXPECT_EQ(3.0, data[2]);
-    EXPECT_EQ(3.0, data[3*8+2]);
-    EXPECT_EQ(4.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(1.0, (*data)[0]);
+    EXPECT_EQ(2.0, (*data)[1]);
+    EXPECT_EQ(3.0, (*data)[2]);
+    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    EXPECT_EQ(4.0, (*data)[3*9]);
 
     header.time=0.9;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(1.0, data[0]);
-    EXPECT_EQ(2.0, data[1]);
-    EXPECT_EQ(3.0, data[2]);
-    EXPECT_EQ(3.0, data[3*8+2]);
-    EXPECT_EQ(4.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(1.0, (*data)[0]);
+    EXPECT_EQ(2.0, (*data)[1]);
+    EXPECT_EQ(3.0, (*data)[2]);
+    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    EXPECT_EQ(4.0, (*data)[3*9]);
 
     header.time=1.0;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(2.0, data[0]);
-    EXPECT_EQ(3.0, data[1]);
-    EXPECT_EQ(4.0, data[2]);
-    EXPECT_EQ(4.0, data[3*8+2]);
-    EXPECT_EQ(5.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(2.0, (*data)[0]);
+    EXPECT_EQ(3.0, (*data)[1]);
+    EXPECT_EQ(4.0, (*data)[2]);
+    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    EXPECT_EQ(5.0, (*data)[3*9]);
 
     header.time=1.1;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(2.0, data[0]);
-    EXPECT_EQ(3.0, data[1]);
-    EXPECT_EQ(4.0, data[2]);
-    EXPECT_EQ(4.0, data[3*8+2]);
-    EXPECT_EQ(5.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(2.0, (*data)[0]);
+    EXPECT_EQ(3.0, (*data)[1]);
+    EXPECT_EQ(4.0, (*data)[2]);
+    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    EXPECT_EQ(5.0, (*data)[3*9]);
 
     header.time=2.1;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(2.0, data[0]);
-    EXPECT_EQ(3.0, data[1]);
-    EXPECT_EQ(4.0, data[2]);
-    EXPECT_EQ(4.0, data[3*8+2]);
-    EXPECT_EQ(5.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(2.0, (*data)[0]);
+    EXPECT_EQ(3.0, (*data)[1]);
+    EXPECT_EQ(4.0, (*data)[2]);
+    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    EXPECT_EQ(5.0, (*data)[3*9]);
 
     header.time=200;
-    reader.read_element_data(header, &(data[0]), element_id_map);
-    EXPECT_EQ(2.0, data[0]);
-    EXPECT_EQ(3.0, data[1]);
-    EXPECT_EQ(4.0, data[2]);
-    EXPECT_EQ(4.0, data[3*8+2]);
-    EXPECT_EQ(5.0, data[3*9]);
+    data = reader.get_element_data<double>(header, element_id_map, 0);
+    EXPECT_EQ(2.0, (*data)[0]);
+    EXPECT_EQ(3.0, (*data)[1]);
+    EXPECT_EQ(4.0, (*data)[2]);
+    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    EXPECT_EQ(5.0, (*data)[3*9]);
 
 }
 
