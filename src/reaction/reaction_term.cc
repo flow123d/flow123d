@@ -1,7 +1,8 @@
 #include "reaction/reaction_term.hh"
+
+#include "../io/output_time.impl.hh"
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
-#include "io/output.h"
 
 using namespace Input::Type;
         

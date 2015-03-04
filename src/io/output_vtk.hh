@@ -33,7 +33,7 @@
 #include "input/accessors.hh"
 #include "fields/field_algo_base.hh"
 
-#include "io/output.h"
+#include "output_time.impl.hh"
 
 /**
  * \brief This class is used for output data to VTK file format

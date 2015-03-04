@@ -27,10 +27,11 @@
  *
  */
 
-#include "io/output.h"
-#include "io/output_msh.h"
+#include "output_msh.hh"
+
 #include "system/xio.h"
 #include "mesh/mesh.h"
+#include "output_time.impl.hh"
 
 
 using namespace Input::Type;

@@ -27,6 +27,8 @@
  *
  */
 
+#include "output_vtk.hh"
+
 #include <limits.h>
 #include <mpi.h>
 #include <boost/any.hpp>
@@ -36,9 +38,8 @@
 #include <assert.h>
 
 #include "system/xio.h"
-#include "io/output.h"
-#include "io/output_vtk.h"
 #include "mesh/mesh.h"
+#include "output_time.impl.hh"
 #include "system/sys_profiler.hh"
 
 

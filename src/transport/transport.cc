@@ -40,8 +40,6 @@
 #include "mesh/partitioning.hh"
 #include "transport/transport.h"
 
-#include "io/output.h"
-
 #include "la/distribution.hh"
 
 #include "la/sparse_graph.hh"
@@ -49,6 +47,7 @@
 #include <iomanip>
 #include <string>
 
+#include "io/output_time.impl.hh"
 #include "tools/time_governor.hh"
 // TODO: move partitioning into mesh_ and remove this include
 //#include "flow/darcy_flow_mh.hh"
