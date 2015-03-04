@@ -284,6 +284,8 @@ void TransportOperatorSplitting::update_solution() {
 
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
+	    	START_TIMER("TOS-balance");
+
 			// save mass after transport step
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{
@@ -292,18 +294,18 @@ void TransportOperatorSplitting::update_solution() {
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] -= region_mass[ri];
 	    	}
+
+	    	convection->calculate_cumulative_balance();
+
+	    	END_TIMER("TOS-balance");
 	    }
 
         if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
 
-//	    if (convection->mass_balance() != NULL)
-//	    	convection->mass_balance()->calculate(convection->time().t());
-
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
-	    	convection->calculate_cumulative_balance();
 
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{
