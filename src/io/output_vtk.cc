@@ -85,6 +85,7 @@ OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
         xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
     }
 
+    this->make_subdirectory();
     this->write_head();
 }
 
@@ -105,14 +106,7 @@ OutputVTK::~OutputVTK()
 
 int OutputVTK::write_data(void)
 {
-    char base_dir_name[PATH_MAX];
-    char new_dir_name[PATH_MAX];
-    char base_file_name[PATH_MAX];
-    char base[PATH_MAX];
-    char frame_file_name[PATH_MAX];
-    ofstream *data_file = new ofstream;
-    DIR *dir;
-    int i, j, ret;
+    ASSERT(_mesh != nullptr, "Null mesh.\n");
 
     /* It's possible now to do output to the file only in the first process */
     if(this->rank != 0) {
@@ -120,54 +114,19 @@ int OutputVTK::write_data(void)
         return 0;
     }
 
-    strncpy(base_dir_name, this->_base_filename.c_str(), PATH_MAX);
+    ostringstream ss;
+    ss << main_output_basename_ << "-"
+       << std::setw(6) << std::setfill('0') << this->current_step
+       << ".vtu";
 
-    /* Remove last file name from base_name and find position of last directory
-     * delimiter: '/' */
-    for(j=strlen(base_dir_name)-1; j>0; j--) {
-        if(base_dir_name[j]=='/') {
-            base_dir_name[j]='\0';
-            break;
-        }
-    }
 
-    strncpy(base_file_name, this->_base_filename.c_str(), PATH_MAX);
+    std::string frame_file_name = ss.str();
+    DBGMSG("ff: %s\n", frame_file_name.c_str());
+    std::string frame_file_path = main_output_dir_ + "/" + main_output_basename_ + "/" + frame_file_name;
 
-    /* Find, where is the '.' character of .pvd suffix of base_name */
-    for(i=strlen(base_file_name)-1; i>=0; i--) {
-        if(base_file_name[i]=='.') {
-            break;
-        }
-    }
-
-    /* Create base of pvd file. Example ./output/transport.pvd -> transport */
-    strncpy(base, &base_file_name[j+1], i-j-1);
-    base[i-j-1]='\0';
-
-    /* New folder for output */
-    sprintf(new_dir_name, "%s/%s", base_dir_name, base);
-
-    /* Try to open directory */
-    dir = opendir(new_dir_name);
-    if(dir == NULL) {
-        /* Directory doesn't exist. Create new one. */
-        ret = mkdir(new_dir_name, 0777);
-
-        if(ret != 0) {
-            xprintf(Err, "Couldn't create directory: %s, error: %s\n", new_dir_name, strerror(errno));
-        }
-    } else {
-        closedir(dir);
-    }
-
-    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->current_step);
-
-    //std::string frame_file_name = frame_filename(this->current_step);
-    //std::string frame_file_path = subdir_path + "/" + frame_file_name;
-
-    _data_file.open(frame_file_name);
+    _data_file.open(frame_file_path);
     if(_data_file.is_open() == false) {
-        xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
+        xprintf(Err, "Could not write output to the file: %s\n", frame_file_path.c_str());
         return 0;
     } else {
         /* Set up data file */
@@ -180,13 +139,14 @@ int OutputVTK::write_data(void)
         this->_base_file.precision(std::numeric_limits<double>::digits10);
 
         /* Strip out relative path and add "base/" string */
+        std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
         this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
-                << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+                << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 
         xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
-                this->current_step, frame_file_name);
+                this->current_step, relative_frame_file.c_str());
 
         this->write_vtk_vtu();
 
@@ -206,8 +166,15 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-    string main_file=this->_base_filename;
+    string main_file="./" + this->_base_filename; // guarantee that find_last_of succeeds
+    ASSERT( main_file.substr( main_file.size() - 4) == ".pvd" , "none");
+    unsigned int last_sep_pos=main_file.find_last_of(DIR_DELIMITER);
+    main_output_dir_=main_file.substr(2, last_sep_pos-2);
+    main_output_basename_=main_file.substr(last_sep_pos+1);
+    main_output_basename_=main_output_basename_.substr(0, main_output_basename_.size() - 4); // 5 = ".pvd".size() +1
 
+    FilePath fp(main_output_dir_ + DIR_DELIMITER + main_output_basename_ + DIR_DELIMITER + "__tmp__", FilePath::output_file);
+    fp.create_output_dir();
 }
 
 

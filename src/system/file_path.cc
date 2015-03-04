@@ -18,7 +18,7 @@ map<string,string> FilePath::placeholder;
 string FilePath::output_dir="";
 string FilePath::root_dir="";
 
-FilePath::FilePath(const string file_path, const  FileType ft)
+FilePath::FilePath(string file_path, const  FileType ft)
 : file_type_(ft)
 {
     if (output_dir == "") {
@@ -32,7 +32,11 @@ FilePath::FilePath(const string file_path, const  FileType ft)
         substitute_value();
     } else if (ft == output_file) {
         if (file_path[0] == DIR_DELIMITER) {
-            THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
+            if (file_path.substr(0, output_dir.size()) == output_dir) {
+                file_path=file_path.substr(output_dir.size()+1);
+            } else {
+                THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
+            }
         }
         abs_file_path = output_dir + DIR_DELIMITER + file_path;
         substitute_value();

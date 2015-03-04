@@ -61,7 +61,7 @@ public:
      * - Forbids absolute output paths.
      * - For relative output path prepends it by the output directory given at the command line.
      */
-    FilePath(const string file_path, const  FileType ft);
+    FilePath(string file_path, const  FileType ft);
 
     /**
      * Set:

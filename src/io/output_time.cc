@@ -138,7 +138,7 @@ void OutputTime::fix_main_file_extension(std::string extension)
 {
     if(this->_base_filename.compare(this->_base_filename.size()-extension.size(), extension.size(), extension) != 0) {
         string new_name = this->_base_filename + extension;
-        xprintf(Warn, "Renaming output file: %s to %sn",
+        xprintf(Warn, "Renaming output file: %s to %s\n",
                 this->_base_filename.c_str(), new_name.c_str());
         this->_base_filename = new_name;
     }

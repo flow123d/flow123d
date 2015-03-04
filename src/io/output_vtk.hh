@@ -219,10 +219,9 @@ protected:
     */
    string subdir_name_;
 
-
    string main_output_basename_;
 
-   string main_output_dir;
+   string main_output_dir_;
 };
 
 #endif /* OUTPUT_VTK_HH_ */
