@@ -58,9 +58,10 @@ void FieldCommon::set_input_list(const Input::Array &list)
 
     // check that times forms ascending sequence
     double time,last_time=0.0;
+
     if (list.size() == 0) return;
-    for( auto it = shared_->input_list_.begin<Input::Record>();
-            it != shared_->input_list_.end(); ++it) {
+    for( auto it = list.begin<Input::Record>();
+            it != list.end(); ++it) {
     	bool found;
     	if (this->multifield_) {
     		found = it->find<Input::Record>(input_name());
@@ -77,13 +78,13 @@ void FieldCommon::set_input_list(const Input::Array &list)
     	}
         if (found) {
             // field descriptor appropriate to the field
+
             time = it->val<double>("time");
             if (time < last_time) {
-                cout << shared_->input_list_.address_string();
                 THROW( ExcNonascendingTime()
                         << EI_Time(time)
                         << EI_Field(input_name())
-                        << shared_->input_list_.ei_address());
+                        << it->ei_address());
             }
             last_time=time;
 
@@ -96,6 +97,7 @@ void FieldCommon::set_input_list(const Input::Array &list)
 
 
 void FieldCommon::mark_input_times(TimeMark::Type mark_type) {
+    if (! flags().match(FieldFlag::declare_input)) return;
     ASSERT_LESS( 0, shared_->input_list_.size());
 
     // pass through field descriptors containing key matching field name.

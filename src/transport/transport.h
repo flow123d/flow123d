@@ -45,6 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/vec_seq_double.hh"
 
 
 class SorptionImmob;
@@ -141,6 +142,29 @@ public:
      */
     void set_target_time(double target_time);
 
+    /**
+     * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
+     */
+    void set_balance_object(boost::shared_ptr<Balance> balance)
+    {
+    	balance_ = balance;
+    	subst_idx = balance_->add_quantities(substances_.names());
+    }
+
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
+    /**
+     * Calculate quantities necessary for cumulative balance (over time).
+     * This method is called at each (sub)iteration of the time loop.
+     */
+    void calculate_cumulative_balance();
+
+    /**
+     * Calculate instant quantities at output times.
+     */
+    void calculate_instant_balance();
+
 	/**
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
@@ -160,11 +184,10 @@ public:
 	inline OutputTime *output_stream() { return output_stream_; }
 
 	double **get_concentration_matrix();
+	Vec *get_concentration_vector() { return vconc; }
 	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
 	int *get_el_4_loc();
 	int *get_row_4_el();
-
-	TimeIntegrationScheme time_scheme() override { return explicit_euler; }
 
 private:
 
@@ -253,8 +276,7 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    Vec *vconc_out; // concentration vector output (gathered)
-    double **out_conc;
+    std::vector<VectorSeqDouble> out_conc;
 
 	/// Record with output specification.
 	Input::Record output_rec;
@@ -262,9 +284,12 @@ private:
 	OutputTime *output_stream_;
 
 
-            int *row_4_el;
-            int *el_4_loc;
-            Distribution *el_ds;
+	int *row_4_el;
+	int *el_4_loc;
+	Distribution *el_ds;
+
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
             friend class TransportOperatorSplitting;
 };

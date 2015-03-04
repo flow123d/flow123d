@@ -1,132 +1,31 @@
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.000000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 0             0             0             0             
-  3             .bc_outflow                0             0             0             0             
-  -3            IMPLICIT BOUNDARY          0             0             0             0             
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   0             0             0             
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0             
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.100000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 -27.4127      0             -27.4127      0.1           
-  3             .bc_outflow                6.20298e-21   6.20298e-21   0             0.1           
-  -3            IMPLICIT BOUNDARY          1.53059e-12   1.54617e-12   -1.55856e-14  0.1           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -27.4127      1.54617e-12   -27.4127      
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0.1           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.200000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 -18.5087      0             -18.5087      0.2           
-  3             .bc_outflow                8.25947e-16   8.25947e-16   0             0.2           
-  -3            IMPLICIT BOUNDARY          2.19146e-12   2.2058e-12    -1.43435e-14  0.2           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -18.5087      2.20663e-12   -18.5087      
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0.2           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.300000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 -14.9202      0             -14.9202      0.3           
-  3             .bc_outflow                1.39065e-12   1.39065e-12   0             0.3           
-  -3            IMPLICIT BOUNDARY          2.33745e-12   2.41314e-12   -7.56942e-14  0.3           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -14.9202      3.80379e-12   -14.9202      
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0.3           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.400000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 -12.8432      0             -12.8432      0.4           
-  3             .bc_outflow                2.31128e-10   2.31128e-10   0             0.4           
-  -3            IMPLICIT BOUNDARY          2.33388e-12   2.49975e-12   -1.65866e-13  0.4           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -12.8432      2.33628e-10   -12.8432      
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0.4           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
-# ---------------------------------------- WATER BALANCE ----------------------------------------
-# Time of computed water balance: 0.500000
-
-
-# Boundary water balance:
-# [boundary_id] [label]                  [total_balance][total_outflow][total_inflow][time]        
-# -----------------------------------------------------------------------------------------------
-  2             .bc_inflow                 -11.4458      0             -11.4458      0.5           
-  3             .bc_outflow                9.42667e-09   9.42667e-09   0             0.5           
-  -3            IMPLICIT BOUNDARY          2.29394e-12   2.53564e-12   -2.41699e-13  0.5           
-# -----------------------------------------------------------------------------------------------
-# total boundary balance                   -11.4458      9.4292e-09    -11.4458      
-
-
-# Source fluxes over material subdomains:
-# [region_id]   [label]                  [total_balance]                            [time]        
-# -----------------------------------------------------------------------------------------------
-  1             plane                      0                                         0.5           
-# -----------------------------------------------------------------------------------------------
-# total sources balance                    0             
-
-
+	"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"plane"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".bc_inflow"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	".bc_outflow"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"IMPLICIT BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0	"ALL"	"water_volume"	0	0	0	0	0	0	0	0	0	0
+	0.1	"plane"	"water_volume"	0	0	0	4.8135	0	0	0	0	0	0
+	0.1	".bc_inflow"	"water_volume"	-27.4127	-27.4127	0	0	0	0	0	0	0	0
+	0.1	".bc_outflow"	"water_volume"	6.19853e-21	0	6.19853e-21	0	0	0	0	0	0	0
+	0.1	"IMPLICIT BOUNDARY"	"water_volume"	7.8654e-10	-3.13321e-10	1.09986e-09	0	0	0	0	0	0	0
+	0.1	"ALL"	"water_volume"	-27.4127	-27.4127	1.09986e-09	4.8135	0	0	0	-4.8135	0	-3.33353e-09
+	0.2	"plane"	"water_volume"	0	0	0	6.9788	0	0	0	0	0	0
+	0.2	".bc_inflow"	"water_volume"	-18.5087	-18.5087	0	0	0	0	0	0	0	0
+	0.2	".bc_outflow"	"water_volume"	8.25479e-16	0	8.25479e-16	0	0	0	0	0	0	0
+	0.2	"IMPLICIT BOUNDARY"	"water_volume"	1.01851e-09	-4.33152e-10	1.45166e-09	0	0	0	0	0	0	0
+	0.2	"ALL"	"water_volume"	-18.5087	-18.5087	1.45166e-09	6.9788	0	0	0	-6.9788	0	-1.04995e-08
+	0.3	"plane"	"water_volume"	0	0	0	8.61311	0	0	0	0	0	0
+	0.3	".bc_inflow"	"water_volume"	-14.9202	-14.9202	0	0	0	0	0	0	0	0
+	0.3	".bc_outflow"	"water_volume"	1.39052e-12	0	1.39052e-12	0	0	0	0	0	0	0
+	0.3	"IMPLICIT BOUNDARY"	"water_volume"	1.16905e-09	-4.84705e-10	1.65376e-09	0	0	0	0	0	0	0
+	0.3	"ALL"	"water_volume"	-14.9202	-14.9202	1.65515e-09	8.61311	0	0	0	-8.61311	0	-2.02266e-08
+	0.4	"plane"	"water_volume"	0	0	0	9.9832	0	0	0	0	0	0
+	0.4	".bc_inflow"	"water_volume"	-12.8432	-12.8432	0	0	0	0	0	0	0	0
+	0.4	".bc_outflow"	"water_volume"	2.31123e-10	0	2.31123e-10	0	0	0	0	0	0	0
+	0.4	"IMPLICIT BOUNDARY"	"water_volume"	1.30036e-09	-5.28685e-10	1.82905e-09	0	0	0	0	0	0	0
+	0.4	"ALL"	"water_volume"	-12.8432	-12.8432	2.06017e-09	9.9832	0	0	0	-9.9832	0	-3.23458e-08
+	0.5	"plane"	"water_volume"	0	0	0	11.1867	0	0	0	0	0	0
+	0.5	".bc_inflow"	"water_volume"	-11.4458	-11.4458	0	0	0	0	0	0	0	0
+	0.5	".bc_outflow"	"water_volume"	9.42661e-09	0	9.42661e-09	0	0	0	0	0	0	0
+	0.5	"IMPLICIT BOUNDARY"	"water_volume"	1.42951e-09	-5.69198e-10	1.99871e-09	0	0	0	0	0	0	0
+	0.5	"ALL"	"water_volume"	-11.4458	-11.4458	1.14253e-08	11.1867	0	0	0	-11.1867	0	-4.68332e-08

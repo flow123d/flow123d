@@ -14,8 +14,8 @@ using namespace std;
 #include "system/exceptions.hh"
 #include "fields/field_values.hh"
 #include "input/accessors.hh"
-#include "coupling/time_marks.hh"
-#include "coupling/time_governor.hh"
+#include "tools/time_marks.hh"
+#include "tools/time_governor.hh"
 
 #include "fields/field_flag.hh"
 #include "fields/unit_si.hh"

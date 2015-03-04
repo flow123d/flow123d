@@ -441,9 +441,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 
     // possibly set from default value
     if ( regions_to_init.size() ) {
-    	xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n",
-    	        input_default().c_str(), input_name().c_str(), name().c_str());
-
+    	std::string region_list;
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
     	auto input_type = get_input_type();
@@ -455,7 +453,12 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         for(const Region &reg: regions_to_init) {
     		data_->region_history_[reg.idx()]
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
+    		region_list+=" "+reg.label();
         }
+        xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n"
+                "regions: %s\n",
+                input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
+
     }
     shared_->is_fully_initialized_;
 }

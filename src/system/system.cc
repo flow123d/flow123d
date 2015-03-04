@@ -77,10 +77,10 @@ static struct MsgFmt msg_fmt[] = {
 	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
-	{Warn,		true,  false,   SCR_STDERR,	false,	"Warning (%s, %s(), %d):\n"},
-	{UsrErr,	true,  false,   SCR_NONE,	true,	"User Error (%s, %s(), %d):\n"},
-	{Err,		true,  false,   SCR_NONE,	true,	"Error (%s, %s(), %d):\n"},
-	{PrgErr,	true,  false,   SCR_NONE,	true,	"Internal Error (%s, %s(), %d):\n"}
+	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning (%s, %s(), %d):\n"},
+	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error (%s, %s(), %d):\n"},
+	{Err,		true,  false,   SCR_NONE,	true,	"\nError (%s, %s(), %d):\n"},
+	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error (%s, %s(), %d):\n"}
 };
 
 /// @}

@@ -117,7 +117,7 @@ public:
     void clear_data(void);
 
     /**
-     *  Add time marks matching given @p tgoutput_mark_type as well as general output type
+     *  Add time marks matching given @p tg.output_mark_type as well as general output type
      *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
      *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
      */

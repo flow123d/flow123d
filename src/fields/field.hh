@@ -15,8 +15,8 @@ using namespace std;
 
 #include "system/exceptions.hh"
 #include "input/accessors.hh"
-#include "coupling/time_marks.hh"
-#include "coupling/time_governor.hh"
+#include "tools/time_marks.hh"
+#include "tools/time_governor.hh"
 
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"

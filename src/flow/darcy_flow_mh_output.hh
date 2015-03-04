@@ -43,6 +43,8 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 
+#include "fields/vec_seq_double.hh"
+
 
 class DarcyFlowMH_Steady;
 class OutputTime;
@@ -100,6 +102,8 @@ public:
     /** \brief Calculate values for output.  **/
     void output();
 
+    const OutputFields &get_output_fields() { return output_fields; }
+
 
 private:
     void make_side_flux();
@@ -155,17 +159,14 @@ private:
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     vector<double> corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    vector<double> ele_pressure;
+    VectorSeqDouble ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    vector<double> ele_piezo_head;
-    /// have to copy vector<int> provided by Mesh, in order to use FieldElementwise
-    /// TEMPORARY SOLUTION
-    vector<double> subdomains;
+    VectorSeqDouble ele_piezo_head;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    vector<double> ele_flux;
+    VectorSeqDouble ele_flux;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
