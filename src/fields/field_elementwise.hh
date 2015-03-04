@@ -54,11 +54,6 @@ public:
     /**
      * Alternative to previous constructor.
      */
-    FieldElementwise(std::vector<typename Value::element_type> &data, unsigned int n_components);
-
-    /**
-     * Alternative to previous constructor.
-     */
     FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
     static Input::Type::Record input_type;
