@@ -16,7 +16,90 @@
 
 \normalsize
 
-\subsection{Linear Reactions}
+\subsection{General kinetic reaction}
+\label{sec:kinetic}
+We consider a system of $m$ stoichiometric reactions, each symbolically written as
+\begin{equation} \label{eqn:general_kinetic_reaction}
+  \sum\limits_{i=1}^{n_r} \nu_{rik}\chi_{i} \rightarrow \sum\limits_{i=1}^{n_r} \nu_{pik} \chi_{i},
+\end{equation}
+where 
+\begin{itemize}
+  \item $\nu_{rik}$ \units{}{}{} is the stoichiometric coefficient (number of moles) 
+        for reactant component $i$ in reaction $k$,
+  \item $\nu_{pik}$ \units{}{}{} is the stoichiometric coefficient
+        for product component $i$ in reaction $k$,
+  \item $n_r$ is the number of reaction components (both reactants and products),
+  \item $\chi_{i}$ represents the chemical symbol for the component $i$.
+\end{itemize}
+For the components that are not present in reaction, the stoichiometric coefficients are set
+$\nu_{rik}=0$ or $\nu_{pik}=0$.
+
+The kinetics temperature dependence is introduce in modified Arrhenius model.
+The production rate of the component $i$ is then modeled as
+\begin{equation} \label{eqn:modified_arrhenius}
+  \frac{\d c_i}{\d t} = M_i \sum\limits_{k=1}^{m}\left( \nu_{pik}-\nu_{rik} \right) 
+  B_k \left(\frac{T}{T_{0k}}\right)^{\alpha_k} \exp\left(-\frac{\Delta E_k}{R_gT}\right)
+  \prod\limits_{j=1}^{n_r}\left(\frac{\rho_j}{M_j}\right)^{\nu_{rjk}},
+\end{equation}
+where
+\begin{itemize}
+  \item $c_i$ \units{1}{-3}{} is concentration of component $i$,
+  \item $M_i$, $M_j$ \units{1}{-3}{} is the molar mass of component $i$, or $j$ respectively,
+  \item $B_k$ \units{}{}{-1} is the collision-frequency factor (or preexponential factor) of reaction $k$,
+              it represents number of all particle collisions per second (not all necessarilly 
+              resulting in reaction),
+  \item $T$ [K] is the current absolute temperature,
+  \item $T_{0k}$ [K] is the reference absolute temperature, at which the number of particle collisions per second
+        is equal $B_k$,
+  \item $\alpha_k$ \units{}{}{} is the temperature exponent of the reaction $k$,
+  \item $\Delta E_k$ $[\textrm{Jmol}^{-1}]$ is the activation energy per mole,
+  \item $R_g = 8.3144$ $[\textrm{Jmol}^{-1}\textrm{K}^{-1}]$ is the universal gas constant,
+  \item $\rho_j$ \units{1}{-3}{} is the density of component $j$.
+\end{itemize}
+
+To get rid of the unit dependence on the exponent, we divide the equation \eqref{eqn:modified_arrhenius} 
+by liquid density $\rho=\sum_{j=1}^{n_r}\rho_i$ and put $M_i$ under the exponent. Using
+\begin{equation}
+  \prod\limits_{j=1}^{n_r}\left( \frac{\rho_j M_i}{\rho M_j}\right)^{\nu_{rjk}} 
+  = \left(\frac{M_i}{\rho}\right)^{\sum_{j=1}^{n_r}\nu_{rjk}} 
+    \prod\limits_{j=1}^{n_r}\left( \frac{\rho_j}{M_j}\right),
+\end{equation}
+we obtain
+\begin{equation}
+  \frac{\d}{\d t}\left(\frac{c_i}{\rho}\right) = \sum\limits_{k=1}^{m}\left( \nu_{pik}-\nu_{rik} \right) 
+  B_k \left(\frac{T}{T_{0k}}\right)^{\alpha_k} \exp\left(-\frac{\Delta E_k}{R_gT}\right)
+  \left(\frac{M_i}{\rho}\right)^{1-\sum_{j=1}^{n_r}\nu_{rjk}} 
+  \prod\limits_{j=1}^{n_r}\left( \frac{\rho_j M_i}{\rho M_j}\right)^{\nu_{rjk}} 
+%   
+%   = \left(\frac{M_i}{\rho}\right)^{\sum_{j=1}^{n_r}\nu_{rjk}} 
+%     \prod\limits_{j=1}^{n_r}\left( \frac{\rho_j}{M_j}\right),
+\end{equation}
+
+\subsection{Radioactive Decay}
+\label{sec:decay}
+The radioactive decay is one of the processes that can modelled in the reaction term of the transport model.
+This process is coupled with the tranport using the operator splitting method.
+It can run throughout all the phases, including the mobile and immobile phase of the liquid 
+and also the sorbed solid phase, as it can be seen in the figure \ref{fig:reaction_term}.
+
+The radioactive decay of the parent radionuclide A to a nuclid B
+%
+\[ A\xrightarrow{\lambda} B, \qquad A\xrightarrow{t_{1/2}} B \]
+%
+is mathematicaly formulated as a first order differential equation
+%
+\begin{eqnarray} \label{eqn:halflife}
+  \frac{\d c_A}{\d\tau} &=& -k c_A, \\
+  \frac{\d c_B}{\d\tau} &=& k c_A,
+\end{eqnarray}
+%
+where $\lambda$ is the radioactive decay rate. Usually, the half life of the parent radionuclide is known 
+instead of the rate. Their relation is
+%
+\begin{equation} \label{eqn:halflife}
+  k = - \frac{\ln 2}{t_{1/2}}.
+\end{equation}
+%
 \label{sec:linear_reactions}
 The software suppports linear chemical reactions in the transport operator splitting method. 
 The linear chemical reactions (we will recall them only as 'reactions' in this section) can desribe
