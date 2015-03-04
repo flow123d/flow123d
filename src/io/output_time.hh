@@ -17,6 +17,7 @@
 
 
 class OutputDataBase;
+
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
@@ -66,10 +67,11 @@ public:
     /**
      * Types of reference data
      */
+    static const unsigned int N_DISCRETE_SPACES = 3;
     enum DiscreteSpace {
         NODE_DATA   = 0,
         CORNER_DATA = 1,
-        ELEM_DATA   = 3
+        ELEM_DATA   = 2
     };
 
     /**
@@ -153,25 +155,10 @@ protected:
     void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
 
     /**
-     * \brief This method returns pointer at existing data, when corresponding
-     * output data exists or it creates new one.
-     */
-    OutputDataBase *output_data_by_field_name(const string &field_name, DiscreteSpace ref_type);
-
-    /**
-     * \brief This method set current time for registered data array/vector
-     */
-    //void set_data_time(void *data, double time);
-
-    /**
      * Change main filename to have prescribed extension.
      */
     void fix_main_file_extension(std::string extension);
 
-    /**
-     * \brief Virtual method for writing header of output file
-     */
-    //virtual int write_head(void) = 0 ;
 
     /**
      * \brief Virtual method for writing data to output file
@@ -179,34 +166,23 @@ protected:
     virtual int write_data(void) = 0;
 
     /**
-     * \brief Virtual method for writing tail of output file
-     */
-    //virtual int write_tail(void) = 0;
-
-    /**
-     * \brief Vector of pointers at OutputTime
-     */
-    //static std::vector<OutputTime*> output_streams;
-
-    /**
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
 
+    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
     /**
-     * Vector of registered output data related to nodes
+     * Map field name to its OutputData object.
      */
-    vector<OutputDataBase*> node_data;
+    typedef std::map<std::string, OutputDataPtr > OutputDataFieldMap;
 
     /**
-     * Vector of registered output data related to corner of elements
+     * Registered output data. Single map for every value of DiscreteSpace
+     * corresponding to nodes, elements and corners.
      */
-    vector<OutputDataBase*> corner_data;
+    OutputDataFieldMap  output_data_map_[N_DISCRETE_SPACES];
 
-    /**
-     * Vector of registered output data related to elements
-     */
-    vector<OutputDataBase*> elem_data;
+
 
     /**
      * Current step

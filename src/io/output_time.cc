@@ -109,29 +109,7 @@ OutputTime::~OutputTime(void)
 
 
 
-OutputDataBase *OutputTime::output_data_by_field_name
-		(const std::string &field_name, DiscreteSpace ref_type)
-{
-    std::vector<OutputDataBase*> *data_vector;
 
-    switch(ref_type) {
-    case NODE_DATA:
-        data_vector = &this->node_data;
-        break;
-    case CORNER_DATA:
-        data_vector = &this->corner_data;
-        break;
-    case ELEM_DATA:
-        data_vector = &this->elem_data;
-        break;
-    }
-
-    /* Try to find existing data */
-    for(auto &data : *data_vector)
-        if (data->field_name == field_name)     return data;
-
-    return nullptr;
-}
 
 
 void OutputTime::fix_main_file_extension(std::string extension)
@@ -259,9 +237,7 @@ void OutputTime::write_time_frame()
 
 void OutputTime::clear_data(void)
 {
-	node_data.clear();
-    corner_data.clear();
-    elem_data.clear();
+    for(auto &map : output_data_map_)  map.clear();
 }
 
 

@@ -29,9 +29,10 @@
 
 #include "output_msh.hh"
 
-#include "system/xio.h"
+//#include "system/xio.h"
 #include "mesh/mesh.h"
-#include "output_time.impl.hh"
+#include "output_data_base.hh"
+#include <boost/range/adaptor/map.hpp>
 
 
 using namespace Input::Type;
@@ -91,7 +92,7 @@ void OutputMSH::write_msh_topology(void)
 
 
 template<class element>
-void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
+void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
 
@@ -107,7 +108,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 }
 
 
-void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
+void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
 {
     Mesh *mesh = this->_mesh;
     ofstream &file = this->_base_file;
@@ -134,17 +135,11 @@ void OutputMSH::write_msh_node_data(double time, int step)
 {
     ofstream &file = this->_base_file;
     Mesh *mesh = this->_mesh;
-    OutputDataBase *output_data;
 
     double time_fixed = isfinite(time)?time:0;
 
-    if(this->node_data.empty() == false) {
-        for(vector<OutputDataBase*>::iterator data = this->node_data.begin();
-                    data != this->node_data.end();
-                    ++data)
+    for(OutputDataPtr output_data :  this->output_data_map_[NODE_DATA] | boost::adaptors::map_values)
         {
-            output_data = *data;
-
             file << "$NodeData" << endl;
 
             file << "1" << endl;     // one string tag
@@ -162,13 +157,8 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "$EndNodeData" << endl;
         }
-    } else if(this->corner_data.empty() == false) {
-        for(vector<OutputDataBase*>::iterator data = this->corner_data.begin();
-                    data != this->corner_data.end();
-                    ++data)
+    for(OutputDataPtr output_data :  this->output_data_map_[CORNER_DATA] | boost::adaptors::map_values)
         {
-            output_data = *data;
-
             file << "$ElementNodeData" << endl;
 
             file << "1" << endl;     // one string tag
@@ -186,22 +176,16 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "$EndElementNodeData" << endl;
         }
-    }
 }
 
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
-	OutputDataBase* output_data;
     ofstream &file = this->_base_file;
 
     double time_fixed = isfinite(time) ? time : 0;
 
-    if(this->elem_data.empty() == false) {
-        for(vector<OutputDataBase*>::iterator data = this->elem_data.begin();
-                    data != this->elem_data.end();
-                    ++data)
+    for(OutputDataPtr output_data :  this->output_data_map_[ELEM_DATA] | boost::adaptors::map_values)
         {
-            output_data = *data;
             file << "$ElementData" << endl;
 
             file << "1" << endl;     // one string tag
@@ -219,7 +203,6 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
             file << "$EndElementData" << endl;
         }
-    }
 }
 
 int OutputMSH::write_head(void)
