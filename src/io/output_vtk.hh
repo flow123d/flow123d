@@ -203,11 +203,7 @@ protected:
    void write_vtk_vtu(void);
 
    /**
-    * \brief This method add right suffix to .pvd VTK file
-    */
-   void fix_base_file_name(void);
-
-   /**
+    * Set appropriate file path substrings.
     * Make subdirectory for VTU time frames.
     */
    void make_subdirectory();
@@ -216,13 +212,17 @@ protected:
    /**
     * Data output stream (could be same as base_file)
     */
-   ofstream *_data_file;
+   ofstream _data_file;
 
    /**
     * Path to time frame VTU data subdirectory
     */
-   string subdir_path;
+   string subdir_name_;
 
+
+   string main_output_basename_;
+
+   string main_output_dir;
 };
 
 #endif /* OUTPUT_VTK_HH_ */

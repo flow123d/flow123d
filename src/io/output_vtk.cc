@@ -77,7 +77,14 @@ Selection OutputVTK::input_type_compression
 
 OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-    this->fix_base_file_name();
+    this->fix_main_file_extension(".pvd");
+
+    if(this->rank == 0) {
+        this->_base_file.open(this->_base_filename.c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
+        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+    }
+
     this->write_head();
 }
 
@@ -155,29 +162,26 @@ int OutputVTK::write_data(void)
 
     sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->current_step);
 
-    data_file->open(frame_file_name);
-    if(data_file->is_open() == false) {
+    //std::string frame_file_name = frame_filename(this->current_step);
+    //std::string frame_file_path = subdir_path + "/" + frame_file_name;
+
+    _data_file.open(frame_file_name);
+    if(_data_file.is_open() == false) {
         xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
         return 0;
     } else {
         /* Set up data file */
-        this->_data_file = data_file;
 
         xprintf(MsgLog, "%s: Writing output file %s ... ",
                 __func__, this->_base_filename.c_str());
 
-        /* Find first directory delimiter */
-        for(i=strlen(frame_file_name); i>=0; i--) {
-            if(frame_file_name[i]==DIR_DELIMITER) {
-                break;
-            }
-        }
 
         /* Set floating point precision to max */
         this->_base_file.precision(std::numeric_limits<double>::digits10);
 
         /* Strip out relative path and add "base/" string */
-        this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0) << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+        this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+                << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
 
         xprintf(MsgLog, "O.K.\n");
 
@@ -187,9 +191,9 @@ int OutputVTK::write_data(void)
         this->write_vtk_vtu();
 
         /* Close stream for file of current frame */
-        data_file->close();
-        delete data_file;
-        this->_data_file = NULL;
+        _data_file.close();
+        //delete data_file;
+        //this->_data_file = NULL;
 
         xprintf(MsgLog, "O.K.\n");
     }
@@ -200,20 +204,9 @@ int OutputVTK::write_data(void)
 
 
 
-void OutputVTK::fix_base_file_name(void)
-{
-    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".pvd") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n",
-                this->_base_filename.c_str(), this->_base_filename.c_str());
-        this->_base_filename += ".pvd";
-    }
-}
-
-
-
 void OutputVTK::make_subdirectory()
 {
+    string main_file=this->_base_filename;
 
 }
 
@@ -223,7 +216,7 @@ void OutputVTK::make_subdirectory()
 
 void OutputVTK::write_vtk_vtu_head(void)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     file << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
@@ -235,7 +228,7 @@ void OutputVTK::write_vtk_vtu_head(void)
 void OutputVTK::write_vtk_geometry(void)
 {
     Mesh *mesh = this->_mesh;
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     int tmp;
 
@@ -246,7 +239,7 @@ void OutputVTK::write_vtk_geometry(void)
     /* Write own coordinates */
     tmp = 0;
     /* Set floating point precision */
-    this->_data_file->precision(std::numeric_limits<double>::digits10);
+    file.precision(std::numeric_limits<double>::digits10);
     FOR_NODES(mesh, node) {
         node->aux = tmp;   /* store index in the auxiliary variable */
 
@@ -265,7 +258,7 @@ void OutputVTK::write_vtk_geometry(void)
 void OutputVTK::write_vtk_topology(void)
 {
     Mesh *mesh = this->_mesh;
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     Node* node;
     //ElementIter ele;
@@ -333,7 +326,7 @@ void OutputVTK::write_vtk_topology(void)
 void OutputVTK::write_vtk_discont_geometry(void)
 {
     Mesh *mesh = this->_mesh;
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     NodeIter node;
     unsigned int li;
@@ -343,7 +336,7 @@ void OutputVTK::write_vtk_discont_geometry(void)
     /* Write DataArray begin */
     file << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
     /* Set floating point precision */
-    this->_data_file->precision(std::numeric_limits<double>::digits10);
+    file.precision(std::numeric_limits<double>::digits10);
     FOR_ELEMENTS(mesh, ele) {
         FOR_ELEMENT_NODES(ele, li) {
             node = ele->node[li];
@@ -362,7 +355,7 @@ void OutputVTK::write_vtk_discont_geometry(void)
 void OutputVTK::write_vtk_discont_topology(void)
 {
     Mesh *mesh = this->_mesh;
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     //Node* node;
     //ElementIter ele;
@@ -432,7 +425,7 @@ void OutputVTK::write_vtk_discont_topology(void)
 
 void OutputVTK::write_vtk_data_ascii(vector<OutputDataBase*> &vec_output_data)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     for( OutputDataBase* data : vec_output_data)
     {
@@ -480,7 +473,7 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
 void OutputVTK::write_vtk_node_data(void)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     // merge node and corner data
     vector<OutputDataBase*> node_corner_data(this->node_data);
@@ -510,7 +503,7 @@ void OutputVTK::write_vtk_node_data(void)
 
 void OutputVTK::write_vtk_element_data(void)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     if(this->elem_data.empty() != true) {
         /* Write CellData begin */
@@ -529,7 +522,7 @@ void OutputVTK::write_vtk_element_data(void)
 
 void OutputVTK::write_vtk_vtu_tail(void)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
 
     file << "</UnstructuredGrid>" << endl;
     file << "</VTKFile>" << endl;
@@ -538,7 +531,7 @@ void OutputVTK::write_vtk_vtu_tail(void)
 
 void OutputVTK::write_vtk_vtu(void)
 {
-    ofstream &file = *this->_data_file;
+    ofstream &file = this->_data_file;
     Mesh *mesh = this->_mesh;
 
     /* Write header */

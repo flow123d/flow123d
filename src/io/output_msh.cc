@@ -260,26 +260,25 @@ int OutputMSH::write_data(void)
     return 1;
 }
 
-void OutputMSH::fix_base_file_name(void)
-{
-    // When GMSH file doesn't .msh suffix, then add .msh suffix to this file name
-    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".msh") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.msh\n",
-                this->_base_filename.c_str(),
-                this->_base_filename.c_str());
-        this->_base_filename += ".msh";
-    }
-}
+
 
 int OutputMSH::write_tail(void)
 {
     return 1;
 }
 
+
+
 OutputMSH::OutputMSH(const Input::Record &in_rec) : OutputTime(in_rec)
 {
-	this->fix_base_file_name();
+	this->fix_main_file_extension(".msh");
     this->header_written = false;
+
+    if(this->rank == 0) {
+        this->_base_file.open(this->_base_filename.c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", this->_base_filename.c_str() );
+        xprintf(MsgLog, "Writing flow output file: %s ... \n", this->_base_filename.c_str());
+    }
 }
 
 OutputMSH::~OutputMSH()

@@ -76,7 +76,7 @@ public:
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
      */
-    static void destroy_all(void);
+    //static void destroy_all(void);
 
     /**
      * \brief This method tries to create new instance of OutputTime according
@@ -161,12 +161,17 @@ protected:
     /**
      * \brief This method set current time for registered data array/vector
      */
-    void set_data_time(void *data, double time);
+    //void set_data_time(void *data, double time);
+
+    /**
+     * Change main filename to have prescribed extension.
+     */
+    void fix_main_file_extension(std::string extension);
 
     /**
      * \brief Virtual method for writing header of output file
      */
-    virtual int write_head(void) = 0 ;
+    //virtual int write_head(void) = 0 ;
 
     /**
      * \brief Virtual method for writing data to output file
@@ -176,12 +181,12 @@ protected:
     /**
      * \brief Virtual method for writing tail of output file
      */
-    virtual int write_tail(void) = 0;
+    //virtual int write_tail(void) = 0;
 
     /**
      * \brief Vector of pointers at OutputTime
      */
-    static std::vector<OutputTime*> output_streams;
+    //static std::vector<OutputTime*> output_streams;
 
     /**
      * Cached MPI rank of process (is tested in methods)

@@ -80,21 +80,15 @@ OutputTime::OutputTime(const Input::Record &in_rec)
 : input_record_(in_rec)
 {
 
-    string fname = in_rec.val<FilePath>("file");
-
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
-    if(this->rank == 0) {
-        this->_base_file.open(fname.c_str());
-        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", fname.c_str() );
-        xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-    }
-
+    this->_base_filename = in_rec.val<FilePath>("file");
     this->current_step = 0;
-    this->_base_filename = fname;
     this->_mesh = NULL;
     this->time = -1.0;
     this->write_time = -1.0;
+
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+
 }
 
 
@@ -139,11 +133,23 @@ OutputDataBase *OutputTime::output_data_by_field_name
     return nullptr;
 }
 
+
+void OutputTime::fix_main_file_extension(std::string extension)
+{
+    if(this->_base_filename.compare(this->_base_filename.size()-extension.size(), extension.size(), extension) != 0) {
+        string new_name = this->_base_filename + extension;
+        xprintf(Warn, "Renaming output file: %s to %sn",
+                this->_base_filename.c_str(), new_name.c_str());
+        this->_base_filename = new_name;
+    }
+}
+
+
 /* Initialize static member of the class */
-std::vector<OutputTime*> OutputTime::output_streams;
+//std::vector<OutputTime*> OutputTime::output_streams;
 
 
-
+/*
 void OutputTime::destroy_all(void)
 {
     // Delete all objects
@@ -156,7 +162,7 @@ void OutputTime::destroy_all(void)
 
     OutputTime::output_streams.clear();
 }
-
+    */
 
 
 OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
@@ -181,7 +187,6 @@ OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 
     return output_time;
 }
-
 
 
 void OutputTime::add_admissible_field_names(const Input::Array &in_array)

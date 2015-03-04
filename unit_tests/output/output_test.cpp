@@ -216,16 +216,16 @@ public:
 		delete my_mesh;
 	}
 	int write_data(void) override {return 0;};
-	int write_head(void) override {return 0;};
-	int write_tail(void) override {return 0;};
+	//int write_head(void) override {return 0;};
+	//int write_tail(void) override {return 0;};
 
 
 	// test_compute_field_data
-	template <class F>
-	void tcfd(string init, string result) {
+	template <class FieldType>
+	void test_compute_field_data(string init, string result) {
 
 		// make field init it form the init string
-		F field("test_field", false); // bulk field
+	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_n_components(3);
 		field.input_selection(&test_selection);
@@ -292,17 +292,48 @@ public:
 	Mesh * my_mesh;
 };
 
+
+
+TEST_F(TestOutputTime, fix_main_file_extension)
+{
+    this->_base_filename="test.pvd";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", this->_base_filename);
+
+    this->_base_filename="test";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", this->_base_filename);
+
+    this->_base_filename="test.msh";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.msh.pvd", this->_base_filename);
+
+    this->_base_filename="test.msh";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", this->_base_filename);
+
+    this->_base_filename="test";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", this->_base_filename);
+
+    this->_base_filename="test.pvd";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.pvd.msh", this->_base_filename);
+
+}
+
+
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
-	tcfd< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	EXPECT_THROW( { (tcfd< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
-	tcfd< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	EXPECT_THROW( { (tcfd< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
-	tcfd< Field<3,FV<0>::Integer> > ("3", "3 ");
-	tcfd< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
-	tcfd< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	tcfd< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
-	tcfd< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
+	EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
+	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
+	EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
+	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
+	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
+	test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
+	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
+	test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
 }
 
 
