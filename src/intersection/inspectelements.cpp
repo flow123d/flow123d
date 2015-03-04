@@ -267,14 +267,14 @@ bool InspectElements::intersectionExists(unsigned int elm_2D_idx, unsigned int e
 
 void InspectElements::UpdateTriangle(const ElementFullIter &element_2D){
 
-			arma::vec3 pole_bodu[3] = {element_2D->node[0]->point(),element_2D->node[1]->point(),element_2D->node[2]->point()};
+			arma::vec3 *pole_bodu[3] = {&element_2D->node[0]->point(),&element_2D->node[1]->point(),&element_2D->node[2]->point()};
 		    triangle = Simplex<2>(pole_bodu);
 
 };
 
 void InspectElements::UpdateTetrahedron(const ElementFullIter &element_3D){
 
-			arma::vec3 pole_bodu[4] = {element_3D->node[0]->point(),element_3D->node[1]->point(),element_3D->node[2]->point(),element_3D->node[3]->point()};
+			arma::vec3 *pole_bodu[4] = {&element_3D->node[0]->point(),&element_3D->node[1]->point(),&element_3D->node[2]->point(),&element_3D->node[3]->point()};
 		    tetrahedron = Simplex<3>(pole_bodu);
 
 };

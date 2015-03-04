@@ -8,44 +8,54 @@ namespace computeintersection{
 #define _PLUCKER_H
 
 /**
- *  TODO:
- *  Class Documentation.
- *  Naming notation.
+ * Plucker class represents a line by 6 dimensional vector.
+ * After inserting a three-dimensional points A and B, which represents the line,
+ * class creates plucker coordinates of the line.
+ *
+ * Class also can compute a product of two plucker coordinates.
  */
-
 class Plucker{
 private:
+
 	arma::vec6 coordinates;
 	bool computed;
 
 public:
 	Plucker();
-	Plucker(const arma::vec3 u, const arma::vec3 a);
+	Plucker(const arma::vec3 &u, const arma::vec3 &a);
+	Plucker(const Plucker &p); // copy constructor
 	inline ~Plucker(){};
 
-	inline double operator[](int index){return coordinates[index];};
+	inline double operator[](const unsigned int index) const{
+		return coordinates[index];
+	};
 
-	double operator*(Plucker b);
-	void operator*(double number);
+	// Compute product of two Plücker coordinates
+	double operator*(const Plucker &b);
+
+	inline void clear(){computed = false;};
+
+	inline bool is_computed() const{
+		return computed;
+	};
 
 
-	void setComputed(bool computed);
-	void clear();
-	bool isComputed() const;
-
-
-	void compute(const arma::vec3 u, const arma::vec3 a);
+	// Compute Plücker coordinates and set computed to true
+	void compute(const arma::vec3 &a, const arma::vec3 &b);
 
 	// get directional vector U
-	arma::vec3 getU();
+	inline arma::vec3 get_u_vector() const{
+		return coordinates(arma::span(0,2));
+	};
 
 	// get cross product vector UxA
-	arma::vec3 getUA();
+	inline arma::vec3 get_ua_vector() const{
+		return coordinates(arma::span(3,5));
+	};
 
-	arma::vec6 getPlucker() const;
-
-	/// TODO: Should be assign operator ??
-	void setPlucker(const Plucker &p);
+	inline arma::vec6 get_plucker_coords() const{
+		return coordinates;
+	};
 
 	void toString();
 };

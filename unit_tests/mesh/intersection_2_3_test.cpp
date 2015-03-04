@@ -16,7 +16,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/velka_sit.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/megasit4.msh", FilePath::input_file);
 
 	Profiler::initialize();
 

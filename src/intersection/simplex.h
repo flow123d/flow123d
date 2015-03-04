@@ -3,103 +3,109 @@
 using namespace std;
 namespace computeintersection {
 
-// Declaration of template Simplex - for compiler
+/**
+ * Simplex<N> represents N-dimensional simplex,
+ * Simplex<0> = pointer to 3D point
+ * Simplex<1> = abscissa
+ * Simplex<2> = triangle
+ * Simplex<3> = tetrahedron
+ * Sub - simplices are made in lexicographical order
+ *
+ * 				Simplex<3> with 4 points 0,1,2,3 creates:
+ * 								|
+ * 					 -----------------------------------------------------------------------------------------------------------------------------------------------
+ * 					|												|												|												|
+ * 					S<2>(0,1,2) 									S<2>(0,1,3) 									S<2>(0,2,3) 									S<2>(1,2,3)
+ * 						|												|												|												|
+ * 		 -------------------------------				 -------------------------------				 -------------------------------				 -------------------------------
+ * 		|				|				|				|				|				|				|				|				|				|				|				|
+ * 		S<1>(0,1) 		S<1>(0,2) 		S<1>(1,2) 		S<1>(0,1) 		S<1>(0,3) 		S<1>(1,3) 		S<1>(0,2) 		S<1>(0,3) 		S<1>(2,3) 		S<1>(1,2) 		S<1>(1,3) 		S<1>(2,3)
+ * 			|				|				|				|				|				|				|				|				|				|				|				|
+ * 		 -------		 -------		 -------		 -------		 -------		 -------		 -------		 -------		 -------		 -------		 -------		 -------
+ * 		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|		|
+ *		S<0>(0) S<0>(1) S<0>(0) S<0>(2) S<0>(1) S<0>(2) S<0>(0) S<0>(1) S<0>(0) S<0>(3) S<0>(1) S<0>(3) S<0>(0) S<0>(2) S<0>(0) S<0>(3) S<0>(2) S<0>(3) S<0>(1) S<0>(2) S<0>(1) S<0>(3) S<0>(2) S<0>(3)
+ *
+ * Simplex<0> has pointer to 3D point, because 3D point will be only once in memory
+ *
+ */
 template<int N> class Simplex;
 
 template<> class Simplex<0> {
 private:
-	arma::vec3 coordinates;
-	//SPoint<3> point;
+	//arma::vec3 coordinates;
+	arma::vec3* coords;
 public:
-	inline Simplex() {
-	}
-	;
-	inline Simplex(arma::vec3 co) :
-			coordinates(co) {
-	}
-	;
-	inline Simplex(arma::vec3 *field) {
-		coordinates = field[0];
-	}
-	;
-	//inline Simplex(SPoint<3> *point_array):point(point_array[0]){};
-	inline ~Simplex() {
-	}
-	;
-	inline arma::vec3 &getPointCoordinates(){
-		return coordinates;
-	}
-	;
+	inline Simplex(){
+		coords = NULL;
+	};
+	inline Simplex(arma::vec3 **field){coords = field[0];};
+	inline ~Simplex(){};
 
-	inline int dim() {
-		return 0;
+	inline void setSimplices(arma::vec3 **field){
+		coords = field[0];
+	};
+
+	inline arma::vec3 &getPointCoordinates(){
+		return *coords;//inates;
+	};
+
+	inline void setPointCoordinates(arma::vec3 &point){
+		if(coords == NULL){
+			coords = &point;
+		}else{
+			(*coords)[0] = point[0];
+			(*coords)[1] = point[1];
+			(*coords)[2] = point[2];
+		}
 	}
-	;
-	inline void toString() {
-		cout << "Simplex<0>(" << coordinates[0] << "," << coordinates[1] << ","
-				<< coordinates[2] << ")" << endl;
+
+	inline void to_string(){
+		cout << "Simplex<0>(" << (*coords)[0] << "," << (*coords)[1] << ","	<< (*coords)[2] << ")" << endl;
 	}
-	;
 };
 
 template<int N> class Simplex {
 private:
 	Simplex<N - 1> Simplices[N + 1];
 public:
-	inline Simplex() {}
+	inline Simplex(){};
 
-	//Simplex(arma::vec3 *field_of_coordinates);
-	inline Simplex(arma::vec3 *field_of_coordinates) {
+	inline Simplex(arma::vec3 **field_of_pointers_to_coordinates){
 
-		arma::vec3 help_coordinates[N];
-		//SPoint<3> help_point[N];
+		this->setSimplices(field_of_pointers_to_coordinates);
+	};
+
+	inline void setSimplices(arma::vec3 **field_of_pointers_to_coordinates){
+		arma::vec3 *temporary_pointers[N];
+
 		for (int i = 0; i < N; i++) {
-			help_coordinates[i] = field_of_coordinates[i];
+			temporary_pointers[i] = field_of_pointers_to_coordinates[i];
 		};
-		Simplices[0] = Simplex<N - 1>(help_coordinates);
+		Simplices[0].setSimplices(temporary_pointers);
+		//Simplices[0] = Simplex<N - 1>(temporary_pointers);
 		for (int i = 1; i < N + 1; i++) {
-			help_coordinates[N - i] = field_of_coordinates[N - i + 1];
-			Simplices[i] = Simplex<N - 1>(help_coordinates);
+			temporary_pointers[N - i] = field_of_pointers_to_coordinates[N - i + 1];
+			//Simplices[i] = Simplex<N - 1>(temporary_pointers);
+			Simplices[i].setSimplices(temporary_pointers);
 		}
 	}
-	;
-	inline ~Simplex() {
-	}
-	;
-	inline void setSimplex(Simplex<N - 1> Simplex_n[N + 1]) {
-		for (int i = 0; i < N + 1; i++) {
-			Simplices[i] = Simplex_n[i];
-		}
-	}
-	;
-	inline void setSimplex(Simplex<N - 1> Simplex0) {
-		Simplices[0] = Simplex0;
-	}
-	;
-	//inline Simplex<N-1,3> operator[](int a){return Simplices[a];};
+
+	inline ~Simplex(){};
+
 	inline Simplex<N - 1> &operator[](int a){
 		return Simplices[a];
-	}
-	;
-	inline Simplex<N - 1> getSimplexChild(int a){
-		return Simplices[a];
-	}
-	;
+	};
 
-	inline void toString() {
+	inline void to_string(){
 		cout << "Simplex<" << N << ">:" << endl;
 		for (int i = 0; i < N + 1; i++) {
 			for (int j = 3; N <= j; j--) {
 				cout << "  ";
 			}
-			Simplices[i].toString();
+			Simplices[i].to_string();
 		}
 	}
-	;
-	inline int dim() {
-		return N;
-	}
-	;
+
 	Simplex<1> &getAbscissa(unsigned int index);
 };
 

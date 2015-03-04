@@ -43,12 +43,12 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 void ComputeIntersection<Simplex<1>, Simplex<2>>::initPluckerToCompute(){
 	// Spočtení pluckerovych souradnic
 
-	if(!plucker_coordinates_abscissa[0]->isComputed()){
+	if(!plucker_coordinates_abscissa[0]->is_computed()){
 		plucker_coordinates_abscissa[0]->compute((*abscissa)[0].getPointCoordinates(),
 												 (*abscissa)[1].getPointCoordinates());
 	}
 	for(unsigned int i = 0; i < 3; i++){
-		if(!plucker_coordinates_triangle[i]->isComputed()){
+		if(!plucker_coordinates_triangle[i]->is_computed()){
 			plucker_coordinates_triangle[i]->compute((*triangle)[i][0].getPointCoordinates(), (*triangle)[i][1].getPointCoordinates());
 		}
 	}
@@ -132,10 +132,10 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IntersectionPoint<1,2>
 			if(*plucker_products[i] == 0){
 				arma::vec3 A = (*abscissa)[0].getPointCoordinates();
 				//arma::vec3 B("9 5 0");
-				arma::vec3 U = plucker_coordinates_abscissa[0]->getU();
+				arma::vec3 U = plucker_coordinates_abscissa[0]->get_u_vector();
 				arma::vec3 C = (*triangle)[i][i%2].getPointCoordinates();
 				//arma::vec3 D("4 4 0");
-				arma::vec3 V = plucker_coordinates_triangle[i]->getU();
+				arma::vec3 V = plucker_coordinates_triangle[i]->get_u_vector();
 				arma::vec3 K = C - A;
 				arma::vec3 Det = -arma::cross(U,V);
 				unsigned int max_index = 0;
