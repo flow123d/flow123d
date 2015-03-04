@@ -44,7 +44,7 @@ Record OutputMSH::input_type
 
 void OutputMSH::write_msh_header(void)
 {
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
 
     // Write simple header
     file << "$MeshFormat" << endl;
@@ -54,7 +54,7 @@ void OutputMSH::write_msh_header(void)
 
 void OutputMSH::write_msh_geometry(void)
 {
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
     Mesh* mesh = this->_mesh;
 
     // Write information about nodes
@@ -68,7 +68,7 @@ void OutputMSH::write_msh_geometry(void)
 
 void OutputMSH::write_msh_topology(void)
 {
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
     Mesh* mesh = this->_mesh;
     unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
@@ -93,7 +93,7 @@ void OutputMSH::write_msh_topology(void)
 template<class element>
 void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data)
 {
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
 
     /* Set precision to max */
     file.precision(std::numeric_limits<double>::digits10);
@@ -110,7 +110,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 {
     Mesh *mesh = this->_mesh;
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
 
     /* Set precision to max */
     file.precision(std::numeric_limits<double>::digits10);
@@ -132,7 +132,7 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataBase* output_data)
 
 void OutputMSH::write_msh_node_data(double time, int step)
 {
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
     Mesh *mesh = this->_mesh;
     OutputDataBase *output_data;
 
@@ -192,7 +192,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 void OutputMSH::write_msh_elem_data(double time, int step)
 {
 	OutputDataBase* output_data;
-    ofstream &file = *this->_base_file;
+    ofstream &file = this->_base_file;
 
     double time_fixed = isfinite(time) ? time : 0;
 
@@ -253,7 +253,7 @@ int OutputMSH::write_data(void)
     this->write_msh_elem_data(this->time, this->current_step);
 
     // Flush stream to be sure everything is in the file now
-    this->_base_file->flush();
+    this->_base_file.flush();
 
     xprintf(MsgLog, "O.K.\n");
 

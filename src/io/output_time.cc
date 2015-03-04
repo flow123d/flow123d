@@ -67,6 +67,54 @@ AbstractRecord OutputTime::input_format_type
     = AbstractRecord("OutputTime",
             "Format of output stream and possible parameters.");
 
+
+OutputTime::OutputTime()
+: _mesh(nullptr)
+{
+
+}
+
+
+
+OutputTime::OutputTime(const Input::Record &in_rec)
+: input_record_(in_rec)
+{
+
+    string fname = in_rec.val<FilePath>("file");
+
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+    if(this->rank == 0) {
+        this->_base_file.open(fname.c_str());
+        INPUT_CHECK( this->_base_file.is_open() , "Can not open output file: %s\n", fname.c_str() );
+        xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
+    }
+
+    this->current_step = 0;
+    this->_base_filename = fname;
+    this->_mesh = NULL;
+    this->time = -1.0;
+    this->write_time = -1.0;
+}
+
+
+
+OutputTime::~OutputTime(void)
+{
+    /* It's possible now to do output to the file only in the first process */
+     //if(rank != 0) {
+     //    /* TODO: do something, when support for Parallel VTK is added */
+     //    return;
+    // }
+
+    if (this->_base_file.is_open()) this->_base_file.close();
+
+     xprintf(MsgLog, "O.K.\n");
+}
+
+
+
+
 OutputDataBase *OutputTime::output_data_by_field_name
 		(const std::string &field_name, DiscreteSpace ref_type)
 {
@@ -95,6 +143,7 @@ OutputDataBase *OutputTime::output_data_by_field_name
 std::vector<OutputTime*> OutputTime::output_streams;
 
 
+
 void OutputTime::destroy_all(void)
 {
     // Delete all objects
@@ -107,6 +156,8 @@ void OutputTime::destroy_all(void)
 
     OutputTime::output_streams.clear();
 }
+
+
 
 OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
 {
@@ -131,6 +182,8 @@ OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
     return output_time;
 }
 
+
+
 void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 {
     vector<Input::FullEnum> field_ids;
@@ -142,46 +195,6 @@ void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 }
 
 
-OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec)
-{
-    ofstream *base_file;
-
-    string fname = in_rec.val<FilePath>("file");
-
-    base_file = new ofstream;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
-    if(this->rank == 0) {
-    	base_file->open(fname.c_str());
-    	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-    }
-
-    this->current_step = 0;
-    this->_base_file = base_file;
-    this->_base_filename = fname;
-    this->_data_file = NULL;
-    this->_mesh = NULL;
-    this->time = -1.0;
-    this->write_time = -1.0;
-}
-
-OutputTime::~OutputTime(void)
-{
-    /* It's possible now to do output to the file only in the first process */
-     //if(rank != 0) {
-     //    /* TODO: do something, when support for Parallel VTK is added */
-     //    return;
-    // }
-
-     if(this->_base_file != NULL) {
-         this->_base_file->close();
-         delete this->_base_file;
-     }
-
-     xprintf(MsgLog, "O.K.\n");
-}
 
 
 void OutputTime::mark_output_times(const TimeGovernor &tg)

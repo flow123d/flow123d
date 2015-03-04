@@ -34,6 +34,10 @@ class TimeGovernor;
 class OutputTime {
 
 public:
+    /// Default constructor. Only for testing.
+    OutputTime();
+
+
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
@@ -227,17 +231,12 @@ protected:
     /**
      * Base output stream
      */
-    ofstream *_base_file;
+    ofstream _base_file;
 
     /**
      * Name of base output file
      */
     string _base_filename;
-
-    /**
-     * Data output stream (could be same as base_file)
-     */
-    ofstream *_data_file;
 
     /**
      * Cached pointer at mesh used by this output stream

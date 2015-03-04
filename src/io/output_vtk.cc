@@ -39,7 +39,7 @@
 
 #include "system/xio.h"
 #include "mesh/mesh.h"
-#include "output_time.impl.hh"
+#include "output_data_base.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -73,6 +73,151 @@ Selection OutputVTK::input_type_compression
         "Data in VTK file format are not compressed")
     .add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
         "Data in VTK file format are compressed using zlib (not supported yet)");
+
+
+OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
+{
+    this->fix_base_file_name();
+    this->write_head();
+}
+
+
+
+OutputVTK::OutputVTK()
+{}
+
+
+
+OutputVTK::~OutputVTK()
+{
+    this->write_tail();
+}
+
+
+
+
+int OutputVTK::write_data(void)
+{
+    char base_dir_name[PATH_MAX];
+    char new_dir_name[PATH_MAX];
+    char base_file_name[PATH_MAX];
+    char base[PATH_MAX];
+    char frame_file_name[PATH_MAX];
+    ofstream *data_file = new ofstream;
+    DIR *dir;
+    int i, j, ret;
+
+    /* It's possible now to do output to the file only in the first process */
+    if(this->rank != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return 0;
+    }
+
+    strncpy(base_dir_name, this->_base_filename.c_str(), PATH_MAX);
+
+    /* Remove last file name from base_name and find position of last directory
+     * delimiter: '/' */
+    for(j=strlen(base_dir_name)-1; j>0; j--) {
+        if(base_dir_name[j]=='/') {
+            base_dir_name[j]='\0';
+            break;
+        }
+    }
+
+    strncpy(base_file_name, this->_base_filename.c_str(), PATH_MAX);
+
+    /* Find, where is the '.' character of .pvd suffix of base_name */
+    for(i=strlen(base_file_name)-1; i>=0; i--) {
+        if(base_file_name[i]=='.') {
+            break;
+        }
+    }
+
+    /* Create base of pvd file. Example ./output/transport.pvd -> transport */
+    strncpy(base, &base_file_name[j+1], i-j-1);
+    base[i-j-1]='\0';
+
+    /* New folder for output */
+    sprintf(new_dir_name, "%s/%s", base_dir_name, base);
+
+    /* Try to open directory */
+    dir = opendir(new_dir_name);
+    if(dir == NULL) {
+        /* Directory doesn't exist. Create new one. */
+        ret = mkdir(new_dir_name, 0777);
+
+        if(ret != 0) {
+            xprintf(Err, "Couldn't create directory: %s, error: %s\n", new_dir_name, strerror(errno));
+        }
+    } else {
+        closedir(dir);
+    }
+
+    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->current_step);
+
+    data_file->open(frame_file_name);
+    if(data_file->is_open() == false) {
+        xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
+        return 0;
+    } else {
+        /* Set up data file */
+        this->_data_file = data_file;
+
+        xprintf(MsgLog, "%s: Writing output file %s ... ",
+                __func__, this->_base_filename.c_str());
+
+        /* Find first directory delimiter */
+        for(i=strlen(frame_file_name); i>=0; i--) {
+            if(frame_file_name[i]==DIR_DELIMITER) {
+                break;
+            }
+        }
+
+        /* Set floating point precision to max */
+        this->_base_file.precision(std::numeric_limits<double>::digits10);
+
+        /* Strip out relative path and add "base/" string */
+        this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0) << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
+
+        xprintf(MsgLog, "O.K.\n");
+
+        xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
+                this->current_step, frame_file_name);
+
+        this->write_vtk_vtu();
+
+        /* Close stream for file of current frame */
+        data_file->close();
+        delete data_file;
+        this->_data_file = NULL;
+
+        xprintf(MsgLog, "O.K.\n");
+    }
+
+    return 1;
+}
+
+
+
+
+void OutputVTK::fix_base_file_name(void)
+{
+    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
+    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".pvd") != 0) {
+        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n",
+                this->_base_filename.c_str(), this->_base_filename.c_str());
+        this->_base_filename += ".pvd";
+    }
+}
+
+
+
+void OutputVTK::make_subdirectory()
+{
+
+}
+
+
 
 
 
@@ -445,107 +590,6 @@ void OutputVTK::write_vtk_vtu(void)
 }
 
 
-int OutputVTK::write_data(void)
-{
-    char base_dir_name[PATH_MAX];
-    char new_dir_name[PATH_MAX];
-    char base_file_name[PATH_MAX];
-    char base[PATH_MAX];
-    char frame_file_name[PATH_MAX];
-    ofstream *data_file = new ofstream;
-    DIR *dir;
-    int i, j, ret;
-
-    /* It's possible now to do output to the file only in the first process */
-    if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return 0;
-    }
-
-    strncpy(base_dir_name, this->_base_filename.c_str(), PATH_MAX);
-
-    /* Remove last file name from base_name and find position of last directory
-     * delimiter: '/' */
-    for(j=strlen(base_dir_name)-1; j>0; j--) {
-        if(base_dir_name[j]=='/') {
-            base_dir_name[j]='\0';
-            break;
-        }
-    }
-
-    strncpy(base_file_name, this->_base_filename.c_str(), PATH_MAX);
-
-    /* Find, where is the '.' character of .pvd suffix of base_name */
-    for(i=strlen(base_file_name)-1; i>=0; i--) {
-        if(base_file_name[i]=='.') {
-            break;
-        }
-    }
-
-    /* Create base of pvd file. Example ./output/transport.pvd -> transport */
-    strncpy(base, &base_file_name[j+1], i-j-1);
-    base[i-j-1]='\0';
-
-    /* New folder for output */
-    sprintf(new_dir_name, "%s/%s", base_dir_name, base);
-
-    /* Try to open directory */
-    dir = opendir(new_dir_name);
-    if(dir == NULL) {
-        /* Directory doesn't exist. Create new one. */
-        ret = mkdir(new_dir_name, 0777);
-
-        if(ret != 0) {
-            xprintf(Err, "Couldn't create directory: %s, error: %s\n", new_dir_name, strerror(errno));
-        }
-    } else {
-        closedir(dir);
-    }
-
-    sprintf(frame_file_name, "%s/%s-%06d.vtu", new_dir_name, base, this->current_step);
-
-    data_file->open(frame_file_name);
-    if(data_file->is_open() == false) {
-        xprintf(Err, "Could not write output to the file: %s\n", frame_file_name);
-        return 0;
-    } else {
-        /* Set up data file */
-        this->_data_file = data_file;
-
-        xprintf(MsgLog, "%s: Writing output file %s ... ",
-                __func__, this->_base_filename.c_str());
-
-        /* Find first directory delimiter */
-        for(i=strlen(frame_file_name); i>=0; i--) {
-            if(frame_file_name[i]==DIR_DELIMITER) {
-                break;
-            }
-        }
-
-        /* Set floating point precision to max */
-        this->_base_file->precision(std::numeric_limits<double>::digits10);
-
-        /* Strip out relative path and add "base/" string */
-        *this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0) << "\" group=\"\" part=\"0\" file=\"" << base << "/" << &frame_file_name[i+1] <<"\"/>" << endl;
-
-        xprintf(MsgLog, "O.K.\n");
-
-        xprintf(MsgLog, "%s: Writing output (frame %d) file %s ... ", __func__,
-                this->current_step, frame_file_name);
-
-        this->write_vtk_vtu();
-
-        /* Close stream for file of current frame */
-        data_file->close();
-        delete data_file;
-        this->_data_file = NULL;
-
-        xprintf(MsgLog, "O.K.\n");
-    }
-
-    return 1;
-}
-
 
 int OutputVTK::write_head(void)
 {
@@ -558,9 +602,9 @@ int OutputVTK::write_head(void)
     xprintf(MsgLog, "%s: Writing output file (head) %s ... ", __func__,
             this->_base_filename.c_str() );
 
-    *this->_base_file << "<?xml version=\"1.0\"?>" << endl;
-    *this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
-    *this->_base_file << "<Collection>" << endl;
+    this->_base_file << "<?xml version=\"1.0\"?>" << endl;
+    this->_base_file << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
+    this->_base_file << "<Collection>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
@@ -579,8 +623,8 @@ int OutputVTK::write_tail(void)
     xprintf(MsgLog, "%s: Writing output file (tail) %s ... ", __func__,
             this->_base_filename.c_str() );
 
-    *this->_base_file << "</Collection>" << endl;
-    *this->_base_file << "</VTKFile>" << endl;
+    this->_base_file << "</Collection>" << endl;
+    this->_base_file << "</VTKFile>" << endl;
 
     xprintf(MsgLog, "O.K.\n");
 
@@ -588,25 +632,6 @@ int OutputVTK::write_tail(void)
 }
 
 
-void OutputVTK::fix_base_file_name(void)
-{
-    // When VTK file doesn't .pvd suffix, then add .pvd suffix to this file name
-    if(this->_base_filename.compare(this->_base_filename.size()-4, 4, ".pvd") != 0) {
-        xprintf(Warn, "Renaming name of output file from: %s to %s.pvd\n",
-                this->_base_filename.c_str(), this->_base_filename.c_str());
-        this->_base_filename += ".pvd";
-    }
-}
-
-OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
-{
-	this->fix_base_file_name();
-	this->write_head();
-}
 
 
-OutputVTK::~OutputVTK()
-{
-    this->write_tail();
-}
 

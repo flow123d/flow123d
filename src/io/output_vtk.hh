@@ -33,7 +33,8 @@
 #include "input/accessors.hh"
 #include "fields/field_algo_base.hh"
 
-#include "output_time.impl.hh"
+#include "output_data_base.hh"
+#include "output_time.hh"
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -90,7 +91,7 @@ public:
      */
     int write_tail(void);
 
-private:
+protected:
 
     /**
      * \brief The declaration enumeration used for variant of file VTK format
@@ -205,6 +206,23 @@ private:
     * \brief This method add right suffix to .pvd VTK file
     */
    void fix_base_file_name(void);
+
+   /**
+    * Make subdirectory for VTU time frames.
+    */
+   void make_subdirectory();
+
+
+   /**
+    * Data output stream (could be same as base_file)
+    */
+   ofstream *_data_file;
+
+   /**
+    * Path to time frame VTU data subdirectory
+    */
+   string subdir_path;
+
 };
 
 #endif /* OUTPUT_VTK_HH_ */
