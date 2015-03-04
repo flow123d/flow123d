@@ -90,11 +90,8 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
 
 
 Element::~Element() {
-    delete[] this->node;
-    delete[] this->edge_idx_;
-    delete[] this->permutation_idx_;
-
-    if (this->boundary_idx_) delete[] this->boundary_idx_;
+    // Can not make deallocation here since then resize of
+    // vectors of elements deallocates what should be keeped.
 }
 
 
