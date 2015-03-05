@@ -23,6 +23,7 @@
         } 
       ],
       
+      balance = true,
 
       output = {
         output_stream = {

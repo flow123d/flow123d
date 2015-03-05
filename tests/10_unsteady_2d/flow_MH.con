@@ -33,6 +33,11 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = {
+        cumulative = true
+      },
+
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-07
@@ -44,7 +49,8 @@
 
     time = {
       end_time = 0.5, 
-      init_dt = 0.01
+      max_dt = 0.01,
+      min_dt = 0.01
     }
   }, 
 

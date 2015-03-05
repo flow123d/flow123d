@@ -28,6 +28,8 @@
         velocity_p0 = "flow_output_stream"
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -73,6 +75,10 @@
 	    isotherm_other= [0, 0, 0, 0.6, 0, 0.4]
           }
         ]
+      },
+
+      balance = {
+        cumulative = true
       }
     } 
   }, 

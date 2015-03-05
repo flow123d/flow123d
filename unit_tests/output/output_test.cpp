@@ -9,7 +9,7 @@
 
 #include "io/output_time.hh"
 #include "io/output_data_base.hh"
-#include "coupling/time_governor.hh"
+#include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
 
