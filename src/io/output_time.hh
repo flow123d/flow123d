@@ -152,7 +152,7 @@ protected:
      * into private storage for postponed output.
      */
     template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
+    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
 
     /**
      * Change main filename to have prescribed extension.
@@ -170,19 +170,17 @@ protected:
      */
     int rank;
 
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
     /**
      * Map field name to its OutputData object.
      */
-    typedef std::map<std::string, OutputDataPtr > OutputDataFieldMap;
+    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
+    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
      * corresponding to nodes, elements and corners.
      */
-    OutputDataFieldMap  output_data_map_[N_DISCRETE_SPACES];
-
-
+    OutputDataFieldVec  output_data_vec_[N_DISCRETE_SPACES];
 
     /**
      * Current step
@@ -200,9 +198,11 @@ protected:
     double write_time;
 
     /**
-     * Map of names of output fields. True means that field will be saved.
+     * Maps names of output fields required by user to their indices in
+     * output_data_vec_.
      */
-    map<string, bool> output_names;
+    typedef unsigned int DiscreteSpaceFlags;
+    std::map<std::string, DiscreteSpaceFlags> output_names;
 
     /**
      * Record for current output stream

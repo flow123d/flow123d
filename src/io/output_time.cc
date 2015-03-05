@@ -172,8 +172,12 @@ void OutputTime::add_admissible_field_names(const Input::Array &in_array)
     vector<Input::FullEnum> field_ids;
     in_array.copy_to(field_ids);
 
-    for (auto it: field_ids) {
-        this->output_names.insert(std::pair<std::string, bool>((string)it, true));
+    for (auto field_full_enum: field_ids) {
+        /* Setting flags to zero means use just discrete space
+         * provided as default in the field.
+         */
+        DiscreteSpaceFlags flags = 0;
+        this->output_names[(std::string)field_full_enum]=flags;
     }
 }
 
@@ -237,7 +241,7 @@ void OutputTime::write_time_frame()
 
 void OutputTime::clear_data(void)
 {
-    for(auto &map : output_data_map_)  map.clear();
+    for(auto &map : output_data_vec_)  map.clear();
 }
 
 

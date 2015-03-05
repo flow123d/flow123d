@@ -138,7 +138,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
     double time_fixed = isfinite(time)?time:0;
 
-    for(OutputDataPtr output_data :  this->output_data_map_[NODE_DATA] | boost::adaptors::map_values)
+    for(OutputDataPtr output_data :  this->output_data_vec_[NODE_DATA])
         {
             file << "$NodeData" << endl;
 
@@ -157,7 +157,7 @@ void OutputMSH::write_msh_node_data(double time, int step)
 
             file << "$EndNodeData" << endl;
         }
-    for(OutputDataPtr output_data :  this->output_data_map_[CORNER_DATA] | boost::adaptors::map_values)
+    for(OutputDataPtr output_data :  this->output_data_vec_[CORNER_DATA] )
         {
             file << "$ElementNodeData" << endl;
 
@@ -184,7 +184,7 @@ void OutputMSH::write_msh_elem_data(double time, int step)
 
     double time_fixed = isfinite(time) ? time : 0;
 
-    for(OutputDataPtr output_data :  this->output_data_map_[ELEM_DATA] | boost::adaptors::map_values)
+    for(OutputDataPtr output_data :  this->output_data_vec_[ELEM_DATA] )
         {
             file << "$ElementData" << endl;
 

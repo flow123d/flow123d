@@ -236,8 +236,8 @@ public:
 
 		{
 			this->compute_field_data(ELEM_DATA, field);
-			EXPECT_EQ(1, output_data_map_[ELEM_DATA].size());
-			OutputDataPtr data =  output_data_map_[ELEM_DATA].begin()->second;
+			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
+			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -248,8 +248,8 @@ public:
 
 		{
 			this->compute_field_data(NODE_DATA, field);
-			EXPECT_EQ(1, output_data_map_[NODE_DATA].size());
-			OutputDataPtr data =  output_data_map_[NODE_DATA].begin()->second;
+			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
+			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -260,8 +260,8 @@ public:
 
 		{
 			this->compute_field_data(CORNER_DATA, field);
-			EXPECT_EQ(1, output_data_map_[CORNER_DATA].size());
-			OutputDataPtr data =  output_data_map_[CORNER_DATA].begin()->second;
+			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
+			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -272,9 +272,9 @@ public:
 
 
 		this->clear_data();
-		EXPECT_EQ(0, output_data_map_[NODE_DATA].size());
-		EXPECT_EQ(0, output_data_map_[ELEM_DATA].size());
-		EXPECT_EQ(0, output_data_map_[CORNER_DATA].size());
+		EXPECT_EQ(0, output_data_vec_[NODE_DATA].size());
+		EXPECT_EQ(0, output_data_vec_[ELEM_DATA].size());
+		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size());
 
 		/*
 

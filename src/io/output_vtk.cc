@@ -391,11 +391,11 @@ void OutputVTK::write_vtk_discont_topology(void)
 
 
 
-void OutputVTK::write_vtk_data_ascii(OutputDataFieldMap &output_data_map)
+void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
 {
     ofstream &file = this->_data_file;
 
-    for(OutputDataPtr data :  output_data_map | boost::adaptors::map_values)
+    for(OutputDataPtr data :  output_data_vec)
     {
         file 	<< "<DataArray type=\"Float64\" "
         		<< "Name=\"" << data->output_field_name <<"\" ";
@@ -420,22 +420,22 @@ void OutputVTK::write_vtk_data_ascii(OutputDataFieldMap &output_data_map)
 
 
 void OutputVTK::write_vtk_data_names(ofstream &file,
-        OutputDataFieldMap &output_data_map)
+        OutputDataFieldVec &output_data_vec)
 {
-    if (output_data_map.empty()) return;
+    if (output_data_vec.empty()) return;
 
     file << "Scalars=\"";
-    for(OutputDataPtr data :  output_data_map | boost::adaptors::map_values)
+    for(OutputDataPtr data :  output_data_vec )
 		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
-    for(OutputDataPtr data :  output_data_map | boost::adaptors::map_values)
+    for(OutputDataPtr data :  output_data_vec )
 		if (data->n_elem_ == OutputDataBase::N_VECTOR) file << data->output_field_name << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
-    for(OutputDataPtr data :  output_data_map | boost::adaptors::map_values)
+    for(OutputDataPtr data :  output_data_vec )
 		if (data->n_elem_ == OutputDataBase::N_TENSOR) file << data->output_field_name << ",";
 	file << "\"";
 }
@@ -446,8 +446,9 @@ void OutputVTK::write_vtk_node_data(void)
     ofstream &file = this->_data_file;
 
     // merge node and corner data
-    OutputDataFieldMap node_corner_data(output_data_map_[NODE_DATA]);
-    node_corner_data.insert(output_data_map_[CORNER_DATA].begin(), output_data_map_[CORNER_DATA].end());
+    OutputDataFieldVec node_corner_data(output_data_vec_[NODE_DATA]);
+    node_corner_data.insert(node_corner_data.end(),
+            output_data_vec_[CORNER_DATA].begin(), output_data_vec_[CORNER_DATA].end());
 
     if( ! node_corner_data.empty() ) {
         /* Write <PointData begin */
@@ -456,10 +457,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data_ascii(output_data_map_[NODE_DATA]);
+        this->write_vtk_data_ascii(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data_ascii(output_data_map_[CORNER_DATA]);
+        this->write_vtk_data_ascii(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -471,7 +472,7 @@ void OutputVTK::write_vtk_element_data(void)
 {
     ofstream &file = this->_data_file;
 
-    auto &data_map = this->output_data_map_[ELEM_DATA];
+    auto &data_map = this->output_data_vec_[ELEM_DATA];
     if (data_map.empty()) return;
 
     /* Write CellData begin */
@@ -505,7 +506,7 @@ void OutputVTK::write_vtk_vtu(void)
     this->write_vtk_vtu_head();
 
     /* When there is no discontinuous data, then write classical vtu */
-    if ( this->output_data_map_[CORNER_DATA].empty() )
+    if ( this->output_data_vec_[CORNER_DATA].empty() )
     {
         /* Write Piece begin */
         file << "<Piece NumberOfPoints=\"" << mesh->n_nodes() << "\" NumberOfCells=\"" << mesh->n_elements() <<"\">" << endl;

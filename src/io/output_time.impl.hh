@@ -263,39 +263,32 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-    if (output_names.find(multi_field.name()) != output_names.end()) {
-        if (output_names[multi_field.name()] == true)
-            for (unsigned long index=0; index < multi_field.size(); index++)
-                this->compute_field_data(type, multi_field[index] );
+    ASSERT_LESS(type, N_DISCRETE_SPACES);
+    if (output_names.find(multi_field.name()) == output_names.end()) return;
 
-        return;
-    }
-    else
-    {
-        // We are trying to output field that is not recognized by the stream.
-        //DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
-    }
+    DiscreteSpaceFlags flags = output_names[multi_field.name()];
+    if (! flags) flags = 1 << type;
+    for (unsigned long index=0; index < multi_field.size(); index++)
+        for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
+            if (flags & (1 << ids))
+                    this->compute_field_data( DiscreteSpace(ids), multi_field[index] );
+
 }
 
 
 template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace ref_type,
+void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
-    if (output_names.find(field_ref.name()) != output_names.end()) {
-        if (output_names[field_ref.name()] == true)
-            this->compute_field_data(ref_type, field_ref);
+    ASSERT_LESS(type, N_DISCRETE_SPACES);
+    if (output_names.find(field_ref.name()) == output_names.end()) return;
 
-        return;
-    }
-    else
-    {
-        // We are trying to output field that is not recognized by the stream.
-        //DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
-    }
+    DiscreteSpaceFlags flags = output_names[field_ref.name()];
+    if (! flags) flags = 1 << type;
+    for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
+        if (flags & (1 << ids))
+            this->compute_field_data( DiscreteSpace(ids), field_ref);
 }
-
-
 
 
 
@@ -322,12 +315,14 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     size[ELEM_DATA]=this->_mesh->n_elements();
     size[CORNER_DATA]=this->_mesh->n_corners();
 
-    auto &od_map=this->output_data_map_[space_type];
-    auto it = od_map.find(field.name());
-    if ( it == od_map.end() )
-        od_map[field.name()] = std::make_shared< OutputData<Value> >(field, size[space_type]);
-
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*od_map[field.name()]);
+    auto &od_vec=this->output_data_vec_[space_type];
+    auto it=std::find_if(od_vec.begin(), od_vec.end(),
+            [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
+    if ( it == od_vec.end() ) {
+        od_vec.push_back( std::make_shared< OutputData<Value> >(field, size[space_type]) );
+        it=--od_vec.end();
+    }
+    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
 
     unsigned int i_node;
 

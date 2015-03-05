@@ -172,14 +172,14 @@ protected:
     /**
      * Write registered data to output stream using ascii format
      */
-    void write_vtk_data_ascii(OutputDataFieldMap &output_data_map);
+    void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
 
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
      * Output is done into stream @p file.
      */
     void write_vtk_data_names(ofstream &file,
-            OutputDataFieldMap &output_data_map);
+            OutputDataFieldVec &output_data_map);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
