@@ -143,9 +143,6 @@ public:
      *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
      *  and just check that they comes in in correct order.
      */
-    void read_element_data( GMSH_DataHeader &search_header,
-            double *data, std::vector<int> const & el_ids);
-
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( GMSH_DataHeader &search_header,
     		std::vector<int> const & el_ids, unsigned int component_idx);

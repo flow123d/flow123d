@@ -46,12 +46,6 @@ public:
     FieldElementwise(unsigned int n_comp=0);
 
     /**
-     * Temporary solution (as well as the whole this class before we use DofHandlers) how to
-     * build FiledElementwise on an existing array of values on elements.
-     */
-    FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
-
-    /**
      * Alternative to previous constructor.
      */
     FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);

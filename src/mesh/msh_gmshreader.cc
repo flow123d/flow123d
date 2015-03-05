@@ -302,69 +302,6 @@ void GmshMeshReader::read_data_header(Tokenizer &tok, GMSH_DataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data( GMSH_DataHeader &search_header,
-        double *data, std::vector<int> const & el_ids)
-{
-
-    using namespace boost;
-
-    unsigned int id, idx, i_row;
-    unsigned int n_read = 0;
-    vector<int>::const_iterator id_iter = el_ids.begin();
-    double * data_ptr;
-    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
-
-    // check that the header is valid, try to correct
-    if (actual_header.n_components != search_header.n_components) {
-        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of components: %d, using %d instead.\n",
-                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_components, search_header.n_components);
-        actual_header.n_components=search_header.n_components;
-    }
-    if (actual_header.n_entities != search_header.n_entities) {
-        xprintf(Warn, "In file '%s', '$ElementData' section for field '%s', time: %f.\nWrong number of entities: %d, using %d instead.\n",
-                tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, actual_header.n_entities, search_header.n_entities);
-        // actual_header.n_entities=search_header.n_entities;
-    }
-
-    // read @p data buffer as we have correct header with already passed time
-    // we assume that @p data buffer is big enough
-    tok_.set_position(actual_header.position);
-    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
-        try {
-            tok_.next_line();
-            id = lexical_cast<unsigned int>(*tok_); ++tok_;
-            while (id_iter != el_ids.end() && *id_iter < (int)id) {
-                ++id_iter; // skip initialization of some rows in data if ID is missing
-            }
-            if (id_iter == el_ids.end()) {
-                xprintf(Warn,"In file '%s', '$ElementData' section for field '%s', time: %f.\nData ID %d not found or is not in order. Skipping rest of data.\n",
-                        tok_.f_name().c_str(), search_header.field_name.c_str(), actual_header.time, id);
-                break;
-            }
-            // save data from the line if ID was found
-            if (*id_iter == (int)id) {
-                idx = id_iter - el_ids.begin();
-                data_ptr = data + idx * search_header.n_components;
-                for (unsigned int i_col =0; i_col < search_header.n_components; ++i_col, ++data_ptr) {
-                    *(data_ptr) = lexical_cast<double>(*tok_); ++tok_;
-                }
-                n_read++;
-            }
-            // skip the line if ID on the line  < actual ID in the map el_ids
-        } catch (bad_lexical_cast &) {
-            xprintf(UsrErr, "Wrong format of $ElementData line, %s.\n", tok_.position_msg().c_str());
-        }
-    // possibly skip remaining lines after break
-    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
-
-    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
-    		actual_header.time, n_read, actual_header.field_name.c_str());
-
-    search_header.actual = true; // use input header to indicate modification of @p data buffer
-}
-
-
-
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data( GMSH_DataHeader &search_header,
 		std::vector<int> const & el_ids, unsigned int component_idx)
