@@ -15,6 +15,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 
+#include "io/output_time.hh"
 #include "tools/time_governor.hh"
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
@@ -31,8 +32,6 @@
 #include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
-#include "io/output.h"
-
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 

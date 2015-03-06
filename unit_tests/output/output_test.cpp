@@ -19,8 +19,14 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 
-//#include "fields/field_constant.hh"
 #include "fields/field.hh"
+
+
+
+
+
+
+
 
 // Test #1 of input for output stream
 const string output_stream1 = R"JSON(
@@ -210,16 +216,16 @@ public:
 		delete my_mesh;
 	}
 	int write_data(void) override {return 0;};
-	int write_head(void) override {return 0;};
-	int write_tail(void) override {return 0;};
+	//int write_head(void) override {return 0;};
+	//int write_tail(void) override {return 0;};
 
 
 	// test_compute_field_data
-	template <class F>
-	void tcfd(string init, string result) {
+	template <class FieldType>
+	void test_compute_field_data(string init, string result) {
 
 		// make field init it form the init string
-		F field("test_field", false); // bulk field
+	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_n_components(3);
 		field.input_selection(&test_selection);
@@ -230,8 +236,8 @@ public:
 
 		{
 			this->compute_field_data(ELEM_DATA, field);
-			EXPECT_EQ(1, elem_data.size());
-			OutputDataBase *data =  elem_data[0];
+			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
+			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -242,8 +248,8 @@ public:
 
 		{
 			this->compute_field_data(NODE_DATA, field);
-			EXPECT_EQ(1, node_data.size());
-			OutputDataBase *data =  node_data[0];
+			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
+			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -254,8 +260,8 @@ public:
 
 		{
 			this->compute_field_data(CORNER_DATA, field);
-			EXPECT_EQ(1, corner_data.size());
-			OutputDataBase *data =  corner_data[0];
+			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
+			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
@@ -266,9 +272,9 @@ public:
 
 
 		this->clear_data();
-		EXPECT_EQ(0, elem_data.size());
-		EXPECT_EQ(0, node_data.size());
-		EXPECT_EQ(0, corner_data.size());
+		EXPECT_EQ(0, output_data_vec_[NODE_DATA].size());
+		EXPECT_EQ(0, output_data_vec_[ELEM_DATA].size());
+		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size());
 
 		/*
 
@@ -286,36 +292,54 @@ public:
 	Mesh * my_mesh;
 };
 
+
+
+TEST_F(TestOutputTime, fix_main_file_extension)
+{
+    this->_base_filename="test.pvd";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", this->_base_filename);
+
+    this->_base_filename="test";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", this->_base_filename);
+
+    this->_base_filename="test.msh";
+    this->fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.msh.pvd", this->_base_filename);
+
+    this->_base_filename="test.msh";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", this->_base_filename);
+
+    this->_base_filename="test";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", this->_base_filename);
+
+    this->_base_filename="test.pvd";
+    this->fix_main_file_extension(".msh");
+    EXPECT_EQ("test.pvd.msh", this->_base_filename);
+
+}
+
+
 #define FV FieldValue
 TEST_F(TestOutputTime, compute_field_data) {
-	tcfd< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	EXPECT_THROW( { (tcfd< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
-	tcfd< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	EXPECT_THROW( { (tcfd< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );} , OutputTime::ExcOutputVariableVector);
-	tcfd< Field<3,FV<0>::Integer> > ("3", "3 ");
-	tcfd< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
-	tcfd< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	tcfd< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
-	tcfd< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
+	EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::Vector> > ("[1, 2, 3]", "1.3 ") );} ,
+	        OutputTime::ExcOutputVariableVector);
+	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
+	EXPECT_THROW( { (test_compute_field_data< Field<3,FV<0>::EnumVector> > ("[\"white\", \"black\", \"white\"]", "1.3 ") );},
+	        OutputTime::ExcOutputVariableVector);
+	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
+	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
+	test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
+	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
+	test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
 }
 
 
 
-// full list of tested template parameters
-#define f_list(Dim) \
-	Field<Dim,FV<0>::Scalar> , \
-	Field<Dim,FV<0>::Vector>, \
-    Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::EnumVector>, \
-    Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<0>::Vector>, \
-	Field<Dim,FV<2>::VectorFixed>, \
-	Field<Dim,FV<3>::VectorFixed>, \
-	Field<Dim,FV<2>::TensorFixed>, \
-	Field<Dim,FV<3>::TensorFixed>
-
-// simple list - for first trial
-#define s_list(Dim) Field<Dim,FV<0>::Scalar>
 
 
 

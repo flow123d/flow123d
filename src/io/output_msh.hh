@@ -30,7 +30,8 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "io/output.h"
+#include "output_time.hh"
+#include "system/sys_vector.hh"
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -110,14 +111,14 @@ private:
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
     template<class element>
-    void write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataBase* output_data);
+    void write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataPtr output_data);
 
     /**
      * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
      *
      * \param[in]   *out_data   The pointer at structure storing pointer at own data.
      */
-    void write_msh_ascii_discont_data(OutputDataBase* output_data);
+    void write_msh_ascii_discont_data(OutputDataPtr output_data);
 
     /**
      * \brief This function write all data on nodes to output file. This function
