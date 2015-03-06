@@ -40,7 +40,11 @@ ENDMACRO (FLOW_DEFINE_CONSTANT variable_name numeric_value)
 # MACRO will generate definitions.tmp file in which all definition will be stored
 # after that python script will expand this file into valid header file config.h
 MACRO (GENERATE_CONFIG_H file_path)
-    # write definitions to tmp file
+    # prepare tmp output location variable 
     MESSAGE ("GENERATING CONFIG_H_TMP")
-    FILE (WRITE "${file_path}" "${DEFINITIONS_CONTENT}")
+    set(OUTPUT_TMP_PATH "${file_path}.tmp")
+    # write definitions to tmp file
+    FILE (WRITE "${OUTPUT_TMP_PATH}" "${DEFINITIONS_CONTENT}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${OUTPUT_TMP_PATH} ${file_path})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${OUTPUT_TMP_PATH})
 ENDMACRO (GENERATE_CONFIG_H file_path)
