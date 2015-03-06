@@ -6,6 +6,7 @@
  */
 
 
+#include <memory>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
@@ -98,9 +99,9 @@ Address::Address(const Address& other)
 {}
 
 
-const Address * Address::down(unsigned int idx) const {
+std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
-	Address *addr = new Address(this->data_->root_storage_, this->data_->root_type_);
+	auto addr = std::make_shared<Address>(this->data_->root_storage_, this->data_->root_type_);
 	addr->data_->parent_ = this->data_.get();
 	addr->data_->descendant_order_ = idx;
 	addr->data_->actual_storage_ = data_->actual_storage_->get_item(idx);

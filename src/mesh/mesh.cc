@@ -148,6 +148,27 @@ void Mesh::reinit(Input::Record in_record)
 }
 
 
+Mesh::~Mesh() {
+    for(Edge &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+
+    FOR_ELEMENTS( this, ele ) {
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+
+    for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
+        Element *ele=&(bc_elements[idx]);
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+}
+
+
 unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
