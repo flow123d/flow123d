@@ -71,7 +71,6 @@
 
 #include <vector>
 #include <string>
-#include <fstream>
 #include <ostream>
 
 #include "system/system.hh"

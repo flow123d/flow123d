@@ -11,13 +11,10 @@
 #include <vector>
 #include <string>
 #include <fstream>
-
-#include "mesh/mesh.h"
 #include "input/accessors.hh"
 
-
 class OutputDataBase;
-
+class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;

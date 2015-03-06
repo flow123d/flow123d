@@ -30,7 +30,7 @@
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
 
-#include "io/output_time.impl.hh"
+#include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"

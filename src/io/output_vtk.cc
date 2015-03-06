@@ -28,20 +28,9 @@
  */
 
 #include "output_vtk.hh"
-
 #include <limits.h>
-//#include <mpi.h>
-//#include <boost/any.hpp>
-//#include <dirent.h>
-//#include <sys/stat.h>
-//#include <errno.h>
-//#include <assert.h>
-
-//#include "system/xio.h"
-//#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
-#include <boost/range/adaptor/map.hpp>
 
 
 using namespace Input::Type;

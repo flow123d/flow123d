@@ -36,7 +36,7 @@
 #include <string>
 #include <vector>
 
-#include "../io/output_time.impl.hh"
+#include "io/output_time.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 

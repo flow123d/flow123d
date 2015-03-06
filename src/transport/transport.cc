@@ -47,7 +47,7 @@
 #include <iomanip>
 #include <string>
 
-#include "io/output_time.impl.hh"
+#include "io/output_time.hh"
 #include "tools/time_governor.hh"
 // TODO: move partitioning into mesh_ and remove this include
 //#include "flow/darcy_flow_mh.hh"

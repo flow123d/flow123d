@@ -30,7 +30,8 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "output_time.impl.hh"
+#include "output_time.hh"
+#include "system/sys_vector.hh"
 
 /**
  * \brief This class is used for output data to VTK file format

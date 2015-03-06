@@ -15,7 +15,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 
-#include "io/output_time.impl.hh"
+#include "io/output_time.hh"
 #include "tools/time_governor.hh"
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"

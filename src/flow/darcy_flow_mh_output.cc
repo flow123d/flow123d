@@ -42,7 +42,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
-#include "io/output_time.impl.hh"
+#include "io/output_time.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
