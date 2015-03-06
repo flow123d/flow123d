@@ -9,6 +9,7 @@
 #include <flow_gtest_mpi.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
+#include "mesh/mesh.h"
 #include "input/json_to_storage.hh"
 #include "system/sys_profiler.hh"
 
