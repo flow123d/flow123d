@@ -172,9 +172,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
                 << (*reactions_it).ei_address());
 		}
-		//temporary, until new mass balance considering reaction term is created
-		xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
-					  "Only the mass flux over boundaries is correct.\n");
 
 		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
