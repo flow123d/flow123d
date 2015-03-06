@@ -79,10 +79,9 @@ it::Record DarcyFlowMHOutput::input_type
 
 DarcyFlowMHOutput::OutputFields::OutputFields()
 {
-
-	*this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
+    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
+    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
-	*this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
