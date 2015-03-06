@@ -33,7 +33,7 @@ MACRO (FLOW_DEFINE_CONSTANT variable_name numeric_value)
     MESSAGE (STATUS "Adding: '${variable_name}' ${numeric_value}")
     LIST (APPEND DEFINITIONS_LIST "FLOW123D_${variable_name}=${numeric_value}")
     SET (DEFINITIONS_CONTENT "${DEFINITIONS_CONTENT}#define FLOW123D_${variable_name} ${numeric_value}\n")
-ENDMACRO (FLOW_DEFINE variable_name)
+ENDMACRO (FLOW_DEFINE_CONSTANT variable_name numeric_value)
 
 
 
@@ -43,4 +43,4 @@ MACRO (GENERATE_CONFIG_H file_path)
     # write definitions to tmp file
     MESSAGE ("GENERATING CONFIG_H_TMP")
     FILE (WRITE "${file_path}" "${DEFINITIONS_CONTENT}")
-ENDMACRO (GENERATE_CONFIG_H)
+ENDMACRO (GENERATE_CONFIG_H file_path)
