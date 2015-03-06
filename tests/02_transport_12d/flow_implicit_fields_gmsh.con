@@ -31,7 +31,8 @@
         { rid = 184,
           conductivity = 1
         }
-      ]
+      ],
+      balance = true
     },
 
     secondary_equation = {
@@ -83,7 +84,7 @@
         }
       ],
       dg_variant = "symmetric",
-      mass_balance = {
+      balance = {
         cumulative = true
       }
     }

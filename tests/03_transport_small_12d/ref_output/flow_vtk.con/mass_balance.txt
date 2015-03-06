@@ -1,539 +1,265 @@
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.000000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0             0             0             
-  2             .1d_left                 U235          0             0             0             
-  3             .1d_bottom               age           0             0             0             
-  3             .1d_bottom               U235          0             0             0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0             0             0             
-  9             .2d_bottom               U235          -0.000386566  0             -0.000386566  
-  10            .2d_left                 age           0             0             0             
-  10            .2d_left                 U235          -0.000750698  0             -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0             0             0             
-# Total mass flux of substance [M/T]     U235          -4.95789      0             -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0             0.559017      
-  4             1d_upper                 U235          0             0             
-  5             1d_lower                 age           0             0.559017      
-  5             1d_lower                 U235          0             0             
-  6             1d_left_branch           age           0             0.559017      
-  6             1d_left_branch           U235          0             0             
-  11            2d                       age           0             1             
-  11            2d                       U235          0             0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0             2.67705       
-# Total mass [M] and sources [M/T]       U235          0             0             
-
-
-# Cumulative mass balance on time interval [0,0]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0             0             0             0             0             0             
-  U235          0             0             0             0             0             0             0             
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.100000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0548307     0.0548307     0             
-  2             .1d_left                 U235          2.21531       2.21531       0             
-  3             .1d_bottom               age           0.0552479     0.0552479     0             
-  3             .1d_bottom               U235          2.20983       2.20983       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0188583     0.0188583     0             
-  9             .2d_bottom               U235          0.10155       0.101937      -0.000386566  
-  10            .2d_left                 age           0.0168973     0.0168973     0             
-  10            .2d_left                 U235          0.107268      0.108019      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.145834      0.145834      0             
-# Total mass flux of substance [M/T]     U235          -0.322795     4.6351        -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000714457   0.559017      
-  4             1d_upper                 U235          0.139604      0             
-  5             1d_lower                 age           0.00260759    0.559017      
-  5             1d_lower                 U235          0.138136      0             
-  6             1d_left_branch           age           0.00258406    0.559017      
-  6             1d_left_branch           U235          0.13852       0             
-  11            2d                       age           0.0159032     1             
-  11            2d                       U235          0.16686       0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0218093     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.58312       0             
-
-
-# Cumulative mass balance on time interval [0,0.1]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0.267705      0.0112644     0.256441      0.0218093     0.234631      0.914954      
-  U235          0             0             -0.149302     0.149302      0.58312       -0.433819     0.743961      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.200000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0559773     0.0559773     0             
-  2             .1d_left                 U235          2.23831       2.23831       0             
-  3             .1d_bottom               age           0.0570239     0.0570239     0             
-  3             .1d_bottom               U235          2.23631       2.23631       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0275929     0.0275929     0             
-  9             .2d_bottom               U235          0.202114      0.2025        -0.000386566  
-  10            .2d_left                 age           0.0234065     0.0234065     0             
-  10            .2d_left                 U235          0.198934      0.199685      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.164001      0.164001      0             
-# Total mass flux of substance [M/T]     U235          -0.0810831    4.87681       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717786   0.559017      
-  4             1d_upper                 U235          0.139723      0             
-  5             1d_lower                 age           0.00268141    0.559017      
-  5             1d_lower                 U235          0.139447      0             
-  6             1d_left_branch           age           0.00262849    0.559017      
-  6             1d_left_branch           U235          0.139569      0             
-  11            2d                       age           0.0197464     1             
-  11            2d                       U235          0.236963      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0257741     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.655702      0             
-
-
-# Cumulative mass balance on time interval [0,0.2]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0.53541       0.0269805     0.50843       0.0257741     0.482656      0.949306      
-  U235          0             0             -0.16832      0.16832       0.655702      -0.487382     0.743298      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.300000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560465     0.0560465     0             
-  2             .1d_left                 U235          2.24089       2.24089       0             
-  3             .1d_bottom               age           0.0571964     0.0571964     0             
-  3             .1d_bottom               U235          2.24204       2.24204       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0291449     0.0291449     0             
-  9             .2d_bottom               U235          0.238682      0.239068      -0.000386566  
-  10            .2d_left                 age           0.0243869     0.0243869     0             
-  10            .2d_left                 U235          0.221544      0.222295      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.166775      0.166775      0             
-# Total mass flux of substance [M/T]     U235          -0.013601     4.94429       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717829   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268687    0.559017      
-  5             1d_lower                 U235          0.139643      0             
-  6             1d_left_branch           age           0.00263048    0.559017      
-  6             1d_left_branch           U235          0.139648      0             
-  11            2d                       age           0.0201932     1             
-  11            2d                       U235          0.248027      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262284     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.667044      0             
-
-
-# Cumulative mass balance on time interval [0,0.3]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             0.803115      0.0435726     0.759543      0.0262284     0.733314      0.965468      
-  U235          0             0             -0.171845     0.171845      0.667044      -0.495198     0.742378      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.400000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560479     0.0560479     0             
-  2             .1d_left                 U235          2.24096       2.24096       0             
-  3             .1d_bottom               age           0.0572003     0.0572003     0             
-  3             .1d_bottom               U235          2.24223       2.24223       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292809     0.0292809     0             
-  9             .2d_bottom               U235          0.242183      0.242569      -0.000386566  
-  10            .2d_left                 age           0.0244983     0.0244983     0             
-  10            .2d_left                 U235          0.224049      0.2248        -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167027      0.167027      0             
-# Total mass flux of substance [M/T]     U235          -0.00733266   4.95056       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.00071783    0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268697    0.559017      
-  5             1d_lower                 U235          0.139648      0             
-  6             1d_left_branch           age           0.00263052    0.559017      
-  6             1d_left_branch           U235          0.13965       0             
-  11            2d                       age           0.0202364     1             
-  11            2d                       U235          0.249075      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262717     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668099      0             
-
-
-# Cumulative mass balance on time interval [0,0.4]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             1.07082       0.0602674     1.01055       0.0262717     0.984281      0.974003      
-  U235          0             0             -0.172773     0.172773      0.668099      -0.495327     0.741397      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.500000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560481     0.0560481     0             
-  2             .1d_left                 U235          2.24097       2.24097       0             
-  3             .1d_bottom               age           0.0572005     0.0572005     0             
-  3             .1d_bottom               U235          2.24224       2.24224       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292946     0.0292946     0             
-  9             .2d_bottom               U235          0.242523      0.242909      -0.000386566  
-  10            .2d_left                 age           0.0245112     0.0245112     0             
-  10            .2d_left                 U235          0.224364      0.225114      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167054      0.167054      0             
-# Total mass flux of substance [M/T]     U235          -0.00665949   4.95123       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717831   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268698    0.559017      
-  5             1d_lower                 U235          0.139648      0             
-  6             1d_left_branch           age           0.00263052    0.559017      
-  6             1d_left_branch           U235          0.139651      0             
-  11            2d                       age           0.0202409     1             
-  11            2d                       U235          0.249189      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262763     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668214      0             
-
-
-# Cumulative mass balance on time interval [0,0.5]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             1.33853       0.076972      1.26155       0.0262763     1.23528       0.979172      
-  U235          0             0             -0.173461     0.173461      0.668214      -0.494754     0.740412      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.600000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560482     0.0560482     0             
-  2             .1d_left                 U235          2.24098       2.24098       0             
-  3             .1d_bottom               age           0.0572007     0.0572007     0             
-  3             .1d_bottom               U235          2.24225       2.24225       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292962     0.0292962     0             
-  9             .2d_bottom               U235          0.242561      0.242947      -0.000386566  
-  10            .2d_left                 age           0.0245127     0.0245127     0             
-  10            .2d_left                 U235          0.2244        0.225151      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167058      0.167058      0             
-# Total mass flux of substance [M/T]     U235          -0.00656884   4.95132       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717831   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268699    0.559017      
-  5             1d_lower                 U235          0.139649      0             
-  6             1d_left_branch           age           0.00263053    0.559017      
-  6             1d_left_branch           U235          0.139651      0             
-  11            2d                       age           0.0202415     1             
-  11            2d                       U235          0.249202      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262768     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668229      0             
-
-
-# Cumulative mass balance on time interval [0,0.6]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             1.60623       0.0936776     1.51255       0.0262768     1.48628       0.982627      
-  U235          0             0             -0.174121     0.174121      0.668229      -0.494108     0.739429      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.700000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560484     0.0560484     0             
-  2             .1d_left                 U235          2.24099       2.24099       0             
-  3             .1d_bottom               age           0.0572009     0.0572009     0             
-  3             .1d_bottom               U235          2.24226       2.24226       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292967     0.0292967     0             
-  9             .2d_bottom               U235          0.242568      0.242954      -0.000386566  
-  10            .2d_left                 age           0.0245131     0.0245131     0             
-  10            .2d_left                 U235          0.224406      0.225157      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167059      0.167059      0             
-# Total mass flux of substance [M/T]     U235          -0.00653881   4.95135       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717832   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268699    0.559017      
-  5             1d_lower                 U235          0.139649      0             
-  6             1d_left_branch           age           0.00263054    0.559017      
-  6             1d_left_branch           U235          0.139651      0             
-  11            2d                       age           0.0202417     1             
-  11            2d                       U235          0.249206      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262771     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668233      0             
-
-
-# Cumulative mass balance on time interval [0,0.7]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             1.87394       0.110383      1.76355       0.0262771     1.73728       0.9851        
-  U235          0             0             -0.174776     0.174776      0.668233      -0.493457     0.738451      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.800000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560485     0.0560485     0             
-  2             .1d_left                 U235          2.241         2.241         0             
-  3             .1d_bottom               age           0.0572011     0.0572011     0             
-  3             .1d_bottom               U235          2.24226       2.24226       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292971     0.0292971     0             
-  9             .2d_bottom               U235          0.242572      0.242959      -0.000386566  
-  10            .2d_left                 age           0.0245134     0.0245134     0             
-  10            .2d_left                 U235          0.22441       0.225161      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.16706       0.16706       0             
-# Total mass flux of substance [M/T]     U235          -0.00651395   4.95138       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717833   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.002687      0.559017      
-  5             1d_lower                 U235          0.13965       0             
-  6             1d_left_branch           age           0.00263054    0.559017      
-  6             1d_left_branch           U235          0.139652      0             
-  11            2d                       age           0.0202419     1             
-  11            2d                       U235          0.249209      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262773     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668237      0             
-
-
-# Cumulative mass balance on time interval [0,0.8]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             2.14164       0.127089      2.01455       0.0262773     1.98827       0.986956      
-  U235          0             0             -0.175429     0.175429      0.668237      -0.492809     0.737476      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 0.900000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560487     0.0560487     0             
-  2             .1d_left                 U235          2.241         2.241         0             
-  3             .1d_bottom               age           0.0572013     0.0572013     0             
-  3             .1d_bottom               U235          2.24227       2.24227       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292974     0.0292974     0             
-  9             .2d_bottom               U235          0.242576      0.242963      -0.000386566  
-  10            .2d_left                 age           0.0245137     0.0245137     0             
-  10            .2d_left                 U235          0.224414      0.225164      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167061      0.167061      0             
-# Total mass flux of substance [M/T]     U235          -0.00648945   4.9514        -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717833   0.559017      
-  4             1d_upper                 U235          0.139726      0             
-  5             1d_lower                 age           0.00268701    0.559017      
-  5             1d_lower                 U235          0.13965       0             
-  6             1d_left_branch           age           0.00263055    0.559017      
-  6             1d_left_branch           U235          0.139652      0             
-  11            2d                       age           0.0202421     1             
-  11            2d                       U235          0.249212      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262775     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668241      0             
-
-
-# Cumulative mass balance on time interval [0,0.9]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             2.40935       0.143795      2.26555       0.0262775     2.23927       0.988401      
-  U235          0             0             -0.176079     0.176079      0.668241      -0.492162     0.736504      
-
-
-# ----------------------------------------------- MASS BALANCE -----------------------------------------------
-# Time: 1.000000
-
-
-# Mass flux through boundary [M/T]:
-# [boundary_id] [label]                  [substance]   [total flux]  [outward flux][inward flux] 
-# -------------------------------------------------------------------------------------------------------------
-  1             .1d_top                  age           0             0             0             
-  1             .1d_top                  U235          -4.45308      0             -4.45308      
-  2             .1d_left                 age           0.0560488     0.0560488     0             
-  2             .1d_left                 U235          2.24101       2.24101       0             
-  3             .1d_bottom               age           0.0572014     0.0572014     0             
-  3             .1d_bottom               U235          2.24228       2.24228       0             
-  7             .2d_top                  age           0             0             0             
-  7             .2d_top                  U235          -0.278411     0             -0.278411     
-  8             .2d_right                age           0             0             0             
-  8             .2d_right                U235          -0.225265     0             -0.225265     
-  9             .2d_bottom               age           0.0292978     0.0292978     0             
-  9             .2d_bottom               U235          0.242581      0.242967      -0.000386566  
-  10            .2d_left                 age           0.024514      0.024514      0             
-  10            .2d_left                 U235          0.224417      0.225168      -0.000750698  
-# -------------------------------------------------------------------------------------------------------------
-# Total mass flux of substance [M/T]     age           0.167062      0.167062      0             
-# Total mass flux of substance [M/T]     U235          -0.00646497   4.95143       -4.95789      
-
-
-# Mass [M] and sources [M/T] on regions:
-# [region_id]   [label]                  [substance]   [total_mass]  [total_source]
-# -------------------------------------------------------------------------------------------------------------
-  4             1d_upper                 age           0.000717834   0.559017      
-  4             1d_upper                 U235          0.139727      0             
-  5             1d_lower                 age           0.00268702    0.559017      
-  5             1d_lower                 U235          0.13965       0             
-  6             1d_left_branch           age           0.00263055    0.559017      
-  6             1d_left_branch           U235          0.139653      0             
-  11            2d                       age           0.0202423     1             
-  11            2d                       U235          0.249215      0             
-# -------------------------------------------------------------------------------------------------------------
-# Total mass [M] and sources [M/T]       age           0.0262777     2.67705       
-# Total mass [M] and sources [M/T]       U235          0.668245      0             
-
-
-# Cumulative mass balance on time interval [0,1]
-# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]
-# [substance]   [A=init. mass][B=source]    [C=flux]      [A+B-C]       [D=curr. mass][A+B-C-D=err.][rel. error]  
-  age           0             2.67705       0.160502      2.51655       0.0262777     2.49027       0.989558      
-  U235          0             0             -0.176726     0.176726      0.668245      -0.491518     0.735536      
-
-
+	"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
+	0	"1d_upper"	"age"	0	0	0	0	0.559017	0	0.559017	0	0	0
+	0	"1d_upper"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	"1d_lower"	"age"	0	0	0	0	0.559017	0	0.559017	0	0	0
+	0	"1d_lower"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	"1d_left_branch"	"age"	0	0	0	0	0.559017	0	0.559017	0	0	0
+	0	"1d_left_branch"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	"2d"	"age"	0	0	0	0	1	0	1	0	0	0
+	0	"2d"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	0	".1d_left"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".1d_left"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	".1d_bottom"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".1d_bottom"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	0	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	0	".2d_bottom"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_bottom"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_left"	"age"	0	0	0	0	0	0	0	0	0	0
+	0	".2d_left"	"U235"	0	0	0	0	0	0	0	0	0	0
+	0	"ALL"	"age"	0	0	0	0	2.67705	0	2.67705	0	0	0
+	0	"ALL"	"U235"	-1.9959e-06	-1.9959e-06	0	0	0	0	0	0	0	0
+	100000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	100000	"1d_upper"	"U235"	0	0	0	0.0603728	0	0	0	0	0	0
+	100000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	100000	"1d_lower"	"U235"	0	0	0	0.000179349	0	0	0	0	0	0
+	100000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	100000	"1d_left_branch"	"U235"	0	0	0	0.000179967	0	0	0	0	0	0
+	100000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	100000	"2d"	"U235"	0	0	0	0.00820655	0	0	0	0	0	0
+	100000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	100000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	100000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	100000	".1d_left"	"U235"	0	0	0	0	0	0	0	0	0	0
+	100000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	100000	".1d_bottom"	"U235"	0	0	0	0	0	0	0	0	0	0
+	100000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	100000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	100000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	100000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	100000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	100000	".2d_bottom"	"U235"	3.15297e-10	0	3.15297e-10	0	0	0	0	0	0	0
+	100000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	100000	".2d_left"	"U235"	2.9938e-10	0	2.9938e-10	0	0	0	0	0	0	0
+	100000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	0.198309	200780	-200779
+	100000	"ALL"	"U235"	-1.99529e-06	-1.9959e-06	6.14677e-10	0.0689386	0	0	0	-0.199569	-0.13063	-2.84495e-14
+	200000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	200000	"1d_upper"	"U235"	0	0	0	0.107317	0	0	0	0	0	0
+	200000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	200000	"1d_lower"	"U235"	0	0	0	0.0070258	0	0	0	0	0	0
+	200000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	200000	"1d_left_branch"	"U235"	0	0	0	0.00705007	0	0	0	0	0	0
+	200000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	200000	"2d"	"U235"	0	0	0	0.0164254	0	0	0	0	0	0
+	200000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	200000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	200000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	200000	".1d_left"	"U235"	2.84677e-10	0	2.84677e-10	0	0	0	0	0	0	0
+	200000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	200000	".1d_bottom"	"U235"	2.84265e-10	0	2.84265e-10	0	0	0	0	0	0	0
+	200000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	200000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	200000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	200000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	200000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	200000	".2d_bottom"	"U235"	1.42176e-09	0	1.42176e-09	0	0	0	0	0	0	0
+	200000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	200000	".2d_left"	"U235"	1.36459e-09	0	1.36459e-09	0	0	0	0	0	0	0
+	200000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	0.397899	401559	-401558
+	200000	"ALL"	"U235"	-1.99255e-06	-1.9959e-06	3.35528e-09	0.137818	0	0	0	-0.398967	-0.261149	-5.12923e-14
+	300000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	300000	"1d_upper"	"U235"	0	0	0	0.128961	0	0	0	0	0	0
+	300000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	300000	"1d_lower"	"U235"	0	0	0	0.0262853	0	0	0	0	0	0
+	300000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	300000	"1d_left_branch"	"U235"	0	0	0	0.0263766	0	0	0	0	0	0
+	300000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	300000	"2d"	"U235"	0	0	0	0.0246525	0	0	0	0	0	0
+	300000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	300000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	300000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	300000	".1d_left"	"U235"	1.17692e-08	0	1.17692e-08	0	0	0	0	0	0	0
+	300000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	300000	".1d_bottom"	"U235"	1.17487e-08	0	1.17487e-08	0	0	0	0	0	0	0
+	300000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	300000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	300000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	300000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	300000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	300000	".2d_bottom"	"U235"	2.92457e-09	0	2.92457e-09	0	0	0	0	0	0	0
+	300000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	300000	".2d_left"	"U235"	2.83304e-09	0	2.83304e-09	0	0	0	0	0	0	0
+	300000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	0.59749	602338	-602336
+	300000	"ALL"	"U235"	-1.96663e-06	-1.9959e-06	2.92755e-08	0.206275	0	0	0	-0.597142	-0.390867	-2.27596e-14
+	400000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	400000	"1d_upper"	"U235"	0	0	0	0.13593	0	0	0	0	0	0
+	400000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	400000	"1d_lower"	"U235"	0	0	0	0.0515445	0	0	0	0	0	0
+	400000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	400000	"1d_left_branch"	"U235"	0	0	0	0.0517258	0	0	0	0	0	0
+	400000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	400000	"2d"	"U235"	0	0	0	0.0329434	0	0	0	0	0	0
+	400000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	400000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	400000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	400000	".1d_left"	"U235"	7.04164e-08	0	7.04164e-08	0	0	0	0	0	0	0
+	400000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	400000	".1d_bottom"	"U235"	7.02733e-08	0	7.02733e-08	0	0	0	0	0	0	0
+	400000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	400000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	400000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	400000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	400000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	400000	".2d_bottom"	"U235"	4.59284e-09	0	4.59284e-09	0	0	0	0	0	0	0
+	400000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	400000	".2d_left"	"U235"	4.4841e-09	0	4.4841e-09	0	0	0	0	0	0	0
+	400000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	0.79708	803117	-803115
+	400000	"ALL"	"U235"	-1.84613e-06	-1.9959e-06	1.49767e-07	0.272144	0	0	0	-0.787825	-0.515681	7.34413e-14
+	500000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	500000	"1d_upper"	"U235"	0	0	0	0.13777	0	0	0	0	0	0
+	500000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	500000	"1d_lower"	"U235"	0	0	0	0.0759232	0	0	0	0	0	0
+	500000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	500000	"1d_left_branch"	"U235"	0	0	0	0.0761959	0	0	0	0	0	0
+	500000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	500000	"2d"	"U235"	0	0	0	0.0413145	0	0	0	0	0	0
+	500000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	500000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	500000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	500000	".1d_left"	"U235"	1.93801e-07	0	1.93801e-07	0	0	0	0	0	0	0
+	500000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	500000	".1d_bottom"	"U235"	1.93352e-07	0	1.93352e-07	0	0	0	0	0	0	0
+	500000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	500000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	500000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	500000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	500000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	500000	".2d_bottom"	"U235"	6.31582e-09	0	6.31582e-09	0	0	0	0	0	0	0
+	500000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	500000	".2d_left"	"U235"	6.20716e-09	0	6.20716e-09	0	0	0	0	0	0	0
+	500000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	0.99667	1.0039e+06	-1.00389e+06
+	500000	"ALL"	"U235"	-1.59622e-06	-1.9959e-06	3.99677e-07	0.331204	0	0	0	-0.958795	-0.627591	1.99396e-13
+	600000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	600000	"1d_upper"	"U235"	0	0	0	0.138229	0	0	0	0	0	0
+	600000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	600000	"1d_lower"	"U235"	0	0	0	0.0957774	0	0	0	0	0	0
+	600000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	600000	"1d_left_branch"	"U235"	0	0	0	0.09613	0	0	0	0	0	0
+	600000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	600000	"2d"	"U235"	0	0	0	0.04974	0	0	0	0	0	0
+	600000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	600000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	600000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	600000	".1d_left"	"U235"	3.55007e-07	0	3.55007e-07	0	0	0	0	0	0	0
+	600000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	600000	".1d_bottom"	"U235"	3.54089e-07	0	3.54089e-07	0	0	0	0	0	0	0
+	600000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	600000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	600000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	600000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	600000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	600000	".2d_bottom"	"U235"	8.0521e-09	0	8.0521e-09	0	0	0	0	0	0	0
+	600000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	600000	".2d_left"	"U235"	7.95778e-09	0	7.95778e-09	0	0	0	0	0	0	0
+	600000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	1.19626	1.20467e+06	-1.20467e+06
+	600000	"ALL"	"U235"	-1.27079e-06	-1.9959e-06	7.25106e-07	0.379876	0	0	0	-1.0997	-0.719819	3.09086e-13
+	700000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	700000	"1d_upper"	"U235"	0	0	0	0.138371	0	0	0	0	0	0
+	700000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	700000	"1d_lower"	"U235"	0	0	0	0.110142	0	0	0	0	0	0
+	700000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	700000	"1d_left_branch"	"U235"	0	0	0	0.110558	0	0	0	0	0	0
+	700000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	700000	"2d"	"U235"	0	0	0	0.0581719	0	0	0	0	0	0
+	700000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	700000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	700000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	700000	".1d_left"	"U235"	5.12699e-07	0	5.12699e-07	0	0	0	0	0	0	0
+	700000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	700000	".1d_bottom"	"U235"	5.1125e-07	0	5.1125e-07	0	0	0	0	0	0	0
+	700000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	700000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	700000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	700000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	700000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	700000	".2d_bottom"	"U235"	9.79455e-09	0	9.79455e-09	0	0	0	0	0	0	0
+	700000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	700000	".2d_left"	"U235"	9.7253e-09	0	9.7253e-09	0	0	0	0	0	0	0
+	700000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	1.39585	1.40545e+06	-1.40545e+06
+	700000	"ALL"	"U235"	-9.52433e-07	-1.9959e-06	1.04347e-06	0.417242	0	0	0	-1.20787	-0.790624	3.79086e-13
+	800000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	800000	"1d_upper"	"U235"	0	0	0	0.13845	0	0	0	0	0	0
+	800000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	800000	"1d_lower"	"U235"	0	0	0	0.119634	0	0	0	0	0	0
+	800000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	800000	"1d_left_branch"	"U235"	0	0	0	0.120096	0	0	0	0	0	0
+	800000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	800000	"2d"	"U235"	0	0	0	0.0665583	0	0	0	0	0	0
+	800000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	800000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	800000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	800000	".1d_left"	"U235"	6.40178e-07	0	6.40178e-07	0	0	0	0	0	0	0
+	800000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	800000	".1d_bottom"	"U235"	6.38239e-07	0	6.38239e-07	0	0	0	0	0	0	0
+	800000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	800000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	800000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	800000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	800000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	800000	".2d_bottom"	"U235"	1.15477e-08	0	1.15477e-08	0	0	0	0	0	0	0
+	800000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	800000	".2d_left"	"U235"	1.15108e-08	0	1.15108e-08	0	0	0	0	0	0	0
+	800000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	1.59544	1.60623e+06	-1.60623e+06
+	800000	"ALL"	"U235"	-6.94426e-07	-1.9959e-06	1.30147e-06	0.444738	0	0	0	-1.28746	-0.842725	4.0723e-13
+	900000	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	900000	"1d_upper"	"U235"	0	0	0	0.138518	0	0	0	0	0	0
+	900000	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	900000	"1d_lower"	"U235"	0	0	0	0.125479	0	0	0	0	0	0
+	900000	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	900000	"1d_left_branch"	"U235"	0	0	0	0.125973	0	0	0	0	0	0
+	900000	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	900000	"2d"	"U235"	0	0	0	0.0748536	0	0	0	0	0	0
+	900000	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	900000	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	900000	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	900000	".1d_left"	"U235"	7.3042e-07	0	7.3042e-07	0	0	0	0	0	0	0
+	900000	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	900000	".1d_bottom"	"U235"	7.28088e-07	0	7.28088e-07	0	0	0	0	0	0	0
+	900000	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	900000	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	900000	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	900000	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	900000	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	900000	".2d_bottom"	"U235"	1.33161e-08	0	1.33161e-08	0	0	0	0	0	0	0
+	900000	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	900000	".2d_left"	"U235"	1.33158e-08	0	1.33158e-08	0	0	0	0	0	0	0
+	900000	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	1.79503	1.80701e+06	-1.80701e+06
+	900000	"ALL"	"U235"	-5.10762e-07	-1.9959e-06	1.48514e-06	0.464824	0	0	0	-1.34561	-0.880785	4.02345e-13
+	1e+06	"1d_upper"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	1e+06	"1d_upper"	"U235"	0	0	0	0.138585	0	0	0	0	0	0
+	1e+06	"1d_lower"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	1e+06	"1d_lower"	"U235"	0	0	0	0.128891	0	0	0	0	0	0
+	1e+06	"1d_left_branch"	"age"	0	0	0	0.139754	0.559017	0	0.559017	0	0	0
+	1e+06	"1d_left_branch"	"U235"	0	0	0	0.129407	0	0	0	0	0	0
+	1e+06	"2d"	"age"	0	0	0	0.25	1	0	1	0	0	0
+	1e+06	"2d"	"U235"	0	0	0	0.0830225	0	0	0	0	0	0
+	1e+06	".1d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	1e+06	".1d_top"	"U235"	-1.75937e-06	-1.75937e-06	0	0	0	0	0	0	0	0
+	1e+06	".1d_left"	"age"	9.17391e-07	0	9.17391e-07	0	0	0	0	0	0	0
+	1e+06	".1d_left"	"U235"	7.88459e-07	0	7.88459e-07	0	0	0	0	0	0	0
+	1e+06	".1d_bottom"	"age"	9.18219e-07	0	9.18219e-07	0	0	0	0	0	0	0
+	1e+06	".1d_bottom"	"U235"	7.85839e-07	0	7.85839e-07	0	0	0	0	0	0	0
+	1e+06	".2d_top"	"age"	0	0	0	0	0	0	0	0	0	0
+	1e+06	".2d_top"	"U235"	-1.23511e-07	-1.23511e-07	0	0	0	0	0	0	0	0
+	1e+06	".2d_right"	"age"	0	0	0	0	0	0	0	0	0	0
+	1e+06	".2d_right"	"U235"	-1.13023e-07	-1.13023e-07	0	0	0	0	0	0	0	0
+	1e+06	".2d_bottom"	"age"	8.10683e-08	0	8.10683e-08	0	0	0	0	0	0	0
+	1e+06	".2d_bottom"	"U235"	1.51011e-08	0	1.51011e-08	0	0	0	0	0	0	0
+	1e+06	".2d_left"	"age"	7.92234e-08	0	7.92234e-08	0	0	0	0	0	0	0
+	1e+06	".2d_left"	"U235"	1.51387e-08	0	1.51387e-08	0	0	0	0	0	0	0
+	1e+06	"ALL"	"age"	1.9959e-06	0	1.9959e-06	0.669263	2.67705	0	2.67705	1.99462	2.00779e+06	-2.00779e+06
+	1e+06	"ALL"	"U235"	-3.91363e-07	-1.9959e-06	1.60454e-06	0.479906	0	0	0	-1.38927	-0.909364	3.74034e-13

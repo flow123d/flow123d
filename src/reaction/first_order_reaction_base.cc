@@ -112,7 +112,7 @@ void FirstOrderReactionBase::update_solution(void)
     }
 
     START_TIMER("linear reaction step");
-    
+
     for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
         this->compute_reaction(concentration_matrix_, loc_el);
     
