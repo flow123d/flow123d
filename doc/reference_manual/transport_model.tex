@@ -47,12 +47,20 @@ Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, relat
 The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
 For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
 
-\item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources.
+\item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources in the porous medium.
 Its form is:
 \begin{equation}
- F_S^i = \delta f^i_S + \delta(c_S^i-c^i)\sigma_S. \label{eqn:transport_sources}
+ F_S^i = \delta f^i_S + \delta(c_S^i-c^i)\sigma_S^i. \label{eqn:transport_sources}
 \end{equation}
 Here $f_S^i$ \units{1}{-3}{-1} is the \hyperA{SoluteTransport-DG-Data::sources-density}{density of concentration sources}, $c_S^i$ \units{1}{-3}{} is an \hyperA{SoluteTransport-DG-Data::sources-conc}{equilibrium concentration} and $\sigma_S^i$ \units{}{}{-1} is the \hyperA{SoluteTransport-DG-Data::sources-sigma}{concentration flux}.
+One has to pay attention when prescribing the source, namely to determine whether it is related to the \emph{liquid} or the \emph{porous medium}. We mention several examples:
+\begin{itemize}
+\item extraction of solution: $f_S^i = 0$, $c_S^i = 0$, $\sigma_S^i>0$ is the intensity of extraction, i.e. volume of liquid extracted from a unit volume of porous medium per second;
+\item injection of solution: $f_S^i = 0$, $c_S^i$ is the concentration of the substance in the injected liquid, $\sigma_S^i>0$ is the intensity of injection (volume of liquid injected into a unit volume of porous medium per second);
+% \item source of contamination
+\item production or degradation of substances due to bacteria present in liquid: $f_S^i=\th p^i$, where $p^i$ is the production/degradation rate in a unit volume of liquid;
+\item age of liquid: if $f_S^i=\th$ then $c^i$ is the age of liquid, i.e. the time spent in the domain.
+\end{itemize}
 
 \item $F^c_C$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
 
@@ -132,7 +140,10 @@ The mass, flux and source on every geometrical region is calculated at each comp
 \paragraph{Two transport models.}
 Within the above presented model, Flow123d presents two possible approaches to solute transport.
 \begin{itemize}
-\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorption).
+\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
+Only the inflow/outflow boundary condition is available and the source term has the form
+\[ F_S^i = \delta f_S^i + \delta(c_S^i-c^i)^+\sigma_S^i. \]
+The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorption).
 \item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3. Reaction term is currently not implemented.
 \end{itemize}
 
