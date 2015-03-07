@@ -23,6 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace Input {
 namespace Type {
@@ -48,6 +49,15 @@ Default::Default(const std::string & value)
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
 {}
+
+std::size_t Default::content_hash() const
+{   size_t seed = 0;
+    boost::hash_combine(seed, "Default");
+    boost::hash_combine(seed, type_);
+    boost::hash_combine(seed, value_);
+    return seed;
+}
+
 
 
 /**********************************************************************************
@@ -76,6 +86,25 @@ Record::Record(const string & type_name_in, const string & description)
 
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
+}
+
+
+std::size_t Record::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Record");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->description_);
+    boost::hash_combine(seed, data_->auto_conversion_key);
+    for( Key &key : data_->keys) {
+        boost::hash_combine(seed, key.key_);
+        boost::hash_combine(seed, key.description_);
+        boost::hash_combine(seed, key.type_->content_hash() );
+        boost::hash_combine(seed, key.type_->content_hash() );
+        boost::hash_combine(seed, key.default_.content_hash() );
+
+    }
+    return seed;
 }
 
 
@@ -486,6 +515,19 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
                  "Sub-record selection.");
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
+}
+
+
+std::size_t AbstractRecord::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Abstract");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->description_);
+    for( Record &key : child_data_->list_of_childs) {
+        boost::hash_combine(seed, key.content_hash() );
+    }
+    return seed;
 }
 
 
