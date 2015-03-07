@@ -189,6 +189,13 @@ protected:
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 
+    /// Header of the format, printed before first call of recursive print.
+    /// see @p print(stream) method
+    std::string format_head;
+    /// Tail of the format, printed after all recursive prints are finished.
+    /// see @p print(stream) method
+    std::string format_tail;
+
     /**
      * @brief Internal data class.
      * Contains flags of written Input::Types objects and functionality of regular expression filter of Input::Types full names.
@@ -420,7 +427,11 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth)
+    {
+	    format_head="[\n";
+	    format_tail="{}]\n";
+    }
 
 protected:
 
@@ -437,9 +448,10 @@ protected:
 
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
 
 
+    std::hash<std::string> full_name_hash_fn;
 };
 
 
