@@ -139,6 +139,12 @@ public:
      */
     virtual bool valid_default(const string &str) const =0;
 
+    /**
+     * Hash of the type specification. Provides unique id computed from its
+     * content (definition) so that same types have same hash.
+     */
+    virtual std::size_t content_hash() const =0;
+
 protected:
 
     /**
@@ -152,11 +158,7 @@ protected:
     TypeBase(const TypeBase& other);
 
 
-    /**
-     * Hash of the type specification. Provides unique id computed from its
-     * content (definition) so that same types have same hash.
-     */
-    virtual std::size_t content_hash() const =0;
+
 
     /**
      * Type of hash values used in associative array that translates key names to indices in Record and Selection.

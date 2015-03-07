@@ -255,6 +255,17 @@ protected:
          */
         const string get_reference(const void * type_data) const;
 
+        /**
+         * Combines was_sritten and mark_written for hashes.
+         */
+        bool was_written(std::size_t hash)
+        {
+            bool in_set = ( output_hash.find(hash) != output_hash.end() );
+            if (! in_set) output_hash.insert(hash);
+            return in_set;
+        }
+
+
         /// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
         typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
@@ -270,6 +281,9 @@ protected:
 
         /// Set of processed types by regular expression and full names
         std::set<string> full_type_names;
+
+        /// Set of hashes of outputed types. Should replace keys.
+        std::set<std::size_t> output_hash;
     };
 
     /// Stores flags and references of processed type
@@ -435,6 +449,8 @@ public:
 
 protected:
 
+	std::string format_hash(std::size_t hash);
+
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
     void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
@@ -449,9 +465,6 @@ protected:
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
     void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
-
-
-    std::hash<std::string> full_name_hash_fn;
 };
 
 
