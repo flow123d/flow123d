@@ -36,11 +36,7 @@ template<int N, int M> class IntersectionPoint {
 
 	// Possibly just call clear()
 	inline IntersectionPoint(){
-		side_idx1 = -1;
-		side_idx2 = -1;
-		orientation = 1;
-		is_vertex = false;
-		is_patological = false;
+		this->clear();
 	};
 	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
@@ -94,13 +90,19 @@ template<int N, int M> class IntersectionPoint {
 	};
 
 	/// Try to avoid.
-	inline void setLocalCoords1(const arma::vec::fixed<N+1> lc1){
-			local_coords1 = lc1;
+	inline void setLocalCoords1(const arma::vec::fixed<N+1> &lc1){
+			//local_coords1 = lc1;
+		for(unsigned int i = 0;i<N+1;i++){
+			local_coords1[i] = lc1[i];
+		}
 	};
 
 	/// Try to avoid.
-	inline void setLocalCoords2(const arma::vec::fixed<M+1> lc2){
-			local_coords2 = lc2;
+	inline void setLocalCoords2(const arma::vec::fixed<M+1> &lc2){
+			//local_coords2 = lc2;
+		for(unsigned int i = 0;i<M+1;i++){
+			local_coords2[i] = lc2[i];
+		}
 	};
 
 	inline void setSide1(int s){
