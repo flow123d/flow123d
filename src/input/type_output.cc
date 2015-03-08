@@ -1267,18 +1267,24 @@ std::string OutputJSONMachine::format_hash( std::size_t hash) {
 }
 
 
+std::string OutputJSONMachine::escape_description(std::string desc) {
+    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+}
+
+
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
 
     std::size_t hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Record\"," << endl;
     stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
     stream << "\"type_full_name\" : \"" << type->full_type_name() << "\"," << endl;
     stream << endl;
-    stream << "\"description\" : \"" << boost::regex_replace(OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+    stream << "\"description\" : \"" <<
+            escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
     // parent records, implemented abstracts
     boost::shared_ptr<AbstractRecord> parent_ptr;
@@ -1304,9 +1310,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
             stream << "," << endl;
         }
         stream << "{ \"key\" : \"" << it->key_ << "\"," << endl;
-        stream << "\"description\" : \"" << boost::regex_replace(it->description_, boost::regex("\\n"), "\\\\n") << "\"," << endl;
-        stream << "\"default\" : { \"type\" : \"" << dft_type << "\",  \"value\" : \"" << dft_value << "\" }," << endl;
-        stream << "\"type\" : \"" << format_hash(it->type_->content_hash()) << "\"," << endl;
+        stream << "\"description\" : \"" <<
+                escape_description(it->description_) << "\"," << endl;
+        stream << "\"default\" : { "
+                <<"\"type\" : \"" << dft_type << "\"," << endl
+                <<"\"value\" : \"" << escape_description(dft_value) << "\" }," << endl;
+        stream << "\"type\" : \"" << format_hash(it->type_->content_hash()) << "\"" << endl;
         stream << "}";
     }
 
@@ -1335,12 +1344,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 	get_array_type(*type, array_type);
 
 	stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Array\"," << endl;
 	stream << "\"range\" : [" << lower_size << ", " << upper_size << "]," << endl;
-	stream << "\"subtype\" : ";
-	print(stream, array_type.get(), 0);
-	stream << endl << "}";
+	stream << "\"subtype\" : \"" << format_hash(array_type->content_hash()) << "\"" << endl;
+	stream << "}," << endl;
 }
 
 
@@ -1350,14 +1358,15 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AbstractRecord\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-    stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+    stream << "\"description\" : \"" <<
+            escape_description( OutputBase::get_record_description(type)) << "\"," << endl;
 
     print_abstract_record_keys(stream, type, depth);
-    stream << "}";
+    stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         print(stream, &*it, depth+1);
@@ -1370,12 +1379,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AdHocAbstractRecord\"," << endl;
     stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
 
     print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type), depth);
-    stream << "}";
+    stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         print(stream, &*it, depth+1);
@@ -1415,11 +1424,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
     if (doc_flags_.was_written(hash)) return;
 
 	stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Selection\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_selection_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	stream << "\"description\" : \"" <<
+	        escape_description(OutputBase::get_selection_description(type)) << "\"," << endl;
 
 	stream << "\"values\" : [" << endl;
 
@@ -1427,11 +1437,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 		if (it != type->begin()) {
 			stream << "," << endl;
 		}
-		stream << "{ \"value\" : \"" << it->value << "\", \"name\" : \"" << it->key_ << "\", \"description\" : \"" << it->description_ << "\" }";
+		stream << "{ \"value\" : \"" << it->value << "\"," << endl
+		       << " \"name\" : \"" << it->key_ << "\"," << endl
+		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
 	}
 
 	stream << "]" << endl;
-	stream << "}";
+	stream << "},";
 }
 
 
@@ -1443,13 +1455,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
 	get_integer_bounds(*type, lower, upper);
 
 	stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Integer\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
-	stream << "}";
+	stream << "},";
 }
 
 
@@ -1461,12 +1473,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
 	get_double_bounds(*type, lower, upper);
 
 	stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Double\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
-	stream << "}";
+	stream << "},";
 }
 
 
@@ -1475,11 +1487,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
-    stream << "\"input_type\" : \"Bool\"" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Bool\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "}";
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"" << endl;
+	stream << "},";
 }
 
 
@@ -1488,12 +1500,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
-    stream << "\"input_type\" : \"String\"" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"String\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-
-	stream << "}";
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"" << endl;
+	stream << "},";
 }
 
 
@@ -1502,11 +1513,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
-    stream << "\" id \" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 
-	stream << "\"input_type\" : \"FileName\"" << endl;
+	stream << "\"input_type\" : \"FileName\"," << endl;
 	stream << "\"file_mode\" : \"";
 	switch (type->get_file_type()) {
 	case ::FilePath::input_file:
@@ -1517,7 +1528,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
 		break;
 	}
 
-	stream << "}";
+	stream << endl << "},";
 }
 
 
