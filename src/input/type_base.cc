@@ -21,6 +21,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/functional/hash.hpp>
+
 
 #include "type_base.hh"
 #include "type_record.hh"
@@ -134,6 +136,16 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 /**********************************************************************************
  * implementation of Type::Array
  */
+
+std::size_t Array::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->lower_bound_);
+    boost::hash_combine(seed, data_->upper_bound_);
+    boost::hash_combine(seed, data_->type_of_values_->content_hash() );
+    return seed;
+}
 
 
 bool Array::finish() {
@@ -263,6 +275,14 @@ string Scalar::full_type_name() const {
  */
 
 
+std::size_t Bool::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    return seed;
+}
+
+
 bool Bool::valid_default(const string &str) const {
     from_default(str);
     return true;
@@ -290,6 +310,17 @@ string Bool::type_name() const {
 /**********************************************************************************
  * implementation of Type::Integer
  */
+
+std::size_t Integer::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, lower_bound_);
+    boost::hash_combine(seed, upper_bound_);
+    return seed;
+}
+
+
 
 bool Integer::match(int value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
@@ -327,6 +358,18 @@ string Integer::type_name() const {
 /**********************************************************************************
  * implementation of Type::Double
  */
+
+
+std::size_t Double::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, lower_bound_);
+    boost::hash_combine(seed, upper_bound_);
+    return seed;
+}
+
+
 
 bool Double::match(double value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
@@ -366,6 +409,18 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
+std::size_t FileName::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, type_);
+    return seed;
+}
+
+
+
+
+
 string FileName::type_name() const {
     switch (type_) {
     case ::FilePath::input_file:
@@ -387,6 +442,14 @@ bool FileName::match(const string &str) const {
 /**********************************************************************************
  * implementation of Type::String
  */
+
+
+std::size_t String::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, type_name());
+    return seed;
+}
 
 
 
