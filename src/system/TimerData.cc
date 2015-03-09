@@ -10,6 +10,7 @@
 #include <string>
 
 #include "system/TimerData.hh"
+#include "config.h"
 
 using namespace std;
 

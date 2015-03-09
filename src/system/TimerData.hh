@@ -4,9 +4,7 @@
  *  Created on: 2. 3. 2015
  *      Author: jan-hybs
  */
-#ifndef SRC_SYSTEM_TIMERDATA_HH_
-#define SRC_SYSTEM_TIMERDATA_HH_
-
+#include "config.h"
 #include <string>
 
 /**
@@ -128,4 +126,3 @@ class TimerData {
 
 };
 
-#endif /* SRC_SYSTEM_TIMERDATA_HH_ */
