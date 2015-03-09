@@ -26,6 +26,7 @@ cmake_minimum_required(VERSION 2.8)
        numerical.tex
        output.tex
        pos_12.tex
+       reactions_num.tex
        semchem.tex
        sorpce.tex
        tests.tex

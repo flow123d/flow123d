@@ -45,7 +45,8 @@ Up to now we can have \emph{dual porosity}, \emph{sorption} (these two are more 
 
 The \emph{reaction} model acts only on the specified substances and computes exchange of concentration 
 among them. It does not have its own output because it only changes the concentration of substances 
-in the specified zone where the reaction takes place. See \ref{sec:linear_reactions} for thorough description.
+in the specified zone where the reaction takes place.
+% See Section \ref{sec:linear_reactions} for thorough description.
 
 The \emph{sorption} model describes the exchange of concentration of the substances between liquid and solid. It can be
 followed by another \emph{reaction} that can run in both phases. The concentration in solid is an additional output 
@@ -66,52 +67,19 @@ two zones -- the mobile zone and the immobile zone. Both occupy the same macrosc
 the immobile zone is formed by the dead-end pores, where the liquid is trapped and cannot pass through. The rest of the pore volume 
 is occupied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due 
 to molecular diffusion. We consider simple nonequilibrium linear model:
+\begin{subequations}
+\label{eq:odes_dual_por}
 \begin{align}
     \vartheta_m \partial_t c_m &= D_{dp} ( c_i - c_m), \label{eqn:dual_porosity_ode1}\\
     \vartheta_i \partial_t c_i &= D_{dp} ( c_m - c_i), \label{eqn:dual_porosity_ode2}
 \end{align}
+\end{subequations}
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
 \hyperA{DualPorosity-Data::diffusion-rate-immobile}{$D_{dp}$} is a diffusion rate between the zones.
 \hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
 $\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from transport equation \eqref{e:ADE}.
 
-The analytic solution of the system of differential equations at the time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
-\begin{align}
-     c_m(t) &= (c_m(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0), 
-     \label{eqn:dual_porosity_anal1}\\
-     c_i(t) &= (c_i(0) - c_a(0)) \exp\left(- D_{dp}\left(\frac{1}{\vartheta_m} + \frac{1}{\vartheta_i}\right) t \right) + c_a(0),
-     \label{eqn:dual_porosity_anal2}
-\end{align}
-where $c_a$ is the weighted average
-\[
-  c_a = \frac{\vartheta_m c_m + \vartheta_i c_i}{\vartheta_m + \vartheta_i}.
-\]
 
-If the time step is large, we use the analytic solution to compute new values of concentrations. 
-Otherwise, we replace the time derivatives in \eqref{eqn:dual_porosity_ode1} and \eqref{eqn:dual_porosity_ode2} 
-by first order forward differences and we get the classical Euler scheme
-\begin{align}
-  c_m(t^+) = \frac{D_{dp} \Delta t}{\vartheta_m}(c_i(t) - c_m(t)) + c_m(t), \\
-  c_i(t^+) = \frac{D_{dp} \Delta t}{\vartheta_i}(c_m(t) - c_i(t)) + c_i(t), \\
-\end{align}
-where $\Delta t = t^+ - t$ is the time step. 
-
-The condition on the size of the time step is derived from the Taylor expansion of 
-\eqref{eqn:dual_porosity_anal1} or \eqref{eqn:dual_porosity_anal2}, respectively. We neglect the higher order 
-terms and we want the second order term to be smaller than the given scheme tolerance 
-\hyperA{DualPorosity::scheme-tolerance}{$tol$}, relatively to $c_a$,
-\begin{equation}
-  (c_m(0) - c_a(0))
-  \frac{ D_{dp}^2 (\Delta t)^2 \left(\frac{\vartheta_m + \vartheta_i}{\vartheta_m \vartheta_i}\right)^2}{2}
-  \frac{1}{c_a} \leq tol. \\
-\end{equation}
-We then transform the above inequation into the following condition which is tested in the program
-\begin{equation} \label{eqn:euler_scheme_condition}
-  \max(|c_m(0) - c_a(0)|, |c_i(0) - c_a(0)|) \leq 
-  2 c_a \left(\frac{\vartheta_m \vartheta_i}{D_{dp} \Delta t (\vartheta_m + \vartheta_i)}\right)^2 tol. \\
-\end{equation}
-If the inequation \eqref{eqn:euler_scheme_condition} is not satisfied, then the analytic 
-solution is used.
  
 
 \subsection{Equilibrial Sorption}
@@ -191,7 +159,7 @@ k_l=K M_s^{-1}\rho_l.
 The conversion of different prefixes of units are left on the user. One should be careful using the 
 Freundlich isotherm, though, where the exponent $\alpha$ must not be forgotten.
 
-Let us now describe the actual computation of the sorption model. Denoting
+Denoting
 \[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
 and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
 \begin{equation}
@@ -199,79 +167,6 @@ and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sor
  \label{eq:nonlin_sorption}
 \end{equation}
 which can be either solved iteratively or using interpolation.
-To solve \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
-to look for the solution (unknown $c_l$), see Figure \ref{fig:sorpce}. The lower bound is $0$ (concentration can not reach negative values). 
-The upper bound is derived using a simple mapping. Let us suppose limmited 
-\hyperA{Sorption::solubility}{$solubility$} of the selected transported substance and let us denote the 
-limmit $\bar{c}_l$. We keep the maximal "total mass" 
-$\bar{c}_T= \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, but we dissolve all the mass to get 
-maximal $c_l^{max} > \bar{c}_l$. That means $c_s = 0$ at this moment. We can slightly enlarge the interval by setting the upper bound equal to 
-$c_l^{max} + const_{small}$.
-
-\begin{figure}[ht!]
- \centering
- \includegraphics[width = 0.75\textwidth]{\fig/sorpce.pdf}
- \caption{Sorption in combination with limmited solubility.}
- \label{fig:sorpce}
-\end{figure}
-
-
-To approximate the equation \eqref{eq:nonlin_sorption} using interpolation, we need to prepare the set of values 
-which represents $[c_l, f(c_l)]$, with $c_l$ equidistantly distributed in transformed (rotated and rescaled) 
-coordination system at first. The construction process of the interpolation table follows.
-\begin{enumerate}
- \item Maximal ``total mass'' $\bar{c}_T = \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ is computed.
- \item Total mass step is derived $mass\_step = \bar{c}_T/n\_steps$. $n\_steps$ is given by
-       \hyperA{Sorption::substeps}{$substeps$}.
- \item Appropriate $c_T^j = (mass\_step\cdot j)/\mu_l,~j\in \{0,\ldots, n\_steps\}$ are computed. 
- \item The equations $\mu_l \cdot c_T^j = \mu_l\cdot c_l^j + \mu_s\cdot f(c_l^j)~j\in \{0,\ldots, n\_steps\}$ are solved 
-       for $c_l^j$ as unknowns. The solution is the set of ordered couples (points) 
-       $[c_l^j,f(c_l^j)],~j\in\{0,\ldots,n\_steps\}$.
-\end{enumerate}
-After the computation of $\{[c_l^j,f(c_l^j)]\}$, we transform these coordinates to the system where the total mass is 
-an independent variable. This is done by multiplication of precomputed points using the transformation matrix ${\bf A}$:
-\begin{equation}
- \begin{array}{l}
-  \vec{c}\,^R = {\bf A}\cdot\vec{c}\\
-  \left[\begin{array}{c} c_l^{R,j}\\ c_s^{R,j} \end{array}\right] = 
-  \left[\begin{array}{cc}
-    \vartheta\cdot \rho_w & M_s(1 - \vartheta)\rho_R\\
-    -M_s(1 - \vartheta)\rho_R & \vartheta\cdot \rho_w
-  \end{array}\right]\cdot
-  \left[\begin{array}{c} c_l^j\\ c_s^j \end{array}\right]\\
-  j\in\{0,\ldots,n\_steps\}
- \end{array}
- \label{eq:transf_mat}
-\end{equation}
-
-The values $c_l^{R,j}$ are equidistantly distributed and there is no reason to save them, but the values 
-$c_s^{R,j}$ are stored in onedimensional interpolation table.
-
-Once we have the interpolation table, we can use it for projecting the transport results ${[c_l,c_s]}$ on the 
-isotherm under consideration. Following steps must be taken.
-\begin{enumerate}
- \item Achieved concentrations are transformed to the coordinate system through multiplication with the 
-       matrix ${\bf A}$, see \eqref{eq:transf_mat}.
- \item Transformed values are interpolated.
- \item The result of interpolation is transformed back. The backward transformation consists of multiplication 
-       with ${\bf A}^T$ which is followed by rescaling the result. Rescaling the result is necessary because  
-       ${\bf A}$ is not orthonormal as it is shown bellow.
- \[
- \begin{array}{l}
- {\bf A}^T\cdot{\bf A} =
-  \left((\vartheta - 1)^2\cdot M_s^2\cdot \rho_R^2 + \vartheta^2\cdot \rho_w^2\right)\cdot\left[\begin{array}{cc}
-    1 & 0\\
-    0 & 1
-  \end{array}\right]
-  \end{array}
- \]
-\end{enumerate}
-
-
-\subsection{Limited Solubility}\label{subsec:lim_solub}
-When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ neither iterative 
-solver nor interpolation table is used. The aqueous concentration is set to be $\bar{c}_l$ and sorbed 
-concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdot \bar{c}_l)/\mu_s$.
 
 \subsection{Sorption in Dual Porosity Model} 
 \label{subsec:sorp_dual_por}
