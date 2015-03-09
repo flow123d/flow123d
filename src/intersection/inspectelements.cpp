@@ -17,13 +17,15 @@ InspectElements::~InspectElements(){};
 void InspectElements::computeIntersections2d3dInit(){
 
 	flag_for_3D_elements.assign(mesh->n_elements(), -1);
+	closed_elements.assign(mesh->n_elements(), false);
+	intersection_list.assign(mesh->n_elements(),std::vector<IntersectionLocal>());
 
-	FOR_ELEMENTS(mesh, elm) {
+	/*FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 2) {
 			intersection_list[elm.index()] = std::vector<IntersectionLocal>();
 			closed_elements[elm.index()] = false;
 		}
-	}
+	}*/
 
 	element_2D_index = -1;
 
@@ -31,6 +33,8 @@ void InspectElements::computeIntersections2d3dInit(){
 
 void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele){
 
+
+	unsigned int elm_2D = ele->index();
 	//xprintf(Msg, "========PRODLUZUJI========\n");
 	for(unsigned int i = 0; i < prolongation_table.size();i++){
 
@@ -59,14 +63,14 @@ void InspectElements::computeIntersections2d3dUseProlongationTable(std::vector<s
 							//xprintf(Msg, "\t\t Idx původního elementu a jeho hrany(%d,%d) - Idx sousedního elementu a jeho hrany(%d,%d)\n",elm->index(),stena,other_side->element()->index(),other_side->el_idx());
 
 
-						if(!intersectionExists(sousedni_element,ele->index())){
+						if(!intersectionExists(sousedni_element,elm_2D)){
 							//flag_for_3D_elements[ele->index()] = sousedni_element;
 
 							// Vytvoření průniku bez potřeby počítání
-							IntersectionLocal il_other(sousedni_element, ele->index());
+							IntersectionLocal il_other(sousedni_element, elm_2D);
 							intersection_list[sousedni_element].push_back(il_other);
 
-							ProlongationLine pl2(sousedni_element, ele->index(), intersection_list[sousedni_element].size() - 1);
+							ProlongationLine pl2(sousedni_element, elm_2D, intersection_list[sousedni_element].size() - 1);
 							prolongation_line_queue_2D.push(pl2);
 						}
 				}
@@ -136,7 +140,7 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].traceGenericPolygon(prolongation_table);
 
 	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 2){
-		all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
+		//all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 	}
 };
@@ -194,7 +198,7 @@ void InspectElements::ComputeIntersections23(){
 					if(il.getIPsize() > 2){
 
 
-						all_intersections.push_back(il);
+						//all_intersections.push_back(il);
 
 						intersection_list[elm.index()].push_back(il);
 						flag_for_3D_elements[ele->index()] = elm.index();
@@ -257,14 +261,17 @@ void InspectElements::ComputeIntersections23(){
 
 bool InspectElements::intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx){
 
-	for(unsigned int i; i < intersection_list[elm_2D_idx].size();i++){
+	bool found = false;
+
+	for(unsigned int i = 0; i < intersection_list[elm_2D_idx].size();i++){
 
 		if(intersection_list[elm_2D_idx][i].idx_3D() == elm_3D_idx){
-			return true;
+			found = true;
+			break;
 		}
 
 	}
-	return false;
+	return found;
 };
 
 
@@ -284,6 +291,127 @@ void InspectElements::UpdateTetrahedron(const ElementFullIter &element_3D){
 
 };
 
+void InspectElements::print_mesh_to_file(string name){
+
+
+	for(unsigned int i = 0; i < 2;i++){
+		string t_name = name;
+
+		unsigned int number_of_intersection_points = 0;
+		unsigned int number_of_polygons = 0;
+		unsigned int number_of_nodes = mesh->n_nodes();
+
+		for(unsigned int j = 0; j < intersection_list.size();j++){
+			number_of_polygons += intersection_list[j].size();
+			for(unsigned int k = 0; k < intersection_list[j].size();k++){
+				number_of_intersection_points += intersection_list[j][k].getIPsize();
+			}
+		}
+
+		FILE * file;
+		if(i == 0){
+			file = fopen((t_name.append("_0.msh")).c_str(),"w");
+		}else{
+			file = fopen((t_name.append("_1.msh")).c_str(),"w");
+		}
+		fprintf(file, "$MeshFormat\n");
+		fprintf(file, "2.2 0 8\n");
+		fprintf(file, "$EndMeshFormat\n");
+		fprintf(file, "$Nodes\n");
+		fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
+
+		FOR_NODES(mesh, nod){
+			arma::vec3 _nod = nod->point();
+			fprintf(file,"%d %f %f %f\n", nod.id(), _nod[0], _nod[1], _nod[2]);
+		}
+
+		for(unsigned int j = 0; j < intersection_list.size();j++){
+			for(unsigned int k = 0; k < intersection_list[j].size();k++){
+
+				IntersectionLocal il = intersection_list[j][k];
+
+				ElementFullIter el2D = mesh->element(il.idx_2D());
+				ElementFullIter el3D = mesh->element(il.idx_3D());
+
+
+				for(unsigned int l = 0; l < (unsigned int)il.getIPsize(); l++){
+					//xprintf(Msg, "first\n");
+					number_of_nodes++;
+					IntersectionPoint<2,3> IP23 = il.get_point(l);
+					arma::vec3 _global;
+					if(i == 0){
+						_global = (IP23.getLocalCoords1())[0] * el2D->node[0]->point()
+														   +(IP23.getLocalCoords1())[1] * el2D->node[1]->point()
+														   +(IP23.getLocalCoords1())[2] * el2D->node[2]->point();
+					}else{
+						_global = (IP23.getLocalCoords2())[0] * el3D->node[0]->point()
+														   +(IP23.getLocalCoords2())[1] * el3D->node[1]->point()
+														   +(IP23.getLocalCoords2())[2] * el3D->node[2]->point()
+														   +(IP23.getLocalCoords2())[3] * el3D->node[3]->point();
+					}
+					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
+				}
+			}
+		}
+
+		fprintf(file,"$EndNodes\n");
+		fprintf(file,"$Elements\n");
+		fprintf(file,"%d\n", (number_of_intersection_points + mesh->n_elements()) );
+
+		FOR_ELEMENTS(mesh, elee){
+			// 1 4 2 30 26 1 2 3 4
+			// 2 2 2 2 36 5 6 7
+			if(elee->dim() == 3){
+				int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+				int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+				int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+				int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+
+				fprintf(file,"%d 4 2 30 26 %d %d %d %d\n", elee.id(), id1, id2, id3, id4);
+			}else if(elee->dim() == 2){
+				int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+				int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+				int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+				fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
+
+			}else{
+				xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
+			}
+		}
+
+
+		unsigned int number_of_elements = mesh->n_elements();
+		unsigned int last = 0;
+		unsigned int nodes = mesh->n_nodes();
+
+		for(unsigned int j = 0; j < intersection_list.size();j++){
+				for(unsigned int k = 0; k < intersection_list[j].size();k++){
+
+				IntersectionLocal il = intersection_list[j][k];
+
+				for(unsigned int l = 0; l < (unsigned int)il.getIPsize(); l++){
+					number_of_elements++;
+					nodes++;
+					if(l == 0){
+						last = nodes;
+					}
+
+					if((l+1) == (unsigned int)il.getIPsize()){
+						fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, last);
+					}else{
+						fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
+					}
+
+				}
+			}
+		}
+
+		fprintf(file,"$EndElements\n");
+		fclose(file);
+	}
+
+};
+/*
 void InspectElements::print(unsigned int vyber){
 
 
@@ -416,5 +544,5 @@ void InspectElements::print(unsigned int vyber){
 	fclose(soubor);
 
 }
-
+*/
 } // END namespace

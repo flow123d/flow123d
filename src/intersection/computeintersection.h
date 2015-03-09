@@ -141,7 +141,7 @@ public:
 	void toStringPluckerCoordinates();
 	void toStringPluckerCoordinatesTree();
 
-	inline ~ComputeIntersection() {}
+	inline ~ComputeIntersection() {};
 
 //private:
 

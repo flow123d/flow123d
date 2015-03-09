@@ -21,14 +21,14 @@ namespace computeintersection {
 
 class InspectElements {
 
-	std::vector<IntersectionLocal> all_intersections;
+	//std::vector<IntersectionLocal> all_intersections;
 
 	/* Possibly replace IntersectionLocal by index of ProlongationLine
 	 * in the prolongation_line_queue, which should rather be std::deque
 	 * to support both queue and random access operations.
 	 */
-	std::map<unsigned int, std::vector<IntersectionLocal>> intersection_list;
-	std::map<unsigned int, bool> closed_elements;
+	std::vector<std::vector<IntersectionLocal>> intersection_list;
+	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
 
 	std::queue<ProlongationLine> prolongation_line_queue_2D;
@@ -68,8 +68,11 @@ public:
 	void UpdateTriangle(const ElementFullIter &el);
 	void UpdateTetrahedron(const ElementFullIter &el);
 
-	void print(unsigned int vyber);
-	inline double polygonArea(){
+	//void print(unsigned int vyber);
+
+	void print_mesh_to_file(string name);
+
+	/*inline double polygonArea(){
 		double subtotal = 0.0;
 		for(unsigned int i = 0; i < all_intersections.size();i++){
 			 Element efi = *mesh->element(all_intersections[i].idx_2D());
@@ -80,7 +83,7 @@ public:
 			 //xprintf(Msg,"Subtotal: %f\n",2*localArea*t2dArea);
 		}
 		return subtotal;
-	};
+	};*/
 
 	inline double polygonArea2(){
 		double subtotal = 0.0;
