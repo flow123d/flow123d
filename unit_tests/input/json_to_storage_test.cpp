@@ -335,6 +335,7 @@ TEST_F(InputJSONToStorageTest, Record) {
     }
 
     // Test automatic conversion from record
+/*
     {
         static Type::Record lower( "Lower", "");
         lower.declare_key("int", Type::Integer(), "");
@@ -361,6 +362,7 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ( 37, storage_->get_item(1)->get_item(0)->get_int() );
 
     }
+*/
 /*
     {
         static Type::AbstractRecord abstr("Abstract", "");

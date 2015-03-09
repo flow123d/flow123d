@@ -344,7 +344,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
            keys_to_process.insert(map_it->first);
         }
 
-        Type::Record::KeyIter key_it;
+        /*Type::Record::KeyIter key_it;
         if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
             JSONPath type_path(p);
             if (type_path.down( "TYPE" ) != NULL) {
@@ -360,7 +360,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
             else {  // automatic conversion
             	return record_automatic_conversion(p, record);
             }
-        }
+        }*/
 
         StorageArray *storage_array = new StorageArray(record->size());
         // check individual keys
