@@ -121,3 +121,40 @@ isotherm under consideration. Following steps must be taken.
 \paragraph{Limited solubility.} When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, neither iterative 
 solver nor interpolation table is used. The aqueous concentration is set to be $\bar{c}_l$ and sorbed 
 concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdot \bar{c}_l)/\mu_s$.
+
+\subsection{System of Linear Ordinary Differential Equations}
+\label{sec:num_slode}
+
+A system of linear ordinary differential equations (ODE) appears in several places in the model. We provide 
+several solvers which we shall brielfy describe in this section. Let us denote the system
+\[
+  \partial_t \vc c(t) = \mathbf{A}(t) \vc{c}(t) + \vc{b}(t).
+\]
+
+\paragraph{Semi-analytic solution.}
+A semi-analytic solution can be obtained in special cases due to the physical nature of the problem.
+The problem can be then solved only by a~matrix multiplication $\vc c(t+\Delta t) = \mathbf{R} \vc{c}(t)$. 
+This is used in case of radioactive decays and first order kinetic reactions.
+
+The right hand side $\vc{b}$ is zero and $\mathbf{A}$ is constant. The assumption is made that the equations 
+are independent during one time step. Each quantity $c_i$ (concentration in this case) is decreased 
+by $e^{a_{ii} \Delta t}$ (supposing negative diagonal) during time step $\Delta t$. The decrement $\left( 1-e^{a_{ii} \Delta t} \right)$
+is then distributed among other quantities according to the given fraction.
+
+In case of radioactive decays and first order reactions, the elements of the solution matrix $\mathbf{R}$ are
+\begin{eqnarray*}
+     r_{ii} &=& e^{-k_i \Delta t}, \\
+     r_{ji} &=& \left( 1-e^{-k_i \Delta t} \right) b_{ji} \frac{M_j}{M_i},
+\end{eqnarray*}
+where $b_{ji}$ is the branching ratio of $i$-th reactant (or radionuclide) and $\frac{M_j}{M_i}$ is 
+the fraction of molar masses.
+The expressions $b_{ji} \frac{M_j}{M_i}$ are then obtained from the system matrix by dividing 
+$-\frac{a_{ji}}{a_{ii}}$. See the system matrix entries in \eqref{eqn:reaction_system_entries}.
+
+The assumption (equations independence) is adequate when a very small time step is applied. This will then lead 
+to huge amount of evaluations of the exponential functions which can be expensive, so other numerical methods 
+might be more appropriate. When the time step is large then the assumption is inadequate.
+
+On the other hand, if the time step is constant (for significantly large number of time steps), we get the
+solution cheaply just by matrix multiplication, because the matrix $\mathbf{R}$ is constant.
+
