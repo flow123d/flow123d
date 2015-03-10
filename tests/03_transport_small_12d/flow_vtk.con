@@ -52,7 +52,7 @@
         { r_set = "ALL",
           init_conc = 0,
           porosity= 0.25,
-          sources_density = [1.0, 0]
+          sources_density = [0.25, 0]   // source is in the whole volume (l+s) -> times porosity
         },
         { r_set = "BOUNDARY",
           bc_conc = [0.0, 1.0]

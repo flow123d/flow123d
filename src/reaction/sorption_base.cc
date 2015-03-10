@@ -311,7 +311,6 @@ void SorptionBase::initialize_substance_ids()
     if(!found)
     {
       substance_global_idx_.push_back(global_idx);
-      molar_masses_.push_back(substances_[global_idx].molar_mass());
     }
 
   }  

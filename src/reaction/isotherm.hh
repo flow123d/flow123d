@@ -172,11 +172,12 @@ public:
      * @param scale_sorbed  - fraction of the space with the solid to which we adsorp
      * @param c_aqua_limit - limit for interpolation table, possibly solubility limit
      * @param mult_coef - multiplicative coefficient of the isotherm (all isotherms have one)
-     * @param secodn_coef - possibly second parameter of the isotherm
+     * @param second_coef - possibly second parameter of the isotherm
      */
 	inline void reinit(enum SorptionType sorption_type, bool limited_solubility_on,
 			double aqua_density, double scale_aqua, double scale_sorbed,
 			double c_aqua_limit, double mult_coef, double second_coef);
+
     /**
      * Create interpolation table for isotherm in rotated coordinate system with X axes given by total mass in
      * both phases. Size of the table is the only parameter. Currently we support only linear interpolation.
@@ -314,13 +315,21 @@ inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_sol
 	scale_sorbed_ = scale_sorbed;
     inv_scale_aqua_ = scale_aqua_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
     inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
-    table_limit_ = c_aqua_limit;
-    limited_solubility_on_ = limited_solubility_on;
-    mult_coef_ = mult_coef;
-    second_coef_ = second_coef;
+    if(adsorption_type == Isotherm::none)
+    {
+        table_limit_ = 1.0;         // must be >0 due to the if statement in make_table(int)
+        limited_solubility_on_ = false;
+        mult_coef_ = 0;
+        second_coef_ = 0;
+    }
+    else{
+        table_limit_ = c_aqua_limit;
+        limited_solubility_on_ = limited_solubility_on;
+        mult_coef_ = mult_coef;
+        second_coef_ = second_coef;
+    }
 
 }
-
 
 
 inline void Isotherm::compute( double &c_aqua, double &c_sorbed ) {
