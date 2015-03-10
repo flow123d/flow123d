@@ -15,6 +15,7 @@
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 #include "reaction/reaction_term.hh"
 
 class Isotherm;
@@ -215,8 +216,7 @@ protected:
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
-  Vec *vconc_solid_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
-  double **conc_solid_out; ///< sorbed concentration array output (gathered - sequential)  
+  std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
 };
 

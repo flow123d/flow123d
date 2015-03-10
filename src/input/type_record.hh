@@ -57,6 +57,8 @@ public:
      */
     Default(const std::string & value);
 
+    std::size_t content_hash() const;
+
     /**
      * Factory function to make an default value that will be specified at the time when a key will be read.
      * You have to provide a string with description of the default value used at the read time., e.g.
@@ -213,6 +215,10 @@ public:
      * its \p description.
      */
     Record(const string & type_name_in, const string & description);
+
+
+    std::size_t content_hash() const  override;
+
 
     /**
      * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
@@ -528,6 +534,7 @@ public:
      */
     AbstractRecord(const string & type_name_in, const string & description);
 
+    std::size_t content_hash() const   override;
 
     /**
      * Allows shorter input of the AbstractRecord providing the default value to the "TYPE" key.
@@ -643,6 +650,10 @@ public:
 	 * Constructor
 	 */
 	AdHocAbstractRecord(const AbstractRecord &ancestor);
+
+    std::size_t content_hash() const   override
+            { return 0;}
+
 
     /**
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,

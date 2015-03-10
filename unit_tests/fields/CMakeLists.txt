@@ -47,6 +47,7 @@ if(CMAKE_HAVE_CXX11)
     define_test(multi_field)
     
     define_mpi_test(generic_field 1)
+    define_mpi_test(vec_seq_double 1)
        
 endif()
 

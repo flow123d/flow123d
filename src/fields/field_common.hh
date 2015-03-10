@@ -22,6 +22,8 @@ using namespace std;
 #include "io/output_time.hh"
 
 
+class Region;
+
 namespace IT=Input::Type;
 
 /**

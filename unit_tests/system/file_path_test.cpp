@@ -57,3 +57,15 @@ TEST(FilePath, input) {
     string str = FilePath("subdir/${INPUT}/init.in", FilePath::input_file);
     EXPECT_EQ("/main_root/subdir/variant_input/init.in", str);
 }
+
+
+TEST(FilePath, create_output_dir) {
+    //::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    boost::filesystem::remove_all("./work_dir");
+    FilePath::set_io_dirs("./work_dir","", "my_input", "my_output");
+    EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output"));
+    FilePath fp("subdir/some_file.xyz", FilePath::output_file);
+    fp.create_output_dir();
+    EXPECT_TRUE(boost::filesystem::is_directory("./work_dir/my_output/subdir"));
+    boost::filesystem::remove_all("./work_dir");
+}

@@ -71,7 +71,6 @@
 
 #include <vector>
 #include <string>
-#include <fstream>
 #include <ostream>
 
 #include "system/system.hh"
@@ -264,37 +263,33 @@ template<int spacedim, class Value>
 void OutputTime::register_data(const DiscreteSpace type,
         MultiField<spacedim, Value> &multi_field)
 {
-    if (output_names.find(multi_field.name()) != output_names.end()) {
-        if (output_names[multi_field.name()] == true)
-            for (unsigned long index=0; index < multi_field.size(); index++)
-                this->compute_field_data(type, multi_field[index] );
+    ASSERT_LESS(type, N_DISCRETE_SPACES);
+    if (output_names.find(multi_field.name()) == output_names.end()) return;
 
-        return;
-    }
-    else
-    {
-        // We are trying to output field that is not recognized by the stream.
-        //DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), multi_field.name().c_str());
-    }
+    DiscreteSpaceFlags flags = output_names[multi_field.name()];
+    if (! flags) flags = 1 << type;
+    for (unsigned long index=0; index < multi_field.size(); index++)
+        for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
+            if (flags & (1 << ids))
+                    this->compute_field_data( DiscreteSpace(ids), multi_field[index] );
+
 }
 
 
 template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace ref_type,
+void OutputTime::register_data(const DiscreteSpace type,
         Field<spacedim, Value> &field_ref)
 {
-    if (output_names.find(field_ref.name()) != output_names.end()) {
-        if (output_names[field_ref.name()] == true)
-            this->compute_field_data(ref_type, field_ref);
+    ASSERT_LESS(type, N_DISCRETE_SPACES);
+    if (output_names.find(field_ref.name()) == output_names.end()) return;
 
-        return;
-    }
-    else
-    {
-        // We are trying to output field that is not recognized by the stream.
-        //DBGMSG("Internal error: Output stream %s does not support field %s.\n", name.c_str(), field_ref.name().c_str());
-    }
+    DiscreteSpaceFlags flags = output_names[field_ref.name()];
+    if (! flags) flags = 1 << type;
+    for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
+        if (flags & (1 << ids))
+            this->compute_field_data( DiscreteSpace(ids), field_ref);
 }
+
 
 
 template<int spacedim, class Value>
@@ -309,29 +304,25 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
 
     // TODO: remove const_cast after resolving problems with const Mesh.
-    this->_mesh = const_cast<Mesh *>(field.mesh());
+    Mesh *field_mesh = const_cast<Mesh *>(field.mesh());
+    ASSERT(!this->_mesh || this->_mesh==field_mesh, "Overwriting non-null mesh pointer.\n");
+    this->_mesh=field_mesh;
     ASSERT(this->_mesh, "Null mesh pointer.\n");
 
     // get possibly existing data for the same field, check both name and type
-    OutputDataBase *data = output_data_by_field_name(field.name(), space_type);
-    OutputData<Value> *output_data = dynamic_cast<OutputData<Value> *>(data);
+    std::vector<unsigned int> size(N_DISCRETE_SPACES);
+    size[NODE_DATA]=this->_mesh->n_nodes();
+    size[ELEM_DATA]=this->_mesh->n_elements();
+    size[CORNER_DATA]=this->_mesh->n_corners();
 
-    if (!output_data) {
-        switch(space_type) {
-        case NODE_DATA:
-            output_data = new OutputData<Value>(field, this->_mesh->n_nodes() );
-            node_data.push_back(output_data);
-            break;
-        case CORNER_DATA:
-            output_data = new OutputData<Value>(field, this->_mesh->n_corners() );
-            corner_data.push_back(output_data);
-            break;
-        case ELEM_DATA:
-            output_data = new OutputData<Value>(field, this->_mesh->n_elements() );
-            elem_data.push_back(output_data);
-            break;
-        }
+    auto &od_vec=this->output_data_vec_[space_type];
+    auto it=std::find_if(od_vec.begin(), od_vec.end(),
+            [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
+    if ( it == od_vec.end() ) {
+        od_vec.push_back( std::make_shared< OutputData<Value> >(field, size[space_type]) );
+        it=--od_vec.end();
     }
+    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
 
     unsigned int i_node;
 
@@ -339,9 +330,9 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     switch(space_type) {
     case NODE_DATA: {
         // set output data to zero
-        vector<unsigned int> count(output_data->n_values, 0);
-        for(unsigned int idx=0; idx < output_data->n_values; idx++)
-            output_data->zero(idx);
+        vector<unsigned int> count(output_data.n_values, 0);
+        for(unsigned int idx=0; idx < output_data.n_values; idx++)
+            output_data.zero(idx);
 
         // sum values
         FOR_ELEMENTS(this->_mesh, ele) {
@@ -354,15 +345,15 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(node->point(),
                                         ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-                output_data->add(node_index, node_value);
+                output_data.add(node_index, node_value);
                 count[node_index]++;
 
             }
         }
 
         // Compute mean values at nodes
-        for(unsigned int idx=0; idx < output_data->n_values; idx++)
-            output_data->normalize(idx, count[idx]);
+        for(unsigned int idx=0; idx < output_data.n_values; idx++)
+            output_data.normalize(idx, count[idx]);
     }
     break;
     case CORNER_DATA: {
@@ -376,7 +367,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(node->point(),
                                         ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
-                output_data->store_value(corner_index,  node_value);
+                output_data.store_value(corner_index,  node_value);
                 corner_index++;
             }
         }
@@ -390,7 +381,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                             field.value(ele->centre(),
                                     ElementAccessor<spacedim>(this->_mesh, ele_index,false)) ));
             //std::cout << ele_index << " ele:" << typename Value::return_type(ele_value) << std::endl;
-            output_data->store_value(ele_index,  ele_value);
+            output_data.store_value(ele_index,  ele_value);
         }
     }
     break;
