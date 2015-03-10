@@ -2,7 +2,8 @@
 
 % \input{decay}
 
-\subsection{Dual Porosity}
+\subsection{Dual Porosity} 
+\label{sec:num_dual_porosity}
 
 The analytic solution of the system of differential equations \eqref{eq:odes_dual_por} at the time $t$ with initial conditions $c_m(0)$ and $c_i(0)$ is
 \begin{align}
@@ -44,12 +45,13 @@ solution is used.
 
 
 \subsection{Equilibrial Sorption}
+\label{sec:num_sorp_math}
 
 Let us now describe the actual computation of the sorption model.
 To solve \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
 to look for the solution (unknown $c_l$), see Figure \ref{fig:sorpce}. The lower bound is $0$ (concentration can not reach negative values). 
 The upper bound is derived using a simple mapping. Let us suppose limited 
-\hyperA{Sorption::solubility}{$solubility$} of the selected transported substance and let us denote the 
+\hyperA{Sorption::solubility}{\tt solubility} of the selected transported substance and let us denote the 
 limit $\bar{c}_l$. We keep the maximal "total mass" 
 $\bar{c}_T= \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, but we dissolve all the mass to get 
 maximal $c_l^{max} > \bar{c}_l$. That means $c_s = 0$ at this moment. We can slightly enlarge the interval by setting the upper bound equal to 
@@ -115,7 +117,7 @@ isotherm under consideration. Following steps must be taken.
 \end{enumerate}
 
 
-\subsection{Limited Solubility}\label{subsec:lim_solub}
-When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$ neither iterative 
+% \subsection{Limited Solubility}\label{subsec:lim_solub}
+\paragraph{Limited solubility.} When $\mu_l\cdot c_l + \mu_s\cdot f(c_l) > \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, neither iterative 
 solver nor interpolation table is used. The aqueous concentration is set to be $\bar{c}_l$ and sorbed 
 concentration is computed $c_s = (\mu_l\cdot c_l + \mu_s\cdot f(c_l) - \mu_l\cdot \bar{c}_l)/\mu_s$.
