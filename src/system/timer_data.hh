@@ -4,6 +4,10 @@
  *  Created on: 2. 3. 2015
  *      Author: jan-hybs
  */
+
+#ifndef TIMERDATA_HH_
+#define TIMERDATA_HH_
+
 #include "config.h"
 #include <string>
 
@@ -59,17 +63,17 @@ class TimerData {
         /**
          * Method returns time in seconds in double precision
          */
-        double toTime (void) const;
+        double to_time (void) const;
 
         /**
          * Debug-only method returning double value from 'toTime' method as string
          */
-        string toString (void);
+        string to_string (void);
 
         /**
          * Static method which generates TimerData object and sets its ticks value to current time
          */
-        static TimerData getTime (void);
+        static TimerData get_time (void);
 
         /**
          * Static method for initializing timers (necessary for Windows timer only)
@@ -96,17 +100,17 @@ class TimerData {
          * Method which returns current time ticks. Depending on used timer value may represent
          * nanoseconds or internal ticks / CPU frequency
          */
-        long long getTicks (void) const;
+        long long get_ticks (void) const;
 
         /**
          * Setter for ticks variable
          */
-        void setTicks (long long ticks);
+        void set_ticks (long long ticks);
 
         /**
          * Static method which gets current ticks and converts them to long long int
          */
-        static long long getCurrentTicks ();
+        static long long get_current_ticks ();
 
         /**
          * Static variable representing initialization
@@ -121,8 +125,14 @@ class TimerData {
         /**
          * Variable for storing CPU Frequency
          */
-        static LARGE_INTEGER Frequency;
+        static LARGE_INTEGER frequency;
+
+        /**
+         * Init function which sets current CPU frequency
+         * and returns it
+         */
+        static LARGE_INTEGER get_frequency;
 #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 
 };
-
+#endif /* TIMERDATA_HH_ */

@@ -38,10 +38,8 @@
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
-#include "system/TimerData.hh"
-
-
 #include "mpi.h"
+#include "timer_data"
 /*
  * These should be replaced by using boost MPI interface
  */
@@ -88,8 +86,8 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
  */
 
 Timer::Timer(const CodePoint &cp, int parent)
-: start_time(TimerData::getTime()),
-  cumul_time(TimerData::getTime()),
+: start_time(TimerData::get_time()),
+  cumul_time(TimerData::get_time()),
   call_count(0),
   start_count(0),
   code_point_(&cp),
@@ -105,7 +103,7 @@ Timer::Timer(const CodePoint &cp, int parent)
 
 
 double Timer::cumulative_time() const {
-    return cumul_time.toTime();
+    return cumul_time.to_time();
 }
 
 
@@ -113,7 +111,7 @@ double Timer::cumulative_time() const {
 void Timer::start() {
     if (start_count == 0) {
         TimerData::init();
-        start_time = TimerData::getTime();
+        start_time = TimerData::get_time();
     }
     call_count++;
     start_count++;
@@ -122,7 +120,7 @@ void Timer::start() {
 
 
 void Timer::update() {
-    cumul_time = (cumul_time + TimerData::getTime()) - start_time;
+    cumul_time = (cumul_time + TimerData::get_time()) - start_time;
 }
 
 

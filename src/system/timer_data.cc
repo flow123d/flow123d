@@ -9,14 +9,13 @@
 #include <stdlib.h>
 #include <string>
 
-#include "system/TimerData.hh"
 #include "config.h"
+#include "timer_data.hh"
 
 using namespace std;
 
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 #include <windows.h>
-LARGE_INTEGER TimerData::Frequency;
 #else
 #include <chrono>
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
@@ -28,36 +27,36 @@ bool TimerData::inited = false;
  */
 
 TimerData::TimerData () :
-        ticks_ (TimerData::getCurrentTicks ()) {
+        ticks_ (TimerData::get_current_ticks ()) {
 }
 
 /*
  * Public methods
  */
 
-double TimerData::toTime (void) const {
+double TimerData::to_time (void) const {
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-    return ((double)this->getTicks()) / (TimerData::Frequency.QuadPart);
+    return ((double)this->get_ticks()) / (TimerData::frequency.QuadPart);
 #else
-    return ((double) this->getTicks ()) / (1 * 1000 * 1000 * 1000);
+    return ((double) this->get_ticks ()) / (1 * 1000 * 1000 * 1000);
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 }
 
-string TimerData::toString (void) {
+string TimerData::to_string (void) {
     char buffer[50];
-    sprintf (buffer, "%1.9f", this->toTime ());
+    sprintf (buffer, "%1.9f", this->to_time ());
     return buffer;
 }
 
 TimerData TimerData::operator+ (const TimerData &right) {
     TimerData result;
-    result.setTicks (this->ticks_ + right.ticks_);
+    result.set_ticks (this->ticks_ + right.ticks_);
     return result;
 }
 
 TimerData TimerData::operator- (const TimerData &right) {
     TimerData result;
-    result.setTicks (this->ticks_ - right.ticks_);
+    result.set_ticks (this->ticks_ - right.ticks_);
     return result;
 }
 
@@ -65,21 +64,14 @@ TimerData TimerData::operator- (const TimerData &right) {
  * Static methods
  */
 
-TimerData TimerData::getTime () {
+TimerData TimerData::get_time () {
     TimerData result;
     // ticks are already set in constructor
     return result;
 }
 void TimerData::init () {
     if (TimerData::inited) return;
-
-    // set Frequency on Windows platform
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-    QueryPerformanceFrequency(&TimerData::Frequency);
-//        cout << "Windows used" << endl;
-#else
-//        cout << "Chrono used" << endl;
-#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+    // init routine
     TimerData::inited = true;
 }
 
@@ -87,15 +79,15 @@ void TimerData::init () {
  * Private methods
  */
 
-long long TimerData::getTicks () const {
+long long TimerData::get_ticks () const {
     return this->ticks_;
 }
 
-void TimerData::setTicks (long long ticks) {
+void TimerData::set_ticks (long long ticks) {
     this->ticks_ = ticks;
 }
 
-long long TimerData::getCurrentTicks () {
+long long TimerData::get_current_ticks () {
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
     LARGE_INTEGER time;
     QueryPerformanceCounter (&time);
@@ -106,7 +98,17 @@ long long TimerData::getCurrentTicks () {
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 }
 
+#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+LARGE_INTEGER TimerData::get_frequency () {
+    LARGE_INTEGER frequency;
+    QueryPerformanceFrequency(&frequency);
+    return frequency;
+}
+// initialize frequency field
+LARGE_INTEGER TimerData::frequency = TimerData::get_frequency ();
+#endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+
 std::ostream& operator<< (std::ostream &strm, TimerData &right) {
-    return strm << 564;
+    return strm << right.to_string ();
 }
 

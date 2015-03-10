@@ -62,8 +62,8 @@
 
 #include "global_defs.h"
 #include "system/system.hh"
-#include "system/TimerData.hh"
 #include <mpi.h>
+#include "timer_data.hh"
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
