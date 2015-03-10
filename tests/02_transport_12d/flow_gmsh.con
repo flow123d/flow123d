@@ -34,7 +34,9 @@
         }
       ],
       
-      balance = true,
+      balance = {
+        format = "gnuplot"
+      },
 
       output = {
         output_stream = {
@@ -74,7 +76,8 @@
         end_time = 5.0
       },
       balance = {
-        cumulative = true
+        cumulative = true,
+        format = "gnuplot"
       },
       
       reaction_term = {
