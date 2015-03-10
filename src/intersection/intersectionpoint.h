@@ -72,37 +72,15 @@ template<int N, int M> class IntersectionPoint {
 		cout << "Orientation: " << orientation << " Vertex: " << is_vertex << " Patological: " << is_patological << endl;
 	};
 
-	/// Possibly can remove.
-	inline arma::vec::fixed<N+1> getLocalCoords1(){
-			return local_coords1;
-		};
+	inline double get_lc1_coord(unsigned int i) const{
+		return local_coords1[i];
+	};
 
-	/// Possibly can remove.
-	inline arma::vec::fixed<M+1> getLocalCoords2(){
-			return local_coords2;
-		};
-
-	inline arma::vec::fixed<N+1> getLC1() const{
+	inline arma::vec::fixed<N+1> &get_local_coords1(){
 		return local_coords1;
 	};
-	inline arma::vec::fixed<M+1> getLC2() const{
+	inline arma::vec::fixed<M+1> &get_local_coords2(){
 		return local_coords2;
-	};
-
-	/// Try to avoid.
-	inline void setLocalCoords1(const arma::vec::fixed<N+1> &lc1){
-			//local_coords1 = lc1;
-		for(unsigned int i = 0;i<N+1;i++){
-			local_coords1[i] = lc1[i];
-		}
-	};
-
-	/// Try to avoid.
-	inline void setLocalCoords2(const arma::vec::fixed<M+1> &lc2){
-			//local_coords2 = lc2;
-		for(unsigned int i = 0;i<M+1;i++){
-			local_coords2[i] = lc2[i];
-		}
 	};
 
 	inline void setSide1(int s){
@@ -137,23 +115,26 @@ template<int N, int M> class IntersectionPoint {
 		return orientation;
 	};
 
-	inline bool isVertex(){
+	inline bool isVertex() const{
 		return is_vertex;
 	};
 
-	inline bool isPatological(){
+	inline bool isPatological() const{
 		return is_patological;
 	};
 
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
+};
 
-	inline int getDim1(){
-		return N;
-	};
-	inline int getDim2(){
-		return M;
-	};
+class TriangleLineIntersections{
 
+	int side_idx1;
+	int side_idx2;
+
+	unsigned int orientation;
+
+	bool is_vertex;
+	bool is_patological;
 };
 
 } // END namespace

@@ -24,55 +24,35 @@ TEST(simplex, all) {
 	arma::vec3 Point1;Point1[0] = 2;Point1[1] = 3;Point1[2] = 4;
 	arma::vec3 Point2;Point2[0] = 3;Point2[1] = 4;Point2[2] = 1;
 	arma::vec3 Point3;Point3[0] = 4;Point3[1] = 1;Point3[2] = 2;
-	//arma::vec3 Point4;Point4[0] = 5;Point4[1] = 5;Point4[2] = 5;
 
+	arma::vec3 PointA;PointA[0] = 5;PointA[1] = 6;PointA[2] = 7;
+	arma::vec3 PointB;PointB[0] = 6;PointB[1] = 7;PointB[2] = 5;
+	arma::vec3 PointC;PointC[0] = 7;PointC[1] = 5;PointC[2] = 6;
 
-	arma::vec3 *pp, *ll;
-	arma::vec3 *pole_p[4];
-	//pp = new arma::vec3;
-	pp = &Point0;
-	ll = &Point0;
 
 	arma::vec3 *pole_pp[] = {&Point0,&Point1,&Point2,&Point3};
-	arma::vec3 pole[] = {Point0,Point1,Point2,Point3};
-	pole_p[0] = &Point0;
-	pole_p[1] = &Point1;
-	pole_p[2] = &Point2;
-	pole_p[3] = &Point3;
-	       //= {pp,pp,pp,ll};
+	arma::vec3 *pole_p[] = {&PointA, &PointB, &PointC};
 
-	Point0[0] = 10;
-
-	(*pp)[0] = 20;
-
-	(pole_p[0][0])[0] = 30;
-
-
-
-	xprintf(Msg, "pp:%f, ll:%f\n",(*pp)[0],(*ll)[0]);
-	//*pp0 = Point0;
-
-	//Simplex<3> sss(pole);
 	Simplex<3> ss(pole_pp);
+	Simplex<2> s(pole_p);
+
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	FilePath mesh_file("mesh/site/velka_sit.msh", FilePath::input_file);
+
+	Mesh mesh;
+	ifstream ifs(string(mesh_file).c_str());
+	mesh.read_gmsh_from_stream(ifs);
 
 
-	//sss.toString();
-	ss.to_string();
+	InspectElements ie(&mesh);
+	ie.ComputeIntersections23();
 
-	//Simplex<3> a;
-	//a[0][0][0].setPointCoordinates(Point0);
-	//a[0][0][1].setPointCoordinates(Point1);
-	//a[0][1][1].setPointCoordinates(Point2);
-	//a[1][1][1].setPointCoordinates(Point3);
+	/*ComputeIntersection<Simplex<2>, Simplex<3>> pp(s,ss);
+	pp.init();
 
-	//a.to_string();
+	pp.toStringPluckerCoordinatesTree();
+*/
 
-
-	for(unsigned int i = 0; i < 100000;i++){
-		//Simplex<3> sss(pole);
-		Simplex<3> ss(pole_pp);
-	}
-	//Profiler::uninitialize();
 
 	xprintf(Msg, "Test complete!\n");
 }

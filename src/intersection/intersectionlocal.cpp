@@ -21,11 +21,13 @@ IntersectionLocal::IntersectionLocal(unsigned int elem2D,unsigned int elem3D):el
 			tracing_table(i,j) = -1;
 		}
 	}
+
+	i_points.reserve(4);
 };
 
 IntersectionLocal::~IntersectionLocal(){};
 
-void IntersectionLocal::addIP(IntersectionPoint<2,3> InPoint){
+void IntersectionLocal::addIP(const IntersectionPoint<2,3> &InPoint){
 	if(InPoint.isPatological()){
 		is_patological = true;
 	}
@@ -87,7 +89,7 @@ void IntersectionLocal::fillTracingTable2(){
 			unsigned int n = i + 1 - j;
 
 			if(i_points[m].isVertex()){
-				index1 = 4 + ((i_points[m].getLocalCoords1()[0] == 1) ? 0 : ((i_points[m].getLocalCoords1()[1] == 1) ? 1 : 2));
+				index1 = 4 + ((i_points[m].get_local_coords1()[0] == 1) ? 0 : ((i_points[m].get_local_coords1()[1] == 1) ? 1 : 2));
 				//i_points[m].setSide1(index1-4);//uloží se pouze index vrcholu
 				i_points[m].setSide2(-1);
 				// Uložit si o jaky vrchol se jedna
@@ -98,7 +100,7 @@ void IntersectionLocal::fillTracingTable2(){
 			}
 
 			if(i_points[n].isVertex()){
-				index2 = 4 + ((i_points[n].getLocalCoords1()[0] == 1) ? 0 : ((i_points[n].getLocalCoords1()[1] == 1) ? 1 : 2));
+				index2 = 4 + ((i_points[n].get_local_coords1()[0] == 1) ? 0 : ((i_points[n].get_local_coords1()[1] == 1) ? 1 : 2));
 				//i_points[n].setSide1(index2-4);//uloží se pouze index vrcholu
 				i_points[n].setSide2(-1);
 				tracing_table(index2,2) = n;
@@ -208,6 +210,7 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 
 
 	std::vector<IntersectionPoint<2,3>> new_points;
+	new_points.reserve(i_points.size());
 	int start_idx = -1;
 	int start_point_idx = -1;
 
@@ -310,14 +313,14 @@ void IntersectionLocal::traceConvexHull(){
 
 	// Odstranění duplicit
 	for(unsigned int i = 0; i < i_points.size()-1; i++){
-		if((i_points[i].getLC1()[0] == i_points[i+1].getLC1()[0]) &&
-				(i_points[i].getLC1()[1] == i_points[i+1].getLC1()[1])){
+		if((i_points[i].get_local_coords1()[0] == i_points[i+1].get_local_coords1()[0]) &&
+				(i_points[i].get_local_coords1()[1] == i_points[i+1].get_local_coords1()[1])){
 			i_points.erase(i_points.begin()+i);
 		}
 	}
 
-	if(i_points.size() > 1 && i_points[0].getLC1()[0] == i_points[i_points.size()-1].getLC1()[0] &&
-			i_points[0].getLC1()[1] == i_points[i_points.size()-1].getLC1()[1]){
+	if(i_points.size() > 1 && i_points[0].get_local_coords1()[0] == i_points[i_points.size()-1].get_local_coords1()[0] &&
+			i_points[0].get_local_coords1()[1] == i_points[i_points.size()-1].get_local_coords1()[1]){
 		i_points.erase(i_points.end());
 	}
 
@@ -341,8 +344,8 @@ void IntersectionLocal::traceConvexHull(){
 double IntersectionLocal::ConvexHullCross(const IntersectionPoint<2,3> &O,
 		const IntersectionPoint<2,3> &A,
 		const IntersectionPoint<2,3> &B) const{
-	return ((A.getLC1()[1]-O.getLC1()[1])*(B.getLC1()[2]-O.getLC1()[2])
-			-(A.getLC1()[2]-O.getLC1()[2])*(B.getLC1()[1]-O.getLC1()[1]));
+	return ((A.get_lc1_coord(1)-O.get_lc1_coord(1))*(B.get_lc1_coord(2)-O.get_lc1_coord(2))
+			-(A.get_lc1_coord(2)-O.get_lc1_coord(2))*(B.get_lc1_coord(1)-O.get_lc1_coord(1)));
 }
 
 /* split the polygon into triangles according to the first point
@@ -361,9 +364,9 @@ double IntersectionLocal::getArea(){
 	double subtotal = 0.0;
 	for(unsigned int j = 2; j < i_points.size();j++){
 		//xprintf(Msg, "volani %d %d\n",j, i_points.size());
-		subtotal += fabs(i_points[0].getLocalCoords1()(1)*(i_points[j-1].getLocalCoords1()(2) - i_points[j].getLocalCoords1()(2)) +
-				 i_points[j-1].getLocalCoords1()(1)*(i_points[j].getLocalCoords1()(2) - i_points[0].getLocalCoords1()(2)) +
-				 i_points[j].getLocalCoords1()(1)*(i_points[0].getLocalCoords1()(2) - i_points[j-1].getLocalCoords1()(2)));
+		subtotal += fabs(i_points[0].get_local_coords1()(1)*(i_points[j-1].get_local_coords1()(2) - i_points[j].get_local_coords1()(2)) +
+				 i_points[j-1].get_local_coords1()(1)*(i_points[j].get_local_coords1()(2) - i_points[0].get_local_coords1()(2)) +
+				 i_points[j].get_local_coords1()(1)*(i_points[0].get_local_coords1()(2) - i_points[j-1].get_local_coords1()(2)));
 	}
 	return fabs(subtotal/2);
 };

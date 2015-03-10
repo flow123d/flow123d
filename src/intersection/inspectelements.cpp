@@ -10,7 +10,9 @@ namespace computeintersection {
 
 InspectElements::InspectElements(){};
 
-InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){};
+InspectElements::InspectElements(Mesh* _mesh):mesh(_mesh){
+	element_2D_index = -1;
+};
 
 InspectElements::~InspectElements(){};
 
@@ -19,15 +21,6 @@ void InspectElements::computeIntersections2d3dInit(){
 	flag_for_3D_elements.assign(mesh->n_elements(), -1);
 	closed_elements.assign(mesh->n_elements(), false);
 	intersection_list.assign(mesh->n_elements(),std::vector<IntersectionLocal>());
-
-	/*FOR_ELEMENTS(mesh, elm) {
-		if (elm->dim() == 2) {
-			intersection_list[elm.index()] = std::vector<IntersectionLocal>();
-			closed_elements[elm.index()] = false;
-		}
-	}*/
-
-	element_2D_index = -1;
 
 };
 
@@ -139,7 +132,7 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	std::vector<std::pair<unsigned int, unsigned int>> prolongation_table;
 	intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].traceGenericPolygon(prolongation_table);
 
-	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].getIPsize() > 2){
+	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].size() > 2){
 		//all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 	}
@@ -148,32 +141,44 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 
 void InspectElements::ComputeIntersections23(){
 
+	{ START_TIMER("Incializace pruniku");
 	computeIntersections2d3dInit();
+
+	END_TIMER("Inicializace pruniku");}
 
 	unsigned int elementLimit = 20;
 	BIHTree bt(mesh, elementLimit);
 
+
+	{ START_TIMER("Prochazeni vsech elementu");
+
 	FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 2 && !closed_elements[elm.index()]) {
 
-			if(elm->index() == 3616){
-				xprintf(Msg, "OU YEAH\n");
-			}
-
-			this->UpdateTriangle(elm);
-
-
 			std::vector<unsigned int> searchedElements;
+
+			{ START_TIMER("BB_triangle");
+
 			TTriangle tt;
 			tt.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
 						 TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
 						 TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
 
 			//FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_triangle(efi,tt);
-			BoundingBox elementBoundingBox = tt.get_bounding_box();
-			bt.find_bounding_box(elementBoundingBox, searchedElements);
-			//bool prunik = false;
+				{ START_TIMER("BB");
 
+				BoundingBox elementBoundingBox = tt.get_bounding_box();
+				bt.find_bounding_box(elementBoundingBox, searchedElements);
+				END_TIMER("BB");}
+
+			END_TIMER("BB_triangle");}
+
+
+			if(searchedElements.size() > 0){
+				this->UpdateTriangle(elm);
+			}
+
+			{ START_TIMER("Hlavni vypocet");
 			for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++){
 				int idx = *it;
 				ElementFullIter ele = mesh->element( idx );
@@ -181,11 +186,12 @@ void InspectElements::ComputeIntersections23(){
 
 					this->UpdateTetrahedron(ele);
 
+					//xprintf(Msg, "bounding box\n");
 					IntersectionLocal il(elm.index(), ele->index());
 					ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 					CI_23.init();
 
-					//xprintf(Msg, "pred compute\n");
+
 					CI_23.compute(il);
 					//xprintf(Msg, "po compute\n");
 					//il.tracePolygon();
@@ -193,11 +199,11 @@ void InspectElements::ComputeIntersections23(){
 					il.traceGenericPolygon(prolongation_table);
 
 
-					//xprintf(Msg, "Polygon(%d) - patological: %d \n",il.getIPsize(), il.isPatological());
+					//xprintf(Msg, "Polygon(%d) - patological: %d \n",il.size(), il.isPatological());
 
-					if(il.getIPsize() > 2){
+					if(il.size() > 2){
 
-
+						{ START_TIMER("Prochazeni vsech front");
 						//all_intersections.push_back(il);
 
 						intersection_list[elm.index()].push_back(il);
@@ -208,6 +214,7 @@ void InspectElements::ComputeIntersections23(){
 						computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 
 						// Dokončila se trasovací tabulka = fronty jsou naplněny
+
 
 						while(1){
 						// Zpracování front
@@ -240,6 +247,7 @@ void InspectElements::ComputeIntersections23(){
 							}
 
 						}
+						END_TIMER("Prochazeni vsech front");}
 						//prunik = true;
 						break; // ukončí procházení dalších bounding boxů
 					}
@@ -248,14 +256,15 @@ void InspectElements::ComputeIntersections23(){
 			}
 			// Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
 			closed_elements[elm.index()] = true;
+			END_TIMER("Hlavni vypocet");}
 			//if(prunik){
 				//break; // do budoucna odstranit break - tady ho mam, abych měl jistotu, že se provádí průchod
 			//}
 		}
 	}
 
-	//xprintf(Msg,"Element(3030) - velikost(%d)\n", intersection_list[3030].size());
-	//xprintf(Msg,"Element(3617) - velikost(%d)\n", intersection_list[3617].size());
+	END_TIMER("Prochazeni vsech elementu");}
+
 };
 
 
@@ -304,7 +313,7 @@ void InspectElements::print_mesh_to_file(string name){
 		for(unsigned int j = 0; j < intersection_list.size();j++){
 			number_of_polygons += intersection_list[j].size();
 			for(unsigned int k = 0; k < intersection_list[j].size();k++){
-				number_of_intersection_points += intersection_list[j][k].getIPsize();
+				number_of_intersection_points += intersection_list[j][k].size();
 			}
 		}
 
@@ -334,20 +343,20 @@ void InspectElements::print_mesh_to_file(string name){
 				ElementFullIter el3D = mesh->element(il.idx_3D());
 
 
-				for(unsigned int l = 0; l < (unsigned int)il.getIPsize(); l++){
+				for(unsigned int l = 0; l < il.size(); l++){
 					//xprintf(Msg, "first\n");
 					number_of_nodes++;
 					IntersectionPoint<2,3> IP23 = il.get_point(l);
 					arma::vec3 _global;
 					if(i == 0){
-						_global = (IP23.getLocalCoords1())[0] * el2D->node[0]->point()
-														   +(IP23.getLocalCoords1())[1] * el2D->node[1]->point()
-														   +(IP23.getLocalCoords1())[2] * el2D->node[2]->point();
+						_global = (IP23.get_local_coords1())[0] * el2D->node[0]->point()
+														   +(IP23.get_local_coords1())[1] * el2D->node[1]->point()
+														   +(IP23.get_local_coords1())[2] * el2D->node[2]->point();
 					}else{
-						_global = (IP23.getLocalCoords2())[0] * el3D->node[0]->point()
-														   +(IP23.getLocalCoords2())[1] * el3D->node[1]->point()
-														   +(IP23.getLocalCoords2())[2] * el3D->node[2]->point()
-														   +(IP23.getLocalCoords2())[3] * el3D->node[3]->point();
+						_global = (IP23.get_local_coords2())[0] * el3D->node[0]->point()
+														   +(IP23.get_local_coords2())[1] * el3D->node[1]->point()
+														   +(IP23.get_local_coords2())[2] * el3D->node[2]->point()
+														   +(IP23.get_local_coords2())[3] * el3D->node[3]->point();
 					}
 					fprintf(file,"%d %f %f %f\n", number_of_nodes, _global[0], _global[1], _global[2]);
 				}
@@ -389,14 +398,14 @@ void InspectElements::print_mesh_to_file(string name){
 
 				IntersectionLocal il = intersection_list[j][k];
 
-				for(unsigned int l = 0; l < (unsigned int)il.getIPsize(); l++){
+				for(unsigned int l = 0; l < il.size(); l++){
 					number_of_elements++;
 					nodes++;
 					if(l == 0){
 						last = nodes;
 					}
 
-					if((l+1) == (unsigned int)il.getIPsize()){
+					if((l+1) == il.size()){
 						fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, last);
 					}else{
 						fprintf(file,"%d 1 2 18 7 %d %d\n", number_of_elements, nodes, nodes+1);
@@ -439,7 +448,7 @@ void InspectElements::print(unsigned int vyber){
 	}
 
 		for(unsigned int i = 0; i < all_intersections.size(); i++){
-			pocet_pruseciku += all_intersections[i].getIPsize();
+			pocet_pruseciku += all_intersections[i].size();
 		}
 	fprintf(soubor, "%d\n", (pocet_pruseciku + pocet_predtim));
 
@@ -456,7 +465,7 @@ void InspectElements::print(unsigned int vyber){
 	for(unsigned int i = 0; i < velikost_pruseciku; i++){
 
 		IntersectionLocal il = all_intersections[i];
-		velikost = il.getIPsize();
+		velikost = il.size();
 
 			unsigned int idx2D = all_intersections[i].idx_2D();
 			unsigned int idx3D = all_intersections[i].idx_3D();
@@ -471,14 +480,14 @@ void InspectElements::print(unsigned int vyber){
 				IntersectionPoint<2,3> IP23 = il.get_point(j);
 				arma::vec3 T_globalni;
 				if(vyber == 0){
-					T_globalni = (IP23.getLocalCoords1())[0] * el2D->node[0]->point()
-													   +(IP23.getLocalCoords1())[1] * el2D->node[1]->point()
-													   +(IP23.getLocalCoords1())[2] * el2D->node[2]->point();
+					T_globalni = (IP23.get_local_coords1())[0] * el2D->node[0]->point()
+													   +(IP23.get_local_coords1())[1] * el2D->node[1]->point()
+													   +(IP23.get_local_coords1())[2] * el2D->node[2]->point();
 				}else{
-					T_globalni = (IP23.getLocalCoords2())[0] * el3D->node[0]->point()
-													   +(IP23.getLocalCoords2())[1] * el3D->node[1]->point()
-													   +(IP23.getLocalCoords2())[2] * el3D->node[2]->point()
-													   +(IP23.getLocalCoords2())[3] * el3D->node[3]->point();
+					T_globalni = (IP23.get_local_coords2())[0] * el3D->node[0]->point()
+													   +(IP23.get_local_coords2())[1] * el3D->node[1]->point()
+													   +(IP23.get_local_coords2())[2] * el3D->node[2]->point()
+													   +(IP23.get_local_coords2())[3] * el3D->node[3]->point();
 				}
 				fprintf(soubor,"%d %f %f %f\n", pocet_prus, T_globalni[0], T_globalni[1], T_globalni[2]);
 				//fprintf(soubor,"%d %f %f %f\n", pocet_prus, C_globalni[0], C_globalni[1], C_globalni[2]);
@@ -522,7 +531,7 @@ void InspectElements::print(unsigned int vyber){
 
 
 			IntersectionLocal il = all_intersections[i];
-			velikost = il.getIPsize();
+			velikost = il.size();
 
 				for(unsigned int j = 0; j < velikost; j++){
 					pocet_prus++;

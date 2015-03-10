@@ -20,7 +20,7 @@ TEST(ngh_intersection_2_3, all) {
 	unsigned int elementLimit = 20;
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/velka_sit.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/megasit10.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
@@ -31,6 +31,7 @@ TEST(ngh_intersection_2_3, all) {
 	cout << "Síť načtena!" << endl;
 	cout << "Probíhá výpočet průniku" << endl;
 
+	{ START_TIMER("Vypocet pruniku");
 	BIHTree bt(&mesh, elementLimit);
 
 	double obsah = 0;
@@ -49,6 +50,7 @@ TEST(ngh_intersection_2_3, all) {
 			TIntersectionType iType;
 			double measure;
 
+			{ START_TIMER("Hlavni vypocet");
 			for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
 				{
 					int idx = *it;
@@ -65,13 +67,16 @@ TEST(ngh_intersection_2_3, all) {
 						//if (iType == line) {rintf(Msg, "%d %d \n",elm.id(),ele.id()); }l
 					}
 				}
+			END_TIMER("Hlavni vypocet");}
 		 }
    }
 
 
 
 	xprintf(Msg,"Obsah polygonu: %f\n", obsah);
-	//Profiler::instance()->output(0,cout);//MPI_COMM_WORLD,cout);
+	END_TIMER("Vypocet pruniku");}
+
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 	Profiler::uninitialize();
 	xprintf(Msg, "Test complete!");
 }

@@ -85,7 +85,7 @@ public:
 		return subtotal;
 	};*/
 
-	inline double polygonArea2(){
+	inline double polygonArea(){
 		double subtotal = 0.0;
 
 		for(unsigned int i = 0; i < intersection_list.size(); i++){

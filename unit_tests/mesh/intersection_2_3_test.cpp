@@ -16,7 +16,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/megasit4.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/megasit10.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
@@ -28,18 +28,22 @@ TEST(intersections, all) {
 	cout << "Probíhá výpočet průniku" << endl;
 
 	InspectElements ie(&mesh);
+	{ START_TIMER("Vypocet pruniku");
+
 	ie.ComputeIntersections23();
-	ie.print(0);
-	ie.print(1);
+	END_TIMER("Vypocet pruniku");}
+	//ie.print(0);
+	//ie.print(1);
+	//ie.print_mesh_to_file("pokus");
 
 	double obsah = ie.polygonArea();
 	xprintf(Msg,"Obsah polygonu: %f\n", obsah);
-	double obsah2 = ie.polygonArea2();
-	xprintf(Msg,"Obsah2 polygonu: %f\n", obsah2);
 
+	Profiler::instance()->output(MPI_COMM_WORLD, cout);
 	Profiler::uninitialize();
 
-	xprintf(Msg, "Test complete!");
+	//count << pa.c_str() << endl;
+	xprintf(Msg, "Test complete! ");
 }
 
 

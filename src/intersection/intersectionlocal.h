@@ -49,20 +49,18 @@ public:
     IntersectionLocal(unsigned int elem2D,unsigned int elem3D);
     ~IntersectionLocal();
 
-    void addIP(IntersectionPoint<2,3> InPoint);
+    void addIP(const IntersectionPoint<2,3> &InPoint);
 
     inline bool isPatological(){
     	return is_patological;
     };
 
-    inline IntersectionPoint<2,3> get_point(const unsigned int index)
+    inline IntersectionPoint<2,3> &get_point(const unsigned int index)
     {
          return i_points[index];
     }
-    //inline int getID(){
-    	//return id;
-    //}
-    inline int getIPsize(){
+
+    inline unsigned int size(){
     	return i_points.size();
     }
     inline unsigned int idx_2D(){return element_2D_idx;}
@@ -80,14 +78,6 @@ public:
 
     inline void printTracingTable(){
     	tracing_table.print();
-    };
-
-    inline void setTracingTable(unsigned int rows, unsigned int cols, unsigned int value){
-    	tracing_table(rows, cols) = value;
-    };
-
-    inline unsigned int getTracingTableValue(unsigned int rows, unsigned int cols){
-    	return tracing_table(rows, cols);
     };
 
     void traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
@@ -140,9 +130,9 @@ public:
     /*
      * Vrací IntersectionPoint s prohozenými dimenzemi i daty.
      * */
-    template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> flipDimension(IntersectionPoint<dim, subdim> IP){
+    template<unsigned int subdim, unsigned int dim> inline static IntersectionPoint<subdim, dim> flipDimension(IntersectionPoint<dim, subdim> &IP){
     		//cout << "IntersectionLocal::flipDimension<" << dim << "," << subdim << "> na <" << subdim << "," <<  dim << ">" << endl;
-        	IntersectionPoint<subdim, dim> IPn(IP.getLocalCoords2(), IP.getLocalCoords1(), IP.getSide2(), IP.getSide1(), IP.getOrientation(), IP.isVertex(), IP.isPatological());
+        	IntersectionPoint<subdim, dim> IPn(IP.get_local_coords2(), IP.get_local_coords1(), IP.getSide2(), IP.getSide1(), IP.getOrientation(), IP.isVertex(), IP.isPatological());
         	return IPn;
      };
 
@@ -151,19 +141,19 @@ public:
       * (1 -> 2) nebo (2 -> 3)
       * Templetuji dimenzí, kterou chci a vkládám IP s druhou nižší dimenzí
       * */
-     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-1> IP){
+     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-1> &IP){
 
         	arma::vec::fixed<d+1> interpolovane;
         	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-1 << "> na <" << sd << "," <<  d << ">" << endl;
         	if(d == 3){
-        		interpolovane = RefSimplex<3>::interpolate<2>(IP.getLocalCoords2(), IP.getSide2());
+        		interpolovane = RefSimplex<3>::interpolate<2>(IP.get_local_coords2(), IP.getSide2());
         	}else if(d == 2){
-        		interpolovane = RefSimplex<2>::interpolate<1>(IP.getLocalCoords2(), IP.getSide2());
+        		interpolovane = RefSimplex<2>::interpolate<1>(IP.get_local_coords2(), IP.getSide2());
         	}else{
         		cout << "zakazany stav" << endl;
         		interpolovane.zeros();
         	}
-        	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(),IP.getOrientation(),IP.isVertex(), IP.isPatological());
+        	IntersectionPoint<sd, d> IPn(IP.get_local_coords1(),interpolovane,IP.getSide1(), IP.getSide2(),IP.getOrientation(),IP.isVertex(), IP.isPatological());
         	return IPn;
       };
 
@@ -172,17 +162,17 @@ public:
       * (1 -> 3)
       * Templetuji dimenzí, kterou chci a vkládám IP s druhou dimenzí o 2 menší
       * */
-     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-2> IP){
+     template<int sd,int d> inline static IntersectionPoint<sd, d> interpolateDimension(IntersectionPoint<sd,d-2> &IP){
 
              	arma::vec::fixed<d+1> interpolovane;
              	//cout << "IntersectionLocal::interpolateDimension<" << sd << "," << d-2 << "> na <" << sd << "," <<  d << ">" << endl;
              	if(d == 3){
-             		interpolovane = RefSimplex<3>::interpolate<1>(IP.getLocalCoords2(), IP.getSide2());
+             		interpolovane = RefSimplex<3>::interpolate<1>(IP.get_local_coords2(), IP.getSide2());
              	}else{
              		cout << "zakazany stav" << endl;
              		interpolovane.zeros();
              	}
-             	IntersectionPoint<sd, d> IPn(IP.getLocalCoords1(),interpolovane,IP.getSide1(), IP.getSide2(), IP.getOrientation(),IP.isVertex(), IP.isPatological());
+             	IntersectionPoint<sd, d> IPn(IP.get_local_coords1(),interpolovane,IP.getSide1(), IP.getSide2(), IP.getOrientation(),IP.isVertex(), IP.isPatological());
              	return IPn;
            };
 };
