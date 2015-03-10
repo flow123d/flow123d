@@ -39,7 +39,7 @@
 
 #include "system/file_path.hh"
 #include "mpi.h"
-#include "timer_data"
+#include "timer_data.hh"
 /*
  * These should be replaced by using boost MPI interface
  */
