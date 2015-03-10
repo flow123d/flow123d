@@ -108,8 +108,8 @@ is known instead of the rate. Relation of these can be derived:
     \frac{\d c_A}{c_A} &=& -k \d\tau\\
     \int\limits_{c_A^0}^{c_A^0/2}\frac{\d c_A}{c_A} &=& -k\int\limits_{0}^{t_{1/2}} 1\d\tau\\
     \big[ \ln c_A\big]^{c_A^0/2}_{c_A^0} &=& -\big[k\tau\big]^{t_{1/2}}_{0}\\
-    \ln\frac{c_A^0}{2} - \ln c_A^0 &=& - k t_{1/2}\\
-    \ln 2 &=& k t_{1/2}\\
+%     \ln\frac{c_A^0}{2} - \ln c_A^0 &=& - k t_{1/2}\\
+%     \ln 2 &=& k t_{1/2}\\
     k &=& \frac{\ln 2}{t_{1/2}}.
 \end{eqnarray*}
 
@@ -125,12 +125,28 @@ part in a complex radioactive chain, including branches, e.g.
 Now the problem turned into a system of differential equations $\partial_t \vc{c}=\mathbf{D}\vc{c}$ with the following
 matrix, generally full and nonsymmetric:
 \[
-\mathbf{D} = \begin{pmatrix} -k_1 &k_{21}& \cdots & k_{s1} \\ 
+\mathbf{D} = \begin{pmatrix} M_1 &     && \\ 
+                                 & M_2 && \\
+                                 && \ddots & \\
+                  && & M_s \end{pmatrix}
+             \begin{pmatrix} -k_1 &k_{21}& \cdots & k_{s1} \\ 
                   k_{12} & -k_2 & \cdots & k_{s2} \\
                   \vdots &\vdots& \ddots & \vdots \\
                   k_{1s} &k_{2s}& \cdots & -k_s \end{pmatrix}
+             \begin{pmatrix} \frac{1}{M_1} &     && \\ 
+                                 & \frac{1}{M_2} && \\
+                                 && \ddots & \\
+                  && & \frac{1}{M_s} \end{pmatrix},
 \]
-We denote the rate constant of an $i$-th substance 
+where $M_i$ is molar mass. We can then write
+\begin{equation} \label{eqn:reaction_system_entries}
+d_{ij} =
+  \begin{cases}
+  k_{ji} \frac{M_i}{M_j}, \quad i\neq j, \\
+  -k_{ij}, \quad i=j. \\
+  \end{cases}
+\end{equation}
+We denote the rate constant of the $i$-th radionuclide
 \[
   k_i=\sum_{j=1}^{s}k_{ij}=\sum_{j=1}^{s}b_{ij}k_i
 \]
@@ -140,15 +156,15 @@ determines the distribution into different branches of the decay chain, holding 
 Notice, that physically it is not possible to create a chain loop, so in fact one can permutate the vector of 
 concentrations and rearrange the matrix $D$ into a lower triangle matrix
 \[
-\mathbf{D} = \begin{pmatrix} -k_1 &  &  &  \\ 
-                  k_{12} & -k_2 & &  \\
+\mathbf{D} = \begin{pmatrix} d_{11} &  &  &  \\ 
+                  d_{21} & d_{22} & &  \\
                   \vdots &\vdots& \ddots &  \\
-                  k_{1s} &k_{2s}& \cdots & -k_s \end{pmatrix}.
+                  d_{s1} &d_{s2}& \cdots & d_{ss} \end{pmatrix}.
 \]
 However, we do not do this and we do not search the reactions for chain loops.
 
 The system of first order differential equations with constant coefficients is solved using one of the
-implemented ODE solvers.
+implemented linear ODE solvers.
 
 
 \subsection{First Order Reaction}
