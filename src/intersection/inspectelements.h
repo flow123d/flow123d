@@ -21,8 +21,6 @@ namespace computeintersection {
 
 class InspectElements {
 
-	//std::vector<IntersectionLocal> all_intersections;
-
 	/* Possibly replace IntersectionLocal by index of ProlongationLine
 	 * in the prolongation_line_queue, which should rather be std::deque
 	 * to support both queue and random access operations.
@@ -30,6 +28,7 @@ class InspectElements {
 	std::vector<std::vector<IntersectionLocal>> intersection_list;
 	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
+
 
 	std::queue<ProlongationLine> prolongation_line_queue_2D;
 	std::queue<ProlongationLine> prolongation_line_queue_3D;
@@ -43,20 +42,27 @@ class InspectElements {
 	Simplex<3> tetrahedron;
 
 	Mesh *mesh;
+	std::vector<BoundingBox> elements_bb;
+	BoundingBox mesh_3D_bb;
 
-	//ComputeIntersection<Simplex<1>,Simplex<3> > CI13;
-	//ComputeIntersection<Simplex<2>,Simplex<3> > CI23;
+	void UpdateAbscissa(const ElementFullIter &el);
+	void UpdateTriangle(const ElementFullIter &el);
+	void UpdateTetrahedron(const ElementFullIter &el);
 
 public:
-	InspectElements();
+
 	InspectElements(Mesh *_mesh);
 	~InspectElements();
 
-	// dopnit implementaci do .cpp
+	template<unsigned int subdim, unsigned int dim> inline void compute_intersections(){
+		cout << "Warning - method compute_intersections "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
+	};
+
+
 	void computeIntersections2d3d();
 	void computeIntersections2d3dInit();
 	void computeIntersections2d3dProlongation(const ProlongationLine &pl);
-	void computeIntersections2d3dUseProlongationTable(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
+	void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
 
 	bool intersectionExists(unsigned int elm_2D_idx, unsigned int elm_3D_idx);
 
@@ -64,26 +70,7 @@ public:
 	void ComputeIntersections23();
 	void ComputeIntersections13();
 
-	void UpdateAbscissa(const ElementFullIter &el);
-	void UpdateTriangle(const ElementFullIter &el);
-	void UpdateTetrahedron(const ElementFullIter &el);
-
-	//void print(unsigned int vyber);
-
 	void print_mesh_to_file(string name);
-
-	/*inline double polygonArea(){
-		double subtotal = 0.0;
-		for(unsigned int i = 0; i < all_intersections.size();i++){
-			 Element efi = *mesh->element(all_intersections[i].idx_2D());
-			 TTriangle t2d(efi);
-			 double t2dArea = t2d.GetArea();
-			 double localArea = all_intersections[i].getArea();//il.getArea();
-			 subtotal += 2*localArea*t2dArea;
-			 //xprintf(Msg,"Subtotal: %f\n",2*localArea*t2dArea);
-		}
-		return subtotal;
-	};*/
 
 	inline double polygonArea(){
 		double subtotal = 0.0;

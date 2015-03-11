@@ -34,15 +34,19 @@ void IntersectionLocal::addIP(const IntersectionPoint<2,3> &InPoint){
 	i_points.push_back(InPoint);
 };
 
-void IntersectionLocal::traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table){
+void IntersectionLocal::traceGenericPolygon(std::vector<unsigned int> &prolongation_table){
 
 	if(!is_patological){
+
+		trace_polygon_opt(prolongation_table);
 		//xprintf(Msg,"Tracing opt polygon(%d)\n", i_points.size());
-		this->tracePolygonOpt(prolongation_table);
+		//std::vector<std::pair<unsigned int, unsigned int>> pp;
+		//tracePolygonOpt(pp);
+
 
 	}else{
 		xprintf(Msg,"Tracing traceConvexHull polygon(%d)", i_points.size());
-		this->traceConvexHull();
+		traceConvexHull();
 	}
 };
 
@@ -239,7 +243,7 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 			}
 
 			//xprintf(Msg, "\t Prodlužuji stěnou(%d) - body[%d,%d]\n", start_idx,(int)tracing_table(start_idx,1),(int)tracing_table(start_idx,2));
-
+			//xprintf(Msg,"[%d,1]\n",start_idx);
 			prolongation_table.push_back(std::make_pair(start_idx, 1));//IntersectionLocal::PROLONGATION_TYPE_TETRAHEDRON_SIDE));
 			// Prodloužení -> podle indexu steny vratim sousedni 3D element
 
@@ -274,6 +278,7 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 			}
 			//xprintf(Msg, "\t Prodlužuji hranou(%d) - body[%d,%d]\n", (int)tracing_table(start_idx,3),(int)tracing_table(start_idx,2),(int)tracing_table(tracing_table(start_idx,0),1));
 			// Prodloužení -> podle indexu hrany vratim sousedni 2D element
+			//xprintf(Msg,"[%d,0]\n",(int)tracing_table(start_idx,3));
 			prolongation_table.push_back(std::make_pair(tracing_table(start_idx,3), 0));
 
 			/*SideIter elm_side = element_2D->side(tracing_table(start_idx,3));
@@ -297,6 +302,106 @@ void IntersectionLocal::tracePolygonOpt(std::vector<std::pair<unsigned int, unsi
 	}
 
 
+
+	i_points = new_points;
+
+};
+
+void IntersectionLocal::trace_polygon_opt(std::vector<unsigned int> &prolongation_table){
+
+	if(is_patological || i_points.size() < 2){
+		return;
+	}
+
+	arma::Mat<int>::fixed<7,2> trace_table;
+	for(unsigned int i = 0; i < 7;i++){
+		for(unsigned int j = 0; j < 2;j++){
+			trace_table(i,j) = -1;
+		}
+	}
+
+	std::vector<IntersectionPoint<2,3>> new_points;
+	new_points.reserve(i_points.size());
+	prolongation_table.reserve(i_points.size());
+
+	/*
+	 * Point orientation
+	 * S0 + 1 => IN , S0 + 0 => OUT
+	 * S1 + 0 => IN
+	 * S2 + 1 => IN
+	 * S3 + 0 => IN
+	 *
+	 * H1 has opossite orientation
+	 * */
+
+	for(unsigned int i = 0; i < i_points.size();i++){
+
+			// TYP bodu H-S nebo H-H
+			if(i_points[i].getSide1() != -1){
+				// TYP bodu H-S
+				if(!i_points[i].isVertex()){
+
+					unsigned int j = (i_points[i].getSide2() + i_points[i].getOrientation()+ i_points[i].getSide1())%2;
+
+
+					if(j == 1){
+						trace_table(i_points[i].getSide2(),0) = i_points[i].getSide1()+4;
+						trace_table(i_points[i].getSide2(),1) = i;
+					}else{
+						// bod je vstupní na hraně a vchází do čtyřstěnu
+						trace_table(4+i_points[i].getSide1(),0) = i_points[i].getSide2();
+						trace_table(4+i_points[i].getSide1(),1) = i;
+					}
+
+
+
+				}else{
+					// TYP bodu H-H
+					unsigned int vertex_index = (i_points[i].get_local_coords1()[0] == 1 ? 0 : (i_points[i].get_local_coords1()[1] == 1 ? 1 : 2));
+					unsigned int triangle_side_in = RefSimplex<2>::line_sides[vertex_index][1];
+					unsigned int triangle_side_out = RefSimplex<2>::line_sides[vertex_index][0];
+					if(trace_table(4+triangle_side_in,1) == -1){
+						trace_table(4+triangle_side_in,0) = triangle_side_out+4;
+						trace_table(4+triangle_side_in,1) = i;
+					}
+				}
+			}else{
+				// TYP bodu S-S
+				unsigned int tetrahedron_line = i_points[i].getSide2();
+				unsigned int tetrahedron_side_in = RefSimplex<3>::line_sides[tetrahedron_line][i_points[i].getOrientation()];
+				unsigned int tetrahedron_side_out = RefSimplex<3>::line_sides[tetrahedron_line][1 - i_points[i].getOrientation()];
+				trace_table(tetrahedron_side_in,0) = tetrahedron_side_out;
+				trace_table(tetrahedron_side_in,1) = i;
+			}
+	}
+
+	//trace_table.print();
+
+	int first_row_index = -1;
+	int next_row = -1;
+	for(unsigned int i = 0; i < 7;i++){
+		if(first_row_index != -1){
+			if(trace_table(i,0) == first_row_index){
+				new_points.push_back(i_points[(unsigned int)trace_table(i,1)]);
+				first_row_index = i;
+				next_row = trace_table(i,0);
+				break;
+			}
+		}else if(trace_table(i,0) != -1){
+			first_row_index = i;
+			next_row = trace_table(i,0);
+		}
+	}
+
+	prolongation_table.push_back((unsigned int)trace_table(first_row_index,0));
+
+	while(first_row_index != next_row){
+		new_points.push_back(i_points[(unsigned int)trace_table(next_row,1)]);
+		//prolongation_table.push_back((unsigned int)next_row);
+		prolongation_table.push_back((unsigned int)trace_table(next_row,0));
+		next_row = trace_table(next_row,0);
+	}
+	//prolongation_table.push_back((unsigned int)next_row);
 
 	i_points = new_points;
 
@@ -344,8 +449,8 @@ void IntersectionLocal::traceConvexHull(){
 double IntersectionLocal::ConvexHullCross(const IntersectionPoint<2,3> &O,
 		const IntersectionPoint<2,3> &A,
 		const IntersectionPoint<2,3> &B) const{
-	return ((A.get_lc1_coord(1)-O.get_lc1_coord(1))*(B.get_lc1_coord(2)-O.get_lc1_coord(2))
-			-(A.get_lc1_coord(2)-O.get_lc1_coord(2))*(B.get_lc1_coord(1)-O.get_lc1_coord(1)));
+	return ((A.get_local_coords1()[1]-O.get_local_coords1()[1])*(B.get_local_coords1()[2]-O.get_local_coords1()[2])
+			-(A.get_local_coords1()[2]-O.get_local_coords1()[2])*(B.get_local_coords1()[1]-O.get_local_coords1()[1]));
 }
 
 /* split the polygon into triangles according to the first point
@@ -360,7 +465,7 @@ double IntersectionLocal::ConvexHullCross(const IntersectionPoint<2,3> &O,
  *
  *  final polygon area is sum of triangle areas
  */
-double IntersectionLocal::getArea(){
+double IntersectionLocal::getArea() const{
 	double subtotal = 0.0;
 	for(unsigned int j = 2; j < i_points.size();j++){
 		//xprintf(Msg, "volani %d %d\n",j, i_points.size());

@@ -55,7 +55,7 @@ public:
     	return is_patological;
     };
 
-    inline IntersectionPoint<2,3> &get_point(const unsigned int index)
+    inline const IntersectionPoint<2,3> &get_point(const unsigned int index) const
     {
          return i_points[index];
     }
@@ -70,7 +70,7 @@ public:
      * method compute local polygon area from barycentric coordinates
      * @return double computed local area
      */
-    double getArea();
+    double getArea() const;
 
     inline void print(){
     	xprintf(Msg, "Metoda nebyla zatím implementována!\n");
@@ -80,7 +80,7 @@ public:
     	tracing_table.print();
     };
 
-    void traceGenericPolygon(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
+    void traceGenericPolygon(std::vector<unsigned int> &prolongation_table);
 
     // Už k ničemu (možná ale byla se dala využít k prodlužování patologického polygonu, uvidíme)
     void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
@@ -95,6 +95,8 @@ public:
      *  zda-li je na něm 0 - 2 průniků.
      */
     void tracePolygonOpt(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
+
+    void trace_polygon_opt(std::vector<unsigned int> &prolongation_table);
 
     void prolongatePolygon(std::queue<ProlongationLine> &fronta2D, std::queue<ProlongationLine> &fronta3D);
 

@@ -33,10 +33,8 @@ template<int N, int M> class IntersectionPoint {
 
 	public:
 
-
-	// Possibly just call clear()
 	inline IntersectionPoint(){
-		this->clear();
+		clear();
 	};
 	inline IntersectionPoint(const arma::vec::fixed<N+1> &lc1,
 					  const arma::vec::fixed<M+1> &lc2,
@@ -72,14 +70,10 @@ template<int N, int M> class IntersectionPoint {
 		cout << "Orientation: " << orientation << " Vertex: " << is_vertex << " Patological: " << is_patological << endl;
 	};
 
-	inline double get_lc1_coord(unsigned int i) const{
-		return local_coords1[i];
-	};
-
-	inline arma::vec::fixed<N+1> &get_local_coords1(){
+	inline const arma::vec::fixed<N+1> &get_local_coords1() const{
 		return local_coords1;
 	};
-	inline arma::vec::fixed<M+1> &get_local_coords2(){
+	inline const arma::vec::fixed<M+1> &get_local_coords2() const{
 		return local_coords2;
 	};
 

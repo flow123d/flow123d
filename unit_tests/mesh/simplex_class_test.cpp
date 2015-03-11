@@ -1,4 +1,5 @@
-#include <flow_gtest.hh>
+#define TEST_USE_MPI
+#include <flow_gtest_mpi.hh>
 #include "system/system.hh"
 //#include "system/sys_profiler.hh"
 //#include "system/file_path.hh"
@@ -17,7 +18,6 @@ TEST(simplex, all) {
 
 	//FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	//Profiler::initialize();
 
 
 	arma::vec3 Point0;Point0[0] = 1;Point0[1] = 2;Point0[2] = 3;
@@ -36,8 +36,12 @@ TEST(simplex, all) {
 	Simplex<3> ss(pole_pp);
 	Simplex<2> s(pole_p);
 
+
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/velka_sit.msh", FilePath::input_file);
+
+	Profiler::initialize();
+
+	FilePath mesh_file("mesh/site/triangle_tetrahedron12.msh", FilePath::input_file);
 
 	Mesh mesh;
 	ifstream ifs(string(mesh_file).c_str());
@@ -45,14 +49,19 @@ TEST(simplex, all) {
 
 
 	InspectElements ie(&mesh);
-	ie.ComputeIntersections23();
-
+	//ie.ComputeIntersections23();
+	//ie.print_mesh_to_file("neco");
 	/*ComputeIntersection<Simplex<2>, Simplex<3>> pp(s,ss);
 	pp.init();
 
 	pp.toStringPluckerCoordinatesTree();
 */
+	Profiler::uninitialize();
 
+	ie.compute_intersections<2,3>();
+	ie.compute_intersections<1,2>();
+	ie.compute_intersections<0,94>();
+	ie.compute_intersections<8,5>();
 
 	xprintf(Msg, "Test complete!\n");
 }
