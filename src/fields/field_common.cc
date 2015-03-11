@@ -79,9 +79,10 @@ void FieldCommon::set_input_list(const Input::Array &list)
     			found = mutlifield_rec.find<Input::Array>("components");
     		}
     		else found = false;
-    	}
+    	}*/
+
+        bool found =true;
         if (found) {
-*/        
             // field descriptor appropriate to the field
 
             time = it->val<double>("time");
@@ -92,8 +93,7 @@ void FieldCommon::set_input_list(const Input::Array &list)
                         << it->ei_address());
             }
             last_time=time;
-
-        //}
+        }
     }
     shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
 }

@@ -570,9 +570,9 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
     double mask_vel_error;
-    vector<double> pressure_diff;
-    vector<double> velocity_diff;
-    vector<double> div_diff;
+    VectorSeqDouble pressure_diff;
+    VectorSeqDouble velocity_diff;
+    VectorSeqDouble div_diff;
 
 
     double * solution;
@@ -715,7 +715,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
 
-    static DiffData result;
+    DiffData result;
 
     // mask 2d elements crossing 1d
     result.velocity_mask.resize(mesh_->n_elements(),0);
@@ -737,11 +737,11 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //result.ele_flux = &( ele_flux );
 
-    auto vel_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.velocity_diff[0]), 1, mesh_->n_elements());
+    auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.pressure_diff[0]), 1, mesh_->n_elements());
+    auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.div_diff[0]), 1, mesh_->n_elements());
+    auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
     output_fields.fields_for_output += output_fields;

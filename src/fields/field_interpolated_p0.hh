@@ -85,7 +85,7 @@ protected:
 	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+	std::shared_ptr< std::vector<typename Value::element_type> > data_;
 
 	/// vector stored suspect elements in calculating the intersection
 	std::vector<unsigned int> searched_elements_;
