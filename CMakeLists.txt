@@ -197,7 +197,7 @@ if (WIN32 OR CYGWIN)
     # if success save theese values via flow_define and flow_define_constant macros
     if (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER AND TIMER_RESOLUTION)
         flow_define           (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER)
-        flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
     else()
         MESSAGE (WARNING "Couldn't access QueryPerformanceCounter timer")   
     endif()
