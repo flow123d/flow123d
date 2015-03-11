@@ -166,6 +166,7 @@ public:
 
 	void set_values() {
         n_comp_ = 3;
+        component_names_ = { "component_0", "component_1", "component_2" };
 
         point_ = Point("1 2 3");
         point_list_.reserve(list_size);
@@ -259,6 +260,7 @@ public:
 	void read_input(const string &field_name) {
 	    field_.name(field_name);
 	    field_.description("xyz");
+	    field_.units( UnitSI::dimensionless() );
 	    set_of_field_ += field_;
 
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
@@ -267,7 +269,7 @@ public:
 	    field_.set_input_list(in_list);
 
 	    field_.set_mesh(*(this->mesh_));
-	    field_.set_n_components(n_comp_);
+	    field_.set_components(component_names_);
 	    field_.set_limit_side(LimitSide::right);
 	    TimeGovernor tg(0.0, 0.5);
 	    set_of_field_.set_time(tg);
@@ -290,6 +292,7 @@ public:
 	Point point_;
 	std::vector< Point > point_list_;
 	string input_type_name_;
+	std::vector< string > component_names_;
 	unsigned int n_comp_;
 
     inline ReturnType value(Point &p, ElementAccessor<3> &elm) {

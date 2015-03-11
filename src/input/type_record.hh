@@ -133,6 +133,12 @@ public:
     inline const string & value() const
     { return (value_); }
 
+    /**
+     * Compares values type_ of two Default objects.
+     */
+    inline bool has_same_type(const Default &other) const
+        {return type_ == other.type_; }
+
 private:
     string value_;              ///< Stored value.
     enum DefaultType type_;     ///< Type of the Default.
@@ -329,6 +335,13 @@ public:
      */
     bool finish();
 
+    /**
+     * Add TYPE key as obligatory.
+     *
+     * This method can't be used for derived record.
+     */
+    Record &has_obligatory_type_key();
+
 
 protected:
 
@@ -353,6 +366,11 @@ protected:
 
     /// copy keys from all Records pointers in copy_from_ptr using the make_copy_keys method
     void make_copy_keys_all();
+
+    /**
+     * Declares a TYPE key of the Record.
+     */
+    Record &declare_type_key(const Selection * key_type);
 
     /**
      * Internal data class.
