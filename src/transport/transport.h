@@ -45,6 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 
 

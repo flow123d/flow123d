@@ -370,28 +370,27 @@ void SorptionBase::initialize_from_input()
 void SorptionBase::initialize_fields()
 {
   ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
-  data_->set_n_components(n_substances_);
-
 
   // read fields from input file
   data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
+  data_->set_components( std::vector<std::string>(n_substances_, "") );
   data_->set_mesh(*mesh_);
   data_->set_limit_side(LimitSide::right);
 
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
-    //initialization of output
-  data_->conc_solid.init(substances_.names());
-  data_->conc_solid.set_mesh(*mesh_);
+  data_->conc_solid.set_components(substances_.names());
+  data_->output_fields.set_mesh(*mesh_);
+  data_->output_fields.set_limit_side(LimitSide::right);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
+  data_->conc_solid.set_up_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 	  auto output_field_ptr = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  data_->output_fields.set_limit_side(LimitSide::right);
   output_stream_->add_admissible_field_names(output_array);
 }
 

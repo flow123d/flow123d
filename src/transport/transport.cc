@@ -111,7 +111,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     n_subst_ = substances_.size();
     INPUT_CHECK(n_subst_ >= 1 ,"Number of substances must be positive.\n");
 
-    data_.set_n_components(n_subst_);
+    data_.set_components(substances_.names());
     data_.set_mesh(init_mesh);
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::right);
@@ -125,18 +125,18 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
-	data_.conc_mobile.init(substances_.names());
-	data_.conc_mobile.set_mesh(*mesh_);
+	data_.output_fields.set_components(substances_.names());
+	data_.output_fields.set_mesh(*mesh_);
+	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
+	data_.conc_mobile.set_up_components();
 	data_.region_ids = GenericField<3>::region_id(*mesh_);
-
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_subst_);
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}
-	data_.output_fields.set_limit_side(LimitSide::right);
 	output_stream_ = OutputTime::create_output_stream(output_rec);
 	output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 	output_stream_->mark_output_times(*time_);

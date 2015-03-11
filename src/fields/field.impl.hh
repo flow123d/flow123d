@@ -27,6 +27,8 @@ Field<spacedim,Value>::Field()
 	// this invariant is kept also by n_comp setter
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->add_factory( std::make_shared<FactoryBase>() );
+
+	this->multifield_ = false;
 }
 
 
@@ -35,12 +37,13 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 : data_(std::make_shared<SharedData>())
 
 {
-	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
-	// this invariant is kept also by n_comp setter
-	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
-	shared_->bc_=bc;
-	this->name( name );
-	this->add_factory( std::make_shared<FactoryBase>() );
+		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
+		// this invariant is kept also by n_comp setter
+		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
+		shared_->bc_=bc;
+		this->name( name );
+		this->add_factory( std::make_shared<FactoryBase>() );
+		this->multifield_ = false;
 }
 
 
@@ -58,6 +61,7 @@ Field<spacedim,Value>::Field(const Field &other)
 	// shared_is already same as other.shared_
 	if (shared_->mesh_) this->set_mesh( *(shared_->mesh_) );
 
+	this->multifield_ = false;
 }
 
 
@@ -109,6 +113,16 @@ it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
 	} else {
 		return FieldBaseType::input_type;
 	}
+}
+
+
+
+template<int spacedim, class Value>
+it::Record &Field<spacedim,Value>::get_multifield_input_type() {
+	ASSERT(false, "This method can't be used for Field");
+
+	static it::Record rec = it::Record();
+	return rec;
 }
 
 
@@ -341,6 +355,10 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
         	unsigned int id;
 			if (shared_->list_it_->opt_val("r_set", domain_name)) {
 				domain = mesh()->region_db().get_region_set(domain_name);
+				if (domain.size() == 0) {
+					THROW( RegionDB::ExcUnknownSetOperand()
+							<< RegionDB::EI_Label(domain_name) << shared_->list_it_->ei_address() );
+				}
 
 			} else if (shared_->list_it_->opt_val("region", domain_name)) {
 				// try find region by label
@@ -366,13 +384,9 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 						<< shared_->list_it_->ei_address() );
 			}
 		    
-			if (domain.size() == 0) {
-				++shared_->list_it_;
-				continue;
-			}
-			// get field instance
-		    //std::vector<FactoryBase *> * ftrs = factories_.get();
-		    //
+			ASSERT(domain.size(), "Region set with name %s is empty or not exists.\n", domain_name.c_str());
+
+			// get field instance   
 			for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
 				FieldBasePtr field_instance = (*rit)->create_field(*(shared_->list_it_), *this);
 				if (field_instance)  // skip descriptors without related keys
@@ -385,6 +399,7 @@ void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
 								HistoryPoint(input_time, field_instance)
 						);
 					}
+					break;
 				}
 		    }
 
@@ -463,116 +478,6 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 		return FieldBaseType::function_factory(field_record, field.n_comp() );
 	else
 		return FieldBasePtr();
-}
-
-
-
-
-
-/******************************************************************************************
- * Implementation of MultiField<...>
- */
-
-template<int spacedim, class Value>
-MultiField<spacedim, Value>::MultiField()
-: FieldCommon()
-{}
-
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::init( const vector<string> &names) {
-    sub_fields_.resize( names.size() );
-    sub_names_ = names;
-    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-    {
-    	sub_fields_[i_comp].units( units() );
-
-    	if (sub_names_[i_comp].length() == 0)
-    		sub_fields_[i_comp].name( name() );
-    	else
-    		sub_fields_[i_comp].name( sub_names_[i_comp] + "_" + name());
-    }
-}
-
-
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type"
-template<int spacedim, class Value>
-it::AbstractRecord &  MultiField<spacedim,Value>::get_input_type() {
-}
-#pragma GCC diagnostic pop
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_limit_side(LimitSide side)
-{
-	for ( SubFieldType &field : sub_fields_)
-		field.set_limit_side(side);
-}
-
-
-template<int spacedim, class Value>
-bool MultiField<spacedim, Value>::set_time(
-		const TimeGovernor &time)
-{
-	bool any=false;
-	for( SubFieldType &field : sub_fields_) {
-		if (field.set_time(time))
-			any = true;
-	}
-    return any;
-}
-
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
-    shared_->mesh_ = &mesh;
-    for(unsigned int i_comp=0; i_comp < size(); i_comp++)
-        sub_fields_[i_comp].set_mesh(mesh);
-}
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
-	if (typeid(other) == typeid(*this)) {
-		auto  const &other_field = dynamic_cast<  MultiField<spacedim, Value> const &>(other);
-		this->operator=(other_field);
-	} else if (typeid(other) == typeid(SubFieldType)) {
-		auto  const &other_field = dynamic_cast<  SubFieldType const &>(other);
-		sub_fields_.resize(1);
-		sub_fields_[0] = other_field;
-	}
-}
-
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::output(OutputTime *stream)
-{
-	// currently we cannot output boundary fields
-	if (!is_bc())
-		stream->register_data(this->output_type(), *this);
-}
-
-
-
-
-
-template<int spacedim, class Value>
-bool MultiField<spacedim, Value>::is_constant(Region reg) {
-	bool const_all=false;
-	for(auto field : sub_fields_) const_all = const_all || field.is_constant(reg);
-	return const_all;
-}
-
-
-
-template<int spacedim, class Value>
-typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record rec, const FieldCommon &field) {
-	return NULL;
 }
 
 

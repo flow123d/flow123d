@@ -59,6 +59,7 @@
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
+#include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
