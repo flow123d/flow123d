@@ -212,7 +212,7 @@ if (NOT TIMER_RESOLUTION)
     # if success save theese values via flow_define and flow_define_constant macros
     if (HAVE_TIMER_CHRONO_HIGH_RESOLUTION AND TIMER_RESOLUTION)
         flow_define           (HAVE_TIMER_CHRONO_HIGH_RESOLUTION)
-        flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
     else()
         MESSAGE (FATAL_ERROR "Couldn't access chrono timer")    
     endif()

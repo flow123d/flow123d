@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include <string>
+#include <time.h>
 
 /**
  * Include either Windows or chrono lib

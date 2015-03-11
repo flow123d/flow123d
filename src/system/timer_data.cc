@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <time.h>
 
 #include "config.h"
 #include "timer_data.hh"
