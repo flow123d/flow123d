@@ -349,13 +349,18 @@ void ConvectionTransport::set_boundary_conditions()
                         if (balance_ != nullptr)
                         {
                         	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+                        	{
+                        		balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
                         		balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value[sbi]);
+                        	}
                         }
                     } else {
                     	if (balance_ != nullptr)
 						{
 							for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+							{
 								balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {flux});
+							}
 						}
                     }
                     ++loc_b;
