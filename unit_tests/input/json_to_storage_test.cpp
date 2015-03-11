@@ -334,6 +334,67 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
     }
 
+    // Test automatic conversion from record
+/*
+    {
+        static Type::Record lower( "Lower", "");
+        lower.declare_key("int", Type::Integer(), "");
+        lower.finish();
+
+        static Type::Record upper( "Upper", "");
+        upper.has_obligatory_type_key();
+        upper.declare_key("rec", lower, "");
+        upper.allow_auto_conversion("rec");
+        upper.finish();
+
+        stringstream ss("{TYPE=\"Upper\", rec={int=37} }");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0)->get_int() );
+
+        stringstream ss1("{int=37}");
+        read_stream(ss1, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0)->get_int() );
+
+    }
+*/
+/*
+    {
+        static Type::AbstractRecord abstr("Abstract", "");
+        abstr.finish();
+
+        static Type::Record lower( "Lower", "");
+        lower.derive_from(abstr);
+        lower.declare_key("int", Type::Integer(), "");
+        lower.finish();
+
+        static Type::Record upper( "Upper", "");
+        upper.decalare_key("rec", upper, "");
+        upper.allow_auto_conversion("rec");
+        upper.has_obligatory_type_key();
+        upper.finish();
+
+        stringstream ss("{TYPE=\"Upper\", rec={int=37} }");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0) );
+
+        stringstream ss("{int=37}");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0) );
+
+    }
+*/
 
 }
 

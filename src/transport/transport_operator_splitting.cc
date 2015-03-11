@@ -15,6 +15,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 
+#include "io/output_time.hh"
 #include "tools/time_governor.hh"
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
@@ -31,8 +32,6 @@
 #include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
-#include "io/output.h"
-
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
@@ -172,9 +171,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
                 << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
                 << (*reactions_it).ei_address());
 		}
-		//temporary, until new mass balance considering reaction term is created
-		xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
-					  "Only the mass flux over boundaries is correct.\n");
 
 		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
@@ -284,6 +280,8 @@ void TransportOperatorSplitting::update_solution() {
 
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
+	    	START_TIMER("TOS-balance");
+
 			// save mass after transport step
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{
@@ -292,18 +290,18 @@ void TransportOperatorSplitting::update_solution() {
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] -= region_mass[ri];
 	    	}
+
+	    	convection->calculate_cumulative_balance();
+
+	    	END_TIMER("TOS-balance");
 	    }
 
         if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
 
-//	    if (convection->mass_balance() != NULL)
-//	    	convection->mass_balance()->calculate(convection->time().t());
-
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
-	    	convection->calculate_cumulative_balance();
 
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{

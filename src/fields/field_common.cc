@@ -62,7 +62,11 @@ void FieldCommon::set_input_list(const Input::Array &list)
     if (list.size() == 0) return;
     for( auto it = list.begin<Input::Record>();
             it != list.end(); ++it) {
-    	bool found;
+// Interleaving of field time sequences can not be done by just filtering
+// fields by name. There is some problem in update_history. 
+// So we require correct ordering of whole list.            
+/*
+       	bool found;
     	if (this->multifield_) {
     		found = it->find<Input::Record>(input_name());
     	}
@@ -75,7 +79,9 @@ void FieldCommon::set_input_list(const Input::Array &list)
     			found = mutlifield_rec.find<Input::Array>("components");
     		}
     		else found = false;
-    	}
+    	}*/
+
+        bool found =true;
         if (found) {
             // field descriptor appropriate to the field
 
@@ -87,9 +93,6 @@ void FieldCommon::set_input_list(const Input::Array &list)
                         << it->ei_address());
             }
             last_time=time;
-
-        }
-    }
 
     shared_->list_it_ = shared_->input_list_.begin<Input::Record>();
 }

@@ -383,7 +383,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    // possibly skip remaining lines after break
 	    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-	    xprintf(Msg, "time: %f; %d entities of field %s read.\n",
+    xprintf(MsgLog, "time: %f; %d entities of field %s read.\n",
 	    		actual_header.time, n_read, actual_header.field_name.c_str());
 
 	    search_header.actual = true; // use input header to indicate modification of @p data buffer
@@ -411,12 +411,11 @@ void GmshMeshReader::make_header_table()
             if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
             	std::vector<GMSH_DataHeader> vec;
             	vec.push_back(header);
-            	//header_table_.insert( std::pair<std::string, std::vector<GMSH_DataHeader> >(header.field_name, vec) );
             	header_table_[header.field_name]=vec;
-            } else if ( header.time <= it->second.back().time ) {  // time is in wrong order. can't be add
+            } else if ( header.time <= it->second.back().time ) { // time is in wrong order. can't be add
             	xprintf(Warn,
-            		"Non-ascending time series detected in file '%s', '$ElementData' section, quantity: '%s', time: '%d'. Skipping this time.\n",
-            		tok_.f_name().c_str(), header.field_name.c_str(), header.time);
+            		"Wrong time order: field '%s', time '%d', file '%s'. Skipping this '$ElementData' section.\n",
+            		header.field_name.c_str(), header.time, tok_.f_name().c_str() );
             } else {  // add new time step
             	it->second.push_back(header);
             }

@@ -45,6 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 
 
@@ -212,7 +213,6 @@ private:
   
   //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
 	void compute_concentration_sources(unsigned int sbi);
-	void compute_concentration_sources_for_mass_balance(unsigned int sbi);
 
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -222,14 +222,6 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_fluxes().
-     */
-    void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-    /**
-     * Implements the virtual method EquationForMassBalance::calc_elem_sources().
-     */
-    void calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance);
 
 
     /**
