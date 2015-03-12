@@ -234,7 +234,7 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_v
 class CodePoint {
 public:
     CONSTEXPR_ CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
-    : tag_(tag), file_(file), func_(func), line_(line), subtag_(PROFILER_EMPTY_SUBTAG),
+    : tag_(tag), subtag_(PROFILER_EMPTY_SUBTAG), file_(file), func_(func), line_(line),
       hash_(str_hash(tag, PROFILER_HASH_DEFAULT)),
       hash_idx_( str_hash(tag, PROFILER_HASH_DEFAULT)%max_n_timer_childs )
     {};

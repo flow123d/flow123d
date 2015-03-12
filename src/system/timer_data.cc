@@ -39,7 +39,8 @@ double TimerData::to_time (void) const {
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
     return ((double)this->get_ticks()) / (TimerData::frequency.QuadPart);
 #else
-    return ((double) this->get_ticks ()) / (1 * 1000 * 1000 * 1000);
+    // nanoseconds / 1 000 000
+    return ((double) this->get_ticks ()) / (1 * 1000 * 1000);
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 }
 

@@ -87,7 +87,7 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
 
 Timer::Timer(const CodePoint &cp, int parent)
 : start_time(TimerData::get_time()),
-  cumul_time(TimerData::get_time()),
+  cumul_time(start_time - start_time),
   call_count(0),
   start_count(0),
   code_point_(&cp),
@@ -369,10 +369,10 @@ void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_inf
     info.push_back( tree_info );
 
     info.push_back( boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " ")) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_max) ) );
-    info.push_back( boost::str(boost::format("%.2f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum / call_count_sum) ) );
-    info.push_back( boost::str( boost::format("%.2f") % (cumul_time_sum) ) );
+    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_max) ) );
+    info.push_back( boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
+    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_sum / call_count_sum) ) );
+    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_sum) ) );
     info.push_back( timer.code_point_str() );
 
     timers_info.push_back(info);
