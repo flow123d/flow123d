@@ -45,18 +45,6 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 		double scale_aqua = por_m,
                scale_sorbed = (1 - por_m) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
 
-        if(adsorption_type[i_subst] == Isotherm::none)       // means no sorption
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-        if( (1-por_m) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-
 		bool limited_solubility_on = false;
 		double table_limit;
 		if (solubility_vec_[i_subst] <= 0.0) {
@@ -66,6 +54,12 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 			limited_solubility_on = true;
 			table_limit=solubility_vec_[i_subst];
 		}
+		
+		if( (1-por_m) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
+        {
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,table_limit,0,0);
+            continue;
+        }
 
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
@@ -146,18 +140,6 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         double scale_aqua = por_m,
                scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
 
-        if(adsorption_type[i_subst] == Isotherm::none)       // means no sorption
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-
         bool limited_solubility_on;
         double table_limit;
         if (solubility_vec_[i_subst] <= 0.0) {
@@ -167,6 +149,12 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         } else {
                 limited_solubility_on = true;
                 table_limit=solubility_vec_[i_subst];
+        }
+        
+        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
+        {
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,table_limit,0,0);
+            continue;
         }
         
         if ( scale_sorbed <= 0.0)
@@ -227,18 +215,6 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         double scale_aqua = por_imm,
                scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
 
-        if(adsorption_type[i_subst] == Isotherm::none)       // means no sorption
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-
         bool limited_solubility_on;
         double table_limit;
         if (solubility_vec_[i_subst] <= 0.0) {
@@ -248,6 +224,12 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         } else {
             limited_solubility_on = true;
             table_limit=solubility_vec_[i_subst];
+        }
+        
+        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
+        {
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
+            continue;
         }
         
         if ( scale_sorbed <= 0.0)

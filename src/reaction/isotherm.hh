@@ -70,6 +70,18 @@ private:
 };
 
 
+/**
+ * Complementary functor for isotherm of type "none"
+ */
+class None {
+public:
+    /// Constructor to set parameters
+    None(){}
+    /// Isotherm definition.
+    inline double operator()(double x) {
+        return (0.0);
+    }
+};
 
 /**
  * Functor for linear isotherm
@@ -208,12 +220,14 @@ public:
 protected:
 	/**
      * Implementation of interpolation construction for particular isotherm functor.
+     * Specialized for sorption 'none' - creates empty table.
      */
     template<class Func>
     void make_table(const Func &isotherm, int n_points);
     /**
      * Find new values for concentrations in @p c_pair that has same total mass and lies on the
      * @p isotherm (functor object).
+     * Specialized for sorption 'none' - returns unchanged @p c_pair.
      */
     template<class Func>
     inline ConcPair solve_conc(ConcPair c_pair, const Func &isotherm);
@@ -271,6 +285,10 @@ protected:
 
 };
 
+// Sorption none template specializations
+template<> Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const None &isotherm);
+template<> void Isotherm::make_table(const None &isotherm, int n_steps);
+
 
 /**
  *  Functor for solved equation in form F(x) ==0.
@@ -312,23 +330,14 @@ inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_sol
 	adsorption_type_ = adsorption_type;
 	rho_aqua_ = rho_aqua;
 	scale_aqua_ = scale_aqua;
-	scale_sorbed_ = scale_sorbed;
+    scale_sorbed_ = scale_sorbed;
+    limited_solubility_on_ = limited_solubility_on;
+    mult_coef_ = mult_coef;
+    second_coef_ = second_coef;
+    
+    table_limit_ = c_aqua_limit;
     inv_scale_aqua_ = scale_aqua_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
     inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
-    if(adsorption_type == Isotherm::none)
-    {
-        table_limit_ = 1.0;         // must be >0 due to the if statement in make_table(int)
-        limited_solubility_on_ = false;
-        mult_coef_ = 0;
-        second_coef_ = 0;
-    }
-    else{
-        table_limit_ = c_aqua_limit;
-        limited_solubility_on_ = limited_solubility_on;
-        mult_coef_ = mult_coef;
-        second_coef_ = second_coef;
-    }
-
 }
 
 
@@ -433,7 +442,7 @@ Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair conc)
         {
                 case 0: // none
                 {
-                        Linear obj_isotherm(0.0);
+                        None obj_isotherm;
                         return solve_conc( conc, obj_isotherm);
                 }
                 break;
@@ -483,6 +492,5 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
 
     return;
 }
-
 
 #endif /* SORPTION_IMPL_HH_ */
