@@ -200,6 +200,8 @@ void Balance::allocate(unsigned int n_loc_dofs,
 		initial_mass_      .resize(n_quant, 0);
 		integrated_fluxes_ .resize(n_quant, 0);
 		integrated_sources_.resize(n_quant, 0);
+		increment_sources_.resize(n_quant, 0);
+		increment_fluxes_.resize(n_quant, 0);
 	}
 
 
@@ -470,8 +472,8 @@ void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 	VecDestroy(&bulk_vec);
 
 	if (rank_ == 0)
-		// sum sources in time interval
-		integrated_sources_[quantity_idx] += sum_sources*dt;
+		// sum sources in one step
+		increment_sources_[quantity_idx] += sum_sources*dt;
 }
 
 
@@ -505,8 +507,8 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 	VecDestroy(&boundary_vec);
 
 	if (rank_ == 0)
-		// sum fluxes in time interval
-		integrated_fluxes_[quantity_idx] += sum_fluxes*dt;
+		// sum fluxes in one step
+		increment_fluxes_[quantity_idx] += sum_fluxes*dt;
 }
 
 
@@ -572,8 +574,8 @@ void Balance::calculate_source(unsigned int quantity_idx,
 		for (int i=0; i<lsize; ++i)
 		{
 			double f = mat_array[i]*sol_array[i] + rhs_array[i];
-			if (f > 0) sources_out_[quantity_idx][r] += f;
-			else sources_in_[quantity_idx][r] += f;
+			if (f > 0) sources_in_[quantity_idx][r] += f;
+			else sources_out_[quantity_idx][r] += f;
 		}
 
 		VecRestoreArrayRead(mat_r, &mat_array);
@@ -623,7 +625,7 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 {
 	if (rank_ == 0)
-		integrated_sources_[quantity_idx] += source;
+		increment_sources_[quantity_idx] += source;
 }
 
 
@@ -723,6 +725,12 @@ void Balance::output(double time)
 					initial_mass_[qi] = sum_masses_[qi];
 				initial_ = false;
 			}
+
+			for (unsigned int qi=0; qi<n_quant; qi++)
+			{
+				integrated_fluxes_[qi] += increment_fluxes_[qi];
+				integrated_sources_[qi] += increment_sources_[qi];
+			}
 		}
 	}
 
@@ -747,6 +755,8 @@ void Balance::output(double time)
 	{
 		sum_fluxes_.assign(n_quant, 0);
 		sum_sources_.assign(n_quant, 0);
+		increment_fluxes_.assign(n_quant, 0);
+		increment_sources_.assign(n_quant, 0);
 	}
 }
 
@@ -923,7 +933,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter)
+			output_ << format_csv_val(time, delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< csv_zero_vals(3, delimiter)
@@ -931,7 +941,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 					<< format_csv_val(sources_[qi][reg->bulk_idx()], delimiter)
 					<< format_csv_val(sources_in_[qi][reg->bulk_idx()], delimiter)
 					<< format_csv_val(sources_out_[qi][reg->bulk_idx()], delimiter)
-					<< csv_zero_vals(3, delimiter) << endl;
+					<< csv_zero_vals(5, delimiter) << endl;
 			++output_line_counter_;
 		}
 	}
@@ -944,13 +954,13 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter)
+			output_ << format_csv_val(time, delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
 					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
 					<< format_csv_val(fluxes_out_[qi][reg->boundary_idx()], delimiter)
-					<< csv_zero_vals(7, delimiter) << endl;
+					<< csv_zero_vals(9, delimiter) << endl;
 			++output_line_counter_;
 		}
 	}
@@ -963,7 +973,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] - integrated_fluxes_[qi]);
-			output_ << format_csv_val(time, delimiter)
+			output_ << format_csv_val(time, delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(sum_fluxes_[qi], delimiter)
@@ -973,6 +983,8 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 					<< format_csv_val(sum_sources_[qi], delimiter)
 					<< format_csv_val(sum_sources_in_[qi], delimiter)
 					<< format_csv_val(sum_sources_out_[qi], delimiter)
+					<< format_csv_val(increment_fluxes_[qi], delimiter)
+					<< format_csv_val(increment_sources_[qi], delimiter)
 					<< format_csv_val(integrated_fluxes_[qi], delimiter)
 					<< format_csv_val(integrated_sources_[qi], delimiter)
 					<< format_csv_val(error, delimiter) << endl;
@@ -989,7 +1001,7 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 	if (delimiter == ' ') {
 		ss << setw(output_column_width-comment_string.size()) << "\"time\"";
 	} else {
-		ss << delimiter << "\"time\"";
+		ss << "\"time\"";
 	}
 
 	output_ << comment_string << ss.str()
@@ -1002,34 +1014,40 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 			<< format_csv_val("source", delimiter)
 			<< format_csv_val("source_in", delimiter)
 			<< format_csv_val("source_out", delimiter)
-			<< format_csv_val("integrated_flux", delimiter)
-			<< format_csv_val("integrated_source", delimiter)
+			<< format_csv_val("flux_increment", delimiter)
+			<< format_csv_val("source_increment", delimiter)
+			<< format_csv_val("flux_cumulative", delimiter)
+			<< format_csv_val("source_cumulative", delimiter)
 			<< format_csv_val("error", delimiter)
 			<< endl;
 }
 
-std::string Balance::format_csv_val(std::string val, char delimiter)
+std::string Balance::format_csv_val(std::string val, char delimiter, bool initial)
 {
 	std::stringstream ss;
 	std::replace( val.begin(), val.end(), '\"', '\'');
+
+	if (!initial) ss << delimiter;
 	if (delimiter == ' ') {
 		std::stringstream sval;
 		sval << "\"" << val << "\"";
 		ss << " " << setw(output_column_width-1) << sval.str();
 	} else {
-		ss << delimiter << "\"" << val << "\"";
+		ss << "\"" << val << "\"";
 	}
 
 	return ss.str();
 }
 
-std::string Balance::format_csv_val(double val, char delimiter)
+std::string Balance::format_csv_val(double val, char delimiter, bool initial)
 {
 	std::stringstream ss;
+
+	if (!initial) ss << delimiter;
 	if (delimiter == ' ') {
 		ss << " " << setw(output_column_width-1) << val;
 	} else {
-		ss << delimiter << val;
+		ss << val;
 	}
 	return ss.str();
 }
