@@ -34,7 +34,8 @@ namespace it = Input::Type;
 template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : time_( -numeric_limits<double>::infinity() ),
-  value_(r_value_)
+  value_(r_value_),
+  component_idx_(std::numeric_limits<unsigned int>::max())
 {
     value_.set_n_comp(n_comp);
 }

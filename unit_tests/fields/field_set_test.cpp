@@ -10,6 +10,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/unit_si.hh"
+#include "fields/bc_field.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -97,6 +98,7 @@ public:
 	}
 
 	Mesh    *mesh_;
+	std::vector<string> component_names_;
 };
 
 
@@ -220,9 +222,10 @@ TEST_F(SomeEquation, set_field) {
 
 TEST_F(SomeEquation, collective_interface) {
     auto data = EqData();
+    component_names_ = { "component_0", "component_1", "component_2", "component_3" };
 
     EXPECT_EQ(1,data["velocity"].n_comp());
-    data.set_n_components(4);
+    data.set_components(component_names_);
     EXPECT_EQ(0,data["init_pressure"].n_comp());
     EXPECT_EQ(4,data["velocity"].n_comp());
     EXPECT_EQ(0,data["reaction_type"].n_comp());
@@ -265,8 +268,9 @@ TEST_F(SomeEquation, collective_interface) {
 
 TEST_F(SomeEquation, input_related) {
     auto data = EqData();
+    component_names_ = { "component_0", "component_1" };
 
-    data.set_n_components(2);
+    data.set_components(component_names_);
     Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
     Input::JSONToStorage reader( eq_data_input, list_type);
     Input::Array in=reader.get_root_interface<Input::Array>();

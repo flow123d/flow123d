@@ -963,13 +963,14 @@ ostream & print_range(ostream& stream, T range_min, T range_max) {
 /**
  * Make \HTRaised{prefix::str}. Hyper target raised to scroll to correct position.
  */
+/*
 std::string hyper_target( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \hyperlink{<prefix>::str}{str}
     return "\\HTRaised{" + label + "}{" + str + "}";
-}
+}*/
 
 /**
  * Make \hyperlink{prefix::str, str}.
@@ -978,8 +979,8 @@ std::string hyper_link( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
-    // \hyperlink{<prefix>::str}{str}
-    return "\\hyperlink{" + label + "}{" + str +"}";
+    // \Alink{<prefix>::str}{str}
+    return "\\Alink{" + label + "}{" + str +"}";
 }
 
 /**
@@ -989,7 +990,7 @@ std::string hyper_B( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
-    // \hyperlink{<prefix>::str}{str}
+    // \hyper_B{<prefix>::str}{str}
     return "\\hyperB{" + label + "}{" + str +"}";
 }
 
@@ -1022,7 +1023,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
             // header
             stream << endl <<"\\begin{RecordType}{"
-                   << internal::hyper_target("IT", type->type_name()) << "}";
+                   << internal::hyper_B("IT", type->type_name()) << "}";
 
             // parent record
             boost::shared_ptr<AbstractRecord> parent_ptr;
@@ -1123,7 +1124,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
             // header
             stream << endl << "\\begin{AbstractType}{"
-                   << internal::hyper_target("IT", type->type_name() ) << "}";
+                   << internal::hyper_B("IT", type->type_name() ) << "}";
             const Record *default_desc = type->get_default_descendant();
             if (default_desc) {
                 stream << "{" << internal::hyper_link( "IT", default_desc->type_name()) << "}";
@@ -1193,7 +1194,7 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
     	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}";
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_B("IT", type->type_name() ) << "}";
             stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {

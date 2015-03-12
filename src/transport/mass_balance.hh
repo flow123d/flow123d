@@ -380,10 +380,10 @@ private:
 	void format_csv_output_header(char delimiter, const std::string& comment_string);
 
 	/// Format string value of csv output. Wrap string into quotes and if delimiter is space, align text to column.
-	std::string format_csv_val(std::string val, char delimiter);
+	std::string format_csv_val(std::string val, char delimiter, bool initial = false);
 
 	/// Format double value of csv output. If delimiter is space, align text to column.
-	std::string format_csv_val(double val, char delimiter);
+	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
 
     /// Handle for file for output of balance and total fluxes over individual regions and region sets.
@@ -459,6 +459,8 @@ private:
 	// time integrated quantities
     std::vector<double> integrated_sources_;
     std::vector<double> integrated_fluxes_;
+    std::vector<double> increment_fluxes_;
+    std::vector<double> increment_sources_;
 
 	/// initial time
 	double initial_time_;

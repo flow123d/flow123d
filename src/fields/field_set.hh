@@ -143,13 +143,13 @@ public:
     FieldCommon &operator[](const std::string &field_name) const;
 
     /**
-     * Collective interface to @p FieldCommonBase::set_n_components().
+     * Collective interface to @p FieldCommonBase::set_components().
      * It is safe to call this for field sets containing also fields
      * with return value other then variable vector as long as all variable
      * vector fields should be set to the same number of components.
      */
-    void set_n_components(unsigned int n_comp) {
-        for(auto field : field_list) field->set_n_components(n_comp);
+    void set_components(const std::vector<string> &names) {
+        for(auto field : field_list) field->set_components(names);
     }
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().

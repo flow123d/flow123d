@@ -229,7 +229,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this += region_ids.name("region_ids")
+    *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
@@ -266,10 +266,10 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_n_components(n_subst_);
+    data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.region_ids = GenericField<3>::region_id(*mesh_);
+    data_.region_id = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -319,10 +319,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.init(substances_.names());
+	data_.output_field.set_components(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
+    data_.output_field.set_up_components();
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
