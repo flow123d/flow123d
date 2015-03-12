@@ -229,7 +229,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this += region_ids.name("region_ids")
+    *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
@@ -269,7 +269,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.region_ids = GenericField<3>::region_id(*mesh_);
+    data_.region_id = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order

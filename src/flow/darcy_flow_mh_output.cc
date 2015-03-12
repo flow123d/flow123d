@@ -86,7 +86,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
-	*this += region_ids.name("region_ids")
+	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
 
@@ -138,7 +138,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
-	output_fields.region_ids = GenericField<3>::region_id(*mesh_);
+	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
 	output_fields.set_limit_side(LimitSide::right);
 
