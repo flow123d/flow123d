@@ -14,7 +14,7 @@ void Isotherm::make_table(int nr_of_points)
 	{
 		case 0: // none
 		 {
-			 Linear obj_isotherm(0.0);
+			 None obj_isotherm;
 			 make_table(obj_isotherm, 1);
 		 }
 		break;
@@ -45,3 +45,20 @@ void Isotherm::make_table(int nr_of_points)
 	return;
 }
 
+
+template<> Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const None &isotherm)
+{
+    return c_pair;
+}
+
+template<> void Isotherm::make_table(const None &isotherm, int n_steps)
+{
+    // Solve_conc returns the same, so we need to do that also in compute_projection.
+    // We set size of the table to 1, so it follow the conditions into solve_conc again.
+    
+    limited_solubility_on_ = false; // so it cannot go in precipitate function
+    
+    total_mass_step_ = 1;            // set just one step in the table, so we void zero division
+    interpolation_table.resize(1,0); // set one value in the table so the condition in compute_projection fails
+    return;
+}

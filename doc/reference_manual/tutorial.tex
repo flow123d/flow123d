@@ -123,7 +123,9 @@ effects which prevent the liquid transition from/to a fracture, like a thin resi
       TYPE = "Steady_MH", 
 
       input_fields = [
-        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
+        { r_set = "1d_domain", conductivity = 1e-6, 
+                               cross_section = 0.04, 
+                               sigma = 0.9 },
         { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
@@ -244,7 +246,7 @@ of dual porosity model are set on lines 64 -- 71 and the output is disabled by s
               r_set="ALL",
               rock_density = 2800.0,    // granit
               sorption_type =  ["none", "freundlich"],
-              isotherm_mult = 0.68, 
+              isotherm_mult = [0, 0.68], 
               isotherm_other = [0, 1.0]
             }
           ],
@@ -267,7 +269,7 @@ of dual porosity model are set on lines 64 -- 71 and the output is disabled by s
       } 
 
     } // secondary_equation
-  }, // problem
+  } // problem
 }
 \end{Verbatim}
 

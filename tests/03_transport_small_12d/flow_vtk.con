@@ -15,7 +15,9 @@
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
+        { r_set = "1d_domain", conductivity = 1e-6, 
+                               cross_section = 0.04, 
+                               sigma = 0.9 },
         { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
@@ -52,7 +54,7 @@
         { r_set = "ALL",
           init_conc = 0,
           porosity= 0.25,
-          sources_density = [1.0, 0]
+          sources_density = [0.25, 0]   // source is in the whole volume (l+s) -> times porosity
         },
         { r_set = "BOUNDARY",
           bc_conc = [0.0, 1.0]
@@ -80,7 +82,6 @@
           TYPE = "SorptionMobile",
           solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           
           input_fields= [
@@ -98,7 +99,6 @@
           TYPE = "SorptionImmobile",
           solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
-          molar_mass = [0.018, 0.235],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
           output_fields = []
