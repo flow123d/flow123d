@@ -229,7 +229,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this += region_ids.name("region_ids")
+    *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
@@ -269,7 +269,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
     data_.set_limit_side(LimitSide::left);
-    data_.region_ids = GenericField<3>::region_id(*mesh_);
+    data_.region_id = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -349,6 +349,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
+    mass_vec = new Vec[n_subst_];
 
 
     // initialization of balance object
@@ -389,10 +390,12 @@ TransportDG<Model>::~TransportDG()
     	delete ls[i];
     	MatDestroy(&stiffness_matrix[i]);
     	VecDestroy(&rhs[i]);
+    	VecDestroy(&mass_vec[i]);
     }
     delete[] ls;
     delete[] stiffness_matrix;
     delete[] rhs;
+    delete[] mass_vec;
     delete feo;
 
     gamma.clear();
@@ -498,6 +501,17 @@ void TransportDG<Model>::update_solution()
 		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
+		
+		// construct mass_vec for initial time
+		if (mass_matrix == NULL)
+		{
+		  for (unsigned int i=0; i<n_subst_; i++)
+		  {
+		    VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
+                    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+                  }
+		}
+		
 		mass_matrix = *(ls_dt->get_matrix());
 	}
 
@@ -572,18 +586,17 @@ void TransportDG<Model>::update_solution()
     	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
 		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
 		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
-		Vec y,w;
-		VecDuplicate(rhs[i], &y);
+		Vec w;
 		VecDuplicate(rhs[i], &w);
-		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		VecWAXPY(w, 1./time_->dt(), mass_vec[i], rhs[i]);
 		ls[i]->set_rhs(w);
 
-		VecDestroy(&y);
 		VecDestroy(&w);
 		MatDestroy(&m);
 
 		ls[i]->solve();
+		
+		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 

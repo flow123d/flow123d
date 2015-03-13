@@ -41,6 +41,7 @@
 \AddDoc{Steady\_MH::solver}
 \AddDoc{Steady\_MH::output}
 \AddDoc{Steady\_MH::mortar\_method}
+\AddDoc{Steady\_MH::balance}
 \AddDoc{Steady\_MH::gravity}
 \AddDoc{Steady\_MH::input\_fields}
 \AddDoc{LinSys}
@@ -61,7 +62,6 @@
 \AddDoc{DarcyMHOutput}
 \AddDoc{DarcyMHOutput::output\_stream}
 \AddDoc{DarcyMHOutput::output\_fields}
-\AddDoc{DarcyMHOutput::balance\_output}
 \AddDoc{DarcyMHOutput::compute\_errors}
 \AddDoc{DarcyMHOutput::raw\_flow\_output}
 \AddDoc{OutputStream}
@@ -78,6 +78,11 @@
 \AddDoc{vtk::compression}
 \AddDoc{gmsh}
 \AddDoc{gmsh::TYPE}
+\AddDoc{Balance}
+\AddDoc{Balance::balance\_on}
+\AddDoc{Balance::format}
+\AddDoc{Balance::cumulative}
+\AddDoc{Balance::file}
 \AddDoc{DarcyFlowMH\_Data}
 \AddDoc{DarcyFlowMH\_Data::r\_set}
 \AddDoc{DarcyFlowMH\_Data::region}
@@ -144,11 +149,6 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
-\AddDoc{FieldPython}
-\AddDoc{FieldPython::TYPE}
-\AddDoc{FieldPython::script\_string}
-\AddDoc{FieldPython::script\_file}
-\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
@@ -163,6 +163,7 @@
 \AddDoc{Unsteady\_MH::solver}
 \AddDoc{Unsteady\_MH::output}
 \AddDoc{Unsteady\_MH::mortar\_method}
+\AddDoc{Unsteady\_MH::balance}
 \AddDoc{Unsteady\_MH::gravity}
 \AddDoc{Unsteady\_MH::input\_fields}
 \AddDoc{Unsteady\_MH::time}
@@ -172,6 +173,7 @@
 \AddDoc{Unsteady\_LMH::solver}
 \AddDoc{Unsteady\_LMH::output}
 \AddDoc{Unsteady\_LMH::mortar\_method}
+\AddDoc{Unsteady\_LMH::balance}
 \AddDoc{Unsteady\_LMH::gravity}
 \AddDoc{Unsteady\_LMH::input\_fields}
 \AddDoc{Unsteady\_LMH::time}
@@ -179,15 +181,12 @@
 \AddDoc{TransportOperatorSplitting}
 \AddDoc{TransportOperatorSplitting::TYPE}
 \AddDoc{TransportOperatorSplitting::time}
+\AddDoc{TransportOperatorSplitting::balance}
 \AddDoc{TransportOperatorSplitting::output\_stream}
-\AddDoc{TransportOperatorSplitting::mass\_balance}
 \AddDoc{TransportOperatorSplitting::substances}
 \AddDoc{TransportOperatorSplitting::reaction\_term}
 \AddDoc{TransportOperatorSplitting::input\_fields}
 \AddDoc{TransportOperatorSplitting::output\_fields}
-\AddDoc{MassBalance}
-\AddDoc{MassBalance::cumulative}
-\AddDoc{MassBalance::file}
 \AddDoc{Substance}
 \AddDoc{Substance::name}
 \AddDoc{Substance::molar\_mass}
@@ -252,11 +251,6 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
-\AddDoc{FieldPython}
-\AddDoc{FieldPython::TYPE}
-\AddDoc{FieldPython::script\_string}
-\AddDoc{FieldPython::script\_file}
-\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
@@ -347,8 +341,8 @@
 \AddDoc{SoluteTransport\_DG}
 \AddDoc{SoluteTransport\_DG::TYPE}
 \AddDoc{SoluteTransport\_DG::time}
+\AddDoc{SoluteTransport\_DG::balance}
 \AddDoc{SoluteTransport\_DG::output\_stream}
-\AddDoc{SoluteTransport\_DG::mass\_balance}
 \AddDoc{SoluteTransport\_DG::substances}
 \AddDoc{SoluteTransport\_DG::solver}
 \AddDoc{SoluteTransport\_DG::input\_fields}
@@ -377,8 +371,8 @@
 \AddDoc{HeatTransfer\_DG}
 \AddDoc{HeatTransfer\_DG::TYPE}
 \AddDoc{HeatTransfer\_DG::time}
+\AddDoc{HeatTransfer\_DG::balance}
 \AddDoc{HeatTransfer\_DG::output\_stream}
-\AddDoc{HeatTransfer\_DG::mass\_balance}
 \AddDoc{HeatTransfer\_DG::solver}
 \AddDoc{HeatTransfer\_DG::input\_fields}
 \AddDoc{HeatTransfer\_DG::dg\_variant}

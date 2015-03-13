@@ -49,77 +49,8 @@
 using namespace std;
 namespace IT=Input::Type;
 
-// Test input for 'values' test
-const string eq_data_input = R"JSON(
-{ 
-  data=[
-      { rid=37,
-        init_pressure={
-            TYPE="FieldConstant",
-            value=1.1
-          },
-        init_conc = [ 1, 2, 3, 4],
-        conc_mobile = {
-            TYPE="MultiField",
-            component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-            common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
-            components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
-          }
-      },
-      { region="2D XY diagonal",
-        init_pressure=2.2,
-        conc_mobile={REF="/data/0/conc_mobile"}
-      },
-      { r_set="BULK",
-        bulk_set_field=5.7,
-        conc_mobile={REF="/data/0/conc_mobile"}
-      },
-
-      // boundary          
-      { rid=101,
-        bc_type={TYPE="FieldConstant", value = "dirichlet"},
-        bc_pressure={
-            TYPE="FieldConstant",
-            value=1.23
-        },
-        conc_mobile = {
-            TYPE="MultiField",
-            component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-            common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
-            components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
-          }
-      },
-      { rid=102,
-        bc_type="dirichlet",
-        bc_piezo_head=1.23,
-        conc_mobile={REF="/data/3/conc_mobile"}
-      }
-  ] 
-}
-)JSON";
 
 
-// Test input for old_bcd
-const string eq_data_old_bcd = R"JSON(
-{ 
-  data=[
-      { r_set="BOUNDARY",
-        flow_old_bcd_file="coupling/simplest_cube.fbc",
-        transport_old_bcd_file="coupling/transport.fbc",
-        conc_mobile = {
-            TYPE="MultiField",
-            component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
-            common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
-            components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
-          }
-      },
-      { r_set="BULK",
-        bulk_set_field=0.0,
-        conc_mobile={REF="/data/0/conc_mobile"}
-      } 
-  ] 
-}
-)JSON";
 
 
 class SomeEquationBase : public EquationBase {
@@ -321,6 +252,55 @@ IT::Record SomeEquation::input_type=
 
 
 TEST_F(SomeEquation, values) {
+    // Test input for 'values' test
+    string eq_data_input = R"JSON(
+    { 
+      data=[
+          { rid=37,
+            init_pressure={
+                TYPE="FieldConstant",
+                value=1.1
+              },
+            init_conc = [ 1, 2, 3, 4],
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { region="2D XY diagonal",
+            init_pressure=2.2,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+          { r_set="BULK",
+            bulk_set_field=5.7,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+
+          // boundary          
+          { rid=101,
+            bc_type={TYPE="FieldConstant", value = "dirichlet"},
+            bc_pressure={
+                TYPE="FieldConstant",
+                value=1.23
+            },
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
+                components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
+              }
+          },
+          { rid=102,
+            bc_type="dirichlet",
+            bc_piezo_head=1.23,
+            conc_mobile={REF="/data/3/conc_mobile"}
+          }
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_input);
     // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
 
@@ -391,6 +371,28 @@ TEST_F(SomeEquation, values) {
 
 
 TEST_F(SomeEquation, old_bcd_input) {
+    // Test input for old_bcd
+    string eq_data_old_bcd = R"JSON(
+    { 
+      data=[
+          { r_set="BOUNDARY",
+            flow_old_bcd_file="coupling/simplest_cube.fbc",
+            transport_old_bcd_file="coupling/transport.fbc",
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { r_set="BULK",
+            bulk_set_field=0.0,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          } 
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_old_bcd);
 
     Space<3>::Point p;
@@ -425,4 +427,26 @@ TEST_F(SomeEquation, old_bcd_input) {
     EXPECT_DOUBLE_EQ(37.0, value(3) );
     }
 
+}
+
+
+
+TEST_F(SomeEquation, wrong_time_order) {
+    // Test input for old_bcd
+    string eq_data = R"JSON(
+    { 
+      data=[
+          { r_set="BULK",
+            time=1.0,
+            bulk_set_field=0.0
+          }, 
+          { r_set="BULK",
+            time=0.0,
+            bulk_set_field=1.0
+          } 
+      ] 
+    }
+    )JSON";
+
+    EXPECT_THROW({read_input(eq_data);}, FieldCommon::ExcNonascendingTime);
 }

@@ -160,7 +160,7 @@ public:
         BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
-        Field<3, FieldValue<3>::Integer> region_ids;
+        Field<3, FieldValue<3>::Integer> region_id;
 
 	};
 
@@ -480,6 +480,9 @@ private:
 
 	/// The mass matrix.
 	Mat mass_matrix;
+	
+	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
+	Vec *mass_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;

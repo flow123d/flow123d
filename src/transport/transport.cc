@@ -88,7 +88,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc").units( UnitSI().kg().m(-3) );
-	output_fields += region_ids.name("region_ids")
+	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
 }
@@ -130,7 +130,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
 	data_.output_fields.set_limit_side(LimitSide::right);
 	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 	data_.conc_mobile.set_up_components();
-	data_.region_ids = GenericField<3>::region_id(*mesh_);
+	data_.region_id = GenericField<3>::region_id(*mesh_);
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
