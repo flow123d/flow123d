@@ -480,6 +480,9 @@ private:
 
 	/// The mass matrix.
 	Mat mass_matrix;
+	
+	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
+	Vec *mass_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;

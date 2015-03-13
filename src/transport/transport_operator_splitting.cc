@@ -83,19 +83,22 @@ TransportBase::TransportEqData::TransportEqData()
 {
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
-	porosity.units( UnitSI::dimensionless() );
+	porosity.units( UnitSI::dimensionless() ).flags_add(in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(cross_section, "");
-	cross_section.flags( FieldFlag::input_copy );
+	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
-	sources_density.units( UnitSI().kg().m(-3).s(-1) );
+	sources_density.units( UnitSI().kg().m(-3).s(-1) )
+			.flags_add(in_rhs);
 
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
-	sources_sigma.units( UnitSI().s(-1) );
+	sources_sigma.units( UnitSI().s(-1) )
+			.flags_add(in_main_matrix & in_rhs);
 
 	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
-	sources_conc.units( UnitSI().kg().m(-3) );
+	sources_conc.units( UnitSI().kg().m(-3) )
+			.flags_add(in_rhs);
 }
 
 
