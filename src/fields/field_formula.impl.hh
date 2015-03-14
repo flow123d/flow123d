@@ -67,7 +67,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-bool FieldFormula<spacedim, Value>::set_time(double time) {
+bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 
     bool any_parser_changed = false;
@@ -99,14 +99,14 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
                             value_input_address_.c_str() );
             }
             if (time_dependent) {
-                parser_matrix_[row][col].AddConstant("t", time);
+                parser_matrix_[row][col].AddConstant("t", time.end());
             }
 
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
 
-            if (time_dependent || this->time_ == -numeric_limits<double>::infinity() ) {
+            if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
                 if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {

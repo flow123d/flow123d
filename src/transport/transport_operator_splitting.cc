@@ -275,7 +275,7 @@ void TransportOperatorSplitting::update_solution() {
 
     START_TIMER("TOS-one step");
     int steps=0;
-    while ( convection->time().lt(time_->t()) )
+    while ( convection->time().step().lt(time_->t()) )
     {
         steps++;
 	    // one internal step

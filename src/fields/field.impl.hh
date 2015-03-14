@@ -246,14 +246,14 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
-bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
+bool Field<spacedim, Value>::set_time(const TimeStep &time)
 {
 	ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
 	ASSERT( limit_side_ != LimitSide::unknown, "Must set limit side on field '%s' before calling set_time.\n",name().c_str());
 
     // We perform set_time only once for every time.
-    if (time.t() == last_time_)  return changed();
-    last_time_=time.t();
+    if (time.end() == last_time_)  return changed();
+    last_time_=time.end();
 
         // possibly update our control field
         if (no_check_control_field_) {
@@ -299,7 +299,7 @@ bool Field<spacedim, Value>::set_time(const TimeGovernor &time)
         		set_time_result_ = TimeStatus::changed;
         	}
         	// let FieldBase implementation set the time
-    		if ( new_ptr->set_time(time.t()) )  set_time_result_ = TimeStatus::changed;
+    		if ( new_ptr->set_time(time) )  set_time_result_ = TimeStatus::changed;
 
         }
     }
@@ -340,7 +340,7 @@ FieldResult Field<spacedim,Value>::field_result( ElementAccessor<spacedim> &elm)
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::update_history(const TimeGovernor &time) {
+void Field<spacedim,Value>::update_history(const TimeStep &time) {
     ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before.\n");
 
     // read input up to given time

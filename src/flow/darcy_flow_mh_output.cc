@@ -205,7 +205,7 @@ void DarcyFlowMHOutput::output()
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-	  output_fields.fields_for_output.set_time(darcy_flow->time());
+	  output_fields.fields_for_output.set_time(darcy_flow->time().step());
 	  output_fields.fields_for_output.output(output_stream);
 	  output_stream->write_time_frame();
 

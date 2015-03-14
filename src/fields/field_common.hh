@@ -260,7 +260,7 @@ public:
      *
      * Different field copies can be set to different times.
      */
-    virtual  bool set_time(const TimeGovernor &time) =0;
+    virtual  bool set_time(const TimeStep &time) =0;
 
     /**
      * Check that @p other is instance of the same Field<..> class and

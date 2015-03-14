@@ -428,7 +428,7 @@ void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times(time_->equation_fixed_mark_type());
-	data_.set_time(*time_);
+	data_.set_time(time_->step());
 
 
     // set initial conditions
@@ -488,7 +488,7 @@ void TransportDG<Model>::update_solution()
     time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(*time_);
+    data_.set_time(time_->step());
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation
@@ -640,7 +640,7 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( *time_);
+    data_.subset(FieldFlag::allow_output).set_time( time_->step());
     data_.output(output_stream);
 	output_stream->write_time_frame();
 

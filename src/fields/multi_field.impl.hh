@@ -53,7 +53,7 @@ it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
 
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::set_time(
-		const TimeGovernor &time)
+		const TimeStep &time)
 {
 	// initialization of Multifield for first call
 	if (sub_fields_.size() == 0) {

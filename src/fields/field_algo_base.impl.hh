@@ -22,7 +22,7 @@ using namespace std;
 #include "fields/field_elementwise.hh"
 
 #include "fields/field_values.hh"
-
+#include "tools/time_governor.hh"
 
 namespace it = Input::Type;
 
@@ -33,8 +33,7 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
-: time_( -numeric_limits<double>::infinity() ),
-  value_(r_value_),
+: value_(r_value_),
   component_idx_(std::numeric_limits<unsigned int>::max())
 {
     value_.set_n_comp(n_comp);
@@ -110,7 +109,7 @@ void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &r
 
 
 template <int spacedim, class Value>
-bool FieldAlgorithmBase<spacedim, Value>::set_time(double time) {
+bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
     time_ = time;
     return false; // no change
 }

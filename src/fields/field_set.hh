@@ -183,7 +183,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeGovernor &time) {
+    void set_time(const TimeStep &time) {
         for(auto field : field_list) field->set_time(time);
     }
 

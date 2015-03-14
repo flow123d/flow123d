@@ -177,7 +177,7 @@ public:
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeGovernor &time) override;
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Check that other has same type and assign from it.
@@ -244,7 +244,7 @@ protected:
      * Read input into @p regions_history_ possibly pop some old values from the
      * history queue to keep its size less then @p history_length_limit_.
      */
-    void update_history(const TimeGovernor &time);
+    void update_history(const TimeStep &time);
 
 
 
