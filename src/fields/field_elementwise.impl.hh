@@ -96,20 +96,20 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
 
 
 template <int spacedim, class Value>
-bool FieldElementwise<spacedim, Value>::set_time(double time) {
+bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
 
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
-    if (time == numeric_limits< double >::infinity()) return false;
+    //if (time.end() == numeric_limits< double >::infinity()) return false;
     
     GMSH_DataHeader search_header;
     search_header.actual=false;
     search_header.field_name=field_name_;
     search_header.n_components=n_components_;
     search_header.n_entities=n_entities_;
-    search_header.time=time;
+    search_header.time=time.end();
 
 
     data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,

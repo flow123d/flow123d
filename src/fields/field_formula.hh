@@ -46,7 +46,7 @@ public:
     /**
      * For time dependent formulas returns always true. For time independent formulas returns true only for the first time.
      */
-    virtual bool set_time(const TimeStep &time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
