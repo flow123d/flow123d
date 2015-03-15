@@ -82,6 +82,12 @@ class TimerData {
         static void init (void);
 
         /**
+         * Static method which measures current's timer resolution.
+         * Returned value is average shortest time step in microseconds with double precision
+         */
+        static double get_resolution ();
+
+        /**
          * Overloaded operator for addition. Allows adding TimerData objects using '+' sign
          */
         TimerData operator+ (const TimerData &right);

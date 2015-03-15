@@ -76,6 +76,21 @@ void TimerData::init () {
     // init routine
     TimerData::inited = true;
 }
+double TimerData::get_resolution () {
+	const int measurements = 100;
+	double result = 0;
+
+	// perform 100 measurements
+	for (unsigned int i = 1; i < measurements; i++) {
+		TimerData t1 = TimerData::get_time ();
+		TimerData t2 = TimerData::get_time ();
+		while ((t2 - t1).get_ticks() == 0) t2 = TimerData::get_time ();
+
+		result += (t2 - t1).to_time();
+	}
+
+	return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
+}
 
 /*
  * Private methods
