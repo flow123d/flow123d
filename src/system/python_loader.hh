@@ -43,6 +43,16 @@ public:
 class PythonLoader {
 public:
 
+	/**
+	 * Definition of exception thrown by python compiler.
+	 */
+	TYPEDEF_ERR_INFO(EI_PythonMessage, std::string);
+	TYPEDEF_ERR_INFO(EI_Description, std::string);
+	TYPEDEF_ERR_INFO(EI_PythonInput, std::string);
+    DECLARE_EXCEPTION(ExcPythonError,
+            << "Python Error: " << EI_PythonMessage::val << "\n" << EI_Description::val << "\n" << EI_PythonInput::qval);
+
+
     /**
      * Calls python initialization and guarantee that appropriate finalization will be called.
      * Do nothing if initialization was done.

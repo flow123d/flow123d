@@ -60,8 +60,25 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     strcpy( tmp_name, module_name.c_str() );
     PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
     if (! compiled_string) {
-        PyErr_Print();
-        std::cerr << "Error: Can not compile python string:\n'" << source_string << std::endl;
+
+		PyObject *ptype, *pvalue, *ptraceback, *pystr;
+		char *str;
+
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		PyErr_NormalizeException(&ptype,&pvalue,&ptraceback);
+
+		// int res = PyArg_ParseTuple(pvalue,"s(siis)",&msg,&file,&line,&offset,&text); //types: char*,char*,int,int,char*
+		// PyObject* file_name = PyObject_GetAttrString(pvalue,"filename");
+		// str = PyString_AsString(file_name);
+
+		pystr = PyObject_Str(pvalue);
+		str = PyString_AsString(pystr);
+		THROW(ExcPythonError() << EI_PythonMessage(str) << EI_Description("Can not compile python string:") << EI_PythonInput(source_string));
+
+		//ptype: <type 'exceptions.SyntaxError'>
+		//pvalue: ('invalid syntax', ('flow123d_python_loader', 5, 21, '    return ( x*y*z+ , )     # one value tuple\n'))
+		//        invalid syntax (flow123d_python_loader, line 5)
+		//ptraceback: <NULL>
     }
     PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
 
