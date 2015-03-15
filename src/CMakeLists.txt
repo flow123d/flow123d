@@ -44,6 +44,7 @@ set(sources_lib_system
     system/math_fce.cc
     system/sys_profiler.cc
     system/timer_data.cc
+    system/jzon/Jzon.cpp
     system/system.cc
     system/xio.cc
     system/exceptions.cc
