@@ -447,11 +447,11 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     root.add ("program-branch", 	flow_branch_);
     root.add ("program-revision", 	flow_revision_);
     root.add ("program-build", 		flow_build_);
-    root.add ("timer_resolution", 	150);
+    root.add ("timer-resolution", 	(boost::str(boost::format("%.6f") % (TimerData::get_resolution()))));
 
     // print some information about the task at the beginning
     root.add ("task-description",  	task_description_);
-    root.add ("task-Task size",  	task_size_);
+    root.add ("task-size",  		task_size_);
 
     //print some information about the task at the beginning
     root.add ("run-process-count", 	mpi_size);
