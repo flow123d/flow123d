@@ -72,7 +72,7 @@ public:
 
 	inline Simplex(arma::vec3 **field_of_pointers_to_coordinates){
 
-		this->setSimplices(field_of_pointers_to_coordinates);
+		setSimplices(field_of_pointers_to_coordinates);
 	};
 
 	inline void setSimplices(arma::vec3 **field_of_pointers_to_coordinates){

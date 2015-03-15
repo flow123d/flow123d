@@ -8,7 +8,7 @@ Plucker::Plucker(){
 };
 
 Plucker::Plucker(const arma::vec3 &a,const arma::vec3 &b){
-	this->compute(a, b);
+	compute(a, b);
 	computed = true;
 };
 

@@ -16,7 +16,113 @@ InspectElements::~InspectElements(){};
 
 template<>
 void InspectElements::compute_intersections<2,3>(){
-	cout << "Computing 2D with 3D" << endl;
+	{ START_TIMER("Incializace pruniku");
+		computeIntersections2d3dInit();
+		END_TIMER("Inicializace pruniku");}
+
+		/*UpdateTriangle(mesh->element(5775));
+		UpdateTetrahedron(mesh->element(172349));
+		IntersectionLocal il(5775, 172349);
+		ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+		CI_23.init();
+		CI_23.compute(il);
+		std::vector<unsigned int> prolongation_table;
+		il.traceGenericPolygon(prolongation_table);
+		intersection_list[5775].push_back(il);
+		return;*/
+
+		BIHTree bt(mesh, 20);
+
+
+		{ START_TIMER("Prochazeni vsech elementu");
+		FOR_ELEMENTS(mesh, elm) {
+			if (elm->dim() == 2 && !closed_elements[elm.index()] && elements_bb[elm->index()].intersect(mesh_3D_bb)) {
+				UpdateTriangle(elm);
+				std::vector<unsigned int> searchedElements;
+				bt.find_bounding_box(elements_bb[elm->index()], searchedElements);
+
+				{ START_TIMER("Hlavni vypocet");
+				for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
+				{
+					unsigned int idx = *it;
+					ElementFullIter ele = mesh->element(idx);
+
+					if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index())) {
+						UpdateTetrahedron(ele);
+						IntersectionLocal il(elm.index(), ele->index());
+						ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+						CI_23.init();
+						CI_23.compute(il);
+
+						if(il.size() > 2){
+
+							std::vector<unsigned int> prolongation_table;
+							//std::vector<unsigned int> pp_table;
+							//il.trace_polygon_opt(pp_table);
+							il.traceGenericPolygon(prolongation_table);
+							//il.printTracingTable();
+
+							{ START_TIMER("Prochazeni vsech front");
+
+							intersection_list[elm.index()].push_back(il);
+							flag_for_3D_elements[ele->index()] = elm.index();
+							xprintf(Msg,"Velikost intersection_list(%d), pocet IL v konkretnim listu(%d)\n", intersection_list.size(), intersection_list[elm.index()].size());
+
+							// PRODLUŽOVÁNÍ
+							computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
+
+							while(1){
+								//xprintf(Msg, "Fronta - prochazim(%d,%d)\n", elm->index(), ele->index());
+							// Zpracování front
+								while(!prolongation_line_queue_3D.empty()){
+									//xprintf(Msg, "predwhile1\n");
+									computeIntersections2d3dProlongation(prolongation_line_queue_3D.front());
+									prolongation_line_queue_3D.pop();
+									//xprintf(Msg, "while1\n");
+								}
+
+								if(element_2D_index >= 0){
+									closed_elements[element_2D_index] = true;
+								}
+
+								element_2D_index = -1;
+								// Pridat priznak trojuhleniku, ze je projity
+								if(!prolongation_line_queue_2D.empty()){
+									//xprintf(Msg, "predif1\n");
+									computeIntersections2d3dProlongation(prolongation_line_queue_2D.front());
+									prolongation_line_queue_2D.pop();
+									//xprintf(Msg, "if1\n");
+								}
+
+								if(element_2D_index >= 0){
+									closed_elements[element_2D_index] = true;
+									//xprintf(Msg, "if2\n");
+								}
+
+								element_2D_index = -1;
+
+								if(prolongation_line_queue_2D.empty() && prolongation_line_queue_3D.empty()){
+									//xprintf(Msg, "if3\n");
+									break;
+								}
+
+							}
+							END_TIMER("Prochazeni vsech front");}
+							//prunik = true;
+							break; // ukončí procházení dalších bounding boxů
+						}
+
+					}
+				}
+				// Prošlo se celé pole sousedním bounding boxů, pokud nevznikl průnik, může se trojúhelník nastavit jako uzavřený
+				closed_elements[elm.index()] = true;
+				END_TIMER("Hlavni vypocet");}
+
+			}
+		}
+
+		END_TIMER("Prochazeni vsech elementu");}
+
 };
 
 /*template<>
@@ -150,8 +256,23 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	ElementFullIter elm = mesh->element(pl.getElement2DIdx());
 	ElementFullIter ele = mesh->element(pl.getElement3DIdx());
 
-	this->UpdateTriangle(elm);
-	this->UpdateTetrahedron(ele);
+	UpdateTriangle(elm);
+	UpdateTetrahedron(ele);
+
+	/*if(elm->index() == 5648 && ele->index() == 180849){
+		triangle.to_string();
+		tetrahedron.to_string();
+		//return;
+	}*/
+
+	/*if(elm->index() == 1076 && ele->index() == 223421){
+
+		triangle.to_string();
+		tetrahedron.to_string();
+
+	}
+
+	xprintf(Msg, "TU(%d,%d)\n",elm->index(),ele->index());*/
 
 	element_2D_index = pl.getElement2DIdx();
 
@@ -166,13 +287,30 @@ void InspectElements::computeIntersections2d3dProlongation(const ProlongationLin
 	CI_23.init();
 	CI_23.compute(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
 
+	/*if(elm->index() == 1076 && ele->index() == 223421){
+		//xprintf(Msg,"ou yeah\n");
+		intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].print();
+	}*/
+
 
 	if(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].size() > 2){
+
+
+		if(elm->index() == 1076 && ele->index() == 223421){
+				//xprintf(Msg,"ou yeah 2\n");
+					}
+
+
 		std::vector<unsigned int> prolongation_table;
 		intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()].traceGenericPolygon(prolongation_table);
-
+		if(elm->index() == 1076 && ele->index() == 223421){
+						//xprintf(Msg,"ou yeah 3\n");
+							}
 		//all_intersections.push_back(intersection_list[pl.getElement2DIdx()][pl.getDictionaryIdx()]);
 		computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
+		if(elm->index() == 1076 && ele->index() == 223421){
+						//xprintf(Msg,"ou yeah 4\n");
+							}
 	}
 };
 
@@ -183,16 +321,27 @@ void InspectElements::ComputeIntersections23(){
 	computeIntersections2d3dInit();
 	END_TIMER("Inicializace pruniku");}
 
+	/*UpdateTriangle(mesh->element(5775));
+	UpdateTetrahedron(mesh->element(172349));
+	IntersectionLocal il(5775, 172349);
+	ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
+	CI_23.init();
+	CI_23.compute(il);
+	std::vector<unsigned int> prolongation_table;
+	il.traceGenericPolygon(prolongation_table);
+	intersection_list[5775].push_back(il);
+	return;*/
+
 	{ START_TIMER("Prochazeni vsech elementu");
 	FOR_ELEMENTS(mesh, elm) {
 		if (elm->dim() == 2 && !closed_elements[elm.index()] && elements_bb[elm->index()].intersect(mesh_3D_bb)) {
-			this->UpdateTriangle(elm);
+			UpdateTriangle(elm);
 
 			{ START_TIMER("Hlavni vypocet");
 
 			FOR_ELEMENTS(mesh, ele) {
 				if (ele->dim() == 3 && flag_for_3D_elements[ele->index()] != (int)(elm->index()) && elements_bb[elm->index()].intersect(elements_bb[ele->index()])) {
-					this->UpdateTetrahedron(ele);
+					UpdateTetrahedron(ele);
 					IntersectionLocal il(elm.index(), ele->index());
 					ComputeIntersection<Simplex<2>,Simplex<3> > CI_23(triangle, tetrahedron);
 					CI_23.init();
@@ -218,12 +367,13 @@ void InspectElements::ComputeIntersections23(){
 						computeIntersections2d3dUseProlongationTable(prolongation_table, elm, ele);
 
 						while(1){
+							//xprintf(Msg, "Fronta - prochazim(%d,%d)\n", elm->index(), ele->index());
 						// Zpracování front
 							while(!prolongation_line_queue_3D.empty()){
-
+								//xprintf(Msg, "predwhile1\n");
 								computeIntersections2d3dProlongation(prolongation_line_queue_3D.front());
 								prolongation_line_queue_3D.pop();
-
+								//xprintf(Msg, "while1\n");
 							}
 
 							if(element_2D_index >= 0){
@@ -233,17 +383,21 @@ void InspectElements::ComputeIntersections23(){
 							element_2D_index = -1;
 							// Pridat priznak trojuhleniku, ze je projity
 							if(!prolongation_line_queue_2D.empty()){
+								//xprintf(Msg, "predif1\n");
 								computeIntersections2d3dProlongation(prolongation_line_queue_2D.front());
 								prolongation_line_queue_2D.pop();
+								//xprintf(Msg, "if1\n");
 							}
 
 							if(element_2D_index >= 0){
 								closed_elements[element_2D_index] = true;
+								//xprintf(Msg, "if2\n");
 							}
 
 							element_2D_index = -1;
 
 							if(prolongation_line_queue_2D.empty() && prolongation_line_queue_3D.empty()){
+								//xprintf(Msg, "if3\n");
 								break;
 							}
 
@@ -383,7 +537,10 @@ void InspectElements::print_mesh_to_file(string name){
 				fprintf(file,"%d 2 2 2 36 %d %d %d\n", elee.id(), id1, id2, id3);
 
 			}else{
-				xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
+				int id1 = mesh->node_vector.index(elee->node[0]) + 1;
+				int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+				fprintf(file,"%d 1 2 14 16 %d %d\n",elee.id(), id1, id2);
+				//xprintf(Msg, "Missing implementation of printing 1D element to a file\n");
 			}
 		}
 

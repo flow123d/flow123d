@@ -72,6 +72,8 @@ private:
 	double *plucker_products[3];
 	bool computed;
 
+	static const double epsilon;
+
 };
 
 /******************************************************************

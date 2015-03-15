@@ -10,6 +10,8 @@ namespace computeintersection{
 /****************************************************************
  * METODY PRO SIMPLEX 1 A SIMPLEX 2
  ****************************************************************/
+const double ComputeIntersection<Simplex<1>, Simplex<2>>::epsilon = 0.000000001;//128*2048*numeric_limits<double>::epsilon();
+
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){
 	computed = false;
 	abscissa = NULL;
@@ -26,15 +28,15 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs
 	plucker_coordinates_triangle.assign(3, new Plucker());
 	plucker_coordinates_abscissa.assign(1, new Plucker);
 
-	this->clear_all();
+	clear_all();
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::clear_all(){
 	for(unsigned int i = 0; i < 3;i++){
-		//this->p_coordinates_triangle[i] = NULL;
+		//p_coordinates_triangle[i] = NULL;
 		plucker_products[i] = NULL;
 	}
-	//this->p_coordinates_abscissa[0] = NULL;
+	//p_coordinates_abscissa[0] = NULL;
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::initPluckerToCompute(){
@@ -62,7 +64,7 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(Simplex<1> *abs, Simp
 	computed = false;
 	abscissa = abs;
 	triangle = triang;
-	this->clear_all();
+	clear_all();
 };
 
 bool ComputeIntersection<Simplex<1>, Simplex<2>>::isComputed(){
@@ -79,8 +81,16 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
 	computed = true;
 
-	if(((*plucker_products[0] > 0) && (*plucker_products[1] < 0) && (*plucker_products[2] > 0)) ||
-	   ((*plucker_products[0] < 0) && (*plucker_products[1] > 0) && (*plucker_products[2] < 0))){
+	//cout << "Plucker_products: " << *plucker_products[0] << "," << *plucker_products[1] << "," << *plucker_products[2] << endl;
+	/*if((*plucker_products[1] > epsilon)){
+		cout << *plucker_products[1] << " je vetsi nez " << epsilon << endl;
+	}else{
+		cout << *plucker_products[1] << " neni vetsi nez " << epsilon << endl;
+
+	}*/
+
+	if(((*plucker_products[0] > epsilon) && (*plucker_products[1] < -epsilon) && (*plucker_products[2] > epsilon)) ||
+	   ((*plucker_products[0] < -epsilon) && (*plucker_products[1] > epsilon) && (*plucker_products[2] < -epsilon))){
 		double c = *plucker_products[0]; //c = -c;
 		double d = *plucker_products[1]; d = -d;
 		double e = *plucker_products[2]; //e = -e;
@@ -110,19 +120,19 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		theta[1] = (-(*abscissa)[0].getPointCoordinates()[i] + global_triangle[i])/max;
 		theta[0] = 1 - theta[1];
 
-
+		/*xprintf(Msg,"Normalni\n");
+		theta.print();
+		local_triangle.print();
+		xprintf(Msg,"Globale:\n");
+		global_triangle.print();*/
 		IntersectionPoint<1,2> IP(theta,local_triangle,-1,-1,(*plucker_products[0] > 0 ? 1 : 0));
 		//IP12s[0] = IP;
 		IP12s.push_back(IP);
 		return true;
-	}else if(compute_zeros_plucker_products && (*plucker_products[0] == 0 || *plucker_products[1] == 0 || *plucker_products[2] == 0)){
+	}else if(compute_zeros_plucker_products && (fabs(*plucker_products[0]) <= epsilon || fabs(*plucker_products[1]) <= epsilon || fabs(*plucker_products[2]) <= epsilon)){
 
-		unsigned int num_zeros = 0;
-		for(unsigned int i = 0; i < 3;i++){
-			if(*plucker_products[i] == 0){
-				num_zeros++;
-			}
-		}
+		//xprintf(Msg, "pocita se patlogicky\n");
+
 
 		// Pokud je 1 nula = jeden patologický průsečík
 
@@ -131,15 +141,18 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 		// Pokud jsou 3 nuly - všechny vypočítat
 
 		for(unsigned int i = 0; i < 3;i++){
-			if(*plucker_products[i] == 0){
+			//cout << "PP: " << *plucker_products[i] << endl;
+			if(fabs(*plucker_products[i]) <= epsilon){
 				arma::vec3 A = (*abscissa)[0].getPointCoordinates();
 				//arma::vec3 B("9 5 0");
 				arma::vec3 U = plucker_coordinates_abscissa[0]->get_u_vector();
 				arma::vec3 C = (*triangle)[i][i%2].getPointCoordinates();
+				//arma::vec3 C = (*triangle)[i][0].getPointCoordinates();
 				//arma::vec3 D("4 4 0");
 				arma::vec3 V = plucker_coordinates_triangle[i]->get_u_vector();
 				arma::vec3 K = C - A;
 				arma::vec3 Det = -arma::cross(U,V);
+				//Det.print();
 				unsigned int max_index = 0;
 				double maximum = Det[0];
 				if(fabs((double)Det[1]) > fabs(maximum)){
@@ -151,6 +164,7 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					max_index = 2;
 				}
 				if(maximum == 0){
+					//continue;
 					return false;
 				}
 
@@ -170,11 +184,16 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					t = -t;
 				}
 
+				//cout << "s,t: " << s << "," << t << endl;
 				//xprintf(Msg, "s,t : %f,%f \n",s,t);
 
-				if(t > 1 || t < 0){
+				if(t > 1+epsilon || t < -epsilon){// || s > 1+epsilon || s < -epsilon){
+					//xprintf(Msg,"hoohoo\n");
 					//return false;
 				}else{
+
+					s = (fabs(s) < epsilon ? 0 : (fabs(1-s) < epsilon ? 1 : s));
+					t = (fabs(t) < epsilon ? 0 : (fabs(1-t) < epsilon ? 1 : t));
 
 					arma::vec::fixed<2> local_abscissa;
 					local_abscissa[0] = 1-s;
@@ -192,6 +211,10 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 					l_triangle[(3-i)%3] = 1 - t;
 					l_triangle[(4-i)%3] = t;
 					l_triangle[2-i] = 0;
+
+					/*xprintf(Msg,"patologicky\n");
+					local_abscissa.print();
+					l_triangle.print();*/
 
 					IntersectionPoint<1,2> IP(local_abscissa,l_triangle,-1,i,1,false,true);
 					IP12s.push_back(IP);
@@ -211,17 +234,17 @@ bool ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<Intersecti
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::toStringPluckerCoordinates(){
 	cout << "\tPluckerCoordinates Abscissa[0]";
-		if(this->plucker_coordinates_abscissa[0] == NULL){
+		if(plucker_coordinates_abscissa[0] == NULL){
 			cout << "NULL" << endl;
 		}else{
-			this->plucker_coordinates_abscissa[0]->toString();
+			plucker_coordinates_abscissa[0]->toString();
 		}
 	for(unsigned int i = 0; i < 3;i++){
 		cout << "\tPluckerCoordinates Triangle[" << i << "]";
-		if(this->plucker_coordinates_triangle[i] == NULL){
+		if(plucker_coordinates_triangle[i] == NULL){
 			cout << "NULL" << endl;
 		}else{
-			this->plucker_coordinates_triangle[i]->toString();
+			plucker_coordinates_triangle[i]->toString();
 		}
 	}
 };
@@ -292,6 +315,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 
 	std::vector<IntersectionPoint<1,2>> IP12s;
 	unsigned int pocet_pruniku = 0;
+	double epsilon = 64*numeric_limits<double>::epsilon();
 
 	for(unsigned int i = 0;i < 4 && pocet_pruniku < 2;i++){
 
@@ -304,6 +328,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 			if(IP12s[IP12s.size() - 1].isPatological()){
 				//xprintf(Msg, "\tPatologicky\n");
 				// Nastavování stěn, které se už nemusí počítat
+
 				if(i == 0){
 					if(IP12s[IP12s.size() - 1].get_local_coords2()[0] == 1){
 						CI12[1].setComputed();
@@ -341,7 +366,14 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 	}
 
 	// Kontrola vytvořených průniků => zda-li není potřeba interpolovat + zda-li se o prunik vubec nejedna:
-	if(pocet_pruniku > 1){
+	if(pocet_pruniku == 1){
+		double f_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
+		if(f_theta > 1 || f_theta < 0){
+			pocet_pruniku = 0;
+			IP13s.pop_back();
+		}
+
+	}else if(pocet_pruniku > 1){
 		double first_theta = IP13s[IP13s.size()-2].get_local_coords1()[1];
 		double second_theta = IP13s[IP13s.size()-1].get_local_coords1()[1];
 
@@ -356,7 +388,7 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 
 			// Jedná se o průnik
 			// První souřadnice leží uvnitř čtyřstěnu
-			if(first_theta > 1 || first_theta < 0){
+			if(first_theta > 1+epsilon || first_theta < -epsilon){
 				double theta = first_theta > 1 ? 1 : 0;
 				arma::vec::fixed<4> interpolovane = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta);
 				arma::vec::fixed<2> inter; inter[0] = 1 - theta; inter[1] = theta;
@@ -364,15 +396,22 @@ int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<Intersectio
 				IP13s[IP13s.size()-2] = IP13;
 
 				first_theta = theta;
+			}else if(fabs(1-first_theta) < epsilon || fabs(first_theta) < epsilon){
+				// Hraniční body
+				IP13s[IP13s.size()-2].setIsVertex(true);
+				IP13s[IP13s.size()-2].setIsPatological(true);
 			}
 			// Druhá souřadnice leží uvnitř čtyřstěnu
-			if(second_theta > 1 || second_theta < 0){
+			if(second_theta > 1+epsilon || second_theta < -epsilon){
 				double theta2 = second_theta > 1 ? 1 : 0;
 				arma::vec::fixed<2> inter2; inter2[0] = 1 - theta2; inter2[1] = theta2;
 				arma::vec::fixed<4> interpolovane2 = RefSimplex<3>::line_barycentric_interpolation(IP13s[IP13s.size()-2].get_local_coords2(), IP13s[IP13s.size()-1].get_local_coords2(), first_theta, second_theta,theta2);
 				IntersectionPoint<1,3> IP13(inter2, interpolovane2,-1,IP13s[IP13s.size()-1].getSide2(),IP13s[IP13s.size()-1].getOrientation(),true, IP13s[IP13s.size()-1].isPatological());
 				IP13s[IP13s.size()-1] = IP13;
-
+			}else if(fabs(1-second_theta) < epsilon || fabs(second_theta) < epsilon){
+				// hraniční body
+				IP13s[IP13s.size()-1].setIsVertex(true);
+				IP13s[IP13s.size()-1].setIsPatological(true);
 			}
 		}
 	}
@@ -385,7 +424,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::toStringPluckerCoordinates(){
 		if(plucker_coordinates_abscissa[0] == NULL){
 			cout << "NULL" << endl;
 		}else{
-			this->plucker_coordinates_abscissa[0]->toString();
+			plucker_coordinates_abscissa[0]->toString();
 		}
 
 	for(unsigned int i = 0; i < 6;i++){
@@ -393,14 +432,14 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::toStringPluckerCoordinates(){
 		if(plucker_coordinates_tetrahedron[i] == NULL){
 			cout << "NULL" << endl;
 		}else{
-			this->plucker_coordinates_tetrahedron[i]->toString();
+			plucker_coordinates_tetrahedron[i]->toString();
 		}
 	}
 };
 
 void ComputeIntersection<Simplex<1>, Simplex<3>>::toStringPluckerCoordinatesTree(){
 	cout << "ComputeIntersection<Simplex<1>, <Simplex<3>> Plucker Coordinates Tree:" << endl;
-		this->toStringPluckerCoordinates();
+		toStringPluckerCoordinates();
 		for(unsigned int i = 0; i < 4;i++){
 			cout << "ComputeIntersection<Simplex<1>, Simplex<2>>["<< i <<"] Plucker Coordinates:" << endl;
 			CI12[i].toStringPluckerCoordinates();
@@ -419,8 +458,8 @@ double* ComputeIntersection<Simplex<1>, Simplex<3>>::getPluckerProduct(unsigned 
  * METODY PRO SIMPLEX 2 A SIMPLEX 3
  ****************************************************************/
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(){
-	this->triange = NULL;
-	this->tetrahedron = NULL;
+	triange = NULL;
+	tetrahedron = NULL;
 
 	plucker_coordinates_triangle.reserve(3);
 	plucker_coordinates_tetrahedron.reserve(6);
@@ -428,8 +467,8 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(){
 
 
 ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetr){
-	this->triange = &triangle;
-	this->tetrahedron = &tetr;
+	triange = &triangle;
+	tetrahedron = &tetr;
 
 	plucker_coordinates_triangle.reserve(3);
 	plucker_coordinates_tetrahedron.reserve(6);
@@ -503,6 +542,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 				IP23 = IntersectionLocal::flipDimension<2,3>(IP32);
 				lokalni_mnohouhelnik.addIP(IP23);
 
+			}else if(pocet_13_pruniku > 2){
+				xprintf(Msg, "JINY POCET PRUNIKU\n");
 			}
 
 
@@ -520,15 +561,16 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionLocal &lok
 	}
 
 	//cout << "ComputeIntersection<Simplex<2>, Simplex<3>>::compute - edges tetrahedron vs triangle" << endl;
-		for(unsigned int i = 0; i < 6;i++){
+	double epsilon = 64*numeric_limits<double>::epsilon();
+	for(unsigned int i = 0; i < 6;i++){
 			if(CI12[i].compute(IP12s, false)){
 				//xprintf(Msg,"Prunik21 %d\n", IP12s.size());
 				pocet_pruniku++;
 				IP12s[IP12s.size() - 1].setSide1(i);
 				if((IP12s[IP12s.size() - 1].get_local_coords1())[0] <= 1 && (IP12s[IP12s.size() - 1].get_local_coords1())[0] >= 0){
-					if(IP12s[IP12s.size() - 1].get_local_coords1()[0] == 1 || IP12s[IP12s.size() - 1].get_local_coords1()[0] == 0){
+					/*if(fabs(1-IP12s[IP12s.size() - 1].get_local_coords1()[0]) < epsilon || fabs(IP12s[IP12s.size() - 1].get_local_coords1()[0]) < epsilon){
 						IP12s[IP12s.size() - 1].setIsPatological(true);
-					}
+					}*/
 					//IP.print();
 									IntersectionPoint<2,1> IP21 = IntersectionLocal::flipDimension<2,1>(IP12s[IP12s.size() - 1]);
 									IntersectionPoint<2,3> IP23 = IntersectionLocal::interpolateDimension<2,3>(IP21);
@@ -567,7 +609,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::toStringPluckerCoordinates(){
 
 void ComputeIntersection<Simplex<2>, Simplex<3>>::toStringPluckerCoordinatesTree(){
 	cout << "ComputeIntersection<Simplex<2>, <Simplex<3>> Plucker Coordinates Tree:" << endl;
-	this->toStringPluckerCoordinates();
+	toStringPluckerCoordinates();
 	for(unsigned int i = 0; i < 6;i++){
 		cout << "ComputeIntersection<Simplex<1>, Simplex<2>>["<< i <<"] Plucker Coordinates:" << endl;
 		CI12[i].toStringPluckerCoordinates();

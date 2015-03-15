@@ -20,7 +20,7 @@ TEST(ngh_intersection_2_3, all) {
 	unsigned int elementLimit = 20;
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/megasit10.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/TEST.msh", FilePath::input_file);
 
 	Profiler::initialize();
 

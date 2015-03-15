@@ -29,21 +29,18 @@ namespace computeintersection{
  */
 class IntersectionLocal {
 
-	//static int numberInstance;
-	//int id;
+	static const double epsilon;
+
 	bool is_patological;
 
 	std::vector<IntersectionPoint<2,3>> i_points; //vektor ukazatelu na dvojice lokal. souradnic
-	arma::mat::fixed<7,4> tracing_table;
+	//arma::mat::fixed<7,4> tracing_table;
 
 	unsigned int element_2D_idx;
 	unsigned int element_3D_idx;
 
 
 public:
-
-	static const unsigned int PROLONGATION_TYPE_TRIANGLE_SIDE = 0;
-	static const unsigned int PROLONGATION_TYPE_TETRAHEDRON_SIDE = 1;
 
     IntersectionLocal();
     IntersectionLocal(unsigned int elem2D,unsigned int elem3D);
@@ -76,35 +73,23 @@ public:
     	xprintf(Msg, "Metoda nebyla zatím implementována!\n");
     }
 
-    inline void printTracingTable(){
+    /*inline void printTracingTable(){
     	tracing_table.print();
-    };
+    };*/
 
     void traceGenericPolygon(std::vector<unsigned int> &prolongation_table);
 
-    // Už k ničemu (možná ale byla se dala využít k prodlužování patologického polygonu, uvidíme)
-    void prolongationType(const IntersectionPoint<2,3> &a, const IntersectionPoint<2,3> &b, unsigned int &type, unsigned int &index) const;
-
-    /**
-     * Trasování Polygonu
-     *  - po té, co se naplní trasovací tabulka se tato tabulka prochází
-     *  a propojují se návaznosti.
-     *
-     *  Tabulka obsahuje 4 stěny a 3 vrcholy = 7 řádků.
-     *  každý řádek má údaj o tom, do kterého řádku má pokračovat a
-     *  zda-li je na něm 0 - 2 průniků.
-     */
-    void tracePolygonOpt(std::vector<std::pair<unsigned int, unsigned int>> &prolongation_table);
-
     void trace_polygon_opt(std::vector<unsigned int> &prolongation_table);
 
-    void prolongatePolygon(std::queue<ProlongationLine> &fronta2D, std::queue<ProlongationLine> &fronta3D);
+    void trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table);
 
-    void traceConvexHull();
-
-    double ConvexHullCross(const IntersectionPoint<2,3> &O,
+    double convex_hull_cross(const IntersectionPoint<2,3> &O,
     		const IntersectionPoint<2,3> &A,
     		const IntersectionPoint<2,3> &B) const;
+
+    int convex_hull_prolongation_side(const IntersectionPoint<2,3> &A,
+    		const IntersectionPoint<2,3> &B) const;
+
  /*
      * Naplnění trasovací tabulky
      *  A) nejdříve se procházejí průniky od přímek trojúhelníku
@@ -126,8 +111,6 @@ public:
     /*
      * Optimalizovanější verze
      * */
-
-    void fillTracingTable2();
 
     /*
      * Vrací IntersectionPoint s prohozenými dimenzemi i daty.

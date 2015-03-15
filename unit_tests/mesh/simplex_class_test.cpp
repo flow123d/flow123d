@@ -63,6 +63,8 @@ TEST(simplex, all) {
 	ie.compute_intersections<0,94>();
 	ie.compute_intersections<8,5>();
 
+	cout << "eps: " << 64*numeric_limits<double>::epsilon()<< endl;
+
 	xprintf(Msg, "Test complete!\n");
 }
 

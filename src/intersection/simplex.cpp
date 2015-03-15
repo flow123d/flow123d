@@ -7,21 +7,21 @@ namespace computeintersection {
 template<> Simplex<1> &Simplex<3>::getAbscissa(unsigned int index) {
 
 	if (index < 3) {
-		return this->Simplices[0][index];
+		return Simplices[0][index];
 	} else if (index < 5) {
-		return this->Simplices[1][index - 2];
+		return Simplices[1][index - 2];
 	} else {
-		return this->Simplices[2][2];
+		return Simplices[2][2];
 	}
 
 }
 
 template<> Simplex<1> &Simplex<2>::getAbscissa(unsigned int index) {
-	return this->Simplices[index];
+	return Simplices[index];
 }
-template<> Simplex<1> &Simplex<1>::getAbscissa(unsigned int index) {
+/*template<> Simplex<1> &Simplex<1>::getAbscissa(unsigned int index) {
 	return this[0];
-}
+}*/
 
 
 /*template<int N> void Simplex<N,3>::setSimplex(
