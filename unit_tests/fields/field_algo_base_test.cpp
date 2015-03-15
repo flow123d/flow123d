@@ -347,7 +347,7 @@ TYPED_TEST(FieldFix, update_history) {
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
-	this->update_history(tg);
+	this->update_history(tg.step());
 
     Region diagonal_1d = this->mesh()->region_db().find_label("1D diagonal");
     Region diagonal_2d = this->mesh()->region_db().find_label("2D XY diagonal");
@@ -371,7 +371,7 @@ TYPED_TEST(FieldFix, update_history) {
 
 	tg.estimate_dt();
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 1.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -388,7 +388,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 2.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -405,7 +405,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 3.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -422,7 +422,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 4.0
     EXPECT_EQ( 3 , this->rh(diagonal_1d.idx()).size() );
@@ -439,7 +439,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 5.0
     EXPECT_EQ( 3 , this->rh(diagonal_1d.idx()).size() );
@@ -479,7 +479,7 @@ TYPED_TEST(FieldFix, set_time) {
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
-	this->set_time(tg);
+	this->set_time(tg.step());
 	this->_value_( *this );
 
 }
@@ -525,26 +525,26 @@ TYPED_TEST(FieldFix, constructors) {
 	f2.set_limit_side(LimitSide::right);
 
 	// tg = 2.0
-	f2.set_time(tg);
+	f2.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(f2));
 	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 3.0
 	tg.next_time();
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 4.0
 	tg.next_time();
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(1,this->_value_(this->field_));
 	EXPECT_EQ(0,this->_value_(f2));
 	EXPECT_ASSERT_DEATH( {field_default.set_time(tg);}, "Must set limit side");
 
 	field_default.set_limit_side(LimitSide::right);
-	field_default.set_time(tg);
+	field_default.set_time(tg.step());
 	EXPECT_EQ(1,this->_value_(field_default));
 }
 
@@ -616,9 +616,9 @@ TEST(Field, init_from_input) {
     init_conc.set_limit_side(LimitSide::right);
     conductivity.set_limit_side(LimitSide::right);
 
-    sorption_type.set_time(TimeGovernor());
-    init_conc.set_time(TimeGovernor());
-    conductivity.set_time(TimeGovernor());
+    sorption_type.set_time(TimeGovernor().step());
+    init_conc.set_time(TimeGovernor().step());
+    conductivity.set_time(TimeGovernor().step());
 
     {	
 
@@ -684,7 +684,7 @@ TEST(Field, init_from_default) {
         scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        scalar_field.set_time(TimeGovernor());
+        scalar_field.set_time(TimeGovernor().step());
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
@@ -698,7 +698,7 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the input field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step());} , ExcXprintfMsg, "Missing value of the input field");
     }
 
     {
@@ -712,7 +712,7 @@ TEST(Field, init_from_default) {
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
         enum_field.set_limit_side(LimitSide::right);
-        enum_field.set_time(TimeGovernor());
+        enum_field.set_time(TimeGovernor().step());
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
@@ -788,10 +788,10 @@ TEST(Field, disable_where) {
     bc_value.set_limit_side(LimitSide::right);
     bc_sigma.set_limit_side(LimitSide::right);
 
-    bc_type.set_time(TimeGovernor());
-    bc_flux.set_time(TimeGovernor());
-    bc_value.set_time(TimeGovernor());
-    bc_sigma.set_time(TimeGovernor());
+    bc_type.set_time(TimeGovernor().step());
+    bc_flux.set_time(TimeGovernor().step());
+    bc_value.set_time(TimeGovernor().step());
+    bc_sigma.set_time(TimeGovernor().step());
 }
 
 
