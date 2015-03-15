@@ -40,6 +40,7 @@
 #include "system/file_path.hh"
 #include "mpi.h"
 #include "timer_data.hh"
+#include "system/jzon/Jzon.h"
 /*
  * These should be replaced by using boost MPI interface
  */
@@ -161,6 +162,7 @@ string Timer::code_point_str() const {
     return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
 }
 
+string Timer::common_path = "";
 
 /***********************************************************************************************
  * Implementation of Profiler
@@ -339,7 +341,7 @@ void Profiler::notify_free(const size_t size) {
 
 
 
-void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
+void Profiler::add_timer_info(MPI_Comm comm, Jzon::Node* holder, int timer_idx, double parent_time) {
 
     Timer &timer = timers_[timer_idx];
 
@@ -361,25 +363,37 @@ void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_inf
 
     if (timer_idx == 0) parent_time = cumul_time_sum;
 
-    vector<string> info;
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
-    string tree_info = string(2*indent, ' ') +
-                       boost::str( boost::format("[%.1f] ") % percent )+
-                       timer.tag();
-    info.push_back( tree_info );
+    string code_point = timer.code_point_str();
+    code_point.erase(0, Timer::common_path.size());
 
-    info.push_back( boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " ")) );
-    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_max) ) );
-    info.push_back( boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1)) );
-    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_sum / call_count_sum) ) );
-    info.push_back( boost::str( boost::format("%.6f") % (cumul_time_sum) ) );
-    info.push_back( timer.code_point_str() );
+    // write current timer info
+    Jzon::Node node = Jzon::object();
+    node.add ("tag", 		(timer.tag()) );
+    node.add ("code_point", (code_point) );
+	node.add ("percent", 	(boost::str(boost::format("[%.1f] ") % percent)) );
+    node.add ("calls", 		(boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " "))) );
+    node.add ("Tmax", 		(boost::str(boost::format("%.6f") % (cumul_time_max))) );
+    node.add ("max/min", 	(boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1))) );
+    node.add ("T/calls", 	(boost::str(boost::format("%.6f") % (cumul_time_sum / call_count_sum))) );
+    node.add ("Ttotal", 	(boost::str(boost::format("%.6f") % (cumul_time_sum))) );
 
-    timers_info.push_back(info);
+    // write times children timers
+    Jzon::Node children = Jzon::array();
+    bool has_children = false;
+    for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
+		if (timer.child_timers[i] > 0) {
+			add_timer_info(comm, &children, timer.child_timers[i], cumul_time_sum);
+			has_children = true;
+		}
+    }
 
-    for (unsigned int i = 0; i < Timer::max_n_childs; i++)
-        if (timer.child_timers[i] > 0)
-            add_timer_info(comm, timers_info, timer.child_timers[i], indent + 1, cumul_time_sum);
+    // add chilren tag and other info if present
+    if (has_children)
+    	node.add("children", children);
+
+    // push itself to root Jzon::Node 'array'
+	holder->add (node);
 }
 
 
@@ -390,125 +404,87 @@ void Profiler::update_running_timers() {
     timers_[0].update();
 }
 
+std::string common_prefix( std::string a, std::string b ) {
+    if( a.size() > b.size() ) std::swap(a,b) ;
+    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
+}
 
 
 void Profiler::output(MPI_Comm comm, ostream &os) {
 
-    const int column_space = 3;
 
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
     update_running_timers();
-    
+
     int ierr, mpi_rank;
-    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank); 
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
 
-    vector < vector<string> > timers_info(1);
+    int mpi_size;
+    MPI_Comm_size(comm, &mpi_size);
 
-    // add header into timers_info table !!
-    timers_info[0].push_back( "tag tree");
-    timers_info[0].push_back( "calls");
-    timers_info[0].push_back( "Tmax");
-    timers_info[0].push_back( "max/min");
-    timers_info[0].push_back( "T/calls");
-    timers_info[0].push_back( "Ttotal");
-    timers_info[0].push_back( "code_point");
+    time_t end_time = time(NULL);
 
-    add_timer_info(comm, timers_info, 0, 0, 0.0);
+    const char format[] = "%x %X";
+    char start_time_string[BUFSIZ] = {0};
+    strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
 
-    //create profiler output only once (on the first processor)
-    if (mpi_rank == 0) {
-
-        // compute with of columns
-        vector<unsigned int> width(timers_info[0].size(),0);
-        for (unsigned int i = 0; i < timers_info.size(); i++)
-            for (unsigned int j = 0; j < timers_info[i].size(); j++) width[j] = max( width[j] , (unsigned int)timers_info[i][j].size() );
-        // detect common path of code points
-        unsigned int common_length=timers_info[1].back().size();
-        for (unsigned int i = 2; i < timers_info.size(); i++) {
-            common_length = min( common_length, (unsigned int) timers_info[i].back().size() );
-            for (unsigned int j = 0; j < common_length; j++ ) {
-                if (timers_info[1].back().at(j) != timers_info[i].back().at(j)) {
-                    common_length = j;
-                    break;
-                }
-            }
-        }
-        // remove common path
-        for (unsigned int i = 1; i < timers_info.size(); i++) timers_info[i].back().erase(0, common_length);
+    char end_time_string[BUFSIZ] = {0};
+    strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
 
-        int mpi_size;
-        MPI_Comm_size(comm, &mpi_size);
+    // find common prefix in file paths
+    string common_path = timers_[0].code_point_str();
+    for (unsigned int i = 1; i < timers_.size(); i++)
+    	common_path = common_prefix (common_path, timers_[i].code_point_str());
+    Timer::common_path = common_path;
 
-        time_t end_time = time(NULL);
+    // generate current run details
+    Jzon::Node root = Jzon::object ();
+    root.add ("program-name", 		flow_name_);
+    root.add ("program-version", 	flow_version_);
+    root.add ("program-branch", 	flow_branch_);
+    root.add ("program-revision", 	flow_revision_);
+    root.add ("program-build", 		flow_build_);
+    root.add ("timer_resolution", 	150);
 
-        const char format[] = "%x %X";
-        char start_time_string[BUFSIZ] = {0};
-        strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
+    // print some information about the task at the beginning
+    root.add ("task-description",  	task_description_);
+    root.add ("task-Task size",  	task_size_);
 
-        char end_time_string[BUFSIZ] = {0};
-        strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
+    //print some information about the task at the beginning
+    root.add ("run-process-count", 	mpi_size);
+    root.add ("run-started-at", 	start_time_string);
+    root.add ("run-finished-at", 	end_time_string);
 
-        //create a file where the output will be written to
+    // recursively add all timers info
+    Jzon::Node children = Jzon::array();
+    add_timer_info(comm, &children, 0, 0.0);
+    root.add("children", children);
 
-        os << "Program name: " << flow_name_ << endl
-           << "Program version: " << flow_version_ << endl
-           << "Program branch: " << flow_branch_ << endl
-           << "Program revision: " << flow_revision_ << endl
-           << "Program build: " << flow_build_ << endl << endl;
-
-
-        os << "Task description: " << task_description_ << endl
-           << "Task size: " << task_size_ << endl << endl;
-
-        //print some information about the task at the beginning
-        os << "Run processes count: " << mpi_size << endl;
-        os << "Run started at: " << start_time_string << endl;
-        os << "Run finished at: " << end_time_string << endl;
-
-        os << setfill ('-') << setw (80) << "" << endl;
-        os.fill(' ');
-
-        // print header
-        for(unsigned int j=0; j< timers_info[0].size(); j++)
-            os << left << setw(width[j]) << timers_info[0][j] << setw(column_space) << "";
-        os << endl;
-
-        os << setfill ('-') << setw (80) << "" << endl;
-        os.fill(' ');
-
-        for (unsigned int i = 1; i < timers_info.size(); i++) {
-            for(unsigned int j=0; j< timers_info[i].size(); j++) {
-                // first and last item are left aligned
-                if (j==0 || j==timers_info[i].size()-1 ) os << left; else os<<right;
-                os << setw(width[j]) << timers_info[i][j] << setw(column_space) << "";
-            }
-
-            os << endl;
-        }
-
-    }
+    // write result to file
+    Jzon::Writer writer;
+    writer.setFormat (Jzon::StandardFormat);
+    writer.writeStream (root, os);
 }
 
 
 
 void Profiler::output(MPI_Comm comm) {
-            char filename[PATH_MAX];
-            strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
-            string full_fname =  FilePath(string(filename), FilePath::output_file);
+	char filename[PATH_MAX];
+	strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
+	string full_fname =  FilePath(string(filename), FilePath::output_file);
 
-            xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-            ofstream os(full_fname.c_str());
-            output(comm, os);
-            os.close();
+	xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
+	ofstream os(full_fname.c_str());
+	output(comm, os);
+	os.close();
 }
 
 
 
-void Profiler::uninitialize()
-{
+void Profiler::uninitialize() {
     if (_instance) {
         ASSERT( _instance->actual_node==0 , "Forbidden to uninitialize the Profiler when actual timer is not zero (but '%s').\n",
                 _instance->timers_[_instance->actual_node].tag().c_str());
