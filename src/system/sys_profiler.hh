@@ -64,6 +64,7 @@
 #include "system/system.hh"
 #include <mpi.h>
 #include "timer_data.hh"
+#include "system/jzon/Jzon.h"
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
@@ -396,6 +397,12 @@ protected:
     size_t total_deallocated_;
 
 
+    /**
+     * common part in filepath
+     */
+    static string common_path;
+
+
     friend class Profiler;
 
 };
@@ -602,7 +609,7 @@ private:
      * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
      * to have alligned columns on the output. The alligning is performed in the output() method.
      */
-    void add_timer_info(MPI_Comm comm, vector<vector<string> > &timersInfo, int timer_idx, int indent, double parent_time);
+    void add_timer_info(MPI_Comm comm, Jzon::Node* node, int timer_idx, double parent_time);
 
     //Profiler(MPI_Comm comm); // private constructor
     Profiler(); // private constructor
