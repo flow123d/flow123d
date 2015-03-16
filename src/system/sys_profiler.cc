@@ -410,7 +410,7 @@ void Profiler::update_running_timers() {
 }
 
 
-
+#ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
@@ -450,6 +450,20 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // write result to file
     write_json(os, root, FLOW123D_JSON_PRETTY);
 }
+
+
+void Profiler::output(MPI_Comm comm) {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
+    string full_fname =  FilePath(string(filename), FilePath::output_file);
+
+    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
+    ofstream os(full_fname.c_str());
+    output(comm, os);
+    os.close();
+}
+
+#endif /* FLOW123D_HAVE_MPI */
 
 void Profiler::output(ostream &os) {
     // last update
@@ -523,16 +537,6 @@ void Profiler::output_header (ptree &root, int mpi_size) {
     root.put ("run-finished-at",    end_time_string);
 }
 
-void Profiler::output(MPI_Comm comm) {
-	char filename[PATH_MAX];
-	strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
-	string full_fname =  FilePath(string(filename), FilePath::output_file);
-
-	xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-	ofstream os(full_fname.c_str());
-	output(comm, os);
-	os.close();
-}
 
 void Profiler::output() {
     char filename[PATH_MAX];

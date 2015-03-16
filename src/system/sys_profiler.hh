@@ -548,7 +548,7 @@ public:
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
 
-
+#ifdef FLOW123D_HAVE_MPI
     /**
      * @brief Output current timing information into the given stream.
      *
@@ -568,11 +568,11 @@ public:
      * TODO: move this outside to minimize dependencies
      */
     void output(MPI_Comm comm);
+#endif /* FLOW123D_HAVE_MPI */
     /**
      * @brief Output current timing information into the given stream.
      *
-     * COLECTIVE - all processes in the communicator have to call this
-     * method. It temporally stops all timers, synchronize all processes, collect
+     * It temporally stops all timers, synchronize all processes, collect
      * profiling informations and write it to the given stream.
      *
      *  Pass through the profiling tree (collective over processors)
