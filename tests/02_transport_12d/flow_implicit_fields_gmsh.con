@@ -52,8 +52,7 @@
       solver = {
         TYPE = "Petsc", 
         a_tol = 1e-12,
-        r_tol = 1e-12,
-        options="-ksp_type gmres -ksp_monitor"
+        r_tol = 1e-12
       },
       input_fields=[
         {
