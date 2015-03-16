@@ -366,15 +366,17 @@ void Profiler::add_timer_info(ReduceFunctor reduce, ptree* holder, int timer_idx
     ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
 
     // fix path
-    string code_point = timer.code_point_str();
-    code_point.erase (0, Timer::common_path.size());
+    string filepath = timer.code_point_->file_;
+    filepath.erase (0, Timer::common_path.size());
 
     // generate node representing this timer
     // add basic information
     ptree node;
     double cumul_time_sum;
     node.put ("tag",        (timer.tag()) );
-    node.put ("code-point", (code_point) );
+    node.put ("file-path",  (filepath) );
+    node.put ("file-line",  (timer.code_point_->line_) );
+    node.put ("function",   (timer.code_point_->func_) );
     cumul_time_sum = reduce (timer, node);
 
 
