@@ -917,12 +917,12 @@ void DarcyFlowMH_Steady::create_linear_system() {
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
                 ls->set_solution( NULL );
-                ls->set_positive_definite();
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
                 if (n_schur_compls==1) {
                     schur1 = new LinSys_PETSC(ds);
+                    schur1->set_positive_definite();
                 } else {
                     IS is;
                     ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
@@ -932,6 +932,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+                    schur2->set_positive_definite();
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
