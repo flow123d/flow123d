@@ -168,7 +168,9 @@ public:
 
     /**
      * Set side of limit when calling @p set_time
-     * with jump time. This method invalidate result of
+     * with jump time, i.e. time where the field change implementation on some region.
+     * Wee assume that implementations prescribe only smooth fields.
+     * This method invalidate result of
      * @p changed() so it should be called just before @p set_time.
      * Can be different for different field copies.
      */
