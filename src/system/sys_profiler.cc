@@ -36,11 +36,23 @@
 #include "sys_profiler.hh"
 #include "system/system.hh"
 #include <boost/format.hpp>
+#include <iostream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include "system/file_path.hh"
 #include "mpi.h"
 #include "timer_data.hh"
-#include "system/jzon/Jzon.h"
+
+
+using boost::property_tree::ptree;
+using boost::property_tree::read_json;
+using boost::property_tree::write_json;
+
+#define FLOW123D_JSON_PRETTY        1
+#define FLOW123D_JSON_MACHINE       0
+#define FLOW123D_MPI_SINGLE_PROCESS 1
+
 /*
  * These should be replaced by using boost MPI interface
  */
@@ -338,62 +350,55 @@ void Profiler::notify_free(const size_t size) {
 
 
 
+std::string common_prefix( std::string a, std::string b ) {
+    if( a.size() > b.size() ) std::swap(a,b) ;
+    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
+}
 
 
 
-void Profiler::add_timer_info(MPI_Comm comm, Jzon::Node* holder, int timer_idx, double parent_time) {
+template<typename ReduceFunctor>
+void Profiler::add_timer_info(ReduceFunctor reduce, ptree* holder, int timer_idx, double parent_time) {
 
+    // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-
     ASSERT( timer_idx >=0, "Wrong timer index %d.\n", timer_idx);
     ASSERT( timer.parent_timer >=0 , "Inconsistent tree.\n");
 
-    int numproc;
-    MPI_Comm_size(comm, &numproc);
-
-    int call_count = timer.call_count;
-    int call_count_min = MPI_Functions::min(&call_count, comm);
-    int call_count_max = MPI_Functions::max(&call_count, comm);
-    int call_count_sum = MPI_Functions::sum(&call_count, comm);
-
-    double cumul_time = timer.cumulative_time() / 1000; // in seconds
-    double cumul_time_min = MPI_Functions::min(&cumul_time, comm);
-    double cumul_time_max = MPI_Functions::max(&cumul_time, comm);
-    double cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
-
-    if (timer_idx == 0) parent_time = cumul_time_sum;
-
-    double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
+    // fix path
     string code_point = timer.code_point_str();
-    code_point.erase(0, Timer::common_path.size());
+    code_point.erase (0, Timer::common_path.size());
 
-    // write current timer info
-    Jzon::Node node = Jzon::object();
-    node.add ("tag", 		(timer.tag()) );
-    node.add ("code-point", (code_point) );
-    node.add ("percent", 	(boost::str(boost::format("[%.1f] ") % percent)) );
-    node.add ("calls", 		(boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " "))) );
-    node.add ("Tmax", 		(boost::str(boost::format("%.6f") % (cumul_time_max))) );
-    node.add ("max-min", 	(boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1))) );
-    node.add ("T-calls", 	(boost::str(boost::format("%.6f") % (cumul_time_sum / call_count_sum))) );
-    node.add ("Ttotal", 	(boost::str(boost::format("%.6f") % (cumul_time_sum))) );
+    // generate node representing this timer
+    // add basic information
+    ptree node;
+    double cumul_time_sum;
+    node.put ("tag",        (timer.tag()) );
+    node.put ("code-point", (code_point) );
+    cumul_time_sum = reduce (timer, node);
+
+
+    // statistical info
+    if (timer_idx == 0) parent_time = cumul_time_sum;
+    double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
+    node.put<double> ("percent", 	percent);
 
     // write times children timers
-    Jzon::Node children = Jzon::array();
+    ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
 		if (timer.child_timers[i] > 0) {
-			add_timer_info(comm, &children, timer.child_timers[i], cumul_time_sum);
+			add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
 			has_children = true;
 		}
     }
 
-    // add chilren tag and other info if present
+    // add children tag and other info if present
     if (has_children)
-    	node.add("children", children);
+    	node.add_child ("children", children);
 
-    // push itself to root Jzon::Node 'array'
-	holder->add (node);
+    // push itself to root ptree 'array'
+	holder->push_back (std::make_pair ("", node));
 }
 
 
@@ -404,26 +409,85 @@ void Profiler::update_running_timers() {
     timers_[0].update();
 }
 
-std::string common_prefix( std::string a, std::string b ) {
-    if( a.size() > b.size() ) std::swap(a,b) ;
-    return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
-}
 
 
 void Profiler::output(MPI_Comm comm, ostream &os) {
-
-
     //wait until profiling on all processors is finished
     MPI_Barrier(comm);
     update_running_timers();
-
-    int ierr, mpi_rank;
+    int ierr, mpi_rank, mpi_size;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
-
-    int mpi_size;
     MPI_Comm_size(comm, &mpi_size);
 
+    // output header
+    ptree root, children;
+    output_header (root, mpi_size);
+
+    // recursively add all timers info
+    // define lambda function which reduces timer from multiple processors
+    // MPI implementation uses MPI call to reduce values
+    auto reduce = [=] (Timer &timer, ptree &node) -> double {
+        int call_count = timer.call_count;
+        double cumul_time = timer.cumulative_time () / 1000;
+        double cumul_time_sum;
+
+        node.put ("call-count", call_count);
+        node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
+        node.put ("call-count_max", MPI_Functions::max(&call_count, comm));
+        node.put ("call-count_sum", MPI_Functions::sum(&call_count, comm));
+
+        node.put ("cumul-time", cumul_time);
+        node.put ("cumul-time-min", MPI_Functions::min(&cumul_time, comm));
+        node.put ("cumul-time_max", MPI_Functions::max(&cumul_time, comm));
+        node.put ("cumul-time_sum", cumul_time_sum = MPI_Functions::sum(&cumul_time, comm));
+        return cumul_time_sum;
+    };
+
+    add_timer_info (reduce, &children, 0, 0.0);
+    root.add_child ("children", children);
+
+    // write result to file
+    write_json(os, root, FLOW123D_JSON_PRETTY);
+}
+
+void Profiler::output(ostream &os) {
+    // last update
+    update_running_timers();
+
+    // output header
+    ptree root, children;
+    output_header (root, FLOW123D_MPI_SINGLE_PROCESS);
+
+
+    // recursively add all timers info
+    // define lambda function which reduces timer from multiple processors
+    // non-MPI implementation is just dummy repetition of initial value
+    auto reduce = [=] (Timer &timer, ptree &node) -> double {
+        int call_count = timer.call_count;
+        double cumul_time = timer.cumulative_time () / 1000;
+
+        node.put ("call-count",     call_count);
+        node.put ("call-count-min", call_count);
+        node.put ("call-count_max", call_count);
+        node.put ("call-count_sum", call_count);
+
+        node.put ("cumul-time",     cumul_time);
+        node.put ("cumul-time-min", cumul_time);
+        node.put ("cumul-time_max", cumul_time);
+        node.put ("cumul-time_sum", cumul_time);
+        return cumul_time;
+    };
+
+    add_timer_info (reduce, &children, 0, 0.0);
+    root.add_child ("children", children);
+
+    // write result to file
+    write_json(os, root, FLOW123D_JSON_PRETTY);
+}
+
+void Profiler::output_header (ptree &root, int mpi_size) {
+    update_running_timers();
     time_t end_time = time(NULL);
 
     const char format[] = "%x %X";
@@ -437,39 +501,27 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // find common prefix in file paths
     string common_path = timers_[0].code_point_str();
     for (unsigned int i = 1; i < timers_.size(); i++)
-    	common_path = common_prefix (common_path, timers_[i].code_point_str());
+        common_path = common_prefix (common_path, timers_[i].code_point_str());
     Timer::common_path = common_path;
 
     // generate current run details
-    Jzon::Node root = Jzon::object ();
-    root.add ("program-name", 		flow_name_);
-    root.add ("program-version", 	flow_version_);
-    root.add ("program-branch", 	flow_branch_);
-    root.add ("program-revision", 	flow_revision_);
-    root.add ("program-build", 		flow_build_);
-    root.add ("timer-resolution", 	(boost::str(boost::format("%.6f") % (TimerData::get_resolution()))));
+
+    root.put ("program-name",       flow_name_);
+    root.put ("program-version",    flow_version_);
+    root.put ("program-branch",     flow_branch_);
+    root.put ("program-revision",   flow_revision_);
+    root.put ("program-build",      flow_build_);
+    root.put ("timer-resolution",   TimerData::get_resolution());
 
     // print some information about the task at the beginning
-    root.add ("task-description",  	task_description_);
-    root.add ("task-size",  		task_size_);
+    root.put ("task-description",   task_description_);
+    root.put ("task-size",          task_size_);
 
     //print some information about the task at the beginning
-    root.add ("run-process-count", 	mpi_size);
-    root.add ("run-started-at", 	start_time_string);
-    root.add ("run-finished-at", 	end_time_string);
-
-    // recursively add all timers info
-    Jzon::Node children = Jzon::array();
-    add_timer_info(comm, &children, 0, 0.0);
-    root.add("children", children);
-
-    // write result to file
-    Jzon::Writer writer;
-    writer.setFormat (Jzon::StandardFormat);
-    writer.writeStream (root, os);
+    root.put ("run-process-count",  mpi_size);
+    root.put ("run-started-at",     start_time_string);
+    root.put ("run-finished-at",    end_time_string);
 }
-
-
 
 void Profiler::output(MPI_Comm comm) {
 	char filename[PATH_MAX];
@@ -482,6 +534,16 @@ void Profiler::output(MPI_Comm comm) {
 	os.close();
 }
 
+void Profiler::output() {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
+    string full_fname =  FilePath(string(filename), FilePath::output_file);
+
+    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
+    ofstream os(full_fname.c_str());
+    output(os);
+    os.close();
+}
 
 
 void Profiler::uninitialize() {

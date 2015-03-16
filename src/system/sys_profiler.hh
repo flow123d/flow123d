@@ -64,7 +64,9 @@
 #include "system/system.hh"
 #include <mpi.h>
 #include "timer_data.hh"
-#include "system/jzon/Jzon.h"
+#include <boost/property_tree/ptree.hpp>
+
+using boost::property_tree::ptree;
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
@@ -407,7 +409,34 @@ protected:
 
 };
 
+/*
+struct SimpleTranslator {
+    typedef std::string internal_type;
+    typedef int         external_type;
 
+    // Converts a string to int
+    boost::optional<external_type> get_value(const internal_type& str) {
+        return boost::optional<external_type>(std::stoi(str));
+    }
+
+    // Converts a bool to string
+    boost::optional<internal_type> put_value(const external_type& i){
+        return boost::optional<internal_type>(std::to_string(i));
+    }
+};
+
+namespace boost {
+namespace property_tree {
+
+template<typename Ch, typename Traits, typename Alloc>
+struct translator_between<std::basic_string< Ch, Traits, Alloc >, int> {
+    typedef SimpleTranslator type;
+};
+
+
+} // namespace property_tree
+} // namespace boost
+*/
 /**
  *
  * @brief Main class for profiling by measuring time intervals.
@@ -540,6 +569,23 @@ public:
      */
     void output(MPI_Comm comm);
     /**
+     * @brief Output current timing information into the given stream.
+     *
+     * COLECTIVE - all processes in the communicator have to call this
+     * method. It temporally stops all timers, synchronize all processes, collect
+     * profiling informations and write it to the given stream.
+     *
+     *  Pass through the profiling tree (collective over processors)
+     *  Print cumulative times average, balance (max/min), count (denote differences)
+     *
+     */
+    void output(ostream &os);
+    /**
+     * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
+     * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
+     */
+    void output();
+    /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
      */
@@ -564,6 +610,13 @@ private:
      */
     void update_running_timers();
 
+    /**
+     * Method will prepare construct specific details about the run (time start and time end)
+     * and write them along with basic informations about the run (name, description, ...)
+     * into ptree object
+     */
+    void output_header (ptree &root, int mpi_size);
+
 
     /// Default code point.
     static CodePoint null_code_point;
@@ -582,6 +635,11 @@ private:
     /// MPI_rank
     //int mpi_rank_;
 
+    /**
+     * flag indicating that collection of timer details will be
+     * using MPI
+    bool mpi_used;
+     */
     // header informations
 
     /// Some measure of the size of the task in the set of the tasks that differs
@@ -609,7 +667,8 @@ private:
      * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
      * to have alligned columns on the output. The alligning is performed in the output() method.
      */
-    void add_timer_info(MPI_Comm comm, Jzon::Node* node, int timer_idx, double parent_time);
+    template<typename ReduceFunctor>
+    void add_timer_info(ReduceFunctor reduce, ptree* node, int timer_idx, double parent_time);
 
     //Profiler(MPI_Comm comm); // private constructor
     Profiler(); // private constructor
