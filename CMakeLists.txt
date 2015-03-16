@@ -611,7 +611,6 @@ include_directories(
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
-    ${CMAKE_SOURCE_DIR}/third_party/jzon
     ${PETSC_INCLUDES}
     ${BDDCML_INCLUDES}
     ${Boost_INCLUDE_DIR}
