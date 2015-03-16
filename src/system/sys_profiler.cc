@@ -370,12 +370,12 @@ void Profiler::add_timer_info(MPI_Comm comm, Jzon::Node* holder, int timer_idx, 
     // write current timer info
     Jzon::Node node = Jzon::object();
     node.add ("tag", 		(timer.tag()) );
-    node.add ("code_point", (code_point) );
-	node.add ("percent", 	(boost::str(boost::format("[%.1f] ") % percent)) );
+    node.add ("code-point", (code_point) );
+    node.add ("percent", 	(boost::str(boost::format("[%.1f] ") % percent)) );
     node.add ("calls", 		(boost::str(boost::format("%i%s") % call_count % (call_count_min != call_count_max ? "*" : " "))) );
     node.add ("Tmax", 		(boost::str(boost::format("%.6f") % (cumul_time_max))) );
-    node.add ("max/min", 	(boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1))) );
-    node.add ("T/calls", 	(boost::str(boost::format("%.6f") % (cumul_time_sum / call_count_sum))) );
+    node.add ("max-min", 	(boost::str(boost::format("%.6f") % (cumul_time_min > 1.0e-10 ? cumul_time_max / cumul_time_min : 1))) );
+    node.add ("T-calls", 	(boost::str(boost::format("%.6f") % (cumul_time_sum / call_count_sum))) );
     node.add ("Ttotal", 	(boost::str(boost::format("%.6f") % (cumul_time_sum))) );
 
     // write times children timers
