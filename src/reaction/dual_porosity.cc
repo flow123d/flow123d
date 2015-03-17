@@ -262,12 +262,12 @@ void DualPorosity::zero_time_step()
 	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
-  data_.set_time(time_->step());
+  data_.set_time(time_->step(0));
   set_initial_condition();
   
   // write initial condition
   output_vector_gather();
-  data_.output_fields.set_time(time_->step());
+  data_.output_fields.set_time(time_->step(0));
   data_.output_fields.output(output_stream_);
   
   if(reaction_mobile != nullptr)
@@ -295,7 +295,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  data_.set_time(time_->step());
+  data_.set_time(time_->step(-2));
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
