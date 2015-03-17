@@ -456,7 +456,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
 void Profiler::output(MPI_Comm comm) {
     char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
     string full_fname =  FilePath(string(filename), FilePath::output_file);
 
     xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
@@ -502,6 +502,18 @@ void Profiler::output(ostream &os) {
     write_json(os, root, FLOW123D_JSON_PRETTY);
 }
 
+
+void Profiler::output() {
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+    string full_fname =  FilePath(string(filename), FilePath::output_file);
+
+    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
+    ofstream os(full_fname.c_str());
+    output(os);
+    os.close();
+}
+
 void Profiler::output_header (ptree &root, int mpi_size) {
     update_running_timers();
     time_t end_time = time(NULL);
@@ -537,18 +549,6 @@ void Profiler::output_header (ptree &root, int mpi_size) {
     root.put ("run-process-count",  mpi_size);
     root.put ("run-started-at",     start_time_string);
     root.put ("run-finished-at",    end_time_string);
-}
-
-
-void Profiler::output() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
-
-    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-    ofstream os(full_fname.c_str());
-    output(os);
-    os.close();
 }
 
 
