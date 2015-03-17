@@ -436,13 +436,13 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
         node.put ("call-count", call_count);
         node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
-        node.put ("call-count_max", MPI_Functions::max(&call_count, comm));
-        node.put ("call-count_sum", MPI_Functions::sum(&call_count, comm));
+        node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
+        node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
 
         node.put ("cumul-time", cumul_time);
         node.put ("cumul-time-min", MPI_Functions::min(&cumul_time, comm));
-        node.put ("cumul-time_max", MPI_Functions::max(&cumul_time, comm));
-        node.put ("cumul-time_sum", cumul_time_sum = MPI_Functions::sum(&cumul_time, comm));
+        node.put ("cumul-time-max", MPI_Functions::max(&cumul_time, comm));
+        node.put ("cumul-time-sum", cumul_time_sum = MPI_Functions::sum(&cumul_time, comm));
         return cumul_time_sum;
     };
 
@@ -485,13 +485,13 @@ void Profiler::output(ostream &os) {
 
         node.put ("call-count",     call_count);
         node.put ("call-count-min", call_count);
-        node.put ("call-count_max", call_count);
-        node.put ("call-count_sum", call_count);
+        node.put ("call-count-max", call_count);
+        node.put ("call-count-sum", call_count);
 
         node.put ("cumul-time",     cumul_time);
         node.put ("cumul-time-min", cumul_time);
-        node.put ("cumul-time_max", cumul_time);
-        node.put ("cumul-time_sum", cumul_time);
+        node.put ("cumul-time-max", cumul_time);
+        node.put ("cumul-time-sum", cumul_time);
         return cumul_time;
     };
 
