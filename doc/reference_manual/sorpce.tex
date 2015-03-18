@@ -53,16 +53,17 @@ followed by another \emph{reaction} that can run in both phases. The concentrati
 of this model. See Subsection \ref{sec:sorp_math}.
 
 
-The \emph{dual porosity} model, described in Subsection \ref{sec:dual_porosity}, introduces the so called immobile (or dead-end) pores in the matrix. The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
+The \emph{dual porosity} model, described in Subsection \ref{sec:dual_porosity}, introduces the so called immobile (or dead-end) pores in the matrix. 
+The convection process operates only on the concentration of the substances in the mobile zone (open pores) 
 and the exchange of concentrations from/to immobile zone is governed by molecular diffusion. This process can be followed by 
 \emph{sorption} model and/or chemical \emph{reaction}, both in mobile and immobile zone. The immobile concentration is an
 additional output.
 
 
-\subsection{Dual Porosity}
+\subsection{Dual Porosity} 
 \label{sec:dual_porosity}
 
-Up to now we have described the transport equation for the single porosity model. The dual porosity model splits the mass into 
+Up to now, we have described the transport equation for the single porosity model. The dual porosity model splits the mass into 
 two zones -- the mobile zone and the immobile zone. Both occupy the same macroscopic volume, however on the microscopic scale, 
 the immobile zone is formed by the dead-end pores, where the liquid is trapped and cannot pass through. The rest of the pore volume 
 is occupied by the mobile zone. Since the liquid in the immobile pores is immobile, the exchange of the substance is only due 
@@ -77,9 +78,13 @@ to molecular diffusion. We consider simple nonequilibrium linear model:
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
 \hyperA{DualPorosity-Data::diffusion-rate-immobile}{$D_{dp}$} is a diffusion rate between the zones.
 \hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
-$\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from transport equation \eqref{e:ADE}.
+$\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from 
+transport equation \eqref{e:ADE}. One can also set non-zero initial concentration \hyperA{DualPorosity-Data::init-conc-immobile}{$c_i(0)$} 
+in the immobile zone.
 
-
+To solve the system of first order differential equation, we use analytic solution or Euler's method,
+which are switched according to a given error tolerance. See subsection \ref{sec:num_dual_porosity} 
+in numerical methods.
  
 
 \subsection{Equilibrial Sorption}
@@ -115,17 +120,27 @@ Notation:
        the mass of liquid $m_l$, all in unit volume. The relation between $c_l$ and the concentration $c$ from 
        transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
  \item \hyperA{Sorption::solvent-density}{$\varrho_l$}, \hyperA{Sorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively.
- \item \hyperA{Sorption::molar-mass}{$M_s$} denotes the molar mass of a substance.
+ \item \hyperA{Substance::molar-mass}{$M_s$} denotes the molar mass of a substance.
  \item Multiplication parameters $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$] are given by 
        \hyperA{Sorption-Data::isotherm-mult}{\tt isotherm\_mult}.
  \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Sorption-Data::isotherm-other}{\tt isotherm\_other}.
 \end{itemize}
 
+Non-zero initial concentration in the solid phase \hyperA{Sorption-Data::init-conc-solid}{$c_s(0)$} can be set in the input record. Now, further denoting
+\[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
+and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
+\begin{equation}
+ c_T = \mu_l c_l + \mu_s f(c_l),
+ \label{eq:nonlin_sorption}
+\end{equation}
+which can be either solved iteratively or using interpolation. See subsection \ref{sec:num_sorp_math} 
+in numerical methods for details.
+
 The units of $c_l$, $c_s$ and $k_i$ can vary in literature. To avoid misinterpretation, we derive (according
 to Bowman~\cite{bowman_conversion_1982}) a conversion rule for Freundlich isotherm which will lead the user 
 also in other cases, we believe. 
 
-Let us have $c$ \units{1}{-3}{}, the mass concentration in liquid, and $s$ [kg\,$\mathrm{kg}^{-1}$], 
+\paragraph{Units conversion.} Let us have $c$ \units{1}{-3}{}, the mass concentration in liquid, and $s$~[kg\,$\mathrm{kg}^{-1}$], 
 the fraction of the amount of the solute adsorbed and the amount of the adsorbent in solid. 
 The unit of $K$ follows from the dimensional analysis of $s=Kc^{\alpha}$:
 \[[K] = \frac{\rm{kg}^{1-\alpha}\rm{m}^{3\alpha}}{\rm{kg}},\]
@@ -159,14 +174,6 @@ k_l=K M_s^{-1}\rho_l.
 The conversion of different prefixes of units are left on the user. One should be careful using the 
 Freundlich isotherm, though, where the exponent $\alpha$ must not be forgotten.
 
-Denoting
-\[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
-and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
-\begin{equation}
- c_T = \mu_l c_l + \mu_s f(c_l),
- \label{eq:nonlin_sorption}
-\end{equation}
-which can be either solved iteratively or using interpolation.
 
 \subsection{Sorption in Dual Porosity Model} 
 \label{subsec:sorp_dual_por}
