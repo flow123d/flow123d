@@ -59,7 +59,7 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     char * tmp_name = new char[ module_name.size() + 2 ];
     strcpy( tmp_name, module_name.c_str() );
 
-    PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
+    PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
     PythonLoader::check_error();
 
     PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);

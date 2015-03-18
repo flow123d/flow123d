@@ -15,6 +15,7 @@
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
+#include "system/file_path.hh"
 
 using namespace std;
 
@@ -45,6 +46,15 @@ TEST(PythonLoader, print_error) {
 
 TEST(PythonLoader, function_error) {
 	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
+}
+
+
+TEST(PythonLoader, file_error) {
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    EXPECT_THROW( { PythonLoader::load_module_from_file(FilePath::get_absolute_working_dir() + "/python_loader_script.py"); },
+    		PythonLoader::ExcPythonError);
 }
 
 
