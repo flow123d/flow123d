@@ -27,10 +27,24 @@ def func_xyz(x,y,z):
 
 )CODE";
 
+string python_print = R"CODE(
+import math
 
-TEST(PythonLoader, python_error) {
+def func_xyz(x,y,z):
+    return ( x*y*z+a , )     # one value tuple
+
+print func_xyz(1, 2, 3)
+
+)CODE";
+
+TEST(PythonLoader, print_error) {
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); }, PythonLoader::ExcPythonError,
+        "Python Error: global name 'a' is not defined");
+}
+
+
+TEST(PythonLoader, function_error) {
 	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
-    //"Program Error: Python Error: invalid syntax (flow123d_python_loader, line 5)"
 }
 
 

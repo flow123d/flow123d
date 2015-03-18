@@ -58,38 +58,48 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     // for unknown reason module name is non-const, so we have to make char * copy
     char * tmp_name = new char[ module_name.size() + 2 ];
     strcpy( tmp_name, module_name.c_str() );
+
     PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
-    if (! compiled_string) {
+    PythonLoader::check_error();
 
-		PyObject *ptype, *pvalue, *ptraceback, *pystr;
-		char *str;
-
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		PyErr_NormalizeException(&ptype,&pvalue,&ptraceback);
-
-		// int res = PyArg_ParseTuple(pvalue,"s(siis)",&msg,&file,&line,&offset,&text); //types: char*,char*,int,int,char*
-		// PyObject* file_name = PyObject_GetAttrString(pvalue,"filename");
-		// str = PyString_AsString(file_name);
-
-		pystr = PyObject_Str(pvalue);
-		str = PyString_AsString(pystr);
-		THROW(ExcPythonError() << EI_PythonMessage(str) << EI_Description("Can not compile python string:") << EI_PythonInput(source_string));
-
-		//ptype: <type 'exceptions.SyntaxError'>
-		//pvalue: ('invalid syntax', ('flow123d_python_loader', 5, 21, '    return ( x*y*z+ , )     # one value tuple\n'))
-		//        invalid syntax (flow123d_python_loader, line 5)
-		//ptraceback: <NULL>
-    }
     PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
-
-    if (result == NULL) {
-        PyErr_Print();
-        std::cerr << "Error: Can not load python module '" << module_name << "' from string:" << std::endl;
-        std::cerr << source_string << std::endl;
-    }
+    PythonLoader::check_error();
 
     delete[] tmp_name;
     return result;
+}
+
+
+
+void PythonLoader::check_error() {
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+
+		if ( PyString_Check(pvalue) ) { // error message contains simple string
+			THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pvalue) ));
+		} else { // set of string values
+			stringstream ss;
+			PyObject* err_type = PySequence_GetItem(pvalue, 0);
+			pystr = PyObject_Str(err_type);
+			ss << PyString_AsString(pystr) << endl;
+			PyObject* descr = PySequence_GetItem(pvalue, 1);
+			PyObject* file = PySequence_GetItem(descr, 0);
+			pystr = PyObject_Str(file);
+			ss << "  File \"" << PyString_AsString(pystr) << "\"";
+			PyObject* row = PySequence_GetItem(descr, 1);
+			pystr = PyObject_Str(row);
+			ss << ", line " << PyString_AsString(pystr) << endl;
+			PyObject* line = PySequence_GetItem(descr, 3);
+			pystr = PyObject_Str(line);
+			ss << PyString_AsString(pystr);
+			PyObject* col = PySequence_GetItem(descr, 2);
+			pystr = PyObject_Str(col);
+			int pos = atoi( PyString_AsString(pystr) );
+			ss << setw(pos) << "^" << endl;
+			THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+		}
+    }
 }
 
 
