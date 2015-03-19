@@ -1350,6 +1350,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 	stream << "\"range\" : [" << lower_size << ", " << upper_size << "]," << endl;
 	stream << "\"subtype\" : \"" << format_hash(array_type->content_hash()) << "\"" << endl;
 	stream << "}," << endl;
+
+	print(stream, array_type.get() ,depth+1);
 }
 
 
