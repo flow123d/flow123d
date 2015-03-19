@@ -302,6 +302,9 @@ protected:
      */
     void assembly_steady_mh_matrix();
 
+    /// Source term is implemented differently in LMH version.
+    virtual void assembly_source_term();
+
     /**
      * Assembly or update whole linear system.
      */
@@ -475,6 +478,7 @@ public:
 protected:
     void read_init_condition() override;
     void modify_system() override;
+    void assembly_source_term() override;
     void setup_time_term();
     virtual void postprocess();
 private:

@@ -439,10 +439,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double loc_side_rhs[4];
 
     if (balance_ != nullptr)
-    {
     	balance_->start_flux_assembly(water_balance_idx_);
-    	balance_->start_source_assembly(water_balance_idx_);
-    }
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
 
@@ -526,18 +523,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
 
 
-        // set sources
-        double source = ele->measure() *
-                data_.cross_section.value(ele->centre(), ele->element_accessor()) *
-                data_.water_source_density.value(ele->centre(), ele->element_accessor());
-        ls->rhs_set_value(el_row, -1.0 * source );
-
-        if (balance_ != nullptr)
-        {
-        	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {el_row}, {source});
-        }
-        
-        
         // D block: non-compatible conections and diagonal: element-element
 
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
@@ -627,10 +612,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     }
 
     if (balance_ != nullptr)
-    {
     	balance_->finish_flux_assembly(water_balance_idx_);
-    	balance_->finish_source_assembly(water_balance_idx_);
-    }
+
+    assembly_source_term();
 
 
     if (mortar_method_ == MortarP0) {
@@ -639,6 +623,32 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         P1_CouplingAssembler(*this).assembly(*ls);
     }  
 }
+
+
+void DarcyFlowMH_Steady::assembly_source_term()
+{
+    if (balance_ != nullptr)
+    	balance_->start_source_assembly(water_balance_idx_);
+
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+
+        ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
+        int el_row = row_4_el[el_4_loc[i_loc]];
+
+        // set sources
+        double source = ele->measure() *
+                data_.cross_section.value(ele->centre(), ele->element_accessor()) *
+                data_.water_source_density.value(ele->centre(), ele->element_accessor());
+        schur0->rhs_set_value(el_row, -1.0 * source );
+
+        if (balance_ != nullptr)
+        	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {el_row}, {source});
+    }
+
+    if (balance_ != nullptr)
+    	balance_->finish_source_assembly(water_balance_idx_);
+}
+
 
 void P0_CouplingAssembler::pressure_diff(int i_ele,
 		vector<int> &dofs, unsigned int &ele_type, double &delta, arma::vec &dirichlet) {
@@ -1692,6 +1702,36 @@ void DarcyFlowLMH_Unsteady::modify_system() {
 }
 
 
+void DarcyFlowLMH_Unsteady::assembly_source_term()
+{
+    if (balance_ != nullptr)
+    	balance_->start_source_assembly(water_balance_idx_);
+
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++)
+    {
+        ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
+
+		// set lumped source
+		double diagonal_coef = ele->measure()
+				  * data_.cross_section.value(ele->centre(), ele->element_accessor())
+				  * data_.water_source_density.value(ele->centre(), ele->element_accessor())
+				  / ele->n_sides();
+
+		FOR_ELEMENT_SIDES(ele,i)
+        {
+			int edge_row = row_4_edge[ele->side(i)->edge_idx()];
+
+			schur0->rhs_set_value(edge_row, -diagonal_coef);
+
+	        if (balance_ != nullptr)
+	        	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {diagonal_coef});
+		}
+    }
+
+    if (balance_ != nullptr)
+    	balance_->finish_source_assembly(water_balance_idx_);
+}
+
 
 void DarcyFlowLMH_Unsteady::postprocess() {
     int side_row, loc_edge_row, i;
@@ -1736,7 +1776,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
       ele = mesh_->element(el_4_loc[i_loc]);
       FOR_ELEMENT_SIDES(ele,i) {
           side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-          values[i] = -1.0 * ele->measure() *
+          values[i] = 1.0 * ele->measure() *
             data_.cross_section.value(ele->centre(), ele->element_accessor()) *
             data_.water_source_density.value(ele->centre(), ele->element_accessor()) /
             ele->n_sides();
