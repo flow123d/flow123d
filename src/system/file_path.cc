@@ -31,7 +31,7 @@ FilePath::FilePath(string file_path, const  FileType ft)
         abs_file_path = root_dir + DIR_DELIMITER + file_path;
         substitute_value();
     } else if (ft == output_file) {
-        if (file_path[0] == DIR_DELIMITER) {
+        if ( FilePath::is_absolute_path(file_path) ) {
             if (file_path.substr(0, output_dir.size()) == output_dir) {
                 file_path=file_path.substr(output_dir.size()+1);
             } else {
