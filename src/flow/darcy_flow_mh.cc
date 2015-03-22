@@ -108,10 +108,11 @@ it::AbstractRecord DarcyFlowMH::input_type=
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
                 "Method for coupling Darcy flow between dimensions." )
 		.declare_key("balance", Balance::input_type, it::Default::obligatory(),
-				"Settings for computing mass balance.")
+				"Settings for computing mass balance.");
+/*
         .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
         		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
-
+*/
 
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
@@ -227,7 +228,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
     data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
     data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
