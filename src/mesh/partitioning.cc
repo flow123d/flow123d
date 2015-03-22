@@ -206,10 +206,8 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
-    cout << "Partitioning::subdomain_id_field_data()" << endl;
     if (!seq_part_) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
-    	cout << " seq_size_ " << seq_size << endl;
     	//seq_part_.resize(seq_size);
     	seq_part_ = make_shared< vector<int> >(seq_size);
         std::vector<int> &vec = *( seq_part_.get() );
