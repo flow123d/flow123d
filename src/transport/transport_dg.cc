@@ -56,11 +56,19 @@ Selection TransportDG<Model>::dg_variant_selection_input_type
 
 template<class Model>
 Selection TransportDG<Model>::EqData::bc_type_selection =
-              Selection("TransportDG_EqData_bc_Type")
-               .add_value(inflow, "inflow", "Dirichlet BC on inflow and homogeneous Neumann BC on outflow.")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin");
+              Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
+              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+              .add_value(dirichlet, "dirichlet",
+                       "Dirichlet boundary condition."
+                       //"Specify the pressure head through the 'bc_pressure' field "
+                       //"or the piezometric head through the 'bc_piezo_head' field."
+                      )
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to $\\sigma (h - h^R)$. "
+                       //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+                       //"through 'bc_pressure' and 'bc_piezo_head' respectively."
+                       )
+              .add_value(inflow, "Prescribes the concentration in the inflow water on the inflow part of the boundary.");
 
 template<class Model>
 Selection TransportDG<Model>::EqData::output_selection =

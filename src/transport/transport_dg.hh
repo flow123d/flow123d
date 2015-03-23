@@ -142,10 +142,11 @@ public:
 	public:
 
         enum BC_Type {
-            inflow=0,
-            dirichlet=1,
-            neumann=2,
-            robin=3
+            none,
+            inflow,
+            dirichlet,
+            neumann,
+            robin
         };
         static Input::Type::Selection bc_type_selection;
 
