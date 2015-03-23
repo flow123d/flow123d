@@ -295,7 +295,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  data_.set_time(time_->step(-2));
+  data_.set_time(time_->step(-1));
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
