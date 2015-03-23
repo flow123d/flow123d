@@ -1055,9 +1055,9 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 stream << "}";
 
                 if (it->default_.is_obligatory()) {
-                    stream << "{\\textless\\it obligatory\\textgreater}";
+                    stream << "{\\textlangle{\\it obligatory }\\textrangle}";
                 } else if (it->default_.is_optional()) {
-                    stream << "{\\textless\\it optional\\textgreater}";
+                    stream << "{\\textlangle{\\it optional }\\textrangle}";
                 } else if (it->default_.has_value_at_read_time()) {
                     stream << "{\"" << it->default_.value() << "\"}";
                 } else {

@@ -42,7 +42,6 @@
 \AddDoc{Steady\_MH::output}
 \AddDoc{Steady\_MH::mortar\_method}
 \AddDoc{Steady\_MH::balance}
-\AddDoc{Steady\_MH::gravity}
 \AddDoc{Steady\_MH::input\_fields}
 \AddDoc{LinSys}
 \AddDoc{Petsc}
@@ -164,7 +163,6 @@
 \AddDoc{Unsteady\_MH::output}
 \AddDoc{Unsteady\_MH::mortar\_method}
 \AddDoc{Unsteady\_MH::balance}
-\AddDoc{Unsteady\_MH::gravity}
 \AddDoc{Unsteady\_MH::input\_fields}
 \AddDoc{Unsteady\_MH::time}
 \AddDoc{Unsteady\_LMH}
@@ -174,7 +172,6 @@
 \AddDoc{Unsteady\_LMH::output}
 \AddDoc{Unsteady\_LMH::mortar\_method}
 \AddDoc{Unsteady\_LMH::balance}
-\AddDoc{Unsteady\_LMH::gravity}
 \AddDoc{Unsteady\_LMH::input\_fields}
 \AddDoc{Unsteady\_LMH::time}
 \AddDoc{Transport}

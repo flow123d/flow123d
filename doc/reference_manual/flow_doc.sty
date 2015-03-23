@@ -1,5 +1,5 @@
 % Various macros and environments for Flow123d manual
-
+\RequirePackage{textcomp}
 \RequirePackage{packages/etoolbox}
 \RequirePackage[backref]{hyperref}   % hypertext capabilities, should by last package
 \hypersetup{colorlinks=true, raiselinks=true}  %setup hyperef package
@@ -111,7 +111,7 @@
         \vskip 0.3ex
         %\hrule%
         \noindent%
-        \hspace{-3em}{\bf\tt ##1} = {\it \textless ##2\textgreater}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+        \hspace{-3em}{\bf\tt ##1} = {\textlangle {\it ##2 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
         \par
         Default: {##3}
         \par

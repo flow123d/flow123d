@@ -89,12 +89,17 @@ it::Selection DarcyFlowMH::mh_mortar_selection
 
 
 it::Selection DarcyFlowMH::EqData::bc_type_selection =
-              it::Selection("EqData_bc_Type")
-               .add_value(none, "none", "Homogeneous Neoumann BC.")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin")
-               .add_value(total_flux, "total_flux");
+              it::Selection("DarcyFlow_BC_Type")
+               .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+               .add_value(dirichlet, "dirichlet",
+                       "Dirichlet boundary condition. "
+                       "Specify the pressure head through the 'bc_pressure' field "
+                       "or the piezometric head through the 'bc_piezo_head' field.")
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to $\sigma (h - h^R)$. "
+                       "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+                       "through 'bc_pressure' and 'bc_piezo_head' respectively.");
+               //.add_value(total_flux, "total_flux");
 
 //new input type with FIELDS
 it::AbstractRecord DarcyFlowMH::input_type=
