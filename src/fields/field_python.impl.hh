@@ -185,11 +185,7 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
         PyTuple_SetItem(p_args_, i, p_value_);
     }
     p_value_ = PyObject_CallObject(p_func_, p_args_);
-
-    if (p_value_ == NULL) {
-        PyErr_Print();
-        xprintf(Err,"FieldPython call failed\n");
-    }
+    PythonLoader::check_error();
 
     unsigned int pos =0;
     for(unsigned int row=0; row < value.n_rows(); row++)
