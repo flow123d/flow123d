@@ -68,7 +68,7 @@ Selection TransportDG<Model>::EqData::bc_type_selection =
                        //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        //"through 'bc_pressure' and 'bc_piezo_head' respectively."
                        )
-              .add_value(inflow, "Prescribes the concentration in the inflow water on the inflow part of the boundary.");
+              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.");
 
 template<class Model>
 Selection TransportDG<Model>::EqData::output_selection =
