@@ -148,6 +148,11 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
+\AddDoc{FieldPython}
+\AddDoc{FieldPython::TYPE}
+\AddDoc{FieldPython::script\_string}
+\AddDoc{FieldPython::script\_file}
+\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
@@ -248,6 +253,11 @@
 \AddDoc{FieldFormula}
 \AddDoc{FieldFormula::TYPE}
 \AddDoc{FieldFormula::value}
+\AddDoc{FieldPython}
+\AddDoc{FieldPython::TYPE}
+\AddDoc{FieldPython::script\_string}
+\AddDoc{FieldPython::script\_file}
+\AddDoc{FieldPython::function}
 \AddDoc{FieldInterpolatedP0}
 \AddDoc{FieldInterpolatedP0::TYPE}
 \AddDoc{FieldInterpolatedP0::gmsh\_file}
