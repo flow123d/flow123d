@@ -93,15 +93,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
-    if (prim_eq.type() == DarcyFlowMH_Steady::input_type ) {
-            water = new DarcyFlowMH_Steady(*mesh, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowMH_Unsteady::input_type ) {
-            water = new DarcyFlowMH_Unsteady(*mesh, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::input_type ) {
-            water = new DarcyFlowLMH_Unsteady(*mesh, prim_eq);
-    } else {
-            xprintf(UsrErr,"Equation type not implemented.");
-    }
+    water = prim_eq.factory< DarcyFlowMH, Mesh &, const Input::Record >(*mesh, prim_eq);
 
 
 
@@ -232,7 +224,6 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    delete water;
     delete transport_reaction;
     delete mesh;
 }
