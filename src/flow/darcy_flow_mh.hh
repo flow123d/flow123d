@@ -56,6 +56,7 @@
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
@@ -243,6 +244,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     class EqData : public DarcyFlowMH::EqData {
     public:
@@ -344,6 +346,10 @@ protected:
   friend class DarcyFlowMHOutput;
   friend class P0_CouplingAssembler;
   friend class P1_CouplingAssembler;
+
+private:
+  /// Registrar of class to factory
+  static const int registrar;
 };
 
 
@@ -432,6 +438,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
@@ -443,6 +450,9 @@ protected:
     void setup_time_term();
     
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
@@ -466,6 +476,7 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
@@ -477,6 +488,9 @@ protected:
     void setup_time_term();
     virtual void postprocess();
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
