@@ -97,8 +97,8 @@ is mathematicaly formulated as a system of first order differential equations
   \frac{\d c_B}{\d\tau} &=& k c_A,
 \end{eqnarray}
 %
-where $k$ is the radioactive decay rate. Usually, the half life of the parent radionuclide \hyperA{Decay::half-life}{$t_{1/2}$} 
-is known instead of the rate. Relation of these can be derived:
+where $k$ is the radioactive decay rate. Usually, the \hyperA{Decay::half-life}{half life} of the parent radionuclide $t_{1/2}$
+is known rather than the rate. Relation of these can be derived:
 %
 % \begin{equation} \label{eqn:halflife}
 %   k = - \frac{\ln 2}{t_{1/2}}.
@@ -150,7 +150,7 @@ We denote the rate constant of the $i$-th radionuclide
 \[
   k_i=\sum_{j=1}^{s}k_{ij}=\sum_{j=1}^{s}b_{ij}k_i
 \]
-which is equal to a sum of partial rate constants $k_{ij}$. Branching ratio \hyperA{RadioactiveDecayProduct::branching-ratio}{$b_{ij}$}$\in(0,1)$ 
+which is equal to a sum of partial rate constants $k_{ij}$. \hyperA{RadioactiveDecayProduct::branching-ratio}{Branching ratio} $b_{ij}\in(0,1)$ 
 determines the distribution into different branches of the decay chain, holding $\sum_{j=1}^{s}b_{ij}=1$.
 
 Notice, that physically it is not possible to create a chain loop, so in fact one can permutate the vector of 
@@ -174,8 +174,8 @@ radioactive decay, it is connected to transport by operator splitting method and
 phases, see figure \ref{fig:reaction_term}.
 
 Currently, reactions with single reactant and multiple products (decays) are available in the software.
-The mathematical description is the same as for the radioactive decay, it only uses kinetic reaction rate
-coefficient \hyperA{Reaction::reaction-rate}{$k$} in the input instead of half life.
+The mathematical description is the same as for the radioactive decay, it only uses 
+\hyperA{Reaction::reaction-rate}{kinetic reaction rate} coefficient $k$ in the input instead of half life.
 
 
 
