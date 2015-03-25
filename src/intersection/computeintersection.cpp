@@ -25,8 +25,17 @@ ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(Simplex<1> &abs
 	abscissa = &abs;
 	triangle = &triang;
 
-	plucker_coordinates_triangle.assign(3, new Plucker());
-	plucker_coordinates_abscissa.assign(1, new Plucker);
+	plucker_coordinates_abscissa.reserve(1);
+	plucker_coordinates_triangle.reserve(3);
+
+	plucker_coordinates_abscissa[0] = new Plucker();
+
+	for(unsigned int i = 0; i < 3;i++){
+		plucker_coordinates_triangle[i] = new Plucker();
+	}
+
+	//plucker_coordinates_triangle.assign(3, new Plucker());
+	//plucker_coordinates_abscissa.assign(1, new Plucker);
 
 	clear_all();
 };
@@ -272,8 +281,17 @@ ComputeIntersection<Simplex<1>, Simplex<3>>::ComputeIntersection(Simplex<1> &abs
 	abscissa = &abs;
 	tetrahedron = &tetr;
 
-	plucker_coordinates_tetrahedron.assign(6, new Plucker());
-	plucker_coordinates_abscissa.assign(1, new Plucker());
+	plucker_coordinates_abscissa.reserve(1);
+	plucker_coordinates_tetrahedron.reserve(6);
+
+	plucker_coordinates_abscissa[0] = new Plucker();
+
+	for(unsigned int i = 0; i < 6;i++){
+		plucker_coordinates_tetrahedron[i] = new Plucker();
+	}
+
+	//plucker_coordinates_tetrahedron.assign(6, new Plucker());
+	//plucker_coordinates_abscissa.assign(1, new Plucker());
 
 	for(unsigned int i = 0; i < 4;i++){
 		CI12[i].set_data(abscissa, &(*tetrahedron)[i]);

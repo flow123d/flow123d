@@ -31,11 +31,12 @@ TEST(intersections, all) {
 	{ START_TIMER("Vypocet pruniku");
 
 	//ie.ComputeIntersections23();
-	ie.compute_intersections<2,3>();
+	//ie.compute_intersections<2,4>();
+	ie.compute_intersections<1,3>();
 	END_TIMER("Vypocet pruniku");}
 	//ie.print(0);
 	//ie.print(1);
-	ie.print_mesh_to_file("pokus");
+	ie.print_mesh_to_file_1D("pokus1D");
 
 	double obsah = ie.polygonArea();
 	xprintf(Msg,"Obsah polygonu: %f\n", obsah);

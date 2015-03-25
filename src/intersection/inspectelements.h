@@ -26,12 +26,15 @@ class InspectElements {
 	 * to support both queue and random access operations.
 	 */
 	std::vector<std::vector<IntersectionLocal>> intersection_list;
+	std::vector<std::vector<IntersectionLine>> intersection_line_list;
 	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
 
 
 	std::queue<ProlongationLine> prolongation_line_queue_2D;
 	std::queue<ProlongationLine> prolongation_line_queue_3D;
+
+	std::queue<ProlongationPoint> prolongation_point_queue;
 
 	//IntersectionLocal temporary_intersection;
 
@@ -45,9 +48,13 @@ class InspectElements {
 	std::vector<BoundingBox> elements_bb;
 	BoundingBox mesh_3D_bb;
 
-	void UpdateAbscissa(const ElementFullIter &el);
-	void UpdateTriangle(const ElementFullIter &el);
-	void UpdateTetrahedron(const ElementFullIter &el);
+	void update_abscissa(const ElementFullIter &el);
+	void update_triangle(const ElementFullIter &el);
+	void update_tetrahedron(const ElementFullIter &el);
+
+	void prolongate_elements(const IntersectionLine &il, const ElementFullIter &elm, const ElementFullIter &ele);
+	void prolongate_1D_element(const ElementFullIter &elm, const ElementFullIter &ele);
+	void prolongate(const ProlongationPoint &pp);
 
 public:
 
@@ -56,6 +63,10 @@ public:
 
 	template<unsigned int subdim, unsigned int dim> inline void compute_intersections(){
 		cout << "Warning - method compute_intersections "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
+	};
+
+	template<unsigned int subdim, unsigned int dim> inline void compute_intersections_init(){
+		cout << "Warning - method compute_intersections_init "<< subdim<<"D with "<< dim<<"D is not implemented yet" << endl;
 	};
 
 
@@ -71,6 +82,7 @@ public:
 	void ComputeIntersections13();
 
 	void print_mesh_to_file(string name);
+	void print_mesh_to_file_1D(string name);
 
 	inline double polygonArea(){
 		double subtotal = 0.0;

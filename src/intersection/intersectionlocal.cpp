@@ -182,7 +182,7 @@ void IntersectionLocal::trace_polygon_opt(std::vector<unsigned int> &prolongatio
 void IntersectionLocal::trace_polygon_convex_hull(std::vector<unsigned int> &prolongation_table){
 
 
-	if(i_points.size() <= 2){
+	if(i_points.size() <= 1){
 			return;
 	}
 
@@ -218,21 +218,31 @@ void IntersectionLocal::trace_polygon_convex_hull(std::vector<unsigned int> &pro
 
 	H.resize(k-1);
 	i_points = H;
-	if(i_points.size() != n){
+	if((int)i_points.size() != n){
 		xprintf(Msg, "Velikost před a po (%d, %d)\n", n, i_points.size());
 
 	}
 
 	// Filling prolongation table
-	if(i_points.size() > 2){
-		xprintf(Msg, "SP START\n");
-		for(unsigned int i = 0; i < i_points.size();i++){
-			int index = convex_hull_prolongation_side(i_points[i],i_points[(i+1)%i_points.size()]);
-			xprintf(Msg,"SP - %d\n",(int)index);
-			if(index != -1){
-				prolongation_table.push_back(index);
-			}else{
-				xprintf(Msg,"Elementy(%d,%d)\n", element_2D_idx, element_3D_idx);
+	if(i_points.size() > 1){
+
+		// Prolongation - finding same zero bary coord/coords except
+		// side with content intersect
+		unsigned int size = i_points.size() == 2 ? 1 : i_points.size();
+		int forbidden_side = side_content_prolongation();
+
+		for(unsigned int i = 0; i < size;i++){
+			unsigned int ii = (i+1)%i_points.size();
+
+			for(unsigned int j = 0; j < 3;j++){
+				if(fabs((double)i_points[i].get_local_coords1()[j]) < epsilon && fabs((double)i_points[ii].get_local_coords1()[j]) < epsilon){
+					prolongation_table.push_back(6-j);
+				}
+			}
+			for(unsigned int k = 0; k < 4;k++){
+				if((int)k != forbidden_side && fabs((double)i_points[i].get_local_coords2()[k]) < epsilon && fabs((double)i_points[ii].get_local_coords2()[k]) < epsilon){
+					prolongation_table.push_back(3-k);
+				}
 			}
 		}
 	}
@@ -285,6 +295,29 @@ int IntersectionLocal::convex_hull_prolongation_side(const IntersectionPoint<2,3
 	xprintf(Msg, "Mozny problem\n");
 	return -1;
 }
+
+int IntersectionLocal::side_content_prolongation() const{
+
+	vector<unsigned int> side_field(4,0);
+
+	for(unsigned int i = 0; i < i_points.size();i++){
+
+		for(unsigned int j = 0; j < 4;j++){
+			if(fabs((double)i_points[i].get_local_coords2()[j]) < epsilon){
+				side_field[j]++;
+			}
+		}
+	}
+
+	for(unsigned int i = 0;i< 4;i++){
+		if(side_field[i] > 2){
+			return i;
+		}
+	}
+	return -1;
+
+}
+
 /* split the polygon into triangles according to the first point
  * for every triangle compute area from barycentric coordinates
  * 				Barycentric coords. 		Local coords.
