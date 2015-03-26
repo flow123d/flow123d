@@ -502,7 +502,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream;
+	std::shared_ptr<OutputTime> output_stream;
 
 
 	// @}

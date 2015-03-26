@@ -218,8 +218,6 @@ ConvectionTransport::~ConvectionTransport()
     xfree(sources_sigma);
     xfree(cumulative_corr);
     
-    delete output_stream_;
-
 }
 
 

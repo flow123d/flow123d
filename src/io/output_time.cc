@@ -108,24 +108,22 @@ void OutputTime::destroy_all(void)
     OutputTime::output_streams.clear();
 }
 
-OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
 {
-    OutputTime* output_time;
+	std::shared_ptr<OutputTime> output_time;
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
     if(format) {
+    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
         if((*format).type() == OutputVTK::input_type) {
-            output_time = new OutputVTK(in_rec);
+            //output_time = new OutputVTK(in_rec);
         } else if ( (*format).type() == OutputMSH::input_type) {
-            output_time = new OutputMSH(in_rec);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            output_time = new OutputVTK(in_rec);
+            //output_time = new OutputMSH(in_rec);
         }
         output_time->format_record_ = *format;
     } else {
-        output_time = new OutputVTK(in_rec);
+        output_time = std::make_shared<OutputVTK>(in_rec);
     }
 
     return output_time;

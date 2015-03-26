@@ -399,7 +399,6 @@ TransportDG<Model>::~TransportDG()
 //    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
-    delete output_stream;
 }
 
 
