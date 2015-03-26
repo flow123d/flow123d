@@ -527,6 +527,7 @@ private:
     /// True if the time governor is used for steady problem.
     bool steady_;
 
+    friend TimeMarks;
 };
 
 /**

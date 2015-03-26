@@ -76,11 +76,11 @@ to molecular diffusion. We consider simple nonequilibrium linear model:
 \end{align}
 \end{subequations}
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
-\hyperA{DualPorosity-Data::diffusion-rate-immobile}{$D_{dp}$} is a diffusion rate between the zones.
-\hyperA{DualPorosity-Data::porosity-immobile}{$\vartheta_i$}~denotes porosity of the immobile zone  and 
-$\hyperlink{TransportOperatorSplitting-Data::porosity::B}{\vartheta_m} = \vartheta$ the mobile porosity from 
-transport equation \eqref{e:ADE}. One can also set non-zero initial concentration \hyperA{DualPorosity-Data::init-conc-immobile}{$c_i(0)$} 
-in the immobile zone.
+$D_{dp}$ is a \hyperA{DualPorosity-Data::diffusion-rate-immobile}{diffusion rate} between the zones.
+$\vartheta_i$~denotes \hyperA{DualPorosity-Data::porosity-immobile}{porosity of the immobile zone} and 
+$\vartheta_m = \vartheta$ the \hyperlink{TransportOperatorSplitting-Data::porosity::B}{mobile porosity} from 
+transport equation \eqref{e:ADE}. One can also set non-zero \hyperA{DualPorosity-Data::init-conc-immobile}{initial 
+concentration in the immobile zone} $c_i(0)$.
 
 To solve the system of first order differential equation, we use analytic solution or Euler's method,
 which are switched according to a given error tolerance. See subsection \ref{sec:num_dual_porosity} 
@@ -101,7 +101,7 @@ and an empirical sorption law
 c_s = f(c_l),
 \end{equation}
 given in terms of the so-called isotherm $f$.
-Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{\tt sorption\_type}:
+Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{sorption type}:
 \begin{itemize}
  \item ``$none$'': $f(c_l)=0$ (the sorption model returns zero concentration in solid);
  \item ``$linear$'': $f(c_l) = k_l c_l$;
@@ -115,19 +115,20 @@ Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{\t
 Notation:
 \begin{itemize}
  \item In solid, $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$] is the fraction of the molar amount of the solute 
-       adsorbed $n$ and the amount of the adsorbent $m_s$ (mass of solid), all in unit volume.
+       adsorbed $n$ and the amount of the adsorbent $m_s$ (mass of solid), all in unit volume. The concentration
+       in solid can be selected for \hyperA{Sorption::output-fields}{output}.
  \item In liquid, $c_l = \frac{m}{m_l}$ \units{}{}{} is the fraction of the amount of the solute $m$ and 
        the mass of liquid $m_l$, all in unit volume. The relation between $c_l$ and the concentration $c$ from 
        transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
- \item \hyperA{Sorption::solvent-density}{$\varrho_l$}, \hyperA{Sorption-Data::rock-density}{$\varrho_s$} is the liquid (solvent) density and the solid (rock) density, respectively.
- \item \hyperA{Substance::molar-mass}{$M_s$} denotes the molar mass of a substance.
- \item Multiplication parameters $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$] are given by 
-       \hyperA{Sorption-Data::isotherm-mult}{\tt isotherm\_mult}.
- \item Additional parameter $[\alpha] = 1$ is given by \hyperA{Sorption-Data::isotherm-other}{\tt isotherm\_other}.
+ \item $\varrho_l$, $\varrho_s$ is the \hyperA{Sorption::solvent-density}{liquid (solvent) density} and 
+       the \hyperA{Sorption-Data::rock-density}{solid (rock) density}, respectively.
+ \item $M_s$ denotes the \hyperA{Substance::molar-mass}{molar mass} of a substance.
+ \item \hyperA{Sorption-Data::isotherm-mult}{Multiplication parameters} are $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$].
+ \item \hyperA{Sorption-Data::isotherm-other}{Additional parameter} $[\alpha] = 1$ can be set.
 \end{itemize}
 
-Non-zero initial concentration in the solid phase \hyperA{Sorption-Data::init-conc-solid}{$c_s(0)$} can be set in the input record. Now, further denoting
-\[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
+Non-zero \hyperA{Sorption-Data::init-conc-solid}{initial concentration} in the solid phase $c_s(0)$ can be set in the input record. 
+Now, further denoting \[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
 and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
 \begin{equation}
  c_T = \mu_l c_l + \mu_s f(c_l),
