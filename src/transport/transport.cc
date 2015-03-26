@@ -318,6 +318,8 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 void ConvectionTransport::set_boundary_conditions()
 {
+    START_TIMER ("set_boundary_conditions");
+
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
 
     unsigned int sbi, loc_el, loc_b = 0;
@@ -464,7 +466,7 @@ void ConvectionTransport::zero_time_step()
 	ASSERT_EQUAL(time_->tlevel(), 0);
 
 	data_.mark_input_times(target_mark_type);
-	data_.set_time(*time_);
+	data_.set_time(time_->step());
 
     set_initial_condition();
 
@@ -493,11 +495,10 @@ void ConvectionTransport::zero_time_step()
 void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
-    
-    unsigned int sbi;
-    
+
+
     START_TIMER("data reinit");
-    data_.set_time(*time_); // set to the last computed time
+    data_.set_time(time_->step()); // set to the last computed time
 
     ASSERT(mh_dh, "Null MH object.\n" );
     // update matrix and sources if neccessary
@@ -514,7 +515,7 @@ void ConvectionTransport::update_solution() {
 
         set_boundary_conditions();
         // scale boundary sources
-        for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
+        for (unsigned int sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
 
         need_time_rescaling = true;
     } else {
@@ -522,7 +523,7 @@ void ConvectionTransport::update_solution() {
         if (data_.bc_conc.changed() ) {
             set_boundary_conditions();
             // scale boundary sources
-            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->dt());
+            for (unsigned int  sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->dt());
         }
     }
 
@@ -533,7 +534,7 @@ void ConvectionTransport::update_solution() {
             MatScale(tm, time_->estimate_dt()/time_->dt() );
             MatShift(tm, 1.0);
 
-            for (sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt()/time_->dt());
+            for (unsigned int sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt()/time_->dt());
 
         } else {
             // scale fresh convection term matrix
@@ -549,10 +550,11 @@ void ConvectionTransport::update_solution() {
 
 
     // proceed to actually computed time
-    time_->next_time(); // explicit scheme use values from previous time and then set then new time
+    // explicit scheme use values from previous time and then set then new time
+    time_->next_time();
 
 
-    for (sbi = 0; sbi < n_subst_; sbi++) {
+    for (unsigned int sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
       
       START_TIMER("compute_concentration_sources");
@@ -822,7 +824,7 @@ void ConvectionTransport::output_data() {
     if (time_->is_current( time_->marks().type_output() )) {
         output_vector_gather();
 
-		data_.output_fields.set_time(*time_);
+		data_.output_fields.set_time(time_->step());
 		data_.output_fields.output(output_stream_);
 
     }

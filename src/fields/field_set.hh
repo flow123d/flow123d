@@ -159,17 +159,17 @@ public:
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::set_mesh().
+     * Collective interface to @p FieldCommon::set_mesh().
      */
     void set_input_list(Input::Array input_list) {
     	for(auto field : field_list) field->set_input_list(input_list);
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::set_mesh().
+     * Collective interface to @p FieldCommon::set_limit_side().
      */
     void set_limit_side(LimitSide side) {
-    	for(auto field : field_list) field->set_limit_side(side);
+    	for(FieldCommon *field : field_list) field->set_limit_side(side);
     }
 
     /**
@@ -183,7 +183,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeGovernor &time) {
+    void set_time(const TimeStep &time) {
         for(auto field : field_list) field->set_time(time);
     }
 

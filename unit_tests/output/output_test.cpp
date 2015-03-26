@@ -232,7 +232,7 @@ public:
 
 		field.set_mesh(*my_mesh);
 		field.set_limit_side(LimitSide::left);
-		field.set_time(TimeGovernor(0.0, 1.0));
+		field.set_time(TimeGovernor(0.0, 1.0).step());
 
 		{
 			this->compute_field_data(ELEM_DATA, field);
@@ -368,7 +368,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     scalar_field.units("L");
     scalar_field.set_mesh(mesh);
     scalar_field.set_limit_side(LimitSide::right);
-    scalar_field.set_time(tg);
+    scalar_field.set_time(tg.step());
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -382,7 +382,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     integer_field.units("");
     integer_field.set_mesh(mesh);
     integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg);
+    integer_field.set_time(tg.step());
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -448,7 +448,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     scalar_field.units("L");
     scalar_field.set_mesh(mesh);
     scalar_field.set_limit_side(LimitSide::right);
-    scalar_field.set_time(tg);
+    scalar_field.set_time(tg.step());
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -462,7 +462,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     integer_field.units("");
     integer_field.set_mesh(mesh);
     integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg);
+    integer_field.set_time(tg.step());
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),
@@ -545,7 +545,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     scalar_field.units("L");
     scalar_field.set_mesh(mesh);
     scalar_field.set_limit_side(LimitSide::right);
-    scalar_field.set_time(tg);
+    scalar_field.set_time(tg.step());
 
     /* Register scalar (double) data */
     OutputTime::register_data<3, FieldValue<1>::Scalar>(reader_output.get_root_interface<Input::Record>(),
@@ -559,7 +559,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     integer_field.units("");
     integer_field.set_mesh(mesh);
     integer_field.set_limit_side(LimitSide::right);
-    integer_field.set_time(tg);
+    integer_field.set_time(tg.step());
 
     /* Register integer data */
     OutputTime::register_data<3, FieldValue<1>::Integer>(reader_output.get_root_interface<Input::Record>(),

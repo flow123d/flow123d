@@ -52,8 +52,14 @@ namespace Input {
 
 
 /**
- * Structure to store and provide information about
- * one time step.
+ * @brief Representation of one time step.\
+ *
+ * Time step consists of the time step @p length() and from time step @end() time.
+ * More over we store the index of the time step within it time governor.
+ *
+ * The reason to store both the end time and the length of the time step is to allow
+ * safe comparisons of the time with safety margin small relative to the
+ * time step length.
  */
 class TimeStep {
 public:
@@ -63,7 +69,8 @@ public:
     TimeStep(double init_time);
 
     /**
-     * Deafult constructor.
+     * Default constructor.
+     * Creates undefined time step.
      */
     TimeStep();
 
@@ -93,8 +100,47 @@ public:
     unsigned int index() const {return index_;}
     double length() const { return length_;}
     double end() const { return end_;}
+    /**
+     * Performs rounding safe comparison time > other_time, i.e. time is strictly greater than given parameter
+     * other_time with precision relative to the magnitude of the numbers time step.
+     * TODO: introduce type TimeDouble with overloaded comparison operators, use it consistently in TimeMarks.
+     */
+    inline bool gt(double other_time) const
+        { return ! safe_compare(other_time, end());}
 
+    /**
+     * Performs rounding safe comparison time >= other_time See @fn gt
+     */
+    inline bool ge(double other_time) const
+        { return safe_compare(end(), other_time); }
+
+    /**
+     * Performs rounding safe comparison time < other_time. See @fn gt
+     */
+    inline bool lt(double other_time) const
+        { return ! safe_compare(end(), other_time); }
+
+    /**
+     * Performs rounding safe comparison time <= other_time. See @fn gt
+     */
+    inline bool le(double other_time) const
+        { return safe_compare(other_time, end()); }
+
+    /**
+     * Returns true if two time steps are exactly the same.
+     */
+    bool operator==(const TimeStep & other)
+        { return (index_ == other.index_)
+                && (length_ == other.length_)
+                && (end_ == other.end_);
+        }
 private:
+
+    /* Returns true if t1-t0 > delta. Where delta is choosen
+     * related to the current time step and magnitude of t1, t0.
+     */
+    bool safe_compare(double t1, double t0) const;
+
     /// Index of the step is index if the end time. Zero time step is artificial.
     unsigned int index_;
     /// Length of the time step. Theoretically @p end minus end of the previous time step.
@@ -399,37 +445,13 @@ public:
 
     /// Returns true if the actual time is greater than or equal to the end time.
     inline bool is_end() const
-        { return (this->ge(end_time_) || t() == inf_time); }
+        { return (this->step().ge(end_time_) || t() == inf_time); }
         
     /// Returns true if the time governor is used for steady problem.
     inline bool is_steady() const
     { return steady_; }
 
-    /**
-     * Performs rounding safe comparison time > other_time, i.e. time is strictly greater than given parameter
-     * other_time with precision relative to the magnitude of the numbers time step.
-     * TODO: introduce type TimeDouble with overloaded comparison operators, use it consistently in TimeMarks.
-     */
-    inline bool gt(double other_time) const
-        { return ! safe_compare(other_time, t());}
 
-    /**
-     * Performs rounding safe comparison time >= other_time See @fn gt
-     */
-    inline bool ge(double other_time) const
-        { return safe_compare(t(), other_time); }
-
-    /**
-     * Performs rounding safe comparison time < other_time. See @fn gt
-     */
-    inline bool lt(double other_time) const
-        { return ! safe_compare(t(), other_time); }
-
-    /**
-     * Performs rounding safe comparison time <= other_time. See @fn gt
-     */
-    inline bool le(double other_time) const
-        { return safe_compare(other_time, t()); }
 
     /**
      * Returns the time level.
@@ -448,9 +470,7 @@ public:
     static const double inf_time;
 
 private:
-    /// Returns true if t1-t0 >delta. Where delta is choosen
-    /// ralated to the current time step and magnitude of t1, t0.
-    bool safe_compare(double t1, double t0) const;
+
 
     /**
      * \brief Common part of the constructors. Set most important parameters, check they are valid and set default values to other.

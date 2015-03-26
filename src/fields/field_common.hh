@@ -168,7 +168,9 @@ public:
 
     /**
      * Set side of limit when calling @p set_time
-     * with jump time. This method invalidate result of
+     * with jump time, i.e. time where the field change implementation on some region.
+     * Wee assume that implementations prescribe only smooth fields.
+     * This method invalidate result of
      * @p changed() so it should be called just before @p set_time.
      * Can be different for different field copies.
      */
@@ -260,7 +262,7 @@ public:
      *
      * Different field copies can be set to different times.
      */
-    virtual  bool set_time(const TimeGovernor &time) =0;
+    virtual  bool set_time(const TimeStep &time) =0;
 
     /**
      * Check that @p other is instance of the same Field<..> class and

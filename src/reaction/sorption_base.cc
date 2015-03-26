@@ -401,13 +401,13 @@ void SorptionBase::zero_time_step()
   ASSERT(output_stream_,"Null output stream.");
   ASSERT_LESS(0, substances_.size());
   
-  data_->set_time(*time_);
+  data_->set_time(time_->step());
   set_initial_condition();
   make_tables();
     
   // write initial condition
   output_vector_gather();
-  data_->output_fields.set_time(*time_);
+  data_->output_fields.set_time(time_->step());
   data_->output_fields.output(output_stream_);
   
   if(reaction_liquid != nullptr) reaction_liquid->zero_time_step();
@@ -435,7 +435,7 @@ void SorptionBase::set_initial_condition()
 
 void SorptionBase::update_solution(void)
 {
-  data_->set_time(*time_); // set to the last computed time
+  data_->set_time(time_->step()); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
   // update interpolation tables in the case of constant rock matrix parameters
@@ -569,7 +569,7 @@ void SorptionBase::output_data(void )
     if (rank == 0)
     {
       // Register fresh output data
-      data_->output_fields.set_time(*time_);
+      data_->output_fields.set_time(time_->step());
       data_->output_fields.output(output_stream_);
     }
 

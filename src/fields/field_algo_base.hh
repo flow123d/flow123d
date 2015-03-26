@@ -32,6 +32,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
 #include "fields/field_values.hh"
+#include "tools/time_governor.hh"
 
 
 
@@ -106,7 +107,7 @@ public:
         *
         * The method returns true if the value of the field has changed in the new time step.
         */
-       virtual bool set_time(double time);
+       virtual bool set_time(const TimeStep &time);
 
        /**
         * Is used only by some Field implementations, but can be used to check validity of incoming ElementAccessor in value methods.
@@ -180,7 +181,7 @@ public:
 
 protected:
        /// Actual time level; initial value is -infinity.
-       double time_;
+       TimeStep time_;
        /// Last value, prevents passing large values (vectors) by value.
        Value value_;
        typename Value::return_type r_value_;

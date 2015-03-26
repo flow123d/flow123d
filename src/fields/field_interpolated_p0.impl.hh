@@ -99,13 +99,13 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 
 template <int spacedim, class Value>
-bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
+bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
-    if (time == numeric_limits< double >::infinity()) return false;
+    //if (time == numeric_limits< double >::infinity()) return false;
     
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
@@ -115,7 +115,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
     search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time;
+    search_header.time = time.end();
     
     bool boundary_domain_ = false;
     data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,

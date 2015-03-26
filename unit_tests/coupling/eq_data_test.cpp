@@ -224,7 +224,7 @@ protected:
         data.set_mesh(*mesh);
         data.set_input_list( in_rec.val<Input::Array>("data"));
         data.set_limit_side(LimitSide::right);
-        data.set_time(tg);
+        data.set_time(tg.step());
     }
 
     virtual void TearDown() {

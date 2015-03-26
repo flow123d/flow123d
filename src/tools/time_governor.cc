@@ -81,7 +81,11 @@ end_(init_time)
 
 
 
-TimeStep::TimeStep() {}
+TimeStep::TimeStep() :
+index_(0),
+length_(TimeGovernor::inf_time),
+end_(-TimeGovernor::inf_time)
+{}
 
 
 
@@ -110,6 +114,13 @@ TimeStep TimeStep::make_next(double new_lenght, double end_time) const
     return ts;
 }
 
+
+
+bool TimeStep::safe_compare(double t1, double t0) const
+{
+    return t1 >= t0
+            - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t1),abs(t0)));
+}
 
 
 
@@ -346,7 +357,7 @@ void TimeGovernor::add_time_marks_grid(double step, TimeMark::Type mark_type) co
 double TimeGovernor::estimate_dt() const {
     if (is_end()) return 0.0;
     
-    if (this->lt(end_of_fixed_dt_interval_))    return fixed_time_step_;
+    if (this->step().lt(end_of_fixed_dt_interval_))    return fixed_time_step_;
 
     // jump to the first future fix time
     TimeMarks::iterator fix_time_it = time_marks_.next(*this, equation_fixed_mark_type());
@@ -387,7 +398,7 @@ void TimeGovernor::next_time()
     if (is_end()) return;
     
 
-    if (this->lt(end_of_fixed_dt_interval_)) {
+    if (this->step().lt(end_of_fixed_dt_interval_)) {
         // this is done for fixed step
         // make tiny correction of time step in order to avoid big rounding errors
         // tiny correction means that dt_changed 'is NOT changed'
@@ -456,11 +467,6 @@ void TimeGovernor::view(const char *name) const
 }
 
 
-bool TimeGovernor::safe_compare(double t1, double t0) const
-{
-    return t1 >= t0
-            - 16*numeric_limits<double>::epsilon()*(1.0+max(abs(t1),abs(t0)));
-}
 
 
 ostream& operator<<(ostream& out, const TimeGovernor& tg)
