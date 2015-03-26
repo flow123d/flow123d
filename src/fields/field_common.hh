@@ -262,6 +262,7 @@ public:
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
     virtual void output(OutputTime *stream) =0;
+    virtual void output(std::shared_ptr<OutputTime> stream) =0;
 
 
     /**

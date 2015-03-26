@@ -143,6 +143,15 @@ void FieldSet::output(OutputTime *stream) {
 
 
 
+void FieldSet::output(std::shared_ptr<OutputTime> stream) {
+	START_TIMER("Fill OutputData");
+    for(auto field : field_list)
+        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+            field->output(stream);
+}
+
+
+
 // OBSOLETE method
 FieldCommon &FieldSet::add_field( FieldCommon *field, const string &name,
                                       const string &desc, const string & d_val) {
