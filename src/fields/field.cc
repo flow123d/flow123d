@@ -22,5 +22,3 @@
 
 
 INSTANCE_ALL(Field)
-INSTANCE_ALL(BCField)
-INSTANCE_ALL(MultiField)

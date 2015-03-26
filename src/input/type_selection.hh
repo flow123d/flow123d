@@ -103,6 +103,10 @@ public:
      */
     const Selection &close() const;
 
+
+    std::size_t content_hash() const   override;
+
+
     /// Implements \p TypeBase::is_finished
     virtual bool is_finished() const;
 

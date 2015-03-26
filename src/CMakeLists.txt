@@ -76,6 +76,7 @@ add_library(input_lib
     input/type_output.cc
     
     input/accessors.cc
+    input/storage_transpose.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit)
@@ -184,6 +185,8 @@ add_library(coupling_lib
     fields/field_values.cc
     fields/field_common.cc
     fields/field.cc
+    fields/bc_field.cc
+    fields/multi_field.cc
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc

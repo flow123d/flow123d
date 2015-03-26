@@ -94,8 +94,8 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
     // allocate data_
 	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
-    data_ = new double[data_size];
-    std::fill(data_, data_ + data_size, 0.0);
+	data_ = std::make_shared<std::vector<typename Value::element_type>>();
+	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
 }
@@ -104,14 +104,13 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 
 
 template <int spacedim, class Value>
-bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
+bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     ASSERT(source_mesh_, "Null mesh pointer of elementwise field: %s, did you call init_from_input(Input::Record)?\n", field_name_.c_str());
-    ASSERT(data_, "Null data pointer.\n");
     if ( reader_file_ == FilePath() ) return false;
     
     //walkaround for the steady time governor - there is no data to be read in time==infinity
     //TODO: is it possible to check this before calling set_time?
-    if (time == numeric_limits< double >::infinity()) return false;
+    //if (time == numeric_limits< double >::infinity()) return false;
     
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
@@ -121,10 +120,11 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(double time) {
     search_header.field_name = field_name_;
     search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
     search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time;
+    search_header.time = time.end();
     
     bool boundary_domain_ = false;
-    ReaderInstances::instance()->get_reader(reader_file_)->read_element_data(search_header, data_, source_mesh_->elements_id_maps(boundary_domain_)  );
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->get_element_data<typename Value::element_type>(search_header,
+    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
 
     return search_header.actual;
 }
@@ -207,8 +207,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
 					unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
-			        typename Value::element_type * ele_data_ptr = (typename Value::element_type *)(data_+index);
-			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  ele_data_ptr) );
+			        std::vector<typename Value::element_type> &vec = *( data_.get() );
+			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
 					Value tmp_value = Value( ret_type_value );
 
 					for (unsigned int i=0; i < this->value_.n_rows(); i++) {

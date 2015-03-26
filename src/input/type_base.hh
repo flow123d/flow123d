@@ -139,6 +139,12 @@ public:
      */
     virtual bool valid_default(const string &str) const =0;
 
+    /**
+     * Hash of the type specification. Provides unique id computed from its
+     * content (definition) so that same types have same hash.
+     */
+    virtual std::size_t content_hash() const =0;
+
 protected:
 
     /**
@@ -150,6 +156,9 @@ protected:
      * Copy constructor. Register type object into lazy_object_set.
      */
     TypeBase(const TypeBase& other);
+
+
+
 
     /**
      * Type of hash values used in associative array that translates key names to indices in Record and Selection.
@@ -256,6 +265,8 @@ public:
     template <class ValueType>
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
+    std::size_t content_hash() const override;
+
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     virtual bool finish();
 
@@ -323,6 +334,9 @@ public:
     Bool()
     {}
 
+    std::size_t content_hash() const   override;
+
+
     bool from_default(const string &str) const;
 
     virtual string type_name() const;
@@ -345,6 +359,8 @@ public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
+
+    std::size_t content_hash() const   override;
 
     /**
      * Returns true if the given integer value conforms to the Type::Integer bounds.
@@ -381,6 +397,8 @@ public:
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
 
+    std::size_t content_hash() const   override;
+
     /**
      * Returns true if the given integer value conforms to the Type::Double bounds.
      */
@@ -413,6 +431,7 @@ class String : public Scalar {
 public:
     virtual string type_name() const;
 
+    std::size_t content_hash() const   override;
 
 
     string from_default(const string &str) const;
@@ -436,6 +455,8 @@ public:
  */
 class FileName : public String {
 public:
+
+    std::size_t content_hash() const   override;
 
     /**
      * Factory function for declaring type FileName for input files.

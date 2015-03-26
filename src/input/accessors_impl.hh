@@ -219,11 +219,11 @@ inline Iterator<T> & Iterator<T>::operator --() {
 template<class T>
 inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
-	Address a( * const_cast<Address *> (address_.down(index_)) );
+    auto new_address =address_.down(index_);
 
-    ASSERT(a.storage_head(), "NULL pointer to storage in address object!!! \n");
+    ASSERT(new_address->storage_head(), "NULL pointer to storage in address object!!! \n");
 
-    return internal::TypeDispatch < DispatchType > ::value(a, type_);
+    return internal::TypeDispatch < DispatchType > ::value(*new_address, type_);
 }
 
 template<class T>

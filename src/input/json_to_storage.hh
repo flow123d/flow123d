@@ -189,6 +189,11 @@ public:
             << EI_JSONLine::val << " : col " << EI_JSONColumn::val
             << " ; reason: " << EI_JSONReason::val << "\n" );
 
+    TYPEDEF_ERR_INFO( EI_InputErrorMessage, const string);
+    TYPEDEF_ERR_INFO( EI_RecordName, const string);
+    DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
+    		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
+
 
     /**
      * Read a storage from input stream. Parameter @p root_type
@@ -247,6 +252,9 @@ protected:
     StorageBase * make_storage(JSONPath &p, const Type::Integer *int_type);
     StorageBase * make_storage(JSONPath &p, const Type::Double *double_type);
     StorageBase * make_storage(JSONPath &p, const Type::String *string_type);
+
+    StorageBase * record_automatic_conversion(JSONPath &p, const Type::Record *record);
+    StorageBase * abstract_rec_automatic_conversion(JSONPath &p, const Type::AbstractRecord *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.

@@ -12,6 +12,7 @@
 #include <cmath>
 
 
+
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
@@ -183,5 +184,9 @@ TEST(FieldPython, read_from_input) {
 
 }
 
+#else
+TEST(FieldPython, python_not_supported) {
+
+}
 #endif // FLOW123D_HAVE_PYTHON
 

@@ -22,6 +22,8 @@ using namespace std;
 #include "io/output_time.hh"
 
 
+class Region;
+
 namespace IT=Input::Type;
 
 /**
@@ -139,13 +141,16 @@ public:
     { flags().add(mask); return *this; }
 
     /**
+     * Set vector of component names.
      * Set number of components for run-time sized vectors. This is used latter when we construct
      * objects derived from FieldBase<...>.
      *
      * n_comp_ is constant zero for fixed values, this zero is set by Field<...> constructors
      */
-    void set_n_components( unsigned int n_comp)
-    { shared_->n_comp_ = (shared_->n_comp_ ? n_comp : 0);}
+    void set_components(const std::vector<string> &names) {
+        shared_->comp_names_ = names;
+        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    }
 
 
     /**
@@ -163,11 +168,14 @@ public:
 
     /**
      * Set side of limit when calling @p set_time
-     * with jump time. This method invalidate result of
+     * with jump time, i.e. time where the field change implementation on some region.
+     * Wee assume that implementations prescribe only smooth fields.
+     * This method invalidate result of
      * @p changed() so it should be called just before @p set_time.
      * Can be different for different field copies.
      */
-    virtual void set_limit_side(LimitSide side) = 0;
+    void set_limit_side(LimitSide side)
+    { this->limit_side_=side; }
 
     /**
      * Getters.
@@ -227,6 +235,12 @@ public:
     virtual IT::AbstractRecord &get_input_type() =0;
 
     /**
+     * Returns input type for MultiField instance.
+     * TODO: temporary solution, see @p multifield_
+     */
+    virtual IT::Record &get_multifield_input_type() =0;
+
+    /**
      * Pass through the input array @p input_list_, collect all times where the field could change and
      * put appropriate time marks into global TimeMarks object.
      * Introduced time marks have both given @p mark_type and @p type_input() type.
@@ -248,7 +262,7 @@ public:
      *
      * Different field copies can be set to different times.
      */
-    virtual  bool set_time(const TimeGovernor &time) =0;
+    virtual  bool set_time(const TimeStep &time) =0;
 
     /**
      * Check that @p other is instance of the same Field<..> class and
@@ -283,6 +297,23 @@ public:
     {
         ASSERT( set_time_result_ != TimeStatus::unknown, "Invalid time status.\n");
         return ( (set_time_result_ == TimeStatus::changed) );
+    }
+
+    /**
+     * Sets @p component_index_
+     */
+    void set_component_index(unsigned int idx)
+    {
+    	this->component_index_ = idx;
+    }
+
+    /**
+     * Return @p multifield_ flag.
+     * TODO: temporary solution
+     */
+    inline bool is_multifield() const
+    {
+    	return this->multifield_;
     }
 
     /**
@@ -323,6 +354,11 @@ protected:
      *  sharing common input field descriptor array and common history.
      */
     struct SharedData {
+    	/**
+    	 * Empty constructor.
+    	 */
+    	SharedData() {};
+
         /**
          * True for boundary fields.
          */
@@ -331,6 +367,10 @@ protected:
          * Number of components for fields that return variable size vectors. Zero in other cases.
          */
         unsigned int n_comp_;
+        /**
+         * Names of field components.
+         */
+        std::vector< std::string > comp_names_;
         /**
          * Name of the particular field. Used to name the key in the Field list Record.
          */
@@ -423,6 +463,17 @@ protected:
      * Output data type used in the output() method. Can be different for different field copies.
      */
     OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
+
+    /**
+     * Specify if the field is part of a MultiField and which component it is
+     */
+    unsigned int component_index_;
+
+    /**
+     * Flag determining if object is Multifield or Field.
+     * TODO: temporary solution, goal is to make these two classes to behave similarly
+     */
+    bool multifield_;
 
     /**
      * Maximum number of FieldBase objects we store per one region.
