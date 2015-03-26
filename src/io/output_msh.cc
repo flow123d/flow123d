@@ -40,6 +40,8 @@ Record OutputMSH::input_type
 	// It is derived from abstract class
 	.derive_from(OutputTime::input_format_type);
 
+const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh");
+
 
 void OutputMSH::write_msh_header(void)
 {

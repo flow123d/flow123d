@@ -75,6 +75,8 @@ Selection OutputVTK::input_type_compression
 
 
 
+const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk");
+
 void OutputVTK::write_vtk_vtu_head(void)
 {
     ofstream &file = *this->_data_file;

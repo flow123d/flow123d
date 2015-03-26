@@ -30,6 +30,8 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
+#include "input/factory.hh"
+
 #include "io/output_data.hh"
 
 /**
@@ -37,6 +39,7 @@
  */
 class OutputMSH : public OutputTime {
 public:
+	typedef OutputTime FactoryBaseType;
 
     /**
      * \brief The constructor of this class
@@ -84,6 +87,9 @@ public:
 
 
 private:
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     bool header_written;
 

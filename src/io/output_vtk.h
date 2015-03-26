@@ -31,6 +31,7 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
+#include "input/factory.hh"
 #include "fields/field_algo_base.hh"
 
 #include "io/output_data.hh"
@@ -41,6 +42,7 @@
 class OutputVTK : public OutputTime {
 
 public:
+	typedef OutputTime FactoryBaseType;
 
     /**
      * \brief The constructor of this class. The head of file is written, when
@@ -138,6 +140,9 @@ private:
         VTK_TRIANGLE_SIZE = 3,
         VTK_TETRA_SIZE = 4
     } VTKElemSize;
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     /**
      * \brief Write header of VTK file (.vtu)
