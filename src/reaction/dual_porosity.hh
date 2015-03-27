@@ -118,8 +118,8 @@ protected:
    */
   FieldSet input_data_set_;
   
-  ReactionTerm *reaction_mobile;       ///< Reaction running in mobile zone
-  ReactionTerm *reaction_immobile;     ///< Reaction running in immobile zone
+  std::shared_ptr<ReactionTerm> reaction_mobile;       ///< Reaction running in mobile zone
+  std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
   
   /// Dual porosity computational scheme tolerance. 
   /** According to this tolerance the analytical solution of dual porosity concentrations or

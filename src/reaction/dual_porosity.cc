@@ -89,9 +89,6 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
-  if(reaction_mobile != nullptr) delete reaction_mobile;
-  if(reaction_immobile != nullptr) delete reaction_immobile;
-
   VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_immobile);
 
@@ -109,32 +106,9 @@ void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == FirstOrderReaction::input_type ) {
-          reaction_mobile =  new FirstOrderReaction(*mesh_, *reactions_it);
-
-      } else
-      if (reactions_it->type() == RadioactiveDecay::input_type) {
-          reaction_mobile = new RadioactiveDecay(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == SorptionMob::input_type ) {
-          reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-      } else
-      if (reactions_it->type() == Semchem_interface::input_type )
-      { THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-      } else
-      { //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-      }
+      // TODO: allowed instances in this case are only
+      // FirstOrderReaction, RadioactiveDecay and SorptionMob
+      reaction_mobile = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
     } else
     {
       reaction_mobile = nullptr;
@@ -143,32 +117,9 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == FirstOrderReaction::input_type ) {
-          reaction_immobile =  new FirstOrderReaction(*mesh_, *reactions_it);
-
-      } else
-      if (reactions_it->type() == RadioactiveDecay::input_type) {
-          reaction_immobile = new RadioactiveDecay(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == SorptionImmob::input_type ) {
-          reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-      } else
-      if (reactions_it->type() == Semchem_interface::input_type )
-      { THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-      } else
-      { //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-      }
+      // TODO: allowed instances in this case are only
+      // FirstOrderReaction, RadioactiveDecay and SorptionImmob
+      reaction_immobile = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
     } else
     {
       reaction_immobile = nullptr;
@@ -196,7 +147,7 @@ void DualPorosity::initialize()
   
   initialize_fields();
 
-  if(reaction_mobile != nullptr)
+  if(reaction_mobile)
   {
     reaction_mobile->substances(substances_)
                 .output_stream(*output_stream_)
@@ -205,7 +156,7 @@ void DualPorosity::initialize()
     reaction_mobile->initialize();
   }
 
-  if(reaction_immobile != nullptr)
+  if(reaction_immobile)
   {
     reaction_immobile->substances(substances_)
                 .output_stream(*output_stream_)
@@ -276,10 +227,10 @@ void DualPorosity::zero_time_step()
   data_.output_fields.set_time(*time_);
   data_.output_fields.output(output_stream_);
   
-  if(reaction_mobile != nullptr)
+  if(reaction_mobile)
     reaction_mobile->zero_time_step();
 
-  if(reaction_immobile != nullptr)
+  if(reaction_immobile)
     reaction_immobile->zero_time_step();
 }
 
@@ -310,8 +261,8 @@ void DualPorosity::update_solution(void)
   }
   END_TIMER("dual_por_exchange_step");
   
-  if(reaction_mobile != nullptr) reaction_mobile->update_solution();
-  if(reaction_immobile != nullptr) reaction_immobile->update_solution();
+  if(reaction_mobile) reaction_mobile->update_solution();
+  if(reaction_immobile) reaction_immobile->update_solution();
 }
 
 
