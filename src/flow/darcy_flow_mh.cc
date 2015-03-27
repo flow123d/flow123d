@@ -982,9 +982,9 @@ void DarcyFlowMH_Steady::create_linear_system() {
 void DarcyFlowMH_Steady::assembly_linear_system() {
 
 	data_.set_time(time_->step());
-	DBGMSG("Assembly linear system\n");
+	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
-		DBGMSG("  Data changed\n");
+		//DBGMSG("  Data changed\n");
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -999,7 +999,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
-	    	DBGMSG("    setup time term\n");
+	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
 	    	setup_time_term();
 	    	modify_system();

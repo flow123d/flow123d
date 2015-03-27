@@ -1,6 +1,7 @@
 /*!
  *
  * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
  *
  * Please make a following refer to Flow123d on your project site if you use the program for any purpose,
  * especially for academic research:
@@ -111,7 +112,6 @@ int OutputVTK::write_data(void)
 
 
     std::string frame_file_name = ss.str();
-    DBGMSG("ff: %s\n", frame_file_name.c_str());
     std::string frame_file_path = main_output_dir_ + "/" + main_output_basename_ + "/" + frame_file_name;
 
     _data_file.open(frame_file_path);
