@@ -123,7 +123,7 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record
         }
         output_time->format_record_ = *format;
     } else {
-        output_time = std::make_shared<OutputVTK>(in_rec);
+        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
     }
 
     return output_time;
