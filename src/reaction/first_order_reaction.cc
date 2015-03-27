@@ -46,6 +46,9 @@ Record FirstOrderReaction::input_type
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
+const int FirstOrderReaction::registrar =
+		Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction");
+
 
 FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)
       : FirstOrderReactionBase(init_mesh, in_rec)

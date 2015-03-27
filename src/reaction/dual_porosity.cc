@@ -43,6 +43,9 @@ Record DualPorosity::input_type
     .declare_key("output_fields", Array(EqData::output_selection),
                 Default("conc_immobile"), "List of fields to write to output stream.");
     
+const int DualPorosity::registrar =
+		Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity");
+
 DualPorosity::EqData::EqData()
 {
   *this += diffusion_rate_immobile

@@ -40,6 +40,9 @@ Record RadioactiveDecay::input_type
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
+const int RadioactiveDecay::registrar =
+		Input::register_class< RadioactiveDecay, Mesh &, Input::Record >("RadioactiveDecay");
+
 
 
 RadioactiveDecay::RadioactiveDecay(Mesh &init_mesh, Input::Record in_rec)

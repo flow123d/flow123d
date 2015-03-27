@@ -14,6 +14,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "reaction/sorption_base.hh"
+#include "input/factory.hh"
 
 class Mesh;
 class Isotherm;
@@ -24,6 +25,8 @@ class Isotherm;
 class SorptionSimple:  public SorptionBase
 {
 public:
+	typedef ReactionTerm FactoryBaseType;
+
     static Input::Type::Record input_type;
 
     /// Constructor.
@@ -35,6 +38,10 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
@@ -74,6 +81,8 @@ protected:
 class SorptionMob:  public SorptionDual
 {
 public:
+	typedef ReactionTerm FactoryBaseType;
+
     static Input::Type::Record input_type;
 
     /// Constructor.
@@ -87,6 +96,10 @@ protected:
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
 
     //double compute_sorbing_scale(double por_m, double por_imm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
@@ -96,6 +109,8 @@ protected:
 class SorptionImmob:  public SorptionDual
 {
 public:
+	typedef ReactionTerm FactoryBaseType;
+
     static Input::Type::Record input_type;
 
     /// Constructor.
@@ -109,6 +124,10 @@ protected:
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
 
     //double compute_sorbing_scale(double por_m, double por_imm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

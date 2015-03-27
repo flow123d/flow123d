@@ -11,6 +11,7 @@
 
 #include <vector>
 #include "input/accessors.hh"
+#include "input/factory.hh"
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
@@ -23,6 +24,8 @@ class Mesh;
 class DualPorosity:  public ReactionTerm
 {
 public:
+  typedef ReactionTerm FactoryBaseType;
+
   /**
    * Static variable for new input data types input
    */
@@ -131,6 +134,10 @@ protected:
   std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
+private:
+  /// Registrar of class to factory
+  static const int registrar;
+
 };
 
 #endif  //DUAL_POROSITY_H_
