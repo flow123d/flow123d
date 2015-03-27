@@ -8,6 +8,7 @@
 #define PADE_APPROXIMANT_H_
 
 #include "input/accessors.hh"
+#include "input/factory.hh"
 #include "reaction/linear_ode_solver.hh"
 #include "armadillo"
 
@@ -23,6 +24,8 @@
 class PadeApproximant : public LinearODESolver<PadeApproximant>
 {
 public:
+	typedef LinearODESolverBase FactoryBaseType;
+
     /**
      * Input record for class PadeApproximant.
      */
@@ -70,6 +73,10 @@ protected:
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
     
     arma::mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 #endif // PADE_APPROXIMANT_H_

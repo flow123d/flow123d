@@ -18,6 +18,9 @@ Record PadeApproximant::input_type
     .declare_key("denominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant");
 
+const int PadeApproximant::registrar =
+		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant");
+
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {
     //DBGMSG("PadeApproximant constructor.\n");

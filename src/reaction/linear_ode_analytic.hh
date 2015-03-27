@@ -2,6 +2,7 @@
 #define LINEAR_ODE_ANALYTIC_H_
 
 #include "reaction/linear_ode_solver.hh"
+#include "input/factory.hh"
 
 /** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
  *
@@ -32,6 +33,8 @@
 class LinearODEAnalytic : public LinearODESolver<LinearODEAnalytic>
 {
 public:
+	typedef LinearODESolverBase FactoryBaseType;
+
     /**
      * Input record for class LinearODE_analytic.
      */
@@ -56,6 +59,11 @@ protected:
     
     /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
     arma::mat solution_matrix_;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
+
 };
 
 #endif // LINEAR_ODE_ANALYTIC_H_

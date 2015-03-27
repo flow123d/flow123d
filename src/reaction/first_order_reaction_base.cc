@@ -20,24 +20,19 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
     Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {
-        if (num_it->type() == PadeApproximant::input_type) 
+    	linear_ode_solver_ = (*num_it).factory< LinearODESolverBase, Input::Record >(*num_it);
+        if (num_it->type() == PadeApproximant::input_type)
         {
-            linear_ode_solver_ = new PadeApproximant(*num_it);
+            //linear_ode_solver_ = new PadeApproximant(*num_it);
         }
         else if (num_it->type() == LinearODEAnalytic::input_type) 
         {
-            linear_ode_solver_ = new LinearODEAnalytic();
-        }
-        else
-        {   //This point cannot be reached. The TYPE_selection will throw an error first. 
-            THROW( ExcMessage() 
-                    << EI_Message("Linear ODEs solver selection failed (SHOULD NEVER HAPPEN).") 
-                    << (*num_it).ei_address());
+            //linear_ode_solver_ = new LinearODEAnalytic();
         }
     }
     else    //default linear ode solver
     {
-        linear_ode_solver_ = new LinearODEAnalytic();
+        linear_ode_solver_ = Input::Factory< LinearODESolverBase, Input::Record >::instance()->create("LinearODEAnalytic", Input::Record());
     }
 }
 
