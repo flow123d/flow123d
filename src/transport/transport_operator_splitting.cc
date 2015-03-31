@@ -34,6 +34,7 @@
 #include "la/distribution.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/factory.hh"
 
 using namespace Input::Type;
 
@@ -72,6 +73,10 @@ Record TransportOperatorSplitting::input_type
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
     		Default("conc"),
        		"List of fields to write to output file.");
+
+
+const int TransportOperatorSplitting::registrar =
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting");
 
 
 

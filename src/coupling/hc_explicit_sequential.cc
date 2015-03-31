@@ -100,29 +100,17 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
-        if (it->type() == TransportOperatorSplitting::input_type)
-        {
-            transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-        }
-        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
-        {
-            transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
-        }
-        else if (it->type() == TransportDG<HeatTransferModel>::input_type)
-        {
-        	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
-        }
-        else
-        {
-            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
-        }
+    	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record & >(*mesh, *it);
+        if (it->type() == TransportOperatorSplitting::input_type) {}
+        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type) {}
+        else if (it->type() == TransportDG<HeatTransferModel>::input_type) {}
 
         // setup fields
         transport_reaction->data()["cross_section"]
         		.copy_from(water->data()["cross_section"]);
 
     } else {
-        transport_reaction = new TransportNothing(*mesh);
+        transport_reaction = std::make_shared<TransportNothing>(*mesh);
     }
 }
 
@@ -224,7 +212,6 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    delete transport_reaction;
     delete mesh;
 }
 

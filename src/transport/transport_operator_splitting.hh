@@ -169,6 +169,7 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
@@ -196,6 +197,8 @@ public:
    
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
     ConvectionTransport *convection;
     std::shared_ptr<ReactionTerm> reaction;

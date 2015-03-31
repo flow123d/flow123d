@@ -44,6 +44,7 @@
 #include "transport/heat_model.hh"
 
 #include "fields/generic_field.hh"
+#include "input/factory.hh"
 
 using namespace Input::Type;
 
@@ -89,6 +90,10 @@ Record TransportDG<Model>::input_type
     .declare_key("output_fields", Array(EqData::output_selection),
     		Default(Model::ModelEqData::default_output_field()),
        		"List of fields to write to output file.");
+
+template<class Model>
+const int TransportDG<Model>::registrar =
+		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG");
 
 
 

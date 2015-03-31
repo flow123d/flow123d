@@ -137,6 +137,7 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -231,6 +232,8 @@ public:
 	~TransportDG();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
