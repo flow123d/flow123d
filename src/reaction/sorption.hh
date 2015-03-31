@@ -14,7 +14,6 @@
 
 #include "fields/field_algo_base.hh"
 #include "reaction/sorption_base.hh"
-#include "input/factory.hh"
 
 class Mesh;
 class Isotherm;

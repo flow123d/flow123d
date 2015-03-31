@@ -1,6 +1,7 @@
 
 #include "reaction/linear_ode_analytic.hh"
 #include "input/accessors.hh"
+#include "input/factory.hh"
 #include "system/sys_profiler.hh"
 
 using namespace Input::Type;

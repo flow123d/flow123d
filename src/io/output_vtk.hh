@@ -31,7 +31,6 @@
 #define OUTPUT_VTK_HH_
 
 #include "input/accessors.hh"
-#include "input/factory.hh"
 
 #include "output_data_base.hh"
 #include "output_time.hh"

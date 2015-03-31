@@ -3,6 +3,7 @@
 
 #include "system/global_defs.h"
 #include "input/accessors.hh"
+#include "input/factory.hh"
 #include "system/sys_profiler.hh"
 #include "reaction/linear_ode_solver.hh"
 #include "reaction/pade_approximant.hh"

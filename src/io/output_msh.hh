@@ -30,7 +30,6 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "input/factory.hh"
 #include "output_time.hh"
 #include "system/sys_vector.hh"
 

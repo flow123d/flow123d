@@ -31,6 +31,7 @@
 #include <limits.h>
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
+#include "input/factory.hh"
 
 
 using namespace Input::Type;

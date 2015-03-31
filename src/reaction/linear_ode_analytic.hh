@@ -2,7 +2,6 @@
 #define LINEAR_ODE_ANALYTIC_H_
 
 #include "reaction/linear_ode_solver.hh"
-#include "input/factory.hh"
 
 /** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
  *

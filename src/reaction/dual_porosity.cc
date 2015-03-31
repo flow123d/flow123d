@@ -17,6 +17,7 @@
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
 #include "semchem/semchem_interface.hh"
+#include "input/factory.hh"
 
 using namespace Input::Type;
 

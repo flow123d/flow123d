@@ -11,7 +11,6 @@
 
 #include <vector>
 #include "input/accessors.hh"
-#include "input/factory.hh"
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"

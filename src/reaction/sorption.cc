@@ -5,6 +5,7 @@
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/accessors.hh"
+#include "input/factory.hh"
 
 /*********************************                 *********************************************************/
 /********************************* SORPTION_SIMPLE *********************************************************/

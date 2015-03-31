@@ -75,6 +75,7 @@
 #include "system/sys_profiler.hh"
 
 #include "transport/mass_balance.hh"
+#include "input/factory.hh"
 
 
 

@@ -56,7 +56,6 @@
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
 #include "input/input_type.hh"
-#include "input/factory.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
