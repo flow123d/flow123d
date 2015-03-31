@@ -1,9 +1,9 @@
-	"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"integrated_flux"	"integrated_source"	"error"
-	0	"fracture"	"water_volume"	0	0	0	0	0	0	0	0	0	0
-	0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0
-	0	".fracture_bottom"	"water_volume"	-0.01	-0.01	0	0	0	0	0	0	0	0
-	0	".fracture_top"	"water_volume"	0.01	0	0.01	0	0	0	0	0	0	0
-	0	".left"	"water_volume"	5.13641e-18	-6.85893e-17	7.37257e-17	0	0	0	0	0	0	0
-	0	".right"	"water_volume"	6.0878e-17	-4.75965e-17	1.08474e-16	0	0	0	0	0	0	0
-	0	".rock_bottom"	"water_volume"	-0.002	-0.002	0	0	0	0	0	0	0	0
-	0	".rock_top"	"water_volume"	0.002	0	0.002	0	0	0	0	0	0	0
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"fracture"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".fracture_bottom"	"water_volume"	-0.01	-0.01	0	0	0	0	0	0	0	0	0	0
+0	".fracture_top"	"water_volume"	0.01	0	0.01	0	0	0	0	0	0	0	0	0
+0	".left"	"water_volume"	5.13641e-18	-6.85893e-17	7.37257e-17	0	0	0	0	0	0	0	0	0
+0	".right"	"water_volume"	6.0878e-17	-4.75965e-17	1.08474e-16	0	0	0	0	0	0	0	0	0
+0	".rock_bottom"	"water_volume"	-0.002	-0.002	0	0	0	0	0	0	0	0	0	0
+0	".rock_top"	"water_volume"	0.002	0	0.002	0	0	0	0	0	0	0	0	0

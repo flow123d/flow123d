@@ -6,6 +6,7 @@
  */
 
 #include "input/type_selection.hh"
+#include <boost/functional/hash.hpp>
 
 namespace Input {
 namespace Type {
@@ -49,6 +50,22 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 const Selection & Selection::close() const {
     data_->finished=true;
     return *this;
+}
+
+
+
+std::size_t Selection::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Selection");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->description_);
+    for( Key &key : data_->keys_) {
+        boost::hash_combine(seed, key.key_);
+        boost::hash_combine(seed, key.description_);
+        boost::hash_combine(seed, key.value);
+    }
+    return seed;
 }
 
 

@@ -57,6 +57,8 @@ public:
      */
     Default(const std::string & value);
 
+    std::size_t content_hash() const;
+
     /**
      * Factory function to make an default value that will be specified at the time when a key will be read.
      * You have to provide a string with description of the default value used at the read time., e.g.
@@ -130,6 +132,12 @@ public:
      */
     inline const string & value() const
     { return (value_); }
+
+    /**
+     * Compares values type_ of two Default objects.
+     */
+    inline bool has_same_type(const Default &other) const
+        {return type_ == other.type_; }
 
 private:
     string value_;              ///< Stored value.
@@ -207,6 +215,10 @@ public:
      * its \p description.
      */
     Record(const string & type_name_in, const string & description);
+
+
+    std::size_t content_hash() const  override;
+
 
     /**
      * Method to derive new Record from an AbstractRecord @p parent. This copy all keys from the @p parent and register the newly created Record
@@ -323,6 +335,13 @@ public:
      */
     bool finish();
 
+    /**
+     * Add TYPE key as obligatory.
+     *
+     * This method can't be used for derived record.
+     */
+    Record &has_obligatory_type_key();
+
 
 protected:
 
@@ -347,6 +366,11 @@ protected:
 
     /// copy keys from all Records pointers in copy_from_ptr using the make_copy_keys method
     void make_copy_keys_all();
+
+    /**
+     * Declares a TYPE key of the Record.
+     */
+    Record &declare_type_key(const Selection * key_type);
 
     /**
      * Internal data class.
@@ -510,6 +534,7 @@ public:
      */
     AbstractRecord(const string & type_name_in, const string & description);
 
+    std::size_t content_hash() const   override;
 
     /**
      * Allows shorter input of the AbstractRecord providing the default value to the "TYPE" key.
@@ -625,6 +650,10 @@ public:
 	 * Constructor
 	 */
 	AdHocAbstractRecord(const AbstractRecord &ancestor);
+
+    std::size_t content_hash() const   override
+            { return 0;}
+
 
     /**
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,

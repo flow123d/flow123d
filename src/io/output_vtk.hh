@@ -32,9 +32,9 @@
 
 #include "input/accessors.hh"
 #include "input/factory.hh"
-#include "fields/field_algo_base.hh"
 
-#include "io/output_data.hh"
+#include "output_data_base.hh"
+#include "output_time.hh"
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -92,7 +92,7 @@ public:
      */
     int write_tail(void);
 
-private:
+protected:
 
     /**
      * \brief The declaration enumeration used for variant of file VTK format
@@ -176,14 +176,14 @@ private:
     /**
      * Write registered data to output stream using ascii format
      */
-    void write_vtk_data_ascii(vector<OutputDataBase*> &output_data);
+    void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
 
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
      * Output is done into stream @p file.
      */
     void write_vtk_data_names(ofstream &file,
-            vector<OutputDataBase*> &output_data);
+            OutputDataFieldVec &output_data_map);
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
@@ -207,9 +207,25 @@ private:
    void write_vtk_vtu(void);
 
    /**
-    * \brief This method add right suffix to .pvd VTK file
+    * Set appropriate file path substrings.
+    * Make subdirectory for VTU time frames.
     */
-   void fix_base_file_name(void);
+   void make_subdirectory();
+
+
+   /**
+    * Data output stream (could be same as base_file)
+    */
+   ofstream _data_file;
+
+   /**
+    * Path to time frame VTU data subdirectory
+    */
+   string subdir_name_;
+
+   string main_output_basename_;
+
+   string main_output_dir_;
 };
 
 #endif /* OUTPUT_VTK_HH_ */

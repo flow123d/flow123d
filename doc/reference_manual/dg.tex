@@ -1,0 +1,151 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discontinuous Galerkin Method}
+\label{sc:dg}
+
+\def\Eh{\mathcal E_d}       % edges of \Th
+\def\Ehb{\mathcal E_{d,B}}  % edges of \Th on boundary
+\def\Ehcom{\mathcal E_{d,C}}         % edges of \Th on interface with lower dimension
+\def\Ehdir{\mathcal E_{d,D}}         % Dirichlet edges of \Th
+\def\Ehint{\mathcal E_{d,I}}       % interior edges of \Th
+\def\Ehneu{\mathcal E_{d,N}}         % Neumann or Robin edges of \Th
+\def\Ngh{\mathcal N_d}
+\def\avg#1{\left\{#1\right\}}
+\def\jmp#1{[#1]}
+\def\wavg#1#2#3{\avg{#1}_{#2,#3}^\omega}
+\def\Td{\mathcal T_d}
+
+
+Models for solute transport and heat transfer described in sections \ref{sc:transport_model} and \ref{sc:heat} are collectively formulated
+ as a system of abstract advection-diffusion equations on domains $\Omega_d$, $d=1,2,3$,
+ connected by communication terms.
+Consider for $d=1,2,3$ the equation 
+\begin{subequations}
+ \label{eq:abstr_system}
+ \begin{equation}
+  \partial_t u_d + \div(\vc b u_d) - \div(\tn A\nabla u_d) = f^0+f^1(u^S-u_d) + q(u_{d+1},u_d) \mbox{ in }(0,T)\times\Omega_d
+ \end{equation}
+ with initial and boundary conditions
+ \begin{align}
+  u_d(0,\cdot) &= u^0 &&\mbox{ in }\Omega_d,\\
+  \label{eq:bc_abstr_dir} u_d &= u^D &&\mbox{ on }(0,T)\times\Gamma^D_d,\\
+  \label{eq:bc_abstr_neu} (\vc b u_d-\tn A\nabla u_d)\cdot\vc n &= f^N + \sigma^R(u_d - u^D) &&\mbox{ on }(0,T)\times\Gamma^N_d,\\
+  (\vc b u_d-\tn A\nabla u_d)\cdot\vc n &= q(u_d,u_{d-1}) &&\mbox{ on } (0,T)\times\Gamma^C_d,
+ \end{align}
+ where
+ \[ \Gamma^C_d:=\overline\Omega_d\cap\overline\Omega_{d-1}. \]
+ The communication term $q(u_{d+1},u_d)$ has the form
+ \begin{equation}
+ \label{eq:com_term_abstr_system}
+  q(u_{d+1},u_d) =
+  \begin{cases}
+      \alpha u_{d+1} + \beta u_d
+    & \mbox{ in }\Gamma^C_{d+1},~d=1,2,\\ 0
+    & \mbox{ on }\Omega_d\setminus\Gamma^C_{d+1},~d=1,2,\mbox{ and for }d=0,3.
+  \end{cases}
+ \end{equation}
+\end{subequations}
+System \eqref{eq:abstr_system} is spatially discretized by the discontinuous Galerkin method
+ with weighted averages,
+ which was derived for the case of one domain in \cite{ern_stephansen_zunino}
+ (for a posteriori estimate see \cite{ern2010guaranteed}).
+For time discretization we use the implicit Euler method.
+
+Let $\tau$ denote the time step.
+For a regular splitting $\Td$ of $\Omega^d$, $d=1,2,3$, into simplices we define the following sets of element sides:
+\begin{align*}
+ &\Eh &&\mbox{sides of all elements in $\Td$ (i.e. triangles for $d=3$, lines for $d=2$ and nodes for $d=1$)},\\
+ &\Ehint &&\mbox{interior sides (shared by 2 or more $d$-dimensional elements)},\\
+ &\Ehb &&\mbox{outer sides (belonging to only one element)},\\
+ &\Ehdir(t) &&\mbox{sides, where the Dirichlet condition \eqref{eq:bc_abstr_dir} is given},\\
+ &\Ehneu(t) &&\mbox{sides, where the Neumann or Robin condition \eqref{eq:bc_abstr_neu} is given},\\
+ &\Ehcom &&\mbox{sides coinciding with $\Gamma^C_d$}.
+\end{align*}
+For an interior side $E$ we denote by $\Ngh(E)$ the set of elements that share $E$ (notice that 1D and 0D sides can be shared by more than 2 elements).
+For an element $T\in\Ngh(E)$ we denote $q_T:=(\vc b\cdot\vc n)_{|T}$ the outflow from $T$,
+and define $\Ngh^-(E):=\{T\in\Ngh(E)\where q_T\le 0\}$, $\Ngh^+(E):=\{T\in\Ngh(E)\where q_T>0\}$
+the sets of all outflow and inflow elements, respectively.
+For every pair $(T^+,T^-)\in \Ngh^+(E)\times\Ngh^-(E)$ we define the flux from $T^+$ to $T^-$ as
+$$ q_{T^+\to T^-} := \frac{q_{T^+} q_{T^-}}{\sum_{T\in\Ngh^-(E)}{q_T}}.$$
+We select arbitrary element $T_E\in\Ngh(E)$ and define $\n_E$ as the the unit outward normal vector to $\partial T_E$ at $E$.
+The jump in values of a function $f$ between two adjacent elements $T_1,T_2\in\Ngh(E)$ is defined by $\jmp{f}_{T_1,T_2}=f_{|T_{1|E}}-f_{|T_{2|E}}$,
+ similarly we introduce the average $\avg{f}_{T_1,T_2}=\frac12(f_{|T_{1|E}} + f_{|T_{2|E}})$
+ and a weighted average $\wavg{f}{T_1}{T_2}=\omega f_{|T_{1|E}} + (1-\omega) f_{|T_{2|E}}$.
+The weight $\omega$ is selected in a specific way (see \cite{ern_stephansen_zunino})
+ taking into account the possible inhomogeneity of the tensor $\tn A$.
+
+% Let us fix one substance and the space dimension $d$.
+For every time step $t_k=k\tau$ we look for the discrete solution $u^{k}=(u_1^{k},u_2^{k},u_3^{k})\in V$, where
+$$ V=\prod_{d=1}^3 V_d \quad\mbox{ and }\quad V_d = \{v:\overline{\Omega^d}\to\R\where v_{|T}\in P_p(T)~\forall T\in\Td\} $$
+are the spaces of piecewise polynomial functions of degree at most $p$ on elements $\Td$,
+ generally discontinuous on interfaces of elements.
+The initial condition for $u_d^{0}$ is defined as the $L^2$-projection of $u^0$ to $V_d$.
+For $k=1,2,\ldots$, $u^{k}$ is given as the solution of the problem
+\begin{equation*}
+ \frac1\tau\sc{u^{k}-u^{k-1}}{v}_{V} + a^{k}(u^{k},v) = b^{k}(v) \quad \forall v\in V.
+\end{equation*}
+Here $\sc{f}{g}_{V}=\sum_{d=1}^d\sc{f}{g}_{\Omega^d}$, $\sc{f}{g}_{\Omega^d}=\int_{\Omega^d} f g$,
+ and forms $a^{k}$, $b^{k}$
+ are defined as follows:
+\begin{multline}
+\label{eq:df_ak_abstr_sys}
+  a^{k}((u_1,u_2,u_3),(v_1,v_2,v_3))\\
+   = \sum_{d=1}^3\bigg( a^{k}_d(u_d,v_d)
+    - \sc{q(u_{d+1},u_d)}{v_d}_{\Omega^d}
+    - \sum_{E\in\Ehcom^d(t_k)}\sc{q(u_d,u_{d-1})}{v_d}_E \bigg),
+\end{multline}
+\begin{equation}
+\label{eq:df_bk_abstr_sys}
+b^{k}((v_1,v_2,v_3)) = \sum_{d=1}^3 b^{k}_d(v_d), \mbox{\hspace{11.7cm}}
+\end{equation}
+\begin{align*}
+ a^{k}_d(u,v) = &\sc{\tn A\nabla u}{\nabla v}_{\Omega^d}
+ - \sc{\vc b u}{\nabla v}_{\Omega^d} + \sc{f^1 u}{v}_{\Omega^d}\\
+ &- \sum_{E\in\Ehint^d}\sum_{\substack{T_1,T_2\in\Ngh(E)\\T_1\neq T_2}}\bigg(\sc{\wavg{\tn A\nabla u}{T_1}{T_2}\cdot\n_E}{\jmp{v}_{T_1,T_2}}_E + \Theta\sc{\wavg{\tn A\nabla v}{T_1}{T_2}\cdot\n_E}{\jmp{u}_{T_1,T_2}}_E \\
+ &- \gamma_E\sc{\jmp{u}_{T_1,T_2}}{\jmp{v}_{T_1,T_2}}_E \bigg)
+ - \sum_{E\in\Ehint^d}\sum_{\substack{T^+\in\Ngh^+(E)\\T^-\in\Ngh^-(E)}}\sc{q_{T^+\to T^-}\avg{u}_{T^+,T^-}}{\jmp{v}_{T^+,T^-}}_E\\
+%  & + \sum_{E\in\Ehb^d}\sc{\vc b\cdot\n u}{v}_E
+ &+ \sum_{E\in\Ehdir^d(t_k)}\bigg(\gamma_E\sc{u}{v}_E + \sc{\vc b\cdot\n u}{v}_E - \sc{\tn A\nabla u\cdot\vc n}{v}_E - \Theta\sc{\tn A\nabla v\cdot\vc n}{u}_E\bigg)\\
+ &+ \sum_{E\in\Ehneu^d(t_k)}\sc{\sigma^R u}{v}_E,\\
+% \end{multline*}
+% 
+% \begin{equation*}
+ b^{k}_d(v) = &\sc{f^0+f^1 u^S}{v}_{\Omega^d} + \sum_{E\in\Ehdir^d(t_k)}\bigg(\gamma_E\sc{u^D}{v}_E - \Theta\sc{u^D}{\tn A\nabla v\cdot\vc n}_E\bigg)\\
+ & + \sum_{E\in\Ehneu^d(t_k)}\sc{\sigma^R u^D-f^N}{v}_E.
+\end{align*}
+The Dirichlet condition is here enforced by a penalty with an arbitrary parameter $\gamma_E>0$;
+ its value influences the level of solution's discontinuity.
+For $\gamma_E\to+\infty$ we obtain asymptotically (at least formally) the finite element method.
+The constant $\Theta$ can take the values $-1$, $0$ or $1$,
+ where $-1$ corresponds to the nonsymetric, $0$ to the incomplete and $1$ to the symetric variant of the discontinuous Galerkin method.
+
+
+
+
+\section{Finite Volume Method for Convective Transport}
+
+In the case of the purely convective solute transport ($\tn D=0$), problem \eqref{eq:abstr_system} is replaced by:
+\begin{subequations}
+ \label{eq:abstr_system_conv}
+ \begin{align}
+  \partial_t u_d + \div(\vc b u_d) &= f^0+f^1(u^S-u_d) + q(u_{d+1},u_d) &&\mbox{ in }(0,T)\times\Omega_d,\\
+  u_d(0,\cdot) &= u^0 &&\mbox{ in }\Omega_d,\\
+  \label{eq:bc_abstr_neu} (\vc b\cdot\vc n) u_d &= (\vc b\cdot\vc n) u^D &&\mbox{ on }\Gamma_d^I,
+ \end{align}
+\end{subequations}
+ where
+ \[ \Gamma_d^I:=\{(t,\vc x)\in(0,T)\times\partial\Omega_d\where \vc b(t,\vc x)\cdot\vc n(\vc x)<0\}. \]
+ The communication term $q(u_{d+1},u_d)$ has the same structure as in \eqref{eq:com_term_abstr_system}.
+
+The system is discretized by the cell-centered finite volume method combined with the explicit Euler time discretization.
+Using the notation of Section \ref{sc:dg}, we consider the space $V$ of piecewise constants on elements and define the discrete problem:
+\begin{equation*}
+ \frac1\tau\sc{u^{k}-u^{k-1}}{v}_{V} + a^{k-1}(u^{k-1},v) = b^{k-1}(v) \quad \forall v\in V,
+\end{equation*}
+where the forms $a^k$ and $b^k$ are defined in \eqref{eq:df_ak_abstr_sys}-\eqref{eq:df_bk_abstr_sys} and $a^k_d$, $b^k_d$ now have simplified form:
+\begin{align*}
+ a^{k}_d(u,v) = & -\sum_{T_i\in\Td}\left(\sc{(\vc b\cdot\vc n)^+u}{v}_{\partial T_i} + \sum_{T_j\in\Td}\sc{q_{T_j\to T_i}u}{v}_{\partial T_i\cap\partial T_j} \right),\\
+ b^{k}_d(v) = &\sc{f^0+f^1(u^S-u^{k-1}_d)^+}{v}_{\Omega^d} + \sum_{T_i\in\Td}\sc{(\vc b\cdot\vc n)^-u^D}{v}_{\partial T_i\cap\partial\Omega_d}.
+\end{align*}
+The above formulation corresponds to the upwind scheme, ideal mixing in case of multiple elements sharing one side, and explicit treatment of linear source term.
+
+% \input convection

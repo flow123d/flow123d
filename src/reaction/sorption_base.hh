@@ -14,6 +14,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "reaction/reaction_term.hh"
 
@@ -167,10 +168,6 @@ protected:
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
    */
   unsigned int n_interpolation_steps_;
-  /**
-   * Molar masses of dissolved species (substances)
-   */
-  std::vector<double> molar_masses_;
   /**
    * Density of the solvent. 
    *  TODO: Could be done region dependent, easily.

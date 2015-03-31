@@ -29,12 +29,13 @@
 
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
+
+#include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
-#include "io/output_data.hh"
 #include "fields/field_fe.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "la/linsys_PETSC.hh"
@@ -55,11 +56,19 @@ Selection TransportDG<Model>::dg_variant_selection_input_type
 
 template<class Model>
 Selection TransportDG<Model>::EqData::bc_type_selection =
-              Selection("TransportDG_EqData_bc_Type")
-               .add_value(inflow, "inflow", "Dirichlet BC on inflow and homogeneous Neumann BC on outflow.")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin");
+              Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
+              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+              .add_value(dirichlet, "dirichlet",
+                       "Dirichlet boundary condition."
+                       //"Specify the pressure head through the 'bc_pressure' field "
+                       //"or the piezometric head through the 'bc_piezo_head' field."
+                      )
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to $\\sigma (h - h^R)$. "
+                       //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+                       //"through 'bc_pressure' and 'bc_piezo_head' respectively."
+                       )
+              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.");
 
 template<class Model>
 Selection TransportDG<Model>::EqData::output_selection =
@@ -228,7 +237,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this += region_ids.name("region_ids")
+    *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
@@ -263,16 +272,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     Model::set_components(substances_, in_rec);
     n_subst_ = substances_.size();
 
-//    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-//    if (it)
-//    	mass_balance_ = new MassBalance(this, *it);
-
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_n_components(n_subst_);
+    data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-    data_.set_limit_side(LimitSide::left);
-    data_.region_ids = GenericField<3>::region_id(*mesh_);
+    data_.set_limit_side(LimitSide::right);
+    data_.region_id = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -322,10 +327,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.init(substances_.names());
+	data_.output_field.set_components(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
+    data_.output_field.set_up_components();
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
@@ -351,6 +357,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
+    mass_vec = new Vec[n_subst_];
 
 
     // initialization of balance object
@@ -391,12 +398,13 @@ TransportDG<Model>::~TransportDG()
     	delete ls[i];
     	MatDestroy(&stiffness_matrix[i]);
     	VecDestroy(&rhs[i]);
+    	VecDestroy(&mass_vec[i]);
     }
     delete[] ls;
     delete[] stiffness_matrix;
     delete[] rhs;
+    delete[] mass_vec;
     delete feo;
-//    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
 }
@@ -427,7 +435,7 @@ void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times(time_->equation_fixed_mark_type());
-	data_.set_time(*time_);
+	data_.set_time(time_->step());
 
 
     // set initial conditions
@@ -487,7 +495,7 @@ void TransportDG<Model>::update_solution()
     time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(*time_);
+    data_.set_time(time_->step());
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation
@@ -500,6 +508,17 @@ void TransportDG<Model>::update_solution()
 		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
+		
+		// construct mass_vec for initial time
+		if (mass_matrix == NULL)
+		{
+		  for (unsigned int i=0; i<n_subst_; i++)
+		  {
+		    VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
+                    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+                  }
+		}
+		
 		mass_matrix = *(ls_dt->get_matrix());
 	}
 
@@ -574,23 +593,20 @@ void TransportDG<Model>::update_solution()
     	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
 		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
 		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
-		Vec y,w;
-		VecDuplicate(rhs[i], &y);
+		Vec w;
 		VecDuplicate(rhs[i], &w);
-		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		VecWAXPY(w, 1./time_->dt(), mass_vec[i], rhs[i]);
 		ls[i]->set_rhs(w);
 
-		VecDestroy(&y);
 		VecDestroy(&w);
 		MatDestroy(&m);
 
 		ls[i]->solve();
+		
+		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
-//    if (mass_balance() != NULL)
-//    	mass_balance()->calculate(time_->t());
     if (balance_ != nullptr)
     {
     	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
@@ -631,12 +647,10 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( *time_);
+    data_.subset(FieldFlag::allow_output).set_time( time_->step());
     data_.output(output_stream);
 	output_stream->write_time_frame();
 
-//	if (mass_balance() != NULL)
-//		mass_balance()->output(time_->t());
 	if (balance_ != nullptr)
 		balance_->output(time_->t());
 

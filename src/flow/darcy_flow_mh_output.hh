@@ -35,8 +35,8 @@
 #include "mesh/mesh.h"
 #include <string>
 #include <vector>
-#include "io/output_data.hh"
 
+#include "io/output_time.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
@@ -79,7 +79,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Integer> subdomain;
-	    Field<3, FieldValue<3>::Integer> region_ids;
+	    Field<3, FieldValue<3>::Integer> region_id;
 
 	    Field<3, FieldValue<3>::Scalar> velocity_diff;
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;

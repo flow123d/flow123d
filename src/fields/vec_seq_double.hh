@@ -58,9 +58,8 @@ public:
 	template <int spacedim, class Value>
 	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
 	{
-		// TODO: use constructor FieldElementwise(shared_ptr, unsigned int) after the implementation of data cache
 		std::shared_ptr<FieldElementwise<spacedim, Value> > field_ptr(
-		          new FieldElementwise<spacedim, Value>( *(data_ptr_.get()), n_comp ));
+		          new FieldElementwise<spacedim, Value>( data_ptr_, n_comp ));
 		return field_ptr;
 	}
 

@@ -15,6 +15,8 @@
 #include <boost/functional/factory.hpp>
 #include <boost/any.hpp>
 
+#include "system/exceptions.hh"
+
 
 namespace Input {
 

@@ -21,10 +21,11 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -252,7 +253,7 @@ public:
      * Dive deeper in the storage tree following index @p idx. Assumes that actual node
      * is an StorageArray, has to be asserted.
      */
-    const Address * down(unsigned int idx) const;
+    std::shared_ptr<Address> down(unsigned int idx) const;
 
     /**
      * Getter. Returns actual storage node.
@@ -427,6 +428,7 @@ protected:
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;
+    friend class AbstractRecord;
 
     /// Contains address and relationships with record ancestor
     Address address_;
@@ -495,6 +497,18 @@ public:
      * Get address as string.
      */
     string address_string() const;
+
+    /**
+     * Transpose storage of target record.
+     *
+     * Replace part representing MultiField in source AbstractRecord with Array of individual items.
+     * *this is source AbstractRecord, target_rec.val(target_key) is Array of target records.
+     *
+     * @param target_rec parent record of MutliField
+     * @param target_key replaced key
+     * @param vec_size size of MultiField data and target Array
+     */
+    void transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size);
 
 
     /**

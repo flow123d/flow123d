@@ -131,6 +131,9 @@ public:
      */
     void reinit(Input::Record in_record);
 
+    /// Destructor.
+    ~Mesh();
+
     inline unsigned int n_nodes() const {
         return node_vector.size();
     }

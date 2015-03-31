@@ -15,6 +15,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "./reaction/reaction_term.hh"
 

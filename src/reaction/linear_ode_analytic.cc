@@ -1,6 +1,7 @@
 
 #include "reaction/linear_ode_analytic.hh"
 #include "input/accessors.hh"
+#include "system/sys_profiler.hh"
 
 using namespace Input::Type;
 
@@ -32,6 +33,8 @@ void LinearODEAnalytic::update_solution(arma::vec& init_vector, arma::vec& outpu
 
 void LinearODEAnalytic::compute_matrix()
 {
+    START_TIMER("ODEAnalytic::compute_matrix");
+
     ASSERT(system_matrix_.n_cols == system_matrix_.n_rows, "Matrix is not square.");
     solution_matrix_.copy_size(system_matrix_);
     

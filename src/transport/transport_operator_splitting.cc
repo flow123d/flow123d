@@ -15,6 +15,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
 
+#include "io/output_time.hh"
 #include "tools/time_governor.hh"
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
@@ -31,8 +32,6 @@
 #include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
-#include "io/output_data.hh"
-
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
@@ -84,19 +83,22 @@ TransportBase::TransportEqData::TransportEqData()
 {
 
 	ADD_FIELD(porosity, "Mobile porosity", "1");
-	porosity.units( UnitSI::dimensionless() );
+	porosity.units( UnitSI::dimensionless() ).flags_add(in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(cross_section, "");
-	cross_section.flags( FieldFlag::input_copy );
+	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
 
 	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
-	sources_density.units( UnitSI().kg().m(-3).s(-1) );
+	sources_density.units( UnitSI().kg().m(-3).s(-1) )
+			.flags_add(in_rhs);
 
 	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
-	sources_sigma.units( UnitSI().s(-1) );
+	sources_sigma.units( UnitSI().s(-1) )
+			.flags_add(in_main_matrix & in_rhs);
 
 	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
-	sources_conc.units( UnitSI().kg().m(-3) );
+	sources_conc.units( UnitSI().kg().m(-3) )
+			.flags_add(in_rhs);
 }
 
 
@@ -150,9 +152,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		else if (reactions_it->type() == SorptionMob::input_type ) {}
 		else if (reactions_it->type() == SorptionImmob::input_type ) {}
 		else if (reactions_it->type() == SorptionSimple::input_type ) {}
-		//temporary, until new mass balance considering reaction term is created
-		xprintf(Warn, "The mass balance is not computed correctly when reaction term is present. "
-					  "Only the mass flux over boundaries is correct.\n");
 
 		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
@@ -253,7 +252,7 @@ void TransportOperatorSplitting::update_solution() {
 
     START_TIMER("TOS-one step");
     int steps=0;
-    while ( convection->time().lt(time_->t()) )
+    while ( convection->time().step().lt(time_->t()) )
     {
         steps++;
 	    // one internal step
@@ -261,6 +260,8 @@ void TransportOperatorSplitting::update_solution() {
 
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
+	    	START_TIMER("TOS-balance");
+
 			// save mass after transport step
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{
@@ -269,18 +270,18 @@ void TransportOperatorSplitting::update_solution() {
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] -= region_mass[ri];
 	    	}
+
+	    	convection->calculate_cumulative_balance();
+
+	    	END_TIMER("TOS-balance");
 	    }
 
         if(reaction) reaction->update_solution();
 	    if(Semchem_reactions) Semchem_reactions->update_solution();
 
-//	    if (convection->mass_balance() != NULL)
-//	    	convection->mass_balance()->calculate(convection->time().t());
-
 	    if (balance_ != nullptr && balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
-	    	convection->calculate_cumulative_balance();
 
 	    	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	    	{
