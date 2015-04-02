@@ -586,7 +586,7 @@ public:
      * Returns reference to the inherited Record with given index (indexed in the same order
      * as they are derived).
      */
-    const Record  &get_descendant(unsigned int idx) const;
+    const Record  &get_descendant(boost::int64_t idx) const;
 
     /**
      * Returns default descendant if TYPE key has default value, otherwise returns empty Record.

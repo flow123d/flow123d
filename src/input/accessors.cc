@@ -234,7 +234,7 @@ AbstractRecord::operator Record() const
 
 Input::Type::Record AbstractRecord::type() const
 {
-    unsigned int type_id = address_.storage_head()->get_item(0)->get_int();
+	boost::int64_t type_id = address_.storage_head()->get_item(0)->get_int();
     return record_type_.get_descendant(type_id);
 }
 

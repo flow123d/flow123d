@@ -602,7 +602,7 @@ const Record  & AbstractRecord::get_descendant(const string& name) const
 
 
 
-const Record  & AbstractRecord::get_descendant(unsigned int idx) const
+const Record  & AbstractRecord::get_descendant(boost::int64_t idx) const
 {
     ASSERT( child_data_->selection_of_childs->is_finished(), "Can not get descendant of unfinished AbstractType\n");
     ASSERT( idx < child_data_->list_of_childs.size() , "Size mismatch.\n");

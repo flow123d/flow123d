@@ -844,6 +844,20 @@ template<> struct TD<unsigned int> { typedef int OT; };
 template<> struct TD<float> { typedef double OT; };
 template<> struct TD<double> { typedef double OT; };
 
+
+/**
+ * Get int value in storage and check if it is integer numeric limits.
+ */
+static int get_storage_int(const Address &a) {
+	boost::int64_t value = a.storage_head()->get_int();
+	if ( value >= std::numeric_limits<int>::min() &&
+		 value <= std::numeric_limits<int>::max() ) {
+		return value;
+	} else {
+		THROW( ExcInputMessage() << EI_Message("Error in input file at address " + a.make_full_address() + ".\nValue out of bounds.") );
+	}
+}
+
 /**
  *  Template specializations for secondary type dispatch.
  */
@@ -858,7 +872,7 @@ struct TypeDispatch {
 
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( get_storage_int(a) ); }
 };
 
 template<>
@@ -866,7 +880,7 @@ struct TypeDispatch<Enum> {
     typedef Enum TmpType;
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( get_storage_int(a) ); }
 };
 
 template<>
@@ -874,7 +888,7 @@ struct TypeDispatch<FullEnum> {
     typedef FullEnum TmpType;
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
+    static inline ReadType value(const Address &a, const InputType &t) { return ReadType( get_storage_int(a), t ); }
 };
 
 template<>
@@ -882,7 +896,7 @@ struct TypeDispatch<int> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
-    static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_int(); }
+    static inline ReadType value(const Address &a, const InputType&) { return get_storage_int(a); }
 };
 
 template<>
