@@ -309,9 +309,7 @@
           wipe-workspace: yes
           branches:
             - master
-            - 1.8.0_master
-            - 1.8.1_patch
-            - 1.8.2_rc
+            - 1.8.2
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H * * * *"
@@ -680,7 +678,7 @@
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
           branches: 
-            - JHy-coverage
+            - master
 
     triggers: 
       - github
