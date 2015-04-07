@@ -486,7 +486,7 @@
           find . -name *.gcda -type f -delete
           find . -name *.gcov -type f -delete
           # filter out only current package
-          python -u flow123d/python/merge-xml-coverage.py -f -k src.{unit-dir} -k src.{unit-dir}.* flow123d/build_tree/coverage-unit-test-{unit-dir}.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -f -k src.{unit-dir} -k src.{unit-dir}.* flow123d/build_tree/coverage-unit-test-{unit-dir}.cobertura
 
     publishers:
       - cobertura:
@@ -524,9 +524,9 @@
     builders:
       - shell: |
           # merge unit test xml files in specified directory
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-unit-test.cobertura
           # create filtered copy of src package only
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src -s .filtered coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src -s .filtered coverage-unit-test.cobertura
           # remove old xml files 
           cd flow123d/build_tree/
           rm -f *.xml
@@ -624,9 +624,9 @@
     builders:
       - shell: |
           # merge integration test xml files
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-test.cobertura
           # create filtered copy of src package only
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src --suffix .filtered coverage-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src --suffix .filtered coverage-test.cobertura
           # remove old xml files 
           cd flow123d/build_tree/
           rm -f *.xml
@@ -701,7 +701,7 @@
         - { project: "Flow123d-{platform}-coveragetest-test-$PLACEHOLDER_test_list$", block: true }
         - { project: "Flow123d-{platform}-coveragetest-coverage-test", block: true }
       - shell: |
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-all.cobertura coverage-test.cobertura coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-all.cobertura coverage-test.cobertura coverage-unit-test.cobertura
           cd flow123d/build_tree/
           rm -f *.xml
           cp coverage-all.cobertura coverage-all.xml
