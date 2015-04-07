@@ -213,6 +213,7 @@ void HC_ExplicitSequential::run_simulation()
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
 	water.reset();
+	transport_reaction.reset();
     delete mesh;
 }
 
