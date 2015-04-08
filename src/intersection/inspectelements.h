@@ -71,7 +71,6 @@ public:
 
 
 	void computeIntersections2d3d();
-	void computeIntersections2d3dInit();
 	void computeIntersections2d3dProlongation(const ProlongationLine &pl);
 	void computeIntersections2d3dUseProlongationTable(std::vector<unsigned int> &prolongation_table, const ElementFullIter &elm, const ElementFullIter &ele);
 

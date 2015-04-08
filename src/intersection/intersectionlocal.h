@@ -133,7 +133,9 @@ public:
     double getArea() const;
 
     inline void print(){
-    	xprintf(Msg, "Metoda nebyla zatím implementována!\n");
+    	for(unsigned int i = 0; i < i_points.size();i++){
+    		i_points[i].print();
+    	}
     }
 
     /*inline void printTracingTable(){

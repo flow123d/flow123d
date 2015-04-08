@@ -10,7 +10,7 @@ namespace computeintersection{
 /****************************************************************
  * METODY PRO SIMPLEX 1 A SIMPLEX 2
  ****************************************************************/
-const double ComputeIntersection<Simplex<1>, Simplex<2>>::epsilon = 0.000000001;//128*2048*numeric_limits<double>::epsilon();
+const double ComputeIntersection<Simplex<1>, Simplex<2>>::epsilon = 0.0000001;//128*2048*numeric_limits<double>::epsilon();
 
 ComputeIntersection<Simplex<1>, Simplex<2>>::ComputeIntersection(){
 	computed = false;

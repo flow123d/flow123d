@@ -16,7 +16,7 @@ TEST(intersections, all) {
 
 	cout << "===============" << endl;
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	FilePath mesh_file("mesh/site/TEST.msh", FilePath::input_file);
+	FilePath mesh_file("mesh/site/TEST2.msh", FilePath::input_file);
 
 	Profiler::initialize();
 
@@ -32,11 +32,11 @@ TEST(intersections, all) {
 
 	//ie.ComputeIntersections23();
 	//ie.compute_intersections<2,4>();
-	ie.compute_intersections<1,3>();
+	ie.compute_intersections<2,3>();
 	END_TIMER("Vypocet pruniku");}
 	//ie.print(0);
 	//ie.print(1);
-	ie.print_mesh_to_file_1D("pokus1D");
+	ie.print_mesh_to_file("pp");
 
 	double obsah = ie.polygonArea();
 	xprintf(Msg,"Obsah polygonu: %f\n", obsah);
