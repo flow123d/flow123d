@@ -1,3 +1,6 @@
+#ifndef SIMPLEX_H_
+#define SIMPLEX_H_
+
 #include <armadillo>
 
 using namespace std;
@@ -111,3 +114,4 @@ public:
 
 
 } // END namespace_close
+#endif /* SIMPLEX_H_ */

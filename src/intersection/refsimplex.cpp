@@ -23,7 +23,7 @@
  * $LastChangedDate$
  *
  * @file
- * @brief Class RefElement defines numbering of vertices, sides, calculation of normal vectors etc.
+ * @brief Class RefSimplex defines numbering of vertices, sides, calculation of normal vectors etc.
  * @author Jan Stebel
  */
 
@@ -224,5 +224,3 @@ template class RefSimplex<2>;
 template class RefSimplex<3>;
 
 } // END namespace
-
-

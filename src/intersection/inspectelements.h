@@ -14,6 +14,11 @@
 #include "fields/field_interpolated_p0.hh"
 
 #include "computeintersection.h"
+#include "prolongationpoint.h"
+#include "prolongationline.h"
+#include "intersectionpolygon.h"
+
+
 
 using namespace std;
 namespace computeintersection {
@@ -25,7 +30,8 @@ class InspectElements {
 	 * in the prolongation_line_queue, which should rather be std::deque
 	 * to support both queue and random access operations.
 	 */
-	std::vector<std::vector<IntersectionLocal>> intersection_list;
+	//
+	std::vector<std::vector<IntersectionPolygon>> intersection_list;
 	std::vector<std::vector<IntersectionLine>> intersection_line_list;
 	std::vector<bool> closed_elements;
 	std::vector<int> flag_for_3D_elements;
@@ -91,7 +97,7 @@ public:
 				Element efi = *mesh->element(intersection_list[i][j].idx_2D());
 				 TTriangle t2d(efi);
 				 double t2dArea = t2d.GetArea();
-				 double localArea = intersection_list[i][j].getArea();//il.getArea();
+				 double localArea = intersection_list[i][j].get_area();//il.getArea();
 				 subtotal += 2*localArea*t2dArea;
 			}
 		}

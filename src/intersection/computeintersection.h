@@ -8,8 +8,11 @@
 //#include <armadillo>
 #include "plucker.h"
 #include "simplex.h"
+#include "refsimplex.h"
 
-//#include "intersectionpoint.h"
+#include "intersectionpoint.h"
+#include "intersectionline.h"
+#include "intersectionpolygon.h"
 #include "intersectionlocal.h"
 #include "system/system.hh"
 
@@ -34,7 +37,7 @@ public:
 
 	void clear_all();
 	bool compute(std::vector<IntersectionPoint<1,2>> &IP12s, bool compute_zeros_plucker_products);
-	void initPluckerToCompute();
+	void init_plucker_to_compute();
 	void set_data(Simplex<1> *abs, Simplex<2> *triang);
 
 
@@ -53,13 +56,13 @@ public:
 		return plucker_coordinates_triangle[index];
 	}
 
-	void toStringPluckerCoordinates();
+	void to_string_plucker_coordinates();
 
-	void setPluckerProduct(double* number, unsigned int i);
-	double* getPluckerProduct(unsigned int i);
+	void set_plucker_product(double* number, unsigned int i);
+	double* get_plucker_product(unsigned int i);
 
-	bool isComputed();
-	void setComputed();
+	bool is_computed();
+	void set_computed();
 
 
 private:
@@ -107,11 +110,11 @@ public:
 		return plucker_coordinates_tetrahedron[index];
 	}
 
-	void toStringPluckerCoordinates();
-	void toStringPluckerCoordinatesTree();
+	void to_string_plucker_coordinates();
+	void to_string_plucker_coordinates_tree();
 
-	void setPluckerProduct(double* number, unsigned int index_CI, unsigned index_edge);
-	double* getPluckerProduct(unsigned int index_CI, unsigned index_edge);
+	void set_plucker_product(double* number, unsigned int index_CI, unsigned index_edge);
+	double* get_plucker_product(unsigned int index_CI, unsigned index_edge);
 
 	inline ~ComputeIntersection() {}
 
@@ -138,10 +141,10 @@ public:
 
 	void clear_all();
 	void init();
-	void compute(IntersectionLocal &lokalni_mnohouhlenik);
+	void compute(IntersectionPolygon &lokalni_mnohouhlenik);
 
-	void toStringPluckerCoordinates();
-	void toStringPluckerCoordinatesTree();
+	void to_string_plucker_coordinates();
+	void to_string_plucker_coordinates_tree();
 
 	inline ~ComputeIntersection() {};
 

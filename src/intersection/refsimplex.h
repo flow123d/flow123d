@@ -1,3 +1,6 @@
+#ifndef REFSIMPLEX_H_
+#define REFSIMPLEX_H_
+
 #include <armadillo>
 #include <array>
 namespace computeintersection{
@@ -165,3 +168,4 @@ public:
 
 };
 } // END namespace
+#endif /* REFSIMPLEX_H_ */

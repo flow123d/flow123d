@@ -1,3 +1,6 @@
+#ifndef INTERSECTIONPOINT_H_
+#define INTERSECTIONPOINT_H_
+
 #include <armadillo>
 #include <array>
 #include "system/system.hh"
@@ -28,8 +31,8 @@ template<int N, int M> class IntersectionPoint {
 
 	unsigned int orientation;
 
-	bool is_vertex;
-	bool is_patological;
+	bool is_vertex_;
+	bool is_patological_;
 
 	public:
 
@@ -48,8 +51,8 @@ template<int N, int M> class IntersectionPoint {
 					    side_idx1(side1),
 					    side_idx2(side2),
 					    orientation(ori),
-					    is_vertex(vertex),
-					    is_patological(patological){};
+					    is_vertex_(vertex),
+					    is_patological_(patological){};
 	inline ~IntersectionPoint(){};
 
 	inline void clear(){
@@ -58,8 +61,8 @@ template<int N, int M> class IntersectionPoint {
 		side_idx1 = -1;
 		side_idx2 = -1;
 		orientation = 1;
-		is_vertex = false;
-		is_patological = false;
+		is_vertex_ = false;
+		is_patological_ = false;
 	};
 
 	inline void print(){
@@ -67,7 +70,7 @@ template<int N, int M> class IntersectionPoint {
 		local_coords1.print();
 		cout << "Local coords on the second element on side(" << side_idx2 << ")" << endl;
 		local_coords2.print();
-		cout << "Orientation: " << orientation << " Vertex: " << is_vertex << " Patological: " << is_patological << endl;
+		cout << "Orientation: " << orientation << " Vertex: " << is_vertex_ << " Patological: " << is_patological_ << endl;
 	};
 
 	inline const arma::vec::fixed<N+1> &get_local_coords1() const{
@@ -77,50 +80,50 @@ template<int N, int M> class IntersectionPoint {
 		return local_coords2;
 	};
 
-	inline void setSide1(int s){
+	inline void set_side1(int s){
 		side_idx1 = s;
 	};
 
-	inline void setSide2(int s){
+	inline void set_side2(int s){
 		side_idx2 = s;
 	};
 
-	inline void setOrientation(unsigned int o){
+	inline void set_orientation(unsigned int o){
 		orientation = o;
 	};
 
-	inline void setIsVertex(bool iv){
-		is_vertex = iv;
+	inline void set_is_vertex(bool iv){
+		is_vertex_ = iv;
 	}
 
-	inline void setIsPatological(bool ip){
-		is_patological = ip;
+	inline void set_is_patological(bool ip){
+		is_patological_ = ip;
 	}
 
-	inline int getSide1() const{
+	inline int get_side1() const{
 		return side_idx1;
 	};
 
-	inline int getSide2() const{
+	inline int get_side2() const{
 		return side_idx2;
 	};
 
-	inline unsigned int getOrientation() const{
+	inline unsigned int get_orientation() const{
 		return orientation;
 	};
 
-	inline bool isVertex() const{
-		return is_vertex;
+	inline bool is_vertex() const{
+		return is_vertex_;
 	};
 
-	inline bool isPatological() const{
-		return is_patological;
+	inline bool is_patological() const{
+		return is_patological_;
 	};
 
 	bool operator<(const IntersectionPoint<N,M> &ip) const;
 };
 
-class TriangleLineIntersections{
+/*class TriangleLineIntersections{
 
 	int side_idx1;
 	int side_idx2;
@@ -129,6 +132,7 @@ class TriangleLineIntersections{
 
 	bool is_vertex;
 	bool is_patological;
-};
+};*/
 
 } // END namespace
+#endif /* INTERSECTIONPOINT_H_ */
