@@ -60,25 +60,11 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     strcpy( tmp_name, module_name.c_str() );
 
     PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
-    PythonLoader::check_error();
-
-    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
-    PythonLoader::check_error();
-
-    delete[] tmp_name;
-    return result;
-}
-
-
-
-void PythonLoader::check_error() {
     if (PyErr_Occurred()) {
     	PyObject *ptype, *pvalue, *ptraceback, *pystr;
 		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 
-		if ( PyString_Check(pvalue) ) { // error message contains simple string
-			THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pvalue) ));
-		} else { // set of string values
+		if ( !PyString_Check(pvalue) ) { // syntax error
 			stringstream ss;
 			PyObject* err_type = PySequence_GetItem(pvalue, 0);
 			pystr = PyObject_Str(err_type);
@@ -98,7 +84,27 @@ void PythonLoader::check_error() {
 			int pos = atoi( PyString_AsString(pystr) );
 			ss << setw(pos) << "^" << endl;
 			THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
-		}
+    	} else {
+    		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pvalue) ));
+    	}
+    }
+
+    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
+    PythonLoader::check_error();
+
+    delete[] tmp_name;
+    return result;
+}
+
+
+
+void PythonLoader::check_error() {
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+
+    	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		pystr = PyObject_Str(pvalue);
+		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pystr) ));
     }
 }
 
