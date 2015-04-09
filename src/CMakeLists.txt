@@ -27,6 +27,29 @@
 #    include(CMake/Modules/PrecompiledHeaders.cmake)
 #endif()
 
+
+# add deal.II library
+message(STATUS "===========================================")
+set(DEAL_II_WITH_MPI ON)
+set(BOOST_DIR "${BOOST_ROOT}")
+set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
+set(UMFPACK_FOUND "true")
+set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
+if (FLOW_BUILD_TYPE EQUAL release)
+  set(CMAKE_BUILD_TYPE "Release")
+else()
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+add_subdirectory("deal.II")
+INCLUDE_DIRECTORIES(
+  ${CMAKE_BINARY_DIR}/src/deal.II/include/
+  ${CMAKE_SOURCE_DIR}/src/deal.II/include/
+  ${DEAL_II_BUNDLED_INCLUDE_DIRS}/
+#  ${DEAL_II_INCLUDE_DIRS}
+  )
+message(STATUS "===========================================")
+
+
 add_subdirectory("input/json_spirit")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -252,6 +275,7 @@ target_link_libraries(flow123d_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
+    ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 
