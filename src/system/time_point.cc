@@ -11,7 +11,7 @@
 #include <time.h>
 
 #include "config.h"
-#include "timer_data.hh"
+#include "time_point.hh"
 
 using namespace std;
 

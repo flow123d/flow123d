@@ -42,7 +42,7 @@
 
 #include "system/file_path.hh"
 #include "mpi.h"
-#include "timer_data.hh"
+#include "time_point.hh"
 
 
 using boost::property_tree::ptree;

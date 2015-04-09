@@ -63,8 +63,8 @@
 #include "global_defs.h"
 #include "system/system.hh"
 #include <mpi.h>
-#include "timer_data.hh"
 #include <boost/property_tree/ptree.hpp>
+#include "time_point.hh"
 
 using boost::property_tree::ptree;
 
