@@ -99,8 +99,8 @@ double MPI_Functions::max(double* val, MPI_Comm comm) {
  */
 
 Timer::Timer(const CodePoint &cp, int parent)
-: start_time(TimerData::get_time()),
-  cumul_time(start_time - start_time),
+: start_time(TimePoint()),
+  cumul_time(0.0),
   call_count(0),
   start_count(0),
   code_point_(&cp),
@@ -116,15 +116,14 @@ Timer::Timer(const CodePoint &cp, int parent)
 
 
 double Timer::cumulative_time() const {
-    return cumul_time.to_time();
+    return cumul_time;
 }
 
 
 
 void Timer::start() {
     if (start_count == 0) {
-        TimerData::init();
-        start_time = TimerData::get_time();
+        start_time = TimePoint();
     }
     call_count++;
     start_count++;
@@ -133,7 +132,7 @@ void Timer::start() {
 
 
 void Timer::update() {
-    cumul_time = (cumul_time + TimerData::get_time()) - start_time;
+    cumul_time += (TimePoint() - start_time);
 }
 
 
@@ -349,6 +348,26 @@ void Profiler::notify_free(const size_t size) {
 }
 
 
+double Profiler::get_resolution () {
+    const int measurements = 100;
+    double result = 0;
+
+    // perform 100 measurements
+    for (unsigned int i = 1; i < measurements; i++) {
+        TimePoint t1 = TimePoint ();
+        TimePoint t2 = TimePoint ();
+
+        // double comparison should be avoided
+        while ((t2 - t1) == 0) t2 = TimePoint ();
+        // while ((t2.ticks - t1.ticks) == 0) t2 = TimePoint ();
+
+        result += t2 - t1;
+    }
+
+    return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
+}
+
+
 
 std::string common_prefix( std::string a, std::string b ) {
     if( a.size() > b.size() ) std::swap(a,b) ;
@@ -539,7 +558,7 @@ void Profiler::output_header (ptree &root, int mpi_size) {
     root.put ("program-branch",     flow_branch_);
     root.put ("program-revision",   flow_revision_);
     root.put ("program-build",      flow_build_);
-    root.put ("timer-resolution",   TimerData::get_resolution());
+    root.put ("timer-resolution",   Profiler::get_resolution());
 
     // print some information about the task at the beginning
     root.put ("task-description",   task_description_);

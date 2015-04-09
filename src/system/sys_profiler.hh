@@ -333,7 +333,7 @@ public:
     std::string code_point_str() const;
 
     /**
-     * Returns cumulative time of the timer in 'ms'.
+     * Returns cumulative time of the timer in seconds.
      */
     double cumulative_time() const;
 
@@ -347,11 +347,11 @@ protected:
     /**
      *   Start time when frame opens.
      */
-    TimerData start_time;
+    TimePoint start_time;
     /**
      * Cumulative time spent in the frame.
      */
-    TimerData cumul_time;
+    double cumul_time;
     /**
      * Total number of opening of the frame.
      */
@@ -361,14 +361,6 @@ protected:
      */
     unsigned int start_count;
 
-
-    #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-        /**
-         * The frequency of the performance counter is fixed at
-         * system boot and is consistent across all processors
-         */
-        LARGE_INTEGER frequency;
-    #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 
     /**
      * Code point of the first START_TIMER for the particular tag. The 'tag' identifies timer
@@ -530,6 +522,12 @@ public:
      * Increase total deallocated memory in current profiler frame.
      */
     void notify_free(const size_t size );
+
+    /**
+     * Return average profiler timer resolution in seconds
+     * based on 100 measurements
+     */
+    static double get_resolution ();
 
 
     /**
@@ -733,6 +731,8 @@ public:
     {}
     void output(MPI_Comm comm)
     {}
+    double get_resolution () const
+    { return 0.0; }
     const char *actual_tag() const
     { return NULL; }
     inline unsigned int actual_count() const

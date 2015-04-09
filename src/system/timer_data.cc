@@ -15,117 +15,47 @@
 
 using namespace std;
 
+
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-#include <windows.h>
+
+    #include <windows.h>
+
+    TimePoint::TimePoint () {
+        LARGE_INTEGER time;
+        QueryPerformanceCounter (&time);
+        this->ticks = time.QuadPart;
+    }
+
+
+    // initialize static frequency when using QueryPerformanceCounter
+    LARGE_INTEGER TimePoint::get_frequency () {
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+        return frequency;
+    }
+    LARGE_INTEGER TimePoint::frequency = TimePoint::get_frequency ();
+
+
+    double TimePoint::operator- (const TimePoint &right) {
+        double difference = this->ticks - right.ticks;
+        return difference / (TimePoint::frequency.QuadPart);
+    }
+
+
 #else
-#include <chrono>
+
+    #include <chrono>
+
+
+    TimePoint::TimePoint () {
+        chrono::time_point<chrono::high_resolution_clock> time = chrono::high_resolution_clock::now ();
+        this->ticks = chrono::duration_cast<std::chrono::nanoseconds> (time.time_since_epoch ()).count ();
+    }
+
+
+    double TimePoint::operator- (const TimePoint &right) {
+        double difference = this->ticks - right.ticks;
+        return difference / (1 * 1000 * 1000 * 1000);
+    }
+
 #endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-
-bool TimerData::inited = false;
-
-/*
- * Constructor
- */
-
-TimerData::TimerData () :
-        ticks_ (TimerData::get_current_ticks ()) {
-}
-
-/*
- * Public methods
- */
-
-double TimerData::to_time (void) const {
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-    return ((double)this->get_ticks()) / (TimerData::frequency.QuadPart);
-#else
-    // nanoseconds / 1 000 000
-    return ((double) this->get_ticks ()) / (1 * 1000 * 1000);
-#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-}
-
-string TimerData::to_string (void) {
-    char buffer[50];
-    sprintf (buffer, "%1.9f", this->to_time ());
-    return buffer;
-}
-
-TimerData TimerData::operator+ (const TimerData &right) {
-    TimerData result;
-    result.set_ticks (this->ticks_ + right.ticks_);
-    return result;
-}
-
-TimerData TimerData::operator- (const TimerData &right) {
-    TimerData result;
-    result.set_ticks (this->ticks_ - right.ticks_);
-    return result;
-}
-
-/*
- * Static methods
- */
-
-TimerData TimerData::get_time () {
-    TimerData result;
-    // ticks are already set in constructor
-    return result;
-}
-void TimerData::init () {
-    if (TimerData::inited) return;
-    // init routine
-    TimerData::inited = true;
-}
-double TimerData::get_resolution () {
-	const int measurements = 100;
-	double result = 0;
-
-	// perform 100 measurements
-	for (unsigned int i = 1; i < measurements; i++) {
-		TimerData t1 = TimerData::get_time ();
-		TimerData t2 = TimerData::get_time ();
-		while ((t2 - t1).get_ticks() == 0) t2 = TimerData::get_time ();
-
-		result += (t2 - t1).to_time();
-	}
-
-	return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
-}
-
-/*
- * Private methods
- */
-
-long long TimerData::get_ticks () const {
-    return this->ticks_;
-}
-
-void TimerData::set_ticks (long long ticks) {
-    this->ticks_ = ticks;
-}
-
-long long TimerData::get_current_ticks () {
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-    LARGE_INTEGER time;
-    QueryPerformanceCounter (&time);
-    return time.QuadPart;
-#else
-    chrono::time_point<chrono::high_resolution_clock> time = chrono::high_resolution_clock::now ();
-    return chrono::duration_cast<std::chrono::nanoseconds> (time.time_since_epoch ()).count ();
-#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
-}
-
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-LARGE_INTEGER TimerData::get_frequency () {
-    LARGE_INTEGER frequency;
-    QueryPerformanceFrequency(&frequency);
-    return frequency;
-}
-// initialize frequency field
-LARGE_INTEGER TimerData::frequency = TimerData::get_frequency ();
-#endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-
-std::ostream& operator<< (std::ostream &strm, TimerData &right) {
-    return strm << right.to_string ();
-}
-

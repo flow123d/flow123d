@@ -5,8 +5,8 @@
  *      Author: jan-hybs
  */
 
-#ifndef TIMERDATA_HH_
-#define TIMERDATA_HH_
+#ifndef TIMEPOINT_HH_
+#define TIMEPOINT_HH_
 
 #include "config.h"
 #include <string>
@@ -58,75 +58,28 @@ using namespace std;
  * for time measurements.
  * Maximum resolution is 1000 ns (limited by value of CLOCKS_PER_SEC).
  */
-class TimerData {
+class TimePoint {
     public:
 
         /**
-         * Method returns time in seconds in double precision
-         */
-        double to_time (void) const;
-
-        /**
-         * Debug-only method returning double value from 'toTime' method as string
-         */
-        string to_string (void);
-
-        /**
-         * Static method which generates TimerData object and sets its ticks value to current time
-         */
-        static TimerData get_time (void);
-
-        /**
-         * Static method for initializing timers (necessary for Windows timer only)
-         */
-        static void init (void);
-
-        /**
-         * Static method which measures current's timer resolution.
-         * Returned value is average shortest time step in microseconds with double precision
-         */
-        static double get_resolution ();
-
-        /**
-         * Overloaded operator for addition. Allows adding TimerData objects using '+' sign
-         */
-        TimerData operator+ (const TimerData &right);
-
-        /**
-         * Overloaded operator for subtraction. Allows subtracting TimerData objects using '-' sign
-         */
-        TimerData operator- (const TimerData &right);
-
-    private:
-        /**
          * Constructor will populate object with current time
          */
-        TimerData ();
+        TimePoint ();
 
         /**
-         * Method which returns current time ticks. Depending on used timer value may represent
-         * nanoseconds or internal ticks / CPU frequency
+         * Overloaded operator for subtraction. Allows subtracting TimerPoint objects using '-' sign
+         * Used for determining interval between two TimerPoints
+         *
+         * Returns duration in seconds
          */
-        long long get_ticks (void) const;
+        double operator- (const TimePoint &right);
 
-        /**
-         * Setter for ticks variable
-         */
-        void set_ticks (long long ticks);
-
-        /**
-         * Static method which gets current ticks and converts them to long long int
-         */
-        static long long get_current_ticks ();
-
-        /**
-         * Static variable representing initialization
-         */
-        static bool inited;
         /**
          * Internal variable for storing actual ticks
          */
-        long long ticks_;
+        long long ticks;
+
+    private:
 
 #ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
         /**
@@ -138,8 +91,8 @@ class TimerData {
          * Init function which sets current CPU frequency
          * and returns it
          */
-        static LARGE_INTEGER get_frequency;
+        static LARGE_INTEGER get_frequency ();
 #endif //FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
 
 };
-#endif /* TIMERDATA_HH_ */
+#endif /* TIMEPOINT_HH_ */
