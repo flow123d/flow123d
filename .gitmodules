@@ -1,0 +1,3 @@
+[submodule "src/deal.II"]
+	path = src/deal.II
+	url = git@github.com:jstebel/dealii.git
