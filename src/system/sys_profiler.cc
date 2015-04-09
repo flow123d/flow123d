@@ -458,10 +458,12 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
         node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
 
-        node.put ("cumul-time", cumul_time);
-        node.put ("cumul-time-min", MPI_Functions::min(&cumul_time, comm));
-        node.put ("cumul-time-max", MPI_Functions::max(&cumul_time, comm));
-        node.put ("cumul-time-sum", cumul_time_sum = MPI_Functions::sum(&cumul_time, comm));
+        cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
+
+        node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
+        node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
+        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
         return cumul_time_sum;
     };
 
@@ -507,10 +509,10 @@ void Profiler::output(ostream &os) {
         node.put ("call-count-max", call_count);
         node.put ("call-count-sum", call_count);
 
-        node.put ("cumul-time",     cumul_time);
-        node.put ("cumul-time-min", cumul_time);
-        node.put ("cumul-time-max", cumul_time);
-        node.put ("cumul-time-sum", cumul_time);
+        node.put ("cumul-time",     boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-min", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-max", boost::format("%1.9f") % cumul_time);
+        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time);
         return cumul_time;
     };
 
@@ -558,7 +560,7 @@ void Profiler::output_header (ptree &root, int mpi_size) {
     root.put ("program-branch",     flow_branch_);
     root.put ("program-revision",   flow_revision_);
     root.put ("program-build",      flow_build_);
-    root.put ("timer-resolution",   Profiler::get_resolution());
+    root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
 
     // print some information about the task at the beginning
     root.put ("task-description",   task_description_);
