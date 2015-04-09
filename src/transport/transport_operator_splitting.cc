@@ -151,12 +151,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		// TODO: allowed instances in this case are only
 		// FirstOrderReaction, RadioactiveDecay, SorptionSimple and DualPorosity
 		reaction = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(init_mesh, *reactions_it);
-		if (reactions_it->type() == FirstOrderReaction::input_type ) {}
-		else if (reactions_it->type() == RadioactiveDecay::input_type) {}
-		else if (reactions_it->type() == DualPorosity::input_type ) {}
-		else if (reactions_it->type() == SorptionMob::input_type ) {}
-		else if (reactions_it->type() == SorptionImmob::input_type ) {}
-		else if (reactions_it->type() == SorptionSimple::input_type ) {}
 
 		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
@@ -318,6 +312,19 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 
 
 
+
+std::string firstOrderReaction = FirstOrderReaction::input_type.type_name();
+std::string radioactiveDecay = RadioactiveDecay::input_type.type_name();
+std::string dualPorosity = DualPorosity::input_type.type_name();
+std::string sorptionMobile = SorptionMob::input_type.type_name();
+std::string sorptionImmobile = SorptionImmob::input_type.type_name();
+std::string sorption = SorptionSimple::input_type.type_name();
+FLOW123D_FORCE_LINK_THIS(firstOrderReaction);
+FLOW123D_FORCE_LINK_THIS(radioactiveDecay);
+FLOW123D_FORCE_LINK_THIS(dualPorosity);
+FLOW123D_FORCE_LINK_THIS(sorptionMobile);
+FLOW123D_FORCE_LINK_THIS(sorptionImmobile);
+FLOW123D_FORCE_LINK_THIS(sorption);
 
 
 

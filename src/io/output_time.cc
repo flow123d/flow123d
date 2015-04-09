@@ -63,6 +63,12 @@ AbstractRecord OutputTime::input_format_type
             "Format of output stream and possible parameters.");
 
 
+std::string vtk = OutputVTK::input_type.type_name();
+std::string gmsh = OutputMSH::input_type.type_name();
+FLOW123D_FORCE_LINK_THIS(vtk);
+FLOW123D_FORCE_LINK_THIS(gmsh);
+
+
 OutputTime::OutputTime()
 : _mesh(nullptr)
 {
@@ -146,11 +152,6 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record
 
     if(format) {
     	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
-        if((*format).type() == OutputVTK::input_type) {
-            //output_time = new OutputVTK(in_rec);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            //output_time = new OutputMSH(in_rec);
-        }
         output_time->format_record_ = *format;
     } else {
         output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);

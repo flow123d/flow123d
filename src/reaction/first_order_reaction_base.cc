@@ -14,6 +14,11 @@
 
 using namespace Input::Type;
 
+std::string padeApproximant = PadeApproximant::input_type.type_name();
+std::string linearODEAnalytic = LinearODEAnalytic::input_type.type_name();
+FLOW123D_FORCE_LINK_THIS(padeApproximant);
+FLOW123D_FORCE_LINK_THIS(linearODEAnalytic);
+
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
@@ -21,14 +26,6 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
     if ( num_it )
     {
     	linear_ode_solver_ = (*num_it).factory< LinearODESolverBase, Input::Record >(*num_it);
-        if (num_it->type() == PadeApproximant::input_type)
-        {
-            //linear_ode_solver_ = new PadeApproximant(*num_it);
-        }
-        else if (num_it->type() == LinearODEAnalytic::input_type) 
-        {
-            //linear_ode_solver_ = new LinearODEAnalytic();
-        }
     }
     else    //default linear ode solver
     {

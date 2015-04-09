@@ -101,9 +101,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
     	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record & >(*mesh, *it);
-        if (it->type() == TransportOperatorSplitting::input_type) {}
-        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type) {}
-        else if (it->type() == TransportDG<HeatTransferModel>::input_type) {}
 
         // setup fields
         transport_reaction->data()["cross_section"]
@@ -217,6 +214,21 @@ HC_ExplicitSequential::~HC_ExplicitSequential() {
     delete mesh;
 }
 
+
+
+std::string transportOperatorSplitting = TransportOperatorSplitting::input_type.type_name();
+std::string soluteTransport = TransportDG<ConcentrationTransportModel>::input_type.type_name();
+std::string heatTransfer = TransportDG<HeatTransferModel>::input_type.type_name();
+FLOW123D_FORCE_LINK_THIS(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_THIS(soluteTransport);
+FLOW123D_FORCE_LINK_THIS(heatTransfer);
+
+std::string steady_MH = DarcyFlowMH_Steady::input_type.type_name();
+std::string unsteady_MH = DarcyFlowMH_Unsteady::input_type.type_name();
+std::string unsteady_LMH = DarcyFlowLMH_Unsteady::input_type.type_name();
+FLOW123D_FORCE_LINK_THIS(steady_MH);
+FLOW123D_FORCE_LINK_THIS(unsteady_MH);
+FLOW123D_FORCE_LINK_THIS(unsteady_LMH);
 
 
 //-----------------------------------------------------------------------------
