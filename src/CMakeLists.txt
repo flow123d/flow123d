@@ -43,7 +43,7 @@ set(sources_lib_system
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
-    system/timer_data.cc
+    system/time_point.cc
     system/system.cc
     system/xio.cc
     system/exceptions.cc
