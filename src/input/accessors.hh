@@ -686,16 +686,16 @@ namespace internal {
     };
   @endcode
   */
-    template<class T>
+    /*template<class T>
     struct TD {
         typedef T OT;
-    };
+    };*/
     /**
      * Secondary type dispatch. For every intermediate C++ type that can be read from input we have to define
      * read function from a given storage and Input type i.e. descendant of Input::Type::TypeBase.
      */
 
-    template<class T>
+    template<class T, class Enable = void>
     struct TypeDispatch;
 } // close namespace internal
 
@@ -760,7 +760,8 @@ template <class T>
 class Iterator : public IteratorBase {
 public:
     /// Converts C++ type @p T (template parameter) to 'DispatchType' from smaller set of types.
-    typedef typename internal::TD<T>::OT DispatchType;
+    typedef T DispatchType;
+    //typedef typename internal::TD<T>::OT DispatchType;
     /**
      * For small set of C++ types and accessor classes Record, AbstractRecord, and Array,
      * returns type of value given by dereference of the iterator (just add const to C++ types).
@@ -835,14 +836,14 @@ namespace internal {
 /**
  *  Template specializations for primary type dispatch.
  */
-template<> struct TD<char> { typedef int OT; };
+/*template<> struct TD<char> { typedef int OT; };
 template<> struct TD<unsigned char> { typedef int OT; };
 template<> struct TD<short int> { typedef int OT; };
 template<> struct TD<unsigned short int> { typedef int OT; };
 template<> struct TD<int> { typedef int OT; };
 template<> struct TD<unsigned int> { typedef int OT; };
 template<> struct TD<float> { typedef double OT; };
-template<> struct TD<double> { typedef double OT; };
+template<> struct TD<double> { typedef double OT; };*/
 
 
 /**
@@ -863,7 +864,7 @@ static int get_storage_int(const Address &a) {
  */
 
 // Generic implementation accepts only enum types
-template< class T>
+template< class T, class Enable >
 struct TypeDispatch {
 
     BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
@@ -891,8 +892,8 @@ struct TypeDispatch<FullEnum> {
     static inline ReadType value(const Address &a, const InputType &t) { return ReadType( get_storage_int(a), t ); }
 };
 
-template<>
-struct TypeDispatch<int> {
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_integral<T> >::type> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
@@ -907,8 +908,8 @@ struct TypeDispatch<bool> {
     static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_bool(); }
 };
 
-template<>
-struct TypeDispatch<double> {
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_float<T> >::type> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
     typedef int TmpType;
