@@ -245,4 +245,6 @@ ConcentrationTransportModel::~ConcentrationTransportModel()
 {}
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
+
 

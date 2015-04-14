@@ -215,8 +215,8 @@ static const int debug_asserts_view = 0;
  * Usage in Input::Factory class.
  * Necessary for linking static input_type records.
  */
-#define FLOW123D_FORCE_LINK_THIS(x) int force_link_##x = 0;
-#define FLOW123D_FORCE_LINK_THAT(x) { extern int force_link_##x; force_link_##x = 1; }
+#define FLOW123D_FORCE_LINK_IN_CHILD(x) int force_link_##x = 0;
+#define FLOW123D_FORCE_LINK_IN_PARENT(x) { extern int force_link_##x; force_link_##x = 1; }
 
 
 ///@}

@@ -14,15 +14,14 @@
 
 using namespace Input::Type;
 
-std::string padeApproximant = PadeApproximant::input_type.type_name();
-std::string linearODEAnalytic = LinearODEAnalytic::input_type.type_name();
-FLOW123D_FORCE_LINK_THIS(padeApproximant);
-FLOW123D_FORCE_LINK_THIS(linearODEAnalytic);
 
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-    Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
+	FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
+	FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
+
+	Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {
     	linear_ode_solver_ = (*num_it).factory< LinearODESolverBase, Input::Record >(*num_it);

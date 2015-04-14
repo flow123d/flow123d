@@ -269,3 +269,5 @@ OutputMSH::~OutputMSH()
     this->write_tail();
 }
 
+FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
+

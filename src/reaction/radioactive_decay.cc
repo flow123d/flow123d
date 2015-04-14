@@ -134,3 +134,5 @@ void RadioactiveDecay::assemble_ode_matrix(void )
         }
     }
 }
+
+FLOW123D_FORCE_LINK_IN_CHILD(radioactiveDecay)

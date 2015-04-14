@@ -121,3 +121,5 @@ void PadeApproximant::evaluate_matrix_polynomial(arma::mat& polynomial_matrix,
     }
     //polynomial_matrix.print();
 }
+
+FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)

@@ -54,3 +54,5 @@ void LinearODEAnalytic::compute_matrix()
         solution_matrix_(i,i) = exponential;
     }
 }
+
+FLOW123D_FORCE_LINK_IN_CHILD(linearODEAnalytic)

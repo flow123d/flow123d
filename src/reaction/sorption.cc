@@ -254,3 +254,8 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 
     END_TIMER("SorptionImmob::isotherm_reinit");
 }
+
+
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorption)

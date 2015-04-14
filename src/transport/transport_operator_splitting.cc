@@ -130,6 +130,13 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   convection(NULL),
   Semchem_reactions(NULL)
 {
+	FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
+	FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
+	FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
+	FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
+	FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
+	FLOW123D_FORCE_LINK_IN_PARENT(sorption);
+
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
@@ -311,20 +318,7 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
 };
 
 
-
-
-std::string firstOrderReaction = FirstOrderReaction::input_type.type_name();
-std::string radioactiveDecay = RadioactiveDecay::input_type.type_name();
-std::string dualPorosity = DualPorosity::input_type.type_name();
-std::string sorptionMobile = SorptionMob::input_type.type_name();
-std::string sorptionImmobile = SorptionImmob::input_type.type_name();
-std::string sorption = SorptionSimple::input_type.type_name();
-FLOW123D_FORCE_LINK_THIS(firstOrderReaction);
-FLOW123D_FORCE_LINK_THIS(radioactiveDecay);
-FLOW123D_FORCE_LINK_THIS(dualPorosity);
-FLOW123D_FORCE_LINK_THIS(sorptionMobile);
-FLOW123D_FORCE_LINK_THIS(sorptionImmobile);
-FLOW123D_FORCE_LINK_THIS(sorption);
+FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
 
 
 

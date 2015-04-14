@@ -73,7 +73,15 @@ it::Record HC_ExplicitSequential::input_type
  */
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
-    START_TIMER("HC constructor");
+	FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
+	FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
+	FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
+
+	FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
+	FLOW123D_FORCE_LINK_IN_PARENT(unsteady_MH);
+	FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
+
+	START_TIMER("HC constructor");
     using namespace Input;
 
     // Read mesh
@@ -215,20 +223,6 @@ HC_ExplicitSequential::~HC_ExplicitSequential() {
 }
 
 
-
-std::string transportOperatorSplitting = TransportOperatorSplitting::input_type.type_name();
-std::string soluteTransport = TransportDG<ConcentrationTransportModel>::input_type.type_name();
-std::string heatTransfer = TransportDG<HeatTransferModel>::input_type.type_name();
-FLOW123D_FORCE_LINK_THIS(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_THIS(soluteTransport);
-FLOW123D_FORCE_LINK_THIS(heatTransfer);
-
-std::string steady_MH = DarcyFlowMH_Steady::input_type.type_name();
-std::string unsteady_MH = DarcyFlowMH_Unsteady::input_type.type_name();
-std::string unsteady_LMH = DarcyFlowLMH_Unsteady::input_type.type_name();
-FLOW123D_FORCE_LINK_THIS(steady_MH);
-FLOW123D_FORCE_LINK_THIS(unsteady_MH);
-FLOW123D_FORCE_LINK_THIS(unsteady_LMH);
 
 
 //-----------------------------------------------------------------------------

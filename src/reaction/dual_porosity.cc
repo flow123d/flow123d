@@ -374,3 +374,5 @@ void DualPorosity::output_data(void )
     if (reaction_immobile) reaction_immobile->output_data();
 }
 
+FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
+

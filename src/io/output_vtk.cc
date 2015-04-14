@@ -585,6 +585,8 @@ int OutputVTK::write_tail(void)
 }
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(vtk)
+
 
 
 

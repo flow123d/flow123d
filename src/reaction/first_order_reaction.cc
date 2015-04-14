@@ -146,3 +146,5 @@ void FirstOrderReaction::initialize_from_input()
             b = b / sum;
 	}
 }
+
+FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
