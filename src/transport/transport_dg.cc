@@ -1796,5 +1796,9 @@ template class TransportDG<ConcentrationTransportModel>;
 template class TransportDG<HeatTransferModel>;
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
+
+
 
 

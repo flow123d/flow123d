@@ -368,5 +368,3 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 HeatTransferModel::~HeatTransferModel()
 {}
 
-FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
-
