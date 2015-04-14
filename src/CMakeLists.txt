@@ -30,9 +30,11 @@
 
 # add deal.II library
 message(STATUS "===========================================")
+set(DEAL_II_WITH_MUPARSER OFF)
 set(DEAL_II_WITH_MPI ON)
 set(BOOST_DIR "${BOOST_ROOT}")
 set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
+set(TBB_FOUND "true")
 set(UMFPACK_FOUND "true")
 set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
 if (FLOW_BUILD_TYPE STREQUAL "release")
@@ -41,11 +43,10 @@ else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 add_subdirectory("deal.II")
+add_dependencies(${DEAL_II_LIBRARY_NAME} tbb)
 INCLUDE_DIRECTORIES(
-  ${CMAKE_BINARY_DIR}/src/deal.II/include/
-  ${CMAKE_SOURCE_DIR}/src/deal.II/include/
-  ${DEAL_II_BUNDLED_INCLUDE_DIRS}/
-#  ${DEAL_II_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}/deal.II/include/
+  ${CMAKE_CURRENT_SOURCE_DIR}/deal.II/include/
   )
 message(STATUS "===========================================")
 
@@ -275,6 +276,7 @@ target_link_libraries(flow123d_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
+    ${TBB_LIBRARIES}
     ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
@@ -284,6 +286,6 @@ target_link_libraries(flow123d_lib
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-
+add_dependencies(flow123d_lib tbb)
 
 
