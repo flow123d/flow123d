@@ -101,30 +101,31 @@ TEST(TimeGovernor, comparisons)
     string tg_in="{time = { start_time = 0.0, end_time = 1E10 } }";
     TimeGovernor tg( read_input(tg_in));
 
+    TimeStep ts=tg.step();
     EXPECT_EQ(1.0, tg.dt());
     EXPECT_EQ(0.0, tg.t());
 
     // First we test around zero
     // test all comparators, later test just one, since other are correctly related
-    EXPECT_TRUE( tg.le(0.0) );
-    EXPECT_TRUE( tg.le(0.5) );
-    EXPECT_TRUE( tg.le(-1E-15) );
-    EXPECT_FALSE( tg.le(-0.1) );
+    EXPECT_TRUE( ts.le(0.0) );
+    EXPECT_TRUE( ts.le(0.5) );
+    EXPECT_TRUE( ts.le(-1E-15) );
+    EXPECT_FALSE( ts.le(-0.1) );
 
-    EXPECT_TRUE( tg.ge(0.0) );
-    EXPECT_TRUE( tg.ge(-0.1) );
-    EXPECT_TRUE( tg.ge(1E-15) );
-    EXPECT_FALSE( tg.ge(0.1) );
+    EXPECT_TRUE( ts.ge(0.0) );
+    EXPECT_TRUE( ts.ge(-0.1) );
+    EXPECT_TRUE( ts.ge(1E-15) );
+    EXPECT_FALSE( ts.ge(0.1) );
 
-    EXPECT_FALSE( tg.lt(0.0) );
-    EXPECT_TRUE( tg.lt(0.5) );
-    EXPECT_FALSE( tg.lt(1E-15) );
-    EXPECT_FALSE( tg.lt(-0.1) );
+    EXPECT_FALSE( ts.lt(0.0) );
+    EXPECT_TRUE( ts.lt(0.5) );
+    EXPECT_FALSE( ts.lt(1E-15) );
+    EXPECT_FALSE( ts.lt(-0.1) );
 
-    EXPECT_FALSE( tg.gt(0.0) );
-    EXPECT_TRUE( tg.gt(-0.1) );
-    EXPECT_FALSE( tg.gt(-1E-15) );
-    EXPECT_FALSE( tg.gt(0.1) );
+    EXPECT_FALSE( ts.gt(0.0) );
+    EXPECT_TRUE( ts.gt(-0.1) );
+    EXPECT_FALSE( ts.gt(-1E-15) );
+    EXPECT_FALSE( ts.gt(0.1) );
 
     double expect_dt=1.0;
     for(double exp_time=1.0;
@@ -139,10 +140,10 @@ TEST(TimeGovernor, comparisons)
         expect_dt=exp_time;
         EXPECT_EQ(exp_time, tg.t());
 
-        EXPECT_TRUE( tg.ge(exp_time) );
-        EXPECT_TRUE( tg.ge(exp_time-1.0) );
-        EXPECT_TRUE( tg.ge(exp_time*(1+1E-15)) );
-        EXPECT_FALSE( tg.ge(exp_time+1.0) );
+        EXPECT_TRUE( tg.step().ge(exp_time) );
+        EXPECT_TRUE( tg.step().ge(exp_time-1.0) );
+        EXPECT_TRUE( tg.step().ge(exp_time*(1+1E-15)) );
+        EXPECT_FALSE( tg.step().ge(exp_time+1.0) );
     }
 
 }

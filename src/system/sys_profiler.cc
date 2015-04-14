@@ -30,7 +30,7 @@
 
 #include <fstream>
 #include <iomanip>
-
+#include <vector>
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
@@ -41,6 +41,9 @@
 
 
 #include "mpi.h"
+
+using namespace std;
+
 /*
  * These should be replaced by using boost MPI interface
  */
@@ -354,7 +357,7 @@ void Profiler::notify_free(const size_t size) {
 
 
 
-void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_info, int timer_idx, int indent, double parent_time) {
+void Profiler::add_timer_info(MPI_Comm comm, std::vector<std::vector<std::string> > &timers_info, int timer_idx, int indent, double parent_time) {
 
     Timer &timer = timers_[timer_idx];
 
@@ -376,7 +379,7 @@ void Profiler::add_timer_info(MPI_Comm comm, vector<vector<string> > &timers_inf
 
     if (timer_idx == 0) parent_time = cumul_time_sum;
 
-    vector<string> info;
+    std::vector<std::string> info;
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
     string tree_info = string(2*indent, ' ') +
                        boost::str( boost::format("[%.1f] ") % percent )+
@@ -419,7 +422,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank); 
     ASSERT(ierr == 0, "Error in MPI test of rank.");
 
-    vector < vector<string> > timers_info(1);
+    std::vector < std::vector<std::string> > timers_info(1);
 
     // add header into timers_info table !!
     timers_info[0].push_back( "tag tree");

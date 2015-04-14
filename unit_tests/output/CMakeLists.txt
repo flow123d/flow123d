@@ -21,3 +21,4 @@ set(libs coupling_lib mesh_lib system_lib flow123d_lib)
 add_test_directory("${libs}")
 
 define_mpi_test( output 1 )
+define_mpi_test( output_vtk 1)

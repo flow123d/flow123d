@@ -155,15 +155,14 @@ and brief user manual.
 
 \vspace{3ex}    
 \noindent
-Jan B\v rezina, Jan Stebel, Ji\v r\' i Hn\' idek, David Flanderka, Pavel Exner, Luk\' a\v s Zedek
+Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Ji\v r\' i Hn\' idek,
 
 \vspace{3cm}
 \noindent
 {\bf Acknowledgement}
 
 \vspace{3ex}
-\noindent This work was supported by the Technology Agency of the Czech Republic under
-the project no. TA01021331.
+\noindent This work was supported by the Ministry of Industry and Trade of the Czech Republic under the project no. FR-TI3/579.
 
 \pagebreak
 \noindent
@@ -266,8 +265,6 @@ the program requires one argument after switch \verb'-s' which is the name of th
         Turn off profiler output.
  \item[{\tt --full\_doc}] \hfill\\
         Prints full structure of the main input file.
- \item[{\tt --JSON\_template}] \hfill\\
-        Prints a description of the main input file as a valid CON file template.
  \item[{\tt --latex\_doc}] \hfill\\ 
         Prints a description of the main input file in LaTeX format using particular macros.
 \end{description}
@@ -343,10 +340,11 @@ derive approximation of thin fractures by lower dimensional interfaces for a gen
 physical processes.
 
 \section{Meshes of Mixed Dimension}
-Common and unique feature of all models in Flow123d is the support of
+Unique feature common to all models in Flow123d is the support of
 domains with mixed dimension. 
 Let $\Omega_{3} \subset \Real^3$ be an open set representing continuous approximation of porous and fractured medium.
-Similarly, we consider a 2D manifold $\Omega_2\subset\overline\Omega_3$, representing 2D fractures and a 1D manifold $\Omega_1\subset \overline\Omega_2$ of 1D channels or preferential paths (see Fig \ref{fig:multi-dim}).
+Similarly, we consider a set of 2D manifolds $\Omega_2\subset\overline\Omega_3$, representing the 2D fractures and a set of 1D manifolds $\Omega_1\subset \overline\Omega_2$ 
+representing the 1D channels or preferential paths (see Fig \ref{fig:multi-dim}).
 We assume that $\Omega_2$ and $\Omega_1$ are polytopic (i.e. polygonal and piecewise linear, respectively).
 For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
 that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$.
@@ -361,7 +359,7 @@ The elements are simplices, i.e. lines, triangles and tetrahedra, respectively.
 }
 \end{figure}
 
-Present numerical methods require meshes satisfying the compatibility conditions
+Present numerical methods used by the software require meshes satisfying the compatibility conditions
 \begin{equation}
         T_{d-1}^i \cap T_d \subset \mathcal{F}_d,   \qquad \text{where } \mathcal{F}_d = \bigcup_{k} \partial T_{d}^{k}
 \end{equation}
@@ -369,13 +367,28 @@ and
 \begin{equation}
         T_{d-1}^i \cap \mathcal{F}_d    \text{ is either $T_{d-1}^i$ or $\emptyset$}    
 \end{equation}
-for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. That is, the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
-match their sides or they poke out of $\Omega_d$. 
+for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. 
+That is, the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
+match their sides or they poke out of $\Omega_d$. Support for a coupling between non-compatible
+meshes of different dimesion is in developement and partly supported by the Darcy Flow model.
 
 \section{Advection-Diffusion Processes on Fractures}
 \label{sc:ad_on_fractures}
-In this section, we shall derive a model for a general advection-diffusion process in a domain of mixed dimensions using
-simple approximations inspired by the paper \citet{martin_modeling_2005}. Let us consider a fracture as a strip domain 
+This section presents derivation of an abstract advection-diffusion process on 2D and 1D manifolds and its coupling with
+the higher dimensional domains. The reader not interested in the details of this approximation may skip directly to
+the later sections describing mathematical models of individual physical processes.
+
+As was already mentioned, the unique feature of Flow123d is support of models living on 2D and 1D manifolds. The aim is to capture 
+features significantly influencing the solution despite of their small cross-section. Such a tiny features are
+challenging for numerical simulations since a direct discretization requires highly refined
+computational mesh. One possible solution is to model these features (fractures, channels) 
+as lower dimensional objects (2D and 1D manifolds) and introduce their coupling with the surrounding continuum.
+The equations modeling a physical process on a manifold as well as its coupling to the model in the surrounding continuum
+has to be derived from the model on the 3D continuum. This section presents such a procedure for the case of the abstract
+advection-diffusion process inspired by the paper \cite{martin_modeling_2005}. Later, we this abstract approach to 
+particular advection-diffusion processes: Darcian flow, solute transport, and heat transfer.
+
+Let us consider a fracture as a strip domain 
 \[
  \Omega_f \subset [0,\delta] \times \Real^{d-1}
 \]
@@ -502,22 +515,24 @@ between upwind ($\xi = 1$) and central difference ($\xi=\frac12$) scheme. Equati
 the surrounding continuum which we shall later apply to individual processes.
 
 
-
 \input{darcy_flow}
 
 \input{transport_model}
 
-\input{sorpce}
+\input{reaction_term}
 
 % TODO: Describe reactions, decays, numerical methods
-%\input{decay}
+\input{chemistry}
 
 \input{heat}
 
+\chapter{Numerical Methods}
 % TODO: Update numerical topics
-% \input{numerical}
+\input{lumped_mh}
 
+\input{dg}
 
+\input{reaction_term_numerical}
 
 %\input{semchem}
 

@@ -110,11 +110,11 @@ defining boundary regions, and set operations with region sets, see Section \ref
 \subsection{Flow Setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
-The \hyperlink{DarcyFlowMH-Data::conductivity::B}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
-Both 2D domain and 1D domain \hyperlink{DarcyFlowMH-Data::cross-section::B}{\tt cross\_section} will be set by default,
+The \Alink{DarcyFlowMH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
+Both 2D domain and 1D domain \Alink{DarcyFlowMH-Data::cross-section}{\tt cross\_section} will be set by default,
 meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{} and the fracture cross section is $\delta_1=1$ \unitss{}{2}{}.
 The transition coefficient $\sigma_2$ between dimensions can be scaled by setting the dimensionless parameter 
-$\sigma_{21}$ (\hyperlink{DarcyFlowMH-Data::sigma::B}{\tt sigma}). This can be used for simulating additional
+$\sigma_{21}$ (\Alink{DarcyFlowMH-Data::sigma}{\tt sigma}). This can be used for simulating additional
 effects which prevent the liquid transition from/to a fracture, like a thin resistance layer. Read Section 
 \ref{sec:darcy_flow} for more details.
 
@@ -123,7 +123,9 @@ effects which prevent the liquid transition from/to a fracture, like a thin resi
       TYPE = "Steady_MH", 
 
       input_fields = [
-        { r_set = "1d_domain", conductivity = 1e-6, sigma = 0.9 },
+        { r_set = "1d_domain", conductivity = 1e-6, 
+                               cross_section = 0.04, 
+                               sigma = 0.9 },
         { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
@@ -160,9 +162,11 @@ Finally, we specify type of the linear solver and its tolerances.
 
 
 \subsection{Transport Setting}
-We also consider subsequent transport problem with the porosity $\theta = 0.25$, zero initial concentration and concentration source for one of the transported substances. The boundary condition is equal to $1$ for the uranium 235 and $0$ for the age of the water and is automatically applied only on the 
-inflow part of the boundary. There are also some sorption and dual porosity models in this particular test case. Sorption and simple reactions model inputs are particularly described in subsections \ref{subsubsec:reactions}.%, but we do not discuss this topic here for the sake of simplicity.
-%see Section \ref{} for the description. 
+The flow model is followed by a transport model in the \Alink{SequentialCoupling::secondary-equation}{\tt secondary\_equation}
+beginning on line 40. For the transport problem, we use an implementation called \hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}
+which stands for an explicit finite volume solver of the convection equation (without diffusion).
+The operator splitting method is used for equilibrium sorption as well as for dual porosity model and 
+first order reactions simulation.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
     secondary_equation = {
@@ -188,25 +192,32 @@ inflow part of the boundary. There are also some sorption and dual porosity mode
       mass_balance = { cumulative = true },
 \end{Verbatim}
 
-For the transport problem we use implementation called ``TransportOperatorSplitting'' which stands for an explicit finite volume solver of the convection equation (without diffusion), 
-the operator splitting is used for the equilibrium sorption as well as for the dual porosity model and first order reactions simulation.
-On lines 43 -- 46, we set the transported \hyperlink{TransportOperatorSplitting::substances::B}{\tt substances}, which are identified by their names. 
-Here the first one is the \verb'age' of the water, with the molar mass of water, and the second one \verb'U235' is the uranium isotope 235. 
-On lines 48 -- 57, we set the input fields, in particular the \hyperlink{TransportOperatorSplitting-Data::porosity::B}{\tt porosity}, sources of concentration and the initial concentrations 
-(one for every substance). However, on line 47 we see only single value since an automatic conversion is applied to turn the scalar zero into the zero vector (of size 2). 
-On lines 51 -- 53, we set the boundary fields, namely the concentration on the inflow part of the boundary.
-We need not to specify the type of the condition since currently there is only one type for this transport model.
+On lines 43 -- 46, we set the transported \Alink{TransportOperatorSplitting::substances}{\tt substances}, 
+which are identified by their names. Here, the first one is the \verb'age' of the water, with the molar mass of water, 
+and the second one \verb'U235' is the uranium isotope 235. 
+On lines 48 -- 57, we set the input fields, in particular zero initial concentration for all substances,
+\Alink{TransportOperatorSplitting-Data::porosity}{\tt porosity} $\theta = 0.25$ and 
+sources of concentration by \Alink{TransportOperatorSplitting-Data::sources-density}{\tt sources\_density}. 
+Notice line 50 where we can see only single value since an automatic conversion is applied to turn the scalar 
+zero into the zero vector (of size 2 according to the number of substances). 
+
+The boundary fields are set on lines 54 -- 56. We need not to specify the type of the condition since there is 
+only one type in the current transport model. The boundary condition is equal to $1$ for the uranium 235 and $0$ 
+for the age of the water and is automatically applied only on the inflow part of the boundary. 
+
 We also have to prescribe the \hyperlink{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
-(in seconds: $10^6\,\rm{s}\approx 11.57$ days)
-since the step size is determined from the CFL condition; however a smaller time step can be enforced if necessary.
+(in seconds: $10^6\,\rm{s}\approx 11.57$ days) is required since the step size is determined from the CFL condition. 
+However, a smaller time step can be enforced if necessary.
+
+Reaction term of the transport model is described in the next subsection, including dual porosity and sorption.
 
 \subsection{Reaction Term}\label{subsubsec:reactions}
 The input information for dual porosity, equilibrial sorption and possibly first order reations are enclosed in the record 
-\hyperlink{TransportOperatorSplitting::reaction-term::B}{\tt reaction\_term}, lines 61 -- 100. Go to section \ref{sec:reaction_term}
+\Alink{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}, lines 61 -- 100. Go to section \ref{sec:reaction_term}
 to see how the models can be chained.
 
 The type of the first process is determined by {\tt TYPE="DualPorosity"}, on line 62. 
-The \hyperlink{DualPorosity::input-fields::B}{\tt input\_fields}
+The \Alink{DualPorosity::input-fields}{\tt input\_fields}
 of dual porosity model are set on lines 64 -- 71 and the output is disabled by setting an empty array on line 73.
 
 \begin{Verbatim}[numbers=left, firstnumber=last]
@@ -235,7 +246,7 @@ of dual porosity model are set on lines 64 -- 71 and the output is disabled by s
               r_set="ALL",
               rock_density = 2800.0,    // granit
               sorption_type =  ["none", "freundlich"],
-              isotherm_mult = 0.68, 
+              isotherm_mult = [0, 0.68], 
               isotherm_other = [0, 1.0]
             }
           ],
@@ -258,7 +269,7 @@ of dual porosity model are set on lines 64 -- 71 and the output is disabled by s
       } 
 
     } // secondary_equation
-  }, // problem
+  } // problem
 }
 \end{Verbatim}
 
@@ -266,26 +277,26 @@ Next, we define the equilibrial sorption model such that \hyperlink{IT::Sorption
 zone of the dual porosity model while \hyperlink{IT::SorptionImmobile}{\tt SorptionImmobile} type takes place in its immobile zone, see lines 76 and 93.
 Isothermally described sorption simulation can be used in the case of low concentrated solutions without competition between multiple dissolved species.
 
-On lines 77 -- 89, we set the sorption related input information. The solvent is water so the \hyperlink{Sorption::solvent-density::B}{\tt solvent\_density} 
-is supposed to be constant all over the simulated area. The vector \hyperlink{Sorption::substances::B}{\tt substances} 
+On lines 77 -- 89, we set the sorption related input information. The solvent is water so the \Alink{Sorption::solvent-density}{\tt solvent\_density} 
+is supposed to be constant all over the simulated area. The vector \Alink{Sorption::substances}{\tt substances} 
 contains the list of names of soluted substances which are considered to be affected by the sorption.
 Solubility is a material characteristic of a sorbing substance related to the solvent. Elements of the vector 
-\hyperlink{Sorption::solubility::B}{\tt solubility} define the upper bound of aqueous concentration which can appear.
+\Alink{Sorption::solubility}{\tt solubility} define the upper bound of aqueous concentration which can appear.
 This constrain is necessary because some substances might have limited solubility and if the solubility exceeds 
 its limit they start to precipitate. {\tt solubility} is a crucial parameter for solving a set of nonlinear 
 equations, described further. 
 
 The record \hyperlink{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
 All implemented types of sorption can take the rock density in the region into account. The value of 
-\hyperlink{Sorption-Data::rock-density::B}{\tt rock\_density} is a constant in our case. 
-The \hyperlink{Sorption-Data::sorption-type::B}{\tt sorption\_type} represents the empirically determined isotherm 
+\Alink{Sorption-Data::rock-density}{\tt rock\_density} is a constant in our case. 
+The \Alink{Sorption-Data::sorption-type}{\tt sorption\_type} represents the empirically determined isotherm 
 type and can have one of four possible values: \{{\tt"none"}, {\tt"linear"}, {\tt"freundlich"}, {\tt"langmuir"}\}. 
 Linear isotherm needs just one parameter given whereas Freundlichs' and Langmuirs' isotherms require two parameters. 
 We will use Freundlich's isotherm for demonstration but we will set the other parameter (exponent) $\alpha=1$ 
 which means it will be the same as the linear type. 
 
 Let suppose we have a sorption coefficient for uranium $K_d=1.6\cdot10^{-4}$ \unitss{-1}{3}{} (www.skb.se, report R-10-48 by James Crawford, 2010) 
-and we want to use. We need to convert it to dimensionless value of \hyperlink{Sorption-Data::isotherm-mult::B}{\tt isotherm\_mult}
+and we want to use. We need to convert it to dimensionless value of \Alink{Sorption-Data::isotherm-mult}{\tt isotherm\_mult}
 in the following way: $k_l = K_dM_s^{-1}\rho_l = K_d\frac{1000}{0.235}\approx0.68$. For further details, see 
 mathematical description in Section \ref{sec:sorp_math}. 
 

@@ -66,7 +66,7 @@ public:
     /**
      * Update time and possibly update data from GMSH file.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -87,7 +87,7 @@ protected:
 	FilePath reader_file_;
 
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+	std::shared_ptr< std::vector<typename Value::element_type> > data_;
 
 	/// vector stored suspect elements in calculating the intersection
 	std::vector<unsigned int> searched_elements_;

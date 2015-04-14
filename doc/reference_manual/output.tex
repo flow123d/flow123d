@@ -120,9 +120,19 @@ On every run we collect some basic profiling informations. After all computation
 \verb'profiler%y%m%d_%H.%M.%S.out' where \verb'%y', \verb'%m', \verb'%d', \verb'%H', \verb'%M', \verb'%S' are 
 two digit numbers representing year, month, day, hour, minute, and second of the program start time.
 
-\subsubsection{Water Flux Information}
-File contains water flow balance, total inflow and outflow over boundary segments. 
-Further there is total water income due to sources (if they are present).
+\subsubsection{Balance of Conservative Quantities}
+Primary and secondary equations can produce additional information on fluxes, sources and state of conservative quantities (for flow it is the volume of water, for transport the mass of a substance, for heat transfer the energy).
+The computation of balance is governed by the key \verb'balance'.
+The balance file (default \verb'water_balance.txt', \verb'mass_balance.txt', \verb'energy_balance.txt') contains the following information:
+\begin{itemize}
+\item time and region
+\item name and unit of the quantity
+\item mass (current state), flux through boundary and volume source at given time and region
+\item incoming and outgoing flux and source
+\item flux and source increment since the last balance output time
+\item cumulative flux and source
+\item error: current mass should equal to initial mass + cumulative sources - cumulative fluxes
+\end{itemize}
 
 
 \subsubsection{Raw Water Flow Data File}

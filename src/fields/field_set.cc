@@ -58,7 +58,13 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             // 2) It should be consistent with rest of documentation.
             // 3) Should be specified for all fields.
             //if (units != "") description+= " [" +field->units() + "]";
-            rec.declare_key(field->input_name(), field->get_input_type(), description);
+
+            // TODO: temporary solution, see FieldCommon::multifield_
+            if (field->is_multifield()) {
+            	rec.declare_key(field->input_name(), field->get_multifield_input_type(), description);
+            } else {
+            	rec.declare_key(field->input_name(), field->get_input_type(), description);
+            }
         }
 
     }

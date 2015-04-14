@@ -4,7 +4,8 @@
 #include "coupling/equation.hh"
 
 #include <limits>
-#include "io/output_data.hh"
+
+#include "io/output_time.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_algo_base.hh"

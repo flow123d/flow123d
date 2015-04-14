@@ -189,6 +189,13 @@ protected:
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 
+    /// Header of the format, printed before first call of recursive print.
+    /// see @p print(stream) method
+    std::string format_head;
+    /// Tail of the format, printed after all recursive prints are finished.
+    /// see @p print(stream) method
+    std::string format_tail;
+
     /**
      * @brief Internal data class.
      * Contains flags of written Input::Types objects and functionality of regular expression filter of Input::Types full names.
@@ -248,6 +255,17 @@ protected:
          */
         const string get_reference(const void * type_data) const;
 
+        /**
+         * Combines was_sritten and mark_written for hashes.
+         */
+        bool was_written(std::size_t hash)
+        {
+            bool in_set = ( output_hash.find(hash) != output_hash.end() );
+            if (! in_set) output_hash.insert(hash);
+            return in_set;
+        }
+
+
         /// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
         typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
@@ -263,6 +281,9 @@ protected:
 
         /// Set of processed types by regular expression and full names
         std::set<string> full_type_names;
+
+        /// Set of hashes of outputed types. Should replace keys.
+        std::set<std::size_t> output_hash;
     };
 
     /// Stores flags and references of processed type
@@ -420,9 +441,16 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth)
+    {
+	    format_head="[\n";
+	    format_tail="{}]\n";
+    }
 
 protected:
+
+	std::string format_hash(std::size_t hash);
+	std::string escape_description(std::string desc);
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
@@ -437,9 +465,7 @@ protected:
 
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
-
-
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
 };
 
 

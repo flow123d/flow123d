@@ -48,7 +48,8 @@ mkdir -p "${PUBLISH_DIR}"
 #safe_copy "${BUILD_TREE}/CHANGES.html"
 safe_copy "${SOURCE_DIR}/CHANGES.md"
 safe_copy "${SOURCE_DIR}/README.md"
-safe_copy "${BUILD_TREE}/doc/reference_manual/flow123d_doc.pdf"
+safe_copy "${BUILD_TREE}/doc/reference_manual/flow123d_doc.pdf" \
+          "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_doc.pdf"
 safe_copy "${BUILD_TREE}/doc/online-doc/flow123d" "${PUBLISH_DIR}/doxygen"
 safe_copy "${BUILD_TREE}/Flow123d-${GIT_VERSION_FULL}-Linux.tar.gz" \
           "${PUBLISH_DIR}/flow123d_${GIT_VERSION_FULL}_${PLATFORM_NAME}.tar.gz"

@@ -14,18 +14,21 @@ cmake_minimum_required(VERSION 2.8)
        ./packages/etoolbox.sty
        convection.tex
        darcy_flow.tex
-       decay.tex
+       chemistry.tex
+       dg.tex
   #    flow_ini.tex
        flow_version.tex
        heat.tex
        input_files.tex
        input_reference.tex
        JSON_input.tex
+       lumped_mh.tex
        numerical.tex
        output.tex
        pos_12.tex
+       reaction_term_numerical.tex
        semchem.tex
-       sorpce.tex
+       reaction_term.tex
        tests.tex
        transport_model.tex
        tutorial.tex
