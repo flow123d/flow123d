@@ -34,6 +34,8 @@
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
+#include "Python.h"
+#include "system/python_loader.hh"
 #include <boost/format.hpp>
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
@@ -576,6 +578,66 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("run-process-count",  mpi_size);
     root.put ("run-started-at",     start_time_string);
     root.put ("run-finished-at",    end_time_string);
+}
+
+
+void Profiler::transform_profiler_data (const string &json_file_path) {
+    cout << "start" << endl;
+
+    PyObject * python_module;
+    PyObject * convert_method;
+    PyObject * arguments;
+    PyObject * return_value;
+    PyObject * tmp;
+    int argument_index = 0;
+
+    // grab module and function
+    python_module   = PythonLoader::load_module_from_file ("/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/python/merge-xml-coverage.py");
+    convert_method  = PyObject_GetAttrString (python_module, "convert" );
+
+    arguments = PyTuple_New (2);
+
+    // set json path location as first argument
+    tmp = PyString_FromString (json_file_path.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // set Formatter class as second value
+    tmp = PyString_FromString ("CSVFormatter");
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+
+    // execute method with arguments
+    return_value = PyObject_CallObject (convert_method, arguments);
+
+
+    if (PyBool_Check (return_value)) {
+        // is boolean
+
+        if (return_value == Py_True) {
+            cout << "Python execution was successful" << endl;
+        }else{
+            cout << "Error when executing Python" << endl;
+        }
+    } else if (PyString_Check (return_value)) {
+        // is string (holds error)
+
+        char* error_msg = PyString_AsString (return_value);
+        cout << "Error when executing Python: " << error_msg << endl;
+    }
+
+    cout << "endl" << endl;
+    PyObject *p_args_;
+    PyObject *p_value_;
+
+//    Py_XDECREF(p_func_);
+//    Py_XDECREF(p_module_);
+
+
+    cout << "ende: " << endl;
+    p_args_ = PyTuple_New ( -1 );
+    PyTuple_SetItem (p_args_, 0, p_value_);
+    PyTuple_SetItem (p_args_, 1, p_value_);
+
 }
 
 
