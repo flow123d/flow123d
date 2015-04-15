@@ -506,6 +506,12 @@ public:
     void stop_timer(int timer_index = -1);
 
 
+    /**
+     * Using PythonLoader Python script is called. Script will transform given filepath json data
+     * to all formats available.
+     */
+    void transform_profiler_data (const string &file_path);
+
 
     /**
      * Adds @p n_calls - 1 to the total number of calls of the current timer. Minus one, since one call is counted when
