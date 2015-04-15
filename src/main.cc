@@ -329,7 +329,8 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
-        Profiler::instance()->output(PETSC_COMM_WORLD);
+        Profiler::instance()->output (PETSC_COMM_WORLD);
+        Profiler::instance()->transform_profiler_data ("path_to_json_file");
         Profiler::uninitialize();
     }
 }
