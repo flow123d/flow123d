@@ -570,7 +570,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_
     if (p.head()->type() == json_spirit::int_type) {
         std::int64_t value = p.head()->get_int64();
 
-        if ( int_type->match(value) )
+        if ( value >= -std::numeric_limits<unsigned int>::max() &&
+        	 value <= std::numeric_limits<unsigned int>::max() &&
+			 int_type->match(value) )
         {
             return new StorageInt( value );
         } else {
