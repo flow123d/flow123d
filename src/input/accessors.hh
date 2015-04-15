@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdint>
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
@@ -850,7 +851,7 @@ template<> struct TD<double> { typedef double OT; };*/
  * Get int value in storage and check if it is integer numeric limits.
  */
 static int get_storage_int(const Address &a) {
-	boost::int64_t value = a.storage_head()->get_int();
+	std::int64_t value = a.storage_head()->get_int();
 	if ( value >= std::numeric_limits<int>::min() &&
 		 value <= std::numeric_limits<int>::max() ) {
 		return value;

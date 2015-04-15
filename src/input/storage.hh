@@ -27,7 +27,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include "system/exceptions.hh"
 
 
@@ -57,7 +57,7 @@ DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "Storage type mismatch. You want va
  */
 class StorageBase {
 public:
-    virtual boost::int64_t get_int() const;
+    virtual std::int64_t get_int() const;
     virtual double get_double() const;
     virtual bool get_bool() const;
     virtual const std::string &get_string() const;
@@ -110,14 +110,14 @@ private:
 class StorageInt : public StorageBase {
 public:
     StorageInt(int value);
-    virtual boost::int64_t get_int() const;
+    virtual std::int64_t get_int() const;
     virtual bool is_null() const;
     virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageInt();
 
 private:
-    boost::int64_t value_;
+    std::int64_t value_;
 };
 
 class StorageDouble : public StorageBase {
