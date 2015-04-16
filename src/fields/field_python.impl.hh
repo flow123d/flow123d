@@ -111,11 +111,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
     p_func_ = PyObject_GetAttrString(p_module_, func_char );
     PythonLoader::check_error();
 
-    if (! PyCallable_Check(p_func_)) {
-    	stringstream ss;
-    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " is not callable." << endl;
-    	THROW(PythonLoader::ExcPythonError() << PythonLoader::EI_PythonMessage( ss.str() ));
-    }
+    PythonLoader::get_callable(p_func_, p_module_, func_name);
 
     p_args_ = PyTuple_New( spacedim );
 
@@ -130,7 +126,7 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
     if ( ! PyTuple_Check( p_value_)) {
     	stringstream ss;
     	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " doesn't return Tuple." << endl;
-    	THROW(PythonLoader::ExcPythonError() << PythonLoader::EI_PythonMessage( ss.str() ));
+        THROW( ExcMessage() << EI_Message( ss.str() ));
     }
 
     unsigned int size = PyTuple_Size( p_value_);

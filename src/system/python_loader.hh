@@ -44,7 +44,7 @@ class PythonLoader {
 public:
 
 	/**
-	 * Definition of exception thrown by python compiler.
+	 * Definition of exception thrown by python compiler or interpreter.
 	 */
 	TYPEDEF_ERR_INFO(EI_PythonMessage, std::string);
     DECLARE_EXCEPTION(ExcPythonError,
@@ -78,6 +78,10 @@ public:
      * Tests whether the error indicator is set, if yes formats and throws exception.
      */
     static void check_error();
+    /**
+     * Check if python function is callable, if not throws exception.
+     */
+    static void get_callable(PyObject *func, PyObject *module, const std::string &func_name);
 };
 
 

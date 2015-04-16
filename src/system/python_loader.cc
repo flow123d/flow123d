@@ -110,6 +110,16 @@ void PythonLoader::check_error() {
 
 
 
+void PythonLoader::get_callable(PyObject *func, PyObject *module, const std::string &func_name) {
+    if (! PyCallable_Check(func)) {
+    	stringstream ss;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
+    	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    }
+}
+
+
+
 wstring to_py_string(const string &str) {
     wchar_t wbuff[ str.size() ];
     size_t wstr_size = mbstowcs( wbuff, str.c_str(), str.size() );
