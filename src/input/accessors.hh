@@ -864,6 +864,15 @@ struct TypeDispatch {
     static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
 };
 
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_enum<T> >::type> {
+    typedef T TmpType;
+
+    typedef Input::Type::Selection InputType;
+    typedef const TmpType ReadType;
+    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+};
+
 template<>
 struct TypeDispatch<Enum> {
     typedef Enum TmpType;
