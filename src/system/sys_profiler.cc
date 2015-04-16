@@ -529,10 +529,10 @@ void Profiler::output(ostream &os) {
 void Profiler::output() {
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
+    json_filepath = FilePath(string(filename), FilePath::output_file);
 
-    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-    ofstream os(full_fname.c_str());
+    xprintf(MsgLog, "output into: %s\n", this->json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
     output(os);
     os.close();
 }
@@ -575,7 +575,7 @@ void Profiler::output_header (ptree &root, int mpi_size) {
 }
 
 
-void Profiler::transform_profiler_data (const string &json_file_path) {
+void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
     cout << "start" << endl;
 
     PyObject * python_module;
@@ -586,19 +586,26 @@ void Profiler::transform_profiler_data (const string &json_file_path) {
     int argument_index = 0;
 
     // grab module and function
-    python_module   = PythonLoader::load_module_from_file ("/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/python/merge-xml-coverage.py");
+    python_module   = PythonLoader::load_module_from_file ("/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/tests/09_flow_steady_time_dep/main.py");
     convert_method  = PyObject_GetAttrString (python_module, "convert" );
 
-    arguments = PyTuple_New (2);
+    //
+    // def convert (json_location, output_file, formatter):
+    //
+
+    arguments = PyTuple_New (3);
 
     // set json path location as first argument
-    tmp = PyString_FromString (json_file_path.c_str());
+    tmp = PyString_FromString (json_filepath.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
-    // set Formatter class as second value
-    tmp = PyString_FromString ("CSVFormatter");
+    // set output path location as second argument
+    tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
+    // set Formatter class as third value
+    tmp = PyString_FromString (formatter.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
     return_value = PyObject_CallObject (convert_method, arguments);
@@ -617,6 +624,8 @@ void Profiler::transform_profiler_data (const string &json_file_path) {
 
         char* error_msg = PyString_AsString (return_value);
         cout << "Error when executing Python: " << error_msg << endl;
+    } else {
+        cout << "Unknown result when executing Python: "<< endl;
     }
 
     cout << "endl" << endl;
@@ -627,7 +636,7 @@ void Profiler::transform_profiler_data (const string &json_file_path) {
 //    Py_XDECREF(p_module_);
 
 
-    cout << "ende: " << endl;
+    cout << "raising error on purpose to see log " << endl;
     p_args_ = PyTuple_New ( -1 );
     PyTuple_SetItem (p_args_, 0, p_value_);
     PyTuple_SetItem (p_args_, 1, p_value_);

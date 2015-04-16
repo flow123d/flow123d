@@ -329,8 +329,14 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
+        // log profiler data to this stream
         Profiler::instance()->output (PETSC_COMM_WORLD);
-        Profiler::instance()->transform_profiler_data ("path_to_json_file");
+
+        // call python script which transforms json file at given location
+        Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+
+        // finally uninitialize
         Profiler::uninitialize();
     }
 }

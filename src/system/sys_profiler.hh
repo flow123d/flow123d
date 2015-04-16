@@ -505,14 +505,6 @@ public:
      */
     void stop_timer(int timer_index = -1);
 
-
-    /**
-     * Using PythonLoader Python script is called. Script will transform given filepath json data
-     * to all formats available.
-     */
-    void transform_profiler_data (const string &file_path);
-
-
     /**
      * Adds @p n_calls - 1 to the total number of calls of the current timer. Minus one, since one call is counted when
      * timer was started. You should use macro ADD_CALLS above.
@@ -552,6 +544,11 @@ public:
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
 
+    /**
+     * Variable which stores last json log filepath
+     */
+    string json_filepath;
+
 #ifdef FLOW123D_HAVE_MPI
     /**
      * @brief Output current timing information into the given stream.
@@ -589,6 +586,10 @@ public:
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
     void output();
+    /**
+     * Method will transform last profiler json file to desired format
+     */
+    void transform_profiler_data (const string &output_file_suffix, const string &formatter);
     /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
