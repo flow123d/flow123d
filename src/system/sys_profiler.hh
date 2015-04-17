@@ -544,11 +544,6 @@ public:
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
 
-    /**
-     * Variable which stores last json log filepath
-     */
-    string json_filepath;
-
 #ifdef FLOW123D_HAVE_MPI
     /**
      * @brief Output current timing information into the given stream.
@@ -665,6 +660,8 @@ private:
     string flow_revision_;
     /// Build date and time.
     string flow_build_;
+    /// Variable which stores last json log filepath
+    string json_filepath;
 
 
     /**
