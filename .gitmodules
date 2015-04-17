@@ -1,0 +1,3 @@
+[submodule "src/python/profiler-transform"]
+	path = src/python/profiler-transform
+	url = https://github.com/x3mSpeedy/Flow123d-py-profiler-transform.git
