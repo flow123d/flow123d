@@ -478,10 +478,10 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 void Profiler::output(MPI_Comm comm) {
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
+    json_filepath = FilePath(string(filename), FilePath::output_file);
 
-    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-    ofstream os(full_fname.c_str());
+    xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
     output(comm, os);
     os.close();
 }
@@ -582,8 +582,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 
 
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    cout << "start" << endl;
-
     PyObject * python_module;
     PyObject * convert_method;
     PyObject * arguments;
@@ -591,8 +589,27 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyObject * tmp;
     int argument_index = 0;
 
-    // grab module and function
-    python_module   = PythonLoader::load_module_from_file ("/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/tests/09_flow_steady_time_dep/main.py");
+
+    // fix module path, first get current system path (Py_GetPath)
+    // than append this modules path
+    string path = Py_GetPath ();
+    path = path + ":" + "../../src/python/profiler-transform/";
+    char * path_char = const_cast<char *>(path.c_str());
+    PySys_SetPath (path_char);
+//    Py_SetPythonHome("../../src/python/profiler-transform/");
+
+    // debug info
+    cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
+    cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
+    cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
+    cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
+    cout << "Py_GetPath:            " << Py_GetPath() << endl;
+    cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
+    cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+    cout << "module_path:           " << path << endl;
+
+    // grab module and function by importing module main.py
+    python_module = PyImport_ImportModule ("main");
     convert_method  = PyObject_GetAttrString (python_module, "convert" );
 
     //
@@ -615,6 +632,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
     // execute method with arguments
     return_value = PyObject_CallObject (convert_method, arguments);
+    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
 
 
     if (PyBool_Check (return_value)) {
@@ -634,18 +652,13 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
         cout << "Unknown result when executing Python: "<< endl;
     }
 
-    cout << "endl" << endl;
-    PyObject *p_args_;
-    PyObject *p_value_;
-
-//    Py_XDECREF(p_func_);
-//    Py_XDECREF(p_module_);
-
-
-    cout << "raising error on purpose to see log " << endl;
-    p_args_ = PyTuple_New ( -1 );
-    PyTuple_SetItem (p_args_, 0, p_value_);
-    PyTuple_SetItem (p_args_, 1, p_value_);
+    //    cout << "endl" << endl;
+    //    PyObject *p_args_;
+    //    PyObject *p_value_;
+    //    cout << "raising error on purpose to see log " << endl;
+    //    p_args_ = PyTuple_New ( -1 );
+    //    PyTuple_SetItem (p_args_, 0, p_value_);
+    //    PyTuple_SetItem (p_args_, 1, p_value_);
 
 }
 
