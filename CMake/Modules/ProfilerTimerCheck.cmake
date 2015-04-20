@@ -9,7 +9,7 @@ MACRO(TEST_TIMER timer_name timer_script_location)
         ${CMAKE_BINARY_DIR} "${timer_script_location}"
         CMAKE_FLAGS "${CMAKE_CXX_FLAGS}"
         RUN_OUTPUT_VARIABLE TIMER_RESOLUTION COMPILE_OUTPUT_VARIABLE TIMER_COMPILE) 
-    MESSAGE(STATUS "${timer_name}:\n ${${timer_name}} ${TIMER_RESOLUTION} [us]\n\n")
+    # MESSAGE(STATUS "${timer_name}:\n ${${timer_name}} ${TIMER_RESOLUTION} [us]")
     if (NOT ${timer_name})
         MESSAGE (STATUS "Compilation error: \n${TIMER_COMPILE}")
     endif()
