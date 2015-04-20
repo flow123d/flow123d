@@ -138,7 +138,7 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  */
 
 template <class T>
-boost::shared_ptr<TypeBase> LazyTypes<T>::add_type(T * type) {
+boost::shared_ptr<T> LazyTypes<T>::add_type(T * type) {
     static LazyTypeMap lazy_type_map;
 	KeyHash hash = LazyTypes<T>::key_hash(type->full_type_name());
 

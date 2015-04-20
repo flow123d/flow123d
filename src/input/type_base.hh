@@ -246,7 +246,7 @@ public:
         return (str);
     }
 
-    static boost::shared_ptr<TypeBase> add_type(T * type);
+    static boost::shared_ptr<T> add_type(T * type);
 
 };
 
