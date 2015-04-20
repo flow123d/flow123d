@@ -854,14 +854,16 @@ template<> struct TD<double> { typedef double OT; };*/
 // Generic implementation accepts only enum types
 template< class T, class Enable >
 struct TypeDispatch {
-
-    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
+    class some_nonexisting_type;
+    //BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
+    static_assert( std::is_same<T, some_nonexisting_type>::value, "Wrong TypeDispatch type.");
 
     typedef T TmpType;
 
     typedef Input::Type::Selection InputType;
     typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) { return ReadType( a.storage_head()->get_int() ); }
+    static inline ReadType value(const Address &a, const InputType&) {
+        return ReadType( a.storage_head()->get_int() ); }
 };
 
 template<class T>
