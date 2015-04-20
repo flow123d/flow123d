@@ -81,7 +81,7 @@ public:
     /**
      * Check if python function is callable, if not throws exception.
      */
-    static void get_callable(PyObject *func, PyObject *module, const std::string &func_name);
+    static void get_callable(PyObject **func, PyObject **module, const std::string &func_name);
 };
 
 

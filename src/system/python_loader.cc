@@ -110,10 +110,15 @@ void PythonLoader::check_error() {
 
 
 
-void PythonLoader::get_callable(PyObject *func, PyObject *module, const std::string &func_name) {
-    if (! PyCallable_Check(func)) {
+void PythonLoader::get_callable(PyObject **func, PyObject **module, const std::string &func_name) {
+    char func_char[func_name.size()+2];
+    strcpy(func_char, func_name.c_str());
+    *func = PyObject_GetAttrString(*module, func_char );
+    PythonLoader::check_error();
+
+    if (! PyCallable_Check(*func)) {
     	stringstream ss;
-    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(*module) << " is not callable." << endl;
     	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
     }
 }
