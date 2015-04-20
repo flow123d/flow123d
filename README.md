@@ -4,7 +4,7 @@ Flow123d is a simulator of underground water flow and transport processes in fra
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
 we can combine continuum models and discrete fracture network models.
-For more information see project pages:
+For more information see the project pages:
 [flow123d.github.com](http://flow123d.github.com).
 
 [![CI Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
@@ -22,9 +22,9 @@ development branches can be obtained by
 
 ### Windows OS prerequisities ###
 
-If you are running Windows, you have to install [cygwin](http://www.cygwin.org) for emulation of
-POSIX unix environment. Then all work has to be done in the directories under
-cygwin, e.g "C:\cygwin\home\user\". In addition to the packages mentioned for the Linux you will need:
+If you are running Windows, you have to install [Cygwin](https://www.cygwin.com/)  for emulation of
+POSIX unix environment (both 32-bit and 64-bit version should work). Then all what follows has to be done in the directories under
+cygwin, e.g "C:\cygwin\home\user\" and within the cygwin shell. In addition to the packages mentioned for the Linux you will need:
 
 * openssh (for MPICH)
 * some editor that can save Unix like text files (eg. notepad+ or sublime) 

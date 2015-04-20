@@ -228,7 +228,7 @@ void TransportOperatorSplitting::output_data(){
         
         START_TIMER("TOS-output data");
 
-        time_->view("TOS");    //show time governor
+
         convection->output_data();
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream_->write_time_frame();
@@ -269,9 +269,11 @@ void TransportOperatorSplitting::update_solution() {
 	vector<double> source(n_substances()), region_mass(mesh_->region_db().bulk_size());
 
     time_->next_time();
+    time_->view("TOS");    //show time governor
 
     convection->set_target_time(time_->t());
     convection->time_->estimate_dt();
+    convection->time_->view("Convection");    //show time governor
 
     START_TIMER("TOS-one step");
     int steps=0;

@@ -154,7 +154,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
         pos = new_pos+1;
     }
     if (relative_ref) {
-    	xprintf(Msg, "Key '%s' is set to value of key '%s'\n", this->str().c_str(), ref_path.str().c_str());
+    	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->str().c_str(), ref_path.str().c_str());
     }
     return ref_path;
 }

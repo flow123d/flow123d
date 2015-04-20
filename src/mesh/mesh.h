@@ -47,6 +47,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "boost/shared_ptr.hpp"
+#include "system/exceptions.hh"
 
 // Forward declarations
 template <int spacedim>
@@ -108,6 +109,17 @@ public:
 
 class Mesh {
 public:
+    TYPEDEF_ERR_INFO( EI_ElemLast, int);
+    TYPEDEF_ERR_INFO( EI_ElemNew, int);
+    TYPEDEF_ERR_INFO( EI_RegLast, std::string);
+    TYPEDEF_ERR_INFO( EI_RegNew, std::string);
+    DECLARE_EXCEPTION(ExcDuplicateBoundary,
+            << "Duplicate boundary elements! \n"
+            << "Element id: " << EI_ElemLast::val << " on region name: " << EI_RegLast::val << "\n"
+            << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
+
+
+
     static const unsigned int undef_idx=-1;
     static Input::Type::Record input_type;
 
