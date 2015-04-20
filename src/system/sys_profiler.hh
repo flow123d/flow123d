@@ -66,7 +66,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include "time_point.hh"
 
-using boost::property_tree::ptree;
+// namespace alias
+namespace property_tree = boost::property_tree;
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
@@ -270,6 +271,14 @@ public:
 
     /// Hash modulo size of array of timer childs ( we have to check full hash to prevent collision)
     unsigned int hash_idx_;
+
+
+
+    /**
+     * Common part of _file path in CodePoint instances used when writing json result
+     * This common part is removed when formatting (Profiler::output methods)
+     */
+    static string common_path;
 };
 
 
@@ -389,12 +398,6 @@ protected:
      * Total number of bytes deallocated directly in this frame (not include subframes).
      */
     size_t total_deallocated_;
-
-
-    /**
-     * common part in filepath
-     */
-    static string common_path;
 
 
     friend class Profiler;
@@ -613,7 +616,7 @@ private:
      * and write them along with basic informations about the run (name, description, ...)
      * into ptree object
      */
-    void output_header (ptree &root, int mpi_size);
+    void output_header (property_tree::ptree &root, int mpi_size);
 
 
     /// Default code point.
@@ -666,7 +669,7 @@ private:
      * to have alligned columns on the output. The alligning is performed in the output() method.
      */
     template<typename ReduceFunctor>
-    void add_timer_info(ReduceFunctor reduce, ptree* node, int timer_idx, double parent_time);
+    void add_timer_info(ReduceFunctor reduce, property_tree::ptree* node, int timer_idx, double parent_time);
 
     //Profiler(MPI_Comm comm); // private constructor
     Profiler(); // private constructor

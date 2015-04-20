@@ -44,14 +44,24 @@
 #include "mpi.h"
 #include "time_point.hh"
 
+// namespace alias
+namespace property_tree = boost::property_tree;
 
-using boost::property_tree::ptree;
-using boost::property_tree::read_json;
-using boost::property_tree::write_json;
-
-#define FLOW123D_JSON_PRETTY        1
-#define FLOW123D_JSON_MACHINE       0
-#define FLOW123D_MPI_SINGLE_PROCESS 1
+/**
+ * Flag to property_tree::write_json method
+ * resulting in json human readible format (indents, newlines)
+ */
+const int FLOW123D_JSON_PRETTY        = 1;
+/**
+ * Flag to property_tree::write_json method
+ * resulting in json machine readible format (no indents, no newlines)
+ */
+const int FLOW123D_JSON_MACHINE       = 0;
+/**
+ * Constant representing number of MPI processes
+ * where there is no MPI to work with (so 1 process)
+ */
+const int FLOW123D_MPI_SINGLE_PROCESS = 1;
 
 /*
  * These should be replaced by using boost MPI interface
@@ -142,7 +152,7 @@ bool Timer::stop(bool forced) {
     if (forced) start_count=1;
 
     if (start_count == 1) {
-        update ();
+        cumul_time += (TimePoint() - start_time);
         start_count--;
         return true;
     } else {
@@ -173,7 +183,6 @@ string Timer::code_point_str() const {
     return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
 }
 
-string Timer::common_path = "";
 
 /***********************************************************************************************
  * Implementation of Profiler
@@ -186,8 +195,7 @@ string Timer::common_path = "";
 
 Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
-
-
+string    CodePoint::common_path = "";
 
 void Profiler::initialize()
 {
@@ -377,7 +385,7 @@ std::string common_prefix( std::string a, std::string b ) {
 
 
 template<typename ReduceFunctor>
-void Profiler::add_timer_info(ReduceFunctor reduce, ptree* holder, int timer_idx, double parent_time) {
+void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder, int timer_idx, double parent_time) {
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
@@ -386,11 +394,11 @@ void Profiler::add_timer_info(ReduceFunctor reduce, ptree* holder, int timer_idx
 
     // fix path
     string filepath = timer.code_point_->file_;
-    filepath.erase (0, Timer::common_path.size());
+    filepath.erase (0, CodePoint::common_path.size());
 
     // generate node representing this timer
     // add basic information
-    ptree node;
+    property_tree::ptree node;
     double cumul_time_sum;
     node.put ("tag",        (timer.tag()) );
     node.put ("file-path",  (filepath) );
@@ -405,7 +413,7 @@ void Profiler::add_timer_info(ReduceFunctor reduce, ptree* holder, int timer_idx
     node.put<double> ("percent", 	percent);
 
     // write times children timers
-    ptree children;
+    property_tree::ptree children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
 		if (timer.child_timers[i] > 0) {
@@ -442,13 +450,13 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     MPI_Comm_size(comm, &mpi_size);
 
     // output header
-    ptree root, children;
+    property_tree::ptree root, children;
     output_header (root, mpi_size);
 
     // recursively add all timers info
     // define lambda function which reduces timer from multiple processors
     // MPI implementation uses MPI call to reduce values
-    auto reduce = [=] (Timer &timer, ptree &node) -> double {
+    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time () / 1000;
         double cumul_time_sum;
@@ -471,7 +479,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     root.add_child ("children", children);
 
     // write result to file
-    write_json(os, root, FLOW123D_JSON_PRETTY);
+    property_tree::write_json (os, root, FLOW123D_JSON_PRETTY);
 }
 
 
@@ -493,14 +501,14 @@ void Profiler::output(ostream &os) {
     update_running_timers();
 
     // output header
-    ptree root, children;
+    property_tree::ptree root, children;
     output_header (root, FLOW123D_MPI_SINGLE_PROCESS);
 
 
     // recursively add all timers info
     // define lambda function which reduces timer from multiple processors
     // non-MPI implementation is just dummy repetition of initial value
-    auto reduce = [=] (Timer &timer, ptree &node) -> double {
+    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time () / 1000;
 
@@ -520,7 +528,7 @@ void Profiler::output(ostream &os) {
     root.add_child ("children", children);
 
     // write result to file
-    write_json(os, root, FLOW123D_JSON_PRETTY);
+    property_tree::write_json (os, root, FLOW123D_JSON_PRETTY);
 }
 
 
@@ -535,7 +543,7 @@ void Profiler::output() {
     os.close();
 }
 
-void Profiler::output_header (ptree &root, int mpi_size) {
+void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     update_running_timers();
     time_t end_time = time(NULL);
 
@@ -551,7 +559,7 @@ void Profiler::output_header (ptree &root, int mpi_size) {
     string common_path = timers_[0].code_point_str();
     for (unsigned int i = 1; i < timers_.size(); i++)
         common_path = common_prefix (common_path, timers_[i].code_point_str());
-    Timer::common_path = common_path;
+    CodePoint::common_path = common_path;
 
     // generate current run details
 
