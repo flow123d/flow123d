@@ -134,6 +134,39 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
 
 
 /**********************************************************************************
+ * implementation of Type::LazyTypes
+ */
+
+template <class T>
+boost::shared_ptr<TypeBase> LazyTypes<T>::add_type(T * type) {
+    static LazyTypeMap lazy_type_map;
+	KeyHash hash = LazyTypes<T>::key_hash(type->full_type_name());
+
+	auto search = lazy_type_map.find(hash);
+	if (search != lazy_type_map.end()) {
+		return search->second;
+	} else {
+		auto type_ptr = boost::make_shared<T>( *type );
+		lazy_type_map.insert( std::pair<KeyHash, boost::shared_ptr<T>>(hash,type_ptr) );
+		return type_ptr;
+	}
+}
+
+// explicit instantiations of template class
+
+#define DECLARE_LAZY_TYPES(TYPE) \
+template class LazyTypes<TYPE>
+
+
+DECLARE_LAZY_TYPES(Selection);
+DECLARE_LAZY_TYPES(Array);
+DECLARE_LAZY_TYPES(Record);
+DECLARE_LAZY_TYPES(AbstractRecord);
+//DECLARE_LAZY_TYPES(AdHocAbstractRecord);
+
+
+
+/**********************************************************************************
  * implementation of Type::Array
  */
 
