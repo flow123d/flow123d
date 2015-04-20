@@ -57,6 +57,17 @@ using namespace std;
  * Meaning clock() method is not sufficient or stable
  * for time measurements.
  * Maximum resolution is 1000 ns (limited by value of CLOCKS_PER_SEC).
+ *
+ * gettimeofday
+ * The actual resolution of gettimeofday() depends on the hardware architecture. Intel
+ * processors as well as SPARC machines offer high resolution timers that measure microseconds.
+ * Other hardware architectures fall back to the system’s timer, which is typically set to 100 Hz.
+ * In such cases, the time resolution will be less accurate. gettimeofday() can result in incorrect
+ * timings if there are processes on your system that change the timer
+ * Possible solution may be other clock
+ *
+ * clock_gettime (CLOCK_MONOTONIC) with clock_getres() method
+ * but clock_gettime is present only on newest Linux. other system have only gettimeofday()
  */
 class TimePoint {
     public:
