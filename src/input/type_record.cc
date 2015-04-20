@@ -529,6 +529,7 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 	this->declare_type_key(child_data_->selection_of_childs.get());
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
+    LazyTypes<AbstractRecord>::add_type( this );
 }
 
 

@@ -99,17 +99,10 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
-	/*
-	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
-	 * We have to return reference, which may be reference to not yet initialized static object.
-	 *
-	 * TODO: Have method to get persistent copy of an Input Type (which exists nevertheless)
-	 */
-	static vector<it::AbstractRecord> ar_list;
-
 	if (is_enum_valued) {
-		ar_list.push_back(make_input_tree());
-		return ar_list.back();
+		it::AbstractRecord *a_rec = new it::AbstractRecord( make_input_tree() );
+		boost::shared_ptr<it::AbstractRecord> ptr = it::LazyTypes<it::AbstractRecord>::add_type( a_rec );
+		return *ptr;
 	} else {
 		return FieldBaseType::input_type;
 	}
