@@ -192,12 +192,16 @@ set(TIMER_RESOLUTION No)
 # try to get best timer on windows
 if (WIN32 OR CYGWIN)
     # on windows and cygwin try to get access QueryPerformanceCounter timer
-    TEST_TIMER (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER ${CMAKE_SOURCE_DIR}/tests/timer_queryperformance.cpp) 
+    TEST_TIMER (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+      ${CMAKE_SOURCE_DIR}/tests/timer_queryperformance.cpp) 
 
     # if success save theese values via flow_define and flow_define_constant macros
     if (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER AND TIMER_RESOLUTION)
         flow_define           (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER)
         # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       QueryPerformanceCounter")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
     else()
         MESSAGE (WARNING "Couldn't access QueryPerformanceCounter timer")   
     endif()
@@ -206,13 +210,16 @@ endif()
 if (NOT TIMER_RESOLUTION)
     # otherwise try to access chrono high resolution timer (multiplatform)
     # expecting c++11 support
-    TEST_TIMER(HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+    TEST_TIMER (HAVE_TIMER_CHRONO_HIGH_RESOLUTION
       ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_chrono_highresolution.cpp)
 
     # if success save theese values via flow_define and flow_define_constant macros
     if (HAVE_TIMER_CHRONO_HIGH_RESOLUTION AND TIMER_RESOLUTION)
         flow_define           (HAVE_TIMER_CHRONO_HIGH_RESOLUTION)
         # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       chrono highresolution timer")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
     else()
         MESSAGE (FATAL_ERROR "Couldn't access chrono timer")    
     endif()
