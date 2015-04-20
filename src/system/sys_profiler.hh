@@ -271,6 +271,14 @@ public:
 
     /// Hash modulo size of array of timer childs ( we have to check full hash to prevent collision)
     unsigned int hash_idx_;
+
+
+
+    /**
+     * Common part of _file path in CodePoint instances used when writing json result
+     * This common part is removed when formatting (Profiler::output methods)
+     */
+    static string common_path;
 };
 
 

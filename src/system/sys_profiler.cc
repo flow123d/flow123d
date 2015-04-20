@@ -48,7 +48,18 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
+/**
 using namespace std;
+ */
+#define FLOW123D_JSON_PRETTY        1
+/**
+ * Flag to property_tree::write_json method
+ * resulting in json machine readible format (no indents, no newlines)
+ */
+/**
+ * Constant representing number of MPI processes
+ * where there is no MPI to work with (so 1 process)
+ */
 
 /*
  * These should be replaced by using boost MPI interface
