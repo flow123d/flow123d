@@ -47,21 +47,6 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
-/**
- * Flag to property_tree::write_json method
- * resulting in json human readible format (indents, newlines)
- */
-const int FLOW123D_JSON_PRETTY        = 1;
-/**
- * Flag to property_tree::write_json method
- * resulting in json machine readible format (no indents, no newlines)
- */
-const int FLOW123D_JSON_MACHINE       = 0;
-/**
- * Constant representing number of MPI processes
- * where there is no MPI to work with (so 1 process)
- */
-const int FLOW123D_MPI_SINGLE_PROCESS = 1;
 
 /*
  * These should be replaced by using boost MPI interface
@@ -141,12 +126,6 @@ void Timer::start() {
 
 
 
-void Timer::update() {
-    cumul_time += (TimePoint() - start_time);
-}
-
-
-
 bool Timer::stop(bool forced) {
 
     if (forced) start_count=1;
@@ -195,7 +174,6 @@ string Timer::code_point_str() const {
 
 Profiler* Profiler::_instance = NULL;
 CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
-string    CodePoint::common_path = "";
 
 void Profiler::initialize()
 {
@@ -394,7 +372,13 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
     // fix path
     string filepath = timer.code_point_->file_;
-    filepath.erase (0, CodePoint::common_path.size());
+
+    // if constant FLOW123D_SOURCE_DIR is defined, we try to erase it from beginning of each CodePoint's filepath
+    #ifdef FLOW123D_SOURCE_DIR
+        string common_path = common_prefix (string(FLOW123D_SOURCE_DIR), filepath);
+        filepath.erase (0, common_path.size());
+    #endif
+
 
     // generate node representing this timer
     // add basic information
@@ -434,8 +418,8 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
 void Profiler::update_running_timers() {
     for(int node=actual_node; node !=0; node = timers_[node].parent_timer)
-        timers_[node].update();
-    timers_[0].update();
+        timers_[node].cumul_time += (TimePoint() - timers_[node].start_time);
+    timers_[0].cumul_time += (TimePoint() - timers_[0].start_time);
 }
 
 
@@ -478,8 +462,14 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     add_timer_info (reduce, &children, 0, 0.0);
     root.add_child ("children", children);
 
-    // write result to file
-    property_tree::write_json (os, root, FLOW123D_JSON_PRETTY);
+
+    /**
+     * Flag to property_tree::write_json method
+     * resulting in json human readable format (indents, newlines)
+     */
+    const int FLOW123D_JSON_HUMAN_READABLE = 1;
+    // write result to stream
+    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
 }
 
 
@@ -502,6 +492,11 @@ void Profiler::output(ostream &os) {
 
     // output header
     property_tree::ptree root, children;
+    /**
+     * Constant representing number of MPI processes
+     * where there is no MPI to work with (so 1 process)
+     */
+    const int FLOW123D_MPI_SINGLE_PROCESS = 1;
     output_header (root, FLOW123D_MPI_SINGLE_PROCESS);
 
 
@@ -527,8 +522,14 @@ void Profiler::output(ostream &os) {
     add_timer_info (reduce, &children, 0, 0.0);
     root.add_child ("children", children);
 
-    // write result to file
-    property_tree::write_json (os, root, FLOW123D_JSON_PRETTY);
+
+    /**
+     * Flag to property_tree::write_json method
+     * resulting in json human readable format (indents, newlines)
+     */
+    const int FLOW123D_JSON_HUMAN_READABLE = 1;
+    // write result to stream
+    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
 }
 
 
@@ -554,13 +555,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     char end_time_string[BUFSIZ] = {0};
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
-
-    // find common prefix in file paths
-    string common_path = timers_[0].code_point_str();
-    for (unsigned int i = 1; i < timers_.size(); i++)
-        common_path = common_prefix (common_path, timers_[i].code_point_str());
-    CodePoint::common_path = common_path;
-
     // generate current run details
 
     root.put ("program-name",       flow_name_);
@@ -569,6 +563,10 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("program-revision",   flow_revision_);
     root.put ("program-build",      flow_build_);
     root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
+    // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
+    #ifdef FLOW123D_SOURCE_DIR
+        root.put ("program-build",  string(FLOW123D_SOURCE_DIR));
+    #endif
 
     // print some information about the task at the beginning
     root.put ("task-description",   task_description_);
