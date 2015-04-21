@@ -41,6 +41,8 @@
 #include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+
+#include "io/output_time.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/xio.h"
@@ -49,9 +51,9 @@
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
-#include "io/output_data.hh"
 #include "mesh/partitioning.hh"
 
+#include "transport/mass_balance.hh"
 
 
 namespace it = Input::Type;
@@ -67,8 +69,8 @@ it::Record DarcyFlowMHOutput::input_type
                     "Parameters of output stream.")
     .declare_key("output_fields", it::Array(OutputFields::output_selection),
     		it::Default::obligatory(), "List of fields to write to output file.")
-    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
-                    "Output file for water balance table.")
+//    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
+//                    "Output file for water balance table.")
     .declare_key("compute_errors", it::Bool(), it::Default("false"),
     				"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
@@ -77,14 +79,14 @@ it::Record DarcyFlowMHOutput::input_type
 
 DarcyFlowMHOutput::OutputFields::OutputFields()
 {
-	*this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
-	*this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
+    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
+    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
-	*this += region_ids.name("region_ids")
+	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
 
@@ -113,7 +115,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(ele_pressure, 1);
+	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh = new DOFHandlerMultiDim(*mesh_);
@@ -128,23 +130,16 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
 	ele_piezo_head.resize(mesh_->n_elements());
-	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(ele_piezo_head, 1));
+	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
+	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
-	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::VectorFixed> >(ele_flux, 3));
+	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
-	output_fields.region_ids = GenericField<3>::region_id(*mesh_);
+	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-/*auto &vec_int_sub = mesh_->get_part()->seq_output_partition();
-	subdomains.resize(vec_int_sub.size());
-	for(unsigned int i=0; i<subdomains.size();i++)
-		subdomains[i]=vec_int_sub[i];
-	output_fields.subdomain.set_field(mesh_->region_db().get_region_set("ALL"),
-			make_shared< FieldElementwise<3, FieldValue<3>::Integer> >(subdomains, 1));
-*/
 	output_fields.set_limit_side(LimitSide::right);
 
 
@@ -157,7 +152,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
 	if (rank == 0) {
         // temporary solution for balance output
-        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
+//        balance_output_file = xfopen( in_rec.val<FilePath>("balance_output"), "wt");
 
         // optionally open raw output file
         FilePath raw_output_file_path;
@@ -167,6 +162,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
         }
 
     }
+
+	flow->balance_->units(
+	        get_output_fields().field_ele_pressure.units()
+	        *flow->data_.cross_section.units()*UnitSI().md(1)
+	        *flow->data_.storativity.units());
 }
 
 
@@ -201,11 +201,11 @@ void DarcyFlowMHOutput::output()
 
       make_node_scalar_param();
 
-      water_balance();
+//      water_balance();
 
       if (in_rec_.val<bool>("compute_errors")) compute_l2_difference();
 
-	  output_fields.fields_for_output.set_time(darcy_flow->time());
+	  output_fields.fields_for_output.set_time(darcy_flow->time().step());
 	  output_fields.fields_for_output.output(output_stream);
 	  output_stream->write_time_frame();
 
@@ -570,9 +570,9 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 struct DiffData {
     double pressure_error[2], velocity_error[2], div_error[2];
     double mask_vel_error;
-    vector<double> pressure_diff;
-    vector<double> velocity_diff;
-    vector<double> div_diff;
+    VectorSeqDouble pressure_diff;
+    VectorSeqDouble velocity_diff;
+    VectorSeqDouble div_diff;
 
 
     double * solution;
@@ -715,7 +715,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
 
-    static DiffData result;
+    DiffData result;
 
     // mask 2d elements crossing 1d
     result.velocity_mask.resize(mesh_->n_elements(),0);
@@ -737,11 +737,11 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //result.ele_flux = &( ele_flux );
 
-    auto vel_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.velocity_diff[0]), 1, mesh_->n_elements());
+    auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.pressure_diff[0]), 1, mesh_->n_elements());
+    auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	std::make_shared< FieldElementwise<3, FieldValue<3>::Scalar> >(&(result.div_diff[0]), 1, mesh_->n_elements());
+    auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
     output_fields.fields_for_output += output_fields;

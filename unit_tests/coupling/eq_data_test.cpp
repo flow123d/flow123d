@@ -36,6 +36,8 @@
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/unit_si.hh"
+#include "fields/bc_field.hh"
+#include "fields/multi_field.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
@@ -47,55 +49,8 @@
 using namespace std;
 namespace IT=Input::Type;
 
-// Test input for 'values' test
-const string eq_data_input = R"JSON(
-{ 
-  data=[
-      { rid=37,
-        init_pressure={
-            TYPE="FieldConstant",
-            value=1.1
-          },
-        init_conc = [ 1, 2, 3, 4]  
-      },
-      { region="2D XY diagonal",
-        init_pressure=2.2
-      },
-      { r_set="BULK",
-        bulk_set_field=5.7
-      },
-
-      // boundary          
-      { rid=101,
-        bc_type={TYPE="FieldConstant", value = "dirichlet"},
-        bc_pressure={
-            TYPE="FieldConstant",
-            value=1.23
-        }
-      },
-      { rid=102,
-        bc_type="dirichlet",
-        bc_piezo_head=1.23
-      }
-  ] 
-}
-)JSON";
 
 
-// Test input for old_bcd
-const string eq_data_old_bcd = R"JSON(
-{ 
-  data=[
-      { r_set="BOUNDARY",
-        flow_old_bcd_file="coupling/simplest_cube.fbc",
-        transport_old_bcd_file="coupling/transport.fbc"  
-      },
-      { r_set="BULK",
-        bulk_set_field=0.0
-      } 
-  ] 
-}
-)JSON";
 
 
 class SomeEquationBase : public EquationBase {
@@ -210,20 +165,25 @@ public:
             ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
             ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
             ADD_FIELD(bulk_set_field, "");
+            ADD_FIELD(conc_mobile, "");
 
             init_pressure.units( UnitSI::dimensionless() );
             init_conc.units( UnitSI::dimensionless() );
             bulk_set_field.units( UnitSI::dimensionless() );
+            conc_mobile.units( UnitSI::dimensionless() );
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
+        MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
 
 protected:
     static Input::Type::Record input_type;
+    static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
+    std::vector<string> component_names;
 
     virtual void SetUp() {
         Profiler::initialize();
@@ -234,6 +194,7 @@ protected:
         mesh= new Mesh;
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
+        component_names = { "comp_0", "comp_1", "comp_2", "comp_3" };
 
     }
 
@@ -244,8 +205,8 @@ protected:
 
         TimeGovernor tg(0.0, 1.0);
 
-        data.init_conc.set_n_components(4);        // set number of substances posibly read from elsewhere
-        data.bc_conc.set_n_components(4);
+        data.set_components(component_names);        // set number of substances posibly read from elsewhere
+        //data.bc_conc.set_components(component_names);
 
         /* Regions in the test mesh:
          * $PhysicalNames
@@ -263,7 +224,7 @@ protected:
         data.set_mesh(*mesh);
         data.set_input_list( in_rec.val<Input::Array>("data"));
         data.set_limit_side(LimitSide::right);
-        data.set_time(tg);
+        data.set_time(tg.step());
     }
 
     virtual void TearDown() {
@@ -275,6 +236,8 @@ protected:
 };
 
 
+
+MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
 IT::Record SomeEquation::input_type=
         IT::Record("SomeEquation","")
@@ -289,6 +252,55 @@ IT::Record SomeEquation::input_type=
 
 
 TEST_F(SomeEquation, values) {
+    // Test input for 'values' test
+    string eq_data_input = R"JSON(
+    { 
+      data=[
+          { rid=37,
+            init_pressure={
+                TYPE="FieldConstant",
+                value=1.1
+              },
+            init_conc = [ 1, 2, 3, 4],
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { region="2D XY diagonal",
+            init_pressure=2.2,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+          { r_set="BULK",
+            bulk_set_field=5.7,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          },
+
+          // boundary          
+          { rid=101,
+            bc_type={TYPE="FieldConstant", value = "dirichlet"},
+            bc_pressure={
+                TYPE="FieldConstant",
+                value=1.23
+            },
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[5, 6, 7, 8]},
+                components=[ {TYPE="FieldConstant", value=5}, {TYPE="FieldConstant", value=6}, {TYPE="FieldConstant", value=7}, {TYPE="FieldConstant", value=8}]
+              }
+          },
+          { rid=102,
+            bc_type="dirichlet",
+            bc_piezo_head=1.23,
+            conc_mobile={REF="/data/3/conc_mobile"}
+          }
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_input);
     // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
 
@@ -311,6 +323,9 @@ TEST_F(SomeEquation, values) {
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
+    for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
+        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_1d) );
+    }
 
     FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
@@ -326,6 +341,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ( 1.0, value.at(2,2) );
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
+    for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
+        EXPECT_DOUBLE_EQ( 1.0 + i, data.conc_mobile[i].value(p, el_2d) );
+    }
 
     // init_conc - variable length vector
     FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
@@ -347,11 +365,34 @@ TEST_F(SomeEquation, values) {
 
     EXPECT_EQ( EqData::dirichlet, data.bc_type.value(p, el_bc_bottom) );
     EXPECT_DOUBLE_EQ(1.23 + (3 + 4 + 3 - 5), data.bc_pressure.value(p, el_bc_bottom) );    // piezo_head
+
 }
 
 
 
 TEST_F(SomeEquation, old_bcd_input) {
+    // Test input for old_bcd
+    string eq_data_old_bcd = R"JSON(
+    { 
+      data=[
+          { r_set="BOUNDARY",
+            flow_old_bcd_file="coupling/simplest_cube.fbc",
+            transport_old_bcd_file="coupling/transport.fbc",
+            conc_mobile = {
+                TYPE="MultiField",
+                component_names=["comp_0", "comp_1", "comp_2", "comp_3"],
+                common={TYPE="FieldConstant", value=[1, 2, 3, 4]},
+                components=[ {TYPE="FieldConstant", value=1}, {TYPE="FieldConstant", value=2}, {TYPE="FieldConstant", value=3}, {TYPE="FieldConstant", value=4}]
+              }
+          },
+          { r_set="BULK",
+            bulk_set_field=0.0,
+            conc_mobile={REF="/data/0/conc_mobile"}
+          } 
+      ] 
+    }
+    )JSON";
+
     read_input(eq_data_old_bcd);
 
     Space<3>::Point p;
@@ -386,4 +427,26 @@ TEST_F(SomeEquation, old_bcd_input) {
     EXPECT_DOUBLE_EQ(37.0, value(3) );
     }
 
+}
+
+
+
+TEST_F(SomeEquation, wrong_time_order) {
+    // Test input for old_bcd
+    string eq_data = R"JSON(
+    { 
+      data=[
+          { r_set="BULK",
+            time=1.0,
+            bulk_set_field=0.0
+          }, 
+          { r_set="BULK",
+            time=0.0,
+            bulk_set_field=1.0
+          } 
+      ] 
+    }
+    )JSON";
+
+    EXPECT_THROW({read_input(eq_data);}, FieldCommon::ExcNonascendingTime);
 }

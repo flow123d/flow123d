@@ -48,17 +48,9 @@ public:
     FieldElementwise(unsigned int n_comp=0);
 
     /**
-     * Temporary solution (as well as the whole this class before we use DofHandlers) how to
-     * build FiledElementwise on an existing array of values on elements.
-     */
-    FieldElementwise(double *data_ptr, unsigned int n_components, unsigned int size );
-
-    /**
      * Alternative to previous constructor.
      */
-    FieldElementwise(vector<double> &data, unsigned int n_components)
-    : FieldElementwise(&(data[0]), n_components, data.size() )
-    {}
+    FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
     static Input::Type::Record input_type;
 
@@ -74,7 +66,7 @@ public:
     /**
      * Update time and possibly update data from GMSH file.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Has to be set before calling init_from_input. This also
@@ -108,10 +100,8 @@ private:
      * TODO: temporary solution until we have separate mesh for the boundary part
      */
     bool boundary_domain_;
-    /// Allocated size of data_ buffer
-    unsigned int data_size_;
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
-    double *data_;
+    std::shared_ptr< std::vector<typename Value::element_type> > data_;
     /// Number of rows in @p data_ buffer.
     unsigned int n_entities_;
     /// Size of Value

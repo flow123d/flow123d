@@ -31,7 +31,7 @@
 #define HEAT_MODEL_HH_
 
 #include "advection_diffusion_model.hh"
-
+#include "fields/multi_field.hh"
 
 
 
@@ -113,6 +113,10 @@ protected:
 public:
 
 	HeatTransferModel();
+
+	static string balance_prefix() { return "energy"; }
+
+	UnitSI balance_units();
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 

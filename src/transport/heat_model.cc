@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
+#include "fields/unit_si.hh"
 
 
 
@@ -174,6 +175,15 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .flags(equation_result);
 }
 
+
+UnitSI HeatTransferModel::balance_units()
+{
+	return data().cross_section.units()*UnitSI().md(1)
+	        *data().output_field.units()
+			*data().porosity.units()
+			*data().fluid_density.units()
+			*data().fluid_heat_capacity.units();
+}
 
 IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {

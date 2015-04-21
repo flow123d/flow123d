@@ -33,6 +33,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
+#include "fields/unit_si.hh"
 
 
 
@@ -86,6 +87,12 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
+UnitSI ConcentrationTransportModel::balance_units()
+{
+	return data().cross_section.units()*UnitSI().md(1)
+	        *data().porosity.units()
+	        *data().output_field.units();
+}
 
 
 IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
@@ -94,7 +101,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
-			.declare_key("substances", IT::Array(IT::String()), IT::Default::obligatory(),
+			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
 					"Names of transported substances.");
 
 	return rec;
@@ -117,9 +124,7 @@ ConcentrationTransportModel::ConcentrationTransportModel() :
 
 void ConcentrationTransportModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
 {
-	std::vector<std::string> names;
-	in_rec.val<Input::Array>("substances").copy_to(names);
-	substances.initialize(names);
+	substances.initialize(in_rec.val<Input::Array>("substances"));
 }
 
 

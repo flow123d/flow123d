@@ -90,8 +90,6 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     if (! in_->fail() ) { // allow only eof state after any getline
         set_tokenizer();
         return true;
-    } else {
-        DBGMSG("Line: '%s'\n", line_.c_str());
     }
 
     return false;

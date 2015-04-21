@@ -173,7 +173,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
-        ("JSON_template", "Prints description of the main input file as a valid CON file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
     	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
@@ -217,12 +216,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::OutputText type_output(&input_type);
         type_output.set_filter(":Field:.*");
         cout << type_output;
-        exit( exit_output );
-    }
-
-    if (vm.count("JSON_template")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONTemplate(&input_type);
         exit( exit_output );
     }
 

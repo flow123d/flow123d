@@ -1,7 +1,7 @@
 {
   problem = {
     TYPE = "SequentialCoupling", 
-    description = "Transport 1D-2D, (convection, dual porosity, sorption)", 
+    description = "Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption, sources).", 
     mesh = {
       mesh_file = "./input/mesh_with_boundary.msh",
       sets = [
@@ -9,14 +9,16 @@
             region_labels = [ "1d_upper", "1d_lower", "1d_left_branch"]
           }
         ]
-    }, 
+    }, // mesh
 
     primary_equation = {
       TYPE = "Steady_MH", 
 
       input_fields= [
-        { r_set = "1d_domain", conductivity = 10, sigma = 0.05 },
-        { region = "2d",       conductivity = 1  },
+        { r_set = "1d_domain", conductivity = 1e-6, 
+                               cross_section = 0.04, 
+                               sigma = 0.9 },
+        { region = "2d",       conductivity = 1e-7  },
         { r_set = "BOUNDARY",
           bc_type = "dirichlet",
           bc_pressure = { TYPE="FieldFormula", value = "x+y" }
@@ -24,9 +26,14 @@
       ],
 
       output = {
-        output_stream = { REF = "/system/output_streams/0" }, 
+        output_stream = { 
+          file = "flow.pvd", 
+          format = { TYPE = "vtk", variant = "ascii" }
+        }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+      
+      balance = true,
       
       solver = {
         TYPE = "Petsc", 
@@ -38,17 +45,24 @@
     secondary_equation = {
       TYPE = "TransportOperatorSplitting", 
 
-      substances = [ "age", "U235" ],
+      substances = [ 
+        {name = "age", molar_mass = 0.018},     // water age
+        {name = "U235", molar_mass = 0.235}     // uranium 235
+      ],
       
       input_fields= [
         { r_set = "ALL",
           init_conc = 0,
-          porosity= 0.25
+          porosity= 0.25,
+          sources_density = [0.25, 0]   // source is in the whole volume (l+s) -> times porosity
         },
         { r_set = "BOUNDARY",
-          bc_conc = 1.0
+          bc_conc = [0.0, 1.0]
         }
       ],
+      
+      time = { end_time = 1e6 },
+      balance = { cumulative = true },
       
       reaction_term = {
         TYPE = "DualPorosity",
@@ -66,24 +80,24 @@
         
         reaction_mobile = {
           TYPE = "SorptionMobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
           solubility = [1.0, 1.0],
           
           input_fields= [
             {
               r_set="ALL",
-              rock_density = 1.0,
-              sorption_type =  ["linear", "freundlich"],
-              isotherm_mult = 0.02, 
-              isotherm_other = [0, 0.5]
+              rock_density = 2800.0,    // granit
+              sorption_type =  ["none", "freundlich"],
+              isotherm_mult = [0, 0.68],
+              isotherm_other = [0, 1.0]
             }
           ],
           output_fields = []
         },
         reaction_immobile = {
           TYPE = "SorptionImmobile",
-          solvent_density = 1.0,
+          solvent_density = 1000.0,     // water
           substances = ["age", "U235"],
           solubility = [1.0, 1.0],
           input_fields = { REF="../../reaction_mobile/input_fields" },
@@ -91,26 +105,11 @@
         }
       },
       
-      output_stream = { REF = "/system/output_streams/1" },
-
-      time = { end_time = 1.0 },
-      mass_balance = { cumulative = true }
-    } // secondary_equation
-  }, // problem
- 
-  system = {
-    output_streams = [
-      {
-        file = "flow.pvd", 
-        format = { TYPE = "vtk", variant = "ascii" },
-        name = "flow_output_stream"
-      }, 
-      {
+      output_stream = { 
         file = "transport.pvd", 
         format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 0.1,
-        name = "transport_output_stream"
+        time_step = 1e5    
       }
-    ]
-  }
+    } // secondary_equation
+  } // problem  
 }

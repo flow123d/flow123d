@@ -115,9 +115,9 @@ int ApplicationBase::petcs_finalize() {
 
 
 void ApplicationBase::init(int argc, char ** argv) {
-    Profiler::initialize();
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
+    Profiler::initialize();
 
 	this->petsc_initialize(argc, argv);
 

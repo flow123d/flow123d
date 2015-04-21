@@ -14,7 +14,7 @@
 % You should have received a copy of the GNU General Public License along with this program; if not,
 % write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
 
-\section{Output files}
+\section{Output Files}
 \label{section_output}
 
 Flow123d supports output of scalar, vector and tensor data fields into two formats. The first is the native format of the GMSH software (usually with extension \verb'msh')
@@ -113,19 +113,29 @@ complete list & See \hyperlink{IT::HeatTransfer-DG-Output}{Heat transfer output 
 
 %\subsection{Paraview viewer remarks}
 
-\subsection{Auxiliary output files}
+\subsection{Auxiliary Output Files}
 
-\subsubsection{Profiling information}
+\subsubsection{Profiling Information}
 On every run we collect some basic profiling informations. After all computations these data are written into the file
 \verb'profiler%y%m%d_%H.%M.%S.out' where \verb'%y', \verb'%m', \verb'%d', \verb'%H', \verb'%M', \verb'%S' are 
 two digit numbers representing year, month, day, hour, minute, and second of the program start time.
 
-\subsubsection{Water flux information}
-File contains water flow balance, total inflow and outflow over boundary segments. 
-Further there is total water income due to sources (if they are present).
+\subsubsection{Balance of Conservative Quantities}
+Primary and secondary equations can produce additional information on fluxes, sources and state of conservative quantities (for flow it is the volume of water, for transport the mass of a substance, for heat transfer the energy).
+The computation of balance is governed by the key \verb'balance'.
+The balance file (default \verb'water_balance.txt', \verb'mass_balance.txt', \verb'energy_balance.txt') contains the following information:
+\begin{itemize}
+\item time and region
+\item name and unit of the quantity
+\item mass (current state), flux through boundary and volume source at given time and region
+\item incoming and outgoing flux and source
+\item flux and source increment since the last balance output time
+\item cumulative flux and source
+\item error: current mass should equal to initial mass + cumulative sources - cumulative fluxes
+\end{itemize}
 
 
-\subsubsection{Raw water flow data file}
+\subsubsection{Raw Water Flow Data File}
 You can force Flow123d to write raw data about results of MH method. The file format is:
 \begin{verbatim}
 $FlowField

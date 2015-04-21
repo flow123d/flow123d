@@ -35,13 +35,15 @@
 #include "mesh/mesh.h"
 #include <string>
 #include <vector>
-#include "io/output_data.hh"
 
+#include "io/output_time.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
+
+#include "fields/vec_seq_double.hh"
 
 
 class DarcyFlowMH_Steady;
@@ -77,7 +79,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Integer> subdomain;
-	    Field<3, FieldValue<3>::Integer> region_ids;
+	    Field<3, FieldValue<3>::Integer> region_id;
 
 	    Field<3, FieldValue<3>::Scalar> velocity_diff;
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;
@@ -99,6 +101,8 @@ public:
 
     /** \brief Calculate values for output.  **/
     void output();
+
+    const OutputFields &get_output_fields() { return output_fields; }
 
 
 private:
@@ -155,17 +159,14 @@ private:
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     vector<double> corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    vector<double> ele_pressure;
+    VectorSeqDouble ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    vector<double> ele_piezo_head;
-    /// have to copy vector<int> provided by Mesh, in order to use FieldElementwise
-    /// TEMPORARY SOLUTION
-    vector<double> subdomains;
+    VectorSeqDouble ele_piezo_head;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    vector<double> ele_flux;
+    VectorSeqDouble ele_flux;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;

@@ -14,6 +14,8 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 #include "./reaction/reaction_term.hh"
 
 class Mesh;
@@ -127,8 +129,7 @@ protected:
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
-  Vec *vconc_immobile_out; ///< PETSC concentration vector output for immobile phase (gathered - sequential)
-  double **conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)  
+  std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
 };

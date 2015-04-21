@@ -30,13 +30,10 @@
 
 #include <fstream>
 #include <iomanip>
-
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
-#include "Python.h"
-#include "system/python_loader.hh"
 #include <boost/format.hpp>
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
@@ -49,6 +46,7 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
+using namespace std;
 
 /*
  * These should be replaced by using boost MPI interface

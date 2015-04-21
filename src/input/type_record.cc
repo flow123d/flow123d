@@ -23,6 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace Input {
 namespace Type {
@@ -48,6 +49,15 @@ Default::Default(const std::string & value)
 Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
 {}
+
+std::size_t Default::content_hash() const
+{   size_t seed = 0;
+    boost::hash_combine(seed, "Default");
+    boost::hash_combine(seed, type_);
+    boost::hash_combine(seed, value_);
+    return seed;
+}
+
 
 
 /**********************************************************************************
@@ -76,6 +86,24 @@ Record::Record(const string & type_name_in, const string & description)
 
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
+}
+
+
+std::size_t Record::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Record");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->description_);
+    boost::hash_combine(seed, data_->auto_conversion_key);
+    for( Key &key : data_->keys) {
+        boost::hash_combine(seed, key.key_);
+        boost::hash_combine(seed, key.description_);
+        boost::hash_combine(seed, key.type_->content_hash() );
+        boost::hash_combine(seed, key.default_.content_hash() );
+
+    }
+    return seed;
 }
 
 
@@ -167,7 +195,7 @@ void Record::make_copy_keys_all() {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( ! data_->p_parent_ || ! data_->parent_ptr_ , "Record has been already derived.\n");
+	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_ , "Record has been already derived.\n");
     if (TypeBase::was_constructed(&parent)) {
         data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
         data_->p_parent_ = NULL;
@@ -329,6 +357,22 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
+Record &Record::declare_type_key(const Selection * key_type) {
+	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
+	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, Default::obligatory(),
+			"Sub-record selection.");
+	return *this;
+}
+
+Record &Record::has_obligatory_type_key() {
+	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
+	Selection * sel = new Selection(type_name() + "_TYPE_selection");
+	sel->add_value(0, type_name());
+	declare_type_key( sel );
+	return *this;
+}
+
+
 /**********************************************************************************
  * implementation of Type::Record::RecordData
  */
@@ -482,10 +526,23 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
   child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
     // declare very first item of any descendant
-    data_->declare_key("TYPE", boost::shared_ptr<Selection>(), child_data_->selection_of_childs.get(), Default::obligatory(),
-                 "Sub-record selection.");
+	this->declare_type_key(child_data_->selection_of_childs.get());
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
+}
+
+
+std::size_t AbstractRecord::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Abstract");
+    boost::hash_combine(seed, data_.get());
+    boost::hash_combine(seed, full_type_name());
+    boost::hash_combine(seed, data_->description_);
+    //for( Record &key : child_data_->list_of_childs) {
+    //    boost::hash_combine(seed, key.content_hash() );
+    //}
+    return seed;
 }
 
 
