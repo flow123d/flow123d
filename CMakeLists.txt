@@ -260,7 +260,8 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS} 
 
 # store compiler flags (into config.h file)
 flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
-
+# store current source dir (for profiler purposes)
+flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
 ######################################################################### find libraries
 #
