@@ -321,16 +321,6 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::output(OutputTime *stream)
-{
-	// currently we cannot output boundary fields
-	if (!is_bc())
-		stream->register_data(this->output_type(), *this);
-}
-
-
-
-template<int spacedim, class Value>
 void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields

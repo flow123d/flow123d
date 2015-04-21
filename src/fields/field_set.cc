@@ -140,15 +140,6 @@ bool FieldSet::is_constant(Region reg) const {
 
 
 
-void FieldSet::output(OutputTime *stream) {
-	START_TIMER("Fill OutputData");
-    for(auto field : field_list)
-        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
-            field->output(stream);
-}
-
-
-
 void FieldSet::output(std::shared_ptr<OutputTime> stream) {
 	START_TIMER("Fill OutputData");
     for(auto field : field_list)

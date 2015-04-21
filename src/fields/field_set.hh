@@ -215,7 +215,6 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::output().
      */
-    void output(OutputTime *stream);
     void output(std::shared_ptr<OutputTime> stream);
 
     /**
