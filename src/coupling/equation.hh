@@ -33,8 +33,8 @@
 
 
 #include <limits>
-#include "time_governor.hh"
-#include "time_marks.hh"
+#include "tools/time_governor.hh"
+#include "tools/time_marks.hh"
 #include "input/accessors.hh"
 
 #include <petscvec.h>

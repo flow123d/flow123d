@@ -91,17 +91,14 @@ DualPorosity::~DualPorosity(void)
 
   VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_immobile);
-  VecDestroy(vconc_immobile_out);
 
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
       //no mpi vectors
       xfree(conc_immobile[sbi]);
-      xfree(conc_immobile_out[sbi]);
   }
 
   xfree(conc_immobile);
-  xfree(conc_immobile_out);
 }
 
 
@@ -185,11 +182,12 @@ void DualPorosity::initialize()
   
   //allocating memory for immobile concentration matrix
   conc_immobile = (double**) xmalloc(substances_.size() * sizeof(double*));
-  conc_immobile_out = (double**) xmalloc(substances_.size() * sizeof(double*));
+  conc_immobile_out.clear();
+  conc_immobile_out.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_immobile[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));
-    conc_immobile_out[sbi] = (double*) xmalloc(distribution_->size() * sizeof(double));
+    conc_immobile_out[sbi].resize( distribution_->size() );
   }
   allocate_output_mpi();
   
@@ -217,32 +215,28 @@ void DualPorosity::initialize()
 
 void DualPorosity::initialize_fields()
 {
-  //setting fields in data
-  data_.set_n_components(substances_.size());
-
   //setting fields that are set from input file
   input_data_set_+=data_;
   input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
+  //setting fields in data
+  data_.set_components(substances_.names());
   data_.set_mesh(*mesh_);
   data_.set_limit_side(LimitSide::right);
   
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
-  
-  //initialization of output
-  data_.conc_immobile.init(substances_.names());
-  data_.conc_immobile.set_mesh(*mesh_);
+  data_.output_fields.set_components(substances_.names());
+  data_.output_fields.set_mesh(*mesh_);
+  data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-
+  data_.conc_immobile.set_up_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-    std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-        new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], substances_.size(), mesh_->n_elements()));
+	auto output_field_ptr = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  data_.output_fields.set_limit_side(LimitSide::right);
   output_stream_->add_admissible_field_names(output_array);
 }
 
@@ -258,22 +252,22 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-          reaction_mobile->data().set_field("porosity", data_["porosity"]);
-          reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_mobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-      reaction_immobile->data().set_field("porosity", data_["porosity"]);
-      reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_immobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
-  data_.set_time(*time_);
+  data_.set_time(time_->step(0));
   set_initial_condition();
   
   // write initial condition
   output_vector_gather();
-  data_.output_fields.set_time(*time_);
+  data_.output_fields.set_time(time_->step(0));
   data_.output_fields.output(output_stream_);
   
   if(reaction_mobile != nullptr)
@@ -301,7 +295,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  data_.set_time(*time_);
+  data_.set_time(time_->step(-2));
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
@@ -383,7 +377,6 @@ void DualPorosity::allocate_output_mpi(void )
     n_subst = substances_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-    vconc_immobile_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
@@ -392,14 +385,13 @@ void DualPorosity::allocate_output_mpi(void )
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
-        VecZeroEntries(vconc_immobile_out[sbi]);
+        VecZeroEntries(conc_immobile_out[sbi].get_data_petsc());
     }
     
     // create output vector scatter
     IS is;
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_immobile[0], is, conc_immobile_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
     ISDestroy(&(is));
 }
 
@@ -409,8 +401,8 @@ void DualPorosity::output_vector_gather()
     unsigned int sbi;
 
     for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
 }
 
@@ -420,7 +412,7 @@ void DualPorosity::output_data(void )
     output_vector_gather();
 
     // Register fresh output data
-    data_.output_fields.set_time(*time_);
+    data_.output_fields.set_time(time_->step());
     data_.output_fields.output(output_stream_);
     
     if (reaction_mobile) reaction_mobile->output_data();

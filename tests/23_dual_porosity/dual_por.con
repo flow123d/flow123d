@@ -26,6 +26,8 @@
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
 
+      balance = true,
+
       solver = { 
         TYPE = "Petsc",
         a_tol = 1e-7 
@@ -70,6 +72,10 @@
         ],
         scheme_tolerance = 0.0,
         output_fields = ["conc_immobile"]
+      },
+      
+      balance = {
+        cumulative = true
       }
     } 
   }, 

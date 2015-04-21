@@ -29,7 +29,7 @@
  */
 
 #include <petscmat.h>
-#include "time_governor.hh"
+#include "tools/time_governor.hh"
 
 
 #include "equation.hh"

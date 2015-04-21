@@ -142,10 +142,11 @@ public:
 	public:
 
         enum BC_Type {
-            inflow=0,
-            dirichlet=1,
-            neumann=2,
-            robin=3
+            none,
+            inflow,
+            dirichlet,
+            neumann,
+            robin
         };
         static Input::Type::Selection bc_type_selection;
 
@@ -160,7 +161,7 @@ public:
         BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
-        Field<3, FieldValue<3>::Integer> region_ids;
+        Field<3, FieldValue<3>::Integer> region_id;
 
 	};
 
@@ -224,8 +225,6 @@ public:
 	 */
 	virtual EqData *get_data() { return &data_; }
 
-	TimeIntegrationScheme time_scheme() { return implicit_euler; }
-
 	/**
 	 * @brief Destructor.
 	 */
@@ -236,6 +235,8 @@ private:
 	inline typename Model::ModelEqData &data() { return data_; }
 
 	void output_vector_gather();
+
+	void preallocate();
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -480,6 +481,9 @@ private:
 
 	/// The mass matrix.
 	Mat mass_matrix;
+	
+	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
+	Vec *mass_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
@@ -521,6 +525,8 @@ private:
 	vector<vector<vector<arma::vec3> > > ad_coef_edg;
 	/// Diffusion coefficients on edges.
 	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
 	// @}
 

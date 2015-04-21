@@ -99,6 +99,7 @@ protected:
 TEST_F(InputJSONToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Integer int_type(1,10);
+    Type::Integer any_int;
 
     {
         stringstream ss("5");
@@ -106,7 +107,10 @@ TEST_F(InputJSONToStorageTest, Integer) {
 
         EXPECT_EQ(5, storage_->get_int());
     }
-
+    {
+        stringstream ss("5000000000");
+        EXPECT_THROW_WHAT( {read_stream(ss, any_int);} , ExcInputError, "Value out of bounds.");
+    }
     {
         stringstream ss("0");
         EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "Value out of bounds.");
@@ -120,12 +124,20 @@ TEST_F(InputJSONToStorageTest, Integer) {
 TEST_F(InputJSONToStorageTest, Double) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Double dbl_type(1.1,10.1);
+    Type::Double any_double;
 
     {
         stringstream ss("5.5");
         read_stream(ss, dbl_type);
 
         EXPECT_EQ(5.5, storage_->get_double());
+    }
+
+    {
+        stringstream ss("5000000000000");
+        read_stream(ss, any_double);
+
+        EXPECT_EQ(5e12, storage_->get_double());
     }
 
     {
@@ -311,7 +323,7 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ(123, storage_->get_item(1)->get_int() );
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON int', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcAutomaticConversionError , "The value should be 'JSON int', but we found:.* 'JSON real'");
     }
 
     {
@@ -322,6 +334,67 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
     }
 
+    // Test automatic conversion from record
+/*
+    {
+        static Type::Record lower( "Lower", "");
+        lower.declare_key("int", Type::Integer(), "");
+        lower.finish();
+
+        static Type::Record upper( "Upper", "");
+        upper.has_obligatory_type_key();
+        upper.declare_key("rec", lower, "");
+        upper.allow_auto_conversion("rec");
+        upper.finish();
+
+        stringstream ss("{TYPE=\"Upper\", rec={int=37} }");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0)->get_int() );
+
+        stringstream ss1("{int=37}");
+        read_stream(ss1, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0)->get_int() );
+
+    }
+*/
+/*
+    {
+        static Type::AbstractRecord abstr("Abstract", "");
+        abstr.finish();
+
+        static Type::Record lower( "Lower", "");
+        lower.derive_from(abstr);
+        lower.declare_key("int", Type::Integer(), "");
+        lower.finish();
+
+        static Type::Record upper( "Upper", "");
+        upper.decalare_key("rec", upper, "");
+        upper.allow_auto_conversion("rec");
+        upper.has_obligatory_type_key();
+        upper.finish();
+
+        stringstream ss("{TYPE=\"Upper\", rec={int=37} }");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0) );
+
+        stringstream ss("{int=37}");
+        read_stream(ss, upper);
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ( 0, storage_->get_item(0)->get_int() );
+        EXPECT_EQ( 37, storage_->get_item(1)->get_item(0) );
+
+    }
+*/
 
 }
 

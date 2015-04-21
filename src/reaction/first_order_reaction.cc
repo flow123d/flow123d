@@ -22,10 +22,10 @@ Record FirstOrderReaction::input_type_product
                  "The name of the product.")
     //.declare_key("stoichiometric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
     .declare_key("branching_ratio", Double(0.0), Default("1.0"),
-                 "The branching ratio of the product when there is more than one."
-                 "Considering only one product, the default ratio 1.0 is used."
-                 "Its value must be positive. Further, the branching ratios of all products are normalized" 
-                 "by their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).");
+                 "The branching ratio of the product when there are more products.\n"
+                 "The value must be positive. Further, the branching ratios of all products are normalized "
+                 "in order to sum to one.\n"
+                 "The default value 1.0, should only be used in the case of single product.");
     
 Record FirstOrderReaction::input_type_single_reaction
 	= Record("Reaction", "Describes a single first order chemical reaction.")

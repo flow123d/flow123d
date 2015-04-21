@@ -59,6 +59,7 @@
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
+#include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
@@ -74,6 +75,7 @@ class Distribution;
 class SparseGraph;
 class LocalToGlobalMap;
 class DarcyFlowMHOutput;
+class Balance;
 
 
 /**
@@ -205,6 +207,11 @@ protected:
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
+
+    /// object for calculation and writing the water balance to file.
+    boost::shared_ptr<Balance> balance_;
+    /// index of water balance within the Balance object.
+    unsigned int water_balance_idx_;
 };
 
 
@@ -294,6 +301,9 @@ protected:
      *
      */
     void assembly_steady_mh_matrix();
+
+    /// Source term is implemented differently in LMH version.
+    virtual void assembly_source_term();
 
     /**
      * Assembly or update whole linear system.
@@ -468,6 +478,7 @@ public:
 protected:
     void read_init_condition() override;
     void modify_system() override;
+    void assembly_source_term() override;
     void setup_time_term();
     virtual void postprocess();
 private:

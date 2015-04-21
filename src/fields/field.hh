@@ -15,8 +15,8 @@ using namespace std;
 
 #include "system/exceptions.hh"
 #include "input/accessors.hh"
-#include "coupling/time_marks.hh"
-#include "coupling/time_governor.hh"
+#include "tools/time_marks.hh"
+#include "tools/time_governor.hh"
 
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
@@ -72,6 +72,13 @@ public:
      * 1) for backward compatibility with old BCD input files
      * 2) for setting pressure values are piezometric head values
      */
+    /**
+     * Note for future:
+     * We pass through parameter @p field information about field that holds the factory which are necessary
+     * for interpreting user input and create particular field instance. It would be clearer to pass these information
+     * when the factory is assigned to a field. Moreover some information may not be set to field at all but directly passed
+     * to the factory.
+     */
     class FactoryBase {
     public:
     	/**
@@ -113,6 +120,8 @@ public:
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
     IT::AbstractRecord &get_input_type() override;
+
+    IT::Record &get_multifield_input_type() override;
 
 
     /**
@@ -162,16 +171,13 @@ public:
      */
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
 
-    void set_limit_side(LimitSide side) override
-    { this->limit_side_=side; }
-
     /**
      * Check that whole field list is set, possibly use default values for unset regions
      * and call set_time for every field in the field list.
      *
      * Returns true if the field has been changed.
      */
-    bool set_time(const TimeGovernor &time) override;
+    bool set_time(const TimeStep &time) override;
 
     /**
      * Check that other has same type and assign from it.
@@ -238,7 +244,7 @@ protected:
      * Read input into @p regions_history_ possibly pop some old values from the
      * history queue to keep its size less then @p history_length_limit_.
      */
-    void update_history(const TimeGovernor &time);
+    void update_history(const TimeStep &time);
 
 
 
@@ -285,134 +291,15 @@ protected:
 
 
 
+    template<int dim, class Val>
+    friend class MultiField;
+
 };
 
 
 
 
 
-/**
- * Same as Field<...> but for boundary regions.
- */
-template<int spacedim, class Value>
-class BCField : public Field<spacedim, Value> {
-public:
-    BCField() : Field<spacedim,Value>("anonymous_bc", true) {}
-};
-
-
-
-
-/**
- * @brief Class for representation of a vector of fields of the same physical quantity.
- *
- * When solving a system of same equations with the number of components given at runtime
- * (as in the case of transport equation for runtime given number of substances) we need means how to work with the whole
- * vector of fields at once. This is the aim of this class. It provides the interface given by the parent class @p FieldCommonBase,
- * but principally it is just a vector of Field<Value,dim> objects. The sub-fields or components of a @p MultiField are independent
- * objects, how ever the setters propagates the values from the MultiFields to the individual fields. The only exception is the
- * @p set_name method which in conjunction with @p MultiField::set_subfield_names can set unique name to each component.
- *
- * Template parameters are used for every subfield.
- *
- *  TODO:
- *  - general mechanism how to convert a Field< dim, Vector> to MultiField< dim, Value>
- *  - implement set_from_input
- *  - implement set_Time
- *  - implement set_complemented_vector_field
- *
- *  - problem with "input" methods, since Field works with AbstratRecord, the MultiField - However  - should use Array of AbstractRecords
- *    simplest solution - test that in EqDataBase and have more methods in FieldCommonBase, or somehow detach input handling from
- *    Fields
- *
- */
-template<int spacedim, class Value>
-class MultiField : public FieldCommon {
-public:
-    //typedef FieldBase<spacedim, Value> SubFieldBaseType;
-    typedef Field<spacedim, Value> SubFieldType;
-    typedef Field<spacedim, typename FieldValue<spacedim>::Vector > TransposedField;
-
-    class MultiFieldFactory : public Field<spacedim, Value>::FactoryBase {
-    public:
-    	virtual typename Field<spacedim, Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field);
-    };
-
-    /**
-     * Default constructor.
-     */
-    MultiField();
-
-    /**
-     * Returns input type of particular field instance, this is usually static member input_type of the corresponding FieldBase class (
-     * with same template parameters), however, for fields returning "Enum" we have to create whole unique Input::Type hierarchy for
-     * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
-     */
-    IT::AbstractRecord &get_input_type() override;
-
-    void set_limit_side(LimitSide side) override;
-
-    /**
-     * Abstract method to update field to the new time level.
-     * Implemented by in class template Field<...>.
-     *
-     * Return true if the value of the field was changed on some region.
-     * The returned value is also stored in @p changed_during_set_time data member.
-     */
-    bool set_time(const TimeGovernor &time) override;
-
-    /**
-     * We have to override the @p set_mesh method in order to call set_mesh method for subfields.
-     */
-    void set_mesh(const Mesh &mesh) override;
-
-
-    /**
-     * Polymorphic copy. Check correct type, allows copy of MultiField or Field.
-     */
-    void copy_from(const FieldCommon & other) override;
-
-    /**
-     * Implementation of @p FieldCommonBase::output().
-     */
-    void output(OutputTime *stream) override;
-
-    /**
-     * Implementation of @p FieldCommonBase::is_constant().
-     */
-    bool is_constant(Region reg) override;
-
-    /**
-     * Virtual destructor.
-     */
-    inline virtual ~MultiField() {}
-
-    /// Number of subfields that compose the multi-field.
-    inline unsigned int size() const
-    { return sub_fields_.size(); }
-
-    /**
-     * Initialize MultiField to the number of components given by the size of @p names
-     * and use this vector  to name individual components. Should be called after the setters derived from
-     * FieldCommonBase.
-     */
-    void init( const vector<string> &names);
-
-    /**
-     * Allows set Field<dim, Vector> that can be used for alternative initialization in "transposed" form.
-     */
-    void set_complemented_vector_field( TransposedField &complemented);
-
-    /**
-     * Returns reference to the sub-field (component) of given index @p idx.
-     */
-    inline SubFieldType &operator[](unsigned int idx)
-    { return sub_fields_[idx]; }
-
-private:
-    std::vector< SubFieldType > sub_fields_;
-    std::vector< std::string > sub_names_;
-};
 
 
 

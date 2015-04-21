@@ -51,14 +51,20 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
     Input::Type::Record rec = FieldCommon::field_descriptor_record(equation_name + "_Data");
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
-            string description =  field->description() + " " + field->units().format();
+            string description =  field->description() + " $[" + field->units().format_latex() + "]$";
 
             // Adding units is not so simple.
             // 1) It must be correct for Latex.
             // 2) It should be consistent with rest of documentation.
             // 3) Should be specified for all fields.
             //if (units != "") description+= " [" +field->units() + "]";
-            rec.declare_key(field->input_name(), field->get_input_type(), description);
+
+            // TODO: temporary solution, see FieldCommon::multifield_
+            if (field->is_multifield()) {
+            	rec.declare_key(field->input_name(), field->get_multifield_input_type(), description);
+            } else {
+            	rec.declare_key(field->input_name(), field->get_input_type(), description);
+            }
         }
 
     }
@@ -77,7 +83,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     {
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
-            string desc = "Output of the field " + field->name() + " " + field->units().format();
+            string desc = "Output of the field " + field->name() + " $[" + field->units().format_latex()+"]$";
             if (field->description().length() > 0)
                 desc += " (" + field->description() + ").";
             else

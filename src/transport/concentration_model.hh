@@ -31,6 +31,8 @@
 #define CONC_TRANS_MODEL_HH_
 
 #include "advection_diffusion_model.hh"
+#include "fields/multi_field.hh"
+
 
 
 
@@ -104,6 +106,10 @@ protected:
 public:
 
 	ConcentrationTransportModel();
+
+	static string balance_prefix() { return "mass"; }
+
+	UnitSI balance_units();
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 

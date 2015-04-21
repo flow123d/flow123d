@@ -11,12 +11,10 @@
 #include <vector>
 #include <string>
 #include <fstream>
-
-#include "mesh/mesh.h"
 #include "input/accessors.hh"
 
-
 class OutputDataBase;
+class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
@@ -34,6 +32,10 @@ class TimeGovernor;
 class OutputTime {
 
 public:
+    /// Default constructor. Only for testing.
+    OutputTime();
+
+
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
@@ -62,17 +64,18 @@ public:
     /**
      * Types of reference data
      */
+    static const unsigned int N_DISCRETE_SPACES = 3;
     enum DiscreteSpace {
         NODE_DATA   = 0,
         CORNER_DATA = 1,
-        ELEM_DATA   = 3
+        ELEM_DATA   = 2
     };
 
     /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
      */
-    static void destroy_all(void);
+    //static void destroy_all(void);
 
     /**
      * \brief This method tries to create new instance of OutputTime according
@@ -117,7 +120,7 @@ public:
     void clear_data(void);
 
     /**
-     *  Add time marks matching given @p tgoutput_mark_type as well as general output type
+     *  Add time marks matching given @p tg.output_mark_type as well as general output type
      *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
      *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
      */
@@ -146,23 +149,13 @@ protected:
      * into private storage for postponed output.
      */
     template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace space, Field<spacedim, Value> &field);
+    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
 
     /**
-     * \brief This method returns pointer at existing data, when corresponding
-     * output data exists or it creates new one.
+     * Change main filename to have prescribed extension.
      */
-    OutputDataBase *output_data_by_field_name(const string &field_name, DiscreteSpace ref_type);
+    void fix_main_file_extension(std::string extension);
 
-    /**
-     * \brief This method set current time for registered data array/vector
-     */
-    void set_data_time(void *data, double time);
-
-    /**
-     * \brief Virtual method for writing header of output file
-     */
-    virtual int write_head(void) = 0 ;
 
     /**
      * \brief Virtual method for writing data to output file
@@ -170,34 +163,21 @@ protected:
     virtual int write_data(void) = 0;
 
     /**
-     * \brief Virtual method for writing tail of output file
-     */
-    virtual int write_tail(void) = 0;
-
-    /**
-     * \brief Vector of pointers at OutputTime
-     */
-    static std::vector<OutputTime*> output_streams;
-
-    /**
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
 
     /**
-     * Vector of registered output data related to nodes
+     * Map field name to its OutputData object.
      */
-    vector<OutputDataBase*> node_data;
+    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
+    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**
-     * Vector of registered output data related to corner of elements
+     * Registered output data. Single map for every value of DiscreteSpace
+     * corresponding to nodes, elements and corners.
      */
-    vector<OutputDataBase*> corner_data;
-
-    /**
-     * Vector of registered output data related to elements
-     */
-    vector<OutputDataBase*> elem_data;
+    OutputDataFieldVec  output_data_vec_[N_DISCRETE_SPACES];
 
     /**
      * Current step
@@ -215,9 +195,11 @@ protected:
     double write_time;
 
     /**
-     * Map of names of output fields. True means that field will be saved.
+     * Maps names of output fields required by user to their indices in
+     * output_data_vec_.
      */
-    map<string, bool> output_names;
+    typedef unsigned int DiscreteSpaceFlags;
+    std::map<std::string, DiscreteSpaceFlags> output_names;
 
     /**
      * Record for current output stream
@@ -227,17 +209,12 @@ protected:
     /**
      * Base output stream
      */
-    ofstream *_base_file;
+    ofstream _base_file;
 
     /**
      * Name of base output file
      */
     string _base_filename;
-
-    /**
-     * Data output stream (could be same as base_file)
-     */
-    ofstream *_data_file;
 
     /**
      * Cached pointer at mesh used by this output stream

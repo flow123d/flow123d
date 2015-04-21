@@ -30,7 +30,6 @@
 
 #include <fstream>
 #include <iomanip>
-
 #include <sys/param.h>
 
 #include "sys_profiler.hh"
@@ -47,6 +46,7 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
+using namespace std;
 
 /*
  * These should be replaced by using boost MPI interface

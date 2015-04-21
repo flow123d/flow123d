@@ -148,6 +148,27 @@ void Mesh::reinit(Input::Record in_record)
 }
 
 
+Mesh::~Mesh() {
+    for(Edge &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+
+    FOR_ELEMENTS( this, ele ) {
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+
+    for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
+        Element *ele=&(bc_elements[idx]);
+        if (ele->node) delete[] ele->node;
+        if (ele->edge_idx_) delete[] ele->edge_idx_;
+        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+    }
+}
+
+
 unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
@@ -390,8 +411,19 @@ void Mesh::make_neighbours_and_edges()
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
-                        edg->side_[ edg->n_sides++ ] = si;
+                        if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
+                            ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                            int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
+                            int new_bc_ele_idx=bc_ele.index();
+                            THROW( ExcDuplicateBoundary()
+                                    << EI_ElemLast(this->bc_elements.get_id(last_bc_ele_idx))
+                                    << EI_RegLast(this->bc_elements[last_bc_ele_idx].region().label())
+                                    << EI_ElemNew(this->bc_elements.get_id(new_bc_ele_idx))
+                                    << EI_RegNew(this->bc_elements[new_bc_ele_idx].region().label())
+                                    );
+                        }
                         elem->edge_idx_[ecs] = last_edge_idx;
+                        edg->side_[ edg->n_sides++ ] = si;
 
                         if (elem->boundary_idx_ == NULL) {
                             elem->boundary_idx_ = new unsigned int [ elem->n_sides() ];

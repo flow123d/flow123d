@@ -204,23 +204,20 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 
 
-vector<double> &Partitioning::subdomain_id_field_data() {
+shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
-    if (seq_part_.size() == 0) {
+    if (!seq_part_) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
-    	seq_part_.resize(seq_size);
-    	vector<int> int_seq_part_(seq_size);
+    	//seq_part_.resize(seq_size);
+    	seq_part_ = make_shared< vector<int> >(seq_size);
+        std::vector<int> &vec = *( seq_part_.get() );
 
         MPI_Gatherv(loc_part_, init_el_ds_->lsize(), MPI_INT,
-                &int_seq_part_[0],
+                &vec[0],
                 (int *)(init_el_ds_->get_lsizes_array()),
                 (int *)(init_el_ds_->get_starts_array()),
                 MPI_INT, 0,init_el_ds_->get_comm() );
 
-        // Following is terrible since FieldElementwise stores everything as array of doubles.
-        auto it_2=seq_part_.begin();
-        for(auto it_1=int_seq_part_.begin(); it_1 != int_seq_part_.end(); ++it_1, ++it_2)
-        	*((int *)&(*it_2))=*it_1;
     }
     return seq_part_;
 

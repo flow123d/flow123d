@@ -68,12 +68,13 @@
 #include <iterator>
 #include <algorithm>
 
-#include "coupling/time_governor.hh"
-
+#include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
+
+#include "transport/mass_balance.hh"
 
 
 
@@ -88,12 +89,17 @@ it::Selection DarcyFlowMH::mh_mortar_selection
 
 
 it::Selection DarcyFlowMH::EqData::bc_type_selection =
-              it::Selection("EqData_bc_Type")
-               .add_value(none, "none", "Homogeneous Neoumann BC.")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin")
-               .add_value(total_flux, "total_flux");
+              it::Selection("DarcyFlow_BC_Type")
+               .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+               .add_value(dirichlet, "dirichlet",
+                       "Dirichlet boundary condition. "
+                       "Specify the pressure head through the 'bc_pressure' field "
+                       "or the piezometric head through the 'bc_piezo_head' field.")
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to $\\sigma (h - h^R)$. "
+                       "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+                       "through 'bc_pressure' and 'bc_piezo_head' respectively.");
+               //.add_value(total_flux, "total_flux");
 
 //new input type with FIELDS
 it::AbstractRecord DarcyFlowMH::input_type=
@@ -106,9 +112,12 @@ it::AbstractRecord DarcyFlowMH::input_type=
                 "Parameters of output form MH module.")
         .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
                 "Method for coupling Darcy flow between dimensions." )
+		.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+				"Settings for computing mass balance.");
+/*
         .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
         		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
-
+*/
 
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
@@ -224,7 +233,8 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
     data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
     data_.bc_pressure.add_factory(
     		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
@@ -249,6 +259,15 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     //rows_ds->view( std::cout );
     
 
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+        balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
+        //if (time_ != nullptr && time_->is_steady())
+        water_balance_idx_ = balance_->add_quantity("water_volume");
+        balance_->allocate(rows_ds->lsize(), 1);
+    }
 
 
     if (make_tg) {
@@ -256,15 +275,15 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     	time_ = new TimeGovernor();
     	data_.mark_input_times(this->mark_type());
     	data_.set_limit_side(LimitSide::right);
-    	data_.set_time(*time_);
+    	data_.set_time(time_->step());
 
-    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     	create_linear_system();
+    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     }
 
 
-}
 
+}
 
 
 
@@ -324,6 +343,23 @@ void DarcyFlowMH_Steady::postprocess()
 void DarcyFlowMH_Steady::output_data() {
     time_->view("DARCY"); //time governor information output
 	this->output_object->output();
+
+	if (balance_ != nullptr)
+	{
+		if (balance_->cumulative() && time_->tlevel() > 0)
+		{
+			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
+			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
+		}
+
+		if (time_->is_current( TimeGovernor::marks().type_output() ))
+		{
+			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
+			balance_->calculate_source(water_balance_idx_, schur0->get_solution());
+			balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
+			balance_->output(time_->t());
+		}
+	}
 }
 
 double DarcyFlowMH_Steady::solution_precision() const
@@ -397,7 +433,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     class Neighbour *ngh;
 
     bool fill_matrix = schur0->is_preallocated();
-    int el_row, side_row, edge_row;
+    int el_row, side_row, edge_row, loc_b = 0;
     int tmp_rows[100];
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
     double local_vb[4]; // 2x2 matrix
@@ -409,6 +445,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
 
+    if (balance_ != nullptr)
+    	balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
 
@@ -454,6 +492,12 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                 } else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
+
+                if (balance_ != nullptr)
+                {
+                	balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
+                }
+                ++loc_b;
             }
             ls->mat_set_value(side_row, edge_row, c_val);
             ls->mat_set_value(edge_row, side_row, c_val);
@@ -486,12 +530,6 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
 
 
-        // set sources
-        ls->rhs_set_value(el_row, -1.0 * ele->measure() *
-                          data_.cross_section.value(ele->centre(), ele->element_accessor()) * 
-                          data_.water_source_density.value(ele->centre(), ele->element_accessor()) );
-        
-        
         // D block: non-compatible conections and diagonal: element-element
 
         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
@@ -580,6 +618,11 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         }
     }
 
+    if (balance_ != nullptr)
+    	balance_->finish_flux_assembly(water_balance_idx_);
+
+    assembly_source_term();
+
 
     if (mortar_method_ == MortarP0) {
     	P0_CouplingAssembler(*this).assembly(*ls);
@@ -587,6 +630,32 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         P1_CouplingAssembler(*this).assembly(*ls);
     }  
 }
+
+
+void DarcyFlowMH_Steady::assembly_source_term()
+{
+    if (balance_ != nullptr)
+    	balance_->start_source_assembly(water_balance_idx_);
+
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+
+        ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
+        int el_row = row_4_el[el_4_loc[i_loc]];
+
+        // set sources
+        double source = ele->measure() *
+                data_.cross_section.value(ele->centre(), ele->element_accessor()) *
+                data_.water_source_density.value(ele->centre(), ele->element_accessor());
+        schur0->rhs_set_value(el_row, -1.0 * source );
+
+        if (balance_ != nullptr)
+        	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {el_row}, {source});
+    }
+
+    if (balance_ != nullptr)
+    	balance_->finish_source_assembly(water_balance_idx_);
+}
+
 
 void P0_CouplingAssembler::pressure_diff(int i_ele,
 		vector<int> &dofs, unsigned int &ele_type, double &delta, arma::vec &dirichlet) {
@@ -865,12 +934,12 @@ void DarcyFlowMH_Steady::create_linear_system() {
                 SchurComplement *ls = new SchurComplement(is, &(*rows_ds));
                 ls->set_from_input(in_rec);
                 ls->set_solution( NULL );
-                ls->set_positive_definite();
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
                 if (n_schur_compls==1) {
                     schur1 = new LinSys_PETSC(ds);
+                    schur1->set_positive_definite();
                 } else {
                     IS is;
                     ISCreateStride(PETSC_COMM_WORLD, el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
@@ -880,6 +949,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+                    schur2->set_positive_definite();
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
@@ -911,10 +981,10 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
 void DarcyFlowMH_Steady::assembly_linear_system() {
 
-	data_.set_time(*time_);
-	DBGMSG("Assembly linear system\n");
+	data_.set_time(time_->step());
+	//DBGMSG("Assembly linear system\n");
 	if (data_.changed()) {
-		DBGMSG("  Data changed\n");
+		//DBGMSG("  Data changed\n");
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -929,10 +999,15 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
 	    if (!time_->is_steady()) {
-	    	DBGMSG("    setup time term\n");
+	    	//DBGMSG("    setup time term\n");
 	    	// assembly time term and rhs
 	    	setup_time_term();
 	    	modify_system();
+	    }
+	    else if (balance_ != nullptr)
+	    {
+	    	balance_->start_mass_assembly(water_balance_idx_);
+	    	balance_->finish_mass_assembly(water_balance_idx_);
 	    }
 	    END_TIMER("full assembly");
 	} else {
@@ -1394,11 +1469,12 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
 	data_.set_limit_side(LimitSide::right);
-	data_.set_time(*time_);
+	data_.set_time(time_->step());
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
 
-	time_->fix_dt_until_mark();
+	//time_->fix_dt_until_mark();
 	create_linear_system();
 
 	VecDuplicate(schur0->get_solution(), &previous_solution);
@@ -1449,30 +1525,45 @@ void DarcyFlowMH_Unsteady::setup_time_term() {
 
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
     DBGMSG("Setup with dt: %f\n",time_->dt());
+
+    if (balance_ != nullptr)
+    	balance_->start_mass_assembly(water_balance_idx_);
+
     for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
         ele = mesh_->element(el_4_loc[i_loc_el]);
         int i_loc_row = i_loc_el + side_ds->lsize();
 
         // set new diagonal
-        local_diagonal[i_loc_row]= - data_.storativity.value(ele->centre(), ele->element_accessor()) * 
-                                  ele->measure() / time_->dt();
+        double diagonal_coeff = data_.cross_section.value(ele->centre(), ele->element_accessor())
+        		* data_.storativity.value(ele->centre(), ele->element_accessor())
+				* ele->measure();
+        local_diagonal[i_loc_row]= - diagonal_coeff / time_->dt();
+
+        if (balance_ != nullptr)
+        	balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {i_loc_row}, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
 
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
+
+    if (balance_ != nullptr)
+    	balance_->finish_mass_assembly(water_balance_idx_);
 }
 
 void DarcyFlowMH_Unsteady::modify_system() {
 	START_TIMER("modify system");
-	if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
-		// if time step has changed and setup_time_term not called
-		MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
+	if (time_->is_changed_dt() && time_->step().index()>0) {
+        double scale_factor=time_->step(-2).length()/time_->step().length();
+        if (scale_factor != 1.0) {
+            // if time step has changed and setup_time_term not called
+            MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
 
-		VecScale(new_diagonal, time_->last_dt()/time_->dt());
-		MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-		schur0->set_matrix_changed();
+            VecScale(new_diagonal, time_->last_dt()/time_->dt());
+            MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
+            schur0->set_matrix_changed();
+        }
 	}
 
     // modify RHS - add previous solution
@@ -1495,11 +1586,12 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 
 
     data_.set_limit_side(LimitSide::right);
-	data_.set_time(*time_);
+	data_.set_time(time_->step());
 
 	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
+	//balance_->units(output_object->get_output_fields().field_ele_pressure.units()*data_.cross_section.units()*data_.storativity.units());
 
-	time_->fix_dt_until_mark();
+	//time_->fix_dt_until_mark();
 	create_linear_system();
 	VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
@@ -1551,6 +1643,10 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 	// modify matrix diagonal
 	// cycle over local element rows
 	ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+	DBGMSG("setup time term with dt: %f\n", time_->dt());
+
+	if (balance_ != nullptr)
+		balance_->start_mass_assembly(water_balance_idx_);
 
 	for (unsigned int i_loc_el = 0; i_loc_el < el_ds->lsize(); i_loc_el++) {
 		ele = mesh_->element(el_4_loc[i_loc_el]);
@@ -1560,10 +1656,16 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 		FOR_ELEMENT_SIDES(ele,i) {
 			int edge_row = row_4_edge[ele->side(i)->edge_idx()];
 			// set new diagonal
-			VecSetValue(new_diagonal,edge_row, - ele->measure() *
+			double diagonal_coef = ele->measure() *
 					  data_.storativity.value(ele->centre(), ele->element_accessor()) *
-					  data_.cross_section.value(ele->centre(), ele->element_accessor()) /
-					  time_->dt() / ele->n_sides(),ADD_VALUES);
+					  data_.cross_section.value(ele->centre(), ele->element_accessor())
+					  / ele->n_sides();
+			VecSetValue(new_diagonal, edge_row, -diagonal_coef / time_->dt(), ADD_VALUES);
+
+	        if (balance_ != nullptr)
+	        	balance_->add_mass_matrix_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {diagonal_coef});
+
+
 		}
 	}
 	VecAssemblyBegin(new_diagonal);
@@ -1573,17 +1675,28 @@ void DarcyFlowLMH_Unsteady::setup_time_term()
 
 	solution_changed_for_scatter=true;
 	schur0->set_matrix_changed();
+
+	if (balance_ != nullptr)
+		balance_->finish_mass_assembly(water_balance_idx_);
 }
 
 void DarcyFlowLMH_Unsteady::modify_system() {
     START_TIMER("modify system");
-    if (time_->is_changed_dt() && !schur0->is_matrix_changed()) {
+    //if (time_->step().index()>0)
+    //    DBGMSG("dt: %f dt-1: %f indexchanged: %d matrix: %d\n", time_->step().length(), time_->step(-1).length(), time_->is_changed_dt(), schur0->is_matrix_changed() );
+
+    if (time_->is_changed_dt() && time_->step().index()>0) {
     	// if time step has changed and setup_time_term not called
 
-        MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
-        VecScale(new_diagonal, time_->last_dt()/time_->dt());
-        MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-        schur0->set_matrix_changed();
+        double scale_factor=time_->step(-2).length()/time_->step().length();
+        if (scale_factor != 1.0) {
+            MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
+
+            //DBGMSG("Scale factor: %f\n",scale_factor);
+            VecScale(new_diagonal, scale_factor);
+            MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
+            schur0->set_matrix_changed();
+        }
     }
 
     // modify RHS - add previous solution
@@ -1595,6 +1708,36 @@ void DarcyFlowLMH_Unsteady::modify_system() {
     VecSwap(previous_solution, schur0->get_solution());
 }
 
+
+void DarcyFlowLMH_Unsteady::assembly_source_term()
+{
+    if (balance_ != nullptr)
+    	balance_->start_source_assembly(water_balance_idx_);
+
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++)
+    {
+        ElementFullIter ele = mesh_->element(el_4_loc[i_loc]);
+
+		// set lumped source
+		double diagonal_coef = ele->measure()
+				  * data_.cross_section.value(ele->centre(), ele->element_accessor())
+				  * data_.water_source_density.value(ele->centre(), ele->element_accessor())
+				  / ele->n_sides();
+
+		FOR_ELEMENT_SIDES(ele,i)
+        {
+			int edge_row = row_4_edge[ele->side(i)->edge_idx()];
+
+			schur0->rhs_set_value(edge_row, -diagonal_coef);
+
+	        if (balance_ != nullptr)
+	        	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {edge_row}, {diagonal_coef});
+		}
+    }
+
+    if (balance_ != nullptr)
+    	balance_->finish_source_assembly(water_balance_idx_);
+}
 
 
 void DarcyFlowLMH_Unsteady::postprocess() {
@@ -1640,7 +1783,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
       ele = mesh_->element(el_4_loc[i_loc]);
       FOR_ELEMENT_SIDES(ele,i) {
           side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-          values[i] = -1.0 * ele->measure() *
+          values[i] = 1.0 * ele->measure() *
             data_.cross_section.value(ele->centre(), ele->element_accessor()) *
             data_.water_source_density.value(ele->centre(), ele->element_accessor()) /
             ele->n_sides();
