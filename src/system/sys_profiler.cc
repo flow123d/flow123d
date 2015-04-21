@@ -593,10 +593,9 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     // fix module path, first get current system path (Py_GetPath)
     // than append this modules path
     string path = Py_GetPath ();
-    path = path + ":" + "../../src/python/profiler-transform/";
+    path = path + ":" + "../../src/python/profiler/";
     char * path_char = const_cast<char *>(path.c_str());
     PySys_SetPath (path_char);
-//    Py_SetPythonHome("../../src/python/profiler-transform/");
 
     // debug info
     cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
@@ -608,8 +607,8 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
     cout << "module_path:           " << path << endl;
 
-    // grab module and function by importing module main.py
-    python_module = PyImport_ImportModule ("main");
+    // grab module and function by importing module profiler_formatter_module.py
+    python_module = PyImport_ImportModule ("profiler_formatter_module");
     convert_method  = PyObject_GetAttrString (python_module, "convert" );
 
     //
