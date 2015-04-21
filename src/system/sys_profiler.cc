@@ -48,18 +48,8 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
-/**
-using namespace std;
- */
-#define FLOW123D_JSON_PRETTY        1
-/**
  * Flag to property_tree::write_json method
- * resulting in json machine readible format (no indents, no newlines)
- */
-/**
- * Constant representing number of MPI processes
- * where there is no MPI to work with (so 1 process)
- */
+#define FLOW123D_JSON_PRETTY        1
 
 /*
  * These should be replaced by using boost MPI interface
@@ -578,7 +568,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
     // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
     #ifdef FLOW123D_SOURCE_DIR
-        root.put ("source-dir",     string(FLOW123D_SOURCE_DIR));
     #endif
 
     // print some information about the task at the beginning
