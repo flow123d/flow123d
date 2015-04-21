@@ -34,6 +34,9 @@
 #include "input/factory.hh"
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(vtk)
+
+
 using namespace Input::Type;
 
 Record OutputVTK::input_type
@@ -583,9 +586,6 @@ int OutputVTK::write_tail(void)
 
     return 1;
 }
-
-
-FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 
 

@@ -36,6 +36,16 @@
 #include "input/accessors.hh"
 #include "input/factory.hh"
 
+FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
+
+FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
+FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
+FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
+FLOW123D_FORCE_LINK_IN_PARENT(sorption);
+
+
 using namespace Input::Type;
 
 AbstractRecord AdvectionProcessBase::input_type
@@ -130,13 +140,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   convection(NULL),
   Semchem_reactions(NULL)
 {
-	FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
-	FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
-	FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
-	FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
-	FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
-	FLOW123D_FORCE_LINK_IN_PARENT(sorption);
-
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
@@ -316,9 +319,6 @@ void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
     mh_dh = &dh;
 	convection->set_velocity_field( dh );
 };
-
-
-FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
 
 
 

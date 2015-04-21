@@ -46,6 +46,10 @@
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 
+FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
+
+
 using namespace Input::Type;
 
 template<class Model>
@@ -1794,10 +1798,6 @@ void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector
 
 template class TransportDG<ConcentrationTransportModel>;
 template class TransportDG<HeatTransferModel>;
-
-
-FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
-FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
 
 
 

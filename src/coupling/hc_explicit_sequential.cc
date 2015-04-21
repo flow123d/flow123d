@@ -42,6 +42,15 @@
 #include "transport/heat_model.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
+FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
+
+FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
+FLOW123D_FORCE_LINK_IN_PARENT(unsteady_MH);
+FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
+
+
 namespace it = Input::Type;
 
 it::AbstractRecord CouplingBase::input_type
@@ -73,14 +82,6 @@ it::Record HC_ExplicitSequential::input_type
  */
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
-	FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-	FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
-	FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
-
-	FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
-	FLOW123D_FORCE_LINK_IN_PARENT(unsteady_MH);
-	FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
-
 	START_TIMER("HC constructor");
     using namespace Input;
 

@@ -19,6 +19,9 @@
 #include "semchem/semchem_interface.hh"
 #include "input/factory.hh"
 
+FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
+
+
 using namespace Input::Type;
 
 
@@ -373,6 +376,3 @@ void DualPorosity::output_data(void )
     if (reaction_mobile) reaction_mobile->output_data();
     if (reaction_immobile) reaction_immobile->output_data();
 }
-
-FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
-

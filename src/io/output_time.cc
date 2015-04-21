@@ -37,6 +37,10 @@
 #include "output_msh.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(vtk)
+FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
+
+
 using namespace Input::Type;
 
 Record OutputTime::input_type
@@ -65,11 +69,7 @@ AbstractRecord OutputTime::input_format_type
 
 OutputTime::OutputTime()
 : _mesh(nullptr)
-{
-	FLOW123D_FORCE_LINK_IN_PARENT(vtk)
-	FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
-
-}
+{}
 
 
 

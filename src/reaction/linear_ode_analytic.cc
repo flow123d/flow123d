@@ -4,6 +4,9 @@
 #include "input/factory.hh"
 #include "system/sys_profiler.hh"
 
+FLOW123D_FORCE_LINK_IN_CHILD(linearODEAnalytic)
+
+
 using namespace Input::Type;
 
 Record LinearODEAnalytic::input_type
@@ -54,5 +57,3 @@ void LinearODEAnalytic::compute_matrix()
         solution_matrix_(i,i) = exponential;
     }
 }
-
-FLOW123D_FORCE_LINK_IN_CHILD(linearODEAnalytic)

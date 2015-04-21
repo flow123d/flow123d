@@ -12,15 +12,16 @@
 #include "mesh/mesh.h"
 #include "la/distribution.hh"
 
+FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
+FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
+
+
 using namespace Input::Type;
 
 
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-	FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
-	FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
-
 	Input::Iterator<Input::AbstractRecord> num_it = input_record_.find<Input::AbstractRecord>("ode_solver");
     if ( num_it )
     {

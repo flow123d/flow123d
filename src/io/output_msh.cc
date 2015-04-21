@@ -33,6 +33,9 @@
 #include "input/factory.hh"
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
+
+
 using namespace Input::Type;
 
 Record OutputMSH::input_type
@@ -268,6 +271,4 @@ OutputMSH::~OutputMSH()
 {
     this->write_tail();
 }
-
-FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 

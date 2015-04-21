@@ -6,6 +6,9 @@
 #include "mesh/mesh.h"
 #include "input/factory.hh"
 
+FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
+
+
 using namespace Input::Type;
 
 Record FirstOrderReaction::input_type_reactant
@@ -146,5 +149,3 @@ void FirstOrderReaction::initialize_from_input()
             b = b / sum;
 	}
 }
-
-FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)

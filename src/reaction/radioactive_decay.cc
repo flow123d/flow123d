@@ -9,6 +9,9 @@
 
 #include "armadillo"
 
+FLOW123D_FORCE_LINK_IN_CHILD(radioactiveDecay)
+
+
 using namespace Input::Type;
 
 Record RadioactiveDecay::input_type_product 
@@ -134,5 +137,3 @@ void RadioactiveDecay::assemble_ode_matrix(void )
         }
     }
 }
-
-FLOW123D_FORCE_LINK_IN_CHILD(radioactiveDecay)

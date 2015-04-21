@@ -80,6 +80,11 @@
 
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(steady_MH);
+FLOW123D_FORCE_LINK_IN_CHILD(unsteady_MH);
+FLOW123D_FORCE_LINK_IN_CHILD(unsteady_LMH);
+
+
 namespace it = Input::Type;
 
 it::Selection DarcyFlowMH::mh_mortar_selection
@@ -1808,10 +1813,6 @@ void DarcyFlowLMH_Unsteady::postprocess() {
   VecAssemblyEnd(schur0->get_solution());
 }
 
-
-FLOW123D_FORCE_LINK_IN_CHILD(steady_MH);
-FLOW123D_FORCE_LINK_IN_CHILD(unsteady_MH);
-FLOW123D_FORCE_LINK_IN_CHILD(unsteady_LMH);
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:
