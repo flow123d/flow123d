@@ -565,7 +565,7 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
     // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
     #ifdef FLOW123D_SOURCE_DIR
-        root.put ("program-build",  string(FLOW123D_SOURCE_DIR));
+        root.put ("source-dir",     string(FLOW123D_SOURCE_DIR));
     #endif
 
     // print some information about the task at the beginning
