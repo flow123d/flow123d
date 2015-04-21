@@ -106,7 +106,7 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-	PythonLoader::get_callable(&p_func_, &p_module_, func_name);
+	p_func_ = PythonLoader::get_callable(p_module_, func_name);
 
     p_args_ = PyTuple_New( spacedim );
 
