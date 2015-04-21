@@ -165,7 +165,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		reaction->substances(substances_)
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
-				.output_stream(*(convection->output_stream()))
+				.output_stream(convection->output_stream())
 				.set_time_governor(*(convection->time_));
 
 		reaction->initialize();

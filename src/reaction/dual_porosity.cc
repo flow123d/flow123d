@@ -154,7 +154,7 @@ void DualPorosity::initialize()
   if(reaction_mobile)
   {
     reaction_mobile->substances(substances_)
-                .output_stream(*output_stream_)
+                .output_stream(output_stream_)
                 .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
     reaction_mobile->initialize();
@@ -163,7 +163,7 @@ void DualPorosity::initialize()
   if(reaction_immobile)
   {
     reaction_immobile->substances(substances_)
-                .output_stream(*output_stream_)
+                .output_stream(output_stream_)
                 .concentration_matrix(conc_immobile, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
