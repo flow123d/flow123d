@@ -212,8 +212,12 @@ static const int debug_asserts_view = 0;
 
 
 /**
- * Usage in Input::Factory class.
- * Necessary for linking static input_type records.
+ * These macros are necessary in classes that contain Input::Type::AbstractRecord (PARENT macro)
+ * and in classes contain descendant of this AbstractRecord (CHILD macro) if these descendants
+ * are initialized through methods of @p Input::Factory class.
+ *
+ * These macros are necessary for initializing of static variables in classes that contain
+ * descendants of parent AbstractRecord.
  */
 #define FLOW123D_FORCE_LINK_IN_CHILD(x) int force_link_##x = 0;
 #define FLOW123D_FORCE_LINK_IN_PARENT(x) extern int force_link_##x; void func_##x() { force_link_##x = 1; }
