@@ -625,7 +625,7 @@ if (USE_PYTHON)
     # this variable is used later to update search module path
     # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
     # if not, default location is src/python dir in CMake_SOURCE_DIR location
-    flow_define(PYTHON_MODULE "${PYTHON_EXTRA_MODULES_PATH}")
+    flow_define(PYTHON_EXTRA_MODULES_PATH "${PYTHON_EXTRA_MODULES_PATH}")
 endif()  
 
 message(STATUS "\n ======================================================= ")
