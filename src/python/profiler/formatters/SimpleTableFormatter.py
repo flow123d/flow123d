@@ -80,6 +80,7 @@ class SimpleTableFormatter (object) :
         self.appendToHeader ("Program build")
 
         self.appendToHeader ("Timer resolution")
+        if 'source-dir' in json: self.appendToHeader ("Source dir")
 
         desc = re.sub ("\s+", " ", json["task-description"], re.M)
         self.appendToHeader ("Task description", desc)
