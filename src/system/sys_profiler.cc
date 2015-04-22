@@ -31,6 +31,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/param.h>
+#include "Python.h"
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
@@ -590,12 +591,6 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     int argument_index = 0;
 
 
-    // fix module path, first get current system path (Py_GetPath)
-    // than append this modules path
-    string path = Py_GetPath ();
-    path = path + ":" + "../../src/python/profiler/";
-    char * path_char = const_cast<char *>(path.c_str());
-    PySys_SetPath (path_char);
 
     // debug info
     cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
@@ -605,10 +600,10 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     cout << "Py_GetPath:            " << Py_GetPath() << endl;
     cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
     cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
-    cout << "module_path:           " << path << endl;
+
 
     // grab module and function by importing module profiler_formatter_module.py
-    python_module = PyImport_ImportModule ("profiler_formatter_module");
+    python_module = PyImport_ImportModule ("profiler.profiler_formatter_module");
     convert_method  = PyObject_GetAttrString (python_module, "convert" );
 
     //
@@ -650,15 +645,6 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     } else {
         cout << "Unknown result when executing Python: "<< endl;
     }
-
-    //    cout << "endl" << endl;
-    //    PyObject *p_args_;
-    //    PyObject *p_value_;
-    //    cout << "raising error on purpose to see log " << endl;
-    //    p_args_ = PyTuple_New ( -1 );
-    //    PyTuple_SetItem (p_args_, 0, p_value_);
-    //    PyTuple_SetItem (p_args_, 1, p_value_);
-
 }
 
 
