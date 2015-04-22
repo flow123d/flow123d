@@ -1,6 +1,9 @@
 __author__ = 'Jan Hybs'
 
 import sys
+
+print sys.path
+sys.exit (0)
 from optparse import OptionParser
 from coverage import coverage_merge_module
 
