@@ -30,6 +30,7 @@
 
 # add deal.II library
 message(STATUS "===========================================")
+# Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
 set(DEAL_II_WITH_MUPARSER OFF)
 set(DEAL_II_WITH_MPI ON)
 set(BOOST_DIR "${BOOST_ROOT}")
@@ -43,11 +44,6 @@ else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 add_subdirectory("deal.II")
-add_dependencies(${DEAL_II_LIBRARY_NAME} tbb)
-INCLUDE_DIRECTORIES(
-  ${CMAKE_CURRENT_BINARY_DIR}/deal.II/include/
-  ${CMAKE_CURRENT_SOURCE_DIR}/deal.II/include/
-  )
 message(STATUS "===========================================")
 
 

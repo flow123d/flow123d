@@ -174,6 +174,7 @@ add_subdirectory("fem")
 add_subdirectory("mesh")
 add_subdirectory("coupling")
 add_subdirectory("output")
+add_subdirectory("deal.II")
 
 
 #################################################################################################
