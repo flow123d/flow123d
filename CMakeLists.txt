@@ -551,9 +551,13 @@ if (USE_PYTHON)
         message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
         message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
         message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+
+        # set extra python module path in src directory, if case PYTHON_COPY if OFF
+        set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
+            set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
 
             string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
             string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
@@ -585,7 +589,11 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
                 )
-            
+            # copy flow123d python scripts and modules
+            execute_process(
+                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
+                )
+
             # copy python include            
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -603,6 +611,12 @@ if (USE_PYTHON)
         set(PYTHON_INCLUDE_DIRS "")
         set(PYTHON_LIBRARIES "")
     endif()
+
+    # define varible for storing this extra module path
+    # this variable is used later to update search module path
+    # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+    # if not, default location is src/python dir in CMake_SOURCE_DIR location
+    flow_define(PYTHON_MODULE "${PYTHON_EXTRA_MODULES_PATH}")
 endif()  
 
 message(STATUS "\n ======================================================= ")
