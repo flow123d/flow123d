@@ -13,6 +13,7 @@
 #include "field.hh"
 #include "mesh/region.hh"
 #include "input/json_to_storage.hh"
+#include "input/type_repository.hh"
 
 
 /******************************************************************************************
@@ -99,10 +100,12 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
+	static vector<it::AbstractRecord> ar_list;
+
 	if (is_enum_valued) {
-		it::AbstractRecord *a_rec = new it::AbstractRecord( make_input_tree() );
-		boost::shared_ptr<it::AbstractRecord> ptr = it::LazyTypes<it::AbstractRecord>::add_type( a_rec );
-		return *ptr;
+		ar_list.push_back(make_input_tree());
+		boost::shared_ptr<it::AbstractRecord> ptr = Input::TypeRepository<it::AbstractRecord>::add_type( ar_list.back() );
+		return ar_list.back();
 	} else {
 		return FieldBaseType::input_type;
 	}

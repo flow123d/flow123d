@@ -217,40 +217,6 @@ protected:
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 
-/**
- * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
- * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
- * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
- * Selections have to be finished after all other types since they are used by AbstractRecords to register all
- * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
- *
- * This is list of unique instances that may contain raw pointers to possibly not yet constructed
- * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
- * These has to be completed/finished before use.
- *
- */
-template <class T>
-class LazyTypes {
-public:
-	/**
-     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
-     *
-     * For simplicity, we currently use whole strings as "hash".
-     */
-    typedef string KeyHash;
-
-    typedef std::map< KeyHash, boost::shared_ptr<T> > LazyTypeMap;
-
-    /// Hash function.
-    inline static KeyHash key_hash(const string &str) {
-        return (str);
-    }
-
-    static boost::shared_ptr<T> add_type(T * type);
-
-};
-
-
 class Record;
 class Selection;
 
