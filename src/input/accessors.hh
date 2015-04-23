@@ -666,33 +666,8 @@ private:
 
 namespace internal {
 
-/**
- *  This is primary type dispatch template. For given type it defines type that will be read from the storage.
- *  i.e. short int, char, and int are all translated to int.
- *
- *  TODO: us boost type traits to have this dispatch complete.
- *  following could work, but then the second dispatch do not work and probably has to be
- *  also implemented by mpl. The problem is, that TD<short int>::OT is not 'int', but unprocessed
- *  mpl construct. I don't know how to force compiler to process it before using it for the second dispatch.
- *
- @code
-    template<class T>
-    struct TD {
-        typedef typename
-                boost::mpl::if_< boost::is_integral<T>, int,
-                    boost::mpl::if_< boost::is_floating_point<T>, double,
-                        T
-                    >
-                >::type OT;
-    };
-  @endcode
-  */
-    /*template<class T>
-    struct TD {
-        typedef T OT;
-    };*/
     /**
-     * Secondary type dispatch. For every intermediate C++ type that can be read from input we have to define
+     * Primary type dispatch. For every intermediate C++ type that can be read from input we have to define
      * read function from a given storage and Input type i.e. descendant of Input::Type::TypeBase.
      */
 
@@ -762,7 +737,6 @@ class Iterator : public IteratorBase {
 public:
     /// Converts C++ type @p T (template parameter) to 'DispatchType' from smaller set of types.
     typedef T DispatchType;
-    //typedef typename internal::TD<T>::OT DispatchType;
     /**
      * For small set of C++ types and accessor classes Record, AbstractRecord, and Array,
      * returns type of value given by dereference of the iterator (just add const to C++ types).
@@ -835,35 +809,14 @@ private:
 namespace internal {
 
 /**
- *  Template specializations for primary type dispatch.
- */
-/*template<> struct TD<char> { typedef int OT; };
-template<> struct TD<unsigned char> { typedef int OT; };
-template<> struct TD<short int> { typedef int OT; };
-template<> struct TD<unsigned short int> { typedef int OT; };
-template<> struct TD<int> { typedef int OT; };
-template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<float> { typedef double OT; };
-template<> struct TD<double> { typedef double OT; };*/
-
-
-/**
- *  Template specializations for secondary type dispatch.
+ *  Template specializations for type dispatch.
  */
 
-// Generic implementation accepts only enum types
+// Generic implementation can't be accepted.
 template< class T, class Enable >
 struct TypeDispatch {
     class some_nonexisting_type;
-    //BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
     static_assert( std::is_same<T, some_nonexisting_type>::value, "Wrong TypeDispatch type.");
-
-    typedef T TmpType;
-
-    typedef Input::Type::Selection InputType;
-    typedef const TmpType ReadType;
-    static inline ReadType value(const Address &a, const InputType&) {
-        return ReadType( a.storage_head()->get_int() ); }
 };
 
 template<class T>
