@@ -70,7 +70,7 @@ namespace it = Input::Type;
 // this should be part of a system class containing all support information
 it::Record Application::input_type
     = it::Record("Root", "Root record of JSON input for Flow123d.")
-    .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
+    .declare_key("problem", CouplingBase::get_input_type(), it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
     		"If true, the program will wait for key press before it terminates.");

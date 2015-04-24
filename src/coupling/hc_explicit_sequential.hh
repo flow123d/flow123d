@@ -49,7 +49,7 @@ class MaterialDatabase;
  */
 class CouplingBase {
 public:
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
 };
 

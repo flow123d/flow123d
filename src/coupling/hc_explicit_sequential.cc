@@ -53,8 +53,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
 
 namespace it = Input::Type;
 
-it::AbstractRecord CouplingBase::input_type
-    = it::AbstractRecord("Problem",
+it::AbstractRecord & CouplingBase::get_input_type() {
+	static it::AbstractRecord type = it::AbstractRecord("Problem",
     		"The root record of description of particular the problem to solve.")
     .declare_key("description",it::String(),
             "Short description of the solved problem.\n"
@@ -62,11 +62,14 @@ it::AbstractRecord CouplingBase::input_type
 	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
             "Computational mesh common to all equations.");
 
+	return type;
+}
+
 
 it::Record HC_ExplicitSequential::input_type
     = it::Record("SequentialCoupling",
             "Record with data for a general sequential coupling.\n")
-    .derive_from( CouplingBase::input_type )
+    .derive_from( CouplingBase::get_input_type() )
 	.declare_key("time", TimeGovernor::input_type, it::Default::optional(),
 			"Simulation time frame and time step.")
 	.declare_key("primary_equation", DarcyFlowMH::input_type, it::Default::obligatory(),
