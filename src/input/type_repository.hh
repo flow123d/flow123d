@@ -45,8 +45,16 @@ public:
 
     typedef std::map< TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
 
-    static boost::shared_ptr<T> add_type(const T & type);
+    static TypeRepository & getInstance() {
+    	static TypeRepository instance;
+    	return instance;
+    };
 
+    boost::shared_ptr<T> add_type(const T & type);
+
+private:
+    /// Default constructor.
+    TypeRepository() {};
 };
 
 

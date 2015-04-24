@@ -104,7 +104,7 @@ it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
 
 	if (is_enum_valued) {
 		ar_list.push_back(make_input_tree());
-		boost::shared_ptr<it::AbstractRecord> ptr = Input::TypeRepository<it::AbstractRecord>::add_type( ar_list.back() );
+		boost::shared_ptr<it::AbstractRecord> ptr = Input::TypeRepository<it::AbstractRecord>::getInstance().add_type( ar_list.back() );
 		return ar_list.back();
 	} else {
 		return FieldBaseType::input_type;
