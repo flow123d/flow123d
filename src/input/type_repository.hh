@@ -31,23 +31,19 @@ namespace Input {
 template <class T>
 class TypeRepository {
 public:
+	/// Template parameter can be only descendant of TypeBase class.
 	static_assert(std::is_base_of<Type::TypeBase, T>::value,
 	        "T must be a descendant of Input::Type::TypeBase"
 	    );
 
 	/**
-     * Type of hash values used in associative array that translates key names to indices in Record and Selection.
+     * Type of hash values used in associative array that translates key names to indices in TypeBase.
      *
-     * For simplicity, we currently use whole strings as "hash".
+     * We currently use TypeBase::content_hash() method as "hash".
      */
-    typedef string KeyHash;
+    typedef std::size_t TypeHash;
 
-    typedef std::map< KeyHash, boost::shared_ptr<T> > TypeRepositoryMap;
-
-    /// Hash function.
-    inline static KeyHash key_hash(const string &str) {
-        return (str);
-    }
+    typedef std::map< TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
 
     static boost::shared_ptr<T> add_type(const T & type);
 
@@ -57,14 +53,14 @@ public:
 template <class T>
 boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
     static TypeRepositoryMap type_repository_map;
-	KeyHash hash = TypeRepository<T>::key_hash(type.full_type_name());
+    TypeHash hash = type.content_hash();
 
 	auto search = type_repository_map.find(hash);
 	if (search != type_repository_map.end()) {
 		return search->second;
 	} else {
 		auto type_ptr = boost::make_shared<T>( type );
-		type_repository_map.insert( std::pair<KeyHash, boost::shared_ptr<T>>(hash,type_ptr) );
+		type_repository_map.insert( std::pair<TypeHash, boost::shared_ptr<T>>(hash,type_ptr) );
 		return type_ptr;
 	}
 }
