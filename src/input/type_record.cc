@@ -538,8 +538,7 @@ std::size_t AbstractRecord::content_hash() const
 {
     std::size_t seed=0;
     boost::hash_combine(seed, "Abstract");
-    boost::hash_combine(seed, data_.get());
-    boost::hash_combine(seed, full_type_name());
+    boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
