@@ -87,6 +87,7 @@ Record::Record(const string & type_name_in, const string & description)
 
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
+    Input::TypeRepository<Record>::getInstance().add_type( *this );
 }
 
 
