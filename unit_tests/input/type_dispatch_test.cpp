@@ -76,5 +76,5 @@ TEST_F(InputTypeDispatchTest, all) {
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );
-    //EXPECT_EQ("blue", *(rec.find<Input::Enum>("color")) );
+    EXPECT_EQ(blue, *(rec.find<Colors>("color")) );
 }
