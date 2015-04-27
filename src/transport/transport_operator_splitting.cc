@@ -37,14 +37,18 @@
 
 using namespace Input::Type;
 
-AbstractRecord AdvectionProcessBase::input_type
-	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
+AbstractRecord & AdvectionProcessBase::get_input_type() {
+	static AbstractRecord type = AbstractRecord("Transport",
+			"Secondary equation for transport of substances.")
 	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
 			"Time governor setting for the secondary equation.")
 	.declare_key("balance", Balance::input_type, Default::obligatory(),
 			"Settings for computing balance.")
 	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
 			"Parameters of output stream.");
+
+	return type;
+}
 
 
 Record TransportBase::input_type_output_record
@@ -58,11 +62,11 @@ Record TransportOperatorSplitting::input_type
             "Explicit FVM transport (no diffusion)\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
-    .derive_from(AdvectionProcessBase::input_type)
+    .derive_from(AdvectionProcessBase::get_input_type())
     .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
     		"Specification of transported substances.")
     	    // input data
-    .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
+    .declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
                 "Reaction model involved in transport.")
 
     .declare_key("input_fields", Array(

@@ -46,8 +46,8 @@ Record SorptionBase::input_type
 							"Specifies highest aqueous concentration in interpolation table.")
     .declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
                     "Containes region specific data necessary to construct isotherms.")//;
-    .declare_key("reaction_liquid", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption in the liquid.")
-    .declare_key("reaction_solid", ReactionTerm::input_type, Default::optional(), "Reaction model following the sorption in the solid.");
+    .declare_key("reaction_liquid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the liquid.")
+    .declare_key("reaction_solid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the solid.");
     
 
 SorptionBase::EqData::EqData(const string &output_field_name)
@@ -89,14 +89,14 @@ Record SorptionBase::record_factory(SorptionBase::SorptionRecord::Type fact)
     {
         case SorptionRecord::mobile:
             rec = IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
-                .derive_from( ReactionTerm::input_type )
+                .derive_from( ReactionTerm::get_input_type() )
                 .copy_keys(SorptionBase::input_type)
                 .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
                     IT::Default("conc_solid"), "List of fields to write to output stream.");
             break;
         case SorptionRecord::immobile:  
             rec = IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
-                .derive_from( ReactionTerm::input_type )
+                .derive_from( ReactionTerm::get_input_type() )
                 .copy_keys(SorptionBase::input_type)
                 .declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
                     IT::Default("conc_immobile_solid"), "List of fields to write to output stream.");
@@ -104,7 +104,7 @@ Record SorptionBase::record_factory(SorptionBase::SorptionRecord::Type fact)
             
         default:
             rec = IT::Record("Sorption", "Sorption model in the reaction term of transport.")
-                .derive_from( ReactionTerm::input_type )
+                .derive_from( ReactionTerm::get_input_type() )
                 .copy_keys(SorptionBase::input_type)
                 .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
                              IT::Default("conc_solid"), "List of fields to write to output stream.");

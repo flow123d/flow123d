@@ -39,7 +39,7 @@ using namespace Input::Type;
 Record OutputVTK::input_type
     = Record("vtk", "Parameters of vtk output format.")
     // It is derived from abstract class
-    .derive_from(OutputTime::input_format_type)
+    .derive_from(OutputTime::get_input_format_type())
     .declare_key("variant", input_type_variant, Default("ascii"),
         "Variant of output stream file format.")
     // The parallel or serial variant

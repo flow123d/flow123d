@@ -190,7 +190,7 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 	static IT::Record input_type = IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::input_type);
+			.derive_from(AdvectionProcessBase::get_input_type());
 
 	return input_type;
 

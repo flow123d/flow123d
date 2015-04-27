@@ -42,7 +42,7 @@
 namespace it = Input::Type;
 
 it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
-    .derive_from(LinSys::input_type)
+    .derive_from(LinSys::get_input_type())
     .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
     .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
 

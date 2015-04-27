@@ -37,7 +37,7 @@ using namespace Input::Type;
 Record OutputMSH::input_type
 	= Record("gmsh", "Parameters of gmsh output format.")
 	// It is derived from abstract class
-	.derive_from(OutputTime::input_format_type);
+	.derive_from(OutputTime::get_input_format_type());
 
 
 void OutputMSH::write_msh_header(void)

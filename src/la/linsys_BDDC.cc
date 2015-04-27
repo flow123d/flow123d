@@ -48,7 +48,7 @@ namespace it = Input::Type;
 
 
 it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
-    .derive_from(LinSys::input_type)
+    .derive_from(LinSys::get_input_type())
     .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
                  "Maximum number of iterations of the linear solver with non-decreasing residual.")
     .declare_key("number_of_levels", it::Integer(0), it::Default("2"),

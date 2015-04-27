@@ -63,9 +63,9 @@ it::Record HC_ExplicitSequential::input_type
     .derive_from( CouplingBase::get_input_type() )
 	.declare_key("time", TimeGovernor::input_type, it::Default::optional(),
 			"Simulation time frame and time step.")
-	.declare_key("primary_equation", DarcyFlowMH::input_type, it::Default::obligatory(),
+	.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
 			"Primary equation, have all data given.")
-	.declare_key("secondary_equation", AdvectionProcessBase::input_type,
+	.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
 			"The equation that depends (the velocity field) on the result of the primary equation.");
 
 

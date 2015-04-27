@@ -47,7 +47,7 @@ public:
 
 
 	/// Common specification of the input record for secondary equations.
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
 
 };

@@ -162,7 +162,7 @@ public:
     {}
 
     static Input::Type::Selection mh_mortar_selection;
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
     static Input::Type::Record bc_segment_rec;
     static Input::Type::AbstractRecord bc_input_type;
     static std::vector<Input::Type::Record> bc_input_types;
