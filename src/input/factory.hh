@@ -15,6 +15,8 @@
 #include <boost/functional/factory.hpp>
 #include <boost/any.hpp>
 
+#include "system/exceptions.hh"
+
 
 namespace Input {
 
@@ -99,6 +101,15 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
      // If arguments types can be deduced (by compiler) from actual arguments one can even use:
      SomeBase * sb = a_rec.factory< SomeBase >(0.25);
  @endcode
+ *
+ * For correct functionality must be used two macros defined in global_defs.h:
+ * - FLOW123D_FORCE_LINK_IN_CHILD(x)
+ * - FLOW123D_FORCE_LINK_IN_PARENT(x)
+ * First is used in C source file of descendant class out of class methods, e.g.:
+ *   FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
+ * Second is used in C source file of parent class in any of class method with same parameter as in
+ * first used, e.g.:
+ *   FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
  *
  */
 template <class Type, class... Arguments>

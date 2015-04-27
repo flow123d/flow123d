@@ -5,8 +5,12 @@
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
+#include "input/factory.hh"
 
 #include "armadillo"
+
+FLOW123D_FORCE_LINK_IN_CHILD(radioactiveDecay)
+
 
 using namespace Input::Type;
 
@@ -39,6 +43,9 @@ Record RadioactiveDecay::input_type
                 "An array of radioactive decays.")
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
+
+const int RadioactiveDecay::registrar =
+		Input::register_class< RadioactiveDecay, Mesh &, Input::Record >("RadioactiveDecay");
 
 
 

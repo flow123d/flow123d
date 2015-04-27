@@ -5,8 +5,13 @@
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/accessors.hh"
+#include "input/factory.hh"
 
-/*********************************                 *********************************************************/
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorption)
+
+
 /********************************* SORPTION_SIMPLE *********************************************************/
 /*********************************                 *********************************************************/
 
@@ -19,6 +24,9 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
     this->eq_data_ = data_;
 	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
 }
+
+const int SorptionSimple::registrar =
+		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption");
 
 SorptionSimple::~SorptionSimple(void)
 {}
@@ -99,6 +107,11 @@ SorptionDual::~SorptionDual(void)
 
 IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord::mobile);
 
+
+const int SorptionMob::registrar =
+		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile");
+
+
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
     : SorptionDual(init_mesh, in_rec, "conc_solid", "SorptionMobile_Output")
 {}
@@ -174,6 +187,9 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 /***********************************                   *****************************************************/
 
 IT::Record SorptionImmob::input_type = SorptionBase::record_factory(SorptionRecord::immobile);
+
+const int SorptionImmob::registrar =
+		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile");
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 : SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")
