@@ -176,7 +176,6 @@ DarcyFlowMHOutput::~DarcyFlowMHOutput(){
     if (balance_output_file != NULL) xfclose(balance_output_file);
     if (raw_output_file != NULL) xfclose(raw_output_file);
     VecDestroy(&vec_corner_pressure);
-    delete output_stream;
 
     delete dh;
 };

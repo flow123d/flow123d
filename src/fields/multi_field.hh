@@ -100,7 +100,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void output(OutputTime *stream) override;
+    void output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of @p FieldCommonBase::is_constant().

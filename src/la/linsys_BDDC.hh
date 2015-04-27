@@ -48,6 +48,8 @@ class LinSys_BDDC : public LinSys
 {
 
 public:
+	typedef LinSys FactoryBaseType;
+
     static Input::Type::Record input_type;
 
     LinSys_BDDC( const unsigned numDofsSub,
@@ -94,6 +96,8 @@ public:
     //void gatherSolution_( );
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
     //! parameters expected from input file:
     int  max_nondecr_it_;         //!< maximum number of iterations of linear solver with non-decreasing residual
