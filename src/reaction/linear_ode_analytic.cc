@@ -11,7 +11,7 @@ using namespace Input::Type;
 
 Record LinearODEAnalytic::input_type
     = Record("LinearODEAnalytic", "Evaluate analytic solution of the system of ODEs.")
-    .derive_from(LinearODESolverBase::input_type);
+    .derive_from(LinearODESolverBase::get_input_type());
     
 const int LinearODEAnalytic::registrar =
 		Input::register_class< LinearODEAnalytic, Input::Record >("LinearODEAnalytic");

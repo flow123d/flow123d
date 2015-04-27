@@ -49,7 +49,7 @@ Record OutputTime::input_type
     .declare_key("file", FileName::output(), Default::obligatory(),
             "File path to the connected output file.")
             // The format
-	.declare_key("format", OutputTime::input_format_type, Default::optional(),
+	.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
 			"Format of output stream and possible parameters.")
 	.declare_key("time_step", Double(0.0),
 			"Time interval between outputs.\n"
@@ -62,9 +62,11 @@ Record OutputTime::input_type
 			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
 
 
-AbstractRecord OutputTime::input_format_type
-    = AbstractRecord("OutputTime",
+AbstractRecord & OutputTime::get_input_format_type() {
+	static AbstractRecord type = AbstractRecord("OutputTime",
             "Format of output stream and possible parameters.");
+	return type;
+}
 
 
 OutputTime::OutputTime()

@@ -59,7 +59,7 @@ public:
     /**
      * \brief The specification of output file format
      */
-    static Input::Type::AbstractRecord input_format_type;
+    static Input::Type::AbstractRecord & get_input_format_type();
 
     /**
      * Types of reference data

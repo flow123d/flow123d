@@ -7,8 +7,11 @@
 
 using namespace Input::Type;
         
-AbstractRecord ReactionTerm::input_type
-    = AbstractRecord("ReactionTerm", "Equation for reading information about simple chemical reactions.");
+AbstractRecord & ReactionTerm::get_input_type() {
+	static AbstractRecord type = AbstractRecord("ReactionTerm",
+			"Equation for reading information about simple chemical reactions.");
+	return type;
+}
 
 Record ReactionTerm::input_type_output_record
     = Record("ReactionTermOutput", "Output setting for transport equations.")

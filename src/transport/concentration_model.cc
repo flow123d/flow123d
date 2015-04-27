@@ -100,7 +100,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 	static IT::Record rec = IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::input_type)
+			.derive_from(AdvectionProcessBase::get_input_type())
 			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
 					"Names of transported substances.");
 

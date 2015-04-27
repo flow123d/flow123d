@@ -25,7 +25,7 @@ public:
   /**
    * Static variable for definition of common input record in reaction term.
    */
-  static Input::Type::AbstractRecord input_type;
+  static Input::Type::AbstractRecord & get_input_type();
   
   /// Specification of the output record. 
   /**

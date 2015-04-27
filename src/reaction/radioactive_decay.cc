@@ -38,10 +38,10 @@ Record RadioactiveDecay::input_type_single_decay
 
 Record RadioactiveDecay::input_type
     = Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
-    .derive_from( ReactionTerm::input_type )
+    .derive_from( ReactionTerm::get_input_type() )
     .declare_key("decays", Array( RadioactiveDecay::input_type_single_decay, 1), Default::obligatory(),
                 "An array of radioactive decays.")
-    .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
+    .declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 const int RadioactiveDecay::registrar =

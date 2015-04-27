@@ -17,7 +17,7 @@ using namespace Input::Type;
     
 Record PadeApproximant::input_type
     = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    .derive_from(LinearODESolverBase::input_type)
+    .derive_from(LinearODESolverBase::get_input_type())
     .declare_key("nominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
     .declare_key("denominator_degree", Integer(1), Default("2"),

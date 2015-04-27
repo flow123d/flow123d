@@ -44,10 +44,10 @@ Record FirstOrderReaction::input_type_single_reaction
 
 Record FirstOrderReaction::input_type
 	= Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
-	.derive_from( ReactionTerm::input_type )
+	.derive_from( ReactionTerm::get_input_type() )
     .declare_key("reactions", Array( FirstOrderReaction::input_type_single_reaction), Default::obligatory(),
                 "An array of first order chemical reactions.")
-    .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
+    .declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 const int FirstOrderReaction::registrar =
