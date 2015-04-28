@@ -41,6 +41,7 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "system/file_path.hh"
+#include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
 
@@ -601,8 +602,8 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
     // grab module and function by importing module profiler_formatter_module.py
-    python_module = PyImport_ImportModule ("profiler.profiler_formatter_module");
-    convert_method  = PyObject_GetAttrString (python_module, "convert" );
+    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    convert_method  = PythonLoader::get_callable (python_module, "convert" );
 
     //
     // def convert (json_location, output_file, formatter):
