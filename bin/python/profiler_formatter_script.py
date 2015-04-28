@@ -1,4 +1,5 @@
 __author__ = 'Jan Hybs'
+import pathfix
 
 import sys
 from optparse import OptionParser
