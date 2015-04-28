@@ -1,6 +1,6 @@
 __author__ = 'jan-hybs'
-import re
-import os
+
+import re, os
 
 class SimpleTableFormatter (object) :
 

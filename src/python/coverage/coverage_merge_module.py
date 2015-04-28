@@ -1,3 +1,8 @@
+__author__ = 'Jan Hybs'
+
+import system.versions
+system.versions.require_version_2 ()
+
 import sys
 import os
 import xml.etree.ElementTree as ET

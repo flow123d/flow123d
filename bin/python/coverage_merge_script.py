@@ -1,5 +1,10 @@
 __author__ = 'Jan Hybs'
+
 import pathfix
+pathfix.append_to_path ()
+
+import system.versions
+system.versions.require_version_2 ()
 
 import sys
 from optparse import OptionParser

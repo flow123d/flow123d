@@ -1,5 +1,8 @@
 __author__ = 'Jan Hybs'
 
+import system.versions
+system.versions.require_version_2 ()
+
 import json
 import datetime
 import importlib
