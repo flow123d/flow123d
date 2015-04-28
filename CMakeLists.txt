@@ -769,7 +769,7 @@ endif()
 install(DIRECTORY bin/config              DESTINATION bin/)
 install(DIRECTORY bin/ndiff               DESTINATION bin/)
 install(DIRECTORY bin/paraview            DESTINATION bin/)
-install(DIRECTORY bin/py                  DESTINATION bin/)
+install(DIRECTORY bin/python                  DESTINATION bin/)
 install(PROGRAMS  bin/tests/run_test.sh   DESTINATION bin/tests)
 
 install(PROGRAMS  bin/flow123d.sh         DESTINATION bin/)

@@ -13,6 +13,9 @@
 
 
 
+#include "system/global_defs.h"
+
+
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
@@ -41,6 +44,14 @@ def func_xyz(x,y,z):
 def func_circle(r,phi):
     return ( r * math.cos(phi), r * math.sin(phi) )
 )CODE";
+
+string python_call_object_err = R"CODE(
+import math
+
+def func_xyz(x,y,z,a):
+    return ( x*y*z+a , )     # one value tuple
+)CODE";
+
 
 string input = R"INPUT(
 {   
@@ -183,6 +194,22 @@ TEST(FieldPython, read_from_input) {
 
 
 }
+
+TEST(FieldPython, python_exception) {
+    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
+        "Python Error: 'module' object has no attribute 'func_xxx'");
+
+}
+
+
+TEST(FieldPython, call_object_error) {
+    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+	EXPECT_THROW( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError);
+        //"Program Error: Python Error: func_xyz() takes exactly 4 arguments (3 given)"
+
+}
+
 
 #else
 TEST(FieldPython, python_not_supported) {

@@ -3,9 +3,13 @@
 
 #include "system/global_defs.h"
 #include "input/accessors.hh"
+#include "input/factory.hh"
 #include "system/sys_profiler.hh"
 #include "reaction/linear_ode_solver.hh"
 #include "reaction/pade_approximant.hh"
+
+
+FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)
 
 
 using namespace Input::Type;
@@ -18,6 +22,9 @@ Record PadeApproximant::input_type
                 "Polynomial degree of the nominator of Pade approximant.")
     .declare_key("denominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant");
+
+const int PadeApproximant::registrar =
+		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant");
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {

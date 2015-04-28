@@ -37,6 +37,7 @@ add_test_directory("${libs}")
     define_test(application_base)
     define_test(flag_array)
     define_test(check_error)
+    define_test(python_loader)
     
     # reqires raw strings  
     define_test(tokenizer)
