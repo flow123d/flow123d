@@ -96,6 +96,15 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     return result;
 }
 
+PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+    initialize();
+
+    // import module by dot separated path and its name
+    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    PythonLoader::check_error();
+
+    return module_object;
+}
 
 
 void PythonLoader::check_error() {
