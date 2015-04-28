@@ -1387,19 +1387,10 @@ void TransportDG<Model>::set_boundary_conditions()
 
 
 
-// TODO: The detection of side number from SideIter
-// in TransportDG::calculate_velocity()
-// should be done with help of class RefElement. This however requires
-// that the MH_DofHandler uses the node/side ordering defined in
-// the respective RefElement.
 template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-    std::map<const Node*, int> node_nums;
-    for (unsigned int i=0; i<cell->n_nodes(); i++)
-        node_nums[cell->node[i]] = i;
-
     velocity.resize(fv.n_points());
 
     for (unsigned int k=0; k<fv.n_points(); k++)
@@ -1410,7 +1401,8 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
             if (cell->side(sid)->dim() != dim-1) continue;
             int num = dim*(dim+1)/2;
             for (unsigned int i=0; i<cell->side(sid)->n_nodes(); i++)
-                num -= node_nums[cell->side(sid)->node(i)];
+                num -= RefElement<dim>::side_nodes[sid][i];
+            
             velocity[k] += fv.shape_vector(num,k) * mh_dh->side_flux( *(cell->side(sid)) );
         }
     }
