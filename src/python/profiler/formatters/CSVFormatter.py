@@ -1,6 +1,6 @@
-from utils.strings import  join_iterable
-
 __author__ = 'jan-hybs'
+
+from utils.strings import  join_iterable
 import re, os
 
 class CSVFormatter (object) :
