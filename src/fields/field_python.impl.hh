@@ -106,22 +106,7 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    char func_char[func_name.size()+2];
-    std::strcpy(func_char, func_name.c_str());
-    p_func_ = PyObject_GetAttrString(p_module_, func_char );
-    if (! p_func_) {
-        if (PyErr_Occurred()) PyErr_Print();
-        xprintf(UsrErr, "Field '%s' not found in the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
-        Py_XDECREF(p_func_);
-        Py_XDECREF(p_module_);
-
-    }
-    if (! PyCallable_Check(p_func_)) {
-        xprintf(UsrErr, "Field '%s' from the python module: %s is not callable.\n", func_name.c_str(), PyModule_GetName(p_module_) );
-        Py_XDECREF(p_func_);
-        Py_XDECREF(p_module_);
-
-    }
+	p_func_ = PythonLoader::get_callable(p_module_, func_name);
 
     p_args_ = PyTuple_New( spacedim );
 
@@ -131,15 +116,12 @@ void FieldPython<spacedim, Value>::set_func(const string &func_name)
         PyTuple_SetItem(p_args_, i, p_value_);
     }
     p_value_ = PyObject_CallObject(p_func_, p_args_);
-
-    if (p_value_ == NULL) {
-        PyErr_Print();
-        // TODO: use cout to output also field arguments
-        xprintf(Err,"Failed to call field '%s' from the python module: %s\n", func_name.c_str(), PyModule_GetName(p_module_) );
-    }
+    PythonLoader::check_error();
 
     if ( ! PyTuple_Check( p_value_)) {
-        xprintf(UsrErr, "Field '%s' from the python module: %s doesn't return Tuple.\n", func_name.c_str(), PyModule_GetName(p_module_) );
+    	stringstream ss;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " doesn't return Tuple." << endl;
+        THROW( ExcMessage() << EI_Message( ss.str() ));
     }
 
     unsigned int size = PyTuple_Size( p_value_);
@@ -194,11 +176,7 @@ void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccess
         PyTuple_SetItem(p_args_, i, p_value_);
     }
     p_value_ = PyObject_CallObject(p_func_, p_args_);
-
-    if (p_value_ == NULL) {
-        PyErr_Print();
-        xprintf(Err,"FieldPython call failed\n");
-    }
+    PythonLoader::check_error();
 
     unsigned int pos =0;
     for(unsigned int row=0; row < value.n_rows(); row++)
