@@ -8,11 +8,14 @@
 
 
 #include <flow_gtest.hh>
-#include <string>
-#include <cmath>
+
+#include "system/global_defs.h"
 
 
 #ifdef FLOW123D_HAVE_PYTHON
+
+#include <string>
+#include <cmath>
 
 #include "system/python_loader.hh"
 #include "system/file_path.hh"
