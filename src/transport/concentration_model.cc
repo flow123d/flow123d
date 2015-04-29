@@ -101,6 +101,12 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::input_type, Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+					"Parameters of output stream.")
 			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
 					"Names of transported substances.");
 

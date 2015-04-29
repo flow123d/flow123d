@@ -110,28 +110,30 @@ it::Selection DarcyFlowMH::EqData::bc_type_selection =
 //new input type with FIELDS
 it::AbstractRecord & DarcyFlowMH::get_input_type() {
 	static it::AbstractRecord type =
-	        it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.")
-	        .declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
-	                "Number of Schur complements to perform when solving MH sytem.")
-	        .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
-	                "Linear solver for MH problem.")
-	        .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
-	                "Parameters of output form MH module.")
-	        .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
-	                "Method for coupling Darcy flow between dimensions." )
-			.declare_key("balance", Balance::input_type, it::Default::obligatory(),
-					"Settings for computing mass balance.");
-	/*
-	        .declare_key("gravity", it::String(), it::Default("0 0 -1 0"),
-	        		"Four-component vector contains potential gradient (positions 0, 1 and 2) and potential constant term (position 3).");
-	*/
-
+	        it::AbstractRecord("DarcyFlowMH", "Mixed-Hybrid  solver for saturated Darcy flow.");
+	type.close();
 	return type;
 }
 
 it::Record DarcyFlowMH_Steady::input_type
     = it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
     .derive_from(DarcyFlowMH::get_input_type())
+	.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
+			"Number of Schur complements to perform when solving MH sytem.")
+	.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
+			"Linear solver for MH problem.")
+	.declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
+			"Parameters of output form MH module.")
+	.declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
+			"Method for coupling Darcy flow between dimensions." )
+	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+			"Settings for computing mass balance.")
+	.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
+			"Boundary condition for pressure as piezometric head." )
+	.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
+			"Initial condition for pressure as piezometric head." )
+	.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(),
+			"File with mesh dependent boundary conditions (obsolete).")
     .declare_key("input_fields", it::Array(
                 DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
                 .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
@@ -147,6 +149,16 @@ const int DarcyFlowMH_Steady::registrar =
 it::Record DarcyFlowMH_Unsteady::input_type
 	= it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 	.derive_from(DarcyFlowMH::get_input_type())
+    .declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
+                 "Number of Schur complements to perform when solving MH sytem.")
+    .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
+                 "Linear solver for MH problem.")
+    .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
+                 "Parameters of output form MH module.")
+    .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
+                 "Method for coupling Darcy flow between dimensions." )
+	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+                 "Settings for computing mass balance.")
 	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);
@@ -159,6 +171,16 @@ const int DarcyFlowMH_Unsteady::registrar =
 it::Record DarcyFlowLMH_Unsteady::input_type
     = it::Record("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
     .derive_from(DarcyFlowMH::get_input_type())
+    .declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
+            "Number of Schur complements to perform when solving MH sytem.")
+    .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
+            "Linear solver for MH problem.")
+    .declare_key("output", DarcyFlowMHOutput::input_type, it::Default::obligatory(),
+            "Parameters of output form MH module.")
+    .declare_key("mortar_method", mh_mortar_selection, it::Default("None"),
+            "Method for coupling Darcy flow between dimensions." )
+	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+			"Settings for computing mass balance.")
     .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);

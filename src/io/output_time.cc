@@ -65,6 +65,7 @@ Record OutputTime::input_type
 AbstractRecord & OutputTime::get_input_format_type() {
 	static AbstractRecord type = AbstractRecord("OutputTime",
             "Format of output stream and possible parameters.");
+	type.close();
 	return type;
 }
 
