@@ -56,7 +56,7 @@ const Selection & Selection::close() const {
 
 
 
-std::size_t Selection::content_hash() const
+TypeBase::TypeHash Selection::content_hash() const
 {
     std::size_t seed=0;
     boost::hash_combine(seed, "Selection");
