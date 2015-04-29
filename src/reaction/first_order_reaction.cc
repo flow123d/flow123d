@@ -4,6 +4,10 @@
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
+#include "input/factory.hh"
+
+FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
+
 
 using namespace Input::Type;
 
@@ -45,6 +49,9 @@ Record FirstOrderReaction::input_type
                 "An array of first order chemical reactions.")
     .declare_key("ode_solver", LinearODESolverBase::input_type, Default::optional(),
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
+
+const int FirstOrderReaction::registrar =
+		Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction");
 
 
 FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)

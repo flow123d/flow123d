@@ -72,10 +72,10 @@ private:
     Mesh *mesh;
 
     /// steady or unsteady water flow simulator based on MH scheme
-    DarcyFlowMH *water;
+    std::shared_ptr<DarcyFlowMH> water;
 
     /// explicit transport with chemistry through operator splitting
-    AdvectionProcessBase *transport_reaction;
+    std::shared_ptr<AdvectionProcessBase> transport_reaction;
 
 };
 

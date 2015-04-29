@@ -311,8 +311,8 @@
             - master
             - 1.8.2
     triggers:
-      # once a day same time between 00:00 to 06:00; if source changed
-      - pollscm: "H * * * *"
+      # run every day around 3 AM even if there is no change in code
+      - timed: "H 3 * * *"
       #- github
     wrappers:
       - build-name:
@@ -681,7 +681,8 @@
             - master
 
     triggers: 
-      - github
+      # run every week around 4 AM even if there is no change in code
+      - timed: "H 4  * * H"
     wrappers:
 
       # injection doesn't work under cygwin; see other solution for release multijob

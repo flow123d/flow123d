@@ -37,6 +37,10 @@
 #include "output_msh.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(vtk)
+FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
+
+
 using namespace Input::Type;
 
 Record OutputTime::input_type
@@ -65,9 +69,7 @@ AbstractRecord OutputTime::input_format_type
 
 OutputTime::OutputTime()
 : _mesh(nullptr)
-{
-
-}
+{}
 
 
 
@@ -138,24 +140,17 @@ void OutputTime::destroy_all(void)
     */
 
 
-OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
 {
-    OutputTime* output_time;
+	std::shared_ptr<OutputTime> output_time;
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
     if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            output_time = new OutputVTK(in_rec);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            output_time = new OutputMSH(in_rec);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            output_time = new OutputVTK(in_rec);
-        }
+    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
         output_time->format_record_ = *format;
     } else {
-        output_time = new OutputVTK(in_rec);
+        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
     }
 
     return output_time;

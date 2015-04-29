@@ -9,6 +9,9 @@
 
 #include <flow_gtest_mpi.hh>
 
+#include "system/global_defs.h"
+
+
 #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include <fstream>

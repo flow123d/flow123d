@@ -75,8 +75,14 @@
 #include "system/sys_profiler.hh"
 
 #include "transport/mass_balance.hh"
+#include "input/factory.hh"
 
 
+
+
+FLOW123D_FORCE_LINK_IN_CHILD(steady_MH);
+FLOW123D_FORCE_LINK_IN_CHILD(unsteady_MH);
+FLOW123D_FORCE_LINK_IN_CHILD(unsteady_LMH);
 
 
 namespace it = Input::Type;
@@ -129,12 +135,21 @@ it::Record DarcyFlowMH_Steady::input_type
                 .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
                 ), it::Default::obligatory(), ""  );
 
+
+const int DarcyFlowMH_Steady::registrar =
+		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("Steady_MH");
+
+
 it::Record DarcyFlowMH_Unsteady::input_type
 	= it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 	.derive_from(DarcyFlowMH::input_type)
 	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);
+
+
+const int DarcyFlowMH_Unsteady::registrar =
+		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("Unsteady_MH");
 
 
 it::Record DarcyFlowLMH_Unsteady::input_type
@@ -144,6 +159,10 @@ it::Record DarcyFlowLMH_Unsteady::input_type
                                 "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);
     
+
+const int DarcyFlowLMH_Unsteady::registrar =
+		Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("Unsteady_LMH");
+
 
 
 
@@ -1793,6 +1812,7 @@ void DarcyFlowLMH_Unsteady::postprocess() {
   VecAssemblyBegin(schur0->get_solution());
   VecAssemblyEnd(schur0->get_solution());
 }
+
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -13,6 +13,9 @@
 
 
 
+#include "system/global_defs.h"
+
+
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"

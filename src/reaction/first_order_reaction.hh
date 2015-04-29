@@ -16,6 +16,8 @@ class Mesh;
 class FirstOrderReaction: public FirstOrderReactionBase
 {
 public:
+	typedef ReactionTerm FactoryBaseType;
+
     static Input::Type::Record input_type;               ///< Input record for class FirstOrderReaction.
     static Input::Type::Record input_type_single_reaction; ///< Input record which defines particular reaction.
     static Input::Type::Record input_type_reactant;      ///< Input record for a reactant of a reaction.
@@ -36,6 +38,10 @@ protected:
     void initialize_from_input() override;
     
     std::vector<double> reaction_rates_;    ///< Vector of reaction rates of the transported substances.
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 #endif  // FIRST_ORDER_REACTION_H_
