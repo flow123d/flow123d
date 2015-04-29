@@ -81,7 +81,7 @@ public:
         * given by element_input_type pointer. USE ONLY IF YOU CAN NOT USE
         * static member FieldBase<...>::input_type.
         */
-       static Input::Type::AbstractRecord get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
 
        /**
         * This static method gets accessor to abstract record with function input,

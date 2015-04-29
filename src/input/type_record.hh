@@ -271,6 +271,9 @@ public:
      */
     virtual bool is_finished() const;
 
+    /// Returns true if @p data_ is closed.
+    inline bool is_closed() const;
+
     /// Record type name getter.
     virtual string type_name() const;
 
@@ -760,6 +763,12 @@ inline unsigned int Record::size() const {
     ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }
+
+
+inline bool Record::is_closed() const {
+	return data_->closed_;
+}
+
 
 
 
