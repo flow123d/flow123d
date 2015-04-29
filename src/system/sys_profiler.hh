@@ -496,8 +496,6 @@ public:
      */
     void stop_timer(int timer_index = -1);
 
-
-
     /**
      * Adds @p n_calls - 1 to the total number of calls of the current timer. Minus one, since one call is counted when
      * timer was started. You should use macro ADD_CALLS above.
@@ -575,6 +573,10 @@ public:
      */
     void output();
     /**
+     * Method will transform last profiler json file to desired format
+     */
+    void transform_profiler_data (const string &output_file_suffix, const string &formatter);
+    /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
      */
@@ -649,6 +651,8 @@ private:
     string flow_revision_;
     /// Build date and time.
     string flow_build_;
+    /// Variable which stores last json log filepath
+    string json_filepath;
 
 
     /**

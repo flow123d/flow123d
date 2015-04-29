@@ -58,21 +58,80 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     // for unknown reason module name is non-const, so we have to make char * copy
     char * tmp_name = new char[ module_name.size() + 2 ];
     strcpy( tmp_name, module_name.c_str() );
-    PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
-    if (! compiled_string) {
-        PyErr_Print();
-        std::cerr << "Error: Can not compile python string:\n'" << source_string << std::endl;
-    }
-    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
 
-    if (result == NULL) {
-        PyErr_Print();
-        std::cerr << "Error: Can not load python module '" << module_name << "' from string:" << std::endl;
-        std::cerr << source_string << std::endl;
+    PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+
+		if ( !PyString_Check(pvalue) ) { // syntax error
+			stringstream ss;
+			PyObject* err_type = PySequence_GetItem(pvalue, 0);
+			pystr = PyObject_Str(err_type);
+			ss << PyString_AsString(pystr) << endl;
+			PyObject* descr = PySequence_GetItem(pvalue, 1);
+			PyObject* file = PySequence_GetItem(descr, 0);
+			pystr = PyObject_Str(file);
+			ss << "  File \"" << PyString_AsString(pystr) << "\"";
+			PyObject* row = PySequence_GetItem(descr, 1);
+			pystr = PyObject_Str(row);
+			ss << ", line " << PyString_AsString(pystr) << endl;
+			PyObject* line = PySequence_GetItem(descr, 3);
+			pystr = PyObject_Str(line);
+			ss << PyString_AsString(pystr);
+			PyObject* col = PySequence_GetItem(descr, 2);
+			pystr = PyObject_Str(col);
+			int pos = atoi( PyString_AsString(pystr) );
+			ss << setw(pos) << "^" << endl;
+			THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    	} else {
+    		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pvalue) ));
+    	}
     }
+
+    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
+    PythonLoader::check_error();
 
     delete[] tmp_name;
     return result;
+}
+
+PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+    initialize();
+
+    // import module by dot separated path and its name
+    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    PythonLoader::check_error();
+
+    return module_object;
+}
+
+
+void PythonLoader::check_error() {
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+
+    	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		pystr = PyObject_Str(pvalue);
+		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pystr) ));
+    }
+}
+
+
+
+PyObject * PythonLoader::get_callable(PyObject *module, const std::string &func_name) {
+    char func_char[func_name.size()+2];
+    strcpy(func_char, func_name.c_str());
+    PyObject * func = PyObject_GetAttrString(module, func_char );
+    PythonLoader::check_error();
+
+    if (! PyCallable_Check(func)) {
+    	stringstream ss;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
+    	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    }
+
+    return func;
 }
 
 
@@ -189,8 +248,20 @@ PythonRunning::PythonRunning(const std::string& program_name)
         num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
         std::cout << "Python full: " << buff << std::endl;
 */
-#endif
+#endif //FLOW123D_PYTHON_PREFIX
+
+    // initialize the Python interpreter.
     Py_Initialize();
+
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, first get current system path (Py_GetPath)
+    // than append flow123d Python modules path to sys.path
+    std::string path = Py_GetPath();
+    path = path  + ":" + std::string(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    // conversion to non const char
+    char * path_char = const_cast<char *>(path.c_str());
+    PySys_SetPath (path_char);
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 

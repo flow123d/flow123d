@@ -34,10 +34,8 @@ add_test_directory("${libs}")
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)
 
-if(CMAKE_HAVE_CXX11)
     define_test(region)
     define_mpi_test(mesh 2)
-endif()
     
     #define_test(generic_node)
     

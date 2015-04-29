@@ -42,3 +42,4 @@ doc/reference_manual/flow_version.tex
 .cproject
 .project
 .settings
+*.pyc
