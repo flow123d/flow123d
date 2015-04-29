@@ -125,8 +125,6 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)//
 
 SorptionBase::~SorptionBase(void)
 {
-  if(reaction_liquid != nullptr) delete reaction_liquid;
-  if(reaction_solid != nullptr) delete reaction_solid;
   if (data_ != nullptr) delete data_;
 
   VecScatterDestroy(&(vconc_out_scatter));
@@ -147,33 +145,9 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_liquid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == FirstOrderReaction::input_type ) {
-        reaction_liquid =  new FirstOrderReaction(*mesh_, *reactions_it);
-    } else
-    if (reactions_it->type() == RadioactiveDecay::input_type) {
-        reaction_liquid = new RadioactiveDecay(*mesh_, *reactions_it);
-    } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-    } else
-    if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-    } else
-    if (reactions_it->type() == Semchem_interface::input_type )
-    {   THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-    } else
-    {   //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-    }
+    // TODO: allowed instances in this case are only
+    // FirstOrderReaction, RadioactiveDecay
+    reaction_liquid = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
   } else
   {
     reaction_liquid = nullptr;
@@ -182,33 +156,9 @@ void SorptionBase::make_reactions()
   reactions_it = input_record_.find<Input::AbstractRecord>("reaction_solid");
   if ( reactions_it )
   {
-    if (reactions_it->type() == FirstOrderReaction::input_type ) {
-        reaction_solid =  new FirstOrderReaction(*mesh_, *reactions_it);
-    } else
-    if (reactions_it->type() == RadioactiveDecay::input_type) {
-        reaction_solid = new RadioactiveDecay(*mesh_, *reactions_it);
-    } else
-    if (reactions_it->type() == SorptionBase::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-    } else
-    if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-    } else
-    if (reactions_it->type() == Semchem_interface::input_type )
-    {   THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-    } else
-    {   //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-    }
+    // TODO: allowed instances in this case are only
+    // FirstOrderReaction, RadioactiveDecay
+	reaction_solid = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
   } else
   {
     reaction_solid = nullptr;
@@ -254,14 +204,14 @@ void SorptionBase::initialize()
   
   initialize_fields();
   
-  if(reaction_liquid != nullptr)
+  if(reaction_liquid)
   {
     reaction_liquid->substances(substances_)
       .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
       .set_time_governor(*time_);
     reaction_liquid->initialize();
   }
-  if(reaction_solid != nullptr)
+  if(reaction_solid)
   {
     reaction_solid->substances(substances_)
       .concentration_matrix(conc_solid, distribution_, el_4_loc_, row_4_el_)
@@ -410,8 +360,8 @@ void SorptionBase::zero_time_step()
   data_->output_fields.set_time(time_->step());
   data_->output_fields.output(output_stream_);
   
-  if(reaction_liquid != nullptr) reaction_liquid->zero_time_step();
-  if(reaction_solid != nullptr) reaction_solid->zero_time_step();
+  if(reaction_liquid) reaction_liquid->zero_time_step();
+  if(reaction_solid) reaction_solid->zero_time_step();
 }
 
 void SorptionBase::set_initial_condition()
@@ -450,8 +400,8 @@ void SorptionBase::update_solution(void)
   }
   END_TIMER("Sorption");
   
-  if(reaction_liquid != nullptr) reaction_liquid->update_solution();
-  if(reaction_solid != nullptr) reaction_solid->update_solution();
+  if(reaction_liquid) reaction_liquid->update_solution();
+  if(reaction_solid) reaction_solid->update_solution();
 }
 
 void SorptionBase::make_tables(void)

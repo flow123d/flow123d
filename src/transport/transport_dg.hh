@@ -137,6 +137,7 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -231,6 +232,8 @@ public:
 	~TransportDG();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
@@ -506,7 +509,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream;
+	std::shared_ptr<OutputTime> output_stream;
 
 
 	// @}

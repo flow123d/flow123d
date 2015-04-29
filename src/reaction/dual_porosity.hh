@@ -24,6 +24,8 @@ class Mesh;
 class DualPorosity:  public ReactionTerm
 {
 public:
+  typedef ReactionTerm FactoryBaseType;
+
   /**
    * Static variable for new input data types input
    */
@@ -116,8 +118,8 @@ protected:
    */
   FieldSet input_data_set_;
   
-  ReactionTerm *reaction_mobile;       ///< Reaction running in mobile zone
-  ReactionTerm *reaction_immobile;     ///< Reaction running in immobile zone
+  std::shared_ptr<ReactionTerm> reaction_mobile;       ///< Reaction running in mobile zone
+  std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
   
   /// Dual porosity computational scheme tolerance. 
   /** According to this tolerance the analytical solution of dual porosity concentrations or
@@ -132,6 +134,10 @@ protected:
   std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
+private:
+  /// Registrar of class to factory
+  static const int registrar;
+
 };
 
 #endif  //DUAL_POROSITY_H_
