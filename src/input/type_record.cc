@@ -51,8 +51,8 @@ Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
 {}
 
-std::size_t Default::content_hash() const
-{   size_t seed = 0;
+TypeBase::TypeHash Default::content_hash() const
+{   TypeBase::TypeHash seed = 0;
     boost::hash_combine(seed, "Default");
     boost::hash_combine(seed, type_);
     boost::hash_combine(seed, value_);
@@ -91,9 +91,9 @@ Record::Record(const string & type_name_in, const string & description)
 }
 
 
-std::size_t Record::content_hash() const
+TypeBase::TypeHash Record::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, "Record");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
@@ -535,9 +535,9 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 }
 
 
-std::size_t AbstractRecord::content_hash() const
+TypeBase::TypeHash AbstractRecord::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
