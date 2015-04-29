@@ -39,12 +39,8 @@
 namespace it = Input::Type;
 
 it::AbstractRecord & LinSys::get_input_type() {
-	static it::AbstractRecord type = it::AbstractRecord("LinSys", "Linear solver setting.")
-    .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
-                "Relative residual tolerance (to initial error).")
-    .declare_key("max_it", it::Integer(0), it::Default("10000"),
-                "Maximum number of outer iterations of the linear solver.");
-
+	static it::AbstractRecord type = it::AbstractRecord("LinSys", "Linear solver setting.");
+	type.close();
 	return type;
 }
 

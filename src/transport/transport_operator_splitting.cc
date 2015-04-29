@@ -39,14 +39,8 @@ using namespace Input::Type;
 
 AbstractRecord & AdvectionProcessBase::get_input_type() {
 	static AbstractRecord type = AbstractRecord("Transport",
-			"Secondary equation for transport of substances.")
-	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
-			"Time governor setting for the secondary equation.")
-	.declare_key("balance", Balance::input_type, Default::obligatory(),
-			"Settings for computing balance.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.");
-
+			"Secondary equation for transport of substances.");
+	type.close();
 	return type;
 }
 
@@ -63,6 +57,12 @@ Record TransportOperatorSplitting::input_type
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
     .derive_from(AdvectionProcessBase::get_input_type())
+	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
+			"Time governor setting for the secondary equation.")
+	.declare_key("balance", Balance::input_type, Default::obligatory(),
+			"Settings for computing balance.")
+	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			"Parameters of output stream.")
     .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
     		"Specification of transported substances.")
     	    // input data

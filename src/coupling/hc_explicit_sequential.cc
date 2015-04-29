@@ -46,12 +46,8 @@ namespace it = Input::Type;
 
 it::AbstractRecord & CouplingBase::get_input_type() {
 	static it::AbstractRecord type = it::AbstractRecord("Problem",
-    		"The root record of description of particular the problem to solve.")
-    .declare_key("description",it::String(),
-            "Short description of the solved problem.\n"
-            "Is displayed in the main log, and possibly in other text output files.")
-	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
-            "Computational mesh common to all equations.");
+    		"The root record of description of particular the problem to solve.");
+	type.close();
 
 	return type;
 }
@@ -61,6 +57,11 @@ it::Record HC_ExplicitSequential::input_type
     = it::Record("SequentialCoupling",
             "Record with data for a general sequential coupling.\n")
     .derive_from( CouplingBase::get_input_type() )
+    .declare_key("description",it::String(),
+            "Short description of the solved problem.\n"
+            "Is displayed in the main log, and possibly in other text output files.")
+	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
+            "Computational mesh common to all equations.")
 	.declare_key("time", TimeGovernor::input_type, it::Default::optional(),
 			"Simulation time frame and time step.")
 	.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
