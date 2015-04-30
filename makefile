@@ -120,17 +120,15 @@ petsc-doc: #build-flow123d
 # to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
 .PHONY: update-submodules
 update-submodules:
-	git submodule update --init
+	git submodule init
 	origin_url=$$( git config --get remote.origin.url ) ;\
 	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
 	then \
-		echo "$${origin_url}" "$${origin_url#https}"; \
-		mv .gitmodules_https .gitmodules; \
-			git submodule sync; \
-		git checkout .gitmodules; \
-	else git submodule sync; \
+		cp .gitmodules_https .gitmodules; \
 	fi
-	
+	git submodule sync
+	git checkout .gitmodules
+	git submodule update
 	
 
 # Let every submodule checkout branch it track. 
