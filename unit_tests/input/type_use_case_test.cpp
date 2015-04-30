@@ -17,7 +17,7 @@
 
 class Equation {
 public:
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
 };
 
@@ -90,25 +90,29 @@ namespace it = Input::Type;
 
 it::Record Application::input_type = it::Record("Application", "Root record of the whole application.")
     // Array of equations with types given by method of class Equation
-    .declare_key("equations", it::Array( Equation::input_type, 1, 10 ), it::Default::obligatory(), "");
+    .declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "");
 
 
 
 
 it::Record EquationA::input_type = it::Record("EquationA", "For example explicit transport equation solver.")
-    .derive_from( Equation::input_type )
+    .derive_from( Equation::get_input_type() )
+	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
     .declare_key("parameter_a", it::Double(), "");
 
 
 it::Record EquationB::input_type = it::Record("EquationB", "For example implicit transport equation solver.")
-    .derive_from( Equation::input_type )
+    .derive_from( Equation::get_input_type() )
+	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
     .declare_key("parameter_b", it::Integer(), it::Default("111"), "")
     .declare_key("default_str", it::String(), it::Default("str value"), "" )
     .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" );
 
-it::AbstractRecord Equation::input_type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
-	// keys that will be derived by every equation, but their type can be overridden
-    .declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"");
+it::AbstractRecord & Equation::get_input_type() {
+	static it::AbstractRecord type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.");
+	type.close();
+	return type;
+}
 
 
 

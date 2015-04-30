@@ -155,8 +155,8 @@ TEST(FieldPython, read_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Record  rec_type("FieldPythonTest","");
-    rec_type.declare_key("field_string", VectorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("field_file", ScalarField::input_type, Input::Type::Default::obligatory(), "" );
+    rec_type.declare_key("field_string", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" );
+    rec_type.declare_key("field_file", ScalarField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" );
     rec_type.finish();
 
     // read input string
