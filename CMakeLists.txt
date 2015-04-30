@@ -274,7 +274,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
 set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
  
-#set(Boost_DEBUG TRUE)
+set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
 # first find_package.
@@ -291,6 +291,7 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem sys
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
+set(BOOST_ROOT $ENV{BOOST_ROOT})
 if (NOT BOOST_ROOT)
 	set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
 endif()
