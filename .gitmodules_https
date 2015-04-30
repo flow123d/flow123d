@@ -1,0 +1,4 @@
+[submodule "src/deal.II"]
+	path = src/deal.II
+	url = https://github.com/flow123d/dealii.git
+	branch = fork_v8.2.1
