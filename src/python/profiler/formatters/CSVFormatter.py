@@ -1,19 +1,29 @@
-__author__ = 'jan-hybs'
+# encoding: utf-8
+# author:   Jan Hybs
 
-from utils.strings import  join_iterable
+from utils.strings import join_iterable
 import re, os
 
-class CSVFormatter (object) :
 
+class CSVFormatter (object):
+    """
+    Class which takes json object from flow123d benchmark profiler report
+     and returns csv string
+    """
 
-    def __init__(self):
+    def __init__ (self):
         self.header = []
         self.body = []
-        self.headerFields = ("percentage", "level", "tag", "call count", "max time", "max/min time", "avg time", "total", "function", "location")
-        self.styles = {"linesep": os.linesep, 'separator': ',', 'prefix': '"', 'suffix': '"'}
+        self.headerFields = (
+            "percentage", "level", "tag", "call count",
+            "max time", "max/min time", "avg time",
+            "total", "function", "location"
+        )
+        self.styles = { "linesep": os.linesep, 'separator': ',', 'prefix': '"', 'suffix': '"' }
         self.linesep = os.linesep
 
-    def format (self, json) :
+    def format (self, json):
+        """"format given json object"""
         self.json = json
         # self.processHeader (json)
         self.processBody (json, 0)
@@ -25,58 +35,35 @@ class CSVFormatter (object) :
 
         result = ""
         result += join_iterable (
-                        self.headerFields,
-                        separator=self.styles["separator"],
-                        prefix=self.styles["prefix"],
-                        suffix=self.styles["suffix"]) + self.linesep
+            self.headerFields,
+            separator=self.styles["separator"],
+            prefix=self.styles["prefix"],
+            suffix=self.styles["suffix"]) + self.linesep
 
         for row in self.body:
             result += join_iterable (
-                        row,
-                        separator=self.styles["separator"],
-                        prefix=self.styles["prefix"],
-                        suffix=self.styles["suffix"])+ self.linesep
-
-
+                row,
+                separator=self.styles["separator"],
+                prefix=self.styles["prefix"],
+                suffix=self.styles["suffix"]) + self.linesep
 
         return result
 
-
-
     def set_styles (self, styles):
-        self.styles.update(styles)
+        """override default styles"""
+        self.styles.update (styles)
         self.linesep = self.styles["linesep"]
 
-    def appendToHeader (self, name, value=None) :
-        value = value if value is not None else self.json[name.lower ().replace (" ", "-")]
-        self.header.append ((name, value))
-
-    def appendToBody (self, values) :
+    def appendToBody (self, values):
+        """Appends entry to body row list.
+        value is tupple of strings each string is represents cell value
+        """
         self.body.append (values)
         pass
 
-    def processHeader (self, json) :
-        self.appendToHeader ("Program name")
-        self.appendToHeader ("Program version")
-        self.appendToHeader ("Program branch")
-        self.appendToHeader ("Program revision")
-        self.appendToHeader ("Program build")
-
-        self.appendToHeader ("Timer resolution")
-
-        desc = re.sub ("\s+", " ", json["task-description"], re.M)
-        self.appendToHeader ("Task description", desc)
-        self.appendToHeader ("Task size")
-
-        self.appendToHeader ("Run process count")
-        self.appendToHeader ("Run started", json["run-started-at"])
-        self.appendToHeader ("Run ended", json["run-finished-at"])
-        self.appendToHeader ("Run duration", json["run-finished-at"] - json["run-started-at"])
-
-
-    def processBody (self, json, level) :
-
-        if level > 0 :
+    def processBody (self, json, level):
+        """Recursive body processing"""
+        if level > 0:
             self.appendToBody ((
                 "{:1.2f}".format (json["percent"]),
                 "{:d}".format (level),
@@ -90,13 +77,14 @@ class CSVFormatter (object) :
                 "{:s}".format (json["file-path"])
             ))
 
-        try :
-            for child in json["children"] :
+        try:
+            for child in json["children"]:
                 self.processBody (child, level + 1)
-        except :
+        except:
             pass
 
     def fixWidth (self, lst):
+        """Gets maximum width for each element of iterable object property"""
         size = len (lst[0])
         maxWidth = [5] * size
 
