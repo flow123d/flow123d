@@ -1,1 +1,2 @@
-__author__ = 'jan-hybs'
+# encoding: utf-8
+# author:   Jan Hybs
