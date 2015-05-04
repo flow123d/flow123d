@@ -455,7 +455,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
             try {
                 // convert to base type to force type dispatch and reference chatching
                 const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
-                std::int64_t descendant_index = make_storage(type_path, type_of_type )->get_int();
+                unsigned int descendant_index = (unsigned int)make_storage(type_path, type_of_type )->get_int();
                 return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
             } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
 
