@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs flow123d_lib) #${PROJECT_BINARY_DIR}/src/deal.II/lib/libdeal_II.g.a ${TBB_LIBRARIES} ${PETSC_LIBRARIES} ${BDDCML_LIBRARIES} ${PETSC_EXTERNAL_LIB} ${Boost_LIBRARIES})
+set(libs flow123d_lib)
 add_test_directory("${libs}")
 
 define_mpi_test(dealii_lac 1)

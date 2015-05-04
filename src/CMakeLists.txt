@@ -43,7 +43,7 @@ if (FLOW_BUILD_TYPE STREQUAL "release")
 else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
-add_subdirectory("deal.II")
+add_subdirectory("dealii")
 message(STATUS "===========================================")
 
 
