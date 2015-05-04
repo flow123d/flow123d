@@ -149,13 +149,13 @@ FE_RT0<dim,spacedim>::FE_RT0()
     number_of_dofs = dim+1;
     number_of_single_dofs[dim] = dim+1;
 
-    sp.fill(1./max(1.,(double)dim));
-    generalized_support_points.push_back(sp);
-    for (unsigned int i=0; i<dim; i++)
+    for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
     {
-        sp.fill(1./max(1.,(double)dim));
-        sp[i] = 0;
-        generalized_support_points.push_back(sp);
+    	sp.fill(0);
+    	for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; ++i)
+    		sp += RefElement<dim>::node_coords(RefElement<dim>::side_nodes[sid][i]);
+    	sp /= RefElement<dim>::n_nodes_per_side;
+    	generalized_support_points.push_back(sp);
     }
 
     order = 1;
@@ -228,48 +228,10 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
 
     for (unsigned int i=0; i<n_raw_functions; i++)
     {
-        /*
-         * For the 0-th side we have:
-         *
-         * $$ |\Gamma_0| = \frac{\sqrt{dim}}{dim-1}, $$
-         * $$ n_0 = \frac{\sqrt{dim}}{dim}(1,\ldots,1). $$
-         *
-         * If dim==1, we set |\Gamma_0| = 1.
-         *
-         */
-
-        r = basis_vector(i,generalized_support_points[0]);
-        if (dim == 1)
+        for (unsigned int j=0; j<dim+1; ++j)
         {
-            F(i,0) = sum(r);
-        }
-        else
-        {
-            F(i,0) = sum(r)/(1.*dim-1);
-        }
-
-        /*
-         * For the remaining sides:
-         *
-         * $$ |\Gamma_j| = \sqrt(dim-1), $$
-         * $$ (n_j)_l = -\delta_{jl}. $$
-         *
-         * If dim==1, we set |\Gamma_1| = 1.
-         *
-         */
-
-        if (dim == 1)
-        {
-            r = basis_vector(i,generalized_support_points[1]);
-            F(i,1) = -r(0);
-        }
-        else
-        {
-            for (unsigned int j=1; j<dim+1; j++)
-            {
-                r = basis_vector(i,generalized_support_points[j]);
-                F(i,j) = -r(j-1)/(1.*dim-1);
-            }
+        	r = basis_vector(i,generalized_support_points[j]);
+        	F(i,j) = dot(r,RefElement<dim>::normal_vector(j))*RefElement<dim>::side_measure(j);
         }
     }
 
