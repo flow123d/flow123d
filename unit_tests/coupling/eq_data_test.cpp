@@ -180,7 +180,7 @@ public:
     };
 
 protected:
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
     static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
     std::vector<string> component_names;
@@ -200,7 +200,7 @@ protected:
 
     void read_input(const string &input) {
         // read input string
-        Input::JSONToStorage reader( input, input_type );
+        Input::JSONToStorage reader( input, get_input_type() );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);
@@ -239,15 +239,18 @@ protected:
 
 MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
-IT::Record SomeEquation::input_type=
-        IT::Record("SomeEquation","")
-        .declare_key("data", IT::Array(
-                SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
-                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
-                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
-                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
-                ), IT::Default::obligatory(), ""  );
+IT::Record & SomeEquation::get_input_type() {
+	static IT::Record type = IT::Record("SomeEquation","")
+	        .declare_key("data", IT::Array(
+	                SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
+	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
+	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
+	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
+	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
+	                ), IT::Default::obligatory(), ""  );
+	type.close();
+	return type;
+}
 
 
 
@@ -302,7 +305,7 @@ TEST_F(SomeEquation, values) {
     )JSON";
 
     read_input(eq_data_input);
-    // cout << Input::Type::OutputText(&SomeEquation::input_type) << endl;
+    // cout << Input::Type::OutputText(&SomeEquation::get_input_type()) << endl;
 
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
