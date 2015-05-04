@@ -17,6 +17,7 @@
 const string json_input = R"JSON(
 {
 	int_val = 1,
+	big_val = 256,
 	str_val = "some_string",
 	color = "blue"
 }
@@ -48,6 +49,8 @@ protected:
         {
         	root_record->declare_key("int_val", Integer(0), Default::obligatory(),
                  "Some integral value.");
+        	root_record->declare_key("big_val", Integer(0), Default::obligatory(),
+                 "Other integral value.");
         	root_record->declare_key("str_val", String(), Default::obligatory(),
                  "Some string value.");
         	root_record->declare_key("color", *sel, Default::obligatory(),
@@ -77,4 +80,6 @@ TEST_F(InputTypeDispatchTest, all) {
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );
     EXPECT_EQ(blue, *(rec.find<Colors>("color")) );
+
+    EXPECT_THROW_WHAT({ rec.val<char>("big_val"); }, Input::ExcInputMessage, "Value out of bounds.");
 }

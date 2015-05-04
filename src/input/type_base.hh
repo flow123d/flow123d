@@ -360,17 +360,12 @@ public:
     : lower_bound_(lower_bound), upper_bound_(upper_bound)
     {}
 
-    template <class T>
-    Integer(T lower_bound=-((std::int64_t)std::numeric_limits<unsigned int>::max), T upper_bound=std::numeric_limits<unsigned int>::max)
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    { BOOST_STATIC_ASSERT( boost::is_integral<T>::value ); }
-
     std::size_t content_hash() const   override;
 
     /**
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
-    bool match(int value) const;
+    bool match(std::int64_t value) const;
 
     /**
      * As before but also returns converted integer in @p value.
@@ -382,7 +377,7 @@ public:
     virtual string type_name() const;
 private:
 
-    int lower_bound_, upper_bound_;
+    std::int64_t lower_bound_, upper_bound_;
 
 };
 

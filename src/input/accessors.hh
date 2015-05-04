@@ -851,9 +851,8 @@ struct TypeDispatch<T, typename boost::enable_if<boost::is_integral<T> >::type> 
     typedef int TmpType;
     static inline ReadType value(const Address &a, const InputType&t) {
     	std::int64_t val = a.storage_head()->get_int();
-    	if (val >= -(std::int64_t)std::numeric_limits<unsigned int>::max() &&
-				val <= (std::int64_t)std::numeric_limits<unsigned int>::max() &&
-				t.match(val) ) {
+    	if (val >= std::numeric_limits<T>::min() &&
+				val <= std::numeric_limits<T>::max() ) {
         	return val;
     	} else {
     		THROW( ExcInputMessage()
