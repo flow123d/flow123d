@@ -1391,20 +1391,15 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
+	ASSERT(cell->dim() == dim, "Element dimension mismatch!");
+
     velocity.resize(fv.n_points());
 
     for (unsigned int k=0; k<fv.n_points(); k++)
     {
         velocity[k].zeros();
         for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-        {
-            if (cell->side(sid)->dim() != dim-1) continue;
-            int num = dim*(dim+1)/2;
-            for (unsigned int i=0; i<cell->side(sid)->n_nodes(); i++)
-                num -= RefElement<dim>::side_nodes[sid][i];
-            
-            velocity[k] += fv.shape_vector(num,k) * mh_dh->side_flux( *(cell->side(sid)) );
-        }
+            velocity[k] += fv.shape_vector(sid,k) * mh_dh->side_flux( *(cell->side(sid)) );
     }
 }
 
