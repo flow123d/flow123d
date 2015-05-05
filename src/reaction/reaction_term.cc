@@ -24,8 +24,7 @@ ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
       concentration_matrix_(nullptr),
       el_4_loc_(nullptr),
       row_4_el_(nullptr),
-      distribution_(nullptr),
-      output_stream_(nullptr)
+      distribution_(nullptr)
 
 {
 }

@@ -32,6 +32,10 @@
 #include <limits.h>
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
+#include "input/factory.hh"
+
+
+FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 
 using namespace Input::Type;
@@ -170,6 +174,8 @@ void OutputVTK::make_subdirectory()
 
 
 
+
+const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk");
 
 void OutputVTK::write_vtk_vtu_head(void)
 {
@@ -580,7 +586,6 @@ int OutputVTK::write_tail(void)
 
     return 1;
 }
-
 
 
 

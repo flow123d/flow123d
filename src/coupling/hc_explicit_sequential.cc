@@ -42,6 +42,15 @@
 #include "transport/heat_model.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
+FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
+
+FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
+FLOW123D_FORCE_LINK_IN_PARENT(unsteady_MH);
+FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
+
+
 namespace it = Input::Type;
 
 it::AbstractRecord & CouplingBase::get_input_type() {
@@ -77,7 +86,7 @@ it::Record HC_ExplicitSequential::input_type
  */
 HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 {
-    START_TIMER("HC constructor");
+	START_TIMER("HC constructor");
     using namespace Input;
 
     // Read mesh
@@ -97,44 +106,21 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
-    if (prim_eq.type() == DarcyFlowMH_Steady::input_type ) {
-            water = new DarcyFlowMH_Steady(*mesh, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowMH_Unsteady::input_type ) {
-            water = new DarcyFlowMH_Unsteady(*mesh, prim_eq);
-    } else if (prim_eq.type() == DarcyFlowLMH_Unsteady::input_type ) {
-            water = new DarcyFlowLMH_Unsteady(*mesh, prim_eq);
-    } else {
-            xprintf(UsrErr,"Equation type not implemented.");
-    }
+    water = prim_eq.factory< DarcyFlowMH, Mesh &, const Input::Record >(*mesh, prim_eq);
 
 
 
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
-        if (it->type() == TransportOperatorSplitting::input_type)
-        {
-            transport_reaction = new TransportOperatorSplitting(*mesh, *it);
-        }
-        else if (it->type() == TransportDG<ConcentrationTransportModel>::input_type)
-        {
-            transport_reaction = new TransportDG<ConcentrationTransportModel>(*mesh, *it);
-        }
-        else if (it->type() == TransportDG<HeatTransferModel>::input_type)
-        {
-        	transport_reaction = new TransportDG<HeatTransferModel>(*mesh, *it);
-        }
-        else
-        {
-            xprintf(PrgErr,"Value of TYPE in the Transport an AbstractRecord out of set of descendants.\n");
-        }
+    	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record & >(*mesh, *it);
 
         // setup fields
         transport_reaction->data()["cross_section"]
         		.copy_from(water->data()["cross_section"]);
 
     } else {
-        transport_reaction = new TransportNothing(*mesh);
+        transport_reaction = std::make_shared<TransportNothing>(*mesh);
     }
 }
 
@@ -236,10 +222,11 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
-    delete water;
-    delete transport_reaction;
+	water.reset();
+	transport_reaction.reset();
     delete mesh;
 }
+
 
 
 

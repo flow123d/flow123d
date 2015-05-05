@@ -105,8 +105,8 @@ TEST_F(FieldFETest, vector) {
 
     // The Raviart-Thomas function given by the following dofs
     // is 3/7*(x-7/3, y-4/3, 0).
-    dof_values[0] = 1;
-    dof_values[1] = 0;
+    dof_values[0] = 0;
+    dof_values[1] = 1;
     dof_values[2] = 0;
 
     arma::vec3 result = { 2./7, 1./14, 0 };

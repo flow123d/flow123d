@@ -373,7 +373,8 @@ double TimeGovernor::estimate_dt() const {
     // this always selects shorter time step,
     // but allows time step larger then constraint by a number close to machine epsilon
     //
-    int n_steps = ceil( full_step / step_estimate - time_step_precision);
+    //DBGMSG("%g %g %g\n",full_step , step_estimate, full_step / step_estimate);
+    double n_steps = ceil( full_step / step_estimate - time_step_precision);
     step_estimate = full_step / n_steps;
     
     // try to avoid time_step changes

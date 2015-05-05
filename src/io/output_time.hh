@@ -81,7 +81,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static OutputTime* create_output_stream(const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
 
     /**
      * \brief Generic method for registering output data stored in MultiField

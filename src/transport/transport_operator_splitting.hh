@@ -169,6 +169,7 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
@@ -196,9 +197,11 @@ public:
    
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
     ConvectionTransport *convection;
-    ReactionTerm *reaction;
+    std::shared_ptr<ReactionTerm> reaction;
 
     double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;

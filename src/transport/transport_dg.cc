@@ -44,6 +44,11 @@
 #include "transport/heat_model.hh"
 
 #include "fields/generic_field.hh"
+#include "input/factory.hh"
+
+FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
+
 
 using namespace Input::Type;
 
@@ -89,6 +94,10 @@ Record TransportDG<Model>::input_type
     .declare_key("output_fields", Array(EqData::output_selection),
     		Default(Model::ModelEqData::default_output_field()),
        		"List of fields to write to output file.");
+
+template<class Model>
+const int TransportDG<Model>::registrar =
+		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG");
 
 
 
@@ -407,7 +416,6 @@ TransportDG<Model>::~TransportDG()
     delete feo;
 
     gamma.clear();
-    delete output_stream;
 }
 
 
@@ -1379,18 +1387,11 @@ void TransportDG<Model>::set_boundary_conditions()
 
 
 
-// TODO: The detection of side number from SideIter
-// in TransportDG::calculate_velocity()
-// should be done with help of class RefElement. This however requires
-// that the MH_DofHandler uses the node/side ordering defined in
-// the respective RefElement.
 template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-    std::map<const Node*, int> node_nums;
-    for (unsigned int i=0; i<cell->n_nodes(); i++)
-        node_nums[cell->node[i]] = i;
+	ASSERT(cell->dim() == dim, "Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
 
@@ -1398,13 +1399,7 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
     {
         velocity[k].zeros();
         for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-        {
-            if (cell->side(sid)->dim() != dim-1) continue;
-            int num = dim*(dim+1)/2;
-            for (unsigned int i=0; i<cell->side(sid)->n_nodes(); i++)
-                num -= node_nums[cell->side(sid)->node(i)];
-            velocity[k] += fv.shape_vector(num,k) * mh_dh->side_flux( *(cell->side(sid)) );
-        }
+            velocity[k] += fv.shape_vector(sid,k) * mh_dh->side_flux( *(cell->side(sid)) );
     }
 }
 

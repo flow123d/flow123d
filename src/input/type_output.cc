@@ -1291,7 +1291,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
     boost::shared_ptr<AbstractRecord> parent_ptr;
     get_parent_ptr(*type, parent_ptr);
     if (parent_ptr) {
-        stream << "\"implements\" : [ \"" << parent_ptr->type_name() << "\" ]," << endl;
+        stream << "\"implements\" : [ \"" << format_hash(parent_ptr->content_hash()) << "\" ]," << endl;
     }
 
     // reducible to key
@@ -1404,7 +1404,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
     // default descendant
     if (desc) {
-        stream << "\"default_descendant\" : \"" << desc->type_name()  << "\"," << endl;
+        stream << "\"default_descendant\" : \"" << format_hash(desc->content_hash())  << "\"," << endl;
     }
     stream << "\"implementations\" : [" << endl;
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
@@ -1440,8 +1440,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 		if (it != type->begin()) {
 			stream << "," << endl;
 		}
-		stream << "{ \"value\" : \"" << it->value << "\"," << endl
-		       << " \"name\" : \"" << it->key_ << "\"," << endl
+		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl
 		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
 	}
 
