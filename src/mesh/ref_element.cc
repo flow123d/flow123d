@@ -195,7 +195,7 @@ double RefElement<3>::side_measure(unsigned int sid)
 {
 	ASSERT(sid < n_sides, "Side number is out of range!");
 
-	return norm(cross(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),
+	return 0.5*norm(cross(node_coords(side_nodes[sid][1]) - node_coords(side_nodes[sid][0]),
 			node_coords(side_nodes[sid][2]) - node_coords(side_nodes[sid][0])),2);
 }
 
