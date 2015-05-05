@@ -616,6 +616,11 @@ public:
      */
     ChildDataIter end_child_data() const;
 
+    /**
+     * Add inherited Record.
+     */
+    int add_child(const Record &subrec);
+
 protected:
     /**
      * This method intentionally have no implementation to
