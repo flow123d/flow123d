@@ -13,6 +13,7 @@
 #include <input/input_type.hh>
 #include <input/json_to_storage.hh>
 #include <input/accessors.hh>
+#include <input/factory.hh>
 
 
 class Equation {
@@ -24,15 +25,27 @@ public:
 
 class EquationA : public Equation {
 public:
-    static Input::Type::Record input_type;
+	typedef Equation FactoryBaseType;
+
+    static Input::Type::Record & get_input_rec();
     EquationA(Input::Record rec);
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
 class EquationB : public Equation {
 public:
-    static Input::Type::Record input_type;
+	typedef Equation FactoryBaseType;
+
+	static Input::Type::Record & get_input_rec();
     EquationB(Input::Record rec);
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
@@ -41,7 +54,7 @@ public:
  */
 class Application : public testing::Test{
 public:
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
 
     inline Input::Record input()
     {
@@ -51,7 +64,7 @@ public:
     void SetUp() override {
     	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
     	ifstream in(f_name);
-    	json_reader = new Input::JSONToStorage(in, input_type );
+    	json_reader = new Input::JSONToStorage(in, get_input_type() );
     }
     void TearDown() override {
     	delete json_reader;
@@ -88,25 +101,48 @@ TEST_F(Application, init) {
 
 namespace it = Input::Type;
 
-it::Record Application::input_type = it::Record("Application", "Root record of the whole application.")
+it::Record & Application::get_input_type() {
+	static it::Record type = it::Record("Application", "Root record of the whole application.")
     // Array of equations with types given by method of class Equation
     .declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "");
+	type.close();
+	return type;
+}
 
 
 
 
-it::Record EquationA::input_type = it::Record("EquationA", "For example explicit transport equation solver.")
+it::Record & EquationA::get_input_rec() {
+	static it::Record type = it::Record("EquationA", "For example explicit transport equation solver.")
     .derive_from( Equation::get_input_type() )
 	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
     .declare_key("parameter_a", it::Double(), "");
+	type.close();
+	return type;
+}
 
 
-it::Record EquationB::input_type = it::Record("EquationB", "For example implicit transport equation solver.")
+const int EquationA::registrar =
+		Input::register_class< EquationA, Input::Record >("EquationA");
+
+
+
+it::Record & EquationB::get_input_rec() {
+	static it::Record type = it::Record("EquationB", "For example implicit transport equation solver.")
     .derive_from( Equation::get_input_type() )
 	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
     .declare_key("parameter_b", it::Integer(), it::Default("111"), "")
     .declare_key("default_str", it::String(), it::Default("str value"), "" )
     .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" );
+	type.close();
+	return type;
+}
+
+
+const int EquationB::registrar =
+		Input::register_class< EquationB, Input::Record >("EquationB");
+
+
 
 it::AbstractRecord & Equation::get_input_type() {
 	static it::AbstractRecord type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.");
