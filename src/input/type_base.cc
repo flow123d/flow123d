@@ -322,7 +322,7 @@ std::size_t Integer::content_hash() const
 
 
 
-bool Integer::match(int value) const {
+bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
 
