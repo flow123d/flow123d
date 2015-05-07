@@ -13,6 +13,7 @@ Package contains:
 """
 
 import system.versions
+from utils.dotdict import DotDict
 
 system.versions.require_version_2 ()
 
@@ -39,7 +40,7 @@ class ProfilerJSONDecoder (json.JSONDecoder):
         default_obj = super (ProfilerJSONDecoder, self).decode (json_string)
 
         self.intFields          = ["file-line", "call-count", "call-count-min", "call-count-max", "call-count-sum"]
-        self.floatFields        = ["cumul-time", "cumul-time-min", "cumul-time-max", "cumul-time-sum", "percent"]
+        self.floatFields        = ["cumul-time", "cumul-time-min", "cumul-time-max", "cumul-time-sum", "percent", "run-duration"]
         self.intFieldsRoot      = ["task-size", "run-process-count"]
         self.floatFieldsRoot    = ["timer-resolution"]
         self.dateFields         = ["run-started-at", "run-finished-at"]
@@ -117,6 +118,7 @@ class ProfilerFormatter (object):
         try:
             with open (json_location, 'r') as fp:
                 jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
+                jsonObj = DotDict (jsonObj)
         except Exception as exception:
             # return string with message on error
             return str (exception)
