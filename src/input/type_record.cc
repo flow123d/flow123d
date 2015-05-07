@@ -87,7 +87,6 @@ Record::Record(const string & type_name_in, const string & description)
 
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
-    Input::TypeRepository<Record>::getInstance().add_type( *this );
 }
 
 
@@ -315,7 +314,7 @@ bool Record::finish()
 
 const Record &Record::close() const {
     data_->closed_=true;
-    return *this;
+    return *( Input::TypeRepository<Record>::getInstance().add_type( *this ).get() );
 }
 
 
@@ -531,7 +530,6 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 	this->declare_type_key(child_data_->selection_of_childs.get());
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
-    Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this );
 }
 
 
@@ -644,6 +642,11 @@ int AbstractRecord::add_child(const Record &subrec)
 	add_descendant(subrec);
 
 	return 1;
+}
+
+AbstractRecord &AbstractRecord::close() {
+	data_->closed_=true;
+    return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
 }
 
 
