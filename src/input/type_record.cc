@@ -640,6 +640,17 @@ AbstractRecord &AbstractRecord::close() {
 }
 
 
+int AbstractRecord::add_child(const Record &subrec)
+{
+	if ( !TypeBase::was_constructed(&subrec) ) {
+		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
+	}
+	add_descendant(subrec);
+
+	return 1;
+}
+
+
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
     return child_data_->list_of_childs.begin();
 }
