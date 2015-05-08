@@ -122,7 +122,12 @@ TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
 
 
 bool TypeBase::was_constructed(const TypeBase * ptr) {
-    return lazy_object_set().find(ptr) != lazy_object_set().end();
+	bool ret = lazy_object_set().find(ptr) != lazy_object_set().end();
+	// TODO: temporary test for development, method will be removed
+	if (!ret) {
+		xprintf(Warn, "Development note - non-constructed record '%s'\n", ptr->type_name().c_str());
+	}
+    return ret;
 }
 
 
