@@ -560,8 +560,7 @@ public:
     /**
      *  Can be used to close the AbstractRecord for further declarations of keys.
      */
-    inline AbstractRecord &close() {
-        Record::close(); return *this; }
+    AbstractRecord &close();
 
 
     /**
