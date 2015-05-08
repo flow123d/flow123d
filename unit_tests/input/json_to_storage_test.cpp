@@ -501,7 +501,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
 }
 
-TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
+/*TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::Selection sel_type("TYPE_selection");
@@ -560,7 +560,7 @@ TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
     }
-}
+} */
 
 TEST(InputJSONToStorageTest_external, get_root_interface) {
     static Input::Type::Record one_rec("One","");

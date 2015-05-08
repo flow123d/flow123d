@@ -402,7 +402,7 @@ using namespace Input::Type;
 /**
  * Test AdHocAbstractRecord.
  */
-namespace IT=Input::Type;
+/*namespace IT=Input::Type;
 
 class AdHocDataTest : public testing::Test {
 public:
@@ -458,4 +458,4 @@ using namespace Input::Type;
 	EXPECT_EQ( 2, AdHocDataTest::adhoc_1.child_size());
 	EXPECT_EQ( 2, AdHocDataTest::adhoc_2.child_size());
 	EXPECT_EQ( 2, AdHocDataTest::rec.size());
-}
+} */
