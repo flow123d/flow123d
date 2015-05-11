@@ -13,7 +13,6 @@
 #include "field.hh"
 #include "mesh/region.hh"
 #include "input/json_to_storage.hh"
-#include "input/type_repository.hh"
 
 
 /******************************************************************************************
@@ -100,11 +99,16 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
+	/*
+	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
+	 * We have to return reference, which may be reference to not yet initialized static object.
+	 *
+	 * TODO: Have method to get persistent copy of an Input Type (which exists nevertheless)
+	 */
 	static vector<it::AbstractRecord> ar_list;
 
 	if (is_enum_valued) {
 		ar_list.push_back(make_input_tree());
-		boost::shared_ptr<it::AbstractRecord> ptr = Input::TypeRepository<it::AbstractRecord>::getInstance().add_type( ar_list.back() );
 		return ar_list.back();
 	} else {
 		return FieldBaseType::input_type;
