@@ -123,7 +123,8 @@ it::Record & EquationA::get_input_rec() {
 
 
 const int EquationA::registrar =
-		Input::register_class< EquationA, Input::Record >("EquationA");
+		Input::register_class< EquationA, Input::Record >("EquationA") +
+		Equation::get_input_type().add_child(EquationA::get_input_rec());
 
 
 
@@ -140,7 +141,8 @@ it::Record & EquationB::get_input_rec() {
 
 
 const int EquationB::registrar =
-		Input::register_class< EquationB, Input::Record >("EquationB");
+		Input::register_class< EquationB, Input::Record >("EquationB") +
+		Equation::get_input_type().add_child(EquationB::get_input_rec());
 
 
 
