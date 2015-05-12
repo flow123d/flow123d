@@ -565,7 +565,6 @@ public:
      */
     AbstractRecord &close();
 
-
     /**
      * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
      * a Selection for list of descendants, since current interface do not expose this Selection. Then this method

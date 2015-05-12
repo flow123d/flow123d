@@ -634,12 +634,6 @@ unsigned int AbstractRecord::child_size() const {
 }
 
 
-AbstractRecord &AbstractRecord::close() {
-	data_->closed_=true;
-    return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ) );
-}
-
-
 int AbstractRecord::add_child(const Record &subrec)
 {
 	if ( !TypeBase::was_constructed(&subrec) ) {
@@ -648,6 +642,11 @@ int AbstractRecord::add_child(const Record &subrec)
 	add_descendant(subrec);
 
 	return 1;
+}
+
+AbstractRecord &AbstractRecord::close() {
+	data_->closed_=true;
+    return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
 }
 
 
