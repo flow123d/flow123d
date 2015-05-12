@@ -58,6 +58,31 @@ void MHFEValues::update(ElementFullIter ele, FieldType &anisotropy, FieldType_Sc
     }
 }
 
+void MHFEValues::print_local_matrix()
+{
+    DBGMSG("Local matrix: \n");
+    for(unsigned int i = 0; i < 4; i++)
+    {
+        for(unsigned int j = 0; j < 4; j++)
+            std:: cout << setw(10) << loc_matrix_[4*i+j] << " ";
+        std::cout << std::endl;
+    }
+    DBGMSG("Inverse local matrix: \n");
+    for(unsigned int i = 0; i < 4; i++)
+    {
+        for(unsigned int j = 0; j < 4; j++)
+            std:: cout << setw(10) << inv_loc_matrix_[4*i+j] << " ";
+        std::cout << std::endl;
+    }
+    DBGMSG("Bas matrix: \n");
+    for(unsigned int i = 0; i < 4; i++)
+    {
+        for(unsigned int j = 0; j < 4; j++)
+            std:: cout << setw(10) << bas_alfa[4*i+j] << " ";
+        std::cout << std::endl;
+    }
+        
+}
 
 
 double * MHFEValues::local_matrix() {

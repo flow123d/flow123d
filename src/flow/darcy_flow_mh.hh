@@ -77,6 +77,10 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 
+class DOFHandlerMultiDim;
+template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<int spacedim, class Value> class FieldFE;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -187,6 +191,9 @@ public:
        return mh_dh;
     }
     
+    FieldFE<3, FieldValue<3>::VectorFixed> * get_velocity()
+    {return velocity_;}
+    
     virtual void set_concentration_vector(Vec &vc){};
 
 
@@ -205,6 +212,16 @@ protected:
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+    
+    
+    FE_RT0<1,3> *fe_rt1_;
+    FE_RT0<2,3> *fe_rt2_;
+    FE_RT0<3,3> *fe_rt3_;
+    DOFHandlerMultiDim *dh_;
+    MappingP1<1,3> *map1_;
+    MappingP1<2,3> *map2_;
+    MappingP1<3,3> *map3_;
+    FieldFE<3, FieldValue<3>::VectorFixed> *velocity_;
 
     MortarMethod mortar_method_;
 
@@ -302,6 +319,7 @@ protected:
      *
      */
     void assembly_steady_mh_matrix();
+    void assembly_steady_mh_matrix_new();
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
@@ -342,6 +360,7 @@ protected:
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
+	Vec velocity_par_;                       //< parallel vector of solution for velocity only
 	VecScatter par_to_all;
         
   EqData data_;
