@@ -247,7 +247,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
     ASSERT(storage_==nullptr," ");
 
     // finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
+    //Input::Type::TypeBase::lazy_finish();
 
     io::filtering_istream filter_in;
 
