@@ -38,7 +38,6 @@
 
 #include <system/global_defs.h>
 
-#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
@@ -608,7 +607,6 @@ struct DiffData {
 
     double * solution;
     const MH_DofHandler * dh;
-    MHFEValues fe_values;
 
     //std::vector< std::vector<double>  > *ele_flux;
     std::vector<int> velocity_mask;
@@ -617,13 +615,13 @@ struct DiffData {
 };
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSolution &anal_sol,  DiffData &result) {
+void l2_diff_local(ElementFullIter &ele, 
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+                   ExactSolution &anal_sol,  DiffData &result) {
 
+    fv_rt.reinit(ele);
     fe_values.reinit(ele);
-    result.fe_values.update(ele,
-    		result.data_->anisotropy,
-    		result.data_->cross_section,
-    		result.data_->conductivity);
+    
     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
 
@@ -683,7 +681,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * result.fe_values.RT0_value( ele, q_point, i_shape )
+                              * fv_rt.shape_vector(i_shape, i_point)
                               / cross;
         }
 
@@ -737,6 +735,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
+    
+    // FEValues for velocity.
+    FE_RT0<1,3> fe_rt1d;
+    FE_RT0<2,3> fe_rt2d;
+    FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
+    FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 
     FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -789,10 +793,10 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	switch (ele->dim()) {
         case 1:
 
-            l2_diff_local<1>( ele, fe_values_1d, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
             break;
         }
     }
