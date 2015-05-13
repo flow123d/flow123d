@@ -125,7 +125,7 @@ void Record::make_derive_from(AbstractRecord &parent) {
     parent.finish();
     parent.add_descendant(*this);
 
-    //make_copy_keys(parent);
+    make_copy_keys(parent);
 
     data_->derived_ = true;
 }
