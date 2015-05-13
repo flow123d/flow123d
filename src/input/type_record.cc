@@ -640,7 +640,7 @@ int AbstractRecord::add_child(Record &subrec)
 		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
 	}
 	add_descendant(subrec);
-	subrec.declare_type_key( child_data_->selection_of_childs.get() );
+	subrec.make_copy_keys(*this);
 
 	return 1;
 }
