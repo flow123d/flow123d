@@ -27,7 +27,7 @@ class EquationA : public Equation {
 public:
 	typedef Equation FactoryBaseType;
 
-    static const Input::Type::Record get_input_rec();
+    static Input::Type::Record & get_input_rec();
     EquationA(Input::Record rec);
 
 private:
@@ -40,7 +40,7 @@ class EquationB : public Equation {
 public:
 	typedef Equation FactoryBaseType;
 
-	static const Input::Type::Record get_input_rec();
+	static Input::Type::Record & get_input_rec();
     EquationB(Input::Record rec);
 
 private:
@@ -54,7 +54,7 @@ private:
  */
 class Application : public testing::Test{
 public:
-    static const Input::Type::Record get_input_type();
+    static Input::Type::Record & get_input_type();
 
     inline Input::Record input()
     {
@@ -101,22 +101,24 @@ TEST_F(Application, init) {
 
 namespace it = Input::Type;
 
-const it::Record Application::get_input_type() {
+it::Record & Application::get_input_type() {
 	static it::Record type = it::Record("Application", "Root record of the whole application.")
     // Array of equations with types given by method of class Equation
-    .declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "");
-	return type.close();
+    .declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "")
+	.close();
+	return type;
 }
 
 
 
 
-const it::Record EquationA::get_input_rec() {
-	it::Record type = it::Record("EquationA", "For example explicit transport equation solver.")
+it::Record & EquationA::get_input_rec() {
+	static it::Record type = it::Record("EquationA", "For example explicit transport equation solver.")
     .derive_from( Equation::get_input_type() )
 	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
-    .declare_key("parameter_a", it::Double(), "");
-	return type.close();
+    .declare_key("parameter_a", it::Double(), "")
+	.close();
+	return type;
 }
 
 
@@ -126,14 +128,15 @@ const int EquationA::registrar =
 
 
 
-const it::Record EquationB::get_input_rec() {
-	it::Record type = it::Record("EquationB", "For example implicit transport equation solver.")
+it::Record & EquationB::get_input_rec() {
+	static it::Record type = it::Record("EquationB", "For example implicit transport equation solver.")
     .derive_from( Equation::get_input_type() )
 	.declare_key("mesh",it::FileName::input(),it::Default::obligatory(),"")
     .declare_key("parameter_b", it::Integer(), it::Default("111"), "")
     .declare_key("default_str", it::String(), it::Default("str value"), "" )
-    .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" );
-	return type.close();
+    .declare_key("substances", it::Array( it::String() ), it::Default::obligatory(), "" )
+	.close();
+	return type;
 }
 
 
@@ -144,8 +147,9 @@ const int EquationB::registrar =
 
 
 it::AbstractRecord & Equation::get_input_type() {
-	it::AbstractRecord type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.");
-	return type.close();
+	static it::AbstractRecord type = it::AbstractRecord("AbstractEquation","Abstract input Record type for any equation.")
+		.close();
+	return type;
 }
 
 
