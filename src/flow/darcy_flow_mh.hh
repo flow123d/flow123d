@@ -191,8 +191,8 @@ public:
        return mh_dh;
     }
     
-    FieldFE<3, FieldValue<3>::VectorFixed> * get_velocity()
-    {return velocity_;}
+    const FieldFE<3, FieldValue<3>::VectorFixed> & get_velocity() const
+    {return *velocity_;}
     
     virtual void set_concentration_vector(Vec &vc){};
 

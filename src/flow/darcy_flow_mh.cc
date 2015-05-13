@@ -369,17 +369,10 @@ void DarcyFlowMH_Steady::postprocess()
     
     IS is_loc;
     VecScatter velocity_scatter;
-    const unsigned int vel_size = mesh_->n_sides();
-    int i, loc_idx[n_loc_sides];
+    int loc_idx[n_loc_sides];
 
     VecCreateMPI(PETSC_COMM_WORLD, n_loc_sides, PETSC_DECIDE, &velocity_par_);
     
-//     i = 0;
-//     FOR_ELEMENTS(mesh_, ele) {
-//         FOR_ELEMENT_SIDES(ele,si) {
-//             loc_idx[i++] = side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
-//         }
-//     }
     unsigned int u=0;
     for (unsigned int i_cell=0; i_cell < el_ds->lsize(); i_cell++)
     {
