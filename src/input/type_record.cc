@@ -125,7 +125,7 @@ void Record::make_derive_from(AbstractRecord &parent) {
     parent.finish();
     parent.add_descendant(*this);
 
-    make_copy_keys(parent);
+    //make_copy_keys(parent);
 
     data_->derived_ = true;
 }
@@ -634,12 +634,13 @@ unsigned int AbstractRecord::child_size() const {
 }
 
 
-int AbstractRecord::add_child(const Record &subrec)
+int AbstractRecord::add_child(Record &subrec)
 {
 	if ( !TypeBase::was_constructed(&subrec) ) {
 		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
 	}
 	add_descendant(subrec);
+	subrec.declare_type_key( child_data_->selection_of_childs.get() );
 
 	return 1;
 }

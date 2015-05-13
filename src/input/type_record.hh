@@ -168,6 +168,7 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
+	friend class AbstractRecord;
 	friend class AdHocAbstractRecord;
 
 public:
@@ -617,7 +618,7 @@ public:
     /**
      * Add inherited Record.
      */
-    int add_child(const Record &subrec);
+    int add_child(Record &subrec);
 
 protected:
     /**
