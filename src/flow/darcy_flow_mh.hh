@@ -81,6 +81,7 @@ class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
 template<int spacedim, class Value> class FieldFE;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
+template<unsigned int dim, unsigned int spacedim> class FEValues;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -319,7 +320,13 @@ protected:
      *
      */
     void assembly_steady_mh_matrix();
-    void assembly_steady_mh_matrix_new();
+    
+    /** Assembly of a local mass matrix on and element.
+     * Auxiliary function for @p assembly_steady_mh_matrix.
+     */
+    template<unsigned int dim>
+    void assembly_steady_mh_local_matrix(arma::mat &local_matrix, ElementFullIter ele, 
+                                         FEValues<dim,3> & fe_values);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
