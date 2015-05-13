@@ -61,7 +61,7 @@ IT::Record get_type_record() {
              "Some boolean value.");
     	value_rec.declare_key("val_description", IT::String(), IT::Default::optional(),
              "Description of value.");
-    	value_rec.close();
+    	value_rec.finish();
     }
 
 	IT::Record data_rec("Data", "Record with data");
@@ -74,7 +74,7 @@ IT::Record get_type_record() {
 	             "Short description.");
 		data_rec.declare_key("value", value_rec,
 	             "Value record.");
-		data_rec.close();
+		data_rec.finish();
 	}
 
 	IT::Record root_record("Problem", "Record of problem");
@@ -83,7 +83,7 @@ IT::Record get_type_record() {
 	             "Definition of data.");
     	root_record.declare_key("pause_after_run", IT::Bool(), IT::Default("false"),
              "If true, the program will wait for key press before it terminates.");
-		root_record.close();
+		root_record.finish();
 	}
 
 	return root_record;

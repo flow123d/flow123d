@@ -49,6 +49,9 @@ TEST(InputAddress, address_output_test) {
 	IT::Record other_record = IT::Record("Other", "Record with data for other problem")
 			.declare_key("TYPE", sel_problem, IT::Default("Other"),	"Type of problem")
 		    .close();
+	{
+		other_record.finish();
+	}
 
 
 	IT::Record region_input_type("Region", "Definition of region of elements.");
@@ -59,7 +62,7 @@ TEST(InputAddress, address_output_test) {
 		                "The ID of the region to which you assign label.");
 		region_input_type.declare_key("other", other_record, IT::Default::obligatory(),
 		                "The ID of the region to which you assign label.");
-		region_input_type.close();
+		region_input_type.finish();
 	}
 
 	IT::Record sequential_coupling_record("SequentialCoupling", "Record with data for a general sequential coupling");
@@ -68,13 +71,13 @@ TEST(InputAddress, address_output_test) {
 				"Type of problem");
 		sequential_coupling_record.declare_key("regions", IT::Array(region_input_type),IT::Default::obligatory(),
 	             "Definition of region.");
-		sequential_coupling_record.close();
+		sequential_coupling_record.finish();
 	}
 
 
 	AbstractRecordTest problemTest("Problem","Base problem.");
     {
-		problemTest.close();
+		problemTest.finish();
 		problemTest.declare_descendant(sequential_coupling_record);
 		problemTest.declare_descendant(other_record);
     }
