@@ -55,15 +55,15 @@ namespace it = Input::Type;
 
 it::AbstractRecord & CouplingBase::get_input_type() {
 	static it::AbstractRecord type = it::AbstractRecord("Problem",
-    		"The root record of description of particular the problem to solve.");
-	type.close();
+    		"The root record of description of particular the problem to solve.")
+	.close();
 
 	return type;
 }
 
 
-it::Record HC_ExplicitSequential::input_type
-    = it::Record("SequentialCoupling",
+it::Record & HC_ExplicitSequential::get_input_type() {
+    static it::Record type = it::Record("SequentialCoupling",
             "Record with data for a general sequential coupling.\n")
     .derive_from( CouplingBase::get_input_type() )
     .declare_key("description",it::String(),
@@ -76,7 +76,13 @@ it::Record HC_ExplicitSequential::input_type
 	.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
 			"Primary equation, have all data given.")
 	.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
-			"The equation that depends (the velocity field) on the result of the primary equation.");
+			"The equation that depends (the velocity field) on the result of the primary equation.")
+	.close();
+    return type;
+}
+
+
+const int HC_ExplicitSequential::registrar = CouplingBase::get_input_type().add_child(HC_ExplicitSequential::get_input_type());
 
 
 

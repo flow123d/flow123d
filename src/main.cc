@@ -292,7 +292,7 @@ void Application::run() {
         // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
+        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
 
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
