@@ -54,7 +54,7 @@ public:
      *
      * \return This variable defines record for output stream
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * \brief The specification of output file format

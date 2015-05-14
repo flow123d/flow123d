@@ -40,8 +40,8 @@ FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 using namespace Input::Type;
 
-Record OutputVTK::input_type
-    = Record("vtk", "Parameters of vtk output format.")
+Record & OutputVTK::get_input_type() {
+    static Record type = Record("vtk", "Parameters of vtk output format.")
     // It is derived from abstract class
     .derive_from(OutputTime::get_input_format_type())
     .declare_key("variant", input_type_variant, Default("ascii"),
@@ -51,7 +51,11 @@ Record OutputVTK::input_type
         "Parallel or serial version of file format.")
     // Type of compression
     .declare_key("compression", input_type_compression, Default("none"),
-        "Compression used in output stream file format.");
+        "Compression used in output stream file format.")
+	.close();
+
+    return type;
+}
 
 
 Selection OutputVTK::input_type_variant
@@ -175,7 +179,8 @@ void OutputVTK::make_subdirectory()
 
 
 
-const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk");
+const int OutputVTK::registrar = (Input::register_class< OutputVTK, const Input::Record & >("vtk"),
+		OutputTime::get_input_format_type().add_child(OutputVTK::get_input_type()) );
 
 void OutputVTK::write_vtk_vtu_head(void)
 {

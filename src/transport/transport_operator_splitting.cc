@@ -58,7 +58,7 @@ AbstractRecord & AdvectionProcessBase::get_input_type() {
 
 Record TransportBase::input_type_output_record
 	= Record("TransportOutput", "Output setting for transport equations.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+	.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 			"Parameters of output stream.");
 
 
@@ -72,7 +72,7 @@ Record TransportOperatorSplitting::input_type
 			"Time governor setting for the secondary equation.")
 	.declare_key("balance", Balance::input_type, Default::obligatory(),
 			"Settings for computing balance.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+	.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 			"Parameters of output stream.")
     .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
     		"Specification of transported substances.")

@@ -63,7 +63,7 @@ public:
     /**
      * \brief The definition of input record for vtk file format
      */
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
 
     /**
 	 * \brief The definition of input record for selection of variant of file format

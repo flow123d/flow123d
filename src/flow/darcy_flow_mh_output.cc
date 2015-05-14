@@ -65,7 +65,7 @@ it::Selection DarcyFlowMHOutput::OutputFields::output_selection
 
 it::Record DarcyFlowMHOutput::input_type
 	= it::Record("DarcyMHOutput", "Parameters of MH output.")
-    .declare_key("output_stream", OutputTime::input_type, it::Default::obligatory(),
+    .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
                     "Parameters of output stream.")
     .declare_key("output_fields", it::Array(OutputFields::output_selection),
     		it::Default::obligatory(), "List of fields to write to output file.")

@@ -43,8 +43,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 using namespace Input::Type;
 
-Record OutputTime::input_type
-    = Record("OutputStream", "Parameters of output.")
+const Record & OutputTime::get_input_type() {
+    static Record type = Record("OutputStream", "Parameters of output.")
     // The stream
     .declare_key("file", FileName::output(), Default::obligatory(),
             "File path to the connected output file.")
@@ -59,7 +59,10 @@ Record OutputTime::input_type
 	        Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
 			"Explicit array of output time points (can be combined with 'time_step'.")
 	.declare_key("add_input_times", Bool(), Default("false"),
-			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
+			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+	.close();
+    return type;
+}
 
 
 AbstractRecord & OutputTime::get_input_format_type() {

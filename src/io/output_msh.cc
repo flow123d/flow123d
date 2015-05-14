@@ -38,12 +38,17 @@ FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 
 using namespace Input::Type;
 
-Record OutputMSH::input_type
-	= Record("gmsh", "Parameters of gmsh output format.")
+Record & OutputMSH::get_input_type() {
+	static Record type = Record("gmsh", "Parameters of gmsh output format.")
 	// It is derived from abstract class
-	.derive_from(OutputTime::get_input_format_type());
+	.derive_from(OutputTime::get_input_format_type())
+	.close();
 
-const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh");
+	return type;
+}
+
+const int OutputMSH::registrar = ( Input::register_class< OutputMSH, const Input::Record & >("gmsh"),
+		OutputTime::get_input_format_type().add_child(OutputMSH::get_input_type()) );
 
 
 void OutputMSH::write_msh_header(void)

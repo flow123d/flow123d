@@ -195,7 +195,7 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 					"Time governor setting for the secondary equation.")
 			.declare_key("balance", Balance::input_type, Default::obligatory(),
 					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 					"Parameters of output stream.");
 
 	return input_type;
