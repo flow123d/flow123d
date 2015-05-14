@@ -69,7 +69,7 @@ it::Record HC_ExplicitSequential::input_type
     .declare_key("description",it::String(),
             "Short description of the solved problem.\n"
             "Is displayed in the main log, and possibly in other text output files.")
-	.declare_key("mesh", Mesh::input_type, it::Default::obligatory(),
+	.declare_key("mesh", Mesh::get_input_type(), it::Default::obligatory(),
             "Computational mesh common to all equations.")
 	.declare_key("time", TimeGovernor::input_type, it::Default::optional(),
 			"Simulation time frame and time step.")

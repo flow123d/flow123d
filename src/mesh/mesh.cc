@@ -66,8 +66,8 @@
 namespace IT = Input::Type;
 
 
-IT::Record Mesh::input_type
-	= IT::Record("Mesh","Record with mesh related data." )
+IT::Record & Mesh::get_input_type() {
+	static IT::Record type = IT::Record("Mesh","Record with mesh related data." )
 	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 			"Input file with mesh description.")
 	.declare_key("regions", IT::Array( RegionDB::region_input_type ), IT::Default::optional(),
@@ -78,6 +78,9 @@ IT::Record Mesh::input_type
 	.declare_key("partitioning", Partitioning::input_type, IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
 	.close();
 
+	return type;
+}
+
 
 
 const unsigned int Mesh::undef_idx;
@@ -86,7 +89,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::input_type );
+    Input::JSONToStorage reader( input_str, Mesh::get_input_type() );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);

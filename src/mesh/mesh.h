@@ -121,7 +121,7 @@ public:
 
 
     static const unsigned int undef_idx=-1;
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
 
 
 
