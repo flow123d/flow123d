@@ -954,7 +954,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
-    	if (in_rec.type() == LinSys_BDDC::input_type) {
+    	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
             xprintf(Warn, "For BDDC is using no Schur complements.");
             n_schur_compls = 0;
@@ -973,7 +973,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
 #endif // FLOW123D_HAVE_BDDCML
         } 
-        else if (in_rec.type() == LinSys_PETSC::input_type) {
+        else if (in_rec.type() == LinSys_PETSC::get_input_type()) {
         // use PETSC for serial case even when user wants BDDC
             if (n_schur_compls > 2) {
                 xprintf(Warn, "Invalid number of Schur Complements. Using 2.");
@@ -987,7 +987,7 @@ void DarcyFlowMH_Steady::create_linear_system() {
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
-                if (in_rec.type() != LinSys_BDDC::input_type) ls->set_from_input(in_rec);
+                if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
                 else {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
@@ -1454,7 +1454,7 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
     // prepare global_row_4_sub_row
 
 #ifdef FLOW123D_HAVE_BDDCML
-    if (in_rec.type() ==  LinSys_BDDC::input_type) {
+    if (in_rec.type() ==  LinSys_BDDC::get_input_type()) {
         // auxiliary
         Element *el;
         int side_row, edge_row;

@@ -41,14 +41,22 @@
 
 namespace it = Input::Type;
 
-it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
+it::Record & LinSys_PETSC::get_input_type() {
+	static it::Record type = it::Record("Petsc", "Solver setting.")
     .derive_from(LinSys::get_input_type())
     .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
                 "Relative residual tolerance (to initial error).")
     .declare_key("max_it", it::Integer(0), it::Default("10000"),
                 "Maximum number of outer iterations of the linear solver.")
     .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
-    .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
+    .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.")
+	.close();
+
+	return type;
+}
+
+
+const int LinSys_PETSC::registrar = LinSys::get_input_type().add_child( LinSys_PETSC::get_input_type() );
 
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)

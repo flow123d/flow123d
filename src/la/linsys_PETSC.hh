@@ -45,7 +45,7 @@ class LinSys_PETSC : public LinSys
 public:
 	typedef LinSys FactoryBaseType;
 
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
 
     LinSys_PETSC(const  Distribution * rows_ds);
 

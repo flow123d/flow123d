@@ -47,7 +47,8 @@
 namespace it = Input::Type;
 
 
-it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
+it::Record & LinSys_BDDC::get_input_type() {
+	static it::Record type = it::Record("Bddc", "Solver setting.")
     .derive_from(LinSys::get_input_type())
     .declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
                 "Relative residual tolerance (to initial error).")
@@ -60,7 +61,14 @@ it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
     .declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
                  "Use adaptive selection of constraints in BDDCML.")
     .declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
-                 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.");
+                 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.")
+	.close();
+
+	return type;
+}
+
+
+const int LinSys_BDDC::registrar = LinSys::get_input_type().add_child( LinSys_BDDC::get_input_type() );
 
 
 
