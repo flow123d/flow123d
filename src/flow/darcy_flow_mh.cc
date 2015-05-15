@@ -159,7 +159,7 @@ it::Record DarcyFlowMH_Unsteady::input_type
                  "Method for coupling Darcy flow between dimensions." )
 	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
                  "Settings for computing mass balance.")
-	.declare_key("time", TimeGovernor::input_type, it::Default::obligatory(),
+	.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);
 
@@ -181,7 +181,7 @@ it::Record DarcyFlowLMH_Unsteady::input_type
             "Method for coupling Darcy flow between dimensions." )
 	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
 			"Settings for computing mass balance.")
-    .declare_key("time",         TimeGovernor::input_type, it::Default::obligatory(),
+    .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")
     .copy_keys(DarcyFlowMH_Steady::input_type);
     

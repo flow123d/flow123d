@@ -49,7 +49,8 @@ using namespace Input::Type;
 
 
 
-Record TimeGovernor::input_type = Record("TimeGovernor",
+Record & TimeGovernor::get_input_type() {
+	static Record type = Record("TimeGovernor",
             "Setting of the simulation time. (can be specific to one equation)")
 	.allow_auto_conversion("max_dt")
     .declare_key("start_time", Double(), Default("0.0"),
@@ -69,7 +70,11 @@ Record TimeGovernor::input_type = Record("TimeGovernor",
     .declare_key("max_dt", Double(0.0),
             Default::read_time("Whole time of the simulation if specified, infinity else."),
             "Hard upper limit for the time step. Actual length of the time step is also limited"
-            "by input and output times.");
+            "by input and output times.")
+	.close();
+
+	return type;
+}
 
 
 

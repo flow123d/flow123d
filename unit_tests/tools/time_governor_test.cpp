@@ -29,7 +29,7 @@ Input::Record read_input(const string &json_input)
 	static Input::Type::Record in_rec("RootInput", "Root record.");
 
 	if (! in_rec.is_finished()) {
-	in_rec.declare_key("time", TimeGovernor::input_type, Input::Type::Default::obligatory(), "");
+	in_rec.declare_key("time", TimeGovernor::get_input_type(), Input::Type::Default::obligatory(), "");
 	in_rec.finish();
 	}
 
