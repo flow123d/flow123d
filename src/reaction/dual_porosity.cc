@@ -25,12 +25,15 @@ FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
 using namespace Input::Type;
 
 
-Selection DualPorosity::EqData::output_selection
-		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
+Selection & DualPorosity::EqData::get_output_selection() {
+	static Selection sel = EqData().output_fields
+		.make_output_field_selection("DualPorosity_Output")
 		.close();
+	return sel;
+}
 
-Record DualPorosity::input_type
-        = Record("DualPorosity",
+Record & DualPorosity::get_input_type() {
+    static Record type = Record("DualPorosity",
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
@@ -44,12 +47,16 @@ Record DualPorosity::input_type
     .declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
     .declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
     
-    .declare_key("output_fields", Array(EqData::output_selection),
-                Default("conc_immobile"), "List of fields to write to output stream.");
+    .declare_key("output_fields", Array(EqData::get_output_selection()),
+                Default("conc_immobile"), "List of fields to write to output stream.")
+	.close();
+
+    return type;
+}
     
 const int DualPorosity::registrar =
 		( Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity"),
-		ReactionTerm::get_input_type().add_child(DualPorosity::input_type) );
+		ReactionTerm::get_input_type().add_child(DualPorosity::get_input_type()) );
 
 DualPorosity::EqData::EqData()
 {
