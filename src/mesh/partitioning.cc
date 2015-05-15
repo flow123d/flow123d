@@ -14,8 +14,8 @@
 
 
 namespace IT = Input::Type;
-IT::Selection Partitioning::graph_type_sel
-    =IT::Selection("GraphType",
+IT::Selection & Partitioning::get_graph_type_sel() {
+	static IT::Selection sel = IT::Selection("GraphType",
             "Different algorithms to make the sparse graph with weighted edges\n"
             "from the multidimensional mesh. Main difference is dealing with \n"
             "neighborings of elements of different dimension.")
@@ -24,18 +24,27 @@ IT::Selection Partitioning::graph_type_sel
     .add_value(same_dimension_neighboring, "same_dimension_neghboring", "Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).")
     .close();
 
-IT::Selection Partitioning::tool_sel
-    =IT::Selection("PartTool", "Select the partitioning tool to use.")
+	return sel;
+}
+
+IT::Selection & Partitioning::get_tool_sel() {
+	static IT::Selection sel = IT::Selection("PartTool", "Select the partitioning tool to use.")
     .add_value(PETSc, "PETSc", "Use PETSc interface to various partitioning tools.")
     .add_value(METIS, "METIS", "Use direct interface to Metis.")
     .close();
 
-IT::Record Partitioning::input_type
-    = IT::Record("Partition","Setting for various types of mesh partitioning." )
-    .declare_key("tool", Partitioning::tool_sel, IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
-    .declare_key("graph_type", Partitioning::graph_type_sel, IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
+	return sel;
+}
+
+IT::Record & Partitioning::get_input_type() {
+    static IT::Record type = IT::Record("Partition","Setting for various types of mesh partitioning." )
+    .declare_key("tool", Partitioning::get_tool_sel(), IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
+    .declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
     .allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
     .close();
+
+    return type;
+}
 
 
 Partitioning::Partitioning(Mesh *mesh, Input::Record in)
