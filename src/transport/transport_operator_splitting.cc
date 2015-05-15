@@ -70,7 +70,7 @@ Record TransportOperatorSplitting::input_type
     .derive_from(AdvectionProcessBase::get_input_type())
 	.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
 			"Time governor setting for the secondary equation.")
-	.declare_key("balance", Balance::input_type, Default::obligatory(),
+	.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
 			"Settings for computing balance.")
 	.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 			"Parameters of output stream.")

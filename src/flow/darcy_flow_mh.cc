@@ -134,7 +134,7 @@ it::Record & DarcyFlowMH_Steady::get_input_type() {
 			"Parameters of output form MH module.")
 	.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
 			"Method for coupling Darcy flow between dimensions." )
-	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+	.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
 			"Settings for computing mass balance.")
 	.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
 			"Boundary condition for pressure as piezometric head." )
@@ -170,7 +170,7 @@ it::Record & DarcyFlowMH_Unsteady::get_input_type() {
                  "Parameters of output form MH module.")
     .declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
                  "Method for coupling Darcy flow between dimensions." )
-	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+	.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
                  "Settings for computing mass balance.")
 	.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
                  "Time governor setting for the unsteady Darcy flow model.")
@@ -197,7 +197,7 @@ it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
             "Parameters of output form MH module.")
     .declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
             "Method for coupling Darcy flow between dimensions." )
-	.declare_key("balance", Balance::input_type, it::Default::obligatory(),
+	.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
 			"Settings for computing mass balance.")
     .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
                                 "Time governor setting for the unsteady Darcy flow model.")

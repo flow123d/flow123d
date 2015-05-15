@@ -45,20 +45,28 @@
 
 using namespace Input::Type;
 
-Selection Balance::format_selection_input_type
-	= Selection("Balance_output_format", "Format of output file for balance.")
+Selection & Balance::get_format_selection_input_type() {
+	static Selection sel = Selection("Balance_output_format", "Format of output file for balance.")
 	.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
 	.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")
-	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fixed column width.");
+	.add_value(Balance::gnuplot, "gnuplot", "Format compatible with GnuPlot datafile with fixed column width.")
+	.close();
 
-Record Balance::input_type
-	= Record("Balance", "Balance of a conservative quantity, boundary fluxes and sources.")
+	return sel;
+}
+
+Record & Balance::get_input_type() {
+	static Record type = Record("Balance", "Balance of a conservative quantity, boundary fluxes and sources.")
 	.declare_key("balance_on", Bool(), Default("true"), "Balance is computed if the value is true.")
-	.declare_key("format", Balance::format_selection_input_type, Default("txt"), "Format of output file.")
+	.declare_key("format", Balance::get_format_selection_input_type(), Default("txt"), "Format of output file.")
 	.declare_key("cumulative", Bool(), Default("false"), "Compute cumulative balance over time. "
 			"If true, then balance is calculated at each computational time step, which can slow down the program.")
 	.declare_key("file", FileName::output(), Default::read_time("FileName balance.*"), "File name for output of balance.")
-	.allow_auto_conversion("balance_on");
+	.allow_auto_conversion("balance_on")
+	.close();
+
+	return type;
+}
 
 
 
