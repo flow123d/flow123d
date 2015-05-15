@@ -50,8 +50,8 @@ using namespace Input::Type;
 
 AbstractRecord & AdvectionProcessBase::get_input_type() {
 	static AbstractRecord type = AbstractRecord("Transport",
-			"Secondary equation for transport of substances.");
-	type.close();
+			"Secondary equation for transport of substances.")
+			.close();
 	return type;
 }
 
@@ -90,7 +90,8 @@ Record TransportOperatorSplitting::input_type
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting");
+		( Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting"),
+		AdvectionProcessBase::get_input_type().add_child( TransportOperatorSplitting::input_type ) );
 
 
 
