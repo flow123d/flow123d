@@ -73,9 +73,12 @@ IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selecti
     .close();
 
 
-IT::Selection ConvectionTransport::EqData::output_selection =
-		EqData().output_fields.make_output_field_selection("ConvectionTransport_Output")
+IT::Selection & ConvectionTransport::EqData::get_output_selection() {
+	static IT::Selection sel = EqData().output_fields
+		.make_output_field_selection("ConvectionTransport_Output")
 		.close();
+	return sel;
+}
 
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()

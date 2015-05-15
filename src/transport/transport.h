@@ -80,9 +80,9 @@ public:
 
     class EqData : public TransportBase::TransportEqData {
     public:
-        static Input::Type::Selection sorption_type_selection;
+        static Input::Type::Selection sorption_type_selection; // TODO: selection is not used - remove ??
 
-        static Input::Type::Selection output_selection;
+        static Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};
