@@ -74,7 +74,7 @@ Record & TransportOperatorSplitting::get_input_type() {
 			"Settings for computing balance.")
 	.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 			"Parameters of output stream.")
-    .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
+    .declare_key("substances", Array( Substance::get_input_type() ), Default::obligatory(),
     		"Specification of transported substances.")
     	    // input data
     .declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
