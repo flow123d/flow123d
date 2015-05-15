@@ -90,7 +90,7 @@ public:
      * Specification of the output record. Need not to be used by all transport models, but they should
      * allow output of similar fields.
      */
-    static Input::Type::Record input_type_output_record;
+    static Input::Type::Record input_type_output_record; // TODO - Record not used - remove ??
 
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
@@ -178,7 +178,7 @@ public:
      * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
      * To make this a coupling class we should modify all main input files for transport problems.
      */
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
 
     /// Constructor.
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);

@@ -62,8 +62,8 @@ Record TransportBase::input_type_output_record
 			"Parameters of output stream.");
 
 
-Record TransportOperatorSplitting::input_type
-	= Record("TransportOperatorSplitting",
+Record & TransportOperatorSplitting::get_input_type() {
+	static Record type = Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
@@ -86,12 +86,16 @@ Record TransportOperatorSplitting::input_type
     		), IT::Default::obligatory(), "")
     .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
     		Default("conc"),
-       		"List of fields to write to output file.");
+       		"List of fields to write to output file.")
+	.close();
+
+	return type;
+}
 
 
 const int TransportOperatorSplitting::registrar =
 		( Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting"),
-		AdvectionProcessBase::get_input_type().add_child( TransportOperatorSplitting::input_type ) );
+		AdvectionProcessBase::get_input_type().add_child( TransportOperatorSplitting::get_input_type() ) );
 
 
 

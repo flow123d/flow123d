@@ -108,7 +108,8 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 					"Parameters of output stream.")
 			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
-					"Names of transported substances.");
+					"Names of transported substances.")
+			.close();
 
 	return rec;
 }

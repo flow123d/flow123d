@@ -196,7 +196,8 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
 					"Settings for computing balance.")
 			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-					"Parameters of output stream.");
+					"Parameters of output stream.")
+			.close();
 
 	return input_type;
 
