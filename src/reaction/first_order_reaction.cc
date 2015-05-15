@@ -51,7 +51,8 @@ Record FirstOrderReaction::input_type
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 const int FirstOrderReaction::registrar =
-		Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction");
+		( Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction"),
+		ReactionTerm::get_input_type().add_child(FirstOrderReaction::input_type) );
 
 
 FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)

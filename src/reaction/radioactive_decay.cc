@@ -45,7 +45,8 @@ Record RadioactiveDecay::input_type
                  "Numerical solver for the system of first order ordinary differential equations coming from the model.");
 
 const int RadioactiveDecay::registrar =
-		Input::register_class< RadioactiveDecay, Mesh &, Input::Record >("RadioactiveDecay");
+		( Input::register_class< RadioactiveDecay, Mesh &, Input::Record >("RadioactiveDecay"),
+		ReactionTerm::get_input_type().add_child(RadioactiveDecay::input_type) );
 
 
 

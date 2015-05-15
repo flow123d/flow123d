@@ -48,7 +48,8 @@ Record DualPorosity::input_type
                 Default("conc_immobile"), "List of fields to write to output stream.");
     
 const int DualPorosity::registrar =
-		Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity");
+		( Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity"),
+		ReactionTerm::get_input_type().add_child(DualPorosity::input_type) );
 
 DualPorosity::EqData::EqData()
 {

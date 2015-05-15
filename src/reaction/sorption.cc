@@ -26,7 +26,8 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
 }
 
 const int SorptionSimple::registrar =
-		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption");
+		( Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption"),
+		ReactionTerm::get_input_type().add_child(SorptionSimple::input_type) );
 
 SorptionSimple::~SorptionSimple(void)
 {}
@@ -109,7 +110,8 @@ IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord
 
 
 const int SorptionMob::registrar =
-		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile");
+		( Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile"),
+		ReactionTerm::get_input_type().add_child(SorptionMob::input_type) );
 
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
@@ -189,7 +191,8 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 IT::Record SorptionImmob::input_type = SorptionBase::record_factory(SorptionRecord::immobile);
 
 const int SorptionImmob::registrar =
-		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile");
+		( Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile"),
+		ReactionTerm::get_input_type().add_child(SorptionImmob::input_type) );
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 : SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")

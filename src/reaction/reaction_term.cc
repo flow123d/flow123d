@@ -9,8 +9,8 @@ using namespace Input::Type;
         
 AbstractRecord & ReactionTerm::get_input_type() {
 	static AbstractRecord type = AbstractRecord("ReactionTerm",
-			"Equation for reading information about simple chemical reactions.");
-	type.close();
+			"Equation for reading information about simple chemical reactions.")
+			.close();
 	return type;
 }
 
