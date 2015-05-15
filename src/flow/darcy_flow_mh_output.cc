@@ -58,23 +58,30 @@
 
 namespace it = Input::Type;
 
-it::Selection DarcyFlowMHOutput::OutputFields::output_selection
-	= DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
+it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
+	static it::Selection sel = DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
 	.copy_values(OutputFields().make_output_field_selection("").close())
 	.close();
 
-it::Record DarcyFlowMHOutput::input_type
-	= it::Record("DarcyMHOutput", "Parameters of MH output.")
+	return sel;
+}
+
+it::Record & DarcyFlowMHOutput::get_input_type() {
+	static it::Record type = it::Record("DarcyMHOutput", "Parameters of MH output.")
     .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
                     "Parameters of output stream.")
-    .declare_key("output_fields", it::Array(OutputFields::output_selection),
+    .declare_key("output_fields", it::Array(OutputFields::get_output_selection()),
     		it::Default::obligatory(), "List of fields to write to output file.")
 //    .declare_key("balance_output", it::FileName::output(), it::Default("water_balance.txt"),
 //                    "Output file for water balance table.")
     .declare_key("compute_errors", it::Bool(), it::Default("false"),
     				"SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
     .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
-                    "Output file with raw data form MH module.");
+                    "Output file with raw data form MH module.")
+	.close();
+
+	return type;
+}
 
 
 DarcyFlowMHOutput::OutputFields::OutputFields()
