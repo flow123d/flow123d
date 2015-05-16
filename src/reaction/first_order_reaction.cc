@@ -11,16 +11,19 @@ FLOW123D_FORCE_LINK_IN_CHILD(firstOrderReaction)
 
 using namespace Input::Type;
 
-Record FirstOrderReaction::input_type_reactant
-    = Record("FirstOrderReactionReactant", "A record describing a reactant of a reaction.")
+Record & FirstOrderReaction::get_input_type_reactant() {
+    static Record type = Record("FirstOrderReactionReactant", "A record describing a reactant of a reaction.")
     .allow_auto_conversion("name")
     .declare_key("name", String(), Default::obligatory(), 
                  "The name of the reactant.")
     //.declare_key("stoichiometric_coefficient", Integer(0.0), Default::optional(1.0))   //in future
-    ;
+    .close();
+
+    return type;
+}
     
-Record FirstOrderReaction::input_type_product 
-    = Record("FirstOrderReactionProduct", "A record describing a product of a reaction.")
+Record & FirstOrderReaction::get_input_type_product() {
+    static Record type = Record("FirstOrderReactionProduct", "A record describing a product of a reaction.")
     .allow_auto_conversion("name")
     .declare_key("name", String(), Default::obligatory(), 
                  "The name of the product.")
@@ -29,30 +32,41 @@ Record FirstOrderReaction::input_type_product
                  "The branching ratio of the product when there are more products.\n"
                  "The value must be positive. Further, the branching ratios of all products are normalized "
                  "in order to sum to one.\n"
-                 "The default value 1.0, should only be used in the case of single product.");
+                 "The default value 1.0, should only be used in the case of single product.")
+	.close();
+
+    return type;
+}
     
-Record FirstOrderReaction::input_type_single_reaction
-	= Record("Reaction", "Describes a single first order chemical reaction.")
-	.declare_key("reactants", Array(FirstOrderReaction::input_type_reactant,1), Default::obligatory(),
+Record & FirstOrderReaction::get_input_type_single_reaction() {
+	static Record type = Record("Reaction", "Describes a single first order chemical reaction.")
+	.declare_key("reactants", Array(FirstOrderReaction::get_input_type_reactant(), 1), Default::obligatory(),
 				"An array of reactants. Do not use array, reactions with only one reactant (decays) are implemented at the moment!")
     .declare_key("reaction_rate", Double(0.0), Default::obligatory(),
                 "The reaction rate coefficient of the first order reaction.")
-    .declare_key("products", Array(FirstOrderReaction::input_type_product,1), Default::obligatory(),
+    .declare_key("products", Array(FirstOrderReaction::get_input_type_product(), 1), Default::obligatory(),
 				"An array of products.")
-	;
+	.close();
+
+	return type;
+}
 
 
-Record FirstOrderReaction::input_type
-	= Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
+Record & FirstOrderReaction::get_input_type() {
+	static Record type = Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
 	.derive_from( ReactionTerm::get_input_type() )
-    .declare_key("reactions", Array( FirstOrderReaction::input_type_single_reaction), Default::obligatory(),
+    .declare_key("reactions", Array( FirstOrderReaction::get_input_type_single_reaction()), Default::obligatory(),
                 "An array of first order chemical reactions.")
     .declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
-                 "Numerical solver for the system of first order ordinary differential equations coming from the model.");
+                 "Numerical solver for the system of first order ordinary differential equations coming from the model.")
+	.close();
+
+	return type;
+}
 
 const int FirstOrderReaction::registrar =
 		( Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction"),
-		ReactionTerm::get_input_type().add_child(FirstOrderReaction::input_type) );
+		ReactionTerm::get_input_type().add_child(FirstOrderReaction::get_input_type()) );
 
 
 FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)

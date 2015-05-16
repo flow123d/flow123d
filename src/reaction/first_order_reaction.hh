@@ -18,10 +18,10 @@ class FirstOrderReaction: public FirstOrderReactionBase
 public:
 	typedef ReactionTerm FactoryBaseType;
 
-    static Input::Type::Record input_type;               ///< Input record for class FirstOrderReaction.
-    static Input::Type::Record input_type_single_reaction; ///< Input record which defines particular reaction.
-    static Input::Type::Record input_type_reactant;      ///< Input record for a reactant of a reaction.
-    static Input::Type::Record input_type_product;       ///< Input record for a product of a reaction.
+    static Input::Type::Record & get_input_type();                 ///< Input record for class FirstOrderReaction.
+    static Input::Type::Record & get_input_type_single_reaction(); ///< Input record which defines particular reaction.
+    static Input::Type::Record & get_input_type_reactant();        ///< Input record for a reactant of a reaction.
+    static Input::Type::Record & get_input_type_product();         ///< Input record for a product of a reaction.
 
     /// Constructor.
     FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec);
