@@ -104,7 +104,7 @@ public:
     const Selection &close() const;
 
 
-    std::size_t content_hash() const   override;
+    TypeHash content_hash() const   override;
 
 
     /// Implements \p TypeBase::is_finished
