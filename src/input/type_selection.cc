@@ -6,6 +6,7 @@
  */
 
 #include "input/type_selection.hh"
+#include "input/type_repository.hh"
 #include <boost/functional/hash.hpp>
 
 namespace Input {
@@ -33,6 +34,7 @@ Selection::Selection(const string &name, const string &desc)
 : data_(boost::make_shared<SelectionData>(name))
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
+    Input::TypeRepository<Selection>::getInstance().add_type( *this );
     data_->description_=desc;
 }
 
@@ -54,7 +56,7 @@ const Selection & Selection::close() const {
 
 
 
-std::size_t Selection::content_hash() const
+TypeBase::TypeHash Selection::content_hash() const
 {
     std::size_t seed=0;
     boost::hash_combine(seed, "Selection");
