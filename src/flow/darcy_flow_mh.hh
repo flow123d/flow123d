@@ -163,9 +163,6 @@ public:
 
     static Input::Type::Selection & get_mh_mortar_selection();
     static Input::Type::AbstractRecord & get_input_type();
-    static Input::Type::Record bc_segment_rec; // TODO: these three variables are unused - remove?
-    static Input::Type::AbstractRecord bc_input_type;
-    static std::vector<Input::Type::Record> bc_input_types;
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }

@@ -56,12 +56,6 @@ AbstractRecord & AdvectionProcessBase::get_input_type() {
 }
 
 
-Record TransportBase::input_type_output_record
-	= Record("TransportOutput", "Output setting for transport equations.")
-	.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-			"Parameters of output stream.");
-
-
 Record & TransportOperatorSplitting::get_input_type() {
 	static Record type = Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"

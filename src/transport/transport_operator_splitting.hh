@@ -86,12 +86,6 @@ public:
 
 	};
 
-    /**
-     * Specification of the output record. Need not to be used by all transport models, but they should
-     * allow output of similar fields.
-     */
-    static Input::Type::Record input_type_output_record; // TODO - Record not used - remove ??
-
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
 
