@@ -28,7 +28,7 @@ public:
     /**
      * Input record for class PadeApproximant.
      */
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
     
     /// Constructor from input record.
     PadeApproximant(Input::Record in_rec);
