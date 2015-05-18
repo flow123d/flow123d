@@ -187,8 +187,8 @@ void OutputVTK::make_subdirectory()
 
 
 
-const int OutputVTK::registrar = (Input::register_class< OutputVTK, const Input::Record & >("vtk"),
-		OutputTime::get_input_format_type().add_child(OutputVTK::get_input_type()) );
+const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk") +
+		OutputTime::get_input_format_type().add_child(OutputVTK::get_input_type());
 
 void OutputVTK::write_vtk_vtu_head(void)
 {

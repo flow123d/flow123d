@@ -113,8 +113,8 @@ Record & TransportDG<Model>::get_input_type() {
 
 template<class Model>
 const int TransportDG<Model>::registrar =
-		(Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG"),
-		AdvectionProcessBase::get_input_type().add_child( TransportDG<Model>::get_input_type() ) );
+		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG") +
+		AdvectionProcessBase::get_input_type().add_child( TransportDG<Model>::get_input_type() );
 
 
 

@@ -28,8 +28,8 @@ Record & PadeApproximant::get_input_type() {
 }
 
 const int PadeApproximant::registrar =
-		( Input::register_class< PadeApproximant, Input::Record >("PadeApproximant"),
-		LinearODESolverBase::get_input_type().add_child(PadeApproximant::get_input_type()) );
+		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant") +
+		LinearODESolverBase::get_input_type().add_child(PadeApproximant::get_input_type());
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {

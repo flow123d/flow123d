@@ -616,7 +616,35 @@ public:
     ChildDataIter end_child_data() const;
 
     /**
-     * Add inherited Record.
+     * Add inherited Record. This method is used primarily in combination with registration
+     * variable. @see Input::Factory
+     *
+     * Example of usage:
+	 @code
+		 class SomeBase
+		 {
+		 public:
+    		/// the specification of input abstract record
+    		static const Input::Type::AbstractRecord & get_input_type();
+			...
+		 }
+
+		 class SomeDescendant : public SomeBase
+		 {
+		 public:
+    		/// the specification of input record
+    		static const Input::Type::Record & get_input_type();
+			...
+		 private:
+			/// registers class to factory
+			static const int reg;
+		 }
+
+		 /// implementation of registration variable
+		 const int SomeDescendant::reg =
+			 Input::register_class< SomeDescendant >("SomeDescendant") +
+			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
+	 @endcode
      */
     int add_child(Record &subrec);
 

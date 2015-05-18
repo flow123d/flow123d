@@ -17,8 +17,8 @@ Record & LinearODEAnalytic::get_input_type() {
 }
     
 const int LinearODEAnalytic::registrar =
-		( Input::register_class< LinearODEAnalytic, Input::Record >("LinearODEAnalytic"),
-		LinearODESolverBase::get_input_type().add_child(LinearODEAnalytic::get_input_type()) );
+		Input::register_class< LinearODEAnalytic, Input::Record >("LinearODEAnalytic") +
+		LinearODESolverBase::get_input_type().add_child(LinearODEAnalytic::get_input_type());
 
 LinearODEAnalytic::LinearODEAnalytic(Input::Record in_rec)
 {
