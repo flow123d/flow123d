@@ -65,7 +65,7 @@ protected:
             total_flux=4
         };
 
-        static IT::Selection bc_type_selection;
+        static IT::Selection & get_bc_type_selection();
 
         template<int spacedim, class Value>
         class FieldFactory : public OldBcdInput::FieldFactory<spacedim, Value> {
@@ -103,7 +103,7 @@ protected:
             anisotropy.units( UnitSI::dimensionless() );
 
             ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
-                      bc_type.input_selection(&bc_type_selection);
+                      bc_type.input_selection(&get_bc_type_selection());
             bc_type.add_factory( std::make_shared<FieldFactory<3, FieldValue<3>::Enum> >
             					 (&(OldBcdInput::instance()->flow_type)) );
             bc_type.units( UnitSI::dimensionless() );
@@ -145,13 +145,17 @@ protected:
     void output_data() override {}
 };
 
-IT::Selection SomeEquationBase::EqData::bc_type_selection =
-              IT::Selection("EqData_bc_Type")
-               .add_value(none, "none")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin")
-               .add_value(total_flux, "total_flux");
+IT::Selection & SomeEquationBase::EqData::get_bc_type_selection() {
+	static IT::Selection sel = IT::Selection("EqData_bc_Type")
+             .add_value(none, "none")
+             .add_value(dirichlet, "dirichlet")
+             .add_value(neumann, "neumann")
+             .add_value(robin, "robin")
+             .add_value(total_flux, "total_flux")
+			 .close();
+
+	return sel;
+}
 
 
 
@@ -247,8 +251,8 @@ IT::Record & SomeEquation::get_input_type() {
 	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
-	                ), IT::Default::obligatory(), ""  );
-	type.close();
+	                ), IT::Default::obligatory(), ""  )
+			.close();
 	return type;
 }
 
