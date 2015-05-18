@@ -68,12 +68,12 @@ public:
     /**
 	 * \brief The definition of input record for selection of variant of file format
 	 */
-    static Input::Type::Selection input_type_variant;
+    static Input::Type::Selection & get_input_type_variant();
 
     /**
 	 * \brief The definition of input record for selection of compression type
 	 */
-    static Input::Type::Selection input_type_compression;
+    static Input::Type::Selection & get_input_type_compression();
 
     /**
      * \brief This function write data to VTK (.pvd) file format
