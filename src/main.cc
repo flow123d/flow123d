@@ -68,12 +68,16 @@
 namespace it = Input::Type;
 
 // this should be part of a system class containing all support information
-it::Record Application::input_type
-    = it::Record("Root", "Root record of JSON input for Flow123d.")
+it::Record & Application::get_input_type() {
+    static it::Record type = it::Record("Root", "Root record of JSON input for Flow123d.")
     .declare_key("problem", CouplingBase::get_input_type(), it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
-    		"If true, the program will wait for key press before it terminates.");
+    		"If true, the program will wait for key press before it terminates.")
+	.close();
+
+    return type;
+}
 
 
 
@@ -143,7 +147,7 @@ Input::Record Application::read_input() {
         xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
     }
     try {
-    	Input::JSONToStorage json_reader(in_stream, input_type );
+    	Input::JSONToStorage json_reader(in_stream, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
     } catch (Input::JSONToStorage::ExcInputError &e ) {
       e << Input::JSONToStorage::EI_File(fname); throw;
@@ -213,7 +217,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&input_type);
+        Input::Type::OutputText type_output(&get_input_type());
         type_output.set_filter(":Field:.*");
         cout << type_output;
         exit( exit_output );
@@ -221,7 +225,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("latex_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&input_type);
+        Input::Type::OutputLatex type_output(&get_input_type());
         type_output.set_filter("");
         cout << type_output;
         exit( exit_output );
@@ -229,7 +233,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("JSON_machine")) {
         Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONMachine(&input_type);
+        cout << Input::Type::OutputJSONMachine(&get_input_type());
         exit( exit_output );
     }
 
