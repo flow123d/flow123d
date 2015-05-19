@@ -18,8 +18,6 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldAlgorithmBase<spacedim,Value>::input_type, NULL);
 
 template <int spacedim, class Value>
 Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(

@@ -32,8 +32,6 @@ public:
     FieldConstant(unsigned int n_comp=0);
 
 
-    static Input::Type::Record input_type;
-
     /**
      * Return Record for initialization of FieldConstant that is derived from AbstractRecord given by @p a_type
      * and the individual elements of the possible Value (vector, tensor) have Input::Type @p eit.

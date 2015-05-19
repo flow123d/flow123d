@@ -44,12 +44,6 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
-it::Record FieldInterpolatedP0<spacedim, Value>::input_type
-    = FieldInterpolatedP0<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
-
-
-
-template <int spacedim, class Value>
 Input::Type::Record FieldInterpolatedP0<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )

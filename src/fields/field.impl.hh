@@ -104,7 +104,7 @@ it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
 	if (is_enum_valued) {
 		return make_input_tree();
 	} else {
-		return FieldBaseType::input_type;
+		return FieldBaseType::get_input_type();
 	}
 }
 

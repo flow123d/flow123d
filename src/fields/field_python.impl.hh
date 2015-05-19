@@ -16,9 +16,6 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldPython<spacedim, Value>::input_type= get_input_type( FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
-
 
 
 template <int spacedim, class Value>

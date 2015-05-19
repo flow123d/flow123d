@@ -20,11 +20,6 @@
 namespace IT = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldElementwise<spacedim, Value>::input_type
-    = FieldElementwise<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
-
-
-template <int spacedim, class Value>
 Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )

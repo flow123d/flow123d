@@ -54,8 +54,6 @@ public:
 	/**
 	 * Declare Input type.
 	 */
-	static Input::Type::Record input_type;
-
 	static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
 	/**

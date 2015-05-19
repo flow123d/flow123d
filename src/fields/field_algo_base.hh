@@ -72,14 +72,8 @@ public:
        static std::string template_name();
 
        /**
-        * Declaration of input type data member.
-        */
-       static Input::Type::AbstractRecord input_type;
-
-       /**
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
-        * given by element_input_type pointer. USE ONLY IF YOU CAN NOT USE
-        * static member FieldBase<...>::input_type.
+        * given by element_input_type pointer.
         */
        static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
 
