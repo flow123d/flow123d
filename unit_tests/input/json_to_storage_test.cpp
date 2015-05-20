@@ -480,6 +480,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     { // auto conversion
        Input::Type::AbstractRecord ar("AR","");
        ar.allow_auto_conversion("BR");
+       ar.close();
        Input::Type::Record br("BR","");
        br.derive_from(ar)
          .declare_key("x",Input::Type::Integer(),Input::Type::Default("10"),"")

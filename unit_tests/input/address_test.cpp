@@ -88,6 +88,7 @@ TEST(InputAddress, address_output_test) {
     {
     	root_record.declare_key("problem", problem, IT::Default::obligatory(),
              "Simulation problem to be solved.");
+    	root_record.finish();
     }
 
 	Input::JSONToStorage json_reader( read_input_json,  root_record);
