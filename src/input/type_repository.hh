@@ -45,24 +45,34 @@ public:
 
     boost::shared_ptr<T> add_type(const T & type);
 
+    void finish();
+
 private:
     /// Default constructor.
     TypeRepository() {};
+
+    TypeRepositoryMap type_repository_map_;
 };
 
 
 template <class T>
 boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
-    static TypeRepositoryMap type_repository_map;
     Type::TypeBase::TypeHash hash = type.content_hash();
 
-	auto search = type_repository_map.find(hash);
-	if (search != type_repository_map.end()) {
+	auto search = type_repository_map_.find(hash);
+	if (search != type_repository_map_.end()) {
 		return search->second;
 	} else {
 		auto type_ptr = boost::make_shared<T>( type );
-		type_repository_map.insert( std::pair<Type::TypeBase::TypeHash, boost::shared_ptr<T>>(hash,type_ptr) );
+		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, boost::shared_ptr<T>>(hash,type_ptr) );
 		return type_ptr;
+	}
+}
+
+template <class T>
+void TypeRepository<T>::finish() {
+	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
+		it->second->finish();
 	}
 }
 
