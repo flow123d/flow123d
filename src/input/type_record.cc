@@ -260,7 +260,7 @@ bool Record::finish()
         data_->p_parent_ = NULL;
     }
     // finish inheritance if parent is non-null
-    if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
+    //if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
 
     // Finish declare_key():
     data_->finished = true;
