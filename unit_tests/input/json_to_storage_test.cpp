@@ -409,6 +409,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     static Type::Record b_rec("EqDarcy","");
     b_rec.derive_from(a_rec);
     b_rec.declare_key("b_val", Type::Integer(), "");
+    a_rec.add_child(b_rec);
     b_rec.finish();
 
     EXPECT_EQ(true, b_rec.is_finished());
@@ -417,6 +418,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     c_rec.derive_from(a_rec);
     c_rec.declare_key("c_val", Type::Integer(), "");
     c_rec.declare_key("a_val", Type::Double(),"");
+    a_rec.add_child(c_rec);
     c_rec.finish();
 
     a_rec.no_more_descendants();
@@ -484,6 +486,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
          .declare_key("y",Input::Type::Integer(),"")
          .allow_auto_conversion("y")
          .close();
+       ar.add_child(br);
        br.finish();
        ar.no_more_descendants();
 

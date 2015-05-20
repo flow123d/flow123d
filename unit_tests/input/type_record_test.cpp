@@ -351,6 +351,8 @@ using namespace Input::Type;
     c_rec.declare_key("c_val", Integer(), "");
     c_rec.declare_key("a_val", Double(),"");
 
+    a_rec.add_child(b_rec);
+    a_rec.add_child(c_rec);
     c_rec.finish();
     b_rec.finish();
 

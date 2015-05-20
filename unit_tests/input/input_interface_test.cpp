@@ -70,12 +70,14 @@ protected:
         desc_a_ptr = new Record("DescendantA","");
         desc_a_ptr->derive_from(*abstr_rec_ptr);
         desc_a_ptr->declare_key("some_int", Integer(),Default("1"),"");
+        abstr_rec_ptr->add_child(*desc_a_ptr);
         desc_a_ptr->finish();
 
         desc_b_ptr = new Record("DescendantB","");
         desc_b_ptr->derive_from(*abstr_rec_ptr);
         desc_b_ptr->declare_key("some_int", Integer(),Default("2"),"");
         desc_b_ptr->declare_key("some_double", Double(),Default::obligatory(),"");
+        abstr_rec_ptr->add_child(*desc_b_ptr);
         desc_b_ptr->finish();
 
         abstr_rec_ptr->no_more_descendants();
