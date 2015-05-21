@@ -69,6 +69,7 @@ TypeBase::TypeHash Default::content_hash() const
 Record::Record()
 : data_( boost::make_shared<RecordData> ("EmptyRecord","") )
 {
+	close();
     finish();
 }
 
@@ -123,7 +124,7 @@ void Record::make_derive_from(AbstractRecord &parent) {
     if (data_->derived_) return;
 
     parent.finish();
-    parent.add_descendant(*this);
+    //parent.add_descendant(*this);
 
     make_copy_keys(parent);
 
@@ -249,7 +250,7 @@ bool Record::finish()
 {
 	if (data_->finished) return true;
 
-	close();
+	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 	// postponed key copies
 	make_copy_keys_all();
 
@@ -260,7 +261,7 @@ bool Record::finish()
         data_->p_parent_ = NULL;
     }
     // finish inheritance if parent is non-null
-    //if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
+    if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
 
     // Finish declare_key():
     data_->finished = true;
@@ -640,10 +641,23 @@ int AbstractRecord::add_child(Record &subrec)
 		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
 	}
 	add_descendant(subrec);
-	subrec.make_copy_keys(*this);
+	//subrec.make_copy_keys(*this);
 
 	return 1;
 }
+
+
+bool AbstractRecord::finish() {
+	if (data_->finished) return true;
+
+	ASSERT(data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
+
+	data_->finished = true;
+	no_more_descendants();
+
+	return (data_->finished);
+}
+
 
 AbstractRecord &AbstractRecord::close() {
 	data_->closed_=true;
