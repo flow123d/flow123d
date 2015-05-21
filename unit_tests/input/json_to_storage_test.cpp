@@ -275,10 +275,10 @@ TEST_F(InputJSONToStorageTest, Array) {
 
 TEST_F(InputJSONToStorageTest, Record) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    static Type::Record rec_type( "SomeRec","desc.");
-    rec_type.declare_key("int_key", Type::Integer(0,5), Type::Default::obligatory(), "");
-    rec_type.declare_key("str_key", Type::String(), "");
-    rec_type.finish();
+    static Type::Record rec_type = Type::Record( "SomeRec","desc.")
+    	.declare_key("int_key", Type::Integer(0,5), Type::Default::obligatory(), "")
+    	.declare_key("str_key", Type::String(), "")
+		.close();
 
     {
         stringstream ss("{ int_key=5 }");
@@ -308,10 +308,11 @@ TEST_F(InputJSONToStorageTest, Record) {
     // test auto conversion
     {
 
-        static Type::Record sub_rec( "SubRecord", "");
-        sub_rec.declare_key("bool_key", Type::Bool(), Type::Default("false"), "");
-        sub_rec.declare_key("int_key", Type::Integer(),  "");
-        sub_rec.allow_auto_conversion("int_key");
+        static Type::Record sub_rec = Type::Record( "SubRecord", "")
+        	.declare_key("bool_key", Type::Bool(), Type::Default("false"), "")
+        	.declare_key("int_key", Type::Integer(),  "")
+        	.allow_auto_conversion("int_key")
+			.close();
         sub_rec.finish();
 
         stringstream ss("123");
@@ -327,7 +328,8 @@ TEST_F(InputJSONToStorageTest, Record) {
     }
 
     {
-        static Type::Record sub_rec( "SubRecord", "");
+        static Type::Record sub_rec = Type::Record( "SubRecord", "")
+        	.close();
         sub_rec.finish();
 
         stringstream ss1("1.23");
@@ -401,27 +403,30 @@ TEST_F(InputJSONToStorageTest, Record) {
 TEST_F(InputJSONToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    static Type::AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Comp. mesh.");
-    a_rec.declare_key("a_val", Type::String(), Type::Default::obligatory(), "");
-    a_rec.finish();
+    static Type::AbstractRecord a_rec = Type::AbstractRecord("EqBase","Base of equation records.")
+    	.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Comp. mesh.")
+    	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
+    	.close();
 
-    static Type::Record b_rec("EqDarcy","");
-    b_rec.derive_from(a_rec);
-    b_rec.declare_key("b_val", Type::Integer(), "");
+    static Type::Record b_rec = Type::Record("EqDarcy","")
+    	.derive_from(a_rec)
+    	.declare_key("b_val", Type::Integer(), "")
+		.close();
+
+    EXPECT_EQ(false, b_rec.is_finished());
+
+    static Type::Record c_rec = Type::Record("EqTransp","")
+    	.derive_from(a_rec)
+		.declare_key("c_val", Type::Integer(), "")
+		.declare_key("a_val", Type::Double(),"")
+		.close();
+
     a_rec.add_child(b_rec);
-    b_rec.finish();
-
-    EXPECT_EQ(true, b_rec.is_finished());
-
-    static Type::Record c_rec("EqTransp","");
-    c_rec.derive_from(a_rec);
-    c_rec.declare_key("c_val", Type::Integer(), "");
-    c_rec.declare_key("a_val", Type::Double(),"");
     a_rec.add_child(c_rec);
+    a_rec.finish();
+    b_rec.finish();
     c_rec.finish();
 
-    a_rec.no_more_descendants();
     EXPECT_EQ(true, b_rec.is_finished());
     EXPECT_EQ(b_rec, a_rec.get_descendant("EqDarcy"));
     EXPECT_EQ(true, a_rec.get_descendant("EqDarcy").is_finished());
@@ -478,18 +483,17 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     }
 
     { // auto conversion
-       Input::Type::AbstractRecord ar("AR","");
-       ar.allow_auto_conversion("BR");
-       ar.close();
-       Input::Type::Record br("BR","");
-       br.derive_from(ar)
+       Type::AbstractRecord ar = Type::AbstractRecord("AR","")
+         .allow_auto_conversion("BR")
+         .close();
+       Type::Record br = Type::Record("BR","")
+         .derive_from(ar)
          .declare_key("x",Input::Type::Integer(),Input::Type::Default("10"),"")
          .declare_key("y",Input::Type::Integer(),"")
          .allow_auto_conversion("y")
          .close();
        ar.add_child(br);
        br.finish();
-       ar.no_more_descendants();
 
        stringstream ss("20");
        this->read_stream(ss, ar);
@@ -567,8 +571,9 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 } */
 
 TEST(InputJSONToStorageTest_external, get_root_interface) {
-    static Input::Type::Record one_rec("One","");
-    one_rec.declare_key("one",Input::Type::Integer(),"");
+    static Type::Record one_rec = Type::Record("One","")
+    	.declare_key("one",Input::Type::Integer(),"")
+		.close();
     one_rec.finish();
 
     stringstream ss("{ one=1 }");
@@ -582,27 +587,30 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
 TEST_F(InputJSONToStorageTest, default_values) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    static Type::Selection sel_type("tmp selection");
-    sel_type.add_value(1,"one");
-    sel_type.add_value(2,"two");
+    static Type::Selection sel_type = Type::Selection("tmp selection")
+    	.add_value(1,"one")
+		.add_value(2,"two")
+		.close();
     sel_type.finish();
 
-    static Type::Record rec_type( "SomeRec","desc.");
-    rec_type.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "");
-    rec_type.declare_key("bool_key", Type::Bool(), Type::Default("true"),"");
-    rec_type.declare_key("sel_key", sel_type, Type::Default("two"),"");
-    rec_type.declare_key("double_key", Type::Double(), Type::Default("1.23"),"");
-    rec_type.declare_key("str_key", Type::String(), Type::Default("ahoj"),"");
-    rec_type.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "");
+    static Type::Record sub_rec = Type::Record( "SubRecord", "")
+    	.declare_key("bool_key", Type::Bool(), Type::Default("false"), "")
+    	.declare_key("int_key", Type::Integer(),  "")
+    	.allow_auto_conversion("int_key")
+    	.close();
 
-    static Type::Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Type::Bool(), Type::Default("false"), "");
-    sub_rec.declare_key("int_key", Type::Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
-    sub_rec.finish();
+    static Type::Record rec_type = Type::Record( "SomeRec","desc.")
+    	.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "")
+    	.declare_key("bool_key", Type::Bool(), Type::Default("true"),"")
+    	.declare_key("sel_key", sel_type, Type::Default("two"),"")
+    	.declare_key("double_key", Type::Double(), Type::Default("1.23"),"")
+    	.declare_key("str_key", Type::String(), Type::Default("ahoj"),"")
+    	.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "")
+	    .declare_key("rec_key", sub_rec, Type::Default("321"), "")
+		.close();
 
-    rec_type.declare_key("rec_key", sub_rec, Type::Default("321"), "");
     rec_type.finish();
+    sub_rec.finish();
 
     {
         stringstream ss("{ }");
