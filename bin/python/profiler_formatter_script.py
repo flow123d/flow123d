@@ -63,12 +63,12 @@ def parse_args (parser):
     if options.list == True:
         return (options, args)
 
-    if options.input == None:
+    if options.input is None:
         print "Error: No input file specified!"
         parser.print_help ()
         sys.exit (1)
 
-    if options.formatter == None:
+    if options.formatter is None:
         print "Error: No formatter specified!"
         parser.print_help ()
         sys.exit (1)
