@@ -70,6 +70,7 @@ add_library(system_lib
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
+    system/time_point.cc
     system/system.cc
     system/xio.cc
     system/exceptions.cc
@@ -283,5 +284,4 @@ set_target_properties(flow123d_lib
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 add_dependencies(flow123d_lib tbb)
-
 
