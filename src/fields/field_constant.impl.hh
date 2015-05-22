@@ -18,11 +18,11 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
-Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
+Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    it::Record type=
+    static it::Record type =
         it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
@@ -32,14 +32,17 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
                                     "* vector of size N to enter diagonal matrix\n"
                                     "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
                                     "* scalar to enter multiple of the unit matrix." )
-        .allow_auto_conversion("value");
+        .allow_auto_conversion("value")
+		.close();
 
     return type;
 }
 
 template <int spacedim, class Value>
 const int FieldConstant<spacedim, Value>::registrar =
-		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant");
+		Input::register_class< FieldConstant<spacedim, Value>, unsigned int >("FieldConstant") +
+		FieldAlgorithmBase<spacedim, Value>::get_input_type()
+			.add_child(FieldConstant<spacedim, Value>::get_input_type( (FieldAlgorithmBase<spacedim, Value>::get_input_type()), nullptr ));
 
 
 template <int spacedim, class Value>
