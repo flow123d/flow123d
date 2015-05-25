@@ -21,41 +21,37 @@
 
 using namespace Input::Type;
 
-Selection & SorptionBase::EqData::get_sorption_type_selection() {
-	static Selection sel = Selection("SorptionType")
-	.add_value(Isotherm::none,"none", "No sorption considered.")
-	.add_value(Isotherm::linear, "linear",
-			"Linear isotherm runs the concentration exchange between liquid and solid.")
-	.add_value(Isotherm::langmuir, "langmuir",
-			"Langmuir isotherm runs the concentration exchange between liquid and solid.")
-	.add_value(Isotherm::freundlich, "freundlich",
-			"Freundlich isotherm runs the concentration exchange between liquid and solid.")
-	.close();
-
-	return sel;
+const Selection & SorptionBase::EqData::get_sorption_type_selection() {
+	return Selection("SorptionType")
+		.add_value(Isotherm::none,"none", "No sorption considered.")
+		.add_value(Isotherm::linear, "linear",
+				"Linear isotherm runs the concentration exchange between liquid and solid.")
+		.add_value(Isotherm::langmuir, "langmuir",
+				"Langmuir isotherm runs the concentration exchange between liquid and solid.")
+		.add_value(Isotherm::freundlich, "freundlich",
+				"Freundlich isotherm runs the concentration exchange between liquid and solid.")
+		.close();
 }
 
 
 
-Record & SorptionBase::get_input_type() {
-	static Record type = Record("Sorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
-    .declare_key("substances", Array(String(),1), Default::obligatory(),
-                 "Names of the substances that take part in the sorption model.")
-	.declare_key("solvent_density", Double(0.0), Default("1.0"),
-				"Density of the solvent.")
-	.declare_key("substeps", Integer(1), Default("1000"),
-				"Number of equidistant substeps, molar mass and isotherm intersections")
-	.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
-							"Specifies solubility limits of all the sorbing species.")
-	.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
-							"Specifies highest aqueous concentration in interpolation table.")
-    .declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
-                    "Containes region specific data necessary to construct isotherms.")//;
-    .declare_key("reaction_liquid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the liquid.")
-    .declare_key("reaction_solid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the solid.")
-	.close();
-
-	return type;
+const Record & SorptionBase::get_input_type() {
+	return Record("Sorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
+		.declare_key("substances", Array(String(),1), Default::obligatory(),
+					 "Names of the substances that take part in the sorption model.")
+		.declare_key("solvent_density", Double(0.0), Default("1.0"),
+					"Density of the solvent.")
+		.declare_key("substeps", Integer(1), Default("1000"),
+					"Number of equidistant substeps, molar mass and isotherm intersections")
+		.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
+								"Specifies solubility limits of all the sorbing species.")
+		.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
+								"Specifies highest aqueous concentration in interpolation table.")
+		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
+						"Containes region specific data necessary to construct isotherms.")//;
+		.declare_key("reaction_liquid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the liquid.")
+		.declare_key("reaction_solid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the solid.")
+		.close();
 }
     
 

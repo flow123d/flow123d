@@ -31,7 +31,7 @@ public:
   /**
    *   Static variable for new input data types input
    */
-  static Input::Type::Record & get_input_type();
+  static const Input::Type::Record & get_input_type();
   
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
@@ -45,7 +45,7 @@ public:
     /**
      * Sorption type specifies a kind of equilibrial description of adsorption.
      */
-    static Input::Type::Selection & get_sorption_type_selection();
+    static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
     EqData(const string &output_field_name);
