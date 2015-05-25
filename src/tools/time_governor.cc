@@ -49,31 +49,29 @@ using namespace Input::Type;
 
 
 
-Record & TimeGovernor::get_input_type() {
-	static Record type = Record("TimeGovernor",
+const Record & TimeGovernor::get_input_type() {
+	return Record("TimeGovernor",
             "Setting of the simulation time. (can be specific to one equation)")
-	.allow_auto_conversion("max_dt")
-    .declare_key("start_time", Double(), Default("0.0"),
-                "Start time of the simulation.")
-    .declare_key("end_time", Double(), Default::read_time("Infinite end time."),
-                "End time of the simulation.")
-    .declare_key("init_dt", Double(0.0), Default("0.0"),
-            "Initial guess for the time step.\n"
-    		"Only useful for equations that use adaptive time stepping."
-    		"If set to 0.0, the time step is determined in fully autonomous"
-    		" way if the equation supports it.")
-    .declare_key("min_dt", Double(0.0),
-            Default::read_time("Machine precision."),
-            "Soft lower limit for the time step. Equation using adaptive time stepping can not"
-            "suggest smaller time step, but actual time step could be smaller in order to match "
-            "prescribed input or output times.")
-    .declare_key("max_dt", Double(0.0),
-            Default::read_time("Whole time of the simulation if specified, infinity else."),
-            "Hard upper limit for the time step. Actual length of the time step is also limited"
-            "by input and output times.")
-	.close();
-
-	return type;
+		.allow_auto_conversion("max_dt")
+		.declare_key("start_time", Double(), Default("0.0"),
+					"Start time of the simulation.")
+		.declare_key("end_time", Double(), Default::read_time("Infinite end time."),
+					"End time of the simulation.")
+		.declare_key("init_dt", Double(0.0), Default("0.0"),
+				"Initial guess for the time step.\n"
+				"Only useful for equations that use adaptive time stepping."
+				"If set to 0.0, the time step is determined in fully autonomous"
+				" way if the equation supports it.")
+		.declare_key("min_dt", Double(0.0),
+				Default::read_time("Machine precision."),
+				"Soft lower limit for the time step. Equation using adaptive time stepping can not"
+				"suggest smaller time step, but actual time step could be smaller in order to match "
+				"prescribed input or output times.")
+		.declare_key("max_dt", Double(0.0),
+				Default::read_time("Whole time of the simulation if specified, infinity else."),
+				"Hard upper limit for the time step. Actual length of the time step is also limited"
+				"by input and output times.")
+		.close();
 }
 
 

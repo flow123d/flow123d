@@ -224,7 +224,7 @@ public:
 	        << ", history index: " << EI_BackIndex::val
 	        << " out of history of size: " << EI_HistorySize::val);
 
-    static Input::Type::Record & get_input_type();
+    static const Input::Type::Record & get_input_type();
 
     /**
      * Getter for time marks.
