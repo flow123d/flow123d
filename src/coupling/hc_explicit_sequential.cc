@@ -54,31 +54,27 @@ FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
 namespace it = Input::Type;
 
 it::AbstractRecord & CouplingBase::get_input_type() {
-	static it::AbstractRecord type = it::AbstractRecord("Problem",
-    		"The root record of description of particular the problem to solve.")
-	.close();
-
-	return type;
+	return it::AbstractRecord("Problem", "The root record of description of particular the problem to solve.")
+		.close();
 }
 
 
-it::Record & HC_ExplicitSequential::get_input_type() {
-    static it::Record type = it::Record("SequentialCoupling",
+const it::Record & HC_ExplicitSequential::get_input_type() {
+    return it::Record("SequentialCoupling",
             "Record with data for a general sequential coupling.\n")
-    .derive_from( CouplingBase::get_input_type() )
-    .declare_key("description",it::String(),
-            "Short description of the solved problem.\n"
-            "Is displayed in the main log, and possibly in other text output files.")
-	.declare_key("mesh", Mesh::get_input_type(), it::Default::obligatory(),
-            "Computational mesh common to all equations.")
-	.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
-			"Simulation time frame and time step.")
-	.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
-			"Primary equation, have all data given.")
-	.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
-			"The equation that depends (the velocity field) on the result of the primary equation.")
-	.close();
-    return type;
+		.derive_from( CouplingBase::get_input_type() )
+		.declare_key("description",it::String(),
+				"Short description of the solved problem.\n"
+				"Is displayed in the main log, and possibly in other text output files.")
+		.declare_key("mesh", Mesh::get_input_type(), it::Default::obligatory(),
+				"Computational mesh common to all equations.")
+		.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
+				"Simulation time frame and time step.")
+		.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
+				"Primary equation, have all data given.")
+		.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
+				"The equation that depends (the velocity field) on the result of the primary equation.")
+		.close();
 }
 
 
