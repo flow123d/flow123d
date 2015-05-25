@@ -29,7 +29,7 @@ public:
   /**
    * Static variable for new input data types input
    */
-  static Input::Type::Record & get_input_type();
+  static const Input::Type::Record & get_input_type();
 
   /// DualPorosity data
   class EqData : public FieldSet
@@ -51,7 +51,7 @@ public:
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     FieldSet output_fields;
 
-    static Input::Type::Selection & get_output_selection();
+    static const Input::Type::Selection & get_output_selection();
   };
 
   /// Constructor.

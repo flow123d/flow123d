@@ -8,10 +8,9 @@
 using namespace Input::Type;
         
 AbstractRecord & ReactionTerm::get_input_type() {
-	static AbstractRecord type = AbstractRecord("ReactionTerm",
+	return AbstractRecord("ReactionTerm",
 			"Equation for reading information about simple chemical reactions.")
 			.close();
-	return type;
 }
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)

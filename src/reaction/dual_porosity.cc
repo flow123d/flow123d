@@ -25,33 +25,30 @@ FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
 using namespace Input::Type;
 
 
-Selection & DualPorosity::EqData::get_output_selection() {
-	static Selection sel = EqData().output_fields
+const Selection & DualPorosity::EqData::get_output_selection() {
+	return EqData().output_fields
 		.make_output_field_selection("DualPorosity_Output")
 		.close();
-	return sel;
 }
 
-Record & DualPorosity::get_input_type() {
-    static Record type = Record("DualPorosity",
+const Record & DualPorosity::get_input_type() {
+    return Record("DualPorosity",
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
-    .derive_from(ReactionTerm::get_input_type())
-    .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
-                    "Containes region specific data necessary to construct dual porosity model.")
-    .declare_key("scheme_tolerance", Double(0.0), Default("1e-3"), 
-                 "Tolerance according to which the explicit Euler scheme is used or not."
-                 "Set 0.0 to use analytic formula only (can be slower).")
-    
-    .declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
-    .declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
-    
-    .declare_key("output_fields", Array(EqData::get_output_selection()),
-                Default("conc_immobile"), "List of fields to write to output stream.")
-	.close();
+		.derive_from(ReactionTerm::get_input_type())
+		.declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
+						"Containes region specific data necessary to construct dual porosity model.")
+		.declare_key("scheme_tolerance", Double(0.0), Default("1e-3"),
+					 "Tolerance according to which the explicit Euler scheme is used or not."
+					 "Set 0.0 to use analytic formula only (can be slower).")
 
-    return type;
+		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
+		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
+
+		.declare_key("output_fields", Array(EqData::get_output_selection()),
+					Default("conc_immobile"), "List of fields to write to output stream.")
+		.close();
 }
     
 const int DualPorosity::registrar =

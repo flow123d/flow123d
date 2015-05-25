@@ -21,9 +21,9 @@ class RadioactiveDecay: public FirstOrderReactionBase
 public:
 	typedef ReactionTerm FactoryBaseType;
 
-    static Input::Type::Record & get_input_type();              ///< Input record for class RadioactiveDecay.
-    static Input::Type::Record & get_input_type_single_decay(); ///< Input record which defines particular decay step.
-    static Input::Type::Record & get_input_type_product();      ///< Input record for a product of a radioactive decay.
+    static const Input::Type::Record & get_input_type();              ///< Input record for class RadioactiveDecay.
+    static const Input::Type::Record & get_input_type_single_decay(); ///< Input record which defines particular decay step.
+    static const Input::Type::Record & get_input_type_product();      ///< Input record for a product of a radioactive decay.
     
     /// Constructor.
     RadioactiveDecay(Mesh &mesh, Input::Record in_rec);

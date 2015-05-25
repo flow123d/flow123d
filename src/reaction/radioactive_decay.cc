@@ -14,46 +14,40 @@ FLOW123D_FORCE_LINK_IN_CHILD(radioactiveDecay)
 
 using namespace Input::Type;
 
-Record & RadioactiveDecay::get_input_type_product() {
-	static Record type = Record("RadioactiveDecayProduct", "A record describing a product of a radioactive decay.")
-    .allow_auto_conversion("name")
-    .declare_key("name", String(), Default::obligatory(), 
-                 "The name of the product.")
-    .declare_key("energy", Double(0.0), Default("0.0"),
-                 "Not used at the moment! The released energy in MeV from the decay of the radionuclide into the product.")
-    .declare_key("branching_ratio", Double(0.0), Default("1.0"),
-                 "The branching ratio of the product when there is more than one."
-                 "Considering only one product, the default ratio 1.0 is used."
-                 "Its value must be positive. Further, the branching ratios of all products are normalized" 
-                 "by their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).")
-	.close();
-
-	return type;
+const Record & RadioactiveDecay::get_input_type_product() {
+	return Record("RadioactiveDecayProduct", "A record describing a product of a radioactive decay.")
+		.allow_auto_conversion("name")
+		.declare_key("name", String(), Default::obligatory(),
+					 "The name of the product.")
+		.declare_key("energy", Double(0.0), Default("0.0"),
+					 "Not used at the moment! The released energy in MeV from the decay of the radionuclide into the product.")
+		.declare_key("branching_ratio", Double(0.0), Default("1.0"),
+					 "The branching ratio of the product when there is more than one."
+					 "Considering only one product, the default ratio 1.0 is used."
+					 "Its value must be positive. Further, the branching ratios of all products are normalized"
+					 "by their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).")
+		.close();
 }
 
-Record & RadioactiveDecay::get_input_type_single_decay() {
-    static Record type = Record("Decay", "A model of a radioactive decay.")
-    .declare_key("radionuclide", String(), Default::obligatory(),
-                "The name of the parent radionuclide.")
-    .declare_key("half_life", Double(0.0), Default::obligatory(),
-                 "The half life of the parent radionuclide in seconds.")
-    .declare_key("products", Array(RadioactiveDecay::get_input_type_product(), 1), Default::obligatory(),
-                "An array of the decay products (daughters).")
-	.close();
-
-    return type;
+const Record & RadioactiveDecay::get_input_type_single_decay() {
+    return Record("Decay", "A model of a radioactive decay.")
+		.declare_key("radionuclide", String(), Default::obligatory(),
+					"The name of the parent radionuclide.")
+		.declare_key("half_life", Double(0.0), Default::obligatory(),
+					 "The half life of the parent radionuclide in seconds.")
+		.declare_key("products", Array(RadioactiveDecay::get_input_type_product(), 1), Default::obligatory(),
+					"An array of the decay products (daughters).")
+		.close();
 }
 
-Record & RadioactiveDecay::get_input_type() {
-    static Record type = Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
-    .derive_from( ReactionTerm::get_input_type() )
-    .declare_key("decays", Array( RadioactiveDecay::get_input_type_single_decay(), 1), Default::obligatory(),
-                "An array of radioactive decays.")
-    .declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
-                 "Numerical solver for the system of first order ordinary differential equations coming from the model.")
-	.close();
-
-    return type;
+const Record & RadioactiveDecay::get_input_type() {
+    return Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
+		.derive_from( ReactionTerm::get_input_type() )
+		.declare_key("decays", Array( RadioactiveDecay::get_input_type_single_decay(), 1), Default::obligatory(),
+					"An array of radioactive decays.")
+		.declare_key("ode_solver", LinearODESolverBase::get_input_type(), Default::optional(),
+					 "Numerical solver for the system of first order ordinary differential equations coming from the model.")
+		.close();
 }
 
 const int RadioactiveDecay::registrar =
