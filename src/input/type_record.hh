@@ -374,7 +374,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(const Selection * key_type);
+    Record &declare_type_key(boost::shared_ptr<Selection> key_type);
 
     /**
      * Internal data class.
@@ -651,7 +651,7 @@ public:
 			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
 	 @endcode
      */
-    int add_child(Record &subrec);
+    int add_child(const Record &subrec);
 
 protected:
     /**
