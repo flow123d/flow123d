@@ -44,29 +44,24 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
-Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    static it::Record type=
-        it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the \\$ElementData section with field name given by this key.")
         .close();
-
-    return type;
 }
 
 
 
 template <int spacedim, class Value>
 const int FieldInterpolatedP0<spacedim, Value>::registrar =
-		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0") +
-		FieldAlgorithmBase<spacedim, Value>::get_input_type()
-			.add_child(FieldInterpolatedP0<spacedim, Value>::get_input_type( (FieldAlgorithmBase<spacedim, Value>::get_input_type()), nullptr ));
+		Input::register_class< FieldInterpolatedP0<spacedim, Value>, unsigned int >("FieldInterpolatedP0");
 
 
 template <int spacedim, class Value>

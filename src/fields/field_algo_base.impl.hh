@@ -55,15 +55,18 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 template <int spacedim, class Value>
 Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
     it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
-    	.allow_auto_conversion("FieldConstant");
+    	.allow_auto_conversion("FieldConstant")
+		.close();
 
-    FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldFormula<spacedim,Value>::get_input_type(type, element_input_type);
+    if ( !type.is_finished() ) {
+		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type(type, element_input_type)) );
 #ifdef FLOW123D_HAVE_PYTHON
-    FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
+		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type(type, element_input_type)) );
 #endif
-    FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
+		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type)) );
+    }
 
     return type.close();
 }

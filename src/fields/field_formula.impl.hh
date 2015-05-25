@@ -20,12 +20,11 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
-Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    static it::Record type
-            = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+    return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(a_type)
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
@@ -37,17 +36,13 @@ Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
                                         "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
                                         "Formula can contain variables x,y,z,t and usual operators and functions." )
 			.close();
-
-    return type;
 }
 
 
 
 template <int spacedim, class Value>
 const int FieldFormula<spacedim, Value>::registrar =
-		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula") +
-		FieldAlgorithmBase<spacedim, Value>::get_input_type()
-			.add_child(FieldFormula<spacedim, Value>::get_input_type( (FieldAlgorithmBase<spacedim, Value>::get_input_type()), nullptr ));
+		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula");
 
 
 

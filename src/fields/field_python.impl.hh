@@ -19,31 +19,26 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
-Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    static it::Record type
-    = it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-    .derive_from(a_type)
-    .declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
-            "Python script given as in place string")
-    .declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
-            "Python script given as external file")
-    .declare_key("function", it::String(), it::Default::obligatory(),
-            "Function in the given script that returns tuple containing components of the return type.\n"
-            "For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
-	.close();
-
-    return type;
+    return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
+		.derive_from(a_type)
+		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given."),
+				"Python script given as in place string")
+		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given."),
+				"Python script given as external file")
+		.declare_key("function", it::String(), it::Default::obligatory(),
+				"Function in the given script that returns tuple containing components of the return type.\n"
+				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+		.close();
 }
 
 
 template <int spacedim, class Value>
 const int FieldPython<spacedim, Value>::registrar =
-		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython") +
-		FieldAlgorithmBase<spacedim, Value>::get_input_type()
-			.add_child(FieldPython<spacedim, Value>::get_input_type( (FieldAlgorithmBase<spacedim, Value>::get_input_type()), nullptr ));
+		Input::register_class< FieldPython<spacedim, Value>, unsigned int >("FieldPython");
 
 
 
