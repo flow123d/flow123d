@@ -7,10 +7,9 @@
 using namespace Input::Type;
 
 AbstractRecord & LinearODESolverBase::get_input_type() {
-	static AbstractRecord type = AbstractRecord("LinearODESolver",
+	return AbstractRecord("LinearODESolver",
 			"Solver of a linear system of ODEs.")
 			.close();
-	return type;
 }
     
 LinearODESolverBase::LinearODESolverBase()
