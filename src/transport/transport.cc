@@ -65,11 +65,10 @@
 namespace IT = Input::Type;
 
 
-IT::Selection & ConvectionTransport::EqData::get_output_selection() {
-	static IT::Selection sel = EqData().output_fields
+const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
+	return EqData().output_fields
 		.make_output_field_selection("ConvectionTransport_Output")
 		.close();
-	return sel;
 }
 
 

@@ -172,7 +172,7 @@ public:
      * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
      * To make this a coupling class we should modify all main input files for transport problems.
      */
-    static Input::Type::Record & get_input_type();
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);

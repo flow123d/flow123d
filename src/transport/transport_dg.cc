@@ -53,20 +53,17 @@ FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
 using namespace Input::Type;
 
 template<class Model>
-Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
-	static Selection sel = Selection("DG_variant", "Type of penalty term.")
-	.add_value(non_symmetric, "non-symmetric", "non-symmetric weighted interior penalty DG method")
-	.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
-	.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method")
-	.close();
-
-	return sel;
+const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
+	return Selection("DG_variant", "Type of penalty term.")
+		.add_value(non_symmetric, "non-symmetric", "non-symmetric weighted interior penalty DG method")
+		.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
+		.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method")
+		.close();
 }
 
 template<class Model>
-Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
-	static Selection sel =
-              Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
+const Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
+	return Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
               .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
               .add_value(dirichlet, "dirichlet",
                        "Dirichlet boundary condition."
@@ -80,7 +77,6 @@ Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
                        )
               .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
 			  .close();
-	return sel;
 }
 
 template<class Model>
@@ -94,21 +90,19 @@ Selection & TransportDG<Model>::EqData::get_output_selection() {
 }
 
 template<class Model>
-Record & TransportDG<Model>::get_input_type() {
-	static Record type = Model::get_input_type("DG", "DG solver")
-    .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
-            "Linear solver for MH problem.")
-    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
-    .declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("non-symmetric"),
-    		"Variant of interior penalty discontinuous Galerkin method.")
-    .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-    .declare_key("output_fields", Array(EqData::get_output_selection()),
-    		Default(Model::ModelEqData::default_output_field()),
-       		"List of fields to write to output file.")
-	.close();
-
-	return type;
+const Record & TransportDG<Model>::get_input_type() {
+	return Model::get_input_type("DG", "DG solver")
+		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+				"Linear solver for MH problem.")
+		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
+		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("non-symmetric"),
+				"Variant of interior penalty discontinuous Galerkin method.")
+		.declare_key("dg_order", Integer(0,3), Default("1"),
+				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+		.declare_key("output_fields", Array(EqData::get_output_selection()),
+				Default(Model::ModelEqData::default_output_field()),
+				"List of fields to write to output file.")
+		.close();
 }
 
 template<class Model>

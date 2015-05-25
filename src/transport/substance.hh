@@ -59,7 +59,7 @@ public:
 
 
 	/// Input type for a substance.
-	static Input::Type::Record & get_input_type();
+	static const Input::Type::Record & get_input_type();
 
 protected:
 

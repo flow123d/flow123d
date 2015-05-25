@@ -112,10 +112,10 @@ public:
 	};
 
 	/// Main balance input record type.
-	static Input::Type::Record & get_input_type();
+	static const Input::Type::Record & get_input_type();
 
 	/// Input selection for file format.
-	static Input::Type::Selection & get_format_selection_input_type();
+	static const Input::Type::Selection & get_format_selection_input_type();
 
 	/**
 	 * Constructor.
