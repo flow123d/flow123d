@@ -90,13 +90,13 @@ public:
 	    // but perform output only if user set compute_errors flag.
 	    FieldSet fields_for_output;
 
-	    static Input::Type::Selection & get_output_selection();
+	    static const Input::Type::Selection & get_output_selection();
 	};
 
     DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
-    static Input::Type::Record & get_input_type();
+    static const Input::Type::Record & get_input_type();
 
 
     /** \brief Calculate values for output.  **/
