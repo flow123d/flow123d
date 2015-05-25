@@ -29,17 +29,17 @@ IT::Selection get_loc_sel() {
 
 
 struct InputTypeCollection {
-    static IT::Record & get_main_record();
-    static IT::Record & get_stat_rec();
-    static IT::Selection & get_stat_sel();
-    static IT::AbstractRecord & get_stat_a_rec();
+    static const IT::Record & get_main_record();
+    static const IT::Record & get_stat_rec();
+    static const IT::Selection & get_stat_sel();
+    static const IT::AbstractRecord & get_stat_a_rec();
 };
 
 // test that declare_key method correctly deal with both static (not yet constructed) and local
 // types
 // The same we test for all types of Array
-IT::Record & InputTypeCollection::get_main_record() {
-	static IT::Record type = IT::Record("MainRecord","")
+const IT::Record & InputTypeCollection::get_main_record() {
+	return IT::Record("MainRecord","")
         .declare_key("stat_rec", InputTypeCollection::get_stat_rec(), "")
         .declare_key("loc_rec", get_loc_rec(), "")
         .declare_key("loc_rec_2", get_loc_rec(), "")
@@ -54,28 +54,22 @@ IT::Record & InputTypeCollection::get_main_record() {
         .declare_key("arr_loc_sel", IT::Array(get_loc_sel()), "")
         .declare_key("arr_stat_a_rec", IT::Array(InputTypeCollection::get_stat_a_rec()), "" )
 		.close();
-
-	return type;
 }
 
 
 
 
-IT::Record & InputTypeCollection::get_stat_rec() {
-	static IT::Record type = IT::Record("stat_rec","").close();
-	return type;
+const IT::Record & InputTypeCollection::get_stat_rec() {
+	return IT::Record("stat_rec","").close();
 }
 
-IT::Selection & InputTypeCollection::get_stat_sel() {
-	static IT::Selection sel = IT::Selection("stat_sel").close();
-	return sel;
+const IT::Selection & InputTypeCollection::get_stat_sel() {
+	return IT::Selection("stat_sel").close();
 }
 
 
-IT::AbstractRecord & InputTypeCollection::get_stat_a_rec() {
-	static IT::AbstractRecord a_rec = IT::AbstractRecord("stat_a_rec","")
-		.close();
-	return a_rec;
+const IT::AbstractRecord & InputTypeCollection::get_stat_a_rec() {
+	return IT::AbstractRecord("stat_a_rec","").close();
 }
 
 

@@ -195,11 +195,11 @@ using namespace Input::Type;
     Record other_record("OtherRecord","desc");
     other_record.close();
 
-    static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
-    sub_rec.declare_key("int_key", Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
-    sub_rec.close();
+    static Record sub_rec = Record( "SubRecord", "")
+    	.declare_key("bool_key", Bool(), Default("false"), "")
+    	.declare_key("int_key", Integer(),  "")
+    	.allow_auto_conversion("int_key")
+    	.close();
 
     record_record.declare_key("sub_rec_1", other_record, "key desc");
     EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.close(); }, ExcWrongDefault,
