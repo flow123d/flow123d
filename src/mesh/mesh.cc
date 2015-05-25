@@ -66,19 +66,17 @@
 namespace IT = Input::Type;
 
 
-IT::Record & Mesh::get_input_type() {
-	static IT::Record type = IT::Record("Mesh","Record with mesh related data." )
-	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
-			"Input file with mesh description.")
-	.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
-	        "List of additional region definitions not contained in the mesh.")
-	.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
-	        "List of region set definitions. There are three region sets implicitly defined:\n"
-	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
-	.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
-	.close();
-
-	return type;
+const IT::Record & Mesh::get_input_type() {
+	return IT::Record("Mesh","Record with mesh related data." )
+		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
+				"Input file with mesh description.")
+		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
+				"List of additional region definitions not contained in the mesh.")
+		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
+				"List of region set definitions. There are three region sets implicitly defined:\n"
+				"ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
+		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
+		.close();
 }
 
 

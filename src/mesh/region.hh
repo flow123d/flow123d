@@ -291,11 +291,11 @@ public:
     /**
      * Format of input record which defined elements and their affiliation to region sets
      */
-    static Input::Type::Record & get_region_input_type();
+    static const Input::Type::Record & get_region_input_type();
     /**
      * Format of input record which defined regions and their affiliation to region sets
      */
-    static Input::Type::Record & get_region_set_input_type();
+    static const Input::Type::Record & get_region_set_input_type();
 
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
