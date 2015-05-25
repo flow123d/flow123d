@@ -39,10 +39,8 @@
 namespace it = Input::Type;
 
 it::AbstractRecord & LinSys::get_input_type() {
-	static it::AbstractRecord type =
-			it::AbstractRecord("LinSys", "Linear solver setting.")
+	return it::AbstractRecord("LinSys", "Linear solver setting.")
 			.close();
-	return type;
 }
 
 #if 0

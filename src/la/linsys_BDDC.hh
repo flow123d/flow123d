@@ -50,7 +50,7 @@ class LinSys_BDDC : public LinSys
 public:
 	typedef LinSys FactoryBaseType;
 
-    static Input::Type::Record & get_input_type();
+    static const Input::Type::Record & get_input_type();
 
     LinSys_BDDC( const unsigned numDofsSub,
                  const Distribution * rows_ds,
