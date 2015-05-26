@@ -111,8 +111,10 @@ public:
 	 *
 	 * Input::Type::Record SomEquation::input_type=
 	 * 		Record("SomeEquation","equation's description")
-	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type()),"List of field descriptors.");
+	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type().close()),"List of field descriptors.");
 	 * @endcode
+	 *
+	 * Returned input type record allows declare new keys and requires to call close() method.
 	 */
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const;
 

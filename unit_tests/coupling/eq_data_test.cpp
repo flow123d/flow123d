@@ -249,6 +249,7 @@ const IT::Record & SomeEquation::get_input_type() {
 	                .declare_key(OldBcdInput::flow_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "")
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
+					.close()
 	                ), IT::Default::obligatory(), ""  )
 			.close();
 }

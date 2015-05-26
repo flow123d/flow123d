@@ -68,7 +68,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
         }
 
     }
-    return rec.close();
+    return rec;
 }
 
 

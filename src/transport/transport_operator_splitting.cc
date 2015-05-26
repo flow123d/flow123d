@@ -76,6 +76,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.declare_key("input_fields", Array(
 				ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
 				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
+				.close()
 				), IT::Default::obligatory(), "")
 		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
 				Default("conc"),

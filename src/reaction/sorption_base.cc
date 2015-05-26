@@ -47,7 +47,7 @@ const Record & SorptionBase::get_input_type() {
 								"Specifies solubility limits of all the sorbing species.")
 		.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 								"Specifies highest aqueous concentration in interpolation table.")
-		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
+		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption").close()), Default::obligatory(), //
 						"Containes region specific data necessary to construct isotherms.")//;
 		.declare_key("reaction_liquid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the liquid.")
 		.declare_key("reaction_solid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the solid.")
