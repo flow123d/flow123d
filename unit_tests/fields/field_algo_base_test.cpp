@@ -44,7 +44,8 @@ public:
 
 		test_selection = Input::Type::Selection("any")
 			.add_value(0,"black")
-			.add_value(1,"white");
+			.add_value(1,"white")
+			.close();
 
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 	    my_mesh = new Mesh();
@@ -60,6 +61,7 @@ public:
 				this->field_.field_descriptor_record("any")
 				.declare_key("a", a_rec_type, "")
 				.declare_key("b", a_rec_type, "")
+				.close()
 				);
 		test_input_list = make_shared<Input::Type::Array>( *test_field_descriptor );
 		test_input_list->finish();
@@ -577,7 +579,8 @@ TEST(Field, init_from_input) {
     it::Selection sorption_type_sel =
             it::Selection("SorptionType")
             .add_value(1,"linear")
-            .add_value(0,"none");
+            .add_value(0,"none")
+			.close();
 
 
     Field<3, FieldValue<3>::Enum > sorption_type;
@@ -595,7 +598,8 @@ TEST(Field, init_from_input) {
             it::Record("main", "desc")
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
-            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
+            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
+			.close();
 
 
     // read input string
@@ -703,8 +707,8 @@ TEST(Field, init_from_default) {
 
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
-        Input::Type::Selection sel("TestType");
-        sel.add_value(0, "none")
+        Input::Type::Selection sel = Input::Type::Selection("TestType")
+           .add_value(0, "none")
            .add_value(1,"dirichlet")
            .close();
 
