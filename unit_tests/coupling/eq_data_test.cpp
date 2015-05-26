@@ -65,7 +65,7 @@ protected:
             total_flux=4
         };
 
-        static IT::Selection & get_bc_type_selection();
+        static const IT::Selection & get_bc_type_selection();
 
         template<int spacedim, class Value>
         class FieldFactory : public OldBcdInput::FieldFactory<spacedim, Value> {
@@ -145,16 +145,14 @@ protected:
     void output_data() override {}
 };
 
-IT::Selection & SomeEquationBase::EqData::get_bc_type_selection() {
-	static IT::Selection sel = IT::Selection("EqData_bc_Type")
+const IT::Selection & SomeEquationBase::EqData::get_bc_type_selection() {
+	return IT::Selection("EqData_bc_Type")
              .add_value(none, "none")
              .add_value(dirichlet, "dirichlet")
              .add_value(neumann, "neumann")
              .add_value(robin, "robin")
              .add_value(total_flux, "total_flux")
 			 .close();
-
-	return sel;
 }
 
 
@@ -184,7 +182,7 @@ public:
     };
 
 protected:
-    static Input::Type::Record & get_input_type();
+    static const Input::Type::Record & get_input_type();
     static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
     std::vector<string> component_names;
@@ -243,8 +241,8 @@ protected:
 
 MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
-IT::Record & SomeEquation::get_input_type() {
-	static IT::Record type = IT::Record("SomeEquation","")
+const IT::Record & SomeEquation::get_input_type() {
+	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
 	                SomeEquation::EqData().make_field_descriptor_type("SomeEquation")
 	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
@@ -253,7 +251,6 @@ IT::Record & SomeEquation::get_input_type() {
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(nullptr), "" )
 	                ), IT::Default::obligatory(), ""  )
 			.close();
-	return type;
 }
 
 
