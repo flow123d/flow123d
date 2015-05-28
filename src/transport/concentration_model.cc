@@ -95,9 +95,9 @@ UnitSI ConcentrationTransportModel::balance_units()
 }
 
 
-IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record(
+	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::get_input_type())
@@ -108,10 +108,7 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
 					"Parameters of output stream.")
 			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
-					"Names of transported substances.")
-			.close();
-
-	return rec;
+					"Names of transported substances.");
 }
 
 IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)

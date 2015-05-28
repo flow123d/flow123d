@@ -185,9 +185,9 @@ UnitSI HeatTransferModel::balance_units()
 			*data().fluid_heat_capacity.units();
 }
 
-IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
+IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record(
+	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::get_input_type())
@@ -196,11 +196,7 @@ IT::Record &HeatTransferModel::get_input_type(const string &implementation, cons
 			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
 					"Settings for computing balance.")
 			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-					"Parameters of output stream.")
-			.close();
-
-	return input_type;
-
+					"Parameters of output stream.");
 }
 
 
