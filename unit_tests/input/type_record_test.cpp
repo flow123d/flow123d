@@ -67,9 +67,10 @@ using namespace Input::Type;
 							.close();
    	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
 
-   EXPECT_THROW_WHAT( { Record rec_wrong_val = Record("yy","")
-	   	   	   	   	   	   	.declare_key("wrong_double", Double(), Default("1.23 4"),"")
-							.close();
+   Record rec_wrong_val = Record("yy","")
+   	   	   	   	   	   	   	.declare_key("wrong_double", Double(), Default("1.23 4"),"")
+   							.close();
+   EXPECT_THROW_WHAT( { rec_wrong_val.finish();
    	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
 
    // test correct finishing.
@@ -120,25 +121,26 @@ TEST(InputTypeRecord, declare_key_arrays) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-
-   static Record array_record("RecordOfArrays", "desc.");
-   static Record array_record2("RecordOfArrays2", "desc.");
-
-   // array type passed through shared_ptr
+    // array type passed through shared_ptr
     Array array_of_int(Integer(0), 5, 100 );
-    array_record.declare_key("array_of_5_ints", array_of_int,"Some bizare array.");
 
-    // array type passed by reference
-    array_record.declare_key("array_of_str", Array( String() ),"Desc. of array");
-    array_record.declare_key("array_of_str_1", Array( String() ), "Desc. of array");
-
-
-    // allow default values for an array
-    array_record.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); array_record.close(); }, ExcWrongDefault,
+    static Record array_record = Record("RecordOfArrays", "desc.")
+    	.declare_key("array_of_5_ints", array_of_int,"Some bizare array.")
+    	// array type passed by reference
+    	.declare_key("array_of_str", Array( String() ),"Desc. of array")
+    	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
+    	// allow default values for an array
+    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "")
+    	.declare_key("some_key", Array( Integer() ), Default("ahoj"), "")
+    	.close();
+    EXPECT_THROW_WHAT( { array_record.finish(); }, ExcWrongDefault,
                   "Default value 'ahoj' do not match type: 'Integer';"
                  );
-    EXPECT_THROW_WHAT( {array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); array_record2.close(); }, ExcWrongDefault,
+
+    static Record array_record2 = Record("RecordOfArrays2", "desc.")
+    	.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), "")
+		.close();
+    EXPECT_THROW_WHAT( { array_record2.finish(); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
 }
@@ -184,16 +186,13 @@ TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    Record record_record("RecordOfRecords", "");
-    Record record_record2("RecordOfRecords2", "");
-
     // Test that Record has to be passed as shared_ptr
     //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
     //              "Complex type .* shared_ptr."
     //              );
 
-    Record other_record("OtherRecord","desc");
-    other_record.close();
+    Record other_record = Record("OtherRecord","desc")
+    	.close();
 
     static Record sub_rec = Record( "SubRecord", "")
     	.declare_key("bool_key", Bool(), Default("false"), "")
@@ -201,14 +200,19 @@ using namespace Input::Type;
     	.allow_auto_conversion("int_key")
     	.close();
 
-    record_record.declare_key("sub_rec_1", other_record, "key desc");
-    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.close(); }, ExcWrongDefault,
+    Record record_record = Record("RecordOfRecords", "")
+    	.declare_key("sub_rec_1", other_record, "key desc")
+		.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc")
+    	.close();
+
+	EXPECT_THROW_WHAT( { record_record.finish(); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
 
-    DBGMSG("here\n");
-    record_record2.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    DBGMSG("here\n");
-    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.close(); } , ExcWrongDefault,
+    Record record_record2 = Record("RecordOfRecords2", "")
+    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "")
+    	.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), "")
+    	.close();
+    EXPECT_THROW_WHAT( { record_record2.finish(); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
 
     // recursion  -  forbidden
@@ -320,8 +324,8 @@ using namespace Input::Type;
 
     composite.finish();
 
-    EXPECT_TRUE(rec1.is_finished());
-    EXPECT_TRUE(rec2.is_finished());
+    EXPECT_FALSE(rec1.is_finished());
+    EXPECT_FALSE(rec2.is_finished());
 
     EXPECT_EQ(3, composite.size());
     EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
