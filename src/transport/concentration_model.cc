@@ -147,10 +147,10 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 {
     double vnorm = arma::norm(velocity, 2);
 
-	if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+	if (fabs(vnorm) > 0)
 		for (int i=0; i<3; i++)
 			for (int j=0; j<3; j++)
-				K(i,j) = velocity[i]*velocity[j]/(vnorm*vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
+				K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
 	else
 		K.zeros();
 
