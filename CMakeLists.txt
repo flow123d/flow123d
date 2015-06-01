@@ -590,8 +590,8 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
-    ${CMAKE_BINARY_DIR}/src/deal.II/include
-    ${CMAKE_SOURCE_DIR}/src/deal.II/include
+    ${CMAKE_BINARY_DIR}/src/dealii/include
+    ${CMAKE_SOURCE_DIR}/src/dealii/include
     ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
