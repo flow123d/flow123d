@@ -200,13 +200,11 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 }
 
 
-IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection(
+	return IT::Selection(
 				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
 				"Selection for output fields of " + description + " for heat transfer.");
-
-	return input_type;
 }
 
 

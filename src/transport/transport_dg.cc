@@ -80,13 +80,10 @@ const Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
 }
 
 template<class Model>
-Selection & TransportDG<Model>::EqData::get_output_selection() {
-	static Selection sel =
-		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+const Selection & TransportDG<Model>::EqData::get_output_selection() {
+	return Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
 		.copy_values(EqData().make_output_field_selection("").close())
 		.close();
-
-	return sel;
 }
 
 template<class Model>

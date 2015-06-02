@@ -111,13 +111,11 @@ IT::Record ConcentrationTransportModel::get_input_type(const string &implementat
 					"Names of transported substances.");
 }
 
-IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection sel = IT::Selection(
+	return IT::Selection(
 				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
 				"Output record for " + description + " for solute transport.");
-
-	return sel;
 }
 
 
