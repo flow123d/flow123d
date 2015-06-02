@@ -77,10 +77,42 @@ const IT::AbstractRecord & InputTypeCollection::get_stat_a_rec() {
 
 TEST(TypeRepository, all) {
     IT::Record rec = InputTypeCollection::get_main_record();
-    //std::cout << OutputText( &rec ) << std::endl;
 
     EXPECT_EQ( InputTypeCollection::get_stat_rec(), InputTypeCollection::get_stat_rec() );
-    //std::cout << &(InputTypeCollection::get_stat_rec()) << endl;
-    //std::cout << &(InputTypeCollection::get_stat_rec()) << endl;
 
 }
+
+
+
+
+
+TEST(TypeRepository, hash) {
+	TypeBase::TypeHash hash;
+
+	// test of Record
+	IT::Record rec = IT::Record("record", "Some record.")
+		.declare_key("int_key", Integer(),"")
+		.declare_key("double_key", Double(),"");
+
+	hash = rec.content_hash();
+	EXPECT_EQ( hash, rec.close().content_hash() ); // close() method get record from TypeRepository
+	EXPECT_EQ( IT::Record("stat_rec","").close().content_hash(), InputTypeCollection::get_stat_rec().content_hash() );
+
+	// test of AbstractRecord
+	IT::AbstractRecord a_rec = IT::AbstractRecord("abstract_record", "Some abstract record.");
+
+	hash = a_rec.content_hash();
+	EXPECT_EQ( hash, a_rec.close().content_hash() );
+	EXPECT_EQ( IT::AbstractRecord("stat_a_rec","").close().content_hash(), InputTypeCollection::get_stat_a_rec().content_hash() );
+
+	// test of Selection
+	IT::Selection sel = IT::Selection("selection", "Some selection.")
+		.add_value(0, "off")
+		.add_value(1, "on");
+
+	hash = sel.content_hash();
+	EXPECT_EQ( hash, sel.close().content_hash() );
+	EXPECT_EQ( IT::Selection("stat_sel").close().content_hash(), InputTypeCollection::get_stat_sel().content_hash() );
+
+}
+
