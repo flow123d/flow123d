@@ -254,7 +254,6 @@ protected:
 
     	boost::shared_ptr<const TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
-    	const TypeBase *p_type_of_values;
     	bool finished;
 
     };

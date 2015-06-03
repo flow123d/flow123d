@@ -165,36 +165,7 @@ bool Array::ArrayData::finish()
 {
 	if (finished) return true;
 
-	if (p_type_of_values != 0)
-	{
-	    if (! was_constructed(p_type_of_values) ) return false;
-
-		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
-		{
-			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
-		{
-			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Selection *>(p_type_of_values) != 0)
-		{
-			Selection *s = (Selection *)dynamic_cast<const Selection *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Selection>(*s);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
-		    xprintf(PrgErr, "Should not happen!\n");
-	}
-
-	return (finished = true);
+	return (finished = const_cast<TypeBase *>( type_of_values_.get() )->finish() );
 }
 
 
@@ -236,21 +207,10 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    // TODO add test if type is closed
 
-    // Records, AbstractRecords and Selections need not be initialized
-    // at the moment, so we save the reference of type and update
-    // the array later in finish().
-    if ( (boost::is_base_of<Record, ValueType>::value ||
-          boost::is_base_of<Selection, ValueType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
-        data_->p_type_of_values = &type;
-        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-    } else {
-        data_->p_type_of_values = NULL;
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        data_->type_of_values_ = type_copy;
-        data_->finished=true;
-    }
+	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
+	data_->type_of_values_ = type_copy;
 }
 
 // explicit instantiation
