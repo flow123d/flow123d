@@ -539,6 +539,9 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
+    if (child_data_->element_input_selection != nullptr) {
+    	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
+    }
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
     //}
@@ -661,6 +664,14 @@ bool AbstractRecord::finish() {
 AbstractRecord &AbstractRecord::close() {
 	data_->closed_=true;
     return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
+}
+
+
+AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
+	if (element_input != NULL ) {
+		child_data_->element_input_selection = element_input;
+	}
+	return *this;
 }
 
 

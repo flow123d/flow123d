@@ -500,7 +500,8 @@ protected:
     class ChildData {
     public:
         ChildData(const string &name)
-        : selection_of_childs( boost::make_shared<Selection> (name) )
+        : selection_of_childs( boost::make_shared<Selection> (name) ),
+		  element_input_selection(nullptr)
         {}
 
         /**
@@ -513,6 +514,8 @@ protected:
          * Vector of derived Records (proxies) in order of derivation.
          */
         vector< Record > list_of_childs;
+
+        const Selection * element_input_selection;
     };
 
 public:
@@ -652,6 +655,8 @@ public:
 	 @endcode
      */
     int add_child(const Record &subrec);
+
+    AbstractRecord &set_element_input(const Selection * element_input);
 
 protected:
     /**
