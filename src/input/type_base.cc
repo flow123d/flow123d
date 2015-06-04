@@ -125,14 +125,6 @@ TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
 
 
 
-bool TypeBase::was_constructed(const TypeBase * ptr) {
-	bool ret = lazy_object_set().find(ptr) != lazy_object_set().end();
-	// TODO: temporary test for development, method will be removed
-	ASSERT(ret, "Development ASSERT - object '%s' is not constructed!\n", ptr->type_name().c_str());
-    return ret;
-}
-
-
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     return ( stream << OutputText(&type, 1) );

@@ -214,8 +214,6 @@ protected:
 
     static LazyObjectsSet &lazy_object_set();
 
-    static bool was_constructed(const TypeBase * ptr);
-
     friend class Array;
     friend class Record;
 };

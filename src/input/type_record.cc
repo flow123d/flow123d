@@ -77,9 +77,7 @@ Record::Record()
 
 Record::Record(const Record & other)
 : TypeBase( other ), data_(other.data_)
-{
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-}
+{}
 
 
 
@@ -246,26 +244,6 @@ bool Record::finish()
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
-        // make our own copy of type object allocated at heap (could be expensive, but we don't care)
-        if (it->p_type != 0) {
-            if (! was_constructed(it->p_type)) return ( data_->finished=false );
-
-            if ( dynamic_cast<const AbstractRecord *>(it->p_type) != 0 ) {
-                const AbstractRecord *ar = dynamic_cast<const AbstractRecord *>(it->p_type);
-                it->type_ = boost::make_shared<const AbstractRecord>(*ar);
-                it->p_type = 0;
-            } else if (dynamic_cast<const Record *>(it->p_type) != 0) {
-                const Record *r= dynamic_cast<const Record *>(it->p_type);
-                it->type_ = boost::make_shared<const Record>(*r);
-                it->p_type = 0;
-            } else if (dynamic_cast<const Selection *>(it->p_type) != 0) {
-                const Selection *s = dynamic_cast<const Selection *>(it->p_type);
-                it->type_ = boost::make_shared<const Selection>(*s);
-                it->p_type = 0;
-            } else {
-                xprintf(PrgErr,"Raw pointer to key '%s' of unknown type in record '%s'.\n", it->key_.c_str(), type_name().c_str());
-            }
-        }
         if (it->key_ != "TYPE") {
             data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
@@ -416,16 +394,9 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
-    if ( (boost::is_base_of<Record, KeyType>::value ||
-          boost::is_base_of<Selection, KeyType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
 
-        data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
-    } else {
-        // for Array, Double, Integer, we assume no static variables
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
-        data_->declare_key(key, type_copy, NULL, default_value, description);
-    }
+	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+	data_->declare_key(key, type_copy, NULL, default_value, description);
 
     return *this;
 }
@@ -494,9 +465,7 @@ AbstractRecord::AbstractRecord()
 
 AbstractRecord::AbstractRecord(const AbstractRecord& other)
 : Record(other), child_data_(other.child_data_)
-{
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Record.\n");
-}
+{}
 
 
 
@@ -617,9 +586,6 @@ unsigned int AbstractRecord::child_size() const {
 
 int AbstractRecord::add_child(const Record &subrec)
 {
-	if ( !TypeBase::was_constructed(&subrec) ) {
-		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
-	}
 	add_descendant(subrec);
 	//subrec.make_copy_keys(*this);
 
@@ -669,18 +635,14 @@ AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
 AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 : AbstractRecord("Derived AdHocAbstractRecord", "This description doesn't have print out.")
 {
-	if ( TypeBase::was_constructed(&ancestor) ) {
-		parent_data_ = ancestor.child_data_;
-		parent_name_ = ancestor.type_name();
-		tmp_ancestor_ = NULL;
+	parent_data_ = ancestor.child_data_;
+	parent_name_ = ancestor.type_name();
+	tmp_ancestor_ = NULL;
 
-		//test default descendant of ancestor
-		const Record * default_desc = ancestor.get_default_descendant();
-		if (default_desc) {
-			allow_auto_conversion( default_desc->type_name() );
-		}
-	} else {
-		tmp_ancestor_ = &ancestor; //postponed
+	//test default descendant of ancestor
+	const Record * default_desc = ancestor.get_default_descendant();
+	if (default_desc) {
+		allow_auto_conversion( default_desc->type_name() );
 	}
 
 	this->close();
@@ -690,11 +652,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 
 AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 {
-	if ( TypeBase::was_constructed(&subrec) ) {
-		AbstractRecord::add_descendant(subrec);
-	} else {
-		unconstructed_childs_.push_back( &subrec );
-	}
+	AbstractRecord::add_descendant(subrec);
 
 	return *this;
 }
@@ -705,7 +663,6 @@ bool AdHocAbstractRecord::finish()
 	if (data_->finished) return true;
 
 	if (tmp_ancestor_ != 0) {
-		if ( !TypeBase::was_constructed(tmp_ancestor_) ) return false;
 		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
 
         parent_data_ = tmp_ancestor_->child_data_;
@@ -722,7 +679,6 @@ bool AdHocAbstractRecord::finish()
 
 	while (unconstructed_childs_.size()) {
 		const Record * rec = *(unconstructed_childs_.begin());
-		if ( !TypeBase::was_constructed(rec) ) return false;
 
 	    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), rec->type_name());
 	    child_data_->list_of_childs.push_back(*rec);
