@@ -368,9 +368,6 @@ protected:
     /// Auxiliary method that actually makes the copy of keys.
     void make_copy_keys(Record &origin);
 
-    /// copy keys from all Records pointers in copy_from_ptr using the make_copy_keys method
-    void make_copy_keys_all();
-
     /**
      * Declares a TYPE key of the Record.
      */
@@ -414,11 +411,6 @@ protected:
          * finalized by finish().
          */
         AbstractRecord *p_parent_;
-
-        /**
-         * List of pointers to copy keys from at finish phase.
-         */
-        vector<const Record *> copy_from_ptr;
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
         boost::shared_ptr<AbstractRecord> parent_ptr_;

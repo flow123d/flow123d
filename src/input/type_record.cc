@@ -184,17 +184,6 @@ void Record::make_copy_keys(Record &origin) {
 }
 
 
-void Record::make_copy_keys_all() {
-	for(auto &ptr : data_->copy_from_ptr) {
-		ASSERT( ptr && TypeBase::was_constructed( ptr ), "Invalid pointer to source record for copy keys operation.\n");
-		Record tmp(*ptr);
-		make_copy_keys(tmp);
-		ptr = NULL;
-	}
-	data_->copy_from_ptr.clear();
-}
-
-
 
 Record &Record::derive_from(AbstractRecord &parent) {
 	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_ , "Record has been already derived.\n");
@@ -211,13 +200,10 @@ Record &Record::derive_from(AbstractRecord &parent) {
 
 
 Record &Record::copy_keys(const Record &other) {
-    if (TypeBase::was_constructed(&other)) {
-    	Record tmp(other);
-    	make_copy_keys(tmp);
-    } else { //postponed
-        data_->copy_from_ptr.push_back( &other );
-    }
-    return *this;
+   	Record tmp(other);
+   	make_copy_keys(tmp);
+
+   	return *this;
 }
 
 
@@ -256,8 +242,6 @@ bool Record::finish()
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
-	// postponed key copies
-	make_copy_keys_all();
 
     // Set correctly data_->parent_ptr; copy keys from parent abstract record after all other copies
     if (data_->p_parent_ != 0 ) {
