@@ -405,13 +405,6 @@ protected:
         const string description_;
         const string type_name_;
 
-        /**
-         * Temporary reference to the parent AbstractRecord object.
-         * After the parent is initialized, the current object is
-         * finalized by finish().
-         */
-        AbstractRecord *p_parent_;
-
         /// Permanent pointer to parent AbstractRecord, necessary for output.
         boost::shared_ptr<AbstractRecord> parent_ptr_;
 

@@ -186,13 +186,9 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_ , "Record has been already derived.\n");
-    if (TypeBase::was_constructed(&parent)) {
-        data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
-        data_->p_parent_ = NULL;
-    } else { //postponed
-        data_->p_parent_ = &parent;
-    }
+	ASSERT( ! data_->parent_ptr_ , "Record has been already derived.\n");
+	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
+    data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
 
 	return *this;
 }
@@ -243,12 +239,6 @@ bool Record::finish()
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
-    // Set correctly data_->parent_ptr; copy keys from parent abstract record after all other copies
-    if (data_->p_parent_ != 0 ) {
-        if (TypeBase::was_constructed( data_->p_parent_))  data_->parent_ptr_=boost::make_shared<AbstractRecord>( * data_->p_parent_ );
-        else return false;
-        data_->p_parent_ = NULL;
-    }
     // finish inheritance if parent is non-null
     if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
 
@@ -356,7 +346,7 @@ Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 }
 
 Record &Record::has_obligatory_type_key() {
-	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
+	ASSERT( ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
 	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
 	sel->add_value(0, type_name());
 	sel->close();
@@ -372,7 +362,6 @@ Record &Record::has_obligatory_type_key() {
 Record::RecordData::RecordData(const string & type_name_in, const string & description)
 :description_(description),
  type_name_(type_name_in),
- p_parent_(0),
  finished(false),
  closed_(false),
  derived_(false),
