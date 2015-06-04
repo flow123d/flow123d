@@ -24,9 +24,7 @@ Selection::Selection()
 
 Selection::Selection(const Selection& other)
 : Scalar(other), data_(other.data_)
-{
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Selection.\n");
-}
+{ }
 
 
 
