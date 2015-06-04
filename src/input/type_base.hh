@@ -283,7 +283,6 @@ public:
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {
-        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
         return *data_->type_of_values_; }
 
     /// Checks size of particular array.
