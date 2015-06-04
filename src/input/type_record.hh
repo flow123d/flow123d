@@ -190,7 +190,6 @@ public:
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
         boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
-        const TypeBase *p_type;						///< Pointer to the key type (needed for lazy evaluation).
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
@@ -388,7 +387,6 @@ protected:
          */
         void declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
-                         const TypeBase *type_temporary,
                          const Default &default_value, const string &description);
 
 

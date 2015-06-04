@@ -158,7 +158,6 @@ void Record::make_copy_keys(Record &origin) {
 			tmp_key.key_ = k->key_;
 			tmp_key.description_ = k->description_;
 			tmp_key.type_ = k->type_;
-			tmp_key.p_type = k->p_type;
 			tmp_key.default_ = k->default_;
 			tmp_key.derived = false;
 			k->key_ = ""; // mark original key for deletion
@@ -240,7 +239,6 @@ bool Record::finish()
     // finish inheritance if parent is non-null
     if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
 
-    // Finish declare_key():
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
@@ -318,7 +316,7 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 
 Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", key_type, NULL, Default::obligatory(),
+	data_->declare_key("TYPE", key_type, Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
@@ -358,7 +356,6 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<const TypeBase> type,
-                         const TypeBase *type_temporary,
                          const Default &default_value, const string &description)
 {
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
@@ -370,11 +367,11 @@ void Record::RecordData::declare_key(const string &key,
     key_to_index_const_iter it = key_to_index.find(key_h);
     if ( it == key_to_index.end() ) {
        key_to_index.insert( std::make_pair(key_h, keys.size()) );
-       Key tmp_key = { (unsigned int)keys.size(), key, description, type, type_temporary, default_value, false}; 
+       Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false};
        keys.push_back(tmp_key);
     } else {
        if (keys[it->second].derived) {
-        Key tmp_key = { it->second, key, description, type, type_temporary, default_value, false};
+        Key tmp_key = { it->second, key, description, type, default_value, false};
         keys[ it->second ] = tmp_key;
        } else {
            xprintf(Err,"Re-declaration of the key: %s in Record type: %s\n", key.c_str(), type_name_.c_str() );
@@ -396,7 +393,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
 	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
-	data_->declare_key(key, type_copy, NULL, default_value, description);
+	data_->declare_key(key, type_copy, default_value, description);
 
     return *this;
 }
