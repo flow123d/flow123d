@@ -160,9 +160,10 @@ TEST_F(InputJSONToStorageTest, Double) {
 
 TEST_F(InputJSONToStorageTest, Selection) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    Type::Selection sel_type("IntSelection");
-    sel_type.add_value(10,"ten","");
-    sel_type.add_value(1,"one","");
+    Type::Selection sel_type = Type::Selection("IntSelection")
+    	.add_value(10,"ten","")
+    	.add_value(1,"one","")
+		.close();
     sel_type.finish();
 
     {

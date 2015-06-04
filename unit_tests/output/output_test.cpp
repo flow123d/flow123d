@@ -190,10 +190,12 @@ const string test_output_time_input = R"JSON(
 }
 )JSON";
 
-Input::Type::Selection test_selection =
-		Input::Type::Selection("any")
+static const Input::Type::Selection & get_test_selection() {
+	return Input::Type::Selection("any")
 		.add_value(0,"black")
-		.add_value(3,"white");
+		.add_value(3,"white")
+		.close();
+}
 
 class TestOutputTime : public testing::Test, public OutputTime {
 public:
@@ -228,7 +230,7 @@ public:
 	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
-		field.input_selection(&test_selection);
+		field.input_selection(&get_test_selection());
 
 		field.set_mesh(*my_mesh);
 		field.set_limit_side(LimitSide::left);

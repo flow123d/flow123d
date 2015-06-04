@@ -30,7 +30,8 @@ enum {
 auto reaction_type_sel = Input::Type::Selection("ReactionType")
 		.add_value(r_first, "r_first")
 		.add_value(r_second, "r_second")
-		.add_value(r_third, "r_third");
+		.add_value(r_third, "r_third")
+		.close();
 
 // Test input for 'values' test
 const string eq_data_input = R"JSON(
@@ -189,7 +190,7 @@ TEST_F(SomeEquation, output_field_selection) {
         .name("bc_pressure");
 
     Input::Type::Selection sel
-        = data.make_output_field_selection("Sel");
+        = data.make_output_field_selection("Sel").close();
     sel.finish();
 
     // Selection should not contain BC field bc_pressure.
