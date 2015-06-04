@@ -384,15 +384,13 @@ using namespace Input::Type;
     // check correct stat of a_rec
     EXPECT_TRUE( a_rec.is_finished() );
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
-    // TODO: finish these two tests after remove was_constructed
-    //EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->p_type ));
-    //EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
+    EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
+    EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
 
     // TYPE should be derived as optional
     //EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
     //EXPECT_TRUE( c_rec.key_iterator("TYPE")->default_.is_optional());
 
-    cout << "1" << endl;
     // inherited keys
     EXPECT_TRUE( b_rec.has_key("mesh") );
     EXPECT_TRUE( c_rec.has_key("mesh") );
