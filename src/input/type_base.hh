@@ -73,6 +73,13 @@ public:
     virtual bool is_finished() const
     {return true;}
 
+    /**
+     * Returns true if the type is closed.
+     *
+     */
+    virtual bool is_closed() const
+    {return true;}
+
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
 

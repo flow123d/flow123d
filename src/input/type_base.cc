@@ -207,7 +207,7 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
-    // TODO add test if type is closed
+    ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
 
 	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
 	data_->type_of_values_ = type_copy;

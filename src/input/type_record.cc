@@ -226,6 +226,11 @@ bool Record::is_finished() const {
 }
 
 
+bool Record::is_closed() const {
+	return data_->closed_;
+}
+
+
 
 
 bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, const string & k_name) const
