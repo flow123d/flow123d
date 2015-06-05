@@ -44,25 +44,15 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase() {}
 
 
 
-TypeBase::TypeBase(const TypeBase& other)
-{
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase(const TypeBase& other) {}
 
 
 
-TypeBase::~TypeBase() {
-    TypeBase::LazyObjectsSet &set=TypeBase::lazy_object_set();
-    TypeBase::LazyObjectsSet::iterator it =set.find(this);
-    ASSERT( it != set.end(), "Missing pointer in lazy_object_set to '%s'.\n", this->type_name().c_str());
-    TypeBase::lazy_object_set().erase(it);
-}
+TypeBase::~TypeBase() {}
 
 
 bool TypeBase::is_valid_identifier(const string& key) {
@@ -79,48 +69,11 @@ string TypeBase::desc() const {
 
 
 
-TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
-    static LazyTypeVector lazy_type_list;
-    return lazy_type_list;
-}
-
-
-
 void TypeBase::lazy_finish() {
-    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
 	Input::TypeRepository<Record>::getInstance().finish();
 	Input::TypeRepository<AbstractRecord>::getInstance().finish();
 	Input::TypeRepository<Selection>::getInstance().finish();
 
-    // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
-    /*for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
-            (*it)->finish();
-        }
-    }
-
-    // then finalize abstract records so that no type can derive from them
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++)
-    {
-        boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
-        if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
-    }
-
-    // at last finish all selections (including those in AbstractRecord)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
-    }
-
-    lazy_type_list().clear();*/
-
-}
-
-
-
-
-TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
-    static LazyObjectsSet set_;
-    return set_;
 }
 
 

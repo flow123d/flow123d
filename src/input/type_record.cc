@@ -84,9 +84,7 @@ Record::Record(const Record & other)
 Record::Record(const string & type_name_in, const string & description)
 : data_( boost::make_shared<RecordData>(type_name_in, description) )
 
-{
-    TypeBase::lazy_type_list().push_back( boost::make_shared<Record>( *this ) );
-}
+{}
 
 
 TypeBase::TypeHash Record::content_hash() const
@@ -474,8 +472,6 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
 {
     // declare very first item of any descendant
 	this->declare_type_key(child_data_->selection_of_childs);
-
-    TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
 }
 
 
