@@ -193,6 +193,8 @@ Record &Record::derive_from(AbstractRecord &parent) {
 
 
 Record &Record::copy_keys(const Record &other) {
+	ASSERT( other.is_closed(), "Record '%s' must be closed!\n", other.type_name().c_str());
+
    	Record tmp(other);
    	make_copy_keys(tmp);
 
