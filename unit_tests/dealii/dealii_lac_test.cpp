@@ -2,8 +2,8 @@
 #define TEST_HAS_MAIN
 
 #include <flow_gtest_mpi.hh>
-#include "deal.II/include/deal.II/lac/vector.templates.h"
-#include "deal.II/include/deal.II/lac/sparse_direct.h"
+#include "dealii/include/deal.II/lac/vector.templates.h"
+#include "dealii/include/deal.II/lac/sparse_direct.h"
 #include "la/distribution.hh"
 
 
