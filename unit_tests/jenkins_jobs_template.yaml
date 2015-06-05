@@ -336,7 +336,6 @@
           name: "Build Flow123d libraries"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-release-make-doc"
             - name: "Flow123d-{platform}-release-build-libs"
       - multijob:
           name: "Unit tests"
@@ -353,6 +352,11 @@
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+      - multijob:
+          name: "Make Docs"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-make-doc"
       - multijob:
           name: "Pack and Install"
           condition: COMPLETED
