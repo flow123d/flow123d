@@ -454,8 +454,10 @@ RECORD_DECLARE_KEY(AdHocAbstractRecord);
  */
 
 AbstractRecord::AbstractRecord()
-: Record(), child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord_TYPE_selection" ) )
+: Record(), child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord", "" ) )
 {
+	close();
+	finish();
 }
 
 
@@ -468,7 +470,7 @@ AbstractRecord::AbstractRecord(const AbstractRecord& other)
 
 AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
 : Record(type_name_in, description),
-  child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
+  child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
 {
     // declare very first item of any descendant
 	this->declare_type_key(child_data_->selection_of_childs);
@@ -480,7 +482,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
 	TypeHash seed=0;
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
-    boost::hash_combine(seed, data_->description_);
+    boost::hash_combine(seed, child_data_->description_);
     if (child_data_->element_input_selection != nullptr) {
     	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
     }
@@ -494,7 +496,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
 
 void AbstractRecord::add_descendant(const Record &subrec)
 {
-    ASSERT( data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
+    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
 
     child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
     child_data_->list_of_childs.push_back(subrec);
@@ -503,7 +505,7 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
-    if (data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
+    if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
     data_->keys[0].default_=Default(type_default); // default record is closed; other constructor creates the zero item
     return *this;
 }
@@ -589,19 +591,19 @@ int AbstractRecord::add_child(const Record &subrec)
 
 
 bool AbstractRecord::finish() {
-	if (data_->finished) return true;
+	if (child_data_->finished_) return true;
 
-	ASSERT(data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
+	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
-	data_->finished = true;
+	child_data_->finished_ = true;
 	no_more_descendants();
 
-	return (data_->finished);
+	return (child_data_->finished_);
 }
 
 
 AbstractRecord &AbstractRecord::close() {
-	data_->closed_=true;
+	child_data_->closed_=true;
     return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
 }
 
@@ -612,6 +614,27 @@ AbstractRecord &AbstractRecord::set_element_input(const Selection * element_inpu
 	}
 	return *this;
 }
+
+
+bool AbstractRecord::is_finished() const {
+    return child_data_->finished_;
+}
+
+
+bool AbstractRecord::is_closed() const {
+	return child_data_->closed_;
+}
+
+
+string AbstractRecord::type_name() const {
+    return child_data_->type_name_;
+}
+
+
+string AbstractRecord::full_type_name() const {
+    return this->type_name();
+}
+
 
 
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
@@ -655,7 +678,7 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 
 bool AdHocAbstractRecord::finish()
 {
-	if (data_->finished) return true;
+	if (child_data_->finished_) return true;
 
 	if (tmp_ancestor_ != 0) {
 		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
@@ -685,7 +708,7 @@ bool AdHocAbstractRecord::finish()
 	    child_data_->list_of_childs.push_back(*it);
 	}
 
-	return Record::finish();
+	return AbstractRecord::finish();
 }
 
 

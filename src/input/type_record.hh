@@ -482,9 +482,13 @@ protected:
      */
     class ChildData {
     public:
-        ChildData(const string &name)
-        : selection_of_childs( boost::make_shared<Selection> (name) ),
-		  element_input_selection(nullptr)
+        ChildData(const string &name, const string &description)
+        : selection_of_childs( boost::make_shared<Selection> (name + "_TYPE_selection") ),
+		  element_input_selection(nullptr),
+		  description_(description),
+		  type_name_(name),
+		  finished_(false),
+		  closed_(false)
         {}
 
         /**
@@ -498,7 +502,21 @@ protected:
          */
         vector< Record > list_of_childs;
 
+        /// Temporary solution, used for AbstractRecords fields.
         const Selection * element_input_selection;
+
+        /// Description of the whole AbstractRecord type.
+        const string description_;
+
+        /// type_name of the whole AbstractRecord type.
+        const string type_name_;
+
+        /// AbstractRecord is finished when it has added all descendant records.
+        bool finished_;
+
+        /// If AbstractRecord is closed, we do not allow any further declaration calls.
+        bool closed_;
+
     };
 
 public:
@@ -595,6 +613,20 @@ public:
      * Returns number of keys in the child_data_.
      */
     unsigned int child_size() const;
+
+    /**
+     * Implements @p TypeBase::is_finished.
+     */
+    virtual bool is_finished() const;
+
+    /// Returns true if @p data_ is closed.
+    virtual bool is_closed() const;
+
+    /// AbstractRecord type name getter.
+    virtual string type_name() const;
+
+    /// AbstractRecord type full name getter.
+    virtual string full_type_name() const;
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.
