@@ -342,21 +342,26 @@ TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.")
-    	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
-    	.declare_key("a_val", String(), Default::obligatory(), "");
+	Record copy_rec = Record("Copy","")
+       	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
+       	.declare_key("a_val", String(), Default::obligatory(), "")
+		.close();
+
+    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.");
     AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
 
     // test derived type
     Record b_rec = Record("EqDarcy","")
     	.derive_from(a_rec)
+		.copy_keys(copy_rec)
     	.declare_key("b_val", Integer(), Default("10"), "")
     	.allow_auto_conversion("a_val")
 		.close();
 
     Record c_rec = Record("EqTransp","")
     	.derive_from(a_rec)
+		.copy_keys(copy_rec)
     	.declare_key("c_val", Integer(), "")
     	.declare_key("a_val", Double(),"")
 		.close();
