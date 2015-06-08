@@ -488,7 +488,8 @@ protected:
 		  description_(description),
 		  type_name_(name),
 		  finished_(false),
-		  closed_(false)
+		  closed_(false),
+		  selection_default_(Default::obligatory())
         {}
 
         /**
@@ -516,6 +517,9 @@ protected:
 
         /// If AbstractRecord is closed, we do not allow any further declaration calls.
         bool closed_;
+
+        /// Default value of selection_of_childs (used for automatic conversion
+        Default selection_default_;
 
     };
 

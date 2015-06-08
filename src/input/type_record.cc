@@ -506,7 +506,8 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
     if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
-    data_->keys[0].default_=Default(type_default); // default record is closed; other constructor creates the zero item
+    data_->keys[0].default_=Default(type_default); //TODO: remove
+    child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
     return *this;
 }
 
@@ -516,13 +517,12 @@ void AbstractRecord::no_more_descendants()
 {
     child_data_->selection_of_childs->close();
     // check validity of possible default value of TYPE key
-    if (data_->keys.size() > 0 ) { // skip for empty records
-        Default &dflt = data_->keys[0].default_;
-        if ( dflt.has_value_at_declaration() ) {
+    if ( !child_data_->selection_default_.is_obligatory() ) { // skip for empty records
+        if ( child_data_->selection_default_.has_value_at_declaration() ) {
             try {
-                child_data_->selection_of_childs->valid_default( dflt.value() );
+                child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
             } catch (ExcWrongDefault & e) {
-                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", data_->keys[0].default_.value().c_str(), type_name().c_str());
+                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
             }
         }
     }
@@ -532,10 +532,9 @@ void AbstractRecord::no_more_descendants()
 
 bool AbstractRecord::valid_default(const string &str) const
 {
-    if (data_->keys.size() != 0)  { // skip for empty records
-        Default &dflt = data_->keys[0].default_;
+    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
         if (! child_data_->selection_of_childs->is_finished()) return false;
-        if ( dflt.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
+        if ( child_data_->selection_default_.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
     }
     THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(this->type_name()));
 }
@@ -559,10 +558,9 @@ const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 
 
 const Record * AbstractRecord::get_default_descendant() const {
-    if (data_->keys.size() != 0 )  { // skip for empty records
-        Default &dflt = data_->keys[0].default_;
-        if ( dflt.has_value_at_declaration() ) {
-            return &( get_descendant( dflt.value() ) );
+    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
+        if ( child_data_->selection_default_.has_value_at_declaration() ) {
+            return &( get_descendant( child_data_->selection_default_.value() ) );
         }
     }
     return NULL;
