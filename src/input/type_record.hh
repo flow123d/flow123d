@@ -473,6 +473,7 @@ protected:
  */
 class AbstractRecord : public Record {
 	friend class OutputBase;
+	//friend class Record;
 	friend class AdHocAbstractRecord;
 
 protected:
@@ -676,6 +677,9 @@ public:
     int add_child(const Record &subrec);
 
     AbstractRecord &set_element_input(const Selection * element_input);
+
+    // Get default value of selection_of_childs
+    Default &get_selection_default() const;
 
 protected:
     /**

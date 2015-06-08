@@ -120,9 +120,21 @@ void Record::make_derive_from(AbstractRecord &parent) {
     if (data_->derived_) return;
 
     parent.finish();
-    //parent.add_descendant(*this);
 
-    make_copy_keys(parent);
+    // add TYPE key derived from parent
+    KeyHash key_h = key_hash("TYPE");
+    std::vector<Key>::iterator it = data_->keys.begin();
+    RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
+    if (kit != data_->key_to_index.end()) { // check if TYPE key exists and remove its
+    	data_->keys.erase( data_->keys.begin()+kit->second );
+    }
+    Key type_key = { 0, "TYPE", "Sub-record selection.", parent.child_data_->selection_of_childs, Default( type_name() ), true };
+    data_->key_to_index[key_h] = type_key.key_index;
+    data_->keys.insert(it, type_key);
+    for (unsigned int i=0; i<data_->keys.size(); i++) {
+		data_->keys[i].key_index = i;
+		data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
+    }
 
     data_->derived_ = true;
 }
@@ -413,6 +425,7 @@ template <class KeyType>
 AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
                         const Default &default_value, const string &description)
 {
+	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
     Record::declare_key(key, type, default_value, description);
     return *this;
 }
@@ -423,6 +436,7 @@ template <class KeyType>
 AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
                         const string &description)
 {
+	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
     return declare_key(key,type, Default::optional(), description);
 }
 
@@ -506,7 +520,6 @@ void AbstractRecord::add_descendant(const Record &subrec)
 
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
     if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
-    data_->keys[0].default_=Default(type_default); //TODO: remove
     child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
     return *this;
 }
@@ -631,6 +644,11 @@ string AbstractRecord::type_name() const {
 
 string AbstractRecord::full_type_name() const {
     return this->type_name();
+}
+
+
+Default &AbstractRecord::get_selection_default() const {
+	return child_data_->selection_default_;
 }
 
 

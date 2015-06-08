@@ -446,7 +446,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
 
         JSONPath type_path(p);
         if ( type_path.down("TYPE") == NULL ) {
-            if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+            if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
                 THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
             } else { // auto conversion
             	return abstract_rec_automatic_conversion(p, abstr_rec);
@@ -463,7 +463,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
             }
         }
     } else {
-        if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+        if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
             THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(abstr_rec->desc()) );
         } else { // auto conversion
