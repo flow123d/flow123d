@@ -426,7 +426,7 @@ AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &ty
                         const Default &default_value, const string &description)
 {
 	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    Record::declare_key(key, type, default_value, description);
+    //Record::declare_key(key, type, default_value, description);
     return *this;
 }
 
@@ -468,7 +468,7 @@ RECORD_DECLARE_KEY(AdHocAbstractRecord);
  */
 
 AbstractRecord::AbstractRecord()
-: Record(), child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord", "" ) )
+: child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord", "" ) )
 {
 	close();
 	finish();
@@ -477,18 +477,14 @@ AbstractRecord::AbstractRecord()
 
 
 AbstractRecord::AbstractRecord(const AbstractRecord& other)
-: Record(other), child_data_(other.child_data_)
+: child_data_(other.child_data_)
 {}
 
 
 
 AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
-: Record(type_name_in, description),
-  child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
-{
-    // declare very first item of any descendant
-	this->declare_type_key(child_data_->selection_of_childs);
-}
+: child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
+{}
 
 
 TypeBase::TypeHash AbstractRecord::content_hash() const

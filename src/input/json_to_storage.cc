@@ -643,7 +643,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {
-            if (a_record->begin()->default_.has_value_at_declaration() )    // a_record->bagin() ... TYPE key
+            if (a_record->get_selection_default().has_value_at_declaration() )
                 return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
             else
                 xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str());
