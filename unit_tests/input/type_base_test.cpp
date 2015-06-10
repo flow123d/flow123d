@@ -300,3 +300,31 @@ Record array_record("RecordOfArrays",
 // main.documentation(cout, TypeBase::full_after_record);
 
 }
+
+TEST(InputTypeAttributes, base_test) {
+	Input::Type::Integer int_val;
+	int_val.add_attribute("attr_1", "\"some attribute\"");
+	int_val.add_attribute("attr_2", "\"other attribute\"");
+	int_val.add_attribute("numeric", "\"10\"");
+	int_val.add_attribute("pair", "[\"0\", \"50\"]");
+	int_val.add_attribute("float_point", "\"0.5\"");
+
+	{
+		std::stringstream ss;
+		int_val.print_json(ss);
+		string str = ss.str();
+		EXPECT_TRUE( str.find("\"attr_1\" : \"some attribute\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"numeric\" : \"10\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"pair\" : [\"0\", \"50\"]") != std::string::npos );
+		EXPECT_TRUE( str.find("\"float_point\" : \"0.5\"") != std::string::npos );
+	}
+
+	{
+		std::stringstream ss;
+		int_val.add_attribute("numeric", "\"5\"");
+		int_val.print_json(ss);
+		string str = ss.str();
+		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
+	}
+}

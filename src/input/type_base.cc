@@ -78,6 +78,36 @@ void TypeBase::lazy_finish() {
 
 
 
+void TypeBase::add_attribute(std::string name, json_string val) {
+	if (validate_json(val)) {
+		attributes_[name] = val;
+	} else {
+		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
+	}
+}
+
+
+void TypeBase::print_json(ostream& stream) {
+	stream << "{" << endl;
+	for (std::map<std::string, json_string>::iterator it=attributes_.begin(); it!=attributes_.end(); ++it) {
+		stream << "\"" << it->first << "\" : " << it->second << endl;
+	}
+	stream << "}";
+}
+
+
+bool TypeBase::validate_json(json_string str) {
+	boost::algorithm::trim(str);
+	return ( (str[0] == '{' && str[str.length()-1] == '}')
+			|| (str[0] == '[' && str[str.length()-1] == ']')
+			|| (str[0] == '\"' && str[str.length()-1] == '\"') );
+}
+
+
+
+
+
+
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     return ( stream << OutputText(&type, 1) );
