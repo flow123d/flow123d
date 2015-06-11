@@ -64,6 +64,7 @@ class TypeBase {
 public:
 	typedef std::size_t TypeHash;
 	typedef std::string json_string;
+	typedef std::map<std::string, json_string> attribute_map;
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -207,7 +208,7 @@ protected:
     std::string escape_description(std::string desc);
 
     /// map of type attributes (e. g. input_type, name etc.)
-    std::map<std::string, json_string> attributes_;
+    boost::shared_ptr<attribute_map> attributes_;
 
     friend class Array;
     friend class Record;
