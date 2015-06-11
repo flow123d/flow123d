@@ -79,6 +79,7 @@ void TypeBase::lazy_finish() {
 
 
 void TypeBase::add_attribute(std::string name, json_string val) {
+	ASSERT(this->is_closed(), "Attribute can be add only to closed type: '%s'.\n", this->type_name().c_str());
 	if (validate_json(val)) {
 		attributes_[name] = val;
 	} else {
@@ -90,9 +91,12 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 void TypeBase::print_json(ostream& stream) {
 	stream << "{" << endl;
 	for (std::map<std::string, json_string>::iterator it=attributes_.begin(); it!=attributes_.end(); ++it) {
-		stream << "\"" << it->first << "\" : " << it->second << endl;
+        if (it != attributes_.begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
 	}
-	stream << "}";
+	stream << endl << "}";
 }
 
 
