@@ -328,3 +328,53 @@ TEST(InputTypeAttributes, base_test) {
 		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
 	}
 }
+
+TEST(InputTypeAttributes, complete_test) {
+	using namespace Input::Type;
+
+	static Selection sel = Selection("Bc_types", "Boundary conditions.")
+		.add_value(0, "none")
+		.add_value(1, "Newton")
+		.add_value(2, "Neumann")
+		.add_value(3, "Dirichlet")
+		.add_value(4, "Robin")
+		.close();
+
+	static Record rec1 = Record("rec_1", "Time step record.")
+		.declare_key("time_step", Double(), Default::obligatory(), "Time step value.")
+		.close();
+
+	static Record rec2 = Record("rec_2", "Step record.")
+		.declare_key("step_iter", Integer(1, 100), Default::obligatory(), "Count of steps.")
+		.close();
+
+	static AbstractRecord a_rec = AbstractRecord("a_rec", "Step AbstractRecord")
+		.close();
+	a_rec.add_child(rec1);
+	a_rec.add_child(rec2);
+
+	static Record main_rec = Record("main_rec", "Main Record.")
+		.declare_key("bc", sel, Default::obligatory(), "Selection of boundary conditions.")
+		.declare_key("idx", Array( Integer() ), Default::obligatory(), "List of indexes.")
+		.declare_key("time", Double(), Default::obligatory(), "Start time value.")
+		.declare_key("step", a_rec, Default::obligatory(), "Start time value.")
+		.declare_key("desc", String(), Default::optional(), "Description of problem.")
+		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
+		.close();
+
+	TypeBase::lazy_finish();
+
+	{
+		std::stringstream ss;
+		main_rec.print_json(ss);
+		string str = ss.str();
+		EXPECT_TRUE( str.find("\"full_name\" : \"main_rec\"") != std::string::npos );
+	}
+	/*cout << "---------------" << endl;
+	main_rec.print_json(cout);
+	cout << "---------------" << endl;
+	a_rec.print_json(cout);
+	cout << "---------------" << endl;
+	sel.print_json(cout);
+	cout << "---------------" << endl;*/
+}
