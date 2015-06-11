@@ -104,6 +104,25 @@ bool TypeBase::validate_json(json_string str) {
 }
 
 
+std::string TypeBase::format_hash( TypeBase::TypeHash hash) {
+    stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();
+}
+
+
+void TypeBase::add_basic_attributes() {
+    this->add_attribute("id", "\"" + format_hash(this->content_hash()) + "\"");
+    this->add_attribute("name", "\"" + this->type_name() + "\"");
+    this->add_attribute("full_name", "\"" + this->full_type_name() + "\""); //obsolete
+}
+
+
+std::string TypeBase::escape_description(std::string desc) {
+    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+}
+
+
 
 
 
@@ -186,6 +205,14 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
 
 	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
 	data_->type_of_values_ = type_copy;
+
+	// Add attributes of array to map.
+	add_attribute("input_type", "\"Array\"");
+	add_attribute("id", "\"" + format_hash(this->content_hash()) + "\"");
+	stringstream ss;
+	ss << "[\"" << min_size << "\", \"" << max_size << "\"]";
+	add_attribute("range", ss.str());
+	add_attribute("subtype", "\"" + format_hash(data_->type_of_values_->content_hash()) + "\"");
 }
 
 // explicit instantiation
@@ -215,6 +242,14 @@ string Scalar::full_type_name() const {
 /**********************************************************************************
  * implementation of Type::Bool
  */
+
+
+Bool::Bool()
+{
+	// Add attributes of bool to map.
+	add_attribute("input_type", "\"Bool\"");
+	add_basic_attributes();
+}
 
 
 TypeBase::TypeHash Bool::content_hash() const
@@ -252,6 +287,19 @@ string Bool::type_name() const {
 /**********************************************************************************
  * implementation of Type::Integer
  */
+
+Integer::Integer(int lower_bound, int upper_bound)
+: lower_bound_(lower_bound), upper_bound_(upper_bound)
+{
+	// Add attributes of integer to map.
+	add_attribute("input_type", "\"Integer\"");
+	add_basic_attributes();
+	stringstream ss;
+	ss << "[\"" << lower_bound_ << "\", \"" << upper_bound_ << "\"]";
+	add_attribute("range", ss.str());
+}
+
+
 
 TypeBase::TypeHash Integer::content_hash() const
 {
@@ -300,6 +348,18 @@ string Integer::type_name() const {
 /**********************************************************************************
  * implementation of Type::Double
  */
+
+
+Double::Double(double lower_bound, double upper_bound)
+: lower_bound_(lower_bound), upper_bound_(upper_bound)
+{
+	// Add attributes of double to map.
+	add_attribute("input_type", "\"Double\"");
+	add_basic_attributes();
+	stringstream ss;
+	ss << "[\"" << lower_bound_ << "\", \"" << upper_bound_ << "\"]";
+	add_attribute("range", ss.str());
+}
 
 
 TypeBase::TypeHash Double::content_hash() const
@@ -351,6 +411,23 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
+FileName::FileName(enum ::FilePath::FileType type)
+: type_(type)
+{
+	// Add attributes of filename to map.
+	add_attribute("input_type", "\"FileName\"");
+	add_basic_attributes();
+	switch (type_) {
+	case ::FilePath::input_file:
+		add_attribute("file_mode", "\"input\"");
+		break;
+	case ::FilePath::output_file:
+		add_attribute("file_mode", "\"output\"");
+		break;
+	}
+}
+
+
 TypeBase::TypeHash FileName::content_hash() const
 {
 	TypeHash seed=0;
@@ -384,6 +461,14 @@ bool FileName::match(const string &str) const {
 /**********************************************************************************
  * implementation of Type::String
  */
+
+
+String::String()
+{
+	// Add attributes of string to map.
+	add_attribute("input_type", "\"String\"");
+	add_basic_attributes();
+}
 
 
 TypeBase::TypeHash String::content_hash() const

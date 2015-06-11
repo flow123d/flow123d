@@ -275,14 +275,55 @@ bool Record::finish()
         }
     }
 
+	// Add attributes of record to map.
+	add_attribute("input_type", "\"Record\"");
+	add_basic_attributes();
+	add_attribute("description", "\"" + escape_description(this->data_->description_) + "\"");
+    // reducible to key
+    Record::KeyIter key_it = this->auto_conversion_key_iter();
+    if (key_it != this->end()) {
+    	add_attribute("reducible_to_key", "\"" + key_it->key_ + "\"");
+    }
+    // set hash of parent
+    if (data_->parent_ptr_)
+    	add_attribute("implements", "[ \"" + format_hash(data_->parent_ptr_->content_hash()) + "\" ]");
+    // keys
+    stringstream ss;
+    ss << "[" << endl;
+    for (Record::KeyIter it = this->begin(); it != this->end(); ++it) {
+        if (it != this->begin()) {
+            ss << "," << endl;
+        }
+		ss << "{ \"key\" : \"" << it->key_ << "\"," << endl;
+		ss << "\"description\" : \"" <<
+				escape_description(it->description_) << "\"," << endl;
+		string dft_type;
+		if ( it->default_.is_obligatory() ) {
+			dft_type = "obligatory";
+		} else if ( it->default_.is_optional() ) {
+			dft_type = "optional";
+		} else if ( it->default_.has_value_at_read_time() ) {
+			dft_type = "value at read time";
+		} else {
+			dft_type = "value at declaration";
+		}
+		ss << "\"default\" : { "
+		   << "\"type\" : \"" << dft_type << "\"," << endl
+		   << "\"value\" : \"" << escape_description(it->default_.value_) << "\" }," << endl;
+		ss << "\"type\" : \"" << format_hash(it->type_->content_hash()) << "\"" << endl;
+		ss << "}";
+    }
+    ss << "]" << endl;
+    add_attribute("keys", ss.str());
+
     return (data_->finished);
 }
 
 
 
-const Record &Record::close() const {
+const Record &Record::close() {
     data_->closed_=true;
-    return *( Input::TypeRepository<Record>::getInstance().add_type( *this ).get() );
+	return *( Input::TypeRepository<Record>::getInstance().add_type( *this ).get() );
 }
 
 
@@ -604,6 +645,25 @@ bool AbstractRecord::finish() {
 
 	child_data_->finished_ = true;
 	no_more_descendants();
+
+	// Add attributes of record to map.
+	add_attribute("input_type", "\"Record\"");
+	add_basic_attributes();
+	add_attribute("description", "\"" + escape_description(this->child_data_->description_) + "\"");
+    // default descendant
+	if (this->get_default_descendant())
+		add_attribute("default_descendant", "\"" + format_hash(this->get_default_descendant()->content_hash()) + "\"");
+    // descendant records
+	stringstream ss;
+    ss << "[" << endl;
+    for (AbstractRecord::ChildDataIter it = this->begin_child_data(); it != this->end_child_data(); ++it) {
+        if (it != this->begin_child_data()) {
+        	ss << "," << endl;
+        }
+        ss << "\"" << format_hash(it->content_hash()) << "\"";
+    }
+    ss << "]" << endl;
+    add_attribute("implementations", ss.str());
 
 	return (child_data_->finished_);
 }

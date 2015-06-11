@@ -37,6 +37,7 @@ namespace Type {
  * @ingroup input_types
  */
 class Default {
+	friend class Record;
 	friend class OutputBase;
 	friend class OutputJSONTemplate;
 
@@ -263,7 +264,7 @@ public:
     /**
      *  Can be used to close the Record for further declarations of keys.
      */
-    const Record &close() const;
+    const Record &close();
 
 
     /**
