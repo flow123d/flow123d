@@ -71,6 +71,7 @@ add_library(input_lib
     input/type_base.cc
     input/type_record.cc
     input/type_selection.cc
+    input/type_generic.cc
     input/storage.cc
     input/json_to_storage.cc
     input/type_output.cc
