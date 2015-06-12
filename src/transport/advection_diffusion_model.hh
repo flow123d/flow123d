@@ -46,8 +46,8 @@ namespace IT = Input::Type;
 class AdvectionDiffusionModel {
 public:
 
-	/// Read or set names of solution components.
-	virtual void set_components(SubstanceList &substances, const Input::Record &in_rec) = 0;
+	/// Read necessary data from input record.
+	virtual void init_from_input(const Input::Record &in_rec, SubstanceList &substances) = 0;
 
 	/**
 	 * Compute coefficients of mass matrix.
@@ -58,6 +58,17 @@ public:
 	virtual void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) = 0;
+
+
+	/**
+	 * Compute retardation coefficients due to sorption.
+	 * @param point_list  Points at which to evaluate.
+	 * @param ele_acc	  Element accessor.
+	 * @param ret_coef    Coefficient vector (output).
+	 */
+	virtual void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<std::vector<double> > &ret_coef) = 0;
 
 	/**
 	 * Compute coefficients of stiffness matrix.

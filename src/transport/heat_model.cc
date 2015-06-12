@@ -212,7 +212,7 @@ HeatTransferModel::HeatTransferModel() :
 {}
 
 
-void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
+void HeatTransferModel::init_from_input(const Input::Record &in_rec, SubstanceList &substances)
 {
 	substances.initialize({""});
 }
