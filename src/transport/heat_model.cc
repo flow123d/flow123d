@@ -259,11 +259,6 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 }
 
 
-void HeatTransferModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
-{
-	substances.initialize({""});
-}
-
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
