@@ -59,6 +59,17 @@ public:
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) = 0;
 
+
+	/**
+	 * Compute retardation coefficients due to sorption.
+	 * @param point_list  Points at which to evaluate.
+	 * @param ele_acc	  Element accessor.
+	 * @param ret_coef    Coefficient vector (output).
+	 */
+	virtual void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<std::vector<double> > &ret_coef) = 0;
+
 	/**
 	 * Compute coefficients of stiffness matrix.
 	 * @param point_list  Points at which to evaluate.
