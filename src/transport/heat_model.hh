@@ -124,6 +124,10 @@ public:
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
+	void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<std::vector<double> > &ret_coef) override {};
+
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
