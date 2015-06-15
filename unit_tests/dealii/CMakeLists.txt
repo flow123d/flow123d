@@ -22,7 +22,7 @@
 #
 
 #set(libs flow123d_lib)
-#add_test_directory("${libs}")
+add_test_directory("${libs}")
 
 #define_mpi_test(dealii_lac 1)
 #define_mpi_test(dealii_lac 2)
