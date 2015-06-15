@@ -62,6 +62,12 @@
 #include <pthread.h>
 #endif
 
+#ifdef __CYGWIN__
+#define WINDOWS_LEAN_AND_MEAN
+#include <windows.h>
+#include <sys/cygwin.h>
+#endif
+
 /*
 dynamic_link is a common interface for searching for required symbols in an
 executable and dynamic libraries.
@@ -301,7 +307,7 @@ OPEN_INTERNAL_NAMESPACE
         *(backslash+1) = 0;
     #else
         // Get the library path
-        Dl_info dlinfo;
+        /*Dl_info dlinfo;
         int res = dladdr( (void*)&dynamic_link, &dlinfo ); // any function inside the library can be used for the address
         if ( !res ) {
             char const * err = dlerror();
@@ -309,17 +315,42 @@ OPEN_INTERNAL_NAMESPACE
             return;
         } else {
             LIBRARY_ASSERT( dlinfo.dli_fname!=NULL, "Unbelievable." );
-        }
+        }*/
+		char *dli_fname;
 
-        char const *slash = strrchr( dlinfo.dli_fname, '/' );
+		#ifdef __CYGWIN__
+			MEMORY_BASIC_INFORMATION mbi;
+			char path[MAX_PATH];
+			VirtualQuery((void*)&dynamic_link, &mbi,
+                sizeof(mbi));
+			GetModuleFileNameA((HINSTANCE)mbi.AllocationBase, path, MAX_PATH);
+
+			char posix_path[MAX_PATH];
+			cygwin_conv_path(CCP_WIN_A_TO_POSIX | CCP_RELATIVE, path, posix_path, MAX_PATH);
+			dli_fname = posix_path;
+
+		#else
+			Dl_info dlinfo;
+			int res = dladdr( (void*)&dynamic_link, &dlinfo ); // any function inside the library can be used for the address
+			if ( !res ) {
+				char const * err = dlerror();
+				DYNAMIC_LINK_WARNING( dl_sys_fail, "dladdr", err );
+				return;
+			} else {
+				LIBRARY_ASSERT( dlinfo.dli_fname!=NULL, "Unbelievable." );
+			}
+			dli_fname = dlinfo.dli_fname;
+		#endif
+
+        char const *slash = strrchr( dli_fname, '/' );
         size_t fname_len=0;
         if ( slash ) {
-            LIBRARY_ASSERT( slash >= dlinfo.dli_fname, "Unbelievable.");
-            fname_len = (size_t)(slash - dlinfo.dli_fname) + 1;
+            LIBRARY_ASSERT( slash >= dli_fname, "Unbelievable.");
+            fname_len = (size_t)(slash - dli_fname) + 1;
         }
 
         size_t rc;
-        if ( dlinfo.dli_fname[0]=='/' ) {
+        if ( dli_fname[0]=='/' ) {
             // The library path is absolute
             rc = 0;
             ap_data._len = 0;
@@ -340,7 +371,7 @@ OPEN_INTERNAL_NAMESPACE
                 ap_data._len=0;
                 return;
             }
-            strncpy( ap_data._path+rc, dlinfo.dli_fname, fname_len );
+            strncpy( ap_data._path+rc, dli_fname, fname_len );
             ap_data._len += fname_len;
             ap_data._path[ap_data._len]=0;
         }
@@ -438,11 +469,24 @@ OPEN_INTERNAL_NAMESPACE
         // The library has been loaded by another module and contains at least one requested symbol.
         // But after we obtained the symbol the library can be unloaded by another thread
         // invalidating our symbol. Therefore we need to pin the library in memory.
+        char * dli_fname;
+    #ifdef __CYGWIN__
+        MEMORY_BASIC_INFORMATION mbi;
+        char path[MAX_PATH];
+        VirtualQuery((void*)&dynamic_link, &mbi, sizeof(mbi));
+        if(GetModuleFileNameA((HINSTANCE)mbi.AllocationBase, path, MAX_PATH)) {
+        char posix_path[MAX_PATH];
+        cygwin_conv_path(CCP_WIN_A_TO_POSIX | CCP_RELATIVE, path, posix_path, MAX_PATH);
+        dli_fname = posix_path;
+
+    #else
         Dl_info info;
         // Get library's name from earlier found symbol
         if ( dladdr( (void*)*desc.handler, &info ) ) {
+            dli_fname = info.dli_fname;
+    #endif
             // Pin the library
-            library_handle = dlopen( info.dli_fname, RTLD_LAZY );
+            library_handle = dlopen( dli_fname, RTLD_LAZY );
             if ( library_handle ) {
                 // If original library was unloaded before we pinned it
                 // and then another module loaded in its place, the earlier
@@ -454,7 +498,7 @@ OPEN_INTERNAL_NAMESPACE
                 }
             } else {
                 char const * err = dlerror();
-                DYNAMIC_LINK_WARNING( dl_lib_not_found, info.dli_fname, err );
+                DYNAMIC_LINK_WARNING( dl_lib_not_found, dli_fname, err );
             }
         }
         else {
