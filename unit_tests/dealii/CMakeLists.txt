@@ -21,9 +21,9 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs flow123d_lib)
-add_test_directory("${libs}")
+#set(libs flow123d_lib)
+#add_test_directory("${libs}")
 
-define_mpi_test(dealii_lac 1)
-define_mpi_test(dealii_lac 2)
-define_mpi_test(dealii_lac 3)
+#define_mpi_test(dealii_lac 1)
+#define_mpi_test(dealii_lac 2)
+#define_mpi_test(dealii_lac 3)
