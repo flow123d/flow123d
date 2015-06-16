@@ -82,6 +82,7 @@ add_library(system_lib
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
+    system/time_point.cc
     system/system.cc
     system/xio.cc
     system/exceptions.cc
