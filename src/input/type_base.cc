@@ -28,6 +28,7 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "json_to_storage.hh"
 #include <boost/algorithm/string.hpp>
 
 
@@ -91,7 +92,7 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 
 
 void TypeBase::print_json(ostream& stream) {
-	stream << "{" << endl;
+	stream << "\"attributes\" : {" << endl;
 	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
         if (it != attributes_->begin()) {
         	stream << "," << endl;
@@ -103,10 +104,13 @@ void TypeBase::print_json(ostream& stream) {
 
 
 bool TypeBase::validate_json(json_string str) {
-	boost::algorithm::trim(str);
-	return ( (str[0] == '{' && str[str.length()-1] == '}')
-			|| (str[0] == '[' && str[str.length()-1] == ']')
-			|| (str[0] == '\"' && str[str.length()-1] == '\"') );
+    try {
+    	JSONPath::Node node;
+    	json_spirit::read_or_throw( str, node);
+    	return true;
+    } catch (json_spirit::Error_position &e ) {
+        return false;
+    }
 }
 
 

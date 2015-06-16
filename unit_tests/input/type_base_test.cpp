@@ -327,9 +327,12 @@ TEST(InputTypeAttributes, base_test) {
 		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
 		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
 	}
+
+    EXPECT_THROW_WHAT( { int_val.add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
+            "Invalid JSON format of attribute 'invalid_attr'." );
 }
 
-TEST(InputTypeAttributes, complete_test) {
+/*TEST(InputTypeAttributes, complete_test) {
 	using namespace Input::Type;
 
 	static Selection sel = Selection("Bc_types", "Boundary conditions.")
@@ -370,11 +373,11 @@ TEST(InputTypeAttributes, complete_test) {
 		string str = ss.str();
 		//EXPECT_TRUE( str.find("\"full_name\" : \"main_rec\"") != std::string::npos );
 	}
-	/*cout << "---------------" << endl;
+	cout << "---------------" << endl;
 	main_rec.print_json(cout);
 	cout << "---------------" << endl;
 	a_rec.print_json(cout);
 	cout << "---------------" << endl;
 	sel.print_json(cout);
-	cout << "---------------" << endl;*/
-}
+	cout << "---------------" << endl;
+}*/
