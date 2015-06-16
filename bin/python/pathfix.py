@@ -1,17 +1,29 @@
-__author__ = 'Jan Hybs'
+# encoding: utf-8
+# author:   Jan Hybs
+
+"""
+This Module provides method for fixing module search path.
+Situation is following:
+ Scripts located in bin/python requires
+ Modules located in src/python
+
+So to sys.path is appended ../../src/python path
+"""
 
 import sys, os
 
 
 def print_debug ():
-    # print debug information about python
-    print ("Python:    " + str (sys.version).replace("\n", "") + ", " + str (sys.executable))
+    """Prints debug information about python"""
+    print ("Python:    " + str (sys.version).replace ("\n", "") + ", " + str (sys.executable))
 
 
 def append_to_path ():
+    """Performs path fix"""
+
     # for now, always print debug info
-    print_debug()
+    print_debug ()
 
     # add src/python into module path
-    path = os.path.join('..', '..', 'src', 'python')
+    path = os.path.join ('..', '..', 'src', 'python')
     sys.path.append (path)
