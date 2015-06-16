@@ -44,8 +44,10 @@ define_test(address)
 define_test(reference)
 
 define_test(lazy_types)
+define_test(type_repository)
 
 define_test(factory)
+define_test(type_dispatch)
 
 
 

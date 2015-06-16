@@ -1261,7 +1261,7 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
  */
 
 
-std::string OutputJSONMachine::format_hash( std::size_t hash) {
+std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
     stringstream ss;
     ss << std::hex << hash;
     return ss.str();
@@ -1275,7 +1275,7 @@ std::string OutputJSONMachine::escape_description(std::string desc) {
 
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
 
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
@@ -1291,7 +1291,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
     boost::shared_ptr<AbstractRecord> parent_ptr;
     get_parent_ptr(*type, parent_ptr);
     if (parent_ptr) {
-        stream << "\"implements\" : [ \"" << parent_ptr->type_name() << "\" ]," << endl;
+        stream << "\"implements\" : [ \"" << format_hash(parent_ptr->content_hash()) << "\" ]," << endl;
     }
 
     // reducible to key
@@ -1335,7 +1335,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
@@ -1357,7 +1357,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
@@ -1378,7 +1378,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
@@ -1404,7 +1404,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
     // default descendant
     if (desc) {
-        stream << "\"default_descendant\" : \"" << desc->type_name()  << "\"," << endl;
+        stream << "\"default_descendant\" : \"" << format_hash(desc->content_hash())  << "\"," << endl;
     }
     stream << "\"implementations\" : [" << endl;
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
@@ -1423,7 +1423,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
 	stream << "{" << endl;
@@ -1440,8 +1440,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 		if (it != type->begin()) {
 			stream << "," << endl;
 		}
-		stream << "{ \"value\" : \"" << it->value << "\"," << endl
-		       << " \"name\" : \"" << it->key_ << "\"," << endl
+		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl
 		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
 	}
 
@@ -1451,7 +1450,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     int lower, upper;
@@ -1469,7 +1468,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     double lower, upper;
@@ -1486,7 +1485,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
@@ -1499,7 +1498,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;
@@ -1512,7 +1511,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
-    std::size_t hash=type->content_hash();
+	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
     stream << "{" << endl;

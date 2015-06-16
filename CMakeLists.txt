@@ -319,7 +319,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
 set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
  
-#set(Boost_DEBUG TRUE)
+set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
 # first find_package.
@@ -336,9 +336,17 @@ set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem sys
 # 3) the second find_package calls find_library to find boost components and fail
 #    the parameters of the find_library are exactly same as in the previous case.
 #
+
+# If no explicit setting from config.cmake ....
+if (NOT BOOST_ROOT)
+    set(BOOST_ROOT $ENV{BOOST_ROOT})
+endif()    
+
+# If no system setting ...
 if (NOT BOOST_ROOT)
 	set(BOOST_ROOT ${EXTERNAL_BOOST_DIR})
 endif()
+
 if (NOT Boost_FORCE_REBUILD)
     find_package(Boost 1.40.0 COMPONENTS ${REQUIRED_Boost_COMPONENTS} )
 endif()    
@@ -394,7 +402,8 @@ include (FindPackageMultipass)
 set(PETSC_EXPORT_LIST 
   MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
-  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB)  
+  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
+  UMFPACK_LIB)  
 find_package(PETSc 3.4.0)
 
 
@@ -640,6 +649,9 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
+    ${CMAKE_BINARY_DIR}/src/dealii/include
+    ${CMAKE_SOURCE_DIR}/src/dealii/include
+    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
 ######################################################################################################################
@@ -751,6 +763,10 @@ make_link_in_source(unit_tests/Makefile)
 # add fparser sources
 message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
+
+# add tbb sources
+message(STATUS "add subdir TBB")
+add_subdirectory(third_party/tbb43_20150316oss)
 
 # add various our sources
 add_subdirectory(src)

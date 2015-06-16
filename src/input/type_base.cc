@@ -137,9 +137,9 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
-std::size_t Array::content_hash() const
+TypeBase::TypeHash Array::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
@@ -275,9 +275,9 @@ string Scalar::full_type_name() const {
  */
 
 
-std::size_t Bool::content_hash() const
+TypeBase::TypeHash Bool::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }
@@ -311,9 +311,9 @@ string Bool::type_name() const {
  * implementation of Type::Integer
  */
 
-std::size_t Integer::content_hash() const
+TypeBase::TypeHash Integer::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -322,7 +322,7 @@ std::size_t Integer::content_hash() const
 
 
 
-bool Integer::match(int value) const {
+bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
 
@@ -360,9 +360,9 @@ string Integer::type_name() const {
  */
 
 
-std::size_t Double::content_hash() const
+TypeBase::TypeHash Double::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -409,9 +409,9 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
-std::size_t FileName::content_hash() const
+TypeBase::TypeHash FileName::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, type_);
     return seed;
@@ -444,9 +444,9 @@ bool FileName::match(const string &str) const {
  */
 
 
-std::size_t String::content_hash() const
+TypeBase::TypeHash String::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }

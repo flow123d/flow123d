@@ -449,7 +449,7 @@ public:
 
 protected:
 
-	std::string format_hash(std::size_t hash);
+	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);

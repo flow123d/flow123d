@@ -128,16 +128,24 @@ class RefElement
 public:
 
 	/**
+	 * Return local coordinates of given node.
+	 * @param nid Node number.
+	 */
+	static arma::vec::fixed<dim> node_coords(unsigned int nid);
+
+	/**
 	 * Return barycentric coordinates of given node.
 	 * @param nid Node number.
 	 */
-	static arma::vec::fixed<dim+1> node_coords(unsigned int nid);
+	static arma::vec::fixed<dim+1> node_barycentric_coords(unsigned int nid);
 
 	/**
 	 * Compute normal vector to a given side.
 	 * @param sid Side number.
 	 */
 	static arma::vec::fixed<dim> normal_vector(unsigned int sid);
+
+	static double side_measure(unsigned int sid);
 
 	/**
 	 * Return index of 1D line, shared by two faces @p f1 and @p f2 of the reference tetrahedron.
