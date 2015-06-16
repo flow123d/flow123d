@@ -1501,14 +1501,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
-    const_cast<String *>(type)->print_json(stream);
-    stream << ",";
-    /*stream << "{" << endl;
+    stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"String\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"" << endl;
-	stream << "},";*/
+	stream << "},";
 }
 
 

@@ -45,25 +45,8 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 }
 
 
-const Selection & Selection::close() {
+const Selection & Selection::close() const {
     data_->closed_=true;
-
-    // Add attributes of selection to map.
-    add_attribute("input_type", "\"Selection\"");
-    add_basic_attributes();
-    add_attribute("description", "\"" + escape_description(this->data_->description_) + "\"");
-    stringstream ss;
-    ss << "[";
-    for (Selection::keys_const_iterator it = this->begin(); it != this->end(); ++it) {
-		if (it != this->begin()) {
-			ss << "," << endl;
-		}
-		ss << "{ \"name\" : \"" << it->key_ << "\"," << endl
-		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
-    }
-    ss << "]";
-    add_attribute("values", "\"" + ss.str() + "\"");
-
     return *( Input::TypeRepository<Selection>::getInstance().add_type( *this ).get() );
 }
 

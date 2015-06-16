@@ -198,15 +198,6 @@ protected:
     /// Check if JSON string is valid
     bool validate_json(json_string str);
 
-    /// Convert type hash to haxadecimal format
-	std::string format_hash(TypeBase::TypeHash hash);
-
-	/// Add basic attributes of type to map (id, name etc.)
-    void add_basic_attributes();
-
-    /// Convert string to escape format.
-    std::string escape_description(std::string desc);
-
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
 
@@ -332,7 +323,8 @@ public:
  */
 class Bool : public Scalar {
 public:
-    Bool();
+    Bool()
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -356,7 +348,9 @@ class Integer : public Scalar {
 	friend class OutputBase;
 
 public:
-    Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max());
+    Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -391,7 +385,9 @@ class Double : public Scalar {
 	friend class OutputBase;
 
 public:
-    Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max());
+    Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -425,8 +421,6 @@ private:
  */
 class String : public Scalar {
 public:
-	String();
-
     virtual string type_name() const;
 
     TypeHash content_hash() const   override;
@@ -495,7 +489,9 @@ private:
     FileName() {}
 
     /// Forbids direct construction.
-    FileName(enum ::FilePath::FileType type);
+    FileName(enum ::FilePath::FileType type)
+    : type_(type)
+    {}
 
 };
 

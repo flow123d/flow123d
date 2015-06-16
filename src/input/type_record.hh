@@ -264,7 +264,7 @@ public:
     /**
      *  Can be used to close the Record for further declarations of keys.
      */
-    const Record &close();
+    const Record &close() const;
 
 
     /**

@@ -101,7 +101,7 @@ public:
     /**
      * Close the Selection, no more values can be added.
      */
-    const Selection &close();
+    const Selection &close() const;
 
 
     TypeHash content_hash() const   override;
@@ -219,7 +219,7 @@ private:
         std::string description_;
 
         /// Indicator of closed Selection.
-        bool closed_;
+        mutable bool closed_;
     };
 
     /// Handle to actual Selection data.
