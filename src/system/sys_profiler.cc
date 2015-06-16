@@ -50,9 +50,6 @@
 // namespace alias
 namespace property_tree = boost::property_tree;
 
- * Flag to property_tree::write_json method
-#define FLOW123D_JSON_PRETTY        1
-
 /*
  * These should be replaced by using boost MPI interface
  */
