@@ -310,6 +310,7 @@
           branches:
             - master
             - 1.8.2
+            - 1.8.3
     triggers:
       # once a day same time between 00:00 to 06:00; if source changed
       - pollscm: "H * * * *"

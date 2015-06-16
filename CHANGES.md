@@ -1,4 +1,9 @@
 List of all changes in user interface and major internal changes.
+************************************************
+
+#Flow123d version 1.8.3
+()
+
 
 ************************************************
 
