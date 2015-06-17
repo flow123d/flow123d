@@ -28,6 +28,7 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "json_to_storage.hh"
 #include <boost/algorithm/string.hpp>
 
 
@@ -44,11 +45,13 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {}
+TypeBase::TypeBase()
+: attributes_( boost::make_shared<attribute_map>() ) {}
 
 
 
-TypeBase::TypeBase(const TypeBase& other) {}
+TypeBase::TypeBase(const TypeBase& other)
+: attributes_(other.attributes_) {}
 
 
 
@@ -75,6 +78,43 @@ void TypeBase::lazy_finish() {
 	Input::TypeRepository<Selection>::getInstance().finish();
 
 }
+
+
+
+void TypeBase::add_attribute(std::string name, json_string val) {
+	ASSERT(this->is_closed(), "Attribute can be add only to closed type: '%s'.\n", this->type_name().c_str());
+	if (validate_json(val)) {
+		(*attributes_)[name] = val;
+	} else {
+		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
+	}
+}
+
+
+void TypeBase::print_json(ostream& stream) {
+	stream << "\"attributes\" : {" << endl;
+	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
+        if (it != attributes_->begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
+}
+
+
+bool TypeBase::validate_json(json_string str) {
+    try {
+    	JSONPath::Node node;
+    	json_spirit::read_or_throw( str, node);
+    	return true;
+    } catch (json_spirit::Error_position &e ) {
+        return false;
+    }
+}
+
+
+
 
 
 

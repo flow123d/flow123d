@@ -63,6 +63,8 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
 class TypeBase {
 public:
 	typedef std::size_t TypeHash;
+	typedef std::string json_string;
+	typedef std::map<std::string, json_string> attribute_map;
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -154,6 +156,12 @@ public:
      */
     virtual TypeHash content_hash() const =0;
 
+    /// Add attribute to map
+    void add_attribute(std::string name, json_string val);
+
+    /// Print JSON output of attributes to @p stream.
+    void print_json(ostream& stream);
+
 protected:
 
     /**
@@ -186,6 +194,12 @@ protected:
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
     static bool is_valid_identifier(const string& key);
+
+    /// Check if JSON string is valid
+    bool validate_json(json_string str);
+
+    /// map of type attributes (e. g. input_type, name etc.)
+    boost::shared_ptr<attribute_map> attributes_;
 
     friend class Array;
     friend class Record;
@@ -310,7 +324,7 @@ public:
 class Bool : public Scalar {
 public:
     Bool()
-    {}
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -335,8 +349,8 @@ class Integer : public Scalar {
 
 public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -372,8 +386,8 @@ class Double : public Scalar {
 
 public:
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
