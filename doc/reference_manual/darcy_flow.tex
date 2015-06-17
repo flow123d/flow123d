@@ -156,7 +156,8 @@ $$ V(t) := \sum_{d=1}^3\int_{\Omega^d}(\delta S h)(t,\vc x)\,d\vc x, $$
 $$ s(t) := \sum_{d=1}^3\int_{\Omega^d}F(t,\vc x)\,d\vc x, $$
 $$ f(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\vc q(t,\vc x)\cdot\vc n(\vc x) \,d\vc x $$
 is the volume \units{}{3}{}, the volume source \units{}{3}{-1} and the volume flux \units{}{3}{-1} of the liquid at time $t$, respectively.
-The volume, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{water\_balance.txt}.
+The volume, flux and source on every geometrical region is calculated at each output time and the values together with the control sums are written to the \Alink{Balance::file}{file} \texttt{water\_balance.\{dat\textbar txt\}}.
+If, in addition, \Alink{Balance::cumulative}{cumulative} is set to true then the time-integrated flux and source is written.
 
 
 

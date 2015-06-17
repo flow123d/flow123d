@@ -64,7 +64,7 @@ One has to pay attention when prescribing the source, namely to determine whethe
 
 \item $F^c_C$ \units{1}{-d}{-1} is the density of concentration sources due to exchange between regions with different dimensions, see \eqref{e:FC} below.
 
-\item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is thoroughly described in the next section \ref{sec:reaction_term}.
+\item The reaction term $F_R(\dots)$ \units{1}{-d}{-1} is thoroughly described in the next section \ref{sec:reaction_term}, see also paragraph "Two transport models" below.
 \end{itemize}
 
 
@@ -124,6 +124,20 @@ F^c_{C1} = q^c_{21}.
 \end{equation}
 
 
+\paragraph{Two transport models.}
+Within the above presented model, Flow123d presents two possible approaches to solute transport.
+\begin{itemize}
+\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
+Only the inflow/outflow boundary condition is available and the source term has the form
+\[ F_S^i = \delta f_S^i + \delta(c_S^i-c^i)^+\sigma_S^i. \]
+The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorption).
+\item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3.
+Reaction term is implemented only for the case of linear sorption, i.e.
+\[ F_R^i = -\partial_t\left((1-\th)\delta M^i\varrho_s c_s^i\right), \quad c_s^i = \frac{k_l^i}{\varrho_l} c, \]
+where $c_s^i$ [mol\,$\mathrm{kg}^{-1}$] is the concentration of sorbed substance, $k_l^i$ [mol\,$\mathrm{kg}^{-1}$] is the \hyperA{SoluteTransport-DG-Data::sorption-mult}{sorption coefficient}, $\varrho_s$ and $\varrho_l$ \units{1}{-3}{} is the \hyperA{SoluteTransport-DG-Data::rock-density}{density of the solid} (rock) and of the \hyperA{SoluteTransport-DG-Data::solvent-density}{liquid} (solvent), respectively, and $M^i$ [kg\,$\mathrm{mol}^{-1}$] denotes the \Alink{Substance::molar-mass}{molar mass} of the $i$-th substance.
+The initial concentration in solid is assumed to be in equilibrium with the concentration in liquid. 
+\end{itemize}
+
 
 \paragraph{Mass balance.}
 The advection-dispersion equation satisfies the balance of mass in the following form:
@@ -134,18 +148,12 @@ $$ m^i(t) := \sum_{d=1}^3\int_{\Omega^d}(\delta\th c^i)(t,\vc x)\,d\vc x, $$
 $$ s^i(t) := \sum_{d=1}^3\int_{\Omega^d}F_S^i(t,\vc x)\,d\vc x, $$
 $$ f^i(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(\vc q c^i - \th\delta\D^i\nabla c^i\right)(t,\vc x)\cdot\vc n \,d\vc x $$
 is the mass \units{1}{}{}, the volume source \units{1}{}{-1} and the mass flux \units{1}{}{-1} of $i$-th substance at time $t$, respectively.
-The mass, flux and source on every geometrical region is calculated at each computational time step and the values together with the control sums are written to the file \texttt{mass\_balance.txt}.
+The mass, flux and source on every geometrical region is calculated at each output time and the values are written to the \Alink{Balance::file}{file} \texttt{mass\_balance.\{dat\textbar txt\}}.
+If, in addition, \Alink{Balance::cumulative}{cumulative} is set to true then the time-integrated flux and source is written.
+In that case the cumulative source contains also contribution due to reactions.
 
 
-\paragraph{Two transport models.}
-Within the above presented model, Flow123d presents two possible approaches to solute transport.
-\begin{itemize}
-\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
-Only the inflow/outflow boundary condition is available and the source term has the form
-\[ F_S^i = \delta f_S^i + \delta(c_S^i-c^i)^+\sigma_S^i. \]
-The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorption).
-\item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3. Reaction term is currently not implemented.
-\end{itemize}
+
 
 
 
