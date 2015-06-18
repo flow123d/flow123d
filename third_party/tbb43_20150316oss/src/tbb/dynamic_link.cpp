@@ -316,7 +316,7 @@ OPEN_INTERNAL_NAMESPACE
         } else {
             LIBRARY_ASSERT( dlinfo.dli_fname!=NULL, "Unbelievable." );
         }*/
-		char *dli_fname;
+		const char *dli_fname;
 
 		#ifdef __CYGWIN__
 			MEMORY_BASIC_INFORMATION mbi;
@@ -469,7 +469,7 @@ OPEN_INTERNAL_NAMESPACE
         // The library has been loaded by another module and contains at least one requested symbol.
         // But after we obtained the symbol the library can be unloaded by another thread
         // invalidating our symbol. Therefore we need to pin the library in memory.
-        char * dli_fname;
+        const char * dli_fname;
     #ifdef __CYGWIN__
         MEMORY_BASIC_INFORMATION mbi;
         char path[MAX_PATH];
