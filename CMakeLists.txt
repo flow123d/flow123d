@@ -193,7 +193,7 @@ set(TIMER_RESOLUTION No)
 if (WIN32 OR CYGWIN)
     # on windows and cygwin try to get access QueryPerformanceCounter timer
     TEST_TIMER (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-      ${CMAKE_SOURCE_DIR}/TimerTest/timer_queryperformance.cpp) 
+      ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_queryperformance.cpp) 
 
     # if success save theese values via flow_define and flow_define_constant macros
     if (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER AND TIMER_RESOLUTION)
