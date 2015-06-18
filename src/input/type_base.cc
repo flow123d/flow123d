@@ -88,9 +88,9 @@ TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
 
 void TypeBase::lazy_finish() {
     // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
-	Input::TypeRepository<Record>::getInstance().finish();
-	Input::TypeRepository<AbstractRecord>::getInstance().finish();
-	Input::TypeRepository<Selection>::getInstance().finish();
+	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Selection>::get_instance().finish();
 
     // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
     /*for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {

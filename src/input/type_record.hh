@@ -515,6 +515,7 @@ protected:
          */
         vector< Record > list_of_childs;
 
+        // TODO: temporary hack, should be removed after implementation of generic types
         const Selection * element_input_selection;
     };
 
@@ -656,6 +657,7 @@ public:
      */
     int add_child(const Record &subrec);
 
+    // TODO: temporary hack, should be removed after implementation of generic types
     AbstractRecord &set_element_input(const Selection * element_input);
 
 protected:
