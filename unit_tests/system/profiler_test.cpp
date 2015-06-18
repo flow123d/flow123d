@@ -159,9 +159,11 @@ TEST(Profiler, one_timer) {
     END_TIMER("test_tag");
 
 //    for (int i = 0; i < 100; i++) {
-//    	EXPECT_LE( abs(ACT-total), DELTA);
-//    	cout << i+1 <<". difference: " << (total-ACT) << ", tolerance: " << DELTA << endl;
-//    	total += wait_sec (TIMER_RESOLUTION);
+//        START_TIMER("test_tag");
+//            EXPECT_LE( abs(ACT-total), DELTA);
+//            cout << i+1 <<". difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
+//            total += wait_sec (TIMER_RESOLUTION);
+//    	END_TIMER("test_tag");
 //    }
 
     START_TIMER("test_tag");
@@ -268,8 +270,9 @@ TEST(Profiler, structure) {
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
 
-    EXPECT_TRUE( sout.str().find("Whole Program   0") );
-    EXPECT_TRUE( sout.str().find("  sub1          2") );
+    // when using find, we need to compare result to string::npos value (which indicates not found)
+    EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+    EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
 
     Profiler::uninitialize();
 
