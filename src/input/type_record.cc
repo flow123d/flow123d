@@ -282,7 +282,7 @@ bool Record::finish()
 
 const Record &Record::close() const {
     data_->closed_=true;
-    return *( Input::TypeRepository<Record>::getInstance().add_type( *this ).get() );
+    return *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
 }
 
 
@@ -493,6 +493,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
+    // TODO temporary hack, should be removed after implementation of generic types
     if (child_data_->element_input_selection != nullptr) {
     	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
     }
@@ -611,7 +612,7 @@ bool AbstractRecord::finish() {
 
 AbstractRecord &AbstractRecord::close() {
 	child_data_->closed_=true;
-    return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
+    return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
 }
 
 

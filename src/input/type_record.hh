@@ -504,7 +504,7 @@ protected:
          */
         vector< Record > list_of_childs;
 
-        /// Temporary solution, used for AbstractRecords fields.
+        // TODO: temporary hack, should be removed after implementation of generic types
         const Selection * element_input_selection;
 
         /// Description of the whole AbstractRecord type.
@@ -676,6 +676,7 @@ public:
      */
     int add_child(const Record &subrec);
 
+    // TODO: temporary hack, should be removed after implementation of generic types
     AbstractRecord &set_element_input(const Selection * element_input);
 
     // Get default value of selection_of_childs

@@ -70,10 +70,9 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish() {
-	Input::TypeRepository<Record>::getInstance().finish();
-	Input::TypeRepository<AbstractRecord>::getInstance().finish();
-	Input::TypeRepository<Selection>::getInstance().finish();
-
+	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Selection>::get_instance().finish();
 }
 
 
