@@ -47,6 +47,7 @@ define_test(reference)
 define_test(type_repository)
 
 define_test(factory)
+define_test(type_dispatch)
 
 
 

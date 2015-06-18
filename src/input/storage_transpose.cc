@@ -5,6 +5,8 @@
  *      Author: jb
  */
 
+#include <cstdint>
+
 #include "input/storage_transpose.hh"
 
 
@@ -110,7 +112,7 @@ StorageBase * StorageTranspose::modify_storage(const Type::TypeBase *target_type
 	ASSERT( target_arec != NULL, "Incompatible type of target type. Must be AbstractRecord!\n");
 	ASSERT( typeid(*source_storage) == typeid(StorageArray), "Incompatible type of storage. Must be Array!\n");
 
-	int descendant_index = source_storage->get_item(0)->get_int();
+	unsigned int descendant_index = (unsigned int)(source_storage->get_item(0)->get_int());
 
 	return modify_storage( &( target_arec->get_descendant(descendant_index) ),
 	                	   &( source_type->get_descendant(descendant_index) ),

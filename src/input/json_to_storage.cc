@@ -5,7 +5,7 @@
  *      Author: jb
  */
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <limits>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -455,7 +455,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
             try {
                 // convert to base type to force type dispatch and reference chatching
                 const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
-                unsigned int descendant_index = make_storage(type_path, type_of_type )->get_int();
+                unsigned int descendant_index = (unsigned int)make_storage(type_path, type_of_type )->get_int();
                 return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
             } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
 
@@ -568,11 +568,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
 {
     if (p.head()->type() == json_spirit::int_type) {
-        boost::int64_t value = p.head()->get_int64();
+        std::int64_t value = p.head()->get_int64();
 
-        if ( value >= std::numeric_limits<int>::min() &&
-             value <= std::numeric_limits<int>::max() &&
-             int_type->match(value) )
+        if ( int_type->match(value) )
         {
             return new StorageInt( value );
         } else {

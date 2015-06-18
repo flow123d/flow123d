@@ -99,7 +99,6 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
-
 	if (is_enum_valued) {
 		return make_input_tree();
 	} else {

@@ -367,7 +367,7 @@ public:
     /**
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
-    bool match(int value) const;
+    bool match(std::int64_t value) const;
 
     /**
      * As before but also returns converted integer in @p value.
@@ -379,7 +379,7 @@ public:
     virtual string type_name() const;
 private:
 
-    int lower_bound_, upper_bound_;
+    std::int64_t lower_bound_, upper_bound_;
 
 };
 

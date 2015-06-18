@@ -37,7 +37,7 @@ DOC_DIR=$(SOURCE_DIR)/doc/reference_manual
 all:  install-hooks build-flow123d 
 
 # this is prerequisite for every target using BUILD_DIR variable
-update-build-tree:
+update-build-tree: update-submodules
 	@-bin/git_post_checkout_hook	# do not print command, ignore return code
 
 
@@ -114,6 +114,30 @@ petsc-doc: #build-flow123d
 	mkdir output; \
 	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
 
+
+# initialize submodules in safe way
+# check which kind of access use this repository use same type for submodules
+# to this end one have to set key "https_url" in the .gitmodules to the alternative https URL.
+.PHONY: update-submodules
+update-submodules:
+	git submodule init
+	origin_url=$$( git config --get remote.origin.url ) ;\
+	if [ "$${origin_url}" != "$${origin_url#https}" ]; \
+	then \
+		cp .gitmodules_https .gitmodules; \
+	fi
+	git submodule sync
+	git checkout .gitmodules
+	git submodule update
+	
+
+# Let every submodule checkout branch it track. 
+# This may be useful to make some patches in submodule repository.
+# Note, however, you have to make: git add <submodule> in order to change 
+# the submodule's commit refered in the flow123d repository.
+.PHONY: checkout-submodule-branches
+checkout-submodule-branches:
+	git submodule foreach -q --recursive 'branch="$$(git config -f $${toplevel}/.gitmodules submodule.$${name}.branch)"; git checkout $${branch}'
 	
 
 ############################################################################################
