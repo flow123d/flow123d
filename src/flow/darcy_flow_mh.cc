@@ -137,7 +137,8 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 		.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(),
 				"File with mesh dependent boundary conditions (obsolete).")
 		.declare_key("input_fields", it::Array(
-					DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH")
+					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
+					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
 					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
 					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
 					.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
