@@ -445,6 +445,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
         // for Array, Double, Integer, we assume no static variables
+    	check_key_default_value(default_value, type, key);
         boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
         data_->declare_key(key, type_copy, NULL, default_value, description);
     }
