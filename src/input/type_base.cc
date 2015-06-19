@@ -28,6 +28,7 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "type_generic.hh"
 #include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
@@ -159,6 +160,9 @@ bool Array::ArrayData::finish()
 {
 	if (finished) return true;
 
+    ASSERT(typeid( *type_of_values_ ) != typeid(Parameter), "Finished Array can't be of type Parameter '%s'.\n",
+    		type_of_values_->type_name().c_str());
+
 	return (finished = type_of_values_->finish() );
 }
 
@@ -221,6 +225,7 @@ ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
 ARRAY_CONSTRUCT(AbstractRecord);
+ARRAY_CONSTRUCT(Parameter);
 
 
 /**********************************************************************************
