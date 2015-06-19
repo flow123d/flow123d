@@ -8,6 +8,8 @@
 
 #include <input/type_generic.hh>
 
+#include <boost/functional/hash.hpp>
+
 
 
 namespace Input {
@@ -15,8 +17,56 @@ namespace Input {
 namespace Type {
 
 
+/*******************************************************************
+ * implementation of Parameter
+ */
+
 Parameter::Parameter(const string & parameter_name)
 : name_(parameter_name) {}
+
+
+Parameter::Parameter(const Parameter & other)
+: name_(other.name_) {}
+
+
+string Parameter::type_name() const {
+    return name_;
+}
+
+
+TypeBase::TypeHash Parameter::content_hash() const {
+	TypeHash seed=0;
+	boost::hash_combine(seed, "Parameter");
+	boost::hash_combine(seed, type_name());
+
+	return seed;
+}
+
+
+bool Parameter::valid_default(const string &str) const {
+    if ( str != type_name() ) {
+        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
+    }
+    return true;
+}
+
+
+/*******************************************************************
+ * implementation of Instance
+ */
+
+Instance::Instance(const TypeBase &generic_type, std::vector<ParameterPair> parameters)
+: generic_type_(generic_type), parameters_(parameters) {}
+
+
+TypeBase::TypeHash Instance::content_hash() const {
+	return 0;
+}
+
+
+bool Instance::valid_default(const string &str) const {
+    return true;
+}
 
 
 } // closing namespace Type
