@@ -168,6 +168,7 @@ class AbstractRecord;
  */
 class Record : public TypeBase {
 	friend class OutputBase;
+	friend class AbstractRecord;
 	friend class AdHocAbstractRecord;
 
 public:
@@ -271,6 +272,9 @@ public:
      */
     virtual bool is_finished() const;
 
+    /// Returns true if @p data_ is closed.
+    inline bool is_closed() const;
+
     /// Record type name getter.
     virtual string type_name() const;
 
@@ -370,7 +374,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(const Selection * key_type);
+    Record &declare_type_key(boost::shared_ptr<Selection> key_type);
 
     /**
      * Internal data class.
@@ -496,7 +500,8 @@ protected:
     class ChildData {
     public:
         ChildData(const string &name)
-        : selection_of_childs( boost::make_shared<Selection> (name) )
+        : selection_of_childs( boost::make_shared<Selection> (name) ),
+		  element_input_selection(nullptr)
         {}
 
         /**
@@ -509,6 +514,9 @@ protected:
          * Vector of derived Records (proxies) in order of derivation.
          */
         vector< Record > list_of_childs;
+
+        // TODO: temporary hack, should be removed after implementation of generic types
+        const Selection * element_input_selection;
     };
 
 public:
@@ -560,9 +568,12 @@ public:
     /**
      *  Can be used to close the AbstractRecord for further declarations of keys.
      */
-    inline AbstractRecord &close() {
-        Record::close(); return *this; }
+    AbstractRecord &close();
 
+    /**
+     *  Finish declaration of the AbstractRecord type.
+     */
+    bool finish();
 
     /**
      * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
@@ -612,6 +623,42 @@ public:
      * Container-like access to the data of the Record. Returns iterator to the last data.
      */
     ChildDataIter end_child_data() const;
+
+    /**
+     * Add inherited Record. This method is used primarily in combination with registration
+     * variable. @see Input::Factory
+     *
+     * Example of usage:
+	 @code
+		 class SomeBase
+		 {
+		 public:
+    		/// the specification of input abstract record
+    		static const Input::Type::AbstractRecord & get_input_type();
+			...
+		 }
+
+		 class SomeDescendant : public SomeBase
+		 {
+		 public:
+    		/// the specification of input record
+    		static const Input::Type::Record & get_input_type();
+			...
+		 private:
+			/// registers class to factory
+			static const int reg;
+		 }
+
+		 /// implementation of registration variable
+		 const int SomeDescendant::reg =
+			 Input::register_class< SomeDescendant >("SomeDescendant") +
+			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
+	 @endcode
+     */
+    int add_child(const Record &subrec);
+
+    // TODO: temporary hack, should be removed after implementation of generic types
+    AbstractRecord &set_element_input(const Selection * element_input);
 
 protected:
     /**
@@ -756,6 +803,12 @@ inline unsigned int Record::size() const {
     ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }
+
+
+inline bool Record::is_closed() const {
+	return data_->closed_;
+}
+
 
 
 

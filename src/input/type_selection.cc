@@ -34,7 +34,6 @@ Selection::Selection(const string &name, const string &desc)
 : data_(boost::make_shared<SelectionData>(name))
 {
     TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
-    Input::TypeRepository<Selection>::getInstance().add_type( *this );
     data_->description_=desc;
 }
 
@@ -51,7 +50,7 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 
 const Selection & Selection::close() const {
     data_->finished=true;
-    return *this;
+    return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
 
 

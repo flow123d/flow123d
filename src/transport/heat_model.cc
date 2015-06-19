@@ -185,25 +185,26 @@ UnitSI HeatTransferModel::balance_units()
 			*data().fluid_heat_capacity.units();
 }
 
-IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
+IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record(
+	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::input_type);
-
-	return input_type;
-
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+					"Parameters of output stream.");
 }
 
 
-IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection(
+	return IT::Selection(
 				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
 				"Selection for output fields of " + description + " for heat transfer.");
-
-	return input_type;
 }
 
 

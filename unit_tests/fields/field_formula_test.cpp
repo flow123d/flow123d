@@ -36,10 +36,10 @@ TEST(FieldFormula, read_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Record  rec_type("FieldFormulaTest","");
-    rec_type.declare_key("conductivity_3d", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("init_conc", VectorField::input_type, Input::Type::Default::obligatory(), "" );
-    rec_type.finish();
+    Input::Type::Record rec_type = Input::Type::Record("FieldFormulaTest","")
+        .declare_key("conductivity_3d", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("init_conc", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .close();
 
     // read input string
     Input::JSONToStorage reader( input, rec_type );
@@ -127,7 +127,7 @@ TEST(FieldFormula, set_time) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Array  input_type(VectorField::input_type);
+    Input::Type::Array  input_type(VectorField::get_input_type(nullptr));
 
     // read input string
     Input::JSONToStorage reader( set_time_input, input_type );

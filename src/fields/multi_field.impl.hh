@@ -45,7 +45,8 @@ it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
 		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
 			"Supplied to components subtree.")
 		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.");
+			"Components of Multifield.")
+		.close();
 
 	return type;
 }
