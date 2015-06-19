@@ -46,8 +46,8 @@ namespace IT = Input::Type;
 class AdvectionDiffusionModel {
 public:
 
-	/// Read or set names of solution components.
-	virtual void set_components(SubstanceList &substances, const Input::Record &in_rec) = 0;
+	/// Read necessary data from input record.
+	virtual void init_from_input(const Input::Record &in_rec, SubstanceList &substances) = 0;
 
 	/**
 	 * Compute coefficients of mass matrix.

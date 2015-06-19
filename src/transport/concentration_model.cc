@@ -80,12 +80,6 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .units( UnitSI().m(2).s(-1) )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
-    *this+=solvent_density
-    		.name("solvent_density")
-			.description("Density of the solvent.")
-			.units(UnitSI().kg().m(-3))
-			.input_default("1.0")
-			.flags_add( in_time_term );
     *this+=rock_density
     		.name("rock_density")
 			.description("Rock matrix density.")
@@ -122,7 +116,9 @@ IT::Record &ConcentrationTransportModel::get_input_type(const string &implementa
 				description + " for solute transport.")
 			.derive_from(AdvectionProcessBase::input_type)
 			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
-					"Names of transported substances.");
+					"Names of transported substances.")
+			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
+					"Density of the solvent [kg.m^(-3)].");
 
 	return rec;
 }
@@ -138,16 +134,16 @@ IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_in
 
 
 ConcentrationTransportModel::ConcentrationTransportModel() :
-		flux_changed(true),
-		substances_(nullptr)
+		flux_changed(true)
 {}
 
 
-void ConcentrationTransportModel::set_components(SubstanceList &substances, const Input::Record &in_rec)
+void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec, SubstanceList &substances)
 {
 	substances.initialize(in_rec.val<Input::Array>("substances"));
-
 	substances_ = &substances;
+
+	solvent_density_ = in_rec.val<double>("solvent_density");
 }
 
 
@@ -178,7 +174,6 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por_m);
-	data().solvent_density.value_list(point_list, ele_acc, rho_l);
 	data().rock_density.value_list(point_list, ele_acc, rho_s);
 	data().sorption_mult.value_list(point_list, ele_acc, sorp_mult);
 
@@ -186,7 +181,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 	{
 		for (unsigned int i=0; i<point_list.size(); i++)
 		{
-			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]/rho_l[i]*sorp_mult[i][sbi]*(*substances_)[sbi].molar_mass()*elem_csec[i];
+			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]/solvent_density_*sorp_mult[i][sbi]*(*substances_)[sbi].molar_mass()*elem_csec[i];
 		}
 	}
 }

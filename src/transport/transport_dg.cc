@@ -268,7 +268,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     // (e.g. if Model represents heat transfer). This should be
     // resolved when transport classes are refactored so that DG method
     // can be combined with reactions under operator splitting.
-    Model::set_components(substances_, in_rec);
+    Model::init_from_input(in_rec, substances_);
     n_subst_ = substances_.size();
 
     // Set up physical parameters.
