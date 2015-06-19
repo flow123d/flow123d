@@ -480,7 +480,7 @@ private:
 	Mat *stiffness_matrix;
 
 	/// The mass matrix.
-	Mat mass_matrix;
+	Mat *mass_matrix;
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	Vec *mass_vec;
@@ -489,7 +489,7 @@ private:
 	LinSys **ls;
 
 	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
-	LinSys *ls_dt;
+	LinSys **ls_dt;
 
 	// @}
 
@@ -517,6 +517,10 @@ private:
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef;
+	/// Retardation coefficient due to sorption.
+	vector<vector<double> > ret_coef;
+	/// Temporary values of source increments
+	vector<double> sorption_sources;
 	/// Advection coefficients.
 	vector<vector<arma::vec3> > ad_coef;
 	/// Diffusion coefficients.
