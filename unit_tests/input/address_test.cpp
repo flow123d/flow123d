@@ -12,20 +12,6 @@
 
 namespace IT = Input::Type;
 
-/**
- * Child class of Input::Type::AbstractRecord
- * Contains public method for adding descendants
- */
-class AbstractRecordTest : public IT::AbstractRecord {
-public:
-	AbstractRecordTest(const string & type_name_in, const string & description) : IT::AbstractRecord(type_name_in, description)
-	{}
-
-	void declare_descendant(const Record &subrec) {
-		add_descendant(subrec);
-	}
-};
-
 const string read_input_json = R"JSON(
 {
 	problem = {
@@ -41,51 +27,47 @@ const string read_input_json = R"JSON(
 DECLARE_EXCEPTION(ExcTest, << Input::EI_Address::val);
 
 TEST(InputAddress, address_output_test) {
-	IT::Selection sel_problem("Problem_TYPE_selection");
-	sel_problem.add_value(0, "SequentialCoupling", "sequential coupling problem");
-    sel_problem.add_value(1, "Other");
-	sel_problem.close();
+	IT::Selection sel_problem = IT::Selection("Problem_TYPE_selection")
+		.add_value(0, "SequentialCoupling", "sequential coupling problem")
+    	.add_value(1, "Other")
+		.close();
 
 	IT::Record other_record = IT::Record("Other", "Record with data for other problem")
 			.declare_key("TYPE", sel_problem, IT::Default("Other"),	"Type of problem")
 		    .close();
-
-
-	IT::Record region_input_type("Region", "Definition of region of elements.");
 	{
-		region_input_type.declare_key("name", IT::String(), IT::Default::obligatory(),
-		                "Label (name) of the region. Has to be unique in one mesh.\n");
-		region_input_type.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-		                "The ID of the region to which you assign label.");
-		region_input_type.declare_key("other", other_record, IT::Default::obligatory(),
-		                "The ID of the region to which you assign label.");
-		region_input_type.close();
-	}
-
-	IT::Record sequential_coupling_record("SequentialCoupling", "Record with data for a general sequential coupling");
-	{
-		sequential_coupling_record.declare_key("TYPE", sel_problem, IT::Default("SequentialCoupling"),
-				"Type of problem");
-		sequential_coupling_record.declare_key("regions", IT::Array(region_input_type),IT::Default::obligatory(),
-	             "Definition of region.");
-		sequential_coupling_record.close();
+		other_record.finish();
 	}
 
 
-	AbstractRecordTest problemTest("Problem","Base problem.");
+	IT::Record region_input_type = IT::Record("Region", "Definition of region of elements.")
+		.declare_key("name", IT::String(), IT::Default::obligatory(),
+		                "Label (name) of the region. Has to be unique in one mesh.\n")
+		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
+		                "The ID of the region to which you assign label.")
+		.declare_key("other", other_record, IT::Default::obligatory(),
+		                "The ID of the region to which you assign label.")
+		.close();
+
+	IT::Record sequential_coupling_record = IT::Record("SequentialCoupling", "Record with data for a general sequential coupling")
+		.declare_key("TYPE", sel_problem, IT::Default("SequentialCoupling"),
+				"Type of problem")
+		.declare_key("regions", IT::Array(region_input_type),IT::Default::obligatory(),
+	             "Definition of region.")
+		.close();
+
+
+    IT::AbstractRecord problem = IT::AbstractRecord("Problem","Base problem.")
+    	.close();
     {
-		problemTest.close();
-		problemTest.declare_descendant(sequential_coupling_record);
-		problemTest.declare_descendant(other_record);
+    	problem.add_child(sequential_coupling_record);
+    	problem.add_child(other_record);
     }
 
-    IT::AbstractRecord problem(problemTest);
-
-    IT::Record root_record("RootRecord", "Root record of JSON input");
-    {
-    	root_record.declare_key("problem", problem, IT::Default::obligatory(),
-             "Simulation problem to be solved.");
-    }
+    IT::Record root_record = IT::Record("RootRecord", "Root record of JSON input")
+		.declare_key("problem", problem, IT::Default::obligatory(),
+				"Simulation problem to be solved.")
+		.close();
 
 	Input::JSONToStorage json_reader( read_input_json,  root_record);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();

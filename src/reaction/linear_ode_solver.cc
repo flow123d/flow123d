@@ -6,8 +6,11 @@
 
 using namespace Input::Type;
 
-AbstractRecord LinearODESolverBase::input_type
-    = AbstractRecord("LinearODESolver", "Solver of a linear system of ODEs.");
+AbstractRecord & LinearODESolverBase::get_input_type() {
+	return AbstractRecord("LinearODESolver",
+			"Solver of a linear system of ODEs.")
+			.close();
+}
     
 LinearODESolverBase::LinearODESolverBase()
 :step_(0), step_changed_(true)

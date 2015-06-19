@@ -58,39 +58,43 @@ protected:
 
         FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
 
-        abstr_rec_ptr = new  AbstractRecord("AbstractRecord", "desc");
-        abstr_rec_ptr->finish();
+        abstr_rec_ptr = new AbstractRecord("AbstractRecord", "desc");
+        abstr_rec_ptr->close();
 
         selection_ptr = new Selection("NameOfSelectionType");
         selection_ptr->add_value(value_a, "A", "");
         selection_ptr->add_value(value_b, "B", "");
         selection_ptr->add_value(value_c, "C", "");
-        selection_ptr->finish();
+        selection_ptr->close();
 
         desc_a_ptr = new Record("DescendantA","");
         desc_a_ptr->derive_from(*abstr_rec_ptr);
         desc_a_ptr->declare_key("some_int", Integer(),Default("1"),"");
-        desc_a_ptr->finish();
+        abstr_rec_ptr->add_child(*desc_a_ptr);
+        desc_a_ptr->close();
 
         desc_b_ptr = new Record("DescendantB","");
         desc_b_ptr->derive_from(*abstr_rec_ptr);
         desc_b_ptr->declare_key("some_int", Integer(),Default("2"),"");
         desc_b_ptr->declare_key("some_double", Double(),Default::obligatory(),"");
-        desc_b_ptr->finish();
+        abstr_rec_ptr->add_child(*desc_b_ptr);
+        desc_b_ptr->close();
 
-        abstr_rec_ptr->no_more_descendants();
+        abstr_rec_ptr->finish();
+        desc_a_ptr->finish();
+		desc_b_ptr->finish();
 
         {
         // declare structure of input file
         this->main = new Record("MainRecord","desc");
 
-        Record sub_record("SubRecord","desc");
-        sub_record.declare_key("array_of_int", Array(Integer()), "desc");
-        sub_record.declare_key("some_integer", Integer(), Default::obligatory(), "desc");
-        sub_record.declare_key("some_double", Double(), "desc");
-        sub_record.declare_key("some_bool", Bool(), Default("true"), "desc");
-        sub_record.declare_key("some_string", String(), "desc");
-        sub_record.finish();
+        Record sub_record = Record("SubRecord","desc")
+        	.declare_key("array_of_int", Array(Integer()), "desc")
+        	.declare_key("some_integer", Integer(), Default::obligatory(), "desc")
+        	.declare_key("some_double", Double(), "desc")
+        	.declare_key("some_bool", Bool(), Default("true"), "desc")
+        	.declare_key("some_string", String(), "desc")
+        	.close();
 
 
 
@@ -109,8 +113,10 @@ protected:
         main->declare_key("selection", *selection_ptr, Default::obligatory(), "");
         main->declare_key("default_int", Integer(), Default("1234"), "");
         main->declare_key("optional_int2", Integer(), "");
-        main->finish();
+        main->close();
         }
+
+        main->finish();
 
         // construct some storage
 
