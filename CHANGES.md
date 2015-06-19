@@ -3,7 +3,7 @@ List of all changes in user interface and major internal changes.
 ************************************************
 
 #Flow123d version 1.8.2
-(2014-03-15)
+(2015-03-15)
 
 ### User interface
 
