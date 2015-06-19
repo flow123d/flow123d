@@ -53,6 +53,9 @@ public:
 		/// Molecular diffusivity (for each substance).
 		Field<3, FieldValue<3>::Vector> diff_m;
 
+	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
+	    Field<3, FieldValue<3>::Vector > sorption_mult;     ///< Coefficient of linear sorption.
+
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
@@ -102,6 +105,12 @@ protected:
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
 
+	/// Pointer to list of substances (needed e.g. for access to molar masses).
+	SubstanceList *substances_;
+
+	/// Density of liquid (a global constant).
+	double solvent_density_;
+
 
 public:
 
@@ -111,12 +120,16 @@ public:
 
 	UnitSI balance_units();
 
-	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
+	void init_from_input(const Input::Record &in_rec, SubstanceList &substances) override;
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
+
+	void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<std::vector<double> > &ret_coef) override;
 
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
