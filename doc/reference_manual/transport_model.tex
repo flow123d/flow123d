@@ -135,6 +135,7 @@ The solution process for one time step is faster, but the maximal time step is r
 Reaction term is implemented only for the case of linear sorption, i.e.
 \[ F_R^i = -\partial_t\left((1-\th)\delta M^i\varrho_s c_s^i\right), \quad c_s^i = \frac{k_l^i}{\varrho_l} c, \]
 where $c_s^i$ [mol\,$\mathrm{kg}^{-1}$] is the concentration of sorbed substance, $k_l^i$ [mol\,$\mathrm{kg}^{-1}$] is the \hyperA{SoluteTransport-DG-Data::sorption-mult}{sorption coefficient}, $\varrho_s$ and $\varrho_l$ \units{1}{-3}{} is the \hyperA{SoluteTransport-DG-Data::rock-density}{density of the solid} (rock) and of the \hyperA{SoluteTransport-DG-Data::solvent-density}{liquid} (solvent), respectively, and $M^i$ [kg\,$\mathrm{mol}^{-1}$] denotes the \Alink{Substance::molar-mass}{molar mass} of the $i$-th substance.
+The initial concentration in solid is assumed to be in equilibrium with the concentration in liquid. 
 \end{itemize}
 
 
