@@ -17,6 +17,7 @@
 #include <iomanip>
 
 #include "system/system.hh"
+#include "input/type_generic.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/type_traits.hpp>
@@ -265,7 +266,9 @@ bool Record::finish()
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
-        if (it->key_ != "TYPE") {
+        ASSERT(typeid( *(it->type_) ) != typeid(Parameter), "Finished Record '%s' can't contain key '%s' of type Parameter.\n",
+        		this->type_name().c_str(), it->type_->type_name().c_str());
+    	if (it->key_ != "TYPE") {
             data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
             // we check once more even keys that was already checked, otherwise we have to store
@@ -477,6 +480,7 @@ RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(AbstractRecord);
 RECORD_DECLARE_KEY(AdHocAbstractRecord);
+RECORD_DECLARE_KEY(Parameter);
 
 
 
