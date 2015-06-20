@@ -37,7 +37,7 @@ const Record & DualPorosity::get_input_type() {
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
 		.derive_from(ReactionTerm::get_input_type())
-		.declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity").close()), Default::obligatory(),
+		.declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
 						"Containes region specific data necessary to construct dual porosity model.")
 		.declare_key("scheme_tolerance", Double(0.0), Default("1e-3"),
 					 "Tolerance according to which the explicit Euler scheme is used or not."

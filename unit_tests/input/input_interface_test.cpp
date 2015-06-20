@@ -213,8 +213,7 @@ TEST_F(InputInterfaceTest, RecordVal) {
     int i;
         i = record.val<int>("some_integer");
         EXPECT_EQ(456,i);
-        i = record.val<char>("some_integer");
-        EXPECT_EQ((char)(456),i);
+        EXPECT_THROW_WHAT({ record.val<char>("some_integer"); }, Input::ExcInputMessage, "Value out of bounds.");
         i = record.val<short int>("some_integer");
         EXPECT_EQ((short int)(456),i);
 

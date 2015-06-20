@@ -67,10 +67,9 @@ using namespace Input::Type;
 							.close();
    	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
 
-   Record rec_wrong_val = Record("yy","")
-   	   	   	   	   	   	   	.declare_key("wrong_double", Double(), Default("1.23 4"),"")
-   							.close();
-   EXPECT_THROW_WHAT( { rec_wrong_val.finish();
+   EXPECT_THROW_WHAT( { Record("yy","")
+   	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
+							.close();
    	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
 
    // test correct finishing.
@@ -130,19 +129,17 @@ using namespace Input::Type;
     	.declare_key("array_of_str", Array( String() ),"Desc. of array")
     	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
     	// allow default values for an array
-    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "")
-    	.declare_key("some_key", Array( Integer() ), Default("ahoj"), "")
-    	.close();
-    EXPECT_THROW_WHAT( { array_record.finish(); }, ExcWrongDefault,
+    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
+    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
                   "Default value 'ahoj' do not match type: 'Integer';"
                  );
+    array_record.close();
 
-    static Record array_record2 = Record("RecordOfArrays2", "desc.")
-    	.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), "")
-		.close();
-    EXPECT_THROW_WHAT( { array_record2.finish(); }, ExcWrongDefault,
+    static Record array_record2 = Record("RecordOfArrays2", "desc.");
+    EXPECT_THROW_WHAT( { array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
+    array_record2.close();
 }
 
 TEST(InputTypeRecord, allow_convertible) {
@@ -201,19 +198,16 @@ using namespace Input::Type;
     	.close();
 
     Record record_record = Record("RecordOfRecords", "")
-    	.declare_key("sub_rec_1", other_record, "key desc")
-		.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc")
-    	.close();
-
-	EXPECT_THROW_WHAT( { record_record.finish(); }, ExcWrongDefault,
+    	.declare_key("sub_rec_1", other_record, "key desc");
+	EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
+	record_record.close();
 
     Record record_record2 = Record("RecordOfRecords2", "")
-    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "")
-    	.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), "")
-    	.close();
-    EXPECT_THROW_WHAT( { record_record2.finish(); } , ExcWrongDefault,
+    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
+    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
+    record_record2.close();
 
     // recursion  -  forbidden
     //record_record->declare_key("sub_rec_2", record_record, "desc.");

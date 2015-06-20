@@ -404,6 +404,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
+	check_key_default_value(default_value, type, key);
 	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
