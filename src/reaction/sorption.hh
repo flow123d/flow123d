@@ -26,7 +26,7 @@ class SorptionSimple:  public SorptionBase
 public:
 	typedef ReactionTerm FactoryBaseType;
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionSimple(Mesh &init_mesh, Input::Record in_rec);
@@ -82,7 +82,7 @@ class SorptionMob:  public SorptionDual
 public:
 	typedef ReactionTerm FactoryBaseType;
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionMob(Mesh &init_mesh, Input::Record in_rec);
@@ -110,7 +110,7 @@ class SorptionImmob:  public SorptionDual
 public:
 	typedef ReactionTerm FactoryBaseType;
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionImmob(Mesh &init_mesh, Input::Record in_rec);

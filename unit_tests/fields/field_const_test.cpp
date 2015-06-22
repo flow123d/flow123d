@@ -55,13 +55,13 @@ TEST(FieldConst, read_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Record  rec_type("FieldConstTest","");
-    rec_type.declare_key("tensor1", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("tensor2", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("tensor3", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("tensor4", TensorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("init_conc", VectorField::input_type, Input::Type::Default::obligatory(), "" );
-    rec_type.finish();
+    Input::Type::Record rec_type = Input::Type::Record("FieldConstTest","")
+        .declare_key("tensor1", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor2", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor3", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("tensor4", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("init_conc", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .close();
 
     // read input string
     Input::JSONToStorage reader( input, rec_type );

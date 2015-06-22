@@ -30,9 +30,9 @@ class Partitioning {
 public:
 
     /// Input specification objects.
-    static Input::Type::Selection graph_type_sel;
-    static Input::Type::Selection tool_sel;
-    static Input::Type::Record input_type;
+    static const Input::Type::Selection & get_graph_type_sel();
+    static const Input::Type::Selection & get_tool_sel();
+    static const Input::Type::Record & get_input_type();
 
     /**
      *  Constructor. A pointer to the mesh and accessor to an input record have to be provided.

@@ -42,7 +42,7 @@ it::Record General_reaction::input_type = it::Record("Isotope", "Definition of i
 
 
 it::Record Semchem_interface::input_type = it::Record("Semchem", "Declares infos valid for all reactions. NOT SUPPORTED!!!.")
-    .derive_from(ReactionTerm::input_type)
+    .derive_from(ReactionTerm::get_input_type())
 	.declare_key("precision", it::Integer(), it::Default::obligatory(), //(1),
 						"How accurate should the simulation be, decimal places(?).")
 	.declare_key("temperature", it::Double(), it::Default::obligatory(), //(298.0),

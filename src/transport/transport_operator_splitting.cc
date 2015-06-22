@@ -48,45 +48,47 @@ FLOW123D_FORCE_LINK_IN_PARENT(sorption);
 
 using namespace Input::Type;
 
-AbstractRecord AdvectionProcessBase::input_type
-	= AbstractRecord("Transport", "Secondary equation for transport of substances.")
-	.declare_key("time", TimeGovernor::input_type, Default::obligatory(),
-			"Time governor setting for the secondary equation.")
-	.declare_key("balance", Balance::input_type, Default::obligatory(),
-			"Settings for computing balance.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.");
+AbstractRecord & AdvectionProcessBase::get_input_type() {
+	return AbstractRecord("Transport",
+			"Secondary equation for transport of substances.")
+			.close();
+}
 
 
-Record TransportBase::input_type_output_record
-	= Record("TransportOutput", "Output setting for transport equations.")
-	.declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-			"Parameters of output stream.");
-
-
-Record TransportOperatorSplitting::input_type
-	= Record("TransportOperatorSplitting",
+const Record & TransportOperatorSplitting::get_input_type() {
+	return Record("TransportOperatorSplitting",
             "Explicit FVM transport (no diffusion)\n"
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
-    .derive_from(AdvectionProcessBase::input_type)
-    .declare_key("substances", Array(Substance::input_type), Default::obligatory(),
-    		"Specification of transported substances.")
-    	    // input data
-    .declare_key("reaction_term", ReactionTerm::input_type, Default::optional(),
-                "Reaction model involved in transport.")
+		.derive_from(AdvectionProcessBase::get_input_type())
+		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+				"Time governor setting for the secondary equation.")
+		.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+				"Settings for computing balance.")
+		.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+				"Parameters of output stream.")
+		.declare_key("substances", Array( Substance::get_input_type() ), Default::obligatory(),
+				"Specification of transported substances.")
+				// input data
+		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
+					"Reaction model involved in transport.")
 
-    .declare_key("input_fields", Array(
-    		ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting")
-    		.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
-    		), IT::Default::obligatory(), "")
-    .declare_key("output_fields", Array(ConvectionTransport::EqData::output_selection),
-    		Default("conc"),
-       		"List of fields to write to output file.");
+		.declare_key("input_fields", Array(
+				Record("TransportOperatorSplitting_Data", FieldCommon::field_descriptor_record_decsription("TransportOperatorSplitting_Data") )
+				.copy_keys( ConvectionTransport::EqData().make_field_descriptor_type("TransportOperatorSplitting") )
+				.declare_key(OldBcdInput::transport_old_bcd_file_key(), IT::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
+				.close()
+				), IT::Default::obligatory(), "")
+		.declare_key("output_fields", Array(ConvectionTransport::EqData::get_output_selection()),
+				Default("conc"),
+				"List of fields to write to output file.")
+		.close();
+}
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting");
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting") +
+		AdvectionProcessBase::get_input_type().add_child( TransportOperatorSplitting::get_input_type() );
 
 
 

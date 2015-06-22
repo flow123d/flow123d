@@ -239,7 +239,7 @@ RegionSet union( const string & set_name_1, const string & set_name_2); // sort 
 RegionSet intersection( const string & set_name_1, const string & set_name_2);
 RegionSet difference( const string & set_name_1, const string & set_name_2);
 const RegionSet & get_set(const string & set_name);
-void read_sets_from_input(Input::Record rec); // see structure of RegionDB::region_set_input_type
+void read_sets_from_input(Input::Record rec); // see structure of RegionDB::get_region_set_input_type()
 
 region_sets = [
    { name="set name",
@@ -291,11 +291,11 @@ public:
     /**
      * Format of input record which defined elements and their affiliation to region sets
      */
-    static Input::Type::Record region_input_type;
+    static const Input::Type::Record & get_region_input_type();
     /**
      * Format of input record which defined regions and their affiliation to region sets
      */
-    static Input::Type::Record region_set_input_type;
+    static const Input::Type::Record & get_region_set_input_type();
 
     TYPEDEF_ERR_INFO( EI_Label, const std::string);
     TYPEDEF_ERR_INFO( EI_ID, unsigned int);
@@ -484,7 +484,7 @@ public:
 
     /**
      * Reads region sets defined by user in input file
-     * Format of input record is defined in variable RegionDB::region_set_input_type
+     * Format of input record is defined in variable RegionDB::get_region_set_input_type()
      *
      * @param arr Array input records which define region sets
      */
@@ -492,7 +492,7 @@ public:
 
     /**
      * Reads elements and their affiliation to region sets defined by user in input file
-     * Format of input record is defined in variable RegionDB::region_input_type
+     * Format of input record is defined in method RegionDB::get_region_input_type()
      *
      * @param region_list Array input records which define region sets and elements
      * @param map Map to which is loaded data

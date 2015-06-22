@@ -16,18 +16,13 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldConstant<spacedim, Value>::input_type
-    = FieldConstant<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
-
 
 template <int spacedim, class Value>
-Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    it::Record type=
-        it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
                                     "Value of the constant field.\n"
@@ -36,9 +31,8 @@ Input::Type::Record FieldConstant<spacedim, Value>::get_input_type(
                                     "* vector of size N to enter diagonal matrix\n"
                                     "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
                                     "* scalar to enter multiple of the unit matrix." )
-        .allow_auto_conversion("value");
-
-    return type;
+        .allow_auto_conversion("value")
+		.close();
 }
 
 template <int spacedim, class Value>

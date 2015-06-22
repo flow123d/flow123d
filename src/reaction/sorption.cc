@@ -15,7 +15,14 @@ FLOW123D_FORCE_LINK_IN_CHILD(sorption)
 /********************************* SORPTION_SIMPLE *********************************************************/
 /*********************************                 *********************************************************/
 
-IT::Record SorptionSimple::input_type = SorptionBase::record_factory(SorptionRecord::simple);
+const IT::Record & SorptionSimple::get_input_type() {
+	return IT::Record("Sorption", "Sorption model in the reaction term of transport.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
+                     IT::Default("conc_solid"), "List of fields to write to output stream.")
+		.close();
+}
 
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
@@ -26,7 +33,8 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
 }
 
 const int SorptionSimple::registrar =
-		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption");
+		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption") +
+		ReactionTerm::get_input_type().add_child(SorptionSimple::get_input_type());
 
 SorptionSimple::~SorptionSimple(void)
 {}
@@ -105,11 +113,19 @@ SorptionDual::~SorptionDual(void)
 /*********************************** SORPTION_MOBILE *******************************************************/
 /**********************************                  *******************************************************/
 
-IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord::mobile);
+const IT::Record & SorptionMob::get_input_type() {
+	return IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
+            IT::Default("conc_solid"), "List of fields to write to output stream.")
+		.close();
+}
 
 
 const int SorptionMob::registrar =
-		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile");
+		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile") +
+		ReactionTerm::get_input_type().add_child(SorptionMob::get_input_type());
 
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
@@ -186,10 +202,18 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 /*********************************** SORPTION_IMMOBILE *****************************************************/
 /***********************************                   *****************************************************/
 
-IT::Record SorptionImmob::input_type = SorptionBase::record_factory(SorptionRecord::immobile);
+const IT::Record & SorptionImmob::get_input_type() {
+	return IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
+            IT::Default("conc_immobile_solid"), "List of fields to write to output stream.")
+		.close();
+}
 
 const int SorptionImmob::registrar =
-		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile");
+		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile") +
+		ReactionTerm::get_input_type().add_child(SorptionImmob::get_input_type());
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 : SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")

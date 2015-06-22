@@ -7,13 +7,11 @@
 
 using namespace Input::Type;
         
-AbstractRecord ReactionTerm::input_type
-    = AbstractRecord("ReactionTerm", "Equation for reading information about simple chemical reactions.");
-
-Record ReactionTerm::input_type_output_record
-    = Record("ReactionTermOutput", "Output setting for transport equations.")
-        .declare_key("output_stream", OutputTime::input_type, Default::obligatory(),
-                        "Parameters of output stream.");
+AbstractRecord & ReactionTerm::get_input_type() {
+	return AbstractRecord("ReactionTerm",
+			"Equation for reading information about simple chemical reactions.")
+			.close();
+}
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
     : EquationBase(init_mesh, in_rec),
