@@ -503,23 +503,6 @@ AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_defaul
 
 
 
-void AbstractRecord::no_more_descendants()
-{
-    child_data_->selection_of_childs->close();
-    // check validity of possible default value of TYPE key
-    if ( !child_data_->selection_default_.is_obligatory() ) { // skip for empty records
-        if ( child_data_->selection_default_.has_value_at_declaration() ) {
-            try {
-                child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
-            } catch (ExcWrongDefault & e) {
-                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
-            }
-        }
-    }
-    if (! finish()) xprintf(PrgErr, "Can not finish AbstractRecord when calling no_more_descendants.\n");
-}
-
-
 bool AbstractRecord::valid_default(const string &str) const
 {
     if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
@@ -586,7 +569,18 @@ bool AbstractRecord::finish() {
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
 	child_data_->finished_ = true;
-	no_more_descendants();
+
+	child_data_->selection_of_childs->close();
+    // check validity of possible default value of TYPE key
+    if ( !child_data_->selection_default_.is_obligatory() ) { // skip for empty records
+        if ( child_data_->selection_default_.has_value_at_declaration() ) {
+            try {
+                child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
+            } catch (ExcWrongDefault & e) {
+                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+            }
+        }
+    }
 
 	return (child_data_->finished_);
 }

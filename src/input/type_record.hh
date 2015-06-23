@@ -457,7 +457,7 @@ protected:
             FunctionInterpreted::get_input_type();
 
             // finish adding descendants.
-            rec.no_more_descendants();
+            rec.finish();
         }
 
         return rec;
@@ -574,13 +574,6 @@ public:
      *  Finish declaration of the AbstractRecord type.
      */
     bool finish();
-
-    /**
-     * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
-     * a Selection for list of descendants, since current interface do not expose this Selection. Then this method
-     * could be removed.
-     */
-    void no_more_descendants();
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
