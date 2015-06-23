@@ -94,7 +94,11 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	parent_ptr = rec.data_->parent_ptr_;
+	if (rec.data_->parent_ptr_.size()) {
+		parent_ptr = rec.data_->parent_ptr_[0];
+	} else {
+		parent_ptr = boost::shared_ptr<AbstractRecord>();
+	}
 }
 
 

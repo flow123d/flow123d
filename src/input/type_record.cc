@@ -171,11 +171,11 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( ! data_->parent_ptr_ , "Record has been already derived.\n");
+	//ASSERT( ! data_->parent_ptr_.size() , "Record has been already derived.\n");
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
 	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
-    data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
+    data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
     if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
     }
@@ -232,10 +232,10 @@ bool Record::finish()
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
     // finish inheritance if parent is non-null
-    if (data_->parent_ptr_) {
+    if ( data_->parent_ptr_.size() ) {
     	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
     				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-    	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( data_->parent_ptr_->get_type_selection() );
+    	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( data_->parent_ptr_[0]->get_type_selection() );
     	data_->keys[0].type_ = type_copy;
     	data_->keys[0].default_ = Default( type_name() );
     }
@@ -282,8 +282,8 @@ string Record::type_name() const {
 
 
 string Record::full_type_name() const {
-	if (data_->parent_ptr_) {
-		return data_->type_name_ + ":" + data_->parent_ptr_->type_name();
+	if (data_->parent_ptr_.size()) {
+		return data_->type_name_ + ":" + data_->parent_ptr_[0]->type_name();
 	}
     return data_->type_name_;
 }
@@ -323,7 +323,7 @@ Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 }
 
 Record &Record::has_obligatory_type_key() {
-	ASSERT( ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
+	ASSERT( ! data_->parent_ptr_.size(), "Record with obligatory TYPE key can't be derived.\n");
 	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
 	sel->add_value(0, type_name());
 	sel->close();

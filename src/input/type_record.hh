@@ -399,7 +399,7 @@ protected:
         const string type_name_;
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
-        boost::shared_ptr<AbstractRecord> parent_ptr_;
+        std::vector< boost::shared_ptr<AbstractRecord> > parent_ptr_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
