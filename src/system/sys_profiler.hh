@@ -523,7 +523,7 @@ public:
      * Returns tag of current timer.
      */
     inline const string actual_tag() const
-        { return timers_[actual_node].tag() }
+        { return timers_[actual_node].tag(); }
     /**
      * Returns total number of calls of current timer.
      */
