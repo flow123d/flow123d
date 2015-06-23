@@ -466,7 +466,7 @@ protected:
  *
  * @ingroup input_types
  */
-class AbstractRecord : public Record {
+class AbstractRecord : public TypeBase {
 	friend class OutputBase;
 	//friend class Record;
 	friend class AdHocAbstractRecord;

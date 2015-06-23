@@ -86,6 +86,12 @@ const string & OutputBase::get_record_description(const Record *rec) {
 
 
 
+const string & OutputBase::get_abstract_description(const AbstractRecord *a_rec) {
+    return a_rec->child_data_->description_;
+}
+
+
+
 void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &key) {
 	Record::KeyIter it = rec.begin() + key_idx;
 	key = *it;
@@ -417,7 +423,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
-            write_description(stream, OutputBase::get_record_description( type ), 0);
+            write_description(stream, OutputBase::get_abstract_description( type ), 0);
             stream << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
@@ -1136,7 +1142,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_record_description(type) << "}" << endl;
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_abstract_description(type) << "}" << endl;
 
             // descendants
             doc_type_ = key_record;
@@ -1370,7 +1376,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
     stream << "\"description\" : \"" <<
-            escape_description( OutputBase::get_record_description(type)) << "\"," << endl;
+            escape_description( OutputBase::get_abstract_description(type)) << "\"," << endl;
 
     print_abstract_record_keys(stream, type, depth);
     stream << "},";

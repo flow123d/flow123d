@@ -82,6 +82,8 @@ protected:
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
     /// Gets description of the given record type.
     const string & get_record_description(const Record *rec);
+    /// Gets description of the given abstract type.
+    const string & get_abstract_description(const AbstractRecord *a_rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
