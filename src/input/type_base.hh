@@ -230,7 +230,7 @@ protected:
 
     	bool finish();
 
-    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
     	bool finished;
 

@@ -367,7 +367,7 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 
 void Record::RecordData::declare_key(const string &key,
-                         boost::shared_ptr<const TypeBase> type,
+                         boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
@@ -405,7 +405,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
 	check_key_default_value(default_value, type, key);
-	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
     return *this;

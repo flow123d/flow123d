@@ -91,7 +91,7 @@ protected:
     /// Gets pointer of parent AbstractRecord for given Record
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
     /// Gets pointer of inner type for given Array
-    void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.

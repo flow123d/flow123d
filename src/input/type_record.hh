@@ -189,7 +189,7 @@ public:
         unsigned int key_index;                     ///< Position inside the record.
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
-        boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
+        boost::shared_ptr<TypeBase> type_;          ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
@@ -257,7 +257,7 @@ public:
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    Record &declare_key(const string &key,const KeyType &type,
+    Record &declare_key(const string &key, const KeyType &type,
                             const string &description);
 
     /**
@@ -272,7 +272,7 @@ public:
     virtual bool is_finished() const;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const;
+    virtual bool is_closed() const override;
 
     /// Record type name getter.
     virtual string type_name() const;
@@ -386,7 +386,7 @@ protected:
          * only this raw pointer is stored and key is fully completed later through TypeBase::lazy_finish().
          */
         void declare_key(const string &key,
-                         boost::shared_ptr<const TypeBase> type,
+                         boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description);
 
 
@@ -625,7 +625,7 @@ public:
     virtual bool is_finished() const;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const;
+    virtual bool is_closed() const override;
 
     /// AbstractRecord type name getter.
     virtual string type_name() const;

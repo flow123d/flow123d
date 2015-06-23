@@ -74,7 +74,7 @@ void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int
 
 
 
-void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+void OutputBase::get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type) {
     arr_type = array.data_->type_of_values_;
 }
 
@@ -378,7 +378,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 
 
 void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
 	switch (doc_type_) {
@@ -641,7 +641,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			break;
 		case full_record:
 			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
-			boost::shared_ptr<const TypeBase> array_type;
+			boost::shared_ptr<TypeBase> array_type;
 			const void * data_ptr = get_array_data(type); // get pointer to type->data_
 
 			get_array_type(*type, array_type);
@@ -1089,7 +1089,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
 
 void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
     switch (doc_type_) {
@@ -1339,7 +1339,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
     if (doc_flags_.was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);
