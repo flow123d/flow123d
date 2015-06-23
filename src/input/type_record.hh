@@ -701,7 +701,7 @@ protected:
  * Class for declaration of polymorphic Record.
  *
  * AbstractRecord extends on list of descendants provided immediately
- * after construction by add_descendant(). These descendants derive
+ * after construction by add_child(). These descendants derive
  * only keys from common AR. AdHocAR has separate instance for every
  * key of this type.
  *

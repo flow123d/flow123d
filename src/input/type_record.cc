@@ -495,16 +495,6 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
 
 
 
-void AbstractRecord::add_descendant(const Record &subrec)
-{
-    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
-
-    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
-    child_data_->list_of_childs.push_back(subrec);
-}
-
-
-
 AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_default) {
     if (child_data_->closed_) xprintf(PrgErr, "Can not specify default value for TYPE key as the AbstractRecord '%s' is closed.\n", type_name().c_str());
     child_data_->selection_default_=Default(type_default); // default record is closed; other constructor creates the zero item
@@ -581,10 +571,12 @@ unsigned int AbstractRecord::child_size() const {
 
 int AbstractRecord::add_child(const Record &subrec)
 {
-	add_descendant(subrec);
-	//subrec.make_copy_keys(*this);
+    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
 
-	return 1;
+    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
+    child_data_->list_of_childs.push_back(subrec);
+
+    return 1;
 }
 
 
@@ -673,7 +665,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 
 AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 {
-	AbstractRecord::add_descendant(subrec);
+	AbstractRecord::add_child(subrec);
 
 	return *this;
 }

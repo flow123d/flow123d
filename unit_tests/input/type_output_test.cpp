@@ -159,7 +159,7 @@ public:
 	{}
 
 	void declare_descendant(const Record &subrec) {
-		add_descendant(subrec);
+		add_child(subrec);
 	}
 };
 
