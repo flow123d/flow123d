@@ -688,11 +688,6 @@ protected:
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
 
-    /**
-     * Add inherited Record.
-     */
-    void add_descendant(const Record &subrec);
-
     friend class Record;
 };
 
