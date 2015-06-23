@@ -95,11 +95,12 @@ TypeBase::TypeHash Record::content_hash() const
     boost::hash_combine(seed, data_->description_);
     boost::hash_combine(seed, data_->auto_conversion_key);
     for( Key &key : data_->keys) {
-        boost::hash_combine(seed, key.key_);
-        boost::hash_combine(seed, key.description_);
-        boost::hash_combine(seed, key.type_->content_hash() );
-        boost::hash_combine(seed, key.default_.content_hash() );
-
+    	if (key.key_ != "TYPE") {
+    		boost::hash_combine(seed, key.key_);
+    		boost::hash_combine(seed, key.description_);
+    		boost::hash_combine(seed, key.type_->content_hash() );
+    		boost::hash_combine(seed, key.default_.content_hash() );
+    	}
     }
     return seed;
 }
@@ -116,36 +117,13 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 
 
-void Record::make_derive_from(AbstractRecord &parent) {
-    if (data_->derived_) return;
-
-    parent.finish();
-
-    // add TYPE key derived from parent
-    KeyHash key_h = key_hash("TYPE");
-    std::vector<Key>::iterator it = data_->keys.begin();
-    RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
-    if (kit != data_->key_to_index.end()) { // check if TYPE key exists and remove its
-    	data_->keys.erase( data_->keys.begin()+kit->second );
-    }
-    Key type_key = { 0, "TYPE", "Sub-record selection.", parent.child_data_->selection_of_childs, Default( type_name() ), true };
-    data_->key_to_index[key_h] = type_key.key_index;
-    data_->keys.insert(it, type_key);
-    for (unsigned int i=0; i<data_->keys.size(); i++) {
-		data_->keys[i].key_index = i;
-		data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
-    }
-
-    data_->derived_ = true;
-}
-
-
-
 void Record::make_copy_keys(Record &origin) {
 
     ASSERT(origin.is_closed(), "Origin record is not closed!\n");
 
 	std::vector<Key>::iterator it = data_->keys.begin();
+	if (data_->keys.size() && it->key_ == "TYPE") it++; // skip TYPE key if exists
+
 	int n_inserted = 0;
 	for(KeyIter pit=origin.data_->keys.begin(); pit != origin.data_->keys.end(); ++pit) {
 		Key tmp_key=*pit;    // make temporary copy of the key
@@ -195,7 +173,12 @@ void Record::make_copy_keys(Record &origin) {
 Record &Record::derive_from(AbstractRecord &parent) {
 	ASSERT( ! data_->parent_ptr_ , "Record has been already derived.\n");
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
+	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
+			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
     data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
+    if (data_->keys.size() == 0) {
+    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
+    }
 
 	return *this;
 }
@@ -249,7 +232,13 @@ bool Record::finish()
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
     // finish inheritance if parent is non-null
-    if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
+    if (data_->parent_ptr_) {
+    	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
+    				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
+    	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( data_->parent_ptr_->get_type_selection() );
+    	data_->keys[0].type_ = type_copy;
+    	data_->keys[0].default_ = Default( type_name() );
+    }
 
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)

@@ -359,11 +359,6 @@ protected:
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
-    /**
-     * Actually perform registration in the parent AbstractRecord and copy keys from it.
-     */
-    void make_derive_from(AbstractRecord &parent);
-
     /// Auxiliary method that actually makes the copy of keys.
     void make_copy_keys(Record &origin);
 
