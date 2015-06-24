@@ -58,7 +58,7 @@ const Record & FirstOrderReaction::get_input_type() {
 
 const int FirstOrderReaction::registrar =
 		Input::register_class< FirstOrderReaction, Mesh &, Input::Record >("FirstOrderReaction") +
-		ReactionTerm::get_input_type().add_child(FirstOrderReaction::get_input_type());
+		FirstOrderReaction::get_input_type().size();
 
 
 FirstOrderReaction::FirstOrderReaction(Mesh &init_mesh, Input::Record in_rec)

@@ -268,10 +268,10 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 		// Note that the velocity vector is in fact the Darcian flux,
 		// so to obtain |v| we have to divide vnorm by porosity and cross_section.
 		double vnorm = arma::norm(velocity[k], 2);
-		if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+		if (fabs(vnorm) > 0)
 			for (int i=0; i<3; i++)
 				for (int j=0; j<3; j++)
-					dif_coef[0][k](i,j) = (velocity[k][i]*velocity[k][j]/(vnorm*vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
+					dif_coef[0][k](i,j) = ((velocity[k][i]/vnorm)*(velocity[k][j]/vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
 											*vnorm*f_rho[k]*f_cond[k];
 		else
 			dif_coef[0][k].zeros();

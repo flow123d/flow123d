@@ -47,7 +47,7 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 
 const Selection & Selection::close() const {
     data_->closed_=true;
-    return *( Input::TypeRepository<Selection>::getInstance().add_type( *this ).get() );
+    return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
 
 

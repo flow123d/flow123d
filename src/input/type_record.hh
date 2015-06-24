@@ -190,7 +190,7 @@ public:
         unsigned int key_index;                     ///< Position inside the record.
         string key_;                                ///< Key identifier.
         string description_;                        ///< Key description in context of particular Record type.
-        boost::shared_ptr<const TypeBase> type_;    ///< Type of the key.
+        boost::shared_ptr<TypeBase> type_;          ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
         bool derived;                               ///< Is true if the key was only derived from the parent Record, but not explicitly declared.
     };
@@ -258,7 +258,7 @@ public:
      * Same as previous method but without given default value (same as Default() - optional key )
      */
     template <class KeyType>
-    Record &declare_key(const string &key,const KeyType &type,
+    Record &declare_key(const string &key, const KeyType &type,
                             const string &description);
 
     /**
@@ -273,7 +273,7 @@ public:
     virtual bool is_finished() const;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const;
+    virtual bool is_closed() const override;
 
     /// Record type name getter.
     virtual string type_name() const;
@@ -360,11 +360,6 @@ protected:
         ASSERT( is_finished(), "Asking for information of unfinished Record type: %s\n", type_name().c_str());
     }
 
-    /**
-     * Actually perform registration in the parent AbstractRecord and copy keys from it.
-     */
-    void make_derive_from(AbstractRecord &parent);
-
     /// Auxiliary method that actually makes the copy of keys.
     void make_copy_keys(Record &origin);
 
@@ -387,7 +382,7 @@ protected:
          * only this raw pointer is stored and key is fully completed later through TypeBase::lazy_finish().
          */
         void declare_key(const string &key,
-                         boost::shared_ptr<const TypeBase> type,
+                         boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description);
 
 
@@ -405,7 +400,7 @@ protected:
         const string type_name_;
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
-        boost::shared_ptr<AbstractRecord> parent_ptr_;
+        std::vector< boost::shared_ptr<AbstractRecord> > parent_ptr_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
@@ -463,7 +458,7 @@ protected:
             FunctionInterpreted::get_input_type();
 
             // finish adding descendants.
-            rec.no_more_descendants();
+            rec.finish();
         }
 
         return rec;
@@ -472,7 +467,7 @@ protected:
  *
  * @ingroup input_types
  */
-class AbstractRecord : public Record {
+class AbstractRecord : public TypeBase {
 	friend class OutputBase;
 	//friend class Record;
 	friend class AdHocAbstractRecord;
@@ -505,7 +500,7 @@ protected:
          */
         vector< Record > list_of_childs;
 
-        /// Temporary solution, used for AbstractRecords fields.
+        // TODO: temporary hack, should be removed after implementation of generic types
         const Selection * element_input_selection;
 
         /// Description of the whole AbstractRecord type.
@@ -520,7 +515,11 @@ protected:
         /// If AbstractRecord is closed, we do not allow any further declaration calls.
         bool closed_;
 
-        /// Default value of selection_of_childs (used for automatic conversion
+        /**
+         * Default value of selection_of_childs (used for automatic conversion).
+         *
+         * If default value isn't set, selection_default_ is set to obligatory.
+         */
         Default selection_default_;
 
     };
@@ -582,13 +581,6 @@ public:
     bool finish();
 
     /**
-     * This method close an AbstractRecord for any descendants (since they modify the parent). Maybe we should not use
-     * a Selection for list of descendants, since current interface do not expose this Selection. Then this method
-     * could be removed.
-     */
-    void no_more_descendants();
-
-    /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
@@ -626,7 +618,7 @@ public:
     virtual bool is_finished() const;
 
     /// Returns true if @p data_ is closed.
-    virtual bool is_closed() const;
+    virtual bool is_closed() const override;
 
     /// AbstractRecord type name getter.
     virtual string type_name() const;
@@ -677,6 +669,7 @@ public:
      */
     int add_child(const Record &subrec);
 
+    // TODO: temporary hack, should be removed after implementation of generic types
     AbstractRecord &set_element_input(const Selection * element_input);
 
     // Get default value of selection_of_childs
@@ -690,13 +683,13 @@ protected:
      */
     Record &derive_from(AbstractRecord &parent);
 
+    /**
+     * Check if type has set value of default descendants.
+     */
+    bool have_default_descendant() const;
+
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
-
-    /**
-     * Add inherited Record.
-     */
-    void add_descendant(const Record &subrec);
 
     friend class Record;
 };
@@ -706,7 +699,7 @@ protected:
  * Class for declaration of polymorphic Record.
  *
  * AbstractRecord extends on list of descendants provided immediately
- * after construction by add_descendant(). These descendants derive
+ * after construction by add_child(). These descendants derive
  * only keys from common AR. AdHocAR has separate instance for every
  * key of this type.
  *
@@ -821,7 +814,7 @@ inline bool Record::has_key(const string& key) const
 
 
 inline unsigned int Record::size() const {
-    finished_check();
+	ASSERT( is_closed(), "Asking for information of unclosed Record type: %s\n", type_name().c_str());
     ASSERT_EQUAL( data_->keys.size(), data_->key_to_index.size());
     return data_->keys.size();
 }

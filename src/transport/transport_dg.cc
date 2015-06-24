@@ -91,7 +91,7 @@ const Record & TransportDG<Model>::get_input_type() {
 	return Model::get_input_type("DG", "DG solver")
 		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for MH problem.")
-		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG").close()), IT::Default::obligatory(), "")
+		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
 		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("non-symmetric"),
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
@@ -105,7 +105,7 @@ const Record & TransportDG<Model>::get_input_type() {
 template<class Model>
 const int TransportDG<Model>::registrar =
 		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG") +
-		AdvectionProcessBase::get_input_type().add_child( TransportDG<Model>::get_input_type() );
+		TransportDG<Model>::get_input_type().size();
 
 
 

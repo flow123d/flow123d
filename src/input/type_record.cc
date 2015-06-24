@@ -95,11 +95,12 @@ TypeBase::TypeHash Record::content_hash() const
     boost::hash_combine(seed, data_->description_);
     boost::hash_combine(seed, data_->auto_conversion_key);
     for( Key &key : data_->keys) {
-        boost::hash_combine(seed, key.key_);
-        boost::hash_combine(seed, key.description_);
-        boost::hash_combine(seed, key.type_->content_hash() );
-        boost::hash_combine(seed, key.default_.content_hash() );
-
+    	if (key.key_ != "TYPE") {
+    		boost::hash_combine(seed, key.key_);
+    		boost::hash_combine(seed, key.description_);
+    		boost::hash_combine(seed, key.type_->content_hash() );
+    		boost::hash_combine(seed, key.default_.content_hash() );
+    	}
     }
     return seed;
 }
@@ -116,36 +117,13 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 
 
-void Record::make_derive_from(AbstractRecord &parent) {
-    if (data_->derived_) return;
-
-    parent.finish();
-
-    // add TYPE key derived from parent
-    KeyHash key_h = key_hash("TYPE");
-    std::vector<Key>::iterator it = data_->keys.begin();
-    RecordData::key_to_index_const_iter kit = data_->key_to_index.find(key_h);
-    if (kit != data_->key_to_index.end()) { // check if TYPE key exists and remove its
-    	data_->keys.erase( data_->keys.begin()+kit->second );
-    }
-    Key type_key = { 0, "TYPE", "Sub-record selection.", parent.child_data_->selection_of_childs, Default( type_name() ), true };
-    data_->key_to_index[key_h] = type_key.key_index;
-    data_->keys.insert(it, type_key);
-    for (unsigned int i=0; i<data_->keys.size(); i++) {
-		data_->keys[i].key_index = i;
-		data_->key_to_index[key_hash( data_->keys[i].key_)] = i;
-    }
-
-    data_->derived_ = true;
-}
-
-
-
 void Record::make_copy_keys(Record &origin) {
 
     ASSERT(origin.is_closed(), "Origin record is not closed!\n");
 
 	std::vector<Key>::iterator it = data_->keys.begin();
+	if (data_->keys.size() && it->key_ == "TYPE") it++; // skip TYPE key if exists
+
 	int n_inserted = 0;
 	for(KeyIter pit=origin.data_->keys.begin(); pit != origin.data_->keys.end(); ++pit) {
 		Key tmp_key=*pit;    // make temporary copy of the key
@@ -193,9 +171,24 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	ASSERT( ! data_->parent_ptr_ , "Record has been already derived.\n");
+	//ASSERT( ! data_->parent_ptr_.size() , "Record has been already derived.\n");
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
-    data_->parent_ptr_=boost::make_shared<AbstractRecord>(parent);
+	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
+			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
+
+	bool contains = false;
+	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+	    if ((*it)->type_name() == parent.type_name()) {
+	    	contains = true;
+	    }
+	}
+	if (!contains) {
+		data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	}
+
+	if (data_->keys.size() == 0) {
+    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
+    }
 
 	return *this;
 }
@@ -249,7 +242,13 @@ bool Record::finish()
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
     // finish inheritance if parent is non-null
-    if (data_->parent_ptr_) make_derive_from(* (data_->parent_ptr_));
+    if ( data_->parent_ptr_.size() ) {
+    	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
+    				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
+    	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( data_->parent_ptr_[0]->get_type_selection() );
+    	data_->keys[0].type_ = type_copy;
+    	data_->keys[0].default_ = Default( type_name() );
+    }
 
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
@@ -282,7 +281,12 @@ bool Record::finish()
 
 const Record &Record::close() const {
     data_->closed_=true;
-    return *( Input::TypeRepository<Record>::getInstance().add_type( *this ).get() );
+    const Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
+    for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+    	(*it)->add_child(rec);
+    }
+
+    return rec;
 }
 
 
@@ -293,8 +297,8 @@ string Record::type_name() const {
 
 
 string Record::full_type_name() const {
-	if (data_->parent_ptr_) {
-		return data_->type_name_ + ":" + data_->parent_ptr_->type_name();
+	if (data_->parent_ptr_.size()) {
+		return data_->type_name_ + ":" + data_->parent_ptr_[0]->type_name();
 	}
     return data_->type_name_;
 }
@@ -334,7 +338,7 @@ Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 }
 
 Record &Record::has_obligatory_type_key() {
-	ASSERT( ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
+	ASSERT( ! data_->parent_ptr_.size(), "Record with obligatory TYPE key can't be derived.\n");
 	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
 	sel->add_value(0, type_name());
 	sel->close();
@@ -367,7 +371,7 @@ Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 
 
 void Record::RecordData::declare_key(const string &key,
-                         boost::shared_ptr<const TypeBase> type,
+                         boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
@@ -404,7 +408,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
-	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
+	check_key_default_value(default_value, type, key);
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
     return *this;
@@ -498,6 +503,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     boost::hash_combine(seed, "Abstract");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, child_data_->description_);
+    // TODO temporary hack, should be removed after implementation of generic types
     if (child_data_->element_input_selection != nullptr) {
     	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
     }
@@ -505,16 +511,6 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     //    boost::hash_combine(seed, key.content_hash() );
     //}
     return seed;
-}
-
-
-
-void AbstractRecord::add_descendant(const Record &subrec)
-{
-    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
-
-    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
-    child_data_->list_of_childs.push_back(subrec);
 }
 
 
@@ -527,26 +523,10 @@ AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_defaul
 
 
 
-void AbstractRecord::no_more_descendants()
-{
-    child_data_->selection_of_childs->close();
-    // check validity of possible default value of TYPE key
-    if ( !child_data_->selection_default_.is_obligatory() ) { // skip for empty records
-        if ( child_data_->selection_default_.has_value_at_declaration() ) {
-            try {
-                child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
-            } catch (ExcWrongDefault & e) {
-                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
-            }
-        }
-    }
-    if (! finish()) xprintf(PrgErr, "Can not finish AbstractRecord when calling no_more_descendants.\n");
-}
-
-
 bool AbstractRecord::valid_default(const string &str) const
 {
-    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
+	// obligatory value if default is not set, see @p selection_default_
+	if ( !child_data_->selection_default_.is_obligatory() )  {
         if (! child_data_->selection_of_childs->is_finished()) return false;
         if ( child_data_->selection_default_.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
     }
@@ -572,10 +552,8 @@ const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 
 
 const Record * AbstractRecord::get_default_descendant() const {
-    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
-        if ( child_data_->selection_default_.has_value_at_declaration() ) {
-            return &( get_descendant( child_data_->selection_default_.value() ) );
-        }
+    if ( have_default_descendant() ) {
+        return &( get_descendant( child_data_->selection_default_.value() ) );
     }
     return NULL;
 }
@@ -595,10 +573,14 @@ unsigned int AbstractRecord::child_size() const {
 
 int AbstractRecord::add_child(const Record &subrec)
 {
-	add_descendant(subrec);
-	//subrec.make_copy_keys(*this);
+    ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
 
-	return 1;
+    if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
+        child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
+        child_data_->list_of_childs.push_back(subrec);
+    }
+
+    return 1;
 }
 
 
@@ -608,7 +590,16 @@ bool AbstractRecord::finish() {
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
 	child_data_->finished_ = true;
-	no_more_descendants();
+
+	child_data_->selection_of_childs->close();
+    // check validity of possible default value of TYPE key
+    if ( have_default_descendant() ) {
+		try {
+			child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
+		} catch (ExcWrongDefault & e) {
+			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+		}
+    }
 
 	return (child_data_->finished_);
 }
@@ -616,7 +607,7 @@ bool AbstractRecord::finish() {
 
 AbstractRecord &AbstractRecord::close() {
 	child_data_->closed_=true;
-    return *( Input::TypeRepository<AbstractRecord>::getInstance().add_type( *this ).get() );
+    return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
 }
 
 
@@ -650,6 +641,16 @@ string AbstractRecord::full_type_name() const {
 
 Default &AbstractRecord::get_selection_default() const {
 	return child_data_->selection_default_;
+}
+
+bool AbstractRecord::have_default_descendant() const {
+	// obligatory value if default is not set, see @p selection_default_
+    if ( !child_data_->selection_default_.is_obligatory() )  {
+        if ( child_data_->selection_default_.has_value_at_declaration() ) {
+        	return true;
+        }
+    }
+	return false;
 }
 
 
@@ -687,7 +688,7 @@ AdHocAbstractRecord::AdHocAbstractRecord(const AbstractRecord &ancestor)
 
 AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 {
-	AbstractRecord::add_descendant(subrec);
+	AbstractRecord::add_child(subrec);
 
 	return *this;
 }

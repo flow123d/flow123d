@@ -73,10 +73,9 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish() {
-	Input::TypeRepository<Record>::getInstance().finish();
-	Input::TypeRepository<AbstractRecord>::getInstance().finish();
-	Input::TypeRepository<Selection>::getInstance().finish();
-
+	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Selection>::get_instance().finish();
 }
 
 
@@ -150,7 +149,7 @@ bool Array::ArrayData::finish()
 {
 	if (finished) return true;
 
-	return (finished = const_cast<TypeBase *>( type_of_values_.get() )->finish() );
+	return (finished = type_of_values_->finish() );
 }
 
 
@@ -194,7 +193,7 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
     ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
 
-	boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
 	data_->type_of_values_ = type_copy;
 }
 
@@ -274,7 +273,7 @@ TypeBase::TypeHash Integer::content_hash() const
 
 
 
-bool Integer::match(int value) const {
+bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
 

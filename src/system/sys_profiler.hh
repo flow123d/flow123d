@@ -63,6 +63,11 @@
 #include "global_defs.h"
 #include "system/system.hh"
 #include <mpi.h>
+#include <boost/property_tree/ptree.hpp>
+#include "time_point.hh"
+
+// namespace alias
+namespace property_tree = boost::property_tree;
 
 //instead of #include "mpi.h"
 //mpi declarations follows:
@@ -108,6 +113,27 @@ using namespace std;
 #define START_TIMER(tag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT(tag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
 #else
 #define START_TIMER(tag)
+#endif
+
+/**
+ * \def START_TIMER_EXT (tag, subtag)
+ *
+ * @brief Starts a timer with specified tag and subtag.
+ *
+ * In fact it creates an static constant expression that identifies the point in the code and
+ * contains tag and subtag of the involved timer and its hash. Then it creates local variable that
+ * calls @p Profiler::start_timer() in constructor and @p Profiler::stop_timer() in destructor.
+ * This way the timer is automatically closed at the end of current block.
+ *
+ * ATTENTION: This macro expands to two statements so following code is illegal:
+ * @code
+ *      if (some_condition) START_TIMER_EXT(tag, subtag);
+ * @endcode
+ */
+#ifdef FLOW123D_DEBUG_PROFILER
+#define START_TIMER_EXT(tag, subtag) static CONSTEXPR_ CodePoint PASTE(cp_,__LINE__) = CODE_POINT_EXT(tag, subtag); TimerFrame PASTE(timer_,__LINE__) = TimerFrame( PASTE(cp_,__LINE__) )
+#else
+#define START_TIMER_EXT(tag, subtag)
 #endif
 
 /**
@@ -167,21 +193,39 @@ using namespace std;
 #ifdef FLOW123D_DEBUG_PROFILER
 
 /**
+ * Variable which represents value when no subtag was specified in CodePoint class
+ */
+#define PROFILER_EMPTY_SUBTAG ""
+
+/**
+ * Variable used for default value in hash process
+ */
+#define PROFILER_HASH_DEFAULT 0
+
+/**
  * @brief Function for compile-time hash computation.  (Needs C++x11 standard.)
  * Input, @p str, is constant null terminated string, result is unsigned int (usually 4 bytes).
  * Function has to be recursive, since standard requires that the body consists only from the return statement.
  *
  * SALT is hash for the empty string. Currently zero for simpler testing.
  */
-inline CONSTEXPR_ unsigned int str_hash(const char * str) {
+inline CONSTEXPR_ unsigned int str_hash(const char * str, unsigned int default_value) {
     #define SALT 0 //0xef50e38f
-    return (*str == 0 ? SALT : str_hash(str+1) * 101 + (unsigned int)(*str) );
+    return (*str == 0 ? SALT : default_value + str_hash(str+1, PROFILER_HASH_DEFAULT) * 101 + (unsigned int)(*str) );
 }
 
 /**
  * Macro to generate constexpr CodePoint object.
  */
 #define CODE_POINT(tag) CodePoint(tag, __FILE__, __func__, __LINE__)
+
+/**
+ * Macro to generate constexpr CodePoint object.
+ */
+#define CODE_POINT_EXT(tag, subtag) CodePoint(tag, subtag, __FILE__, __func__, __LINE__)
+
+
+
 
 /**
  * @brief Class that represents point in the code.
@@ -194,15 +238,24 @@ inline CONSTEXPR_ unsigned int str_hash(const char * str) {
 class CodePoint {
 public:
     CONSTEXPR_ CodePoint(const char *tag, const char * file, const char * func, const unsigned int line)
-    : tag_(tag), file_(file), func_(func), line_(line),
-      hash_(str_hash(tag)), hash_idx_( str_hash(tag)%max_n_timer_childs )
-    {}
+    : tag_(tag), subtag_(PROFILER_EMPTY_SUBTAG), file_(file), func_(func), line_(line),
+      hash_(str_hash(tag, PROFILER_HASH_DEFAULT)),
+      hash_idx_( str_hash(tag, PROFILER_HASH_DEFAULT)%max_n_timer_childs )
+    {};
+    CONSTEXPR_ CodePoint(const char *tag, const char *subtag, const char * file, const char * func, const unsigned int line)
+    : tag_(tag), subtag_(subtag), file_(file), func_(func), line_(line),
+      hash_(str_hash(subtag, str_hash(tag, PROFILER_HASH_DEFAULT))),
+      hash_idx_( str_hash(subtag, str_hash(tag, PROFILER_HASH_DEFAULT))%max_n_timer_childs )
+    {};
 
     /// Size of child arrays in timer nodes.
     static const unsigned int max_n_timer_childs=13;
 
     /// Tag of the code point.
     const char * const tag_;
+
+    /// Subtag of the code point.
+    const char * const subtag_;
 
     /// file name of the code point
     const char * const file_;
@@ -242,35 +295,16 @@ public:
     static const unsigned int max_n_childs=CodePoint::max_n_timer_childs;
 
     /**
-     * TimeData is a type returned by method get_time and used to store time data in timer nodes.
-     * Timer node also provides method @p cumulative_time to retrieve true cumulative time in ms.
-     */
-    typedef clock_t TimeData;
-
-    /**
      * Creates the timer node object. Should not be called directly, but through the START_TIMER macro.
      */
     Timer(const CodePoint &cp, int parent);
 
 
     /**
-     * @brief Returns measure of the time spent in the process since the start.
-     *
-     * TODO: We should detect precision of the clock() command and report it with timing data.
-     * It is usually about 10ms. If this is not enough one is forced to use high-resolution timers
-     * which are system dependent.
-     */
-    static TimeData get_time();
-
-    /**
      * Start the timer. If it is already started, just increase number of starts (recursions) and calls.
      */
     void start();
 
-    /**
-     * Updates cumulative time of the timer.
-     */
-    void update();
 
     /**
      * If number of starts (recursions) drop back to zero, we stop the timer and add the period to the cumulative time.
@@ -282,8 +316,11 @@ public:
 
 
     /// Getter for the 'tag'.
-    inline const char *tag() const
-        { return code_point_->tag_; }
+    inline string tag() const {   
+        string buf(code_point_->tag_);
+        buf.append(code_point_->subtag_);
+        return buf;
+    }
 
     /// Returns true if the timer is open, number of starts (recursions) is nonzero.
     inline bool running() const
@@ -293,7 +330,7 @@ public:
     std::string code_point_str() const;
 
     /**
-     * Returns cumulative time of the timer in 'ms'.
+     * Returns cumulative time of the timer in seconds.
      */
     double cumulative_time() const;
 
@@ -307,11 +344,11 @@ protected:
     /**
      *   Start time when frame opens.
      */
-    TimeData start_time;
+    TimePoint start_time;
     /**
      * Cumulative time spent in the frame.
      */
-    TimeData cumul_time;
+    double cumul_time;
     /**
      * Total number of opening of the frame.
      */
@@ -355,7 +392,34 @@ protected:
 
 };
 
+/*
+struct SimpleTranslator {
+    typedef std::string internal_type;
+    typedef int         external_type;
 
+    // Converts a string to int
+    boost::optional<external_type> get_value(const internal_type& str) {
+        return boost::optional<external_type>(std::stoi(str));
+    }
+
+    // Converts a bool to string
+    boost::optional<internal_type> put_value(const external_type& i){
+        return boost::optional<internal_type>(std::to_string(i));
+    }
+};
+
+namespace boost {
+namespace property_tree {
+
+template<typename Ch, typename Traits, typename Alloc>
+struct translator_between<std::basic_string< Ch, Traits, Alloc >, int> {
+    typedef SimpleTranslator type;
+};
+
+
+} // namespace property_tree
+} // namespace boost
+*/
 /**
  *
  * @brief Main class for profiling by measuring time intervals.
@@ -450,12 +514,18 @@ public:
      */
     void notify_free(const size_t size );
 
+    /**
+     * Return average profiler timer resolution in seconds
+     * based on 100 measurements
+     */
+    static double get_resolution ();
+
 
     /**
      * Returns tag of current timer.
      */
     inline const char *actual_tag() const
-        { return timers_[actual_node].tag(); }
+        { return timers_[actual_node].tag().c_str(); }
     /**
      * Returns total number of calls of current timer.
      */
@@ -467,7 +537,7 @@ public:
     inline double actual_cumulative_time() const
         { return timers_[actual_node].cumulative_time(); }
 
-
+#ifdef FLOW123D_HAVE_MPI
     /**
      * @brief Output current timing information into the given stream.
      *
@@ -487,6 +557,23 @@ public:
      * TODO: move this outside to minimize dependencies
      */
     void output(MPI_Comm comm);
+#endif /* FLOW123D_HAVE_MPI */
+    /**
+     * @brief Output current timing information into the given stream.
+     *
+     * It temporally stops all timers, synchronize all processes, collect
+     * profiling informations and write it to the given stream.
+     *
+     *  Pass through the profiling tree (collective over processors)
+     *  Print cumulative times average, balance (max/min), count (denote differences)
+     *
+     */
+    void output(ostream &os);
+    /**
+     * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
+     * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
+     */
+    void output();
     /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
@@ -512,6 +599,13 @@ private:
      */
     void update_running_timers();
 
+    /**
+     * Method will prepare construct specific details about the run (time start and time end)
+     * and write them along with basic informations about the run (name, description, ...)
+     * into ptree object
+     */
+    void output_header (property_tree::ptree &root, int mpi_size);
+
 
     /// Default code point.
     static CodePoint null_code_point;
@@ -530,6 +624,11 @@ private:
     /// MPI_rank
     //int mpi_rank_;
 
+    /**
+     * flag indicating that collection of timer details will be
+     * using MPI
+    bool mpi_used;
+     */
     // header informations
 
     /// Some measure of the size of the task in the set of the tasks that differs
@@ -557,7 +656,8 @@ private:
      * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
      * to have alligned columns on the output. The alligning is performed in the output() method.
      */
-    void add_timer_info(MPI_Comm comm, vector<vector<string> > &timersInfo, int timer_idx, int indent, double parent_time);
+    template<typename ReduceFunctor>
+    void add_timer_info(ReduceFunctor reduce, property_tree::ptree* node, int timer_idx, double parent_time);
 
     //Profiler(MPI_Comm comm); // private constructor
     Profiler(); // private constructor
@@ -622,6 +722,8 @@ public:
     {}
     void output(MPI_Comm comm)
     {}
+    double get_resolution () const
+    { return 0.0; }
     const char *actual_tag() const
     { return NULL; }
     inline unsigned int actual_count() const

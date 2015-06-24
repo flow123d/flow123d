@@ -175,7 +175,7 @@ public:
 
 
     /// Implements \p TypeBase::is_closed
-    virtual bool is_closed() const;
+    virtual bool is_closed() const override;
 private:
 
     /**
