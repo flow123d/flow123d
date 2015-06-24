@@ -150,7 +150,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
 
 const int DarcyFlowMH_Steady::registrar =
 		Input::register_class< DarcyFlowMH_Steady, Mesh &, const Input::Record >("Steady_MH") +
-		DarcyFlowMH::get_input_type().add_child(DarcyFlowMH_Steady::get_input_type());
+		DarcyFlowMH_Steady::get_input_type().size();
 
 
 const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
@@ -165,7 +165,7 @@ const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 
 const int DarcyFlowMH_Unsteady::registrar =
 		Input::register_class< DarcyFlowMH_Unsteady, Mesh &, const Input::Record >("Unsteady_MH") +
-		DarcyFlowMH::get_input_type().add_child(DarcyFlowMH_Unsteady::get_input_type());
+		DarcyFlowMH_Unsteady::get_input_type().size();
 
 
 const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
@@ -180,7 +180,7 @@ const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
 
 const int DarcyFlowLMH_Unsteady::registrar =
 		Input::register_class< DarcyFlowLMH_Unsteady, Mesh &, const Input::Record >("Unsteady_LMH") +
-		DarcyFlowMH::get_input_type().add_child(DarcyFlowLMH_Unsteady::get_input_type());
+		DarcyFlowLMH_Unsteady::get_input_type().size();
 
 
 

@@ -44,8 +44,6 @@ using namespace Input::Type;
     	.declare_key("a_val", Double(),"")
 		.close();
 
-    a_rec.add_child(b_rec);
-    a_rec.add_child(c_rec);
     c_rec.finish();
     b_rec.finish();
     a_rec.finish();

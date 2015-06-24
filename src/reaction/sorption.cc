@@ -34,7 +34,7 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
 
 const int SorptionSimple::registrar =
 		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption") +
-		ReactionTerm::get_input_type().add_child(SorptionSimple::get_input_type());
+		SorptionSimple::get_input_type().size();
 
 SorptionSimple::~SorptionSimple(void)
 {}
@@ -125,7 +125,7 @@ const IT::Record & SorptionMob::get_input_type() {
 
 const int SorptionMob::registrar =
 		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile") +
-		ReactionTerm::get_input_type().add_child(SorptionMob::get_input_type());
+		SorptionMob::get_input_type().size();
 
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
@@ -213,7 +213,7 @@ const IT::Record & SorptionImmob::get_input_type() {
 
 const int SorptionImmob::registrar =
 		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile") +
-		ReactionTerm::get_input_type().add_child(SorptionImmob::get_input_type());
+		SorptionImmob::get_input_type().size();
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 : SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")

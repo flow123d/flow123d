@@ -52,7 +52,7 @@ const Record & RadioactiveDecay::get_input_type() {
 
 const int RadioactiveDecay::registrar =
 		Input::register_class< RadioactiveDecay, Mesh &, Input::Record >("RadioactiveDecay") +
-		ReactionTerm::get_input_type().add_child(RadioactiveDecay::get_input_type());
+		RadioactiveDecay::get_input_type().size();
 
 
 

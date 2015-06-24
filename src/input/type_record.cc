@@ -175,8 +175,18 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
 	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
-    data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
-    if (data_->keys.size() == 0) {
+
+	bool contains = false;
+	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+	    if ((*it)->type_name() == parent.type_name()) {
+	    	contains = true;
+	    }
+	}
+	if (!contains) {
+		data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	}
+
+	if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
     }
 
@@ -271,7 +281,12 @@ bool Record::finish()
 
 const Record &Record::close() const {
     data_->closed_=true;
-    return *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
+    const Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
+    for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+    	(*it)->add_child(rec);
+    }
+
+    return rec;
 }
 
 
@@ -556,8 +571,10 @@ int AbstractRecord::add_child(const Record &subrec)
 {
     ASSERT( child_data_->closed_, "Can not add descendant to AbstractRecord that is not closed.\n");
 
-    child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
-    child_data_->list_of_childs.push_back(subrec);
+    if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
+        child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
+        child_data_->list_of_childs.push_back(subrec);
+    }
 
     return 1;
 }

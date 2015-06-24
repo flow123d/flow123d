@@ -46,7 +46,7 @@ const Record & OutputMSH::get_input_type() {
 }
 
 const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh") +
-		OutputTime::get_input_format_type().add_child(OutputMSH::get_input_type());
+		OutputMSH::get_input_type().size();
 
 
 void OutputMSH::write_msh_header(void)

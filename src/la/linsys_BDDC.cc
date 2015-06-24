@@ -66,7 +66,7 @@ const it::Record & LinSys_BDDC::get_input_type() {
 }
 
 
-const int LinSys_BDDC::registrar = LinSys::get_input_type().add_child( LinSys_BDDC::get_input_type() );
+const int LinSys_BDDC::registrar = LinSys_BDDC::get_input_type().size();
 
 
 
