@@ -520,7 +520,8 @@ AbstractRecord & AbstractRecord::allow_auto_conversion(const string &type_defaul
 
 bool AbstractRecord::valid_default(const string &str) const
 {
-    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
+	// obligatory value if default is not set, see @p selection_default_
+	if ( !child_data_->selection_default_.is_obligatory() )  {
         if (! child_data_->selection_of_childs->is_finished()) return false;
         if ( child_data_->selection_default_.has_value_at_declaration() ) return get_default_descendant()->valid_default(str);
     }
@@ -546,10 +547,8 @@ const Record  & AbstractRecord::get_descendant(unsigned int idx) const
 
 
 const Record * AbstractRecord::get_default_descendant() const {
-    if ( !child_data_->selection_default_.is_obligatory() )  { // skip for empty records
-        if ( child_data_->selection_default_.has_value_at_declaration() ) {
-            return &( get_descendant( child_data_->selection_default_.value() ) );
-        }
+    if ( have_default_descendant() ) {
+        return &( get_descendant( child_data_->selection_default_.value() ) );
     }
     return NULL;
 }
@@ -589,14 +588,12 @@ bool AbstractRecord::finish() {
 
 	child_data_->selection_of_childs->close();
     // check validity of possible default value of TYPE key
-    if ( !child_data_->selection_default_.is_obligatory() ) { // skip for empty records
-        if ( child_data_->selection_default_.has_value_at_declaration() ) {
-            try {
-                child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
-            } catch (ExcWrongDefault & e) {
-                xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
-            }
-        }
+    if ( have_default_descendant() ) {
+		try {
+			child_data_->selection_of_childs->valid_default( child_data_->selection_default_.value() );
+		} catch (ExcWrongDefault & e) {
+			xprintf(PrgErr, "Default value '%s' for TYPE key do not match any descendant of AbstractRecord '%s'.\n", child_data_->selection_default_.value().c_str(), type_name().c_str());
+		}
     }
 
 	return (child_data_->finished_);
@@ -639,6 +636,16 @@ string AbstractRecord::full_type_name() const {
 
 Default &AbstractRecord::get_selection_default() const {
 	return child_data_->selection_default_;
+}
+
+bool AbstractRecord::have_default_descendant() const {
+	// obligatory value if default is not set, see @p selection_default_
+    if ( !child_data_->selection_default_.is_obligatory() )  {
+        if ( child_data_->selection_default_.has_value_at_declaration() ) {
+        	return true;
+        }
+    }
+	return false;
 }
 
 

@@ -514,7 +514,11 @@ protected:
         /// If AbstractRecord is closed, we do not allow any further declaration calls.
         bool closed_;
 
-        /// Default value of selection_of_childs (used for automatic conversion
+        /**
+         * Default value of selection_of_childs (used for automatic conversion).
+         *
+         * If default value isn't set, selection_default_ is set to obligatory.
+         */
         Default selection_default_;
 
     };
@@ -677,6 +681,11 @@ protected:
      * In such a case the linker should report an undefined reference.
      */
     Record &derive_from(AbstractRecord &parent);
+
+    /**
+     * Check if type has set value of default descendants.
+     */
+    bool have_default_descendant() const;
 
     /// Actual data of the AbstractRecord.
     boost::shared_ptr<ChildData> child_data_;
