@@ -72,11 +72,6 @@ using namespace Input::Type;
 							.close();
    	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
 
-   // test correct finishing.
-#ifdef FLOW123D_DEBUG_ASSERTS
-   EXPECT_THROW_WHAT( {rec.size();}, ExcAssertMsg , "Asking for information of unfinished Record type");
-#endif
-
 /*
    // test documentation of default_at_read_time
    {
