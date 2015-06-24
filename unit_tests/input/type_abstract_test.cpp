@@ -44,8 +44,6 @@ using namespace Input::Type;
     	.declare_key("a_val", Double(),"")
 		.close();
 
-    a_rec.add_child(b_rec);
-    a_rec.add_child(c_rec);
     c_rec.finish();
     b_rec.finish();
     a_rec.finish();
@@ -55,7 +53,7 @@ using namespace Input::Type;
     // no more allow_auto_conversion for a_rec
     EXPECT_THROW_WHAT( { a_rec.allow_auto_conversion("EqTransp");}, ExcXprintfMsg, "Can not specify default value for TYPE key as the AbstractRecord 'EqBase' is closed.");
 
-    a_rec.no_more_descendants();
+    a_rec.finish();
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
 
     // test default value for an auto convertible abstract record key
@@ -86,9 +84,10 @@ using namespace Input::Type;
 
 
     // check of correct auto conversion value
-    AbstractRecord  x("AR","");
-    x.allow_auto_conversion("BR");
-    EXPECT_THROW_WHAT({ x.no_more_descendants(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
+    AbstractRecord x = AbstractRecord("AR","")
+    	.allow_auto_conversion("BR")
+		.close();
+    EXPECT_THROW_WHAT({ x.finish(); }, ExcXprintfMsg, "Default value 'BR' for TYPE key do not match any descendant of AbstractRecord 'AR'.");
 
 }
 

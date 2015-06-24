@@ -27,6 +27,38 @@
 #    include(CMake/Modules/PrecompiledHeaders.cmake)
 #endif()
 
+
+# add deal.II library
+#message(STATUS "===========================================")
+## Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
+#set(DEAL_II_WITH_MUPARSER OFF)
+#set(DEAL_II_WITH_MPI ON)
+#set(BOOST_DIR "${BOOST_ROOT}")
+#set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
+#set(TBB_FOUND "true")
+#set(DEAL_II_WITH_UMFPACK ON)
+## Check if UMFPACK is installed with PETSc
+#if (PETSC_VAR_UMFPACK_LIB)
+#  set(UMFPACK_FOUND "true")
+#  set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
+#else()
+#  MESSAGE(FATAL_ERROR "Deal.II depends on UMFPACK, but PETSc is not built with it.")
+##  set(DEAL_II_ALLOW_BUNDLED OFF)
+##  set(DEAL_II_FORCE_BUNDLED_UMFPACK ON)
+#endif()
+#set(DEAL_II_WITH_LAPACK ON)
+#set(LAPACK_FOUND "true")
+#set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
+#set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
+#if (FLOW_BUILD_TYPE STREQUAL "release")
+#  set(CMAKE_BUILD_TYPE "Release")
+#else()
+#  set(CMAKE_BUILD_TYPE "Debug")
+#endif()
+#add_subdirectory("dealii")
+#message(STATUS "===========================================")
+
+
 add_subdirectory("input/json_spirit")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -50,6 +82,7 @@ add_library(system_lib
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
+    system/time_point.cc
     system/system.cc
     system/xio.cc
     system/exceptions.cc
@@ -253,6 +286,8 @@ target_link_libraries(flow123d_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
+#    ${TBB_LIBRARIES}
+#    ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 
@@ -261,6 +296,6 @@ target_link_libraries(flow123d_lib
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
-
+add_dependencies(flow123d_lib tbb)
 
 

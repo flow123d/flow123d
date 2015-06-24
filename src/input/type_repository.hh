@@ -38,7 +38,7 @@ public:
 
     typedef std::map< Type::TypeBase::TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
 
-    static TypeRepository & getInstance() {
+    static TypeRepository & get_instance() {
     	static TypeRepository instance;
     	return instance;
     };

@@ -168,7 +168,7 @@ TEST_F(SomeEquation, subset_mask) {
 
 
 TEST_F(SomeEquation, field_descriptor) {
-	Input::Type::Record descriptor = EqData().make_field_descriptor_type("SomeEquation").close();
+	Input::Type::Record descriptor = EqData().make_field_descriptor_type("SomeEquation");
 
 	descriptor.finish();
 	EXPECT_EQ(7, descriptor.size());
@@ -272,7 +272,7 @@ TEST_F(SomeEquation, input_related) {
     component_names_ = { "component_0", "component_1" };
 
     data.set_components(component_names_);
-    Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation").close());
+    Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
     Input::JSONToStorage reader( eq_data_input, list_type);
     Input::Array in=reader.get_root_interface<Input::Array>();
     data.set_input_list(in);
