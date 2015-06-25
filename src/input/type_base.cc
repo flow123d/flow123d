@@ -27,6 +27,7 @@
 #include "type_base.hh"
 #include "type_record.hh"
 #include "type_output.hh"
+#include "type_repository.hh"
 #include <boost/algorithm/string.hpp>
 
 
@@ -87,9 +88,12 @@ TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
 
 void TypeBase::lazy_finish() {
     // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
+	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Selection>::get_instance().finish();
 
     // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
+    /*for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
         if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
             (*it)->finish();
         }
@@ -107,7 +111,7 @@ void TypeBase::lazy_finish() {
         if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
     }
 
-    lazy_type_list().clear();
+    lazy_type_list().clear();*/
 
 }
 
@@ -122,7 +126,12 @@ TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
 
 
 bool TypeBase::was_constructed(const TypeBase * ptr) {
-    return lazy_object_set().find(ptr) != lazy_object_set().end();
+	bool ret = lazy_object_set().find(ptr) != lazy_object_set().end();
+	// TODO: temporary test for development, method will be removed
+	if (!ret) {
+		xprintf(Warn, "Development note - non-constructed record '%s'\n", ptr->type_name().c_str());
+	}
+    return ret;
 }
 
 
@@ -137,9 +146,9 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
-std::size_t Array::content_hash() const
+TypeBase::TypeHash Array::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
@@ -275,9 +284,9 @@ string Scalar::full_type_name() const {
  */
 
 
-std::size_t Bool::content_hash() const
+TypeBase::TypeHash Bool::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }
@@ -311,9 +320,9 @@ string Bool::type_name() const {
  * implementation of Type::Integer
  */
 
-std::size_t Integer::content_hash() const
+TypeBase::TypeHash Integer::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -322,7 +331,7 @@ std::size_t Integer::content_hash() const
 
 
 
-bool Integer::match(int value) const {
+bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
 
@@ -360,9 +369,9 @@ string Integer::type_name() const {
  */
 
 
-std::size_t Double::content_hash() const
+TypeBase::TypeHash Double::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -409,9 +418,9 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
-std::size_t FileName::content_hash() const
+TypeBase::TypeHash FileName::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, type_);
     return seed;
@@ -444,9 +453,9 @@ bool FileName::match(const string &str) const {
  */
 
 
-std::size_t String::content_hash() const
+TypeBase::TypeHash String::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }

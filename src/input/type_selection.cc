@@ -6,6 +6,7 @@
  */
 
 #include "input/type_selection.hh"
+#include "input/type_repository.hh"
 #include <boost/functional/hash.hpp>
 
 namespace Input {
@@ -49,12 +50,12 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 
 const Selection & Selection::close() const {
     data_->finished=true;
-    return *this;
+    return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
 
 
 
-std::size_t Selection::content_hash() const
+TypeBase::TypeHash Selection::content_hash() const
 {
     std::size_t seed=0;
     boost::hash_combine(seed, "Selection");

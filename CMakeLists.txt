@@ -183,6 +183,50 @@ else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
 endif()
 
+
+#########################################################################
+# Determining timer with highest resolution
+include(ProfilerTimerCheck)
+set(TIMER_RESOLUTION No)
+
+# try to get best timer on windows
+if (WIN32 OR CYGWIN)
+    # on windows and cygwin try to get access QueryPerformanceCounter timer
+    TEST_TIMER (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+      ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_queryperformance.cpp) 
+
+    # if success save theese values via flow_define and flow_define_constant macros
+    if (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER AND TIMER_RESOLUTION)
+        flow_define           (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER)
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       QueryPerformanceCounter")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
+    else()
+        MESSAGE (WARNING "Couldn't access QueryPerformanceCounter timer")   
+    endif()
+endif()
+
+if (NOT TIMER_RESOLUTION)
+    # otherwise try to access chrono high resolution timer (multiplatform)
+    # expecting c++11 support
+    TEST_TIMER (HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+      ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_chrono_highresolution.cpp)
+
+    # if success save theese values via flow_define and flow_define_constant macros
+    if (HAVE_TIMER_CHRONO_HIGH_RESOLUTION AND TIMER_RESOLUTION)
+        flow_define           (HAVE_TIMER_CHRONO_HIGH_RESOLUTION)
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       chrono highresolution timer")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
+    else()
+        MESSAGE (FATAL_ERROR "Couldn't access chrono timer")    
+    endif()
+endif ()
+
+
+
 #########################################################################
 # Check that glibc has working execinfo.h
 include(CheckIncludeFile)
@@ -216,7 +260,8 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS} 
 
 # store compiler flags (into config.h file)
 flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
-
+# store current source dir (for profiler purposes)
+flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
 ######################################################################### find libraries
 #
@@ -357,7 +402,8 @@ include (FindPackageMultipass)
 set(PETSC_EXPORT_LIST 
   MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
-  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB)  
+  MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
+  UMFPACK_LIB)  
 find_package(PETSc 3.4.0)
 
 
@@ -589,6 +635,9 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
+#    ${CMAKE_BINARY_DIR}/src/dealii/include
+#    ${CMAKE_SOURCE_DIR}/src/dealii/include
+#    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
 ######################################################################################################################
@@ -700,6 +749,10 @@ make_link_in_source(unit_tests/Makefile)
 # add fparser sources
 message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
+
+# add tbb sources
+#message(STATUS "add subdir TBB")
+#add_subdirectory(third_party/tbb43_20150316oss)
 
 # add various our sources
 add_subdirectory(src)

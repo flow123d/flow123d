@@ -34,10 +34,10 @@ string field_constant_input = R"JSON(
 
 TEST(TransposeTo, field_constant) {
 	MultiField<3, FieldValue<3>::Scalar> empty_mf;
-	Input::Type::Record in_rec("MultiFieldTest","");
-	in_rec.declare_key("common", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" );
-	in_rec.declare_key("transposed", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" );
-	in_rec.finish();
+	Input::Type::Record in_rec = Input::Type::Record("MultiFieldTest","")
+	    .declare_key("common", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+	    .declare_key("transposed", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+	    .close();
 
 	Input::JSONToStorage json_reader(field_constant_input, in_rec);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();

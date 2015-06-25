@@ -229,6 +229,11 @@ public:
     static IT::Record field_descriptor_record(const string& record_name);
 
     /**
+     * Create description of field descriptor record.
+     */
+    static const std::string field_descriptor_record_decsription(const string& record_name);
+
+    /**
      * Returns input type for particular field instance, this is reference to a static member input_type of the corresponding @p FieldBase
      * class (i.e. with the same template parameters). This is used in FieldSet::make_field_descriptor_type.
      */

@@ -16,7 +16,7 @@ using namespace std;
  * Implements StorageBase
  */
 
-int StorageBase::get_int() const {
+std::int64_t StorageBase::get_int() const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("int") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -184,7 +184,7 @@ StorageInt::StorageInt(int value)
 
 
 
-int StorageInt::get_int() const {
+std::int64_t StorageInt::get_int() const {
     return value_;
 }
 

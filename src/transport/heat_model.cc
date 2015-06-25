@@ -185,25 +185,26 @@ UnitSI HeatTransferModel::balance_units()
 			*data().fluid_heat_capacity.units();
 }
 
-IT::Record &HeatTransferModel::get_input_type(const string &implementation, const string &description)
+IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record input_type = IT::Record(
+	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::input_type);
-
-	return input_type;
-
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+					"Parameters of output stream.");
 }
 
 
-IT::Selection &HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection input_type = IT::Selection(
+	return IT::Selection(
 				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
 				"Selection for output fields of " + description + " for heat transfer.");
-
-	return input_type;
 }
 
 
@@ -267,10 +268,10 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 		// Note that the velocity vector is in fact the Darcian flux,
 		// so to obtain |v| we have to divide vnorm by porosity and cross_section.
 		double vnorm = arma::norm(velocity[k], 2);
-		if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+		if (fabs(vnorm) > 0)
 			for (int i=0; i<3; i++)
 				for (int j=0; j<3; j++)
-					dif_coef[0][k](i,j) = (velocity[k][i]*velocity[k][j]/(vnorm*vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
+					dif_coef[0][k](i,j) = ((velocity[k][i]/vnorm)*(velocity[k][j]/vnorm)*(disp_l[k]-disp_t[k]) + disp_t[k]*(i==j?1:0))
 											*vnorm*f_rho[k]*f_cond[k];
 		else
 			dif_coef[0][k].zeros();

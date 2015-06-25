@@ -24,19 +24,25 @@ using namespace Input::Type;
    // - various Scalar types (excluding Selection): Integer, Bool, Double, String, FilePath
    // - various decalre_key templates: with/without default, shared_ptr/ reference
    // - various default values
-   static Record rec("SomeRecord", "desc.");
-
-   rec.declare_key("file", FileName::output(), Default::optional(), "desc.");
+   enum Colors {
+	  white, black, red
+   };
 
    Integer digits_type(0, 8);
-   rec.declare_key("digits",digits_type, Default("8"), "desc.");
-
-   rec.declare_key("compression", Bool(),"desc.");
-
    Double time_type(0.0);
-   rec.declare_key("start_time", time_type,"desc.");
+   Selection sel = Selection("Color selection")
+      .add_value(black, "black")
+      .add_value(red, "red")
+      .close();
 
-   rec.declare_key("data_description", String(), Default::optional(),"");
+   static Record rec = Record("SomeRecord", "desc.")
+   	  .declare_key("file", FileName::output(), Default::optional(), "desc.")
+      .declare_key("digits",digits_type, Default("8"), "desc.")
+      .declare_key("compression", Bool(),"desc.")
+      .declare_key("start_time", time_type,"desc.")
+      .declare_key("data_description", String(), Default::optional(),"")
+	  .declare_key("plot_color", sel, "Color to plot the fields in file.")
+	  .close();
 
 
    // errors during declaration
@@ -46,30 +52,25 @@ using namespace Input::Type;
    EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
 #endif
 
-   Record rec_fin("xx","");
-   rec_fin.close();
+   Record rec_fin = Record("xx","")
+	  .close();
    EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Can not add .* into closed record");
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.
-   Record rec_unfin("yy","");
-   rec.declare_key("yy", rec_unfin, "");
+   /*Record rec_unfin("yy","");
+   rec.declare_key("yy", rec_unfin, "");*/
 
-   EXPECT_THROW_WHAT( { rec.declare_key("data_description", String(),"");}, ExcXprintfMsg, "Re-declaration of the key:");
+   EXPECT_THROW_WHAT( { Record rec_redeclare = Record("yy","")
+							.declare_key("data_description", String(), Default::optional(),"")
+							.declare_key("data_description", String(),"")
+							.close();
+   	   	   	   	   	  }, ExcXprintfMsg, "Re-declaration of the key:");
 
-   EXPECT_THROW_WHAT( { rec.declare_key("wrong_double", Double(), Default("1.23 4"),""); }, ExcWrongDefault,
-           "Default value .* do not match type: 'Double';");
-
-   enum Colors {
-       white, black, red
-   };
-
-   Selection sel("Color selection");
-   sel.add_value(black, "black");
-   sel.add_value(red, "red");
-   sel.close();
-
-   rec.declare_key("plot_color", sel, "Color to plot the fields in file.");
+   EXPECT_THROW_WHAT( { Record("yy","")
+   	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
+							.close();
+   	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
 
    // test correct finishing.
 #ifdef FLOW123D_DEBUG_ASSERTS
@@ -119,27 +120,26 @@ TEST(InputTypeRecord, declare_key_arrays) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-
-   static Record array_record("RecordOfArrays", "desc.");
-   static Record array_record2("RecordOfArrays2", "desc.");
-
-   // array type passed through shared_ptr
+    // array type passed through shared_ptr
     Array array_of_int(Integer(0), 5, 100 );
-    array_record.declare_key("array_of_5_ints", array_of_int,"Some bizare array.");
 
-    // array type passed by reference
-    array_record.declare_key("array_of_str", Array( String() ),"Desc. of array");
-    array_record.declare_key("array_of_str_1", Array( String() ), "Desc. of array");
-
-
-    // allow default values for an array
-    array_record.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( {array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); array_record.close(); }, ExcWrongDefault,
+    static Record array_record = Record("RecordOfArrays", "desc.")
+    	.declare_key("array_of_5_ints", array_of_int,"Some bizare array.")
+    	// array type passed by reference
+    	.declare_key("array_of_str", Array( String() ),"Desc. of array")
+    	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
+    	// allow default values for an array
+    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
+    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
                   "Default value 'ahoj' do not match type: 'Integer';"
                  );
-    EXPECT_THROW_WHAT( {array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); array_record2.close(); }, ExcWrongDefault,
+    array_record.close();
+
+    static Record array_record2 = Record("RecordOfArrays2", "desc.");
+    EXPECT_THROW_WHAT( { array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); }, ExcWrongDefault,
                   "Default value '3.2' do not match type: 'array_of_Double';"
                  );
+    array_record2.close();
 }
 
 TEST(InputTypeRecord, allow_convertible) {
@@ -152,23 +152,26 @@ using namespace Input::Type;
     				 .declare_key("optional_bool", Bool(), Default::optional(), "")
     				 .declare_key("read_time_bool", Bool(), Default::read_time(""), "")
      	 	 	 	 .declare_key("int_key", Integer(),  "")
-     	 	 	 	 .allow_auto_conversion("int_key");
+     	 	 	 	 .allow_auto_conversion("int_key")
+					 .close();
     sub_rec.finish();
 
     EXPECT_EQ(3, sub_rec.auto_conversion_key_iter()->key_index );
     }
 
     {
-    static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("obligatory_int", Integer(), Default::obligatory(), "");
-    sub_rec.declare_key("int_key", Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
+    static Record sub_rec = Record( "SubRecord", "")
+    	.declare_key("obligatory_int", Integer(), Default::obligatory(), "")
+    	.declare_key("int_key", Integer(),  "")
+    	.allow_auto_conversion("int_key")
+		.close();
     EXPECT_THROW_WHAT( {sub_rec.finish();}, ExcXprintfMsg,
     		"Finishing Record auto convertible from the key 'int_key', but other obligatory key: 'obligatory_int' has no default value.");
     }
 
     {
-    static Record sub_rec( "SubRecord", "");
+    static Record sub_rec = Record( "SubRecord", "")
+    		.close();
     EXPECT_TRUE( sub_rec.finish() );
     EXPECT_EQ( sub_rec.end(), sub_rec.auto_conversion_key_iter() );
     }
@@ -180,32 +183,31 @@ TEST(InputTypeRecord, declare_key_record) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    Record record_record("RecordOfRecords", "");
-    Record record_record2("RecordOfRecords2", "");
-
     // Test that Record has to be passed as shared_ptr
     //ASSERT_DEATH( {record_record->declare_key("sub_rec_1", Record("subrec_type", "desc") , "desc"); },
     //              "Complex type .* shared_ptr."
     //              );
 
-    Record other_record("OtherRecord","desc");
-    other_record.close();
+    Record other_record = Record("OtherRecord","desc")
+    	.close();
 
-    static Record sub_rec( "SubRecord", "");
-    sub_rec.declare_key("bool_key", Bool(), Default("false"), "");
-    sub_rec.declare_key("int_key", Integer(),  "");
-    sub_rec.allow_auto_conversion("int_key");
-    sub_rec.close();
+    static Record sub_rec = Record( "SubRecord", "")
+    	.declare_key("bool_key", Bool(), Default("false"), "")
+    	.declare_key("int_key", Integer(),  "")
+    	.allow_auto_conversion("int_key")
+    	.close();
 
-    record_record.declare_key("sub_rec_1", other_record, "key desc");
-    EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); record_record.close(); }, ExcWrongDefault,
+    Record record_record = Record("RecordOfRecords", "")
+    	.declare_key("sub_rec_1", other_record, "key desc");
+	EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); }, ExcWrongDefault,
             "Default value '2.3' do not match type: 'OtherRecord';" );
+	record_record.close();
 
-    DBGMSG("here\n");
-    record_record2.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    DBGMSG("here\n");
-    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); record_record2.close(); } , ExcWrongDefault,
+    Record record_record2 = Record("RecordOfRecords2", "")
+    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
+    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , ExcWrongDefault,
             "Default value '2.3' do not match type: 'Integer';" );
+    record_record2.close();
 
     // recursion  -  forbidden
     //record_record->declare_key("sub_rec_2", record_record, "desc.");
@@ -215,24 +217,21 @@ using namespace Input::Type;
 TEST(InputTypeRecord, iterating) {
     using namespace Input::Type;
 
-    Record output_record("OutputRecord",
-            "Information about one file for field data.");
+    Record output_record;
+
     {
-        output_record.declare_key("file", FileName::output(), Default::optional(),
-                "File for output stream.");
+		Integer digits_type((int)0, (int)8);
+		Double time_type(0.0);
 
-        Integer digits_type((int)0, (int)8);
-        output_record.declare_key("digits",digits_type, Default("8"),
-                "Number of digits used for output double values into text output files.");
-        output_record.declare_key("compression", Bool(),
-                "Whether to use compression of output file.");
-
-        Double time_type(0.0);
-        output_record.declare_key("start_time", time_type,
-                "Simulation time of first output.");
-        output_record.declare_key("data_description", String(),
-                "");
-        output_record.finish();
+		output_record = Record("OutputRecord", "Information about one file for field data.")
+			.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
+			.declare_key("digits",digits_type, Default("8"),
+					"Number of digits used for output double values into text output files.")
+			.declare_key("compression", Bool(), "Whether to use compression of output file.")
+			.declare_key("start_time", time_type, "Simulation time of first output.")
+			.declare_key("data_description", String(), "")
+			.close();
+		output_record.finish();
     } // delete local variables
 
     // methods begin() and end(), basic work with iterators
@@ -283,10 +282,11 @@ using namespace Input::Type;
     output_record.declare_key("file", FileName::output(), "");
 
 
-    Record copy_rec = output_record;
-
     Integer digits_type((int)0, (int)8);
-    copy_rec.declare_key("digits",digits_type, "");
+
+    Record copy_rec = output_record
+    	.declare_key("digits",digits_type, "")
+		.close();
     copy_rec.finish();
 
     EXPECT_EQ( true, output_record.is_finished());
@@ -299,24 +299,27 @@ using namespace Input::Type;
 
     Record rec1 =
     		Record("Rec1", "")
-    		.declare_key("a", Integer(), "a from rec1");
+    		.declare_key("a", Integer(), "a from rec1")
+			.close();
 
     Record rec2 =
     		Record("Rec2","")
     		.declare_key("a", Integer(), "a from rec2")
     		.declare_key("b", Integer(), "b from rec2")
-    		.declare_key("c", Integer(), "c from rec2");
+    		.declare_key("c", Integer(), "c from rec2")
+			.close();
 
     Record composite =
     		Record("composite","")
     		.declare_key("b", Integer(), "b from composite")
     		.copy_keys(rec1)
-    		.copy_keys(rec2);
+    		.copy_keys(rec2)
+			.close();
 
     composite.finish();
 
-    EXPECT_TRUE(rec1.is_finished());
-    EXPECT_TRUE(rec2.is_finished());
+    EXPECT_FALSE(rec1.is_finished());
+    EXPECT_FALSE(rec2.is_finished());
 
     EXPECT_EQ(3, composite.size());
     EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
@@ -333,26 +336,30 @@ TEST(InputTypeAbstractRecord, inheritance) {
 using namespace Input::Type;
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    AbstractRecord a_rec("EqBase","Base of equation records.");
-    a_rec.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.");
-    a_rec.declare_key("a_val", String(), Default::obligatory(), "");
-    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy");
+    AbstractRecord a_rec = AbstractRecord("EqBase","Base of equation records.")
+    	.declare_key("mesh", String(), Default("input.msh"), "Comp. mesh.")
+    	.declare_key("a_val", String(), Default::obligatory(), "");
+    AbstractRecord &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
-    a_rec.finish();
 
     // test derived type
-    Record b_rec("EqDarcy","");
-    b_rec.derive_from(a_rec);
-    b_rec.declare_key("b_val", Integer(), Default("10"), "");
-    b_rec.allow_auto_conversion("a_val");
+    Record b_rec = Record("EqDarcy","")
+    	.derive_from(a_rec)
+    	.declare_key("b_val", Integer(), Default("10"), "")
+    	.allow_auto_conversion("a_val")
+		.close();
 
-    Record c_rec("EqTransp","");
-    c_rec.derive_from(a_rec);
-    c_rec.declare_key("c_val", Integer(), "");
-    c_rec.declare_key("a_val", Double(),"");
+    Record c_rec = Record("EqTransp","")
+    	.derive_from(a_rec)
+    	.declare_key("c_val", Integer(), "")
+    	.declare_key("a_val", Double(),"")
+		.close();
 
+    a_rec.add_child(b_rec);
+    a_rec.add_child(c_rec);
     c_rec.finish();
     b_rec.finish();
+    a_rec.finish();
 
     // auto conversion - default value for TYPE
     EXPECT_EQ("EqDarcy", a_rec.key_iterator("TYPE")->default_.value() );
@@ -363,15 +370,17 @@ using namespace Input::Type;
     EXPECT_EQ( b_rec,  * a_rec.get_default_descendant() );
 
     // test default value for an auto convertible abstract record key
-    Record xx_rec("XX", "");
-    xx_rec.declare_key("ar_key", a_rec, Default("ahoj"), "");
+    Record xx_rec = Record("XX", "")
+    		.declare_key("ar_key", a_rec, Default("ahoj"), "")
+			.close();
     xx_rec.finish();
 
     // check correct stat of a_rec
     EXPECT_TRUE( a_rec.is_finished() );
     EXPECT_EQ(0, a_rec.key_index("TYPE"));
-    EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->type_ ));
-    EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
+    // TODO: finish these two tests after remove was_constructed
+    //EXPECT_EQ(Selection("EqBase_TYPE_selection"), *(a_rec.key_iterator("TYPE")->p_type ));
+    //EXPECT_EQ(a_rec.key_iterator("TYPE")->type_, b_rec.key_iterator("TYPE")->type_);
 
     // TYPE should be derived as optional
     //EXPECT_TRUE( b_rec.key_iterator("TYPE")->default_.is_optional());
@@ -402,7 +411,7 @@ using namespace Input::Type;
 /**
  * Test AdHocAbstractRecord.
  */
-namespace IT=Input::Type;
+/*namespace IT=Input::Type;
 
 class AdHocDataTest : public testing::Test {
 public:
@@ -458,4 +467,4 @@ using namespace Input::Type;
 	EXPECT_EQ( 2, AdHocDataTest::adhoc_1.child_size());
 	EXPECT_EQ( 2, AdHocDataTest::adhoc_2.child_size());
 	EXPECT_EQ( 2, AdHocDataTest::rec.size());
-}
+} */

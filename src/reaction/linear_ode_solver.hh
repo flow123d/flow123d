@@ -15,7 +15,7 @@ public:
     /**
      * Abstract record for the linear ODE solver.
      */
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
     
     LinearODESolverBase();
     virtual ~LinearODESolverBase();

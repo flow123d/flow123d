@@ -7,6 +7,7 @@
 
 
 #include "input_type.hh"
+#include "type_repository.hh"
 
 #include <limits>
 #include <ios>
@@ -50,8 +51,8 @@ Default::Default(enum DefaultType type, const std::string & value)
 : value_(value), type_(type)
 {}
 
-std::size_t Default::content_hash() const
-{   size_t seed = 0;
+TypeBase::TypeHash Default::content_hash() const
+{   TypeBase::TypeHash seed = 0;
     boost::hash_combine(seed, "Default");
     boost::hash_combine(seed, type_);
     boost::hash_combine(seed, value_);
@@ -68,6 +69,7 @@ std::size_t Default::content_hash() const
 Record::Record()
 : data_( boost::make_shared<RecordData> ("EmptyRecord","") )
 {
+	close();
     finish();
 }
 
@@ -89,9 +91,9 @@ Record::Record(const string & type_name_in, const string & description)
 }
 
 
-std::size_t Record::content_hash() const
+TypeBase::TypeHash Record::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, "Record");
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
@@ -122,7 +124,7 @@ void Record::make_derive_from(AbstractRecord &parent) {
     if (data_->derived_) return;
 
     parent.finish();
-    parent.add_descendant(*this);
+    //parent.add_descendant(*this);
 
     make_copy_keys(parent);
 
@@ -133,7 +135,7 @@ void Record::make_derive_from(AbstractRecord &parent) {
 
 void Record::make_copy_keys(Record &origin) {
 
-	origin.finish();
+    ASSERT(origin.is_closed(), "Origin record is not closed!\n");
 
 	std::vector<Key>::iterator it = data_->keys.begin();
 	int n_inserted = 0;
@@ -248,7 +250,7 @@ bool Record::finish()
 {
 	if (data_->finished) return true;
 
-	close();
+	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 	// postponed key copies
 	make_copy_keys_all();
 
@@ -313,7 +315,7 @@ bool Record::finish()
 
 const Record &Record::close() const {
     data_->closed_=true;
-    return *this;
+    return *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
 }
 
 
@@ -357,17 +359,18 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(const Selection * key_type) {
+Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", boost::shared_ptr<Selection>(), key_type, Default::obligatory(),
+	data_->declare_key("TYPE", key_type, NULL, Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
 	ASSERT( ! data_->p_parent_ && ! data_->parent_ptr_, "Record with obligatory TYPE key can't be derived.\n");
-	Selection * sel = new Selection(type_name() + "_TYPE_selection");
+	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
 	sel->add_value(0, type_name());
+	sel->close();
 	declare_type_key( sel );
 	return *this;
 }
@@ -442,8 +445,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
         data_->declare_key(key, boost::shared_ptr<const TypeBase>(), &type, default_value, description);
     } else {
         // for Array, Double, Integer, we assume no static variables
-    	if (const_cast<KeyType *>( &type )->finish()) check_key_default_value(default_value, type, key);
-
+    	check_key_default_value(default_value, type, key);
         boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<KeyType>(type);
         data_->declare_key(key, type_copy, NULL, default_value, description);
     }
@@ -526,19 +528,22 @@ AbstractRecord::AbstractRecord(const string & type_name_in, const string & descr
   child_data_( boost::make_shared<ChildData>( type_name_in + "_TYPE_selection" ) )
 {
     // declare very first item of any descendant
-	this->declare_type_key(child_data_->selection_of_childs.get());
+	this->declare_type_key(child_data_->selection_of_childs);
 
     TypeBase::lazy_type_list().push_back( boost::make_shared<AbstractRecord>( *this ) );
 }
 
 
-std::size_t AbstractRecord::content_hash() const
+TypeBase::TypeHash AbstractRecord::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, "Abstract");
-    boost::hash_combine(seed, data_.get());
-    boost::hash_combine(seed, full_type_name());
+    boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->description_);
+    // TODO temporary hack, should be removed after implementation of generic types
+    if (child_data_->element_input_selection != nullptr) {
+    	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
+    }
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
     //}
@@ -631,6 +636,44 @@ const Selection  & AbstractRecord::get_type_selection() const
 
 unsigned int AbstractRecord::child_size() const {
     return child_data_->list_of_childs.size();
+}
+
+
+int AbstractRecord::add_child(const Record &subrec)
+{
+	if ( !TypeBase::was_constructed(&subrec) ) {
+		xprintf(Warn, "Add non-constructed record '%s' to abstract record '%s'!\n", subrec.type_name().c_str(), this->type_name().c_str());
+	}
+	add_descendant(subrec);
+	//subrec.make_copy_keys(*this);
+
+	return 1;
+}
+
+
+bool AbstractRecord::finish() {
+	if (data_->finished) return true;
+
+	ASSERT(data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
+
+	data_->finished = true;
+	no_more_descendants();
+
+	return (data_->finished);
+}
+
+
+AbstractRecord &AbstractRecord::close() {
+	data_->closed_=true;
+    return *( Input::TypeRepository<AbstractRecord>::get_instance().add_type( *this ) );
+}
+
+
+AbstractRecord &AbstractRecord::set_element_input(const Selection * element_input) {
+	if (element_input != NULL ) {
+		child_data_->element_input_selection = element_input;
+	}
+	return *this;
 }
 
 

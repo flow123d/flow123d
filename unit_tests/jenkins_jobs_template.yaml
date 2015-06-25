@@ -336,7 +336,6 @@
           name: "Build Flow123d libraries"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-release-make-doc"
             - name: "Flow123d-{platform}-release-build-libs"
       - multijob:
           name: "Unit tests"
@@ -353,6 +352,11 @@
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+      - multijob:
+          name: "Make Docs"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-make-doc"
       - multijob:
           name: "Pack and Install"
           condition: COMPLETED
@@ -745,3 +749,69 @@
       #     parse-rules: "/home/builder/jenkins/F123-linux-coveragetest/rules.txt"
       #     unstable-on-warning: true
       #     fail-on-error: true
+
+
+
+####################################################################
+# Multijob  project - (windows package tests)
+#
+# Simple multijob which test whether are packed installators functional
+#   Testing consist of 4 steps:
+#      1) install - donwload and install package from cmd
+#      2) run_inside - run binary flow123d from within bin folder
+#      3) run_outside - run binary flow123d from outside of bin folder (currently not working, path value is not updated)
+#      4) uninstall - cmd uninstall and file removal
+- project:
+    name: "Windows package tests"
+    action: [ install, run_inside, run_outside, uninstall ]
+    arch: [ 32, 64 ]
+    jobs:
+      - "Windows-{arch}-package-{action}"
+      - "Windows-{arch}-package-all"
+
+#################################################################
+# template for single testing step (install, uninstall, ...)
+- job-template:
+    name: "Windows-{arch}-package-{action}"
+    node: packages
+    workspace: c:\package_tests\
+    display-name: "Windows {arch} package - {action}"
+    builders:
+      - batch: |
+          "C:/Program Files (x86)/python27/python" install.py -a {arch} -m {action}
+
+
+########################################################################
+# Main multijob - release
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
+- job-template:
+    name: "Windows-{arch}-package-all"
+    node: packages
+    workspace: c:\package_tests\
+    display-name: "Windows {arch} package multijob"
+    project-type: multijob
+    builders:            
+      - multijob:
+          name: "Install"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-install"
+      - multijob:
+          name: "Run inside"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-run_inside"
+      - multijob:
+          name: "Run outside"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-run_outside"
+      - multijob:
+          name: "Uninstall"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-uninstall"
+
+
+
