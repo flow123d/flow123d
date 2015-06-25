@@ -383,7 +383,7 @@ void DarcyFlowMH_Steady::output_data() {
     time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
-	if (balance_ != nullptr)
+	if (balance_)
 	{
 		if (balance_->cumulative() && time_->tlevel() > 0)
 		{
@@ -484,7 +484,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
     double loc_side_rhs[4];
 
-    if (balance_ != nullptr)
+    if (balance_)
     	balance_->start_flux_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
@@ -532,7 +532,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
 
-                if (balance_ != nullptr)
+                if (balance_)
                 {
                 	balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
                 }
@@ -657,7 +657,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
         }
     }
 
-    if (balance_ != nullptr)
+    if (balance_)
     	balance_->finish_flux_assembly(water_balance_idx_);
 
     assembly_source_term();
@@ -673,7 +673,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix() {
 
 void DarcyFlowMH_Steady::assembly_source_term()
 {
-    if (balance_ != nullptr)
+    if (balance_)
     	balance_->start_source_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
@@ -687,11 +687,11 @@ void DarcyFlowMH_Steady::assembly_source_term()
                 data_.water_source_density.value(ele->centre(), ele->element_accessor());
         schur0->rhs_set_value(el_row, -1.0 * source );
 
-        if (balance_ != nullptr)
+        if (balance_)
         	balance_->add_source_rhs_values(water_balance_idx_, ele->region().bulk_idx(), {el_row}, {source});
     }
 
-    if (balance_ != nullptr)
+    if (balance_)
     	balance_->finish_source_assembly(water_balance_idx_);
 }
 
@@ -1043,7 +1043,7 @@ void DarcyFlowMH_Steady::assembly_linear_system() {
 	    	setup_time_term();
 	    	modify_system();
 	    }
-	    else if (balance_ != nullptr)
+	    else if (balance_)
 	    {
 	    	balance_->start_mass_assembly(water_balance_idx_);
 	    	balance_->finish_mass_assembly(water_balance_idx_);
