@@ -184,6 +184,34 @@ bool Array::valid_default(const string &str) const {
 }
 
 
+const TypeBase &Array::make_instance(std::vector<ParameterPair> vec) {
+	// Replace only if type_of_values_ is parameter
+	if ( typeid( *(data_->type_of_values_) ) == typeid(Parameter) ) {
+		ASSERT( vec.size() == 1, "Parameter vector of Input::Type::Array '%s' must have size 1!", this->type_name().c_str());
+		std::vector<ParameterPair>::iterator vec_it=vec.begin();
+		// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
+		Array arr = Array(Integer(), this->data_->lower_bound_, this->data_->upper_bound_);
+		arr.data_->type_of_values_ = (*vec_it).second;
+		// Copy attributes
+		for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
+			arr.add_attribute(it->first, it->second);
+		}
+		// Set parameters as attribute
+		std::stringstream ss;
+		ss << "[";
+		for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
+			if (vec_it != vec.begin()) ss << "," << endl;
+			ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
+		}
+		ss << "]";
+		arr.add_attribute("parameters", ss.str());
+		return *( Input::TypeRepository<Array>::get_instance().add_type(arr) );
+	}
+
+	return *this;
+}
+
+
 /**********************************************************************************
  * implementation and explicit instantiation of Array constructor template
  */
