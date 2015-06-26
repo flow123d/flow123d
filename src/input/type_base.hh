@@ -65,6 +65,8 @@ public:
 	typedef std::size_t TypeHash;
 	typedef std::string json_string;
 	typedef std::map<std::string, json_string> attribute_map;
+	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -161,6 +163,9 @@ public:
 
     /// Print JSON output of attributes to @p stream.
     void print_json(ostream& stream);
+
+    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec)
+    { ASSERT(false, "make_instance() may not be called for TypeBase class.\n"); };
 
 protected:
 

@@ -346,6 +346,9 @@ public:
      */
     Record &has_obligatory_type_key();
 
+    // Implements @p TypeBase::make_instance.
+    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) override;
+
 
 protected:
 
