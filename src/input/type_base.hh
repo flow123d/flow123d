@@ -302,6 +302,9 @@ public:
      */
     virtual bool valid_default(const string &str) const;
 
+    // Implements @p TypeBase::make_instance.
+    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) override;
+
 protected:
 
     /// Handle to the actual array data.
