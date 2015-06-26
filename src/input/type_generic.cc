@@ -55,12 +55,20 @@ bool Parameter::valid_default(const string &str) const {
  * implementation of Instance
  */
 
-Instance::Instance(const TypeBase &generic_type, std::vector<ParameterPair> parameters)
+Instance::Instance(const TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters)
 : generic_type_(generic_type), parameters_(parameters) {}
 
 
 TypeBase::TypeHash Instance::content_hash() const {
-	return 0;
+	TypeHash seed=0;
+	boost::hash_combine(seed, "Instance");
+	boost::hash_combine(seed, generic_type_.content_hash() );
+	for (std::vector<TypeBase::ParameterPair>::const_iterator it = parameters_.begin(); it!=parameters_.end(); it++) {
+		boost::hash_combine(seed, (*it).first );
+		boost::hash_combine(seed, (*it).second->content_hash() );
+	}
+
+	return seed;
 }
 
 
