@@ -49,9 +49,7 @@ protected:
  */
 class Instance : public TypeBase {
 public:
-	typedef std::pair< std::string, boost::shared_ptr<const TypeBase> > ParameterPair;
-
-	Instance(const TypeBase &generic_type, std::vector<ParameterPair> parameters);
+	Instance(const TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
     TypeHash content_hash() const  override;
 
@@ -60,7 +58,7 @@ public:
 protected:
 	const TypeBase &generic_type_;
 
-	std::vector<ParameterPair> parameters_;
+	std::vector<TypeBase::ParameterPair> parameters_;
 };
 
 
