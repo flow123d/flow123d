@@ -361,7 +361,7 @@ const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) {
 	// Copy keys
 	rec.copy_keys(*this);
 	// Replace keys of type Parameter
-	for (std::vector<Key>::iterator key_it=data_->keys.begin(); key_it!=data_->keys.end(); key_it++) {
+	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( typeid( *(key_it->type_) ) == typeid(Parameter) ) {
 			bool found = false;
 			for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
