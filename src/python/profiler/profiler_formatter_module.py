@@ -13,7 +13,6 @@ Package contains:
 """
 
 import system.versions
-from utils.dotdict import DotDict
 
 system.versions.require_version_2 ()
 
@@ -118,7 +117,6 @@ class ProfilerFormatter (object):
         try:
             with open (json_location, 'r') as fp:
                 jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-                jsonObj = DotDict (jsonObj)
         except Exception as exception:
             # return string with message on error
             return str (exception)

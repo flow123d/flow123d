@@ -95,7 +95,11 @@ class SimpleTableFormatter (object):
         if self.maxNameSize < len (str (name)):
             self.maxNameSize = len (str (name))
 
+<<<<<<< HEAD
     def append_to_body (self, values):
+=======
+    def appendToBody (self, values):
+>>>>>>> 8b53b16... Add docs string to all classes and methods
         """Appends entry to body row list.
         value is tupple of tupples, where inner tupper has two elements, first formatting character, and second value,
         formatting character is used in string format() method
