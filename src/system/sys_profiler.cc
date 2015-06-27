@@ -591,13 +591,13 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
     // debug info
-    cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
-    cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
-    cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
-    cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
-    cout << "Py_GetPath:            " << Py_GetPath() << endl;
-    cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
-    cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
+    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
+    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
+    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
+    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
+    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
+    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
 
 
     // grab module and function by importing module profiler_formatter_module.py
