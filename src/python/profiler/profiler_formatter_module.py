@@ -87,7 +87,7 @@ class ProfilerFormatter (object):
 
     @staticmethod
     def get_class_instance (cls):
-        """Method returns class instance upon given name in profiler.formatters.* namespace"""
+        """Method returns class instance upon given name in profiler.formatters.* ns"""
         module = importlib.import_module ("profiler.formatters." + cls)
         class_ = getattr (module, cls)
         instance = class_ ()
@@ -97,7 +97,7 @@ class ProfilerFormatter (object):
     @staticmethod
     def list_formatters ():
         """Method return list of all available formatters.
-        Formatter is every class in profiler.formatters.* namespace which possesses method format
+        Formatter is every class in profiler.formatters.* ns which possesses method format
         """
         result = []
         import pkgutil
@@ -118,7 +118,6 @@ class ProfilerFormatter (object):
         try:
             with open (json_location, 'r') as fp:
                 jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-                jsonObj = DotDict (jsonObj)
         except Exception as exception:
             # return string with message on error
             return str (exception)

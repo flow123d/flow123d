@@ -22,7 +22,7 @@ class DotDict(dict):
             if name in self:
                 return self[name]
 
-            name = name.replace('_', '-')
-            if name in self:
-                return self[name]
-            raise
+            # name = name.replace('_', '-')
+            # if name in self:
+            #     return self[name]
+            # raise
