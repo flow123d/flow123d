@@ -557,8 +557,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     char end_time_string[BUFSIZ] = {0};
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
-    double run_duration = difftime (end_time, start_time);
-
     // generate current run details
 
     root.put ("program-name",       flow_name_);
@@ -579,7 +577,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("run-process-count",  mpi_size);
     root.put ("run-started-at",     start_time_string);
     root.put ("run-finished-at",    end_time_string);
-    root.put ("run-duration",       boost::format("%1.9f") % run_duration);
 }
 
 
