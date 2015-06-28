@@ -219,11 +219,11 @@ class CoverageMerge (object):
         # merge conditionals
         con1 = line1.get ('condition-coverage')
         con2 = line2.get ('condition-coverage')
-        if con1 is not None and con2 is not None:
+        if (con1 is not None and con2 is not None):
             con1value = int (con1.split ('%')[0])
             con2value = int (con2.split ('%')[0])
             # bigger coverage on second line, swap their conditionals
-            if con2value > con1value:
+            if (con2value > con1value):
                 line1.set ('condition-coverage', str (con2))
                 line1.__setitem__ (0, line2.__getitem__ (0))
 

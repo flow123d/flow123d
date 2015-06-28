@@ -25,13 +25,13 @@ class CSVFormatter (object):
     def format (self, json):
         """"format given json object"""
         self.json = json
-        # self.process_header (json)
-        self.process_body (json, 0)
+        # self.processHeader (json)
+        self.processBody (json, 0)
 
         # tmpLst = []
         # tmpLst.append(self.headerFields)
         # tmpLst.extend(self.body)
-        # self.maxWidth = self.fix_width (tmpLst)
+        # self.maxWidth = self.fixWidth (tmpLst)
 
         result = ""
         result += join_iterable (
@@ -54,17 +54,17 @@ class CSVFormatter (object):
         self.styles.update (styles)
         self.linesep = self.styles["linesep"]
 
-    def append_to_body (self, values):
+    def appendToBody (self, values):
         """Appends entry to body row list.
         value is tupple of strings each string is represents cell value
         """
         self.body.append (values)
         pass
 
-    def process_body (self, json, level):
+    def processBody (self, json, level):
         """Recursive body processing"""
         if level > 0:
-            self.append_to_body ((
+            self.appendToBody ((
                 "{:1.2f}".format (json["percent"]),
                 "{:d}".format (level),
                 "{:s}".format (json["tag"]),
@@ -79,11 +79,11 @@ class CSVFormatter (object):
 
         try:
             for child in json["children"]:
-                self.process_body (child, level + 1)
+                self.processBody (child, level + 1)
         except:
             pass
 
-    def fix_width (self, lst):
+    def fixWidth (self, lst):
         """Gets maximum width for each element of iterable object property"""
         size = len (lst[0])
         maxWidth = [5] * size
