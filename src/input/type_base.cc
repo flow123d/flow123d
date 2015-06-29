@@ -47,12 +47,12 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ) {}
+: attributes_( boost::make_shared<attribute_map>() ), generic_(false) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-: attributes_(other.attributes_) {}
+: attributes_(other.attributes_), generic_(other.generic_) {}
 
 
 
@@ -234,6 +234,11 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
     ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
+
+    // for Parameter type sets that array is generic
+    if (typeid(type) == typeid(Parameter)) {
+    	this->generic_ = true;
+    }
 
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
 	data_->type_of_values_ = type_copy;
