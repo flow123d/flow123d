@@ -302,16 +302,16 @@ Record array_record("RecordOfArrays",
 }
 
 TEST(InputTypeAttributes, base_test) {
-	Input::Type::Integer int_val;
-	int_val.add_attribute("attr_1", "\"some attribute\"");
-	int_val.add_attribute("attr_2", "\"other attribute\"");
-	int_val.add_attribute("numeric", "\"10\"");
-	int_val.add_attribute("pair", "[\"0\", \"50\"]");
-	int_val.add_attribute("float_point", "\"0.5\"");
+	Input::Type::Record rec("rec", "Some record.");
+	rec.add_attribute("attr_1", "\"some attribute\"");
+	rec.add_attribute("attr_2", "\"other attribute\"");
+	rec.add_attribute("numeric", "\"10\"");
+	rec.add_attribute("pair", "[\"0\", \"50\"]");
+	rec.add_attribute("float_point", "\"0.5\"");
 
 	{
 		std::stringstream ss;
-		int_val.print_json(ss);
+		rec.print_json(ss);
 		string str = ss.str();
 		EXPECT_TRUE( str.find("\"attr_1\" : \"some attribute\"") != std::string::npos );
 		EXPECT_TRUE( str.find("\"numeric\" : \"10\"") != std::string::npos );
@@ -321,14 +321,14 @@ TEST(InputTypeAttributes, base_test) {
 
 	{
 		std::stringstream ss;
-		int_val.add_attribute("numeric", "\"5\"");
-		int_val.print_json(ss);
+		rec.add_attribute("numeric", "\"5\"");
+		rec.print_json(ss);
 		string str = ss.str();
 		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
 		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
 	}
 
-    EXPECT_THROW_WHAT( { int_val.add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
+    EXPECT_THROW_WHAT( { rec.add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
             "Invalid JSON format of attribute 'invalid_attr'." );
 }
 

@@ -82,7 +82,7 @@ void TypeBase::lazy_finish() {
 
 
 void TypeBase::add_attribute(std::string name, json_string val) {
-	ASSERT(this->is_closed(), "Attribute can be add only to closed type: '%s'.\n", this->type_name().c_str());
+	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
 	if (validate_json(val)) {
 		(*attributes_)[name] = val;
 	} else {
