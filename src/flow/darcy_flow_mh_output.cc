@@ -38,7 +38,6 @@
 
 #include <system/global_defs.h>
 
-#include "flow/mh_fe_values.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
@@ -48,6 +47,9 @@
 #include "system/xio.h"
 
 #include "fem/dofhandler.hh"
+#include "fem/fe_values.hh"
+#include "fem/fe_rt.hh"
+#include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
@@ -243,29 +245,58 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
-    MHFEValues fe_values;
+    const MH_DofHandler &mhdh = darcy_flow->get_mh_dofhandler();
 
-    int i_side=0;
+    // All templates are dimension dependent here.
+    // Prepare guadratures - 1 point at the barycenter.
+    const unsigned int q_order = 0;
+    QGauss<1> q1(q_order);
+    QGauss<2> q2(q_order);
+    QGauss<3> q3(q_order);
+    // Prepare FEValues for computing velocity at the barycenter.
+    FEValues<1,3> fv_rt1(*(darcy_flow->map1_),q1, *(darcy_flow->fe_rt1_), update_values | update_quadrature_points);
+    FEValues<2,3> fv_rt2(*(darcy_flow->map2_),q2, *(darcy_flow->fe_rt2_), update_values | update_quadrature_points);
+    FEValues<3,3> fv_rt3(*(darcy_flow->map3_),q3, *(darcy_flow->fe_rt3_), update_values | update_quadrature_points);
+    
+    unsigned int i=0;
     FOR_ELEMENTS(mesh_, ele) {
-        arma::vec3 flux_in_centre;
-        flux_in_centre.zeros();
-
-        fe_values.update(ele,
-        		darcy_flow->data_.anisotropy,
-        		darcy_flow->data_.cross_section,
-        		darcy_flow->data_.conductivity );
-
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_centre += dh.side_flux( *(ele->side( li ) ) )
-                              * fe_values.RT0_value( ele, ele->centre(), li )
-                              / darcy_flow->data_.cross_section.value(ele->centre(), ele->element_accessor() );
-        }
-
-        for(unsigned int j=0; j<3; j++) 
-            ele_flux[3*i_side+j]=flux_in_centre[j];
+        unsigned int dim = ele->dim();
         
-        i_side++;
+        arma::vec3 flux_in_center;
+        flux_in_center.zeros();
+        
+        switch(dim)
+        {
+            case 1: 
+                fv_rt1.reinit(ele);
+                for (unsigned int li = 0; li < ele->n_sides(); li++) {
+                    flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
+                              * fv_rt1.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
+                }
+                break;
+            case 2: 
+                fv_rt2.reinit(ele);
+                for (unsigned int li = 0; li < ele->n_sides(); li++) {
+                    flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
+                              * fv_rt2.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
+                }
+                break;
+            case 3: 
+                fv_rt3.reinit(ele);
+                for (unsigned int li = 0; li < ele->n_sides(); li++) {
+                    flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
+                              * fv_rt3.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
+                }
+                break;
+        }
+        
+        flux_in_center /= darcy_flow->data_.cross_section.value(ele->centre(), ele->element_accessor() );
+        
+        // place it in the sequential vector
+        for(unsigned int j=0; j<3; j++) 
+            ele_flux[3*i+j]=flux_in_center[j];
+        
+        i++;
     }
 
 }
@@ -579,7 +610,6 @@ struct DiffData {
 
     double * solution;
     const MH_DofHandler * dh;
-    MHFEValues fe_values;
 
     //std::vector< std::vector<double>  > *ele_flux;
     std::vector<int> velocity_mask;
@@ -588,13 +618,13 @@ struct DiffData {
 };
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSolution &anal_sol,  DiffData &result) {
+void l2_diff_local(ElementFullIter &ele, 
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+                   ExactSolution &anal_sol,  DiffData &result) {
 
+    fv_rt.reinit(ele);
     fe_values.reinit(ele);
-    result.fe_values.update(ele,
-    		result.data_->anisotropy,
-    		result.data_->cross_section,
-    		result.data_->conductivity);
+    
     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
 
@@ -654,7 +684,7 @@ void l2_diff_local(ElementFullIter &ele, FEValues<dim,3> &fe_values, ExactSoluti
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * result.fe_values.RT0_value( ele, q_point, i_shape )
+                              * fv_rt.shape_vector(i_shape, i_point)
                               / cross;
         }
 
@@ -708,6 +738,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
+    
+    // FEValues for velocity.
+    FE_RT0<1,3> fe_rt1d;
+    FE_RT0<2,3> fe_rt2d;
+    FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
+    FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 
     FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -760,10 +796,10 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	switch (ele->dim()) {
         case 1:
 
-            l2_diff_local<1>( ele, fe_values_1d, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
             break;
         }
     }

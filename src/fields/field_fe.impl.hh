@@ -82,7 +82,7 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(), update_values);
 		fe_values1.reinit(cell);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		if (dh_->fe<1>()->is_scalar()) {
 			double value = 0;
@@ -111,7 +111,7 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(), update_values);
 		fe_values2.reinit(cell);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		if (dh_->fe<2>()->is_scalar()) {
 			double value = 0;
@@ -140,7 +140,7 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(), update_values);
 		fe_values3.reinit(cell);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		if (dh_->fe<3>()->is_scalar()) {
 			double value = 0;
@@ -178,7 +178,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 		arma::mat::fixed<3,1> m1 = elm.element()->node[1]->point() - elm.element()->node[0]->point();
 		arma::mat::fixed<1,3> im1 = pinv(m1);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		for (int k=0; k<point_list.size(); k++) {
 			Quadrature<1> q1(1);
@@ -212,7 +212,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 		m2.col(1) = elm.element()->node[2]->point() - elm.element()->node[0]->point();
 		arma::mat::fixed<2,3> im2 = pinv(m2);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		for (int k=0; k<point_list.size(); k++) {
 			Quadrature<2> q2(1);
@@ -247,7 +247,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 		m3.col(2) = elm.element()->node[3]->point() - elm.element()->node[0]->point();
 		arma::mat33 im3 = inv(m3);
 
-		dh_->get_dof_indices(cell, dof_indices);
+		dh_->get_loc_dof_indices(cell, dof_indices);
 
 		for (int k=0; k<point_list.size(); k++) {
 			Quadrature<3> q3(1);

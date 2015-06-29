@@ -216,7 +216,17 @@ const Quadrature<dim> * FEValuesBase<dim,spacedim>::get_quadrature() const
     return quadrature;
 }
 
+template<unsigned int dim, unsigned int spacedim> inline
+const FiniteElement<dim,spacedim> * FEValuesBase<dim,spacedim>::get_fe() const
+{
+    return fe;
+}
 
+template<unsigned int dim, unsigned int spacedim> inline
+const Mapping<dim,spacedim> * FEValuesBase<dim,spacedim>::get_mapping() const
+{
+    return mapping;
+}
 
 
 

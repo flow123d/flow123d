@@ -363,6 +363,26 @@ void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int 
 	}
 }
 
+void DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+{
+    unsigned int dim = cell->dim();
+    switch (dim)
+    {
+    case 1:
+        for (unsigned int k=0; k<fe1d_->n_object_dofs(dim,DOF_SINGLE); k++)
+            indices[k] = object_dofs[cell.index()][dim][k] - loffset_;
+        break;
+    case 2:
+        for (unsigned int k=0; k<fe2d_->n_object_dofs(dim,DOF_SINGLE); k++)
+            indices[k] = object_dofs[cell.index()][dim][k] - loffset_;
+        break;
+    case 3:
+        for (unsigned int k=0; k<fe3d_->n_object_dofs(dim,DOF_SINGLE); k++)
+            indices[k] = object_dofs[cell.index()][dim][k] - loffset_;
+        break;
+    }
+}
+
 void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
 {
 	int ndofs=0;

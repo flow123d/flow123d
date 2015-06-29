@@ -77,6 +77,9 @@ class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
 
+template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
+template<unsigned int dim, unsigned int spacedim> class FEValues;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -202,6 +205,14 @@ protected:
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+    
+    
+    FE_RT0<1,3> *fe_rt1_;
+    FE_RT0<2,3> *fe_rt2_;
+    FE_RT0<3,3> *fe_rt3_;
+    MappingP1<1,3> *map1_;
+    MappingP1<2,3> *map2_;
+    MappingP1<3,3> *map3_;
 
     MortarMethod mortar_method_;
 
@@ -299,6 +310,13 @@ protected:
      *
      */
     void assembly_steady_mh_matrix();
+    
+    /** Assembly of a local mass matrix on and element.
+     * Auxiliary function for @p assembly_steady_mh_matrix.
+     */
+    template<unsigned int dim>
+    void assembly_steady_mh_local_matrix(arma::mat &local_matrix, ElementFullIter ele, 
+                                         FEValues<dim,3> & fe_values);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();

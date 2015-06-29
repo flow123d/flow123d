@@ -318,6 +318,16 @@ public:
      * @brief Returns the quadrature in use.
      */
     const Quadrature<dim> * get_quadrature() const;
+    
+    /**
+     * @brief Returns the finite element in use.
+     */
+    const FiniteElement<dim,spacedim> * get_fe() const;
+    
+    /**
+     * @brief Returns the mapping in use.
+     */
+    const Mapping<dim,spacedim> * get_mapping() const;
 
 protected:
 
