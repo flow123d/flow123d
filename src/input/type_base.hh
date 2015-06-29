@@ -165,7 +165,7 @@ public:
     void write_attributes(ostream& stream) const;
 
     /// Create instance of generic type
-    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec)
+    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) const
     { ASSERT(false, "make_instance() may not be called for TypeBase class.\n"); };
 
     /// Return if type is generic.
@@ -311,7 +311,7 @@ public:
     virtual bool valid_default(const string &str) const;
 
     // Implements @p TypeBase::make_instance.
-    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) override;
+    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) const override;
 
 protected:
 

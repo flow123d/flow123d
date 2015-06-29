@@ -364,7 +364,7 @@ Record &Record::has_obligatory_type_key() {
 }
 
 
-const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) {
+const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) const {
 	Record rec = Record(this->type_name(), this->data_->description_);
 	// Add parent Abstracts
 	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {

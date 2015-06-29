@@ -77,5 +77,13 @@ bool Instance::valid_default(const string &str) const {
 }
 
 
+bool Instance::finish() {
+	// TODO returned type must be add to IST
+	generic_type_.make_instance(parameters_);
+
+	return true;
+}
+
+
 } // closing namespace Type
 } // closing namespace Input
