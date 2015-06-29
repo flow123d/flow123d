@@ -55,6 +55,8 @@ public:
 
     virtual bool valid_default(const string &str) const;
 
+    virtual bool finish();
+
 protected:
 	const TypeBase &generic_type_;
 
