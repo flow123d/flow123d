@@ -171,20 +171,12 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(AbstractRecord &parent) {
-	//ASSERT( ! data_->parent_ptr_.size() , "Record has been already derived.\n");
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
 	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE"),
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
 
-	bool contains = false;
-	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
-	    if ((*it)->type_name() == parent.type_name()) {
-	    	contains = true;
-	    }
-	}
-	if (!contains) {
-		data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
-	}
+	// add Abstract to vector of parents
+	data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
@@ -241,7 +233,20 @@ bool Record::finish()
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
-    // finish inheritance if parent is non-null
+	// remove duplicate Abstracts in vector of parent pointers
+	if ( data_->parent_ptr_.size()>1 ) {
+		for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+			TypeHash hash = (*it)->content_hash();
+			for (auto in_it = it+1; in_it != data_->parent_ptr_.end(); ++in_it) {
+				if ( (*in_it)->content_hash() == hash ) { // same parent - remove
+					data_->parent_ptr_.erase( in_it );
+					--in_it;
+				}
+			}
+		}
+	}
+
+	// finish inheritance if parent is non-null
     if ( data_->parent_ptr_.size() ) {
     	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
     				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
