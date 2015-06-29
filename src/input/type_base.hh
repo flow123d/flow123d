@@ -164,8 +164,13 @@ public:
     /// Print JSON output of attributes to @p stream.
     void write_attributes(ostream& stream) const;
 
+    /// Create instance of generic type
     virtual const TypeBase &make_instance(std::vector<ParameterPair> vec)
     { ASSERT(false, "make_instance() may not be called for TypeBase class.\n"); };
+
+    /// Return if type is generic.
+    inline bool is_generic() const
+    { return generic_; };
 
 protected:
 
@@ -212,6 +217,9 @@ protected:
 
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
+
+    /// Flag determining if type is generic (e. g. Record is generic if has key of type Parameter).
+    bool generic_;
 
     friend class Array;
     friend class Record;
