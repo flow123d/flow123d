@@ -63,6 +63,7 @@ TypeBase::TypeHash Selection::content_hash() const
         boost::hash_combine(seed, key.description_);
         boost::hash_combine(seed, key.value);
     }
+    attribute_content_hash(seed);
     return seed;
 }
 

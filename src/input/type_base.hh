@@ -203,6 +203,13 @@ protected:
     /// Check if JSON string is valid
     bool validate_json(json_string str);
 
+    /**
+     * Add attributes to hash of the type specification.
+     *
+     * Method must be called in content_hash() method of TypeBase descendants.
+     */
+    void attribute_content_hash(std::size_t &seed) const;
+
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
 

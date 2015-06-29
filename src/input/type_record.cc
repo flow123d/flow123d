@@ -103,6 +103,7 @@ TypeBase::TypeHash Record::content_hash() const
     		boost::hash_combine(seed, key.default_.content_hash() );
     	}
     }
+    attribute_content_hash(seed);
     return seed;
 }
 
@@ -555,6 +556,7 @@ TypeBase::TypeHash AbstractRecord::content_hash() const
     if (child_data_->element_input_selection != nullptr) {
     	boost::hash_combine(seed, child_data_->element_input_selection->content_hash());
     }
+    attribute_content_hash(seed);
     //for( Record &key : child_data_->list_of_childs) {
     //    boost::hash_combine(seed, key.content_hash() );
     //}

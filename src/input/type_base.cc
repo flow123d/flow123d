@@ -114,6 +114,15 @@ bool TypeBase::validate_json(json_string str) {
 }
 
 
+void TypeBase::attribute_content_hash(std::size_t &seed) const {
+	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
+		boost::hash_combine(seed, (*it).first );
+		boost::hash_combine(seed, (*it).second );
+	}
+
+}
+
+
 
 
 
@@ -136,6 +145,7 @@ TypeBase::TypeHash Array::content_hash() const
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
     boost::hash_combine(seed, data_->type_of_values_->content_hash() );
+    attribute_content_hash(seed);
     return seed;
 }
 
