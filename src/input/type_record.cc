@@ -375,8 +375,6 @@ const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) {
 					key_it->key_.c_str(), this->type_name().c_str());
 		}
 	}
-	// Close record
-	rec.close();
 	// Copy attributes
 	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
 		rec.add_attribute(it->first, it->second);
