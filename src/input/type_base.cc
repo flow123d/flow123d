@@ -74,6 +74,7 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish() {
+	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
@@ -194,7 +195,7 @@ bool Array::valid_default(const string &str) const {
 }
 
 
-const TypeBase &Array::make_instance(std::vector<ParameterPair> vec) {
+const TypeBase &Array::make_instance(std::vector<ParameterPair> vec) const {
 	// Replace only if type_of_values_ is parameter
 	if ( typeid( *(data_->type_of_values_) ) == typeid(Parameter) ) {
 		ASSERT( vec.size() == 1, "Parameter vector of Input::Type::Array '%s' must have size 1!", this->type_name().c_str());
