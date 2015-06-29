@@ -239,6 +239,8 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 bool Record::finish()
 {
+	if (this->generic_) return false;
+
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
@@ -454,7 +456,12 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
-	check_key_default_value(default_value, type, key);
+    // for Parameter key sets that record is generic
+    if (typeid(type) == typeid(Parameter)) {
+    	this->generic_ = true;
+    }
+
+    check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
