@@ -235,6 +235,12 @@ bool Record::finish()
 
 	// remove duplicate Abstracts in vector of parent pointers
 	if ( data_->parent_ptr_.size()>1 ) {
+	    /* Possible simplification using std library:
+ 	     * sort( vec.begin(), vec.end() );
+         * vec.erase( unique( vec.begin(), vec.end() ), vec.end() );
+         *
+         * ... needs sort with particular comparator.
+	     */
 		for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
 			TypeHash hash = (*it)->content_hash();
 			for (auto in_it = it+1; in_it != data_->parent_ptr_.end(); ++in_it) {
