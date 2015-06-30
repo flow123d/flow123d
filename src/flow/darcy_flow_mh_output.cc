@@ -631,11 +631,11 @@ void l2_diff_local(ElementFullIter &ele,
 
     // get coefficients on the current element
     vector<double> fluxes(dim+1);
-    vector<double> pressure_traces(dim+1);
+//     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
         fluxes[li] = result.dh->side_flux( *(ele->side( li ) ) );
-        pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
+//         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     double pressure_mean = result.dh->element_scalar(ele);
 
@@ -665,7 +665,7 @@ void l2_diff_local(ElementFullIter &ele,
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = (i_shape + dim) % (dim + 1);
+            unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
 
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
