@@ -215,7 +215,12 @@ const TypeBase &Array::make_instance(std::vector<ParameterPair> vec) const {
 			ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
 		}
 		ss << "]";
-		arr.add_attribute("parameters", ss.str());
+		json_string val = ss.str();
+		if (this->validate_json(val)) {
+			(*arr.attributes_)["parameters"] = val;
+		} else {
+			xprintf(PrgErr, "Invalid JSON format of attribute 'parameters'.\n");
+		}
 		return *( Input::TypeRepository<Array>::get_instance().add_type(arr) );
 	}
 
