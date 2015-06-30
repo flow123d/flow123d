@@ -54,7 +54,7 @@ const it::Record & LinSys_PETSC::get_input_type() {
 }
 
 
-const int LinSys_PETSC::registrar = LinSys::get_input_type().add_child( LinSys_PETSC::get_input_type() );
+const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)

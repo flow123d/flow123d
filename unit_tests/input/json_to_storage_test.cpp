@@ -160,9 +160,10 @@ TEST_F(InputJSONToStorageTest, Double) {
 
 TEST_F(InputJSONToStorageTest, Selection) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    Type::Selection sel_type("IntSelection");
-    sel_type.add_value(10,"ten","");
-    sel_type.add_value(1,"one","");
+    Type::Selection sel_type = Type::Selection("IntSelection")
+    	.add_value(10,"ten","")
+    	.add_value(1,"one","")
+		.close();
     sel_type.finish();
 
     {
@@ -403,13 +404,17 @@ TEST_F(InputJSONToStorageTest, Record) {
 TEST_F(InputJSONToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+	static Type::Record copy_rec = Type::Record("Copy","")
+       	.declare_key("mesh", Type::String(), Type::Default("input.msh"), "Comp. mesh.")
+       	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
+		.close();
+
     static Type::AbstractRecord a_rec = Type::AbstractRecord("EqBase","Base of equation records.")
-    	.declare_key("mesh", Type::String(), Type::Default::obligatory(), "Comp. mesh.")
-    	.declare_key("a_val", Type::String(), Type::Default::obligatory(), "")
     	.close();
 
     static Type::Record b_rec = Type::Record("EqDarcy","")
     	.derive_from(a_rec)
+		.copy_keys(copy_rec)
     	.declare_key("b_val", Type::Integer(), "")
 		.close();
 
@@ -417,6 +422,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
     static Type::Record c_rec = Type::Record("EqTransp","")
     	.derive_from(a_rec)
+		.copy_keys(copy_rec)
 		.declare_key("c_val", Type::Integer(), "")
 		.declare_key("a_val", Type::Double(),"")
 		.close();

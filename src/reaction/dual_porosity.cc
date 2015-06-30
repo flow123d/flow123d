@@ -53,7 +53,7 @@ const Record & DualPorosity::get_input_type() {
     
 const int DualPorosity::registrar =
 		Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity") +
-		ReactionTerm::get_input_type().add_child(DualPorosity::get_input_type());
+		DualPorosity::get_input_type().size();
 
 DualPorosity::EqData::EqData()
 {

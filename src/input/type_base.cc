@@ -44,25 +44,15 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase() {}
 
 
 
-TypeBase::TypeBase(const TypeBase& other)
-{
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase(const TypeBase& other) {}
 
 
 
-TypeBase::~TypeBase() {
-    TypeBase::LazyObjectsSet &set=TypeBase::lazy_object_set();
-    TypeBase::LazyObjectsSet::iterator it =set.find(this);
-    ASSERT( it != set.end(), "Missing pointer in lazy_object_set to '%s'.\n", this->type_name().c_str());
-    TypeBase::lazy_object_set().erase(it);
-}
+TypeBase::~TypeBase() {}
 
 
 bool TypeBase::is_valid_identifier(const string& key) {
@@ -79,60 +69,12 @@ string TypeBase::desc() const {
 
 
 
-TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
-    static LazyTypeVector lazy_type_list;
-    return lazy_type_list;
-}
-
-
-
 void TypeBase::lazy_finish() {
-    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
-
-    // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
-    /*for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
-            (*it)->finish();
-        }
-    }
-
-    // then finalize abstract records so that no type can derive from them
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++)
-    {
-        boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
-        if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
-    }
-
-    // at last finish all selections (including those in AbstractRecord)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
-    }
-
-    lazy_type_list().clear();*/
-
 }
 
-
-
-
-TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
-    static LazyObjectsSet set_;
-    return set_;
-}
-
-
-
-bool TypeBase::was_constructed(const TypeBase * ptr) {
-	bool ret = lazy_object_set().find(ptr) != lazy_object_set().end();
-	// TODO: temporary test for development, method will be removed
-	if (!ret) {
-		xprintf(Warn, "Development note - non-constructed record '%s'\n", ptr->type_name().c_str());
-	}
-    return ret;
-}
 
 
 
@@ -167,36 +109,7 @@ bool Array::ArrayData::finish()
 {
 	if (finished) return true;
 
-	if (p_type_of_values != 0)
-	{
-	    if (! was_constructed(p_type_of_values) ) return false;
-
-		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
-		{
-			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
-		{
-			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Selection *>(p_type_of_values) != 0)
-		{
-			Selection *s = (Selection *)dynamic_cast<const Selection *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Selection>(*s);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
-		    xprintf(PrgErr, "Should not happen!\n");
-	}
-
-	return (finished = true);
+	return (finished = type_of_values_->finish() );
 }
 
 
@@ -238,21 +151,10 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
 
-    // Records, AbstractRecords and Selections need not be initialized
-    // at the moment, so we save the reference of type and update
-    // the array later in finish().
-    if ( (boost::is_base_of<Record, ValueType>::value ||
-          boost::is_base_of<Selection, ValueType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
-        data_->p_type_of_values = &type;
-        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-    } else {
-        data_->p_type_of_values = NULL;
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        data_->type_of_values_ = type_copy;
-        data_->finished=true;
-    }
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
+	data_->type_of_values_ = type_copy;
 }
 
 // explicit instantiation

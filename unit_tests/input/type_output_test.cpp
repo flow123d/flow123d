@@ -158,8 +158,8 @@ public:
 	: Input::Type::AbstractRecord(type_name_in, description)
 	{}
 
-	void declare_descendant(const Record &subrec) {
-		add_descendant(subrec);
+	void declare_descendant(const Input::Type::Record &subrec) {
+		add_child(subrec);
 	}
 };
 

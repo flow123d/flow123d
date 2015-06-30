@@ -24,16 +24,13 @@ Selection::Selection()
 
 Selection::Selection(const Selection& other)
 : Scalar(other), data_(other.data_)
-{
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Selection.\n");
-}
+{ }
 
 
 
 Selection::Selection(const string &name, const string &desc)
 : data_(boost::make_shared<SelectionData>(name))
 {
-    TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
     data_->description_=desc;
 }
 
@@ -49,7 +46,7 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 
 
 const Selection & Selection::close() const {
-    data_->finished=true;
+    data_->closed_=true;
     return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
 }
 
@@ -79,9 +76,13 @@ bool Selection::valid_default(const string &str) const {
 
 
 bool Selection::is_finished() const {
-    return data_->finished;
+    return is_closed();
 }
 
+
+bool Selection::is_closed() const {
+	return data_->closed_;
+}
 
 string Selection::type_name() const {
    return data_->type_name_;

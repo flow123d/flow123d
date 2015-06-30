@@ -73,6 +73,13 @@ public:
     virtual bool is_finished() const
     {return true;}
 
+    /**
+     * Returns true if the type is closed.
+     *
+     */
+    virtual bool is_closed() const
+    {return true;}
+
     /// Returns an identification of the type. Useful for error messages.
     virtual string type_name() const  { return "TypeBase"; }
 
@@ -110,13 +117,13 @@ public:
         { return ! (*this == other); }
 
     /**
-     *  Destructor removes type object from lazy_object_set.
+     *  Destructor
      */
     virtual ~TypeBase();
 
 
 
-    /// Finishes all registered lazy types.
+    /// Finishes all types registered in type repositories.
     static void lazy_finish();
 
 
@@ -150,12 +157,12 @@ public:
 protected:
 
     /**
-     * Default constructor. Register type object into lazy_object_set.
+     * Default constructor.
      */
     TypeBase();
 
     /**
-     * Copy constructor. Register type object into lazy_object_set.
+     * Copy constructor.
      */
     TypeBase(const TypeBase& other);
 
@@ -179,35 +186,6 @@ protected:
      * we allow identifiers starting with a digit, but it is discouraged since it slows down parsing of the input file.
      */
     static bool is_valid_identifier(const string& key);
-
-    /**
-     * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
-     * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
-     * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
-     * Selections have to be finished after all other types since they are used by AbstractRecords to register all
-     * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
-     *
-     * This is list of unique instances that may contain raw pointers to possibly not yet constructed
-     * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
-     * These has to be completed/finished before use.
-     *
-     */
-    typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
-
-    /**
-     * The reference to the singleton instance of @p lazy_type_list.
-     */
-    static LazyTypeVector &lazy_type_list();
-
-    /**
-     * Set of  pointers to all constructed (even temporaries) lazy types. This list contains ALL instances
-     * (including copies and empty handles) of lazy types.
-     */
-    typedef std::set<const TypeBase *> LazyObjectsSet;
-
-    static LazyObjectsSet &lazy_object_set();
-
-    static bool was_constructed(const TypeBase * ptr);
 
     friend class Array;
     friend class Record;
@@ -252,9 +230,8 @@ protected:
 
     	bool finish();
 
-    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
-    	const TypeBase *p_type_of_values;
     	bool finished;
 
     };
@@ -277,7 +254,6 @@ public:
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {
-        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
         return *data_->type_of_values_; }
 
     /// Checks size of particular array.

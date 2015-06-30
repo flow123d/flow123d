@@ -78,7 +78,7 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
 }
 
 
-const int HC_ExplicitSequential::registrar = CouplingBase::get_input_type().add_child(HC_ExplicitSequential::get_input_type());
+const int HC_ExplicitSequential::registrar = HC_ExplicitSequential::get_input_type().size();
 
 
 

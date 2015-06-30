@@ -34,6 +34,7 @@ add_test_directory("${libs}")
 define_test(type_base)
 define_test(type_output)
 define_test(type_record)
+define_test(type_abstract)
 
 define_test(storage)
 define_test(comment_filter)

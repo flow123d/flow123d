@@ -88,7 +88,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 
 const int TransportOperatorSplitting::registrar =
 		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting") +
-		AdvectionProcessBase::get_input_type().add_child( TransportOperatorSplitting::get_input_type() );
+		TransportOperatorSplitting::get_input_type().size();
 
 
 
