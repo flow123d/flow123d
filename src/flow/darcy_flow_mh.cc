@@ -929,8 +929,11 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
         // base fce = a0 + a1*t0 + a2*t1
         //         a0     a1      a2
         base_2D << 1.0 << 0.0 << -2.0 << arma::endr //point on side 0
-                << -1.0 << 2.0 << 2.0 << arma::endr // point on side 1
-                << 1.0 << -2.0 << 0.0 << arma::endr;// point on side 2
+                << 1.0 << -2.0 << 0.0 << arma::endr // point on side 1
+                << -1.0 << 2.0 << 2.0 << arma::endr;// point on side 2
+//                 << -1.0 << 2.0 << 2.0 << arma::endr // point on side 1
+//                 << 1.0 << -2.0 << 0.0 << arma::endr;// point on side 2
+                
 
         arma::mat base_1D(2, 2);
         //    base fce =   a0 + a1 * t0
