@@ -24,9 +24,12 @@ using namespace Input::Type;
        	.declare_key("parametric", Parameter("parametric"), Default::obligatory(), "")
 		.close();
 
+	static Array parametrized_arr = Array(Parameter("parametric"));
+
 	std::vector<TypeBase::ParameterPair> vec;
 	vec.push_back( std::make_pair("parametric", boost::make_shared<Double>()) );
 	Instance inst = Instance(parametrized_rec, vec);
 
-	const TypeBase &type = parametrized_rec.make_instance(vec);
+	const TypeBase &type_rec = parametrized_rec.make_instance(vec);
+	const TypeBase &type_arr = parametrized_arr.make_instance(vec);
 }

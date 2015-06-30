@@ -274,6 +274,9 @@ public:
     /**
      * Constructor with a @p type of array items given as pure reference. In this case \p type has to by descendant of \p TypeBase different from
      * 'complex' types @p Record and @p Selection. You can also specify minimum and maximum size of the array.
+     *
+     * Possibly modification: If we need set attributes to Array, we can't need TypeBase::add_attribute method (requires non-closed type).
+     * Solution: We add to constructor optional parameter of type vector< pair<std::string, json_string> > what allows set all attributes.
      */
     template <class ValueType>
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
