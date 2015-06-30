@@ -92,7 +92,7 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 }
 
 
-void TypeBase::print_json(ostream& stream) {
+void TypeBase::print_json(ostream& stream) const {
 	stream << "\"attributes\" : {" << endl;
 	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
         if (it != attributes_->begin()) {
@@ -104,7 +104,7 @@ void TypeBase::print_json(ostream& stream) {
 }
 
 
-bool TypeBase::validate_json(json_string str) {
+bool TypeBase::validate_json(json_string str) const {
     try {
     	JSONPath::Node node;
     	json_spirit::read_or_throw( str, node);
@@ -215,7 +215,12 @@ const TypeBase &Array::make_instance(std::vector<ParameterPair> vec) const {
 			ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
 		}
 		ss << "]";
-		arr.add_attribute("parameters", ss.str());
+		json_string val = ss.str();
+		if (this->validate_json(val)) {
+			(*arr.attributes_)["parameters"] = val;
+		} else {
+			xprintf(PrgErr, "Invalid JSON format of attribute 'parameters'.\n");
+		}
 		return *( Input::TypeRepository<Array>::get_instance().add_type(arr) );
 	}
 
