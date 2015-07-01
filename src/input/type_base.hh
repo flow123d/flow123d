@@ -131,6 +131,10 @@ public:
     static void lazy_finish();
 
 
+    /// Check type stored in shared_ptr, if type is Instance make substitution of parameters
+    static boost::shared_ptr<TypeBase> substitute_instance_type(boost::shared_ptr<TypeBase> type_ptr);
+
+
     /**
      * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
      * These input types are typically defined by means
@@ -165,7 +169,7 @@ public:
     void write_attributes(ostream& stream) const;
 
     /// Create instance of generic type
-    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) const
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const
     { ASSERT(false, "make_instance() may not be called for TypeBase class.\n"); };
 
     /// Return if type is generic.
@@ -314,7 +318,7 @@ public:
     virtual bool valid_default(const string &str) const;
 
     // Implements @p TypeBase::make_instance.
-    virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) const override;
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
 

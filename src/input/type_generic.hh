@@ -55,7 +55,11 @@ public:
 
     virtual bool valid_default(const string &str) const;
 
-    virtual bool finish();
+    /// Used for set Instance to TypeRepository
+    const Instance &close() const;
+
+    // Implements @p TypeBase::make_instance.
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
 	const TypeBase &generic_type_;
