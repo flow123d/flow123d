@@ -7,6 +7,7 @@
 
 
 #include <input/type_generic.hh>
+#include <input/type_repository.hh>
 
 #include <boost/functional/hash.hpp>
 
@@ -77,13 +78,15 @@ bool Instance::valid_default(const string &str) const {
 }
 
 
-bool Instance::finish() {
-	// TODO returned type must be add to IST
-	generic_type_.make_instance(parameters_);
-
-	return true;
+const Instance &Instance::close() const {
+	return *( Input::TypeRepository<Instance>::get_instance().add_type( *this ) );
 }
 
+
+// Implements @p TypeBase::make_instance.
+boost::shared_ptr<TypeBase> Instance::make_instance(std::vector<ParameterPair> vec) const {
+	return generic_type_.make_instance(parameters_);
+}
 
 } // closing namespace Type
 } // closing namespace Input
