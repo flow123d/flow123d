@@ -160,7 +160,7 @@ public:
     void add_attribute(std::string name, json_string val);
 
     /// Print JSON output of attributes to @p stream.
-    void print_json(ostream& stream);
+    void write_attributes(ostream& stream) const;
 
 protected:
 
@@ -196,7 +196,7 @@ protected:
     static bool is_valid_identifier(const string& key);
 
     /// Check if JSON string is valid
-    bool validate_json(json_string str);
+    bool validate_json(json_string str) const;
 
     /**
      * Add attributes to hash of the type specification.
