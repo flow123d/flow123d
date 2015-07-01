@@ -162,7 +162,7 @@ public:
     void add_attribute(std::string name, json_string val);
 
     /// Print JSON output of attributes to @p stream.
-    void print_json(ostream& stream) const;
+    void write_attributes(ostream& stream) const;
 
     /// Create instance of generic type
     virtual const TypeBase &make_instance(std::vector<ParameterPair> vec) const

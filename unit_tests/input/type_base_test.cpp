@@ -311,7 +311,7 @@ TEST(InputTypeAttributes, base_test) {
 
 	{
 		std::stringstream ss;
-		rec.print_json(ss);
+		rec.write_attributes(ss);
 		string str = ss.str();
 		EXPECT_TRUE( str.find("\"attr_1\" : \"some attribute\"") != std::string::npos );
 		EXPECT_TRUE( str.find("\"numeric\" : \"10\"") != std::string::npos );
@@ -322,7 +322,7 @@ TEST(InputTypeAttributes, base_test) {
 	{
 		std::stringstream ss;
 		rec.add_attribute("numeric", "\"5\"");
-		rec.print_json(ss);
+		rec.write_attributes(ss);
 		string str = ss.str();
 		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
 		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
@@ -369,15 +369,15 @@ TEST(InputTypeAttributes, base_test) {
 
 	{
 		std::stringstream ss;
-		main_rec.print_json(ss);
+		main_rec.write_attributes(ss);
 		string str = ss.str();
 		//EXPECT_TRUE( str.find("\"full_name\" : \"main_rec\"") != std::string::npos );
 	}
 	cout << "---------------" << endl;
-	main_rec.print_json(cout);
+	main_rec.write_attributes(cout);
 	cout << "---------------" << endl;
-	a_rec.print_json(cout);
+	a_rec.write_attributes(cout);
 	cout << "---------------" << endl;
-	sel.print_json(cout);
+	sel.write_attributes(cout);
 	cout << "---------------" << endl;
 }*/

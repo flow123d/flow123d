@@ -92,7 +92,7 @@ void TypeBase::add_attribute(std::string name, json_string val) {
 }
 
 
-void TypeBase::print_json(ostream& stream) const {
+void TypeBase::write_attributes(ostream& stream) const {
 	stream << "\"attributes\" : {" << endl;
 	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
         if (it != attributes_->begin()) {
