@@ -300,3 +300,84 @@ Record array_record("RecordOfArrays",
 // main.documentation(cout, TypeBase::full_after_record);
 
 }
+
+TEST(InputTypeAttributes, base_test) {
+	Input::Type::Record rec("rec", "Some record.");
+	rec.add_attribute("attr_1", "\"some attribute\"");
+	rec.add_attribute("attr_2", "\"other attribute\"");
+	rec.add_attribute("numeric", "\"10\"");
+	rec.add_attribute("pair", "[\"0\", \"50\"]");
+	rec.add_attribute("float_point", "\"0.5\"");
+
+	{
+		std::stringstream ss;
+		rec.write_attributes(ss);
+		string str = ss.str();
+		EXPECT_TRUE( str.find("\"attr_1\" : \"some attribute\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"numeric\" : \"10\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"pair\" : [\"0\", \"50\"]") != std::string::npos );
+		EXPECT_TRUE( str.find("\"float_point\" : \"0.5\"") != std::string::npos );
+	}
+
+	{
+		std::stringstream ss;
+		rec.add_attribute("numeric", "\"5\"");
+		rec.write_attributes(ss);
+		string str = ss.str();
+		EXPECT_FALSE( str.find("\"numeric\" : \"10\"") != std::string::npos );
+		EXPECT_TRUE( str.find("\"numeric\" : \"5\"") != std::string::npos );
+	}
+
+    EXPECT_THROW_WHAT( { rec.add_attribute("invalid_attr", "non quotation attribute"); }, ExcXprintfMsg,
+            "Invalid JSON format of attribute 'invalid_attr'." );
+}
+
+/*TEST(InputTypeAttributes, complete_test) {
+	using namespace Input::Type;
+
+	static Selection sel = Selection("Bc_types", "Boundary conditions.")
+		.add_value(0, "none")
+		.add_value(1, "Newton")
+		.add_value(2, "Neumann")
+		.add_value(3, "Dirichlet")
+		.add_value(4, "Robin")
+		.close();
+
+	static Record rec1 = Record("rec_1", "Time step record.")
+		.declare_key("time_step", Double(), Default::obligatory(), "Time step value.")
+		.close();
+
+	static Record rec2 = Record("rec_2", "Step record.")
+		.declare_key("step_iter", Integer(1, 100), Default::obligatory(), "Count of steps.")
+		.close();
+
+	static AbstractRecord a_rec = AbstractRecord("a_rec", "Step AbstractRecord")
+		.close();
+	a_rec.add_child(rec1);
+	a_rec.add_child(rec2);
+
+	static Record main_rec = Record("main_rec", "Main Record.")
+		.declare_key("bc", sel, Default::obligatory(), "Selection of boundary conditions.")
+		.declare_key("idx", Array( Integer() ), Default::obligatory(), "List of indexes.")
+		.declare_key("time", Double(), Default::obligatory(), "Start time value.")
+		.declare_key("step", a_rec, Default::obligatory(), "Start time value.")
+		.declare_key("desc", String(), Default::optional(), "Description of problem.")
+		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
+		.close();
+
+	TypeBase::lazy_finish();
+
+	{
+		std::stringstream ss;
+		main_rec.write_attributes(ss);
+		string str = ss.str();
+		//EXPECT_TRUE( str.find("\"full_name\" : \"main_rec\"") != std::string::npos );
+	}
+	cout << "---------------" << endl;
+	main_rec.write_attributes(cout);
+	cout << "---------------" << endl;
+	a_rec.write_attributes(cout);
+	cout << "---------------" << endl;
+	sel.write_attributes(cout);
+	cout << "---------------" << endl;
+}*/

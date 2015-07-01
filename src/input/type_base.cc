@@ -28,6 +28,7 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
 
@@ -44,11 +45,13 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {}
+TypeBase::TypeBase()
+: attributes_( boost::make_shared<attribute_map>() ) {}
 
 
 
-TypeBase::TypeBase(const TypeBase& other) {}
+TypeBase::TypeBase(const TypeBase& other)
+: attributes_(other.attributes_) {}
 
 
 
@@ -77,6 +80,52 @@ void TypeBase::lazy_finish() {
 
 
 
+void TypeBase::add_attribute(std::string name, json_string val) {
+	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
+	if (validate_json(val)) {
+		(*attributes_)[name] = val;
+	} else {
+		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
+	}
+}
+
+
+void TypeBase::write_attributes(ostream& stream) const {
+	stream << "\"attributes\" : {" << endl;
+	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
+        if (it != attributes_->begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
+}
+
+
+bool TypeBase::validate_json(json_string str) const {
+    try {
+    	json_spirit::mValue node;
+    	json_spirit::read_or_throw( str, node);
+    	return true;
+    } catch (json_spirit::Error_position &e ) {
+        return false;
+    }
+}
+
+
+void TypeBase::attribute_content_hash(std::size_t &seed) const {
+	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
+		boost::hash_combine(seed, (*it).first );
+		boost::hash_combine(seed, (*it).second );
+	}
+
+}
+
+
+
+
+
+
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
     return ( stream << OutputText(&type, 1) );
@@ -95,6 +144,7 @@ TypeBase::TypeHash Array::content_hash() const
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
     boost::hash_combine(seed, data_->type_of_values_->content_hash() );
+    attribute_content_hash(seed);
     return seed;
 }
 
