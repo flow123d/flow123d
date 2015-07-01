@@ -29,7 +29,7 @@
 #include "type_output.hh"
 #include "type_repository.hh"
 #include "type_generic.hh"
-#include "json_to_storage.hh"
+#include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
 
@@ -106,7 +106,7 @@ void TypeBase::write_attributes(ostream& stream) const {
 
 bool TypeBase::validate_json(json_string str) const {
     try {
-    	JSONPath::Node node;
+    	json_spirit::mValue node;
     	json_spirit::read_or_throw( str, node);
     	return true;
     } catch (json_spirit::Error_position &e ) {
