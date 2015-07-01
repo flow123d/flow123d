@@ -270,7 +270,8 @@ bool Record::finish()
     {
         ASSERT(typeid( *(it->type_) ) != typeid(Parameter), "Finished Record '%s' can't contain key '%s' of type Parameter.\n",
         		this->type_name().c_str(), it->type_->type_name().c_str());
-    	if (it->key_ != "TYPE") {
+    	it->type_ = TypeBase::substitute_instance_type(it->type_);
+        if (it->key_ != "TYPE") {
             data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
             // we check once more even keys that was already checked, otherwise we have to store
@@ -364,7 +365,7 @@ Record &Record::has_obligatory_type_key() {
 }
 
 
-const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) const {
+boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec) const {
 	Record rec = Record(this->type_name(), this->data_->description_);
 	// Add parent Abstracts
 	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
@@ -402,7 +403,7 @@ const TypeBase &Record::make_instance(std::vector<ParameterPair> vec) const {
 	ss << "]";
 	rec.add_attribute("parameters", ss.str());
 
-	return rec.close();
+	return boost::make_shared<Record>(rec.close());
 }
 
 
@@ -530,6 +531,7 @@ RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(AbstractRecord);
 RECORD_DECLARE_KEY(AdHocAbstractRecord);
 RECORD_DECLARE_KEY(Parameter);
+RECORD_DECLARE_KEY(Instance);
 
 
 
