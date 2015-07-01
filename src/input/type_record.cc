@@ -476,7 +476,6 @@ RECORD_DECLARE_KEY(AdHocAbstractRecord);
 AbstractRecord::AbstractRecord()
 : child_data_( boost::make_shared<ChildData>( "EmptyAbstractRecord", "" ) )
 {
-	attributes_ = boost::make_shared<attribute_map>();
 	close();
 	finish();
 }
@@ -484,18 +483,14 @@ AbstractRecord::AbstractRecord()
 
 
 AbstractRecord::AbstractRecord(const AbstractRecord& other)
-: child_data_(other.child_data_)
-{
-	attributes_ = other.attributes_;
-}
+: TypeBase( other ), child_data_(other.child_data_)
+{}
 
 
 
 AbstractRecord::AbstractRecord(const string & type_name_in, const string & description)
 : child_data_( boost::make_shared<ChildData>( type_name_in, description ) )
-{
-	attributes_ = boost::make_shared<attribute_map>();
-}
+{}
 
 
 TypeBase::TypeHash AbstractRecord::content_hash() const
