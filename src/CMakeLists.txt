@@ -112,7 +112,8 @@ add_library(input_lib
     input/storage_transpose.cc
 )
 target_link_libraries(input_lib 
-    system_lib json_spirit)
+    system_lib json_spirit
+    ${YamlCpp_LIBRARY})
 
 
 # la_lib

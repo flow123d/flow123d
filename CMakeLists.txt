@@ -614,6 +614,17 @@ if (USE_PYTHON)
     endif()
 endif()  
 
+#################################################################################
+#  YAML_CPP_FOUND - set to true if the library is found
+set(YamlCpp_DIR /home/jb/local/yaml-cpp)
+find_package(YamlCpp REQUIRED)
+if (YamlCpp_FOUND)
+    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
+endif()
+
+
+
+
 message(STATUS "\n ======================================================= ")
 
 
@@ -635,6 +646,7 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
+    ${YamlCpp_INCLUDE_DIR}
 #    ${CMAKE_BINARY_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
@@ -808,6 +820,7 @@ message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "===========================================")
 
 

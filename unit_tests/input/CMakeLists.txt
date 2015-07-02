@@ -50,6 +50,8 @@ define_test(type_repository)
 define_test(factory)
 define_test(type_dispatch)
 
+define_test(yaml_lib)
+
 
 
 
