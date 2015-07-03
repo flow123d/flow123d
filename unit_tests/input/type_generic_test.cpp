@@ -41,10 +41,10 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
 
 	return Instance(Record("generic_rec", "desc.")
-						.declare_key("start_time", Double(), "desc.")
-						.declare_key("name", String(), "desc.")
 						.declare_key("param1", Parameter("param1"), "desc.")
 						.declare_key("param2", Parameter("param2"), "desc.")
+						.declare_key("start_time", Double(), "desc.")
+						.declare_key("name", String(), "desc.")
 						.close(),
 					param_vec)
 			.close();
@@ -60,6 +60,18 @@ static const Instance & get_generic_array(const Selection *sel) {
 			.close();
 }
 
+static AbstractRecord & get_abstract_type() {
+	return AbstractRecord("SomeAbstract", "Some Abstract.").close();
+}
+
+static const Instance & get_generic_abstract(const Selection *sel) {
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );
+
+	return Instance( get_abstract_type(), param_vec )
+			.close();
+}
+
 
 TEST(GenericType, generic_record) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -70,6 +82,14 @@ TEST(GenericType, generic_record) {
 			.close();
 
 	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = problem.begin();
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+	const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
+	EXPECT_EQ( typeid( *(in_rec->begin()->type_.get()) ), typeid(Selection) );
+
+	++key_it;
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 }
 
 
@@ -81,4 +101,45 @@ TEST(GenericType, generic_array) {
 			.close();
 
 	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = arr_rec.begin();
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Array) );
+	const Array *array = static_cast<const Array *>(key_it->type_.get());
+	EXPECT_EQ( typeid( array->get_sub_type() ), typeid(Selection) );
+
+	++key_it;
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Array) );
+}
+
+
+TEST(GenericType, generic_abstract) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	static Record desc1 = Record("Descendant1", "")
+			.derive_from(get_abstract_type())
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_int", Integer(), "Integer key")
+			.close();
+
+	static Record desc2 = Record("Descendant2", "")
+			.derive_from(get_abstract_type())
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Record rec_with_abstracts = Record("rec_of_arr", "desc.")
+			.declare_key("abstract1", get_generic_abstract(&get_colors_selection()), "Primary problem.")
+			.declare_key("abstract2", get_generic_abstract(&get_shapes_selection()), "Secondary problem.")
+			.declare_key("bool", Bool(), "Some bool key.")
+			.close();
+
+	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = rec_with_abstracts.begin();
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
+	const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
+	EXPECT_EQ( abstract->child_size(), 2 );
+	EXPECT_EQ( typeid( *(abstract->get_descendant(0).begin()->type_.get()) ), typeid(Selection) );
+
+	++key_it;
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
 }
