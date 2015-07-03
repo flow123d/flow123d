@@ -678,6 +678,9 @@ public:
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
 
+    // Implements @p TypeBase::make_instance.
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+
 protected:
     /**
      * This method intentionally have no implementation to
