@@ -8,11 +8,12 @@
 # By default, the dynamic libraries of yaml-cpp will be found. To find the static ones instead,
 # you must set the YamlCpp_STATIC_LIBRARY variable to TRUE before calling find_package(YamlCpp ...).
 #
-# If yaml-cpp is not installed in a standard path, you can use the YamlCpp_DIR CMake variable
+# If yaml-cpp is not installed in a standard path, you can use the YamlCpp_ROOT_HINT CMake variable
 # to tell CMake where yaml-cpp is.
 
 # attempt to find static library first if this is set
 # currently force static library
+
 #if(YamlCpp_STATIC_LIBRARY)
     set(YamlCpp_STATIC libyaml-cpp.a)
 #endif()
@@ -20,18 +21,23 @@
 # find the yaml-cpp include directory
 find_path(YamlCpp_INCLUDE_DIR yaml-cpp/yaml.h
           PATH_SUFFIXES include
+          HINTS 
+              ${YamlCpp_ROOT_HINT}/include/
           PATHS
-          /usr/local/include/
-          /usr/include/
-          ${YamlCpp_DIR}/include/)
+              /usr/local/include/
+              /usr/include/
+          )
 
 # find the yaml-cpp library
 find_library(YamlCpp_LIBRARY
              NAMES ${YamlCpp_STATIC} yaml-cpp
              PATH_SUFFIXES lib64 lib
-             PATHS  /usr/local
-                    /usr
-                    ${YamlCpp_DIR}/lib)
+             HINTS
+                 ${YamlCpp_ROOT_HINT}
+             PATHS  
+                /usr/local
+                /usr
+             )
 
 # handle the QUIETLY and REQUIRED arguments and set YAMLCPP_FOUND to TRUE if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)

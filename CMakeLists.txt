@@ -616,11 +616,26 @@ endif()
 
 #################################################################################
 #  YAML_CPP_FOUND - set to true if the library is found
-set(YamlCpp_DIR /home/jb/local/yaml-cpp)
-find_package(YamlCpp REQUIRED)
-if (YamlCpp_FOUND)
+
+message(STATUS "\n =======================================================")
+find_package(YamlCpp)
+if (NOT YamlCpp_FOUND)
+    message(STATUS "Try to install our own yaml-cpp library.")
+    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+    include(InstallYamlCpp)
+
+    unset(YamlCpp_FOUND CACHE) 
+    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
+    unset(YamlCpp_LIBRARY CACHE)
+
+    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
+    find_package(YamlCpp REQUIRED)
+    
     message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
 endif()
+
+message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
 
 
 
