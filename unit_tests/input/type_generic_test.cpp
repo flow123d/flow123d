@@ -135,11 +135,26 @@ TEST(GenericType, generic_abstract) {
 	TypeBase::lazy_finish();
 
 	Record::KeyIter key_it = rec_with_abstracts.begin();
-	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
-	const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
-	EXPECT_EQ( abstract->child_size(), 2 );
-	EXPECT_EQ( typeid( *(abstract->get_descendant(0).begin()->type_.get()) ), typeid(Selection) );
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
+		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
+		EXPECT_EQ( abstract->child_size(), 2 );
+		Record::KeyIter desc_it = abstract->get_descendant(0).begin();
+		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(Selection) );
+		++desc_it;
+		const Selection *sel = static_cast<const Selection *>(desc_it->type_.get());
+		EXPECT_EQ( sel->type_name(), "colors" );
+	}
 
 	++key_it;
-	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(AbstractRecord) );
+		const AbstractRecord *abstract = static_cast<const AbstractRecord *>(key_it->type_.get());
+		EXPECT_EQ( abstract->child_size(), 2 );
+		Record::KeyIter desc_it = abstract->get_descendant(0).begin();
+		EXPECT_EQ( typeid( *(desc_it->type_.get()) ), typeid(Selection) );
+		++desc_it;
+		const Selection *sel = static_cast<const Selection *>(desc_it->type_.get());
+		EXPECT_EQ( sel->type_name(), "shapes" );
+	}
 }
