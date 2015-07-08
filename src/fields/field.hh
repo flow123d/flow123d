@@ -119,7 +119,7 @@ public:
      * @p meka_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
-    IT::AbstractRecord &get_input_type() override;
+    const IT::Instance &get_input_type() override;
 
     IT::Record &get_multifield_input_type() override;
 
@@ -235,7 +235,7 @@ protected:
      * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
      * that was set through @p FieldBaseCommon::set_selection() method.
      */
-    IT::AbstractRecord & make_input_tree();
+    const IT::Instance & make_input_tree();
 
 
 
