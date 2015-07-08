@@ -18,14 +18,14 @@
 
 namespace it = Input::Type;
 
+//FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
+
 
 template <int spacedim, class Value>
-const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
-        Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
-        )
+const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
-            .derive_from(a_type)
+            .derive_from(FieldAlgorithmBase<spacedim, Value>::get_abstract_input_type())
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
@@ -42,7 +42,8 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
 
 template <int spacedim, class Value>
 const int FieldFormula<spacedim, Value>::registrar =
-		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula");
+		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula") +
+		FieldFormula<spacedim, Value>::get_input_type().size();
 
 
 
