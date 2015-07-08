@@ -720,6 +720,10 @@ bool AbstractRecord::have_default_descendant() const {
 
 boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
 	AbstractRecord abstract = AbstractRecord(this->type_name(), this->child_data_->description_);
+	// Set default descendant
+	if (this->have_default_descendant()) {
+		abstract.allow_auto_conversion(child_data_->selection_default_.value());
+	}
 	// Copy attributes
 	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
 		abstract.add_attribute(it->first, it->second);
