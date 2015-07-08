@@ -69,10 +69,10 @@ public:
         mesh->read_gmsh_from_stream(in);
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
-            .declare_key("scalar", ScalarField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::Scalar>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector_fixed", VecFixField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("vector", VecField::get_input_type(FieldAlgorithmBase<3, FieldValue<3>::Vector>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
-            .declare_key("tensor_fixed", TensorField::get_input_type(FieldAlgorithmBase<3, FieldValue<2>::TensorFixed>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector", VecField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::JSONToStorage reader( input, rec_type );

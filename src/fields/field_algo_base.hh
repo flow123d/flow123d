@@ -28,6 +28,7 @@
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/type_generic.hh"
 
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
@@ -72,10 +73,15 @@ public:
        static std::string template_name();
 
        /**
+        * Abstract Input Type for Field initialization
+        */
+       static Input::Type::AbstractRecord & get_abstract_input_type();
+
+       /**
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
         * given by element_input_type pointer.
         */
-       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static const Input::Type::Instance & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
 
        /**
         * This static method gets accessor to abstract record with function input,
