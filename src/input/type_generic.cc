@@ -52,6 +52,12 @@ bool Parameter::valid_default(const string &str) const {
 }
 
 
+boost::shared_ptr<TypeBase> Parameter::make_instance(std::vector<ParameterPair> vec) const {
+	ASSERT(false, "Method make_instance can't be called for type Parameter.\n");
+	return boost::make_shared<Parameter>(*this);
+}
+
+
 /*******************************************************************
  * implementation of Instance
  */

@@ -347,7 +347,7 @@ public:
     Record &has_obligatory_type_key();
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 
 protected:
@@ -679,7 +679,7 @@ public:
     Default &get_selection_default() const;
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 protected:
     /**

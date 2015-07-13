@@ -322,6 +322,10 @@ string Bool::type_name() const {
 }
 
 
+boost::shared_ptr<TypeBase> Bool::make_instance(std::vector<ParameterPair> vec) const {
+	return boost::make_shared<Bool>(*this);
+}
+
 /**********************************************************************************
  * implementation of Type::Integer
  */
@@ -367,6 +371,11 @@ bool Integer::valid_default(const string &str) const
 
 string Integer::type_name() const {
     return "Integer";
+}
+
+
+boost::shared_ptr<TypeBase> Integer::make_instance(std::vector<ParameterPair> vec) const {
+	return boost::make_shared<Integer>(*this);
 }
 
 
@@ -417,6 +426,11 @@ bool Double::valid_default(const string &str) const
 
 string Double::type_name() const {
     return "Double";
+}
+
+
+boost::shared_ptr<TypeBase> Double::make_instance(std::vector<ParameterPair> vec) const {
+	return boost::make_shared<Double>(*this);
 }
 
 
@@ -493,6 +507,12 @@ string String::from_default(const string &str) const {
 
 bool String::match(const string &str) const {
     return true;
+}
+
+
+
+boost::shared_ptr<TypeBase> String::make_instance(std::vector<ParameterPair> vec) const {
+	return boost::make_shared<String>(*this);
 }
 
 

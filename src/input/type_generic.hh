@@ -38,6 +38,8 @@ public:
 
     virtual bool valid_default(const string &str) const;
 
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
 protected:
 	const string name_;
 };
@@ -59,7 +61,7 @@ public:
     const Instance &close() const;
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 protected:
 	const TypeBase &generic_type_;
