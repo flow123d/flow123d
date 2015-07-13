@@ -169,8 +169,7 @@ public:
     void write_attributes(ostream& stream) const;
 
     /// Create instance of generic type
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const
-    { ASSERT(false, "make_instance() may not be called for TypeBase class.\n"); };
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
     /// Return if type is generic.
     inline bool is_generic() const
@@ -318,7 +317,7 @@ public:
     virtual bool valid_default(const string &str) const;
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 protected:
 
@@ -364,6 +363,8 @@ public:
     virtual string type_name() const;
 
     virtual bool valid_default(const string &str) const;
+
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 
@@ -397,6 +398,8 @@ public:
     virtual bool valid_default(const string &str) const;
 
     virtual string type_name() const;
+
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -435,6 +438,8 @@ public:
     double from_default(const string &str) const;
 
     virtual string type_name() const;
+
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
 
@@ -465,6 +470,8 @@ public:
 
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual bool valid_default(const string &str) const;
+
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 

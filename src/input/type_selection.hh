@@ -176,6 +176,10 @@ public:
 
     /// Implements \p TypeBase::is_closed
     virtual bool is_closed() const override;
+
+
+    // Implements @p TypeBase::make_instance.
+    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     /**
