@@ -224,11 +224,12 @@ boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec)
 		}
 		ss << "]";
 		json_string val = ss.str();
-		if (this->validate_json(val)) {
-			(*arr.attributes_)["parameters"] = val;
-		} else {
-			xprintf(PrgErr, "Invalid JSON format of attribute 'parameters'.\n");
-		}
+		ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+		(*arr.attributes_)["parameters"] = val;
+		std::stringstream type_stream;
+		type_stream << "\"" << this->content_hash() << "\"";
+		(*arr.attributes_)["generic_type"] = type_stream.str();
+
 		return boost::make_shared<Array>(arr);
 	}
 
