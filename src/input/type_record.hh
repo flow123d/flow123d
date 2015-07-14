@@ -346,7 +346,7 @@ public:
      */
     Record &has_obligatory_type_key();
 
-    // Implements @p TypeBase::make_instance.
+    /// Implements @p TypeBase::make_instance.
     virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 
@@ -376,7 +376,11 @@ protected:
      */
     class RecordData  {
     public:
+        /// Constructor
         RecordData(const string & type_name_in, const string & description);
+
+        /// Copy constructor
+        RecordData(const RecordData &other);
 
         /**
          * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
