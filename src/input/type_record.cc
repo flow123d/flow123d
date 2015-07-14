@@ -390,9 +390,7 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 		}
 	}
 	// Copy attributes
-	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
-		rec.add_attribute(it->first, it->second);
-	}
+	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	// Set parameters as attribute
 	std::stringstream ss;
 	ss << "[";
@@ -725,9 +723,7 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 		abstract.allow_auto_conversion(child_data_->selection_default_.value());
 	}
 	// Copy attributes
-	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
-		abstract.add_attribute(it->first, it->second);
-	}
+	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	// Set parameters as attribute
 	std::stringstream ss;
 	ss << "[";
@@ -771,9 +767,7 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 			}
 		}
 		// Copy attributes
-		for (attribute_map::iterator it=(*child_it).attributes_->begin(); it!=(*child_it).attributes_->end(); it++) {
-			rec.add_attribute(it->first, it->second);
-		}
+		rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 		// Set parameters as attribute
 		rec.add_attribute("parameters", ss.str());
 
