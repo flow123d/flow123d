@@ -421,6 +421,22 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
 }
 
 
+Record::RecordData::RecordData(const RecordData &other)
+:key_to_index(other.key_to_index),
+ keys(other.keys),
+ description_(other.description_),
+ type_name_(other.type_name_),
+ parent_ptr_(other.parent_ptr_),
+ finished(false),
+ closed_(false),
+ derived_(other.derived_),
+ auto_conversion_key_idx(other.auto_conversion_key_idx),
+ auto_conversion_key(other.auto_conversion_key)
+{
+
+}
+
+
 Record::KeyIter Record::RecordData::auto_conversion_key_iter() const {
 	if (auto_conversion_key_idx >= 0) return keys.begin() + auto_conversion_key_idx;
   	else return keys.end();
