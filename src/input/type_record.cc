@@ -270,7 +270,7 @@ bool Record::finish()
     {
         ASSERT(typeid( *(it->type_) ) != typeid(Parameter), "Finished Record '%s' can't contain key '%s' of type Parameter.\n",
         		this->type_name().c_str(), it->type_->type_name().c_str());
-    	it->type_ = TypeBase::substitute_instance_type(it->type_);
+        if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance();
         if (it->key_ != "TYPE") {
             data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 

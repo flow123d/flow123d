@@ -81,15 +81,6 @@ void TypeBase::lazy_finish() {
 
 
 
-boost::shared_ptr<TypeBase> TypeBase::substitute_instance_type(boost::shared_ptr<TypeBase> type_ptr) {
-	if ( typeid( *type_ptr ) == typeid(Instance) ) {
-		return type_ptr->make_instance();
-	}
-	return type_ptr;
-}
-
-
-
 void TypeBase::add_attribute(std::string name, json_string val) {
 	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
 	if (validate_json(val)) {
