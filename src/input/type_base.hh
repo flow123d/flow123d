@@ -131,10 +131,6 @@ public:
     static void lazy_finish();
 
 
-    /// Check type stored in shared_ptr, if type is Instance make substitution of parameters
-    static boost::shared_ptr<TypeBase> substitute_instance_type(boost::shared_ptr<TypeBase> type_ptr);
-
-
     /**
      * Finish method. Finalize construction of "Lazy types": Record, Selection, AbstractRecord, and Array.
      * These input types are typically defined by means
