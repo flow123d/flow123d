@@ -366,15 +366,7 @@ Record &Record::has_obligatory_type_key() {
 
 
 boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec) const {
-	Record rec = Record(this->type_name(), this->data_->description_);
-	// Add parent Abstracts
-	for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
-		rec.derive_from( *(*it) );
-	}
-	// Set autoconversion key
-	if (data_->auto_conversion_key != "") rec.allow_auto_conversion(data_->auto_conversion_key);
-	// Copy keys
-	rec.copy_keys(*this);
+	Record rec = this->deep_copy();
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" && typeid( *(key_it->type_) ) == typeid(Parameter) ) {
@@ -389,8 +381,6 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 					key_it->key_.c_str(), this->type_name().c_str());
 		}
 	}
-	// Copy attributes
-	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	// Set parameters as attribute
 	std::stringstream ss;
 	ss << "[";
@@ -404,6 +394,13 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 	return boost::make_shared<Record>(rec.close());
 }
 
+
+Record Record::deep_copy() const {
+	Record rec = Record();
+	rec.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	return rec;
+}
 
 /**********************************************************************************
  * implementation of Type::Record::RecordData

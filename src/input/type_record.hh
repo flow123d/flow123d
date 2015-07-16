@@ -349,6 +349,9 @@ public:
     /// Implements @p TypeBase::make_instance.
     virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
+    /// Create deep copy of Record (copy all data stored in shared pointers etc.)
+    Record deep_copy() const;
+
 
 protected:
 
