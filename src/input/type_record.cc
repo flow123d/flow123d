@@ -736,13 +736,7 @@ bool AbstractRecord::have_default_descendant() const {
 
 
 boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
-	AbstractRecord abstract = AbstractRecord(this->type_name(), this->child_data_->description_);
-	// Set default descendant
-	if (this->have_default_descendant()) {
-		abstract.allow_auto_conversion(child_data_->selection_default_.value());
-	}
-	// Copy attributes
-	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	AbstractRecord abstract = this->deep_copy();
 	// Set parameters as attribute
 	std::stringstream ss;
 	ss << "[";
@@ -757,10 +751,18 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 
 	// make instances of all descendant records and add them into instance of abstract
 	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
-		abstract.add_child( static_cast<const Record &>( *(*child_it).make_instance(vec) ) );
+		abstract.add_child( static_cast<Record &>( *(*child_it).make_instance(vec) ) );
 	}
 
 	return boost::make_shared<AbstractRecord>(abstract.close());
+}
+
+
+AbstractRecord AbstractRecord::deep_copy() const {
+	AbstractRecord abstract = AbstractRecord();
+	abstract.child_data_ =  boost::make_shared<AbstractRecord::ChildData>(*this->child_data_);
+	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	return abstract;
 }
 
 
@@ -771,6 +773,18 @@ AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
 AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
     return child_data_->list_of_childs.end();
 }
+
+
+AbstractRecord::ChildData::ChildData(const ChildData &other)
+: selection_of_childs( boost::make_shared<Selection> (other.type_name_ + "_TYPE_selection") ),
+  //list_of_childs(other.list_of_childs),
+  element_input_selection(other.element_input_selection),
+  description_(other.description_),
+  type_name_(other.type_name_),
+  finished_(false),
+  closed_(false),
+  selection_default_(other.selection_default_)
+{}
 
 
 /************************************************

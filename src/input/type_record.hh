@@ -507,6 +507,8 @@ protected:
 		  selection_default_(Default::obligatory())
         {}
 
+        ChildData(const ChildData &other);
+
         /**
          * Selection composed from names of derived Records. Indices are according to
          * the order of derivation (starting from zero).
@@ -695,6 +697,9 @@ public:
 
     // Implements @p TypeBase::make_instance.
     virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
+    /// Create deep copy of AbstractRecord (copy all data stored in shared pointers etc.)
+    AbstractRecord deep_copy() const;
 
 protected:
     /**
