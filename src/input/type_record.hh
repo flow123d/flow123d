@@ -375,6 +375,14 @@ protected:
     Record &declare_type_key(boost::shared_ptr<Selection> key_type);
 
     /**
+     * Set parent Abstract of Record.
+     *
+     * This method is created for correct functionality of generic types. It must be called
+     * in Abstract::finish() and refill @p parent_ptr_ vector of correct parents.
+     */
+    const Record &add_parent(AbstractRecord &parent) const;
+
+    /**
      * Internal data class.
      */
     class RecordData  {
