@@ -45,9 +45,7 @@ TypeBase::TypeHash Parameter::content_hash() const {
 
 
 bool Parameter::valid_default(const string &str) const {
-    if ( str != type_name() ) {
-        THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
-    }
+    ASSERT(false, "Method valid_default can't be called for Parameter type.\n");
     return true;
 }
 
@@ -80,6 +78,7 @@ TypeBase::TypeHash Instance::content_hash() const {
 
 
 bool Instance::valid_default(const string &str) const {
+    ASSERT(false, "Method valid_default can't be called for Instance type.\n");
     return true;
 }
 
