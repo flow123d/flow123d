@@ -757,40 +757,7 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 
 	// make instances of all descendant records and add them into instance of abstract
 	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
-		Record rec = Record((*child_it).type_name(), (*child_it).data_->description_);
-		// Add parent Abstracts, generic (this) record is replaced by created instance
-		TypeHash hash = this->content_hash();
-		for (auto it = (*child_it).data_->parent_ptr_.begin(); it != (*child_it).data_->parent_ptr_.end(); ++it) {
-			if ( (*it)->content_hash() == hash ) {
-				rec.derive_from( abstract );
-			} else {
-				rec.derive_from( *(*it) );
-			}
-		}
-		// Set autoconversion key
-		if ((*child_it).data_->auto_conversion_key != "") rec.allow_auto_conversion((*child_it).data_->auto_conversion_key);
-		// Copy keys
-		rec.copy_keys( *child_it );
-		// Replace keys of type Parameter
-		for (std::vector<Record::Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
-			if ( key_it->key_ != "TYPE" && typeid( *(key_it->type_) ) == typeid(Parameter) ) {
-				bool found = false;
-				for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-					if ( (*vec_it).first == key_it->key_ ) {
-						found = true;
-						key_it->type_ = (*vec_it).second;
-					}
-				}
-				if (!found) xprintf(Warn, "Parameterized key '%s' in make_instance method of '%s' Record wasn't replaced!\n",
-						key_it->key_.c_str(), (*child_it).type_name().c_str());
-			}
-		}
-		// Copy attributes
-		rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
-		// Set parameters as attribute
-		rec.add_attribute("parameters", ss.str());
-
-		abstract.add_child( rec.close() );
+		abstract.add_child( static_cast<const Record &>( *(*child_it).make_instance(vec) ) );
 	}
 
 	return boost::make_shared<AbstractRecord>(abstract.close());
