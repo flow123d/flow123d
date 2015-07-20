@@ -197,15 +197,20 @@ bool Array::valid_default(const string &str) const {
 boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec) const {
 	// Replace only if type_of_values_ is parameter
 	if ( typeid( *(data_->type_of_values_) ) == typeid(Parameter) ) {
-		ASSERT( vec.size() == 1, "Parameter vector of Input::Type::Array '%s' must have size 1!", this->type_name().c_str());
-		std::vector<ParameterPair>::iterator vec_it=vec.begin();
 		// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
 		Array arr = Array(Integer(), this->data_->lower_bound_, this->data_->upper_bound_);
-		arr.data_->type_of_values_ = (*vec_it).second;
-		// Copy attributes
-		for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
-			arr.add_attribute(it->first, it->second);
+		// Replace parameter stored in type_of_values_
+		bool found = false;
+		for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
+			if ( (*vec_it).first == data_->type_of_values_->type_name() ) {
+				found = true;
+				arr.data_->type_of_values_ = (*vec_it).second;
+			}
 		}
+		ASSERT(found, "Parameterized type_of_values_ in make_instance method of '%s' Array wasn't replaced!\n",
+				this->type_name().c_str());
+		// Copy attributes
+		arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 		// Set parameters as attribute
 		std::stringstream ss;
 		ss << "[";
