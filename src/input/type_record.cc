@@ -348,21 +348,18 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 				if ( (*vec_it).first == key_it->key_ ) {
 					found = true;
 					key_it->type_ = (*vec_it).second;
+					rec.parameter_map_[(*vec_it).first] = (*vec_it).second->content_hash();
 				}
 			}
 			ASSERT(found, "Parameterized key '%s' in make_instance method of '%s' Record wasn't replaced!\n",
 					key_it->key_.c_str(), this->type_name().c_str());
 		}
 	}
-	// Set parameters as attribute
-	std::stringstream ss;
-	ss << "[";
-	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-		if (vec_it != vec.begin()) ss << "," << endl;
-		ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
-	}
-	ss << "]";
-	rec.add_attribute("parameters", ss.str());
+	// Set attributes
+	rec.add_attribute("parameters", rec.print_parameter_map_to_json());
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	rec.add_attribute("generic_type", type_stream.str());
 
 	return boost::make_shared<Record>(rec.close());
 }
@@ -737,7 +734,7 @@ bool AbstractRecord::have_default_descendant() const {
 
 boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
 	AbstractRecord abstract = this->deep_copy();
-	// Set parameters as attribute
+	// Set parameters as attribute - TODO: replace
 	std::stringstream ss;
 	ss << "[";
 	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
@@ -746,6 +743,9 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 	}
 	ss << "]";
 	abstract.add_attribute("parameters", ss.str());
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	abstract.add_attribute("generic_type", type_stream.str());
 	// Close abstract
 	abstract.close();
 
