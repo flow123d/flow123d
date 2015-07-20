@@ -66,6 +66,7 @@ public:
 	typedef std::string json_string;
 	typedef std::map<std::string, json_string> attribute_map;
 	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	typedef std::map< std::string, TypeHash > ParameterMap;
 
 
     /**
@@ -214,8 +215,21 @@ protected:
      */
     void attribute_content_hash(std::size_t &seed) const;
 
+    /// Merge values @p other map to @p parameter_map_
+    void add_to_parameter_map(ParameterMap other);
+
+    /// Create JSON output from @p parameter_map_ formatted as attribute.
+    json_string print_parameter_map_to_json();
+
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
+
+    /**
+     * Map of used parameters in generic type (for non-generic types is empty).
+     *
+     * Contains all parameter pairs used in type and in all descendants (in subtree of type).
+     */
+    ParameterMap parameter_map_;
 
     /// Flag determining if type is generic (e. g. Record is generic if has key of type Parameter).
     bool generic_;

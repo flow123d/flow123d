@@ -123,6 +123,23 @@ void TypeBase::attribute_content_hash(std::size_t &seed) const {
 }
 
 
+void TypeBase::add_to_parameter_map(ParameterMap other) {
+	parameter_map_.insert(other.begin(), other.end());
+}
+
+
+TypeBase::json_string TypeBase::print_parameter_map_to_json() {
+	std::stringstream ss;
+	ss << "[";
+	for (ParameterMap::iterator it=parameter_map_.begin(); it!=parameter_map_.end(); it++) {
+		if (it != parameter_map_.begin()) ss << "," << endl;
+		ss << "{ \"" << (*it).first << "\" : \"" << (*it).second << "\" }";
+	}
+	ss << "]";
+	return ss.str();
+}
+
+
 
 
 
@@ -205,6 +222,7 @@ boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec)
 			if ( (*vec_it).first == data_->type_of_values_->type_name() ) {
 				found = true;
 				arr.data_->type_of_values_ = (*vec_it).second;
+				arr.parameter_map_[(*vec_it).first] = (*vec_it).second->content_hash();
 			}
 		}
 		ASSERT(found, "Parameterized type_of_values_ in make_instance method of '%s' Array wasn't replaced!\n",
@@ -212,14 +230,7 @@ boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec)
 		// Copy attributes
 		arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 		// Set parameters as attribute
-		std::stringstream ss;
-		ss << "[";
-		for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-			if (vec_it != vec.begin()) ss << "," << endl;
-			ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
-		}
-		ss << "]";
-		json_string val = ss.str();
+		json_string val = arr.print_parameter_map_to_json();
 		ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
 		(*arr.attributes_)["parameters"] = val;
 		std::stringstream type_stream;
