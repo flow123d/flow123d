@@ -350,7 +350,7 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 					key_it->type_ = (*vec_it).second;
 				}
 			}
-			if (!found) xprintf(Warn, "Parameterized key '%s' in make_instance method of '%s' Record wasn't replaced!\n",
+			ASSERT(found, "Parameterized key '%s' in make_instance method of '%s' Record wasn't replaced!\n",
 					key_it->key_.c_str(), this->type_name().c_str());
 		}
 	}
