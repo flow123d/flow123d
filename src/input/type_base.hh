@@ -67,6 +67,7 @@ public:
 	typedef std::map<std::string, json_string> attribute_map;
 	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
 	typedef std::map< std::string, TypeHash > ParameterMap;
+	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
 
 
     /**
@@ -166,7 +167,7 @@ public:
     void write_attributes(ostream& stream) const;
 
     /// Create instance of generic type
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
     /// Return if type is generic.
     inline bool is_generic() const
@@ -327,7 +328,7 @@ public:
     virtual bool valid_default(const string &str) const;
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 protected:
 
@@ -374,7 +375,7 @@ public:
 
     virtual bool valid_default(const string &str) const;
 
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 
@@ -409,7 +410,7 @@ public:
 
     virtual string type_name() const;
 
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -449,7 +450,7 @@ public:
 
     virtual string type_name() const;
 
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
 
@@ -481,7 +482,7 @@ public:
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual bool valid_default(const string &str) const;
 
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 
