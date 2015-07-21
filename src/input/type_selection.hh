@@ -179,7 +179,7 @@ public:
 
 
     // Implements @p TypeBase::make_instance.
-    virtual boost::shared_ptr<TypeBase> make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     /**

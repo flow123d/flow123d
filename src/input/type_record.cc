@@ -243,7 +243,7 @@ bool Record::finish()
     	if (it->key_ != "TYPE") {
     		ASSERT(typeid( *(it->type_) ) != typeid(Parameter), "Finished Record '%s' can't contain key '%s' of type Parameter.\n",
         		this->type_name().c_str(), it->type_->type_name().c_str());
-			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance();
+			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
             data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
 
             // we check once more even keys that was already checked, otherwise we have to store
@@ -338,7 +338,7 @@ Record &Record::has_obligatory_type_key() {
 }
 
 
-boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
 	Record rec = this->deep_copy();
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
@@ -361,7 +361,7 @@ boost::shared_ptr<TypeBase> Record::make_instance(std::vector<ParameterPair> vec
 	type_stream << "\"" << this->content_hash() << "\"";
 	rec.add_attribute("generic_type", type_stream.str());
 
-	return boost::make_shared<Record>(rec.close());
+	return std::make_pair( boost::make_shared<Record>(rec.close()), rec.parameter_map_ );
 }
 
 
@@ -732,7 +732,7 @@ bool AbstractRecord::have_default_descendant() const {
 
 
 
-boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
 	AbstractRecord abstract = this->deep_copy();
 	// Set parameters as attribute - TODO: replace
 	std::stringstream ss;
@@ -751,10 +751,12 @@ boost::shared_ptr<TypeBase> AbstractRecord::make_instance(std::vector<ParameterP
 
 	// make instances of all descendant records and add them into instance of abstract
 	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
-		abstract.add_child( static_cast<Record &>( *(*child_it).make_instance(vec) ) );
+		MakeInstanceReturnType inst = (*child_it).make_instance(vec);
+		abstract.add_child( static_cast<Record &>( *(inst.first) ) );
+		abstract.add_to_parameter_map(inst.second);
 	}
 
-	return boost::make_shared<AbstractRecord>(abstract.close());
+	return std::make_pair( boost::make_shared<AbstractRecord>(abstract.close()), abstract.parameter_map_ );
 }
 
 

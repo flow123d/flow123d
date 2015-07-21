@@ -50,9 +50,9 @@ bool Parameter::valid_default(const string &str) const {
 }
 
 
-boost::shared_ptr<TypeBase> Parameter::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) const {
 	ASSERT(false, "Method make_instance can't be called for type Parameter.\n");
-	return boost::make_shared<Parameter>(*this);
+	return std::make_pair( boost::make_shared<Parameter>(*this), this->parameter_map_ );
 }
 
 
@@ -89,7 +89,7 @@ const Instance &Instance::close() const {
 
 
 // Implements @p TypeBase::make_instance.
-boost::shared_ptr<TypeBase> Instance::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
 	return generic_type_.make_instance(parameters_);
 }
 

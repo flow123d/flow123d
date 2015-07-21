@@ -211,7 +211,7 @@ bool Array::valid_default(const string &str) const {
 }
 
 
-boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec) const {
+TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
 	// Replace only if type_of_values_ is parameter
 	if ( typeid( *(data_->type_of_values_) ) == typeid(Parameter) ) {
 		// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
@@ -237,10 +237,10 @@ boost::shared_ptr<TypeBase> Array::make_instance(std::vector<ParameterPair> vec)
 		type_stream << "\"" << this->content_hash() << "\"";
 		(*arr.attributes_)["generic_type"] = type_stream.str();
 
-		return boost::make_shared<Array>(arr);
+		return std::make_pair( boost::make_shared<Array>(arr), arr.parameter_map_ );
 	}
 
-	return boost::make_shared<Array>(*this);
+	return std::make_pair( boost::make_shared<Array>(*this), this->parameter_map_ );
 }
 
 
@@ -329,8 +329,8 @@ string Bool::type_name() const {
 }
 
 
-boost::shared_ptr<TypeBase> Bool::make_instance(std::vector<ParameterPair> vec) const {
-	return boost::make_shared<Bool>(*this);
+TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Bool>(*this), this->parameter_map_ );
 }
 
 /**********************************************************************************
@@ -381,8 +381,8 @@ string Integer::type_name() const {
 }
 
 
-boost::shared_ptr<TypeBase> Integer::make_instance(std::vector<ParameterPair> vec) const {
-	return boost::make_shared<Integer>(*this);
+TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Integer>(*this), this->parameter_map_ );
 }
 
 
@@ -436,8 +436,8 @@ string Double::type_name() const {
 }
 
 
-boost::shared_ptr<TypeBase> Double::make_instance(std::vector<ParameterPair> vec) const {
-	return boost::make_shared<Double>(*this);
+TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Double>(*this), this->parameter_map_ );
 }
 
 
@@ -518,8 +518,8 @@ bool String::match(const string &str) const {
 
 
 
-boost::shared_ptr<TypeBase> String::make_instance(std::vector<ParameterPair> vec) const {
-	return boost::make_shared<String>(*this);
+TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<String>(*this), this->parameter_map_ );
 }
 
 
