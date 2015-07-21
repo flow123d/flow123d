@@ -90,7 +90,15 @@ const Instance &Instance::close() const {
 
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
-	return generic_type_.make_instance(parameters_);
+	TypeBase::MakeInstanceReturnType ret = generic_type_.make_instance(parameters_);
+#ifdef FLOW123D_DEBUG_ASSERTS
+	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
+		ParameterMap::iterator map_it = ret.second.find( vec_it->first );
+		ASSERT(map_it != ret.second.end(), "Parameter '%s' in make_instance method of '%s' type must be used.\n",
+				vec_it->first.c_str(), generic_type_.type_name().c_str());
+	}
+#endif
+	return ret;
 }
 
 } // closing namespace Type
