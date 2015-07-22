@@ -212,35 +212,30 @@ bool Array::valid_default(const string &str) const {
 
 
 TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
-	// Replace only if type_of_values_ is parameter
-	if ( typeid( *(data_->type_of_values_) ) == typeid(Parameter) ) {
-		// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
-		Array arr = Array(Integer(), this->data_->lower_bound_, this->data_->upper_bound_);
-		// Replace parameter stored in type_of_values_
-		bool found = false;
-		for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-			if ( (*vec_it).first == data_->type_of_values_->type_name() ) {
-				found = true;
-				arr.data_->type_of_values_ = (*vec_it).second;
-				arr.parameter_map_[(*vec_it).first] = (*vec_it).second->content_hash();
-			}
-		}
-		ASSERT(found, "Parameterized type_of_values_ in make_instance method of '%s' Array wasn't replaced!\n",
-				this->type_name().c_str());
-		// Copy attributes
-		arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
-		// Set parameters as attribute
-		json_string val = arr.print_parameter_map_to_json();
-		ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
-		(*arr.attributes_)["parameters"] = val;
-		std::stringstream type_stream;
-		type_stream << "\"" << this->content_hash() << "\"";
-		(*arr.attributes_)["generic_type"] = type_stream.str();
+	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
+	Array arr = this->deep_copy();
+	// Replace parameter stored in type_of_values_
+	MakeInstanceReturnType inst = arr.data_->type_of_values_->make_instance(vec);
+	arr.data_->type_of_values_ = inst.first;
+	arr.add_to_parameter_map(inst.second);
+	// Copy attributes
+	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	// Set parameters as attribute
+	json_string val = arr.print_parameter_map_to_json();
+	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+	(*arr.attributes_)["parameters"] = val;
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	(*arr.attributes_)["generic_type"] = type_stream.str();
 
-		return std::make_pair( boost::make_shared<Array>(arr), arr.parameter_map_ );
-	}
+	return std::make_pair( boost::make_shared<Array>(arr), arr.parameter_map_ );
+}
 
-	return std::make_pair( boost::make_shared<Array>(*this), this->parameter_map_ );
+
+Array Array::deep_copy() const {
+	Array arr = Array(Integer()); // Type integer will be overwritten
+	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	return arr;
 }
 
 

@@ -51,7 +51,13 @@ bool Parameter::valid_default(const string &str) const {
 
 
 TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterPair> vec) const {
-	ASSERT(false, "Method make_instance can't be called for type Parameter.\n");
+	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
+		if ( (*vec_it).first == this->name_ ) {
+			this->parameter_map_[(*vec_it).first] = (*vec_it).second->content_hash();
+			return std::make_pair( (*vec_it).second, this->parameter_map_ );
+		}
+	}
+	ASSERT(false, "Parameterized key '%s' in make_instance method wasn't replaced!\n", this->type_name().c_str());
 	return std::make_pair( boost::make_shared<Parameter>(*this), this->parameter_map_ );
 }
 
