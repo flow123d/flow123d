@@ -230,7 +230,7 @@ protected:
      *
      * Contains all parameter pairs used in type and in all descendants (in subtree of type).
      */
-    ParameterMap parameter_map_;
+    mutable ParameterMap parameter_map_;
 
     /// Flag determining if type is generic (e. g. Record is generic if has key of type Parameter).
     bool generic_;
@@ -274,6 +274,11 @@ protected:
 
     	ArrayData(unsigned int min_size, unsigned int max_size)
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    	{}
+
+    	ArrayData(const ArrayData &other)
+    	: type_of_values_(other.type_of_values_), lower_bound_(other.lower_bound_),
+		  upper_bound_(other.upper_bound_), finished(false)
     	{}
 
     	bool finish();
@@ -329,6 +334,9 @@ public:
 
     // Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
+    /// Create deep copy of Array (copy all data stored in shared pointers etc.)
+    Array deep_copy() const;
 
 protected:
 

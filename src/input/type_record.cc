@@ -342,17 +342,10 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 	Record rec = this->deep_copy();
 	// Replace keys of type Parameter
 	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
-		if ( key_it->key_ != "TYPE" && typeid( *(key_it->type_) ) == typeid(Parameter) ) {
-			bool found = false;
-			for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-				if ( (*vec_it).first == key_it->key_ ) {
-					found = true;
-					key_it->type_ = (*vec_it).second;
-					rec.parameter_map_[(*vec_it).first] = (*vec_it).second->content_hash();
-				}
-			}
-			ASSERT(found, "Parameterized key '%s' in make_instance method of '%s' Record wasn't replaced!\n",
-					key_it->key_.c_str(), this->type_name().c_str());
+		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
+			MakeInstanceReturnType inst = key_it->type_->make_instance(vec);
+			key_it->type_ = inst.first;
+			rec.add_to_parameter_map(inst.second);
 		}
 	}
 	// Set attributes
@@ -734,27 +727,23 @@ bool AbstractRecord::have_default_descendant() const {
 
 TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
 	AbstractRecord abstract = this->deep_copy();
-	// Set parameters as attribute - TODO: replace
-	std::stringstream ss;
-	ss << "[";
-	for (std::vector<ParameterPair>::iterator vec_it=vec.begin(); vec_it!=vec.end(); vec_it++) {
-		if (vec_it != vec.begin()) ss << "," << endl;
-		ss << "{ \"" << (*vec_it).first << "\" : \"" << (*vec_it).second->content_hash() << "\" }";
-	}
-	ss << "]";
-	abstract.add_attribute("parameters", ss.str());
-	std::stringstream type_stream;
-	type_stream << "\"" << this->content_hash() << "\"";
-	abstract.add_attribute("generic_type", type_stream.str());
-	// Close abstract
-	abstract.close();
 
+	// Set close flag - only for add descendants
+	abstract.child_data_->closed_ = true;
 	// make instances of all descendant records and add them into instance of abstract
 	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
 		MakeInstanceReturnType inst = (*child_it).make_instance(vec);
 		abstract.add_child( static_cast<Record &>( *(inst.first) ) );
 		abstract.add_to_parameter_map(inst.second);
 	}
+	// Unset close flag - necessary for set parameters
+	abstract.child_data_->closed_ = false;
+
+	// Set parameters and generic type as attributes
+	abstract.add_attribute("parameters", abstract.print_parameter_map_to_json());
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	abstract.add_attribute("generic_type", type_stream.str());
 
 	return std::make_pair( boost::make_shared<AbstractRecord>(abstract.close()), abstract.parameter_map_ );
 }
