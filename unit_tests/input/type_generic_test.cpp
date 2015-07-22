@@ -72,6 +72,37 @@ static const Instance & get_generic_abstract(const Selection *sel) {
 			.close();
 }
 
+static const Record & get_inner_record() {
+	return Record("inner_rec", "desc.")
+			.declare_key("param2", Parameter("param2"), "desc.")
+			.declare_key("name", String(), "desc.")
+			.close();
+}
+
+/**
+ * Returned part of IST in format:
+ *
+ * Record
+ *  - Record
+ *     - Parameter
+ *     - String
+ *  - Parameter
+ *  - Integer
+ */
+static const Instance & get_record_with_record(const Selection *sel, const boost::shared_ptr<TypeBase> type) {
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param1", boost::make_shared<Selection>(*sel)) );
+	param_vec.push_back( std::make_pair("param2", type) );
+
+	return Instance(Record("record", "desc.")
+						.declare_key("inner_record", get_inner_record(), "desc.")
+						.declare_key("param1", Parameter("param1"), "desc.")
+						.declare_key("start_time", Double(), "desc.")
+						.close(),
+					param_vec)
+			.close();
+}
+
 
 TEST(GenericType, generic_record) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -156,5 +187,38 @@ TEST(GenericType, generic_abstract) {
 		++desc_it;
 		const Selection *sel = static_cast<const Selection *>(desc_it->type_.get());
 		EXPECT_EQ( sel->type_name(), "shapes" );
+	}
+}
+
+
+TEST(GenericType, record_with_record) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	static Record problem = Record("problem", "desc.")
+			.declare_key("primary", get_record_with_record(&get_colors_selection(), boost::make_shared<Integer>(0,100)), "Primary problem.")
+			.declare_key("secondary", get_record_with_record(&get_shapes_selection(), boost::make_shared<Double>()), "Secondary problem.")
+			.declare_key("bool", Bool(), "Some bool key.")
+			.close();
+
+	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = problem.begin();
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
+		in_rec->write_attributes(cout); cout << endl;
+		Record::KeyIter in_rec_it = in_rec->begin();
+		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
+		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Integer) );
+	}
+	++key_it;
+	{
+		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
+		in_rec->write_attributes(cout); cout << endl;
+		Record::KeyIter in_rec_it = in_rec->begin();
+		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
+		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Double) );
 	}
 }
