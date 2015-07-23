@@ -229,10 +229,8 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 
 
-bool Record::finish()
+bool Record::finish(bool is_generic)
 {
-	if (this->generic_) return false;
-
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
@@ -241,10 +239,11 @@ bool Record::finish()
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
     	if (it->key_ != "TYPE") {
-    		ASSERT(typeid( *(it->type_) ) != typeid(Parameter), "Finished Record '%s' can't contain key '%s' of type Parameter.\n",
+    		ASSERT(is_generic || typeid( *(it->type_) ) != typeid(Parameter),
+    			"Finished non-generic Record '%s' can't contain key '%s' of type Parameter.\n",
         		this->type_name().c_str(), it->type_->type_name().c_str());
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
+            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish(is_generic);
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -470,11 +469,6 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
-    // for Parameter key sets that record is generic
-    if (typeid(type) == typeid(Parameter)) {
-    	this->generic_ = true;
-    }
-
     check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
@@ -649,7 +643,7 @@ int AbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AbstractRecord::finish() {
+bool AbstractRecord::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
@@ -660,6 +654,7 @@ bool AbstractRecord::finish() {
 
 	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
 		(*child_it).add_parent(*this);
+		child_data_->finished_ = child_data_->finished_ && const_cast<Record &>(*child_it).finish(is_generic);
 	}
 
     // check validity of possible default value of TYPE key
@@ -808,12 +803,12 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AdHocAbstractRecord::finish()
+bool AdHocAbstractRecord::finish(bool is_generic)
 {
 	if (child_data_->finished_) return true;
 
 	if (tmp_ancestor_ != 0) {
-		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
+		const_cast<AbstractRecord *>(tmp_ancestor_)->finish(is_generic);
 
         parent_data_ = tmp_ancestor_->child_data_;
         parent_name_ = tmp_ancestor_->type_name();
@@ -840,7 +835,7 @@ bool AdHocAbstractRecord::finish()
 	    child_data_->list_of_childs.push_back(*it);
 	}
 
-	return AbstractRecord::finish();
+	return AbstractRecord::finish(is_generic);
 }
 
 

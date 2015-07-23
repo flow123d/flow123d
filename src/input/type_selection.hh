@@ -170,7 +170,7 @@ public:
     inline unsigned int size() const;
 
 
-    bool finish()
+    bool finish(bool is_generic = false)
         { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
 
 

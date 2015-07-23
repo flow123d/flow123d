@@ -337,7 +337,7 @@ public:
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * Add TYPE key as obligatory.
@@ -598,7 +598,7 @@ public:
     /**
      *  Finish declaration of the AbstractRecord type.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
@@ -747,7 +747,7 @@ public:
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
      * calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * Add inherited Record.

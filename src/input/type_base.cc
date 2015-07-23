@@ -47,12 +47,12 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ), generic_(false) {}
+: attributes_( boost::make_shared<attribute_map>() ) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-: attributes_(other.attributes_), generic_(other.generic_) {}
+: attributes_(other.attributes_) {}
 
 
 
@@ -74,6 +74,7 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish() {
+	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
@@ -167,20 +168,21 @@ TypeBase::TypeHash Array::content_hash() const
 }
 
 
-bool Array::finish() {
-	return data_->finish();
+bool Array::finish(bool is_generic) {
+	return data_->finish(is_generic);
 }
 
 
 
-bool Array::ArrayData::finish()
+bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
 
-    ASSERT(typeid( *type_of_values_ ) != typeid(Parameter), "Finished Array can't be of type Parameter '%s'.\n",
+    ASSERT(is_generic || typeid( *type_of_values_ ) != typeid(Parameter),
+    		"Finished non-generic Array can't be of type Parameter '%s'.\n",
     		type_of_values_->type_name().c_str());
 
-	return (finished = type_of_values_->finish() );
+	return (finished = type_of_values_->finish(is_generic) );
 }
 
 
@@ -251,11 +253,6 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
     ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
-
-    // for Parameter type sets that array is generic
-    if (typeid(type) == typeid(Parameter)) {
-    	this->generic_ = true;
-    }
 
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
 	data_->type_of_values_ = type_copy;
