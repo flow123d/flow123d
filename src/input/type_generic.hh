@@ -60,6 +60,9 @@ public:
     /// Used for set Instance to TypeRepository
     const Instance &close() const;
 
+    /// Finish declaration of the Instance type. Call finish of stored @p generic_type_
+    bool finish(bool is_generic = false);
+
     // Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 

@@ -143,7 +143,7 @@ public:
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
      */
-    virtual bool finish()
+    virtual bool finish(bool is_generic = false)
     { return true; };
 
     /**
@@ -168,10 +168,6 @@ public:
 
     /// Create instance of generic type
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
-
-    /// Return if type is generic.
-    inline bool is_generic() const
-    { return generic_; };
 
 protected:
 
@@ -232,9 +228,6 @@ protected:
      */
     mutable ParameterMap parameter_map_;
 
-    /// Flag determining if type is generic (e. g. Record is generic if has key of type Parameter).
-    bool generic_;
-
     friend class Array;
     friend class Record;
 };
@@ -281,7 +274,7 @@ protected:
 		  upper_bound_(other.upper_bound_), finished(false)
     	{}
 
-    	bool finish();
+    	bool finish(bool is_generic = false);
 
     	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
@@ -303,7 +296,7 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish();
+    virtual bool finish(bool is_generic = false);
 
     virtual bool is_finished() const {
         return data_->finished; }

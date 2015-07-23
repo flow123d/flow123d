@@ -94,6 +94,11 @@ const Instance &Instance::close() const {
 }
 
 
+bool Instance::finish(bool is_generic) {
+	return const_cast<TypeBase &>(generic_type_).finish(true);
+}
+
+
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
 	TypeBase::MakeInstanceReturnType ret = generic_type_.make_instance(parameters_);
