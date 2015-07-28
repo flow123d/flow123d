@@ -40,13 +40,14 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 	param_vec.push_back( std::make_pair("param1", boost::make_shared<Selection>(*sel)) );
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
 
-	return Instance(Record("generic_rec", "desc.")
-						.declare_key("param1", Parameter("param1"), "desc.")
-						.declare_key("param2", Parameter("param2"), "desc.")
-						.declare_key("start_time", Double(), "desc.")
-						.declare_key("name", String(), "desc.")
-						.close(),
-					param_vec)
+	static Record rec = Record("generic_rec", "desc.")
+							.declare_key("param1", Parameter("param1"), "desc.")
+							.declare_key("param2", Parameter("param2"), "desc.")
+							.declare_key("start_time", Double(), "desc.")
+							.declare_key("name", String(), "desc.")
+							.close();
+
+	return Instance(rec, param_vec)
 			.close();
 }
 
@@ -94,12 +95,13 @@ static const Instance & get_record_with_record(const Selection *sel, const boost
 	param_vec.push_back( std::make_pair("param1", boost::make_shared<Selection>(*sel)) );
 	param_vec.push_back( std::make_pair("param2", type) );
 
-	return Instance(Record("record", "desc.")
-						.declare_key("inner_record", get_inner_record(), "desc.")
-						.declare_key("param1", Parameter("param1"), "desc.")
-						.declare_key("start_time", Double(), "desc.")
-						.close(),
-					param_vec)
+	static Record rec = Record("record", "desc.")
+					.declare_key("inner_record", get_inner_record(), "desc.")
+					.declare_key("param1", Parameter("param1"), "desc.")
+					.declare_key("start_time", Double(), "desc.")
+					.close();
+
+	return Instance(rec, param_vec)
 			.close();
 }
 

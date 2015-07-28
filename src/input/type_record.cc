@@ -243,7 +243,7 @@ bool Record::finish(bool is_generic)
     			"Finished non-generic Record '%s' can't contain key '%s' of type Parameter.\n",
         		this->type_name().c_str(), it->type_->type_name().c_str());
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish(is_generic);
+            data_->finished = data_->finished && it->type_->finish(is_generic);
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -652,9 +652,10 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	child_data_->selection_of_childs->close();
 
-	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
+	for (std::vector< Record >::iterator child_it = child_data_->list_of_childs.begin();
+			child_it != child_data_->list_of_childs.end(); ++child_it) {
 		(*child_it).add_parent(*this);
-		child_data_->finished_ = child_data_->finished_ && const_cast<Record &>(*child_it).finish(is_generic);
+		child_data_->finished_ = child_data_->finished_ && (*child_it).finish(is_generic);
 	}
 
     // check validity of possible default value of TYPE key

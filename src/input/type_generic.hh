@@ -51,7 +51,7 @@ protected:
  */
 class Instance : public TypeBase {
 public:
-	Instance(const TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
+	Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
     TypeHash content_hash() const  override;
 
@@ -67,7 +67,7 @@ public:
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 
 protected:
-	const TypeBase &generic_type_;
+	TypeBase &generic_type_;
 
 	std::vector<TypeBase::ParameterPair> parameters_;
 };

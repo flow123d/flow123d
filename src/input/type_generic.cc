@@ -66,7 +66,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
  * implementation of Instance
  */
 
-Instance::Instance(const TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters)
+Instance::Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters)
 : generic_type_(generic_type), parameters_(parameters) {}
 
 
@@ -95,7 +95,7 @@ const Instance &Instance::close() const {
 
 
 bool Instance::finish(bool is_generic) {
-	return const_cast<TypeBase &>(generic_type_).finish(true);
+	return generic_type_.finish(true);
 }
 
 
