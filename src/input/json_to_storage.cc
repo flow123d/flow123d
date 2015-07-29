@@ -27,10 +27,27 @@ using namespace internal;
 
 
 JSONPath::JSONPath(const Node& root_node)
+: JSONPath()
 {
     path_.push_back( make_pair( (int)(-1), string("/") ) );
     nodes_.push_back( &root_node );
 }
+
+
+JSONPath::JSONPath()
+{
+    /* from json_spirit_value.hh:
+     * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
+     */
+    json_type_names.push_back("JSON object");
+    json_type_names.push_back("JSON array");
+    json_type_names.push_back("JSON string");
+    json_type_names.push_back("JSON bool");
+    json_type_names.push_back("JSON int");
+    json_type_names.push_back("JSON real");
+    json_type_names.push_back("JSON null");
+}
+
 
 const JSONPath::Node * JSONPath::down(unsigned int index)
 {
@@ -192,6 +209,65 @@ void JSONPath::put_address() {
 
 
 
+bool JSONPath::is_null_type() const {
+	return head()->type() == json_spirit::null_type;
+}
+
+
+bool JSONPath::get_bool_value() const {
+    if (head()->type() == json_spirit::bool_type) {
+        return head()->get_bool();
+    } else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON bool', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(*this) << JSONToStorage::EI_JSON_Type( json_type_names[ head()->type() ] )
+             );
+    }
+	return false;
+}
+
+
+
+std::int64_t JSONPath::get_int_value() const {
+    if (head()->type() == json_spirit::int_type) {
+        return head()->get_int64();
+    } else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON int', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(*this) << JSONToStorage::EI_JSON_Type( json_type_names[ head()->type() ] )
+             );
+    }
+	return 0;
+}
+
+
+
+double JSONPath::get_double_value() const {
+    auto value_type = head()->type();
+    if (    value_type== json_spirit::real_type
+         || value_type == json_spirit::int_type) {
+        return head()->get_real();
+    } else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON real', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(*this) << JSONToStorage::EI_JSON_Type( json_type_names[ head()->type() ] )
+        	 );
+    }
+	return 0.0;
+}
+
+
+
+std::string JSONPath::get_string_value() const {
+    if (head()->type() == json_spirit::str_type) {
+        return head()->get_str();
+    } else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON string', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(*this) << JSONToStorage::EI_JSON_Type( json_type_names[ head()->type() ] )
+             );
+    }
+	return "";
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
     path.output(stream);
     return stream;
@@ -296,7 +372,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
     }
 
     // return Null storage if there is null on the current location
-    if (p.head()->type() == json_spirit::null_type)
+    if (p.is_null_type())
         return new StorageNull();
 
     // dispatch types
@@ -533,19 +609,17 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *selection)
 {
     string item_name;
-    if (p.head()->type() == json_spirit::str_type) {
-        try {
-            item_name = p.head()->get_str();
-            int value = selection->name_to_int( item_name  );
-            return new StorageInt( value );
-        } catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-            THROW( ExcInputError() << EI_Specification("Wrong value '" + item_name + "' of the Selection.")
-                    << EI_ErrorAddress(p) << EI_JSON_Type( "" ) << EI_InputType(selection->desc()) );
-        }
-    }
-
-    THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
-            << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(selection->desc())  );
+	try {
+		item_name = p.get_string_value();
+		int value = selection->name_to_int( item_name  );
+		return new StorageInt( value );
+	} catch (ExcInputError & e) {
+		e << EI_InputType(selection->desc());
+		throw;
+	} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+		THROW( ExcInputError() << EI_Specification("Wrong value '" + item_name + "' of the Selection.")
+				<< EI_ErrorAddress(p) << EI_JSON_Type( "" ) << EI_InputType(selection->desc()) );
+	}
 
     return NULL;
 }
@@ -554,12 +628,13 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *se
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_type)
 {
-    if (p.head()->type() == json_spirit::bool_type) {
-        return new StorageBool( p.head()->get_bool() );
-    } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON bool', but we found: ")
-                << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(bool_type->desc())  );
-    }
+	try {
+		return new StorageBool( p.get_bool_value() );
+	}
+	catch (ExcInputError & e) {
+		e << EI_InputType(bool_type->desc());
+		throw;
+	}
     return NULL;
 }
 
@@ -567,21 +642,22 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
 {
-    if (p.head()->type() == json_spirit::int_type) {
-        std::int64_t value = p.head()->get_int64();
+	std::int64_t value;
+	try {
+		value = p.get_int_value();
+	}
+	catch (ExcInputError & e) {
+		e << EI_InputType(int_type->desc());
+		throw;
+	}
 
-        if ( int_type->match(value) )
-        {
-            return new StorageInt( value );
-        } else {
-            THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(int_type->desc()) );
-        }
+	if ( int_type->match(value) )
+	{
+		return new StorageInt( value );
+	} else {
+		THROW( ExcInputError() << EI_Specification("Value out of bounds.") << EI_ErrorAddress(p) << EI_InputType(int_type->desc()) );
+	}
 
-    } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON int', but we found: ")
-                << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(int_type->desc()) );
-
-    }
     return NULL;
 }
 
@@ -591,14 +667,13 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
 {
     double value;
 
-    auto value_type = p.head()->type();
-    if (    value_type== json_spirit::real_type
-         || value_type == json_spirit::int_type) {
-        value = p.head()->get_real();
-    } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON real', but we found: ")
-                << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(double_type->desc()) );
-    }
+	try {
+		value = p.get_double_value();
+	}
+	catch (ExcInputError & e) {
+		e << EI_InputType(double_type->desc());
+		throw;
+	}
 
     if (double_type->match(value)) {
         return new StorageDouble( value );
@@ -613,19 +688,22 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *string_type)
 {
-    if (p.head()->type() == json_spirit::str_type) {
-        string value = p.head()->get_str();
-        if (string_type->match(value))
-            return new StorageString( value );
-        else
-            THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
-                            << EI_ErrorAddress(p) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
-    } else {
-        THROW( ExcInputError() << EI_Specification("The value should be 'JSON string', but we found: ")
-                << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(string_type->desc()) );
+	string value;
+	try {
+		value = p.get_string_value();
+	}
+	catch (ExcInputError & e) {
+		e << EI_InputType(string_type->desc());
+		throw;
+	}
 
-    }
-    return NULL;
+	if (string_type->match(value))
+		return new StorageString( value );
+	else
+		THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
+						<< EI_ErrorAddress(p) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
+
+	return NULL;
 }
 
 

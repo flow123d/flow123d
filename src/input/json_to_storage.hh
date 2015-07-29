@@ -127,7 +127,21 @@ public:
      */
     void put_address();
 
+    // These methods will be derived from PathBase
+    bool is_null_type() const;
+    bool get_bool_value() const;
+    std::int64_t get_int_value() const;
+    double get_double_value() const;
+    std::string get_string_value() const;
+
 private:
+
+    /**
+     * Default constructor.
+     * Provides common initialization for public constructors.
+     */
+    JSONPath();
+
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
      * For the first type we save index into first part of the pair and empty string to the second.
@@ -137,6 +151,12 @@ private:
     vector<const Node *> nodes_;
     std::set<string> previous_references_;
 
+    /**
+     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
+     * Initialized in constructor.
+     *
+     */
+    vector<string> json_type_names;
 
 };
 
@@ -272,6 +292,7 @@ protected:
      * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
      * Initialized in constructor.
      *
+     * OBSOLETE - will be removed.
      */
     vector<string> json_type_names;
 
