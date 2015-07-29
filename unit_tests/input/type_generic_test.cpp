@@ -224,3 +224,61 @@ TEST(GenericType, record_with_record) {
 		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Double) );
 	}
 }
+
+
+TEST(GenericType, parameter_not_replaced) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+
+	static Record inner = Record("inner_rec", "")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Instance inst = Instance(inner, param_vec)
+								.close();
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("generic_rec", inst, "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "in make_instance method wasn't replaced");
+}
+
+
+TEST(GenericType, parameter_not_used) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Integer>()) );
+	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
+
+	static Record inner = Record("inner_rec", "")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Instance inst = Instance(inner, param_vec)
+								.close();
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("generic_rec", inst, "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "must be used");
+}
+
+
+TEST(GenericType, parameter_during_lazy_finish) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("param", Parameter("param"), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "can't contain key 'param' of type Parameter");
+}
