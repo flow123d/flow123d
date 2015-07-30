@@ -433,6 +433,8 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
+    cout << "MPI_Comm_size" << mpi_size << endl;
+    cout << "MPI_Comm_rank" << mpi_rank << endl;
     // create profiler output only once (on the first processor)
     if (mpi_rank == 0) {
 
@@ -473,6 +475,8 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         const int FLOW123D_JSON_HUMAN_READABLE = 1;
         // write result to stream
         property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    } else {
+        // other MPI processes won't be doing anything
     }
 }
 
@@ -610,5 +614,3 @@ void Profiler::uninitialize() {
 
 
 #endif // def FLOW123D_DEBUG_PROFILER
-
-
