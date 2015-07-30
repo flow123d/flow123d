@@ -133,6 +133,7 @@ public:
     std::int64_t get_int_value() const;
     double get_double_value() const;
     std::string get_string_value() const;
+    std::string get_node_type() const;
 
 private:
 
@@ -287,14 +288,6 @@ protected:
 
     /// Root of the declaration tree of the data in the storage.
     const Type::TypeBase *root_type_;
-
-    /**
-     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
-     * Initialized in constructor.
-     *
-     * OBSOLETE - will be removed.
-     */
-    vector<string> json_type_names;
 
 };
 
