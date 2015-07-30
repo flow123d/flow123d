@@ -433,8 +433,8 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
-    cout << "MPI_Comm_size" << mpi_size << endl;
-    cout << "MPI_Comm_rank" << mpi_rank << endl;
+    cout << "MPI_Comm_size: " << mpi_size << endl;
+    cout << "MPI_Comm_rank: " << mpi_rank << endl;
     // create profiler output only once (on the first processor)
     if (mpi_rank == 0) {
 
