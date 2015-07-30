@@ -134,6 +134,7 @@ public:
     double get_double_value() const;
     std::string get_string_value() const;
     std::string get_node_type() const;
+    bool get_record_key_set(std::set<std::string> &) const;
 
 private:
 

@@ -274,6 +274,24 @@ std::string JSONPath::get_node_type() const {
 
 
 
+bool JSONPath::get_record_key_set(std::set<std::string> &keys_list) const {
+	if (head()->type() == json_spirit::obj_type) {
+    	const json_spirit::mObject & j_map = head()->get_obj();
+        json_spirit::mObject::const_iterator map_it;
+        std::set<string>::iterator set_it;
+
+        for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it) {
+        	keys_list.insert(map_it->first);
+        }
+
+        return true;
+    }
+
+	return false;
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
     path.output(stream);
     return stream;
@@ -405,15 +423,9 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *record)
 {
-    if (p.head()->type() == json_spirit::obj_type) {
-    	const json_spirit::mObject & j_map = p.head()->get_obj();
-    	std::set<string> keys_to_process;
-        json_spirit::mObject::const_iterator map_it;
+	std::set<string> keys_to_process;
+	if ( p.get_record_key_set(keys_to_process) ) {
         std::set<string>::iterator set_it;
-
-        for( map_it = j_map.begin(); map_it != j_map.end(); ++map_it) {
-           keys_to_process.insert(map_it->first);
-        }
 
         /*Type::Record::KeyIter key_it;
         if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
