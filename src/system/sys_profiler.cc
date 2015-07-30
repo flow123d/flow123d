@@ -436,7 +436,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     cout << "MPI_Comm_size: " << mpi_size << endl;
     cout << "MPI_Comm_rank: " << mpi_rank << endl;
     // create profiler output only once (on the first processor)
-    if (mpi_rank == 0) {
+    //if (mpi_rank == 0) {
 
         // output header
         property_tree::ptree root, children;
@@ -475,9 +475,9 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         const int FLOW123D_JSON_HUMAN_READABLE = 1;
         // write result to stream
         property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
-    } else {
+    /*} else {
         // other MPI processes won't be doing anything
-    }
+    }*/
 }
 
 
