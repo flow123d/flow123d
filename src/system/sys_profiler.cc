@@ -433,43 +433,47 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
-    // output header
-    property_tree::ptree root, children;
-    output_header (root, mpi_size);
+    // create profiler output only once (on the first processor)
+    if (mpi_rank == 0) {
 
-    // recursively add all timers info
-    // define lambda function which reduces timer from multiple processors
-    // MPI implementation uses MPI call to reduce values
-    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
-        int call_count = timer.call_count;
-        double cumul_time = timer.cumulative_time () / 1000;
-        double cumul_time_sum;
+        // output header
+        property_tree::ptree root, children;
+        output_header (root, mpi_size);
 
-        node.put ("call-count", call_count);
-        node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
-        node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
-        node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
+        // recursively add all timers info
+        // define lambda function which reduces timer from multiple processors
+        // MPI implementation uses MPI call to reduce values
+        auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
+            int call_count = timer.call_count;
+            double cumul_time = timer.cumulative_time () / 1000;
+            double cumul_time_sum;
 
-        cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
+            node.put ("call-count", call_count);
+            node.put ("call-count-min", MPI_Functions::min(&call_count, comm));
+            node.put ("call-count-max", MPI_Functions::max(&call_count, comm));
+            node.put ("call-count-sum", MPI_Functions::sum(&call_count, comm));
 
-        node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
-        node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
-        node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
-        node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
-        return cumul_time_sum;
-    };
+            cumul_time_sum = MPI_Functions::sum(&cumul_time, comm);
 
-    add_timer_info (reduce, &children, 0, 0.0);
-    root.add_child ("children", children);
+            node.put ("cumul-time", boost::format("%1.9f") % cumul_time);
+            node.put ("cumul-time-min", boost::format("%1.9f") % MPI_Functions::min(&cumul_time, comm));
+            node.put ("cumul-time-max", boost::format("%1.9f") % MPI_Functions::max(&cumul_time, comm));
+            node.put ("cumul-time-sum", boost::format("%1.9f") % cumul_time_sum);
+            return cumul_time_sum;
+        };
+
+        add_timer_info (reduce, &children, 0, 0.0);
+        root.add_child ("children", children);
 
 
-    /**
-     * Flag to property_tree::write_json method
-     * resulting in json human readable format (indents, newlines)
-     */
-    const int FLOW123D_JSON_HUMAN_READABLE = 1;
-    // write result to stream
-    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+        /**
+         * Flag to property_tree::write_json method
+         * resulting in json human readable format (indents, newlines)
+         */
+        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        // write result to stream
+        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    }
 }
 
 
