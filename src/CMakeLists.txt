@@ -56,6 +56,7 @@ else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 add_subdirectory("dealii")
+add_library(dealii_lib ALIAS ${DEAL_II_LIBRARY_NAME})
 message(STATUS "===========================================")
 
 
@@ -284,7 +285,7 @@ target_link_libraries(flow123d_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
-    ${TBB_LIBRARIES}
+#    ${TBB_LIBRARIES}
     ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
@@ -295,5 +296,4 @@ set_target_properties(flow123d_lib
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 add_dependencies(flow123d_lib tbb)
-
 
