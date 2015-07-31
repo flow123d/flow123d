@@ -275,7 +275,7 @@ std::string JSONPath::get_node_type() const {
 
 
 bool JSONPath::get_record_key_set(std::set<std::string> &keys_list) const {
-	if (head()->type() == json_spirit::obj_type) {
+	if ( this->is_map_type() ) {
     	const json_spirit::mObject & j_map = head()->get_obj();
         json_spirit::mObject::const_iterator map_it;
         std::set<string>::iterator set_it;
@@ -288,6 +288,23 @@ bool JSONPath::get_record_key_set(std::set<std::string> &keys_list) const {
     }
 
 	return false;
+}
+
+
+
+int JSONPath::get_array_size() const {
+    if (head()->type() == json_spirit::array_type) {
+        const json_spirit::mArray & j_array = head()->get_array();
+        return j_array.size();
+    }
+
+    return -1;
+}
+
+
+
+bool JSONPath::is_map_type() const {
+	return head()->type() == json_spirit::obj_type;
 }
 
 
@@ -343,9 +360,11 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
     filter_in.push(uncommenting_filter());
     filter_in.push(in);
 
+    // TODO move this code to PathJSON - maybe move creating of filter
     JSONPath::Node node;
 
 
+    // error in yaml https://code.google.com/p/yaml-cpp/wiki/HowToParseADocument
     try {
         json_spirit::read_or_throw( filter_in, node);
     } catch (json_spirit::Error_position &e ) {
@@ -525,7 +544,7 @@ StorageBase * JSONToStorage::record_automatic_conversion(JSONPath &p, const Type
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec)
 {
-    if (p.head()->type() == json_spirit::obj_type) {
+    if ( p.is_map_type() ) {
 
         JSONPath type_path(p);
         if ( type_path.down("TYPE") == NULL ) {
@@ -575,13 +594,15 @@ StorageBase * JSONToStorage::abstract_rec_automatic_conversion(JSONPath &p, cons
 
 StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 {
-
-    if (p.head()->type() == json_spirit::array_type) {
-        const json_spirit::mArray & j_array = p.head()->get_array();
-        if ( array->match_size( j_array.size() ) ) {
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+    //if (p.head()->type() == json_spirit::array_type) {
+        //const json_spirit::mArray & j_array = p.head()->get_array();
+        //arr_size = j_array.size();
+        if ( array->match_size( arr_size ) ) {
           // copy the array and check type of values
-          StorageArray *storage_array = new StorageArray(j_array.size());
-          for( unsigned int idx=0; idx < j_array.size(); idx++)  {
+          StorageArray *storage_array = new StorageArray(arr_size);
+          for( int idx=0; idx < arr_size; idx++)  {
               p.down(idx);
               const Type::TypeBase &sub_type = array->get_sub_type();
               storage_array->new_item(idx, make_storage(p, &sub_type) );

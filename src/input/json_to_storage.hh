@@ -135,6 +135,8 @@ public:
     std::string get_string_value() const;
     std::string get_node_type() const;
     bool get_record_key_set(std::set<std::string> &) const;
+    int get_array_size() const;
+    bool is_map_type() const;
 
 private:
 
