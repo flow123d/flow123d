@@ -391,6 +391,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 
 	    balance_->allocate(feo->dh()->distr()->lsize(),
 	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
+
+	    balance_->units(Model::balance_units());
     }
 
 }
@@ -463,8 +465,6 @@ void TransportDG<Model>::zero_time_step()
     // during preallocation we assemble the matrices and vectors required for mass balance
     if (balance_ != nullptr)
     {
-    	balance_->units(Model::balance_units());
-
         if (!allocation_done) preallocate();
 
 		for (unsigned int sbi=0; sbi<n_subst_; ++sbi)

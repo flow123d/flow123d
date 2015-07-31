@@ -90,9 +90,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 UnitSI ConcentrationTransportModel::balance_units()
 {
-	return data().cross_section.units()*UnitSI().md(1)
-	        *data().porosity.units()
-	        *data().output_field.units();
+	return UnitSI().kg();
 }
 
 
