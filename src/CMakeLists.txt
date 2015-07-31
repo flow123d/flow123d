@@ -36,16 +36,16 @@ set(DEAL_II_WITH_MPI ON)
 set(BOOST_DIR "${BOOST_ROOT}")
 set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
 set(TBB_FOUND "true")
-set(DEAL_II_WITH_UMFPACK ON)
-# Check if UMFPACK is installed with PETSc
-if (PETSC_VAR_UMFPACK_LIB)
-  set(UMFPACK_FOUND "true")
-  set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
-else()
-  MESSAGE(FATAL_ERROR "Deal.II depends on UMFPACK, but PETSc is not built with it.")
-#  set(DEAL_II_ALLOW_BUNDLED OFF)
-#  set(DEAL_II_FORCE_BUNDLED_UMFPACK ON)
-endif()
+set(DEAL_II_WITH_UMFPACK OFF)
+## Check if UMFPACK is installed with PETSc
+#if (PETSC_VAR_UMFPACK_LIB)
+#  set(UMFPACK_FOUND "true")
+#  set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
+#else()
+#  MESSAGE(FATAL_ERROR "Deal.II depends on UMFPACK, but PETSc is not built with it.")
+##  set(DEAL_II_ALLOW_BUNDLED OFF)
+##  set(DEAL_II_FORCE_BUNDLED_UMFPACK ON)
+#endif()
 set(DEAL_II_WITH_LAPACK ON)
 set(LAPACK_FOUND "true")
 set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
@@ -56,6 +56,7 @@ else()
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 add_subdirectory("dealii")
+set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
 message(STATUS "===========================================")
 
 
@@ -284,7 +285,7 @@ target_link_libraries(flow123d_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 
-    ${TBB_LIBRARIES}
+#    ${TBB_LIBRARIES}
     ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
@@ -295,5 +296,4 @@ set_target_properties(flow123d_lib
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 )
 add_dependencies(flow123d_lib tbb)
-
 

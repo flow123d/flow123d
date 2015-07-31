@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs flow123d_lib)
+set(libs la_lib ${DEAL_II_LIBRARY_NAME} system_lib "-lstdc++")
 add_test_directory("${libs}")
 
 define_mpi_test(dealii_lac 1)

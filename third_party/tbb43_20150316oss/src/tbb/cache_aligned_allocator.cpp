@@ -100,7 +100,7 @@ static const dynamic_link_descriptor MallocLinkTable[] = {
 #endif /* TBB_USE_DEBUG */
 
 // MALLOCLIB_NAME is the name of the TBB memory allocator library.
-#if _WIN32||_WIN64
+#if _WIN32||_WIN64||__CYGWIN__
 #define MALLOCLIB_NAME "tbbmalloc" DEBUG_SUFFIX ".dll"
 #elif __APPLE__
 #define MALLOCLIB_NAME "libtbbmalloc" DEBUG_SUFFIX ".dylib"

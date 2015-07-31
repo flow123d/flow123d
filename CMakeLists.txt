@@ -148,7 +148,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       if (CYGWIN)
           # is version 4.8 or higher?
           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fext-numeric-literals")
             flow_define(HAVE_CYGWIN)
           # version is too low
           else ()
