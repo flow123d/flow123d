@@ -49,7 +49,7 @@ PathJSON::PathJSON()
 }
 
 
-const PathJSON::Node * PathJSON::down(unsigned int index)
+bool PathJSON::down(unsigned int index)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mArray &array = head_node->get_array(); // the type should be checked in make_storage
@@ -58,11 +58,11 @@ const PathJSON::Node * PathJSON::down(unsigned int index)
     path_.push_back( make_pair( index, string("") ) );
     nodes_.push_back( &( array[index] ) );
 
-    return nodes_.back();
+    return (nodes_.back() != NULL);
 }
 
 
-const PathJSON::Node * PathJSON::down(const string& key)
+bool PathJSON::down(const string& key)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mObject &obj = head_node->get_obj(); // the type should be checked in make_storage
@@ -74,7 +74,7 @@ const PathJSON::Node * PathJSON::down(const string& key)
         path_.push_back( make_pair( (int)(-1), key) );
         nodes_.push_back( &( it->second ) );
     }
-    return nodes_.back();
+    return (nodes_.back() != NULL);
 }
 
 
@@ -147,7 +147,7 @@ PathJSON PathJSON::find_ref_node(const string& ref_address)
                         << EI_Specification("there should be Array") );
             }
 
-            if ( ref_path.down( atoi(tmp_str.c_str()) ) == NULL) {
+            if ( !ref_path.down( atoi(tmp_str.c_str()) ) ) {
                 THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("index out of size of Array") );
             }
@@ -164,7 +164,7 @@ PathJSON PathJSON::find_ref_node(const string& ref_address)
             if (ref_path.head() -> type() != json_spirit::obj_type)
                 THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("there should be Record") );
-            if ( ref_path.down(tmp_str) == NULL )
+            if ( !ref_path.down(tmp_str) )
                 THROW( ExcReferenceNotFound() << EI_RefAddress(*this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("key '"+tmp_str+"' not found") );
         }
@@ -449,9 +449,9 @@ StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Record *recor
         /*Type::Record::KeyIter key_it;
         if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
             PathJSON type_path(p);
-            if (type_path.down( "TYPE" ) != NULL) {
+            if ( type_path.down( "TYPE" ) ) {
                 try {
-                	if ( type_path.head()->get_str() != record->type_name() ) {
+                	if ( type_path.get_string_value() != record->type_name() ) {
                 		xprintf(UsrErr, "Invalid value of TYPE key of record %s.", record->type_name().c_str());
                 	}
                     make_storage(type_path, key_it->type_.get() )->get_int();
@@ -473,7 +473,7 @@ StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Record *recor
         		keys_to_process.erase(set_it);
         	}
 
-            if (p.down(it->key_) != NULL) {
+            if ( p.down(it->key_) ) {
                 // key on input => check & use it
                 storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
                 p.up();
@@ -547,7 +547,7 @@ StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::AbstractRecor
     if ( p.is_map_type() ) {
 
     	PathJSON type_path(p);
-        if ( type_path.down("TYPE") == NULL ) {
+        if ( !type_path.down("TYPE") ) {
             if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
                 THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
             } else { // auto conversion
@@ -596,9 +596,6 @@ StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Array *array)
 {
 	int arr_size;
 	if ( (arr_size = p.get_array_size()) != -1 ) {
-    //if (p.head()->type() == json_spirit::array_type) {
-        //const json_spirit::mArray & j_array = p.head()->get_array();
-        //arr_size = j_array.size();
         if ( array->match_size( arr_size ) ) {
           // copy the array and check type of values
           StorageArray *storage_array = new StorageArray(arr_size);

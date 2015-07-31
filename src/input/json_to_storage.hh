@@ -72,11 +72,10 @@ public:
     PathJSON(const Node& root_node);
 
     /**
-     * Dive into json_spirit hierarchy. Store current path and returns pointer to new json_spirit node.
-     * If the json_spirit type do not match returns NULL.
+     * Dive into json_spirit hierarchy. Store current path and returns if pointer to new json_spirit node is not NULL.
      */
-    const Node * down(unsigned int index);
-    const Node * down(const string& key);
+    bool down(unsigned int index);
+    bool down(const string& key);
 
     /**
      * Return one level up in the hierrarchy.
@@ -87,12 +86,6 @@ public:
      * Move to root node.
      */
     void go_to_root();
-
-    /**
-     * Pointer to JSON Value object at current path.
-     */
-    inline const Node * head() const
-    { return nodes_.back(); }
 
     /**
      * Returns level of actual path. Root has level == 0.
@@ -145,6 +138,12 @@ private:
      * Provides common initialization for public constructors.
      */
     PathJSON();
+
+    /**
+     * Pointer to JSON Value object at current path.
+     */
+    inline const Node * head() const
+    { return nodes_.back(); }
 
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.

@@ -52,12 +52,12 @@ TEST(PathJSON, all) {
     EXPECT_EQ("/6/a",os.str());
     }
 
-    EXPECT_EQ(1,path.find_ref_node(ref).head()->get_int() );
+    EXPECT_EQ(1,path.find_ref_node(ref).get_int_value() );
 
     path=path.find_ref_node("/6/b");
     path.get_ref_from_head(ref);
     EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path.find_ref_node(ref).head()->get_str() );
+    EXPECT_EQ("ctyri",path.find_ref_node(ref).get_string_value() );
 }
 
 
