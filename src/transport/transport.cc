@@ -52,6 +52,7 @@
 // TODO: move partitioning into mesh_ and remove this include
 //#include "flow/darcy_flow_mh.hh"
 #include "flow/old_bcd.hh"
+#include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
 
@@ -820,4 +821,10 @@ void ConvectionTransport::output_data() {
 		data_.output_fields.output(output_stream_);
 
     }
+}
+
+void ConvectionTransport::set_balance_object(boost::shared_ptr<Balance> balance)
+{
+	balance_ = balance;
+	subst_idx = balance_->add_quantities(substances_.names());
 }

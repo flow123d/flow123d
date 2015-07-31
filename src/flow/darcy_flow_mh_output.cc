@@ -53,7 +53,7 @@
 
 #include "mesh/partitioning.hh"
 
-#include "transport/mass_balance.hh"
+#include "coupling/balance.hh"
 
 
 namespace it = Input::Type;

@@ -74,7 +74,7 @@
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
 
-#include "transport/mass_balance.hh"
+#include "coupling/balance.hh"
 #include "input/factory.hh"
 
 

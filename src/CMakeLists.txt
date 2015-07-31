@@ -227,6 +227,7 @@ add_library(coupling_lib
     fields/unit_si.cc
     fields/generic_field.cc
     coupling/equation.cc
+    coupling/balance.cc
     flow/old_bcd.cc
     # coupling/hc_explicit_sequential.cc
 )
@@ -276,7 +277,7 @@ add_library(flow123d_lib
     transport/transport.cc
     transport/transport_operator_splitting.cc
     transport/transport_dg.cc
-    transport/mass_balance.cc
+    
     transport/substance.cc
 
     coupling/hc_explicit_sequential.cc

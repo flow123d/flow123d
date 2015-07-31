@@ -34,6 +34,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
 #include "fields/unit_si.hh"
+#include "coupling/balance.hh"
 
 
 

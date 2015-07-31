@@ -144,11 +144,7 @@ public:
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    void set_balance_object(boost::shared_ptr<Balance> balance)
-    {
-    	balance_ = balance;
-    	subst_idx = balance_->add_quantities(substances_.names());
-    }
+    void set_balance_object(boost::shared_ptr<Balance> balance);
 
     const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
