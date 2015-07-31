@@ -720,18 +720,20 @@ void TransportDG<Model>::assemble_mass_matrix()
                 for (unsigned int k=0; k<qsize; k++)
                     local_mass_matrix[i*ndofs+j] += mm_coef[k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
             }
+        }
 
-            if (balance_ != nullptr)
+        if (balance_ != nullptr)
+        {
+            for (unsigned int i=0; i<ndofs; i++)
             {
             	local_mass_balance_vector[i] = 0;
             	for (unsigned int k=0; k<qsize; k++)
             		local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
             }
-        }
 
-        if (balance_ != nullptr)
         	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
         		balance_->add_mass_matrix_values(subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+        }
 
         ls_dt->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
     }
@@ -880,20 +882,19 @@ void TransportDG<Model>::set_sources()
         		source = (sources_density[k][sbi] + sources_conc[k][sbi]*sources_sigma[k][sbi])*fe_values.JxW(k);
 
         		for (unsigned int i=0; i<ndofs; i++)
-        		{
         			local_rhs[i] += source*fe_values.shape_value(i,k);
-
-        			if (balance_ != nullptr)
-        			{
-        				local_source_balance_vector[i] -= sources_sigma[k][sbi]*fe_values.shape_value(i,k)*fe_values.JxW(k);
-        				local_source_balance_rhs[i] += source*fe_values.shape_value(i,k);
-        			}
-        		}
-            }
+        	}
         	ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
 
         	if (balance_ != nullptr)
         	{
+        		for (unsigned int i=0; i<ndofs; i++)
+        		{
+        			for (unsigned int k=0; k<qsize; k++)
+        				local_source_balance_vector[i] -= sources_sigma[k][sbi]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+
+        			local_source_balance_rhs[i] += local_rhs[i];
+        		}
         		balance_->add_source_matrix_values(subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
         		balance_->add_source_rhs_values(subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
         	}
@@ -1322,61 +1323,90 @@ void TransportDG<Model>::set_boundary_conditions()
 					side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
 				double transport_flux = side_flux/side->measure();
 
-				for (unsigned int k=0; k<qsize; k++)
+				if (bc_type[sbi] == EqData::inflow && side_flux < 0)
 				{
-					double bc_term = 0;
-					arma::vec3 bc_grad;
-					bc_grad.zeros();
-					if (bc_type[sbi] == EqData::inflow && side_flux < 0)
+					for (unsigned int k=0; k<qsize; k++)
 					{
-						bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
+						double bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
-					else if (bc_type[sbi] == EqData::dirichlet)
+					if (balance_ != nullptr)
+						for (unsigned int i=0; i<ndofs; i++)
+							local_flux_balance_rhs -= local_rhs[i];
+				}
+				else if (bc_type[sbi] == EqData::dirichlet)
+				{
+					for (unsigned int k=0; k<qsize; k++)
 					{
-						bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
-						bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
+						double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						arma::vec3 bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
+									+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
 					}
-					else if (bc_type[sbi] == EqData::neumann)
+					if (balance_ != nullptr)
 					{
-						bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
-					}
-					else if (bc_type[sbi] == EqData::robin)
-					{
-						bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
-					}
-
-					for (unsigned int i=0; i<ndofs; i++)
-					{
-						local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
-								+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
-
-						if (balance_ != nullptr)
+						for (unsigned int k=0; k<qsize; k++)
 						{
-							if (bc_type[sbi] == EqData::dirichlet)
+							for (unsigned int i=0; i<ndofs; i++)
 							{
 								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
 										- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
 										+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
-								local_flux_balance_rhs -= (time_->tlevel() == 0?0:1)*bc_term*fe_values_side.shape_value(i,k);
 							}
-							else if (bc_type[sbi] == EqData::inflow && side_flux < 0)
-							{
-								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-							}
-							else if (bc_type[sbi] == EqData::neumann)
-							{
+						}
+						if (time_->tlevel() > 0)
+							for (unsigned int i=0; i<ndofs; i++)
+								local_flux_balance_rhs -= local_rhs[i];
+					}
+				}
+				else if (bc_type[sbi] == EqData::neumann)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
+					}
+
+					if (balance_ != nullptr)
+					{
+						for (unsigned int i=0; i<ndofs; i++)
+						{
+							for (unsigned int k=0; k<qsize; k++)
 								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-							}
-							else if (bc_type[sbi] == EqData::robin)
-							{
+							local_flux_balance_rhs -= local_rhs[i];
+						}
+					}
+				}
+				else if (bc_type[sbi] == EqData::robin)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
+					}
+
+					if (balance_ != nullptr)
+					{
+						for (unsigned int i=0; i<ndofs; i++)
+						{
+							for (unsigned int k=0; k<qsize; k++)
 								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-								local_flux_balance_rhs -= bc_term*fe_values_side.shape_value(i,k);
-							}
-							else
-							{
+							local_flux_balance_rhs -= local_rhs[i];
+						}
+					}
+				}
+				else if (bc_type[sbi] == EqData::none || (bc_type[sbi] == EqData::inflow && side_flux >= 0))
+				{
+					if (balance_ != nullptr)
+					{
+						for (unsigned int k=0; k<qsize; k++)
+						{
+							for (unsigned int i=0; i<ndofs; i++)
 								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							}
 						}
 					}
 				}
