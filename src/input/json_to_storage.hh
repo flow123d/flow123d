@@ -45,16 +45,16 @@ namespace Input {
  *
  * The class also contains methods for processing of special keys 'REF' and 'TYPE'. The reference is record with only one key
  * 'REF' with a string value that contains address of the reference. The string with the address is extracted by \p JSONToStorage::get_ref_from_head
- * then the JSONPath corresponding to the address is provided by method \p JSONtoStorage::find_ref_node.
+ * then the PathJSON corresponding to the address is provided by method \p JSONtoStorage::find_ref_node.
  */
-class JSONPath {
+class PathJSON {
 public:
     /**
      * Thrown if a reference in the input file
      */
 
-    TYPEDEF_ERR_INFO(EI_ErrorAddress, JSONPath);
-    TYPEDEF_ERR_INFO(EI_RefAddress, JSONPath);
+    TYPEDEF_ERR_INFO(EI_ErrorAddress, PathJSON);
+    TYPEDEF_ERR_INFO(EI_RefAddress, PathJSON);
     TYPEDEF_ERR_INFO(EI_JsonFile, const string);
     TYPEDEF_ERR_INFO(EI_RefStr, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
@@ -69,7 +69,7 @@ public:
 
     typedef json_spirit::mValue Node;
 
-    JSONPath(const Node& root_node);
+    PathJSON(const Node& root_node);
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns pointer to new json_spirit node.
@@ -107,10 +107,10 @@ public:
     bool get_ref_from_head(string & ref_address);
 
     /**
-     * Creates a new JSONPath object given by  address string possibly relative to the current
+     * Creates a new PathJSON object given by  address string possibly relative to the current
      * path.
      */
-    JSONPath find_ref_node(const string& ref_address);
+    PathJSON find_ref_node(const string& ref_address);
 
     /**
      * Output to the given stream.
@@ -144,7 +144,7 @@ private:
      * Default constructor.
      * Provides common initialization for public constructors.
      */
-    JSONPath();
+    PathJSON();
 
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
@@ -165,9 +165,9 @@ private:
 };
 
 /**
- * Output operator for JSONPath. Mainly for debugging purposes and error messages.
+ * Output operator for PathJSON. Mainly for debugging purposes and error messages.
  */
-std::ostream& operator<<(std::ostream& stream, const JSONPath& path);
+std::ostream& operator<<(std::ostream& stream, const PathJSON& path);
 
 
 /**
@@ -199,7 +199,7 @@ public:
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
-    TYPEDEF_ERR_INFO( EI_ErrorAddress, JSONPath);
+    TYPEDEF_ERR_INFO( EI_ErrorAddress, PathJSON);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval <<"\n"
                                             << EI_Specification::val << "\n"
                                             << "JSON type: " << EI_JSON_Type::qval << "\n"
@@ -260,25 +260,25 @@ protected:
 
 
     /**
-     * Check correctness of the input given by json_spirit node at head() of JSONPath @p p
+     * Check correctness of the input given by json_spirit node at head() of PathJSON @p p
      * against type specification @p type. Die on input error (and return NULL).
      * For correct input, creates the storage tree and returns pointer to its root node.
      */
-    StorageBase * make_storage(JSONPath &p, const Type::TypeBase *type);
+    StorageBase * make_storage(PathJSON &p, const Type::TypeBase *type);
 
-    StorageBase * make_storage(JSONPath &p, const Type::Record *record);
-    StorageBase * make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec);
-    StorageBase * make_storage(JSONPath &p, const Type::Array *array);
+    StorageBase * make_storage(PathJSON &p, const Type::Record *record);
+    StorageBase * make_storage(PathJSON &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathJSON &p, const Type::Array *array);
 
-    StorageBase * make_selection_storage_without_catch(JSONPath &p, const Type::Selection *selection);
-    StorageBase * make_storage(JSONPath &p, const Type::Selection *selection);
-    StorageBase * make_storage(JSONPath &p, const Type::Bool *bool_type);
-    StorageBase * make_storage(JSONPath &p, const Type::Integer *int_type);
-    StorageBase * make_storage(JSONPath &p, const Type::Double *double_type);
-    StorageBase * make_storage(JSONPath &p, const Type::String *string_type);
+    StorageBase * make_selection_storage_without_catch(PathJSON &p, const Type::Selection *selection);
+    StorageBase * make_storage(PathJSON &p, const Type::Selection *selection);
+    StorageBase * make_storage(PathJSON &p, const Type::Bool *bool_type);
+    StorageBase * make_storage(PathJSON &p, const Type::Integer *int_type);
+    StorageBase * make_storage(PathJSON &p, const Type::Double *double_type);
+    StorageBase * make_storage(PathJSON &p, const Type::String *string_type);
 
-    StorageBase * record_automatic_conversion(JSONPath &p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(JSONPath &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * record_automatic_conversion(PathJSON &p, const Type::Record *record);
+    StorageBase * abstract_rec_automatic_conversion(PathJSON &p, const Type::AbstractRecord *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.

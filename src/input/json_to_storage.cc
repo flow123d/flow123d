@@ -22,19 +22,19 @@ using namespace internal;
 
 
 /********************************************
- * Implementation of  internal::JSONPath
+ * Implementation of  internal::PathJSON
  */
 
 
-JSONPath::JSONPath(const Node& root_node)
-: JSONPath()
+PathJSON::PathJSON(const Node& root_node)
+: PathJSON()
 {
     path_.push_back( make_pair( (int)(-1), string("/") ) );
     nodes_.push_back( &root_node );
 }
 
 
-JSONPath::JSONPath()
+PathJSON::PathJSON()
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
@@ -49,7 +49,7 @@ JSONPath::JSONPath()
 }
 
 
-const JSONPath::Node * JSONPath::down(unsigned int index)
+const PathJSON::Node * PathJSON::down(unsigned int index)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mArray &array = head_node->get_array(); // the type should be checked in make_storage
@@ -62,7 +62,7 @@ const JSONPath::Node * JSONPath::down(unsigned int index)
 }
 
 
-const JSONPath::Node * JSONPath::down(const string& key)
+const PathJSON::Node * PathJSON::down(const string& key)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mObject &obj = head_node->get_obj(); // the type should be checked in make_storage
@@ -78,7 +78,7 @@ const JSONPath::Node * JSONPath::down(const string& key)
 }
 
 
-void JSONPath::up()
+void PathJSON::up()
 {
     if (path_.size() > 1) {
         path_.pop_back();
@@ -86,13 +86,13 @@ void JSONPath::up()
     }
 }
 
-void JSONPath::go_to_root() {
+void PathJSON::go_to_root() {
     path_.resize(1);
     nodes_.resize(1);
 }
 
 
-bool JSONPath::get_ref_from_head(string & ref_address)
+bool PathJSON::get_ref_from_head(string & ref_address)
 {
     const Node * head_node = nodes_.back();
     if (head_node->type() != json_spirit::obj_type) return false;
@@ -114,11 +114,11 @@ bool JSONPath::get_ref_from_head(string & ref_address)
  * This returns path to reference given by address in ref_address.
  *
  */
-JSONPath JSONPath::find_ref_node(const string& ref_address)
+PathJSON PathJSON::find_ref_node(const string& ref_address)
 {
     namespace ba = boost::algorithm;
 
-    JSONPath ref_path(*this);
+    PathJSON ref_path(*this);
 
     string::size_type pos = 0;
     string::size_type new_pos = 0;
@@ -178,7 +178,7 @@ JSONPath JSONPath::find_ref_node(const string& ref_address)
 
 
 
-void JSONPath::output(ostream &stream) const {
+void PathJSON::output(ostream &stream) const {
     if (level() == 0) {
         stream << "/";
         return;
@@ -195,7 +195,7 @@ void JSONPath::output(ostream &stream) const {
 
 
 
-string JSONPath::str() {
+string PathJSON::str() {
     stringstream ss;
     output(ss);
     return ss.str();
@@ -203,18 +203,18 @@ string JSONPath::str() {
 
 
 
-void JSONPath::put_address() {
+void PathJSON::put_address() {
 	previous_references_.insert(str());
 }
 
 
 
-bool JSONPath::is_null_type() const {
+bool PathJSON::is_null_type() const {
 	return head()->type() == json_spirit::null_type;
 }
 
 
-bool JSONPath::get_bool_value() const {
+bool PathJSON::get_bool_value() const {
     if (head()->type() == json_spirit::bool_type) {
         return head()->get_bool();
     } else {
@@ -227,7 +227,7 @@ bool JSONPath::get_bool_value() const {
 
 
 
-std::int64_t JSONPath::get_int_value() const {
+std::int64_t PathJSON::get_int_value() const {
     if (head()->type() == json_spirit::int_type) {
         return head()->get_int64();
     } else {
@@ -240,7 +240,7 @@ std::int64_t JSONPath::get_int_value() const {
 
 
 
-double JSONPath::get_double_value() const {
+double PathJSON::get_double_value() const {
     auto value_type = head()->type();
     if (    value_type== json_spirit::real_type
          || value_type == json_spirit::int_type) {
@@ -255,7 +255,7 @@ double JSONPath::get_double_value() const {
 
 
 
-std::string JSONPath::get_string_value() const {
+std::string PathJSON::get_string_value() const {
     if (head()->type() == json_spirit::str_type) {
         return head()->get_str();
     } else {
@@ -268,13 +268,13 @@ std::string JSONPath::get_string_value() const {
 
 
 
-std::string JSONPath::get_node_type() const {
+std::string PathJSON::get_node_type() const {
 	return json_type_names[ head()->type() ];
 }
 
 
 
-bool JSONPath::get_record_key_set(std::set<std::string> &keys_list) const {
+bool PathJSON::get_record_key_set(std::set<std::string> &keys_list) const {
 	if ( this->is_map_type() ) {
     	const json_spirit::mObject & j_map = head()->get_obj();
         json_spirit::mObject::const_iterator map_it;
@@ -292,7 +292,7 @@ bool JSONPath::get_record_key_set(std::set<std::string> &keys_list) const {
 
 
 
-int JSONPath::get_array_size() const {
+int PathJSON::get_array_size() const {
     if (head()->type() == json_spirit::array_type) {
         const json_spirit::mArray & j_array = head()->get_array();
         return j_array.size();
@@ -303,13 +303,13 @@ int JSONPath::get_array_size() const {
 
 
 
-bool JSONPath::is_map_type() const {
+bool PathJSON::is_map_type() const {
 	return head()->type() == json_spirit::obj_type;
 }
 
 
 
-std::ostream& operator<<(std::ostream& stream, const JSONPath& path) {
+std::ostream& operator<<(std::ostream& stream, const PathJSON& path) {
     path.output(stream);
     return stream;
 }
@@ -361,7 +361,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
     filter_in.push(in);
 
     // TODO move this code to PathJSON - maybe move creating of filter
-    JSONPath::Node node;
+    PathJSON::Node node;
 
 
     // error in yaml https://code.google.com/p/yaml-cpp/wiki/HowToParseADocument
@@ -371,7 +371,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
         THROW( ExcNotJSONFormat() << EI_JSONLine(e.line_) << EI_JSONColumn(e.column_) << EI_JSONReason(e.reason_));
     }
 
-    JSONPath root_path(node);
+    PathJSON root_path(node);
 
     root_type_ = &root_type;
     storage_ = make_storage(root_path, root_type_);
@@ -389,7 +389,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
  */
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *type)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::TypeBase *type)
 {
     ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
 
@@ -399,7 +399,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
         // todo: mark passed references and check cyclic references
 
         // dereference and take data from there
-        JSONPath ref_path = p.find_ref_node(ref_address);
+    	PathJSON ref_path = p.find_ref_node(ref_address);
         return make_storage( ref_path, type );
     }
 
@@ -440,7 +440,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::TypeBase *typ
 }
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *record)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Record *record)
 {
 	std::set<string> keys_to_process;
 	if ( p.get_record_key_set(keys_to_process) ) {
@@ -448,7 +448,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 
         /*Type::Record::KeyIter key_it;
         if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
-            JSONPath type_path(p);
+            PathJSON type_path(p);
             if (type_path.down( "TYPE" ) != NULL) {
                 try {
                 	if ( type_path.head()->get_str() != record->type_name() ) {
@@ -505,7 +505,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Record *recor
 }
 
 
-StorageBase * JSONToStorage::record_automatic_conversion(JSONPath &p, const Type::Record *record)
+StorageBase * JSONToStorage::record_automatic_conversion(PathJSON &p, const Type::Record *record)
 {
 	Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
 	if ( auto_key_it != record->end() ) {
@@ -542,11 +542,11 @@ StorageBase * JSONToStorage::record_automatic_conversion(JSONPath &p, const Type
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::AbstractRecord *abstr_rec)
 {
     if ( p.is_map_type() ) {
 
-        JSONPath type_path(p);
+    	PathJSON type_path(p);
         if ( type_path.down("TYPE") == NULL ) {
             if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
                 THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
@@ -578,7 +578,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
 
 
 
-StorageBase * JSONToStorage::abstract_rec_automatic_conversion(JSONPath &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * JSONToStorage::abstract_rec_automatic_conversion(PathJSON &p, const Type::AbstractRecord *abstr_rec)
 {
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
@@ -592,7 +592,7 @@ StorageBase * JSONToStorage::abstract_rec_automatic_conversion(JSONPath &p, cons
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Array *array)
 {
 	int arr_size;
 	if ( (arr_size = p.get_array_size()) != -1 ) {
@@ -634,7 +634,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Array *array)
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *selection)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Selection *selection)
 {
     string item_name;
 	try {
@@ -654,7 +654,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Selection *se
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_type)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Bool *bool_type)
 {
 	try {
 		return new StorageBool( p.get_bool_value() );
@@ -668,7 +668,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Bool *bool_ty
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_type)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Integer *int_type)
 {
 	std::int64_t value;
 	try {
@@ -691,7 +691,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Integer *int_
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *double_type)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::Double *double_type)
 {
     double value;
 
@@ -714,7 +714,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::Double *doubl
 
 
 
-StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::String *string_type)
+StorageBase * JSONToStorage::make_storage(PathJSON &p, const Type::String *string_type)
 {
 	string value;
 	try {

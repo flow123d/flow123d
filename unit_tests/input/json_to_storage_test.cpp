@@ -18,13 +18,13 @@ using namespace std;
 
 using namespace Input;
 
-TEST(JSONPath, all) {
+TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    JSONPath::Node node;
+    PathJSON::Node node;
     json_spirit::read_or_throw( in_str, node);
-    JSONPath path(node);
+    PathJSON path(node);
 
     { ostringstream os;
     os << path;
@@ -61,22 +61,22 @@ TEST(JSONPath, all) {
 }
 
 
-TEST(JSONPath, errors) {
+TEST(PathJSON, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    JSONPath::Node node;
+	PathJSON::Node node;
     json_spirit::read_or_throw( in_str, node);
 
     string ref;
-    JSONPath path(node);
+    PathJSON path(node);
     path.down(8);
 
-    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);} ,JSONPath::ExcRefOfWrongType,"has wrong type, should by string." );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, JSONPath::ExcReferenceNotFound, "there should be Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, JSONPath::ExcReferenceNotFound, "index out of size of Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, JSONPath::ExcReferenceNotFound, "can not go up from root" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, JSONPath::ExcReferenceNotFound, "there should be Record" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, JSONPath::ExcReferenceNotFound, "key 'key' not found" );
+    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);} ,PathJSON::ExcRefOfWrongType,"has wrong type, should by string." );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, PathJSON::ExcReferenceNotFound, "there should be Array" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, PathJSON::ExcReferenceNotFound, "index out of size of Array" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, PathJSON::ExcReferenceNotFound, "can not go up from root" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, PathJSON::ExcReferenceNotFound, "there should be Record" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, PathJSON::ExcReferenceNotFound, "key 'key' not found" );
 }
 
 
