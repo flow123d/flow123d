@@ -22,6 +22,31 @@ using namespace internal;
 
 
 /********************************************
+ * Implementation of PathBase
+ */
+PathBase::PathBase() {
+	path_.push_back( make_pair( (int)(-1), string("/") ) );
+}
+
+
+void PathBase::output(ostream &stream) const {
+    if (level() == 0) {
+        stream << "/";
+        return;
+    }
+
+    for(vector< pair<int, string> >::const_iterator it = path_.begin()+1; it != path_.end(); ++it) {
+        if ( it->first < 0 ) {
+            stream << "/" << it->second;
+        } else {
+            stream << "/" << it->first;
+        }
+    }
+}
+
+
+
+/********************************************
  * Implementation of  internal::PathJSON
  */
 
@@ -29,12 +54,12 @@ using namespace internal;
 PathJSON::PathJSON(const Node& root_node)
 : PathJSON()
 {
-    path_.push_back( make_pair( (int)(-1), string("/") ) );
     nodes_.push_back( &root_node );
 }
 
 
 PathJSON::PathJSON()
+: PathBase()
 {
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
@@ -54,7 +79,7 @@ bool PathJSON::down(unsigned int index)
     const Node * head_node = nodes_.back();
     const json_spirit::mArray &array = head_node->get_array(); // the type should be checked in make_storage
 
-    if (  index >= array.size()) return NULL;
+    if (  index >= array.size()) return false;
     path_.push_back( make_pair( index, string("") ) );
     nodes_.push_back( &( array[index] ) );
 
@@ -69,7 +94,7 @@ bool PathJSON::down(const string& key)
 
     json_spirit::mObject::const_iterator it = obj.find(key);
     if (it == obj.end()) {
-        return NULL;
+        return false;
     } else {
         path_.push_back( make_pair( (int)(-1), key) );
         nodes_.push_back( &( it->second ) );
@@ -174,23 +199,6 @@ PathJSON PathJSON::find_ref_node(const string& ref_address)
     	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->str().c_str(), ref_path.str().c_str());
     }
     return ref_path;
-}
-
-
-
-void PathJSON::output(ostream &stream) const {
-    if (level() == 0) {
-        stream << "/";
-        return;
-    }
-
-    for(vector< pair<int, string> >::const_iterator it = path_.begin()+1; it != path_.end(); ++it) {
-        if ( it->first < 0 ) {
-            stream << "/" << it->second;
-        } else {
-            stream << "/" << it->first;
-        }
-    }
 }
 
 
@@ -310,6 +318,104 @@ bool PathJSON::is_map_type() const {
 
 
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path) {
+    path.output(stream);
+    return stream;
+}
+
+
+/********************************************
+ * Implementation of PathYAML
+ */
+
+PathYAML::PathYAML(const Node& root_node)
+: PathBase()
+{
+    nodes_.push_back( &root_node );
+}
+
+
+bool PathYAML::down(unsigned int index) {
+    const Node * head_node = nodes_.back();
+    ASSERT(head_node->IsSequence(), "Head node must be of type Array.\n");
+    std::cout << "size: " << head_node->size() << std::endl;
+
+    if ( index >= head_node->size() ) return false;
+    path_.push_back( make_pair( index, string("") ) );
+    nodes_.push_back( &( head_node[index] ) );
+
+    return (nodes_.back() != NULL);
+}
+
+
+bool PathYAML::down(const string& key) {
+	// TODO
+	return true;
+}
+
+
+void PathYAML::up() {
+    if (path_.size() > 1) {
+        path_.pop_back();
+        nodes_.pop_back();
+    }
+}
+
+
+bool PathYAML::is_null_type() const {
+	return head()->IsNull();
+}
+
+
+bool PathYAML::get_bool_value() const {
+	// TODO
+	return true;
+}
+
+
+std::int64_t PathYAML::get_int_value() const {
+	// TODO
+	return 0;
+}
+
+
+double PathYAML::get_double_value() const {
+	// TODO
+	return 0.0;
+}
+
+
+std::string PathYAML::get_string_value() const {
+	// TODO
+	return "";
+}
+
+
+std::string PathYAML::get_node_type() const {
+	// TODO
+	return "";
+}
+
+
+bool PathYAML::get_record_key_set(std::set<std::string> &) const {
+	// TODO
+	return true;
+}
+
+
+int PathYAML::get_array_size() const {
+	if (head()->IsSequence()) {
+		return head()->size();
+	}
+	return -1;
+}
+
+
+bool PathYAML::is_map_type() const {
+	return head()->IsMap();
+}
+
+
+std::ostream& operator<<(std::ostream& stream, const PathYAML& path) {
     path.output(stream);
     return stream;
 }

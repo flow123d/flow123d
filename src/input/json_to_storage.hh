@@ -27,6 +27,7 @@
 #include <sstream>
 
 #include "json_spirit/json_spirit.h"
+#include "yaml-cpp/yaml.h"
 #include "input/input_type.hh"
 
 #include "input/accessors.hh"
@@ -34,6 +35,53 @@
 
 
 namespace Input {
+
+
+
+class PathBase {
+public:
+
+    /**
+     * Returns level of actual path. Root has level == 0.
+     */
+	virtual int level() const =0;
+
+    /**
+     * Output to the given stream.
+     */
+    void output(ostream &stream) const;
+
+    virtual bool is_null_type() const =0;
+    virtual bool get_bool_value() const =0;
+    virtual std::int64_t get_int_value() const =0;
+    virtual double get_double_value() const =0;
+    virtual std::string get_string_value() const =0;
+    virtual std::string get_node_type() const =0;
+    virtual bool get_record_key_set(std::set<std::string> &) const =0;
+    virtual int get_array_size() const =0;
+    virtual bool is_map_type() const =0;
+
+    /**
+     * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
+     */
+    virtual bool down(unsigned int index) =0;
+    virtual bool down(const string& key) =0;
+
+    /**
+     * Return one level up in the hierarchy.
+     */
+    virtual void up() =0;
+protected:
+    PathBase();
+
+    /**
+     * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
+     * For the first type we save index into first part of the pair and empty string to the second.
+     * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
+     */
+    vector< pair<int, string> > path_;
+
+};
 
 
 
@@ -47,7 +95,7 @@ namespace Input {
  * 'REF' with a string value that contains address of the reference. The string with the address is extracted by \p JSONToStorage::get_ref_from_head
  * then the PathJSON corresponding to the address is provided by method \p JSONtoStorage::find_ref_node.
  */
-class PathJSON {
+class PathJSON : public PathBase {
 public:
     /**
      * Thrown if a reference in the input file
@@ -72,15 +120,15 @@ public:
     PathJSON(const Node& root_node);
 
     /**
-     * Dive into json_spirit hierarchy. Store current path and returns if pointer to new json_spirit node is not NULL.
+     * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
      */
-    bool down(unsigned int index);
-    bool down(const string& key);
+    virtual bool down(unsigned int index);
+    virtual bool down(const string& key);
 
     /**
-     * Return one level up in the hierrarchy.
+     * Return one level up in the hierarchy.
      */
-    void up();
+    virtual void up();
 
     /**
      * Move to root node.
@@ -90,7 +138,7 @@ public:
     /**
      * Returns level of actual path. Root has level == 0.
      */
-    inline int level() const
+    virtual inline int level() const
     { return nodes_.size() - 1; }
 
     /**
@@ -106,11 +154,6 @@ public:
     PathJSON find_ref_node(const string& ref_address);
 
     /**
-     * Output to the given stream.
-     */
-    void output(ostream &stream) const;
-
-    /**
      * Returns string address of current position.
      */
     string str();
@@ -121,17 +164,17 @@ public:
     void put_address();
 
     // These methods will be derived from PathBase
-    bool is_null_type() const;
-    bool get_bool_value() const;
-    std::int64_t get_int_value() const;
-    double get_double_value() const;
-    std::string get_string_value() const;
-    std::string get_node_type() const;
-    bool get_record_key_set(std::set<std::string> &) const;
-    int get_array_size() const;
-    bool is_map_type() const;
+    virtual bool is_null_type() const;
+    virtual bool get_bool_value() const;
+    virtual std::int64_t get_int_value() const;
+    virtual double get_double_value() const;
+    virtual std::string get_string_value() const;
+    virtual std::string get_node_type() const;
+    virtual bool get_record_key_set(std::set<std::string> &) const;
+    virtual int get_array_size() const;
+    virtual bool is_map_type() const;
 
-private:
+protected:
 
     /**
      * Default constructor.
@@ -145,12 +188,6 @@ private:
     inline const Node * head() const
     { return nodes_.back(); }
 
-    /**
-     * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
-     * For the first type we save index into first part of the pair and empty string to the second.
-     * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
-     */
-    vector< pair<int, string> > path_;
     vector<const Node *> nodes_;
     std::set<string> previous_references_;
 
@@ -167,6 +204,57 @@ private:
  * Output operator for PathJSON. Mainly for debugging purposes and error messages.
  */
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path);
+
+
+class PathYAML : public PathBase {
+public:
+    typedef YAML::Node Node;
+
+    PathYAML(const Node& root_node);
+
+    /**
+     * Returns level of actual path. Root has level == 0.
+     */
+    virtual inline int level() const
+    { return nodes_.size() - 1; }
+
+    /**
+     * Dive into yaml-cpp hierarchy. Store current path and returns true if pointer to new yaml node is not NULL.
+     */
+    virtual bool down(unsigned int index);
+    virtual bool down(const string& key);
+
+    /**
+     * Return one level up in the hierarchy.
+     */
+    virtual void up();
+
+    // These methods is derived from PathBase
+    virtual bool is_null_type() const;
+    virtual bool get_bool_value() const;
+    virtual std::int64_t get_int_value() const;
+    virtual double get_double_value() const;
+    virtual std::string get_string_value() const;
+    virtual std::string get_node_type() const;
+    virtual bool get_record_key_set(std::set<std::string> &) const;
+    virtual int get_array_size() const;
+    virtual bool is_map_type() const;
+
+protected:
+    /**
+     * Pointer to YAML Value object at current path.
+     */
+    inline const Node * head() const
+    { return nodes_.back(); }
+
+    vector<const Node *> nodes_;
+};
+
+
+/**
+ * Output operator for PathYAML. Mainly for debugging purposes and error messages.
+ */
+std::ostream& operator<<(std::ostream& stream, const PathYAML& path);
 
 
 /**
