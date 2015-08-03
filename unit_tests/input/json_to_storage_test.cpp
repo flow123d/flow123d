@@ -80,6 +80,41 @@ TEST(PathJSON, errors) {
 }
 
 
+
+TEST(PathYAML, all) {
+::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    PathYAML::Node node = YAML::LoadFile((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
+    PathYAML path(node);
+
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/",os.str());
+    }
+
+    path.down(6);
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6",os.str());
+    }
+
+    path.down("a");
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6/a",os.str());
+    }
+
+    path.up();
+    { ostringstream os;
+    os << path;
+    EXPECT_EQ("/6",os.str());
+    }
+
+    path.down("b");
+    //TODO: test of references
+}
+
+
 class InputJSONToStorageTest : public testing::Test, public Input::JSONToStorage {
 protected:
 
