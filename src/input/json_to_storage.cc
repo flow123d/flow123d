@@ -46,6 +46,14 @@ void PathBase::output(ostream &stream) const {
 
 
 
+string PathBase::str() {
+    stringstream ss;
+    output(ss);
+    return ss.str();
+}
+
+
+
 /********************************************
  * Implementation of  internal::PathJSON
  */
@@ -199,14 +207,6 @@ PathJSON PathJSON::find_ref_node(const string& ref_address)
     	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->str().c_str(), ref_path.str().c_str());
     }
     return ref_path;
-}
-
-
-
-string PathJSON::str() {
-    stringstream ss;
-    output(ss);
-    return ss.str();
 }
 
 
@@ -365,6 +365,12 @@ void PathYAML::up() {
         path_.pop_back();
         nodes_.pop_back();
     }
+}
+
+
+void PathYAML::go_to_root() {
+    path_.resize(1);
+    nodes_.resize(1);
 }
 
 

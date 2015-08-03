@@ -71,6 +71,17 @@ public:
      * Return one level up in the hierarchy.
      */
     virtual void up() =0;
+
+    /**
+     * Move to root node.
+     */
+    virtual void go_to_root() =0;
+
+    /**
+     * Returns string address of current position.
+     */
+    string str();
+
 protected:
     PathBase();
 
@@ -133,7 +144,7 @@ public:
     /**
      * Move to root node.
      */
-    void go_to_root();
+    virtual void go_to_root();
 
     /**
      * Returns level of actual path. Root has level == 0.
@@ -152,11 +163,6 @@ public:
      * path.
      */
     PathJSON find_ref_node(const string& ref_address);
-
-    /**
-     * Returns string address of current position.
-     */
-    string str();
 
     /**
      * Put actual address to previous_references_ set
@@ -228,6 +234,11 @@ public:
      * Return one level up in the hierarchy.
      */
     virtual void up();
+
+    /**
+     * Move to root node.
+     */
+    virtual void go_to_root();
 
     // These methods is derived from PathBase
     virtual bool is_null_type() const;
