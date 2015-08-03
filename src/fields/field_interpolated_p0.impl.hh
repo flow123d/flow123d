@@ -53,7 +53,7 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
-                "The values of the Field are read from the \\$ElementData section with field name given by this key.")
+                "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .close();
 }
 

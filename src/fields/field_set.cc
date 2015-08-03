@@ -86,7 +86,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     {
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
-            string desc = "Output of the field " + field->name() + " $[" + field->units().format_latex()+"]$";
+            string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
             if (field->description().length() > 0)
                 desc += " (" + field->description() + ").";
             else
