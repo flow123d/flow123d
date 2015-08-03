@@ -105,6 +105,12 @@ doxy-doc: cmake update-build-tree
 # It does not generate new input reference file.
 .PHONY: ref-doc
 ref-doc: cmake update-build-tree
+	# generate json format specification (also contains flow123d open message text)
+	# remove flow123d open message text by searching for character '['
+	$(BUILD_DIR)/bin/flow123d --JSON_machine --no_log > $(DOC_DIR)/input_reference_raw.json
+	dd if=$(DOC_DIR)/input_reference_raw.json of=$(DOC_DIR)/input_reference.json bs=1 skip=`head -n 20 $(DOC_DIR)/input_reference_raw.json | grep -bo '\[' | sed 's/:.*//' | head -n 1`
+	python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.json.tex --format=tex
+	cp $(DOC_DIR)/input_reference.json.tex $(DOC_DIR)/input_reference.tex 
 	make -C $(BUILD_DIR)/doc/reference_manual pdf
 
 # call Flow123d and extract petsc command line arguments
@@ -157,9 +163,9 @@ checkout-submodule-branches:
 #	  > $(DOC_DIR)/flow_version.tex
 
 # call flow123d and make raw input_reference file
-$(DOC_DIR)/input_reference_raw.tex: update-build-tree build-flow123d	 	
-	$(BUILD_DIR)/bin/flow123d --latex_doc | grep -v "DBG" | \
-	sed 's/->/$$\\rightarrow$$/g' > $(DOC_DIR)/input_reference_raw.tex
+$(DOC_DIR)/input_reference_raw.tex: update-build-tree build-flow123d
+	echo 'file is now generated using python ist_script'
+
 
 # make empty file with replace rules if we do not have one
 $(DOC_DIR)/add_to_ref_doc.txt: 
