@@ -1,1 +1,7 @@
 test_key: 42
+map_key:
+ a: 4
+ b: 5
+seq_key:
+ - 6
+ - 7
