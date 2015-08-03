@@ -335,21 +335,28 @@ PathYAML::PathYAML(const Node& root_node)
 
 
 bool PathYAML::down(unsigned int index) {
-    const Node * head_node = nodes_.back();
-    ASSERT(head_node->IsSequence(), "Head node must be of type Array.\n");
-    std::cout << "size: " << head_node->size() << std::endl;
+    const Node & head_node = *( nodes_.back() );
+    ASSERT(head_node.IsSequence(), "Head node must be of type Array.\n");
 
-    if ( index >= head_node->size() ) return false;
+    if ( index >= head_node.size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
-    nodes_.push_back( &( head_node[index] ) );
+    nodes_.push_back( new Node( head_node[index] ) );
 
     return (nodes_.back() != NULL);
 }
 
 
 bool PathYAML::down(const string& key) {
-	// TODO
-	return true;
+    const Node & head_node = *( nodes_.back() );
+    ASSERT(head_node.IsMap(), "Head node must be of type Record.\n");
+
+    if (head_node[key]) {
+    	path_.push_back( make_pair( (int)(-1), key) );
+    	nodes_.push_back( new Node( head_node[key] ) );
+    } else {
+        return false;
+    }
+    return (nodes_.back() != NULL);
 }
 
 
