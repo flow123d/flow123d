@@ -20,7 +20,16 @@ class ProfilerJSONDecoder(json.JSONDecoder):
         return lst
 
 class ISTFormatter (object):
+    """
+    Class for formatting json to other formats
+    """
     def json2latex(self, input_file='examples/example.json', output_file='../../docs/input_reference_red.tex'):
+        """
+        Method converts given json file to latex output file
+        :param input_file:
+        :param output_file:
+        :return:
+        """
         with open(input_file, 'r') as fp:
             json_object = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
 
@@ -30,6 +39,12 @@ class ISTFormatter (object):
 
 
     def json2html(self, input_file='examples/example.json', output_file='../../docs/index.html'):
+        """
+        Method converts given input file to single html output file
+        :param input_file:
+        :param output_file:
+        :return:
+        """
         with open(input_file, 'r') as fp:
             json_object = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
 
@@ -91,6 +106,3 @@ if __name__ == '__main__':
         input_file='/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/doc/reference_manual/input_reference.json',
         output_file='/home/jan-hybs/Dokumenty/Smartgit-flow/flow123d/doc/reference_manual/input_reference.tex'
     )
-
-    # m2h = markdown2html()
-    # print m2h.parse('Value of the constant field.\nFor vector values, you can use scalar value to enter constant vector.\nFor square NxN-matrix values, you can use:\n\n* vector of size N to enter diagonal matrix\n* vector of size (($(N+1)*N/2$)) to enter symmetric matrix (upper triangle, row by row)\n* scalar to enter multiple of the unit matrix.')

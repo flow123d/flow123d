@@ -5,6 +5,9 @@
 
 
 class Field(object):
+    """
+    Helper class for Single Field in IST node
+    """
     def __init__(self, name, value=None, type=str):
         self.name = name
         self.value = value
@@ -22,6 +25,11 @@ class TypedList(list):
         list.__init__(self, *args, **kwargs)
 
     def parse(self, lst):
+        """
+        method parses given object
+        :param lst: object to parse
+        :return: self
+        """
         from ist.nodes import registered_nodes
 
         if self.cls is None:
@@ -42,19 +50,35 @@ class TypedList(list):
         return self
 
     def copy(self):
+        """
+        Return copy of this instance
+        :return:
+        """
         return TypedList(self.cls)
 
 
 class AttributeDict(dict):
+    """
+    Helper dict attribute class
+    """
     def __init__(self, cls=None, *args, **kwargs):
         self.cls = cls
         dict.__init__(self, *args, **kwargs)
 
     def parse(self, lst):
+        """
+        method parses given object
+        :param lst: object to parse
+        :return: self
+        """
         for attribute in lst:
             self[attribute['name']] = self.cls().parse(attribute) if self.cls else attribute
 
         return self
 
     def copy(self):
+        """
+        Return copy of this instance
+        :return:
+        """
         return AttributeDict(self.cls)

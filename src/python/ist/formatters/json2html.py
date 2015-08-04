@@ -6,11 +6,17 @@ from ist.utils.htmltree import htmltree
 
 
 class HTMLItemFormatter(htmltree):
+    """
+    Simple formatter class
+    """
     def __init__(self, cls):
         super(HTMLItemFormatter, self).__init__('section', cls)
 
 
 class HTMLUniversal(HTMLItemFormatter):
+    """
+    More abstract formatter class for strings, booleans, and other simple elements
+    """
     def __init__(self):
         super(HTMLUniversal, self).__init__(cls='simple-element')
 
@@ -26,12 +32,22 @@ class HTMLUniversal(HTMLItemFormatter):
 
 
     def format_as_child(self, self_object, record_key, record):
+        """
+        Format this child in listing
+        :param self_object:
+        :param record_key:
+        :param record:
+        :return:
+        """
         self._format_as_child(self_object, record_key, record)
         self._start_format_as_child(self_object, record_key, record)
         self._end_format_as_child(self_object, record_key, record)
 
 
 class HTMLRecordKeyDefault(object):
+    """
+    Class representing default value in record key
+    """
     def __init__(self, html):
         self.html = html if html is not None else htmltree('div', 'record-key-default')
         self.format_rules = {
@@ -69,6 +85,9 @@ class HTMLRecordKeyDefault(object):
 
 
 class HTMLInteger(HTMLUniversal):
+    """
+    Class representing int
+    """
     def _format_as_child(self, self_int, record_key, record):
         with self.open('div', attrib={ 'class': 'item-key-value' }):
             with self.open('span', attrib={ 'class': 'item-key' }):
@@ -78,6 +97,9 @@ class HTMLInteger(HTMLUniversal):
 
 
 class HTMLDouble(HTMLUniversal):
+    """
+    Class representing double
+    """
     def _format_as_child(self, self_double, record_key, record):
         with self.open('div', attrib={ 'class': 'item-key-value' }):
             with self.open('span', attrib={ 'class': 'item-key' }):
@@ -87,6 +109,9 @@ class HTMLDouble(HTMLUniversal):
 
 
 class HTMLBool(HTMLUniversal):
+    """
+    Class representing boolean
+    """
     def _format_as_child(self, self_bool, record_key, record):
         with self.open('div', attrib={ 'class': 'item-key-value' }):
             with self.open('span', attrib={ 'class': 'item-key' }):
@@ -97,6 +122,9 @@ class HTMLBool(HTMLUniversal):
 
 
 class HTMLString(HTMLUniversal):
+    """
+    Class representing string
+    """
     def _format_as_child(self, self_fn, record_key, record):
         with self.open('div', attrib={ 'class': 'item-key-value' }):
             with self.open('span', attrib={ 'class': 'item-key' }):
@@ -104,6 +132,9 @@ class HTMLString(HTMLUniversal):
 
 
 class HTMLFileName(HTMLUniversal):
+    """
+    Class representing filename type
+    """
     def _format_as_child(self, self_fn, record_key, record):
         with self.open('div', attrib={ 'class': 'item-key-value' }):
             with self.open('span', attrib={ 'class': 'item-key' }):
@@ -113,6 +144,9 @@ class HTMLFileName(HTMLUniversal):
 
 
 class HTMLArray(HTMLUniversal):
+    """
+    Class representing Array structure
+    """
     def _format_as_child(self, self_array, record_key, record):
         subtype = self_array.subtype.get_reference()
         with self.open('div', attrib={ 'class': 'item-key-value' }):
@@ -153,6 +187,9 @@ class HTMLArray(HTMLUniversal):
 
 
 class HTMLSelection(HTMLItemFormatter):
+    """
+    Class representing Selection node in IST
+    """
     def __init__(self):
         super(HTMLSelection, self).__init__(cls='main-section selection hidden')
 
@@ -191,6 +228,9 @@ class HTMLSelection(HTMLItemFormatter):
 
 
 class HTMLAbstractRecord(HTMLItemFormatter):
+    """
+    Class representing AbstractRecord node in IST
+    """
     def __init__(self):
         super(HTMLAbstractRecord, self).__init__(cls='main-section abstract-record hidden')
 
@@ -235,6 +275,9 @@ class HTMLAbstractRecord(HTMLItemFormatter):
 
 
 class HTMLRecord(HTMLItemFormatter):
+    """
+    Class representing record node in IST
+    """
     def __init__(self):
         super(HTMLRecord, self).__init__(cls='main-section record hidden')
 
@@ -289,6 +332,9 @@ class HTMLRecord(HTMLItemFormatter):
 
 
 class HTMLRecordKey(HTMLItemFormatter):
+    """
+    Class representing one record key
+    """
     def __init__(self):
         super(HTMLRecordKey, self).__init__(cls='record-key')
 
@@ -306,6 +352,9 @@ class HTMLRecordKey(HTMLItemFormatter):
 
 
 class HTMLFormatter(object):
+    """
+    Class which performs formatting
+    """
     formatters = {
         'Record': HTMLRecord,
         'RecordKey': HTMLRecordKey,
@@ -322,6 +371,11 @@ class HTMLFormatter(object):
 
     @staticmethod
     def format(items):
+        """
+        Formats given items to HTML format
+        :param items: json items
+        :return: html div element containing all given elements
+        """
         html = htmltree('div')
         html.id('input-reference')
 
@@ -345,32 +399,23 @@ class HTMLFormatter(object):
 
     @staticmethod
     def get_formatter_for(o):
+        """
+        Return formatter for given object
+        :param o:
+        :return: formatter
+        """
         cls = HTMLFormatter.formatters.get(o.__class__.__name__, None)
         if cls is None:
             cls = HTMLFormatter.formatters.get('')
         return cls()
 
     @staticmethod
-    def __cmp(a, b):
-        try:
-            name_a = a.get_name()
-        except:
-            name_a = None
-
-        try:
-            name_b = b.get_name()
-        except:
-            name_b = None
-
-        if name_a > name_b:
-            return 1
-
-        if name_a < name_b:
-            return -1
-        return 0
-
-    @staticmethod
     def abc_navigation_bar(items):
+        """
+        Returns alphabet ordered links to given items
+        :param items: all items
+        :return: html div object
+        """
         html = htmltree('div')
 
         sorted_items = sorted(items, cmp=HTMLFormatter.__cmp)
@@ -389,6 +434,11 @@ class HTMLFormatter(object):
 
     @staticmethod
     def tree_navigation_bar(items):
+        """
+        Returns default ordered links to given items
+        :param items: all items
+        :return: html div object
+        """
         html = htmltree('div')
 
         # sorted_items = sorted(items, cmp=HTMLFormatter.__cmp)
@@ -418,3 +468,22 @@ class HTMLFormatter(object):
                             else:
                                 html.span(item.get_type()[0], attrib={ 'class': 'shortcut' })
                                 html.span(item.get_name())
+
+    @staticmethod
+    def __cmp(a, b):
+        try:
+            name_a = a.get_name()
+        except:
+            name_a = None
+
+        try:
+            name_b = b.get_name()
+        except:
+            name_b = None
+
+        if name_a > name_b:
+            return 1
+
+        if name_a < name_b:
+            return -1
+        return 0

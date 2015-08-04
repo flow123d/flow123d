@@ -4,6 +4,9 @@ from ist.utils.utils import TypedList
 
 
 class Globals(object):
+    """
+    Global class object which stores references and all objects on memory for later use
+    """
     items = { }
     names = {
         'record': 'type_name',
@@ -18,6 +21,13 @@ class Globals(object):
 
     @staticmethod
     def search_in_element(element, value):
+        """
+        Method search in given element for specific value
+        used on markdown links e.g. [[record_root#keys#pause_after_run]]
+        :param element: element, typed list
+        :param value: string fields name
+        :return:
+        """
         from ist.nodes import Record
 
         if type(element) is Record:
@@ -38,13 +48,13 @@ class Globals(object):
 
     @staticmethod
     def get_url_by_name(label, type=''):
-        from ist.utils.htmltree import htmltree
-        '''
+        """
         constructs and returns tuple (name, type, link) from given name and label
         :param label: name#field where field is optional
         :param type:
-        :return:
-        '''
+        :return: triplet of (name. type, #link) or triplet of None
+        """
+        from ist.utils.htmltree import htmltree
         parts = label.split("#")
         name = parts[0]
         fields = parts[1:]

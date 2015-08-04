@@ -4,6 +4,9 @@ import xml.etree.ElementTree as ET
 
 
 class Html2Latex (object):
+    """
+    Class which based on given element (html/string) can produce latex format
+    """
     list_types = {
         'ul': 'itemize',
         'ol': 'enumerate'
@@ -20,24 +23,36 @@ class Html2Latex (object):
         self.tex = texlist ()
 
     def extend_children (self):
+        """
+        Recursive children call
+        """
         for child in self.el:
             self.tex.extend (Html2Latex (child).to_latex ())
 
     def tag_is (self, *tags):
+        """
+        whether current tag is in given tags
+        """
         return self.el.tag in tags
 
     def text (self):
+        """ return current text """
         return self.el.text if self.el.text else ''
 
     def tail (self):
+        """ return current tail """
         return self.el.tail if self.el.tail else ''
 
     def add_tail (self):
+        """
+        Adds current tail if exists
+        """
         if self.tail():
             with self.tex:
                 self.tex.append (self.tail ())
 
     def get_list_type (self):
+        """ helper method for getting list type"""
         return self.list_types.get (self.el.tag, 'itemize')
 
     #
@@ -45,7 +60,9 @@ class Html2Latex (object):
     # return self.el.tag
 
     def to_latex (self):
-
+        """
+        Method converts this object to latex with recursive calls
+        """
 
         if self.tag_is ('p'):
             with self.tex:
@@ -120,6 +137,9 @@ class Html2Latex (object):
 
 
 class LatexHref (Html2Latex):
+    """
+    Class for latex hrefs
+    """
     def to_latex (self):
 
         # Alink href?

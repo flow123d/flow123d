@@ -5,6 +5,9 @@ from ist.utils.utils import Field, TypedList, AttributeDict
 
 
 class ISTNode(object):
+    """
+    Parent of all nodes in IST
+    """
     # type of the object (similar to __class__.__name__)
     __type__ = ''
 
@@ -18,17 +21,31 @@ class ISTNode(object):
 
 
     def get_name(self):
+        """
+        :return: node name based on class __name__ field
+        """
         return getattr(self, self.__name_field__)
 
 
     def get_type(self):
+        """
+        :return: node  __type__ field
+        """
         return self.__type__
 
 
     def get_value(self):
+        """
+        :return: node value based on class __value_field__ field
+        """
         return getattr(self, self.__value_field__)
 
     def parse(self, o={ }):
+        """
+        method parses given object
+        :param o: object to parse
+        :return: self
+        """
         for field in self._fields:
             # parse list
             if issubclass(field.type, TypedList) or issubclass(field.type, AttributeDict):
@@ -48,9 +65,19 @@ class ISTNode(object):
         return self
 
     def include_in_format(self):
+        """
+        :return: whether this ISTNode will appear in output specification
+        """
         return True
 
     def get(self, *args):
+        """
+        Getter which will return given field value
+        If not found other field passed as arguments are tested/returned
+        If no field exists raise Exception
+        :param args: field names
+        :return: field value or raise
+        """
         for arg in args:
             value = getattr(self, arg, None)
             if value is not None:
@@ -71,6 +98,9 @@ class ISTNode(object):
 
 
 class Reference(ISTNode):
+    """
+    Class representing reference object
+    """
     __type__ = 'Reference'
     __value_field__ = 'ref_id'
 
@@ -79,6 +109,9 @@ class Reference(ISTNode):
         return self
 
     def get_reference(self):
+        """
+        :return: reference if exists otherwise None
+        """
         return Globals.items.get(str(self.ref_id), None)
 
     def copy(self):
@@ -92,6 +125,9 @@ class Reference(ISTNode):
 
 
 class NumberRange(ISTNode):
+    """
+    Class representing simple number range
+    """
     __type__ = 'Range'
     __name_field__ = ''
     __value_field__ = ''
@@ -143,12 +179,14 @@ class NumberRange(ISTNode):
         """
         method will return string representation if is meaningful or flag always visible
         is True
-        :return:
         """
         return self._format() if self.always_visible or not self.is_pointless() else ''
 
 
 class DoubleRange(NumberRange):
+    """
+    Class representing Double number range
+    """
     __type__ = 'Range'
     __name_field__ = ''
 
@@ -163,6 +201,9 @@ class DoubleRange(NumberRange):
 
 
 class AbstractNode(ISTNode):
+    """
+    Abstract node for more complex nodes
+    """
     _fields = ISTNode._fields + [
         Field('id'),
         Field('input_type')
@@ -170,6 +211,9 @@ class AbstractNode(ISTNode):
 
 
 class Attribute(AbstractNode):
+    """
+    Class representing attribute node
+    """
     __type__ = 'Attribute'
     __name_field__ = 'name'
     __value_field__ = 'value'
@@ -181,18 +225,28 @@ class Attribute(AbstractNode):
 
 
 class DescriptionNode(AbstractNode):
+    """
+    Class representing node with description
+    """
     _fields = AbstractNode._fields + [
         Field('description')
     ]
 
 
 class ComplexNode(DescriptionNode):
+    """
+    Class representing the most complex nodes (records and similar)
+with description and supporting attributes
+    """
     _fields = DescriptionNode._fields + [
         Field('attributes', AttributeDict(Attribute))
     ]
 
 
 class SelectionValue(DescriptionNode):
+    """
+    Class representing selection node
+    """
     __type__ = 'Selection value'
     __name_field__ = 'name'
     __value_field__ = 'name'
@@ -203,6 +257,9 @@ class SelectionValue(DescriptionNode):
 
 
 class RecordKeyDefault(AbstractNode):
+    """
+    Class representing default value in record key
+    """
     __type__ = 'Defaults'
     __name_field__ = ''
     __value_field__ = 'value'
@@ -214,6 +271,9 @@ class RecordKeyDefault(AbstractNode):
 
 
 class RecordKey(DescriptionNode):
+    """
+    Class representing one record key
+    """
     __type__ = 'Record key'
     __name_field__ = 'key'
     __value_field__ = 'default'
@@ -229,6 +289,9 @@ class RecordKey(DescriptionNode):
 
 
 class String(AbstractNode):
+    """
+    Class representing string
+    """
     __type__ = 'String'
     __name_field__ = ''
     __value_field__ = 'name'
@@ -240,6 +303,9 @@ class String(AbstractNode):
 
 
 class Double(AbstractNode):
+    """
+    Class representing double
+    """
     __type__ = 'Double'
     __name_field__ = ''
     __value_field__ = 'range'
@@ -252,6 +318,9 @@ class Double(AbstractNode):
 
 
 class Integer(AbstractNode):
+    """
+    Class representing int
+    """
     __type__ = 'Integer'
     __name_field__ = ''
     __value_field__ = 'range'
@@ -264,6 +333,9 @@ class Integer(AbstractNode):
 
 
 class FileName(AbstractNode):
+    """
+    Class representing filename type
+    """
     __type__ = 'FileName'
     __name_field__ = ''
     __value_field__ = 'file_mode'
@@ -276,6 +348,9 @@ class FileName(AbstractNode):
 
 
 class Bool(AbstractNode):
+    """
+    Class representing boolean
+    """
     __type__ = 'Bool'
     __name_field__ = ''
     __value_field__ = ''
@@ -287,6 +362,9 @@ class Bool(AbstractNode):
 
 
 class Array(AbstractNode):
+    """
+    Class representing Array structure
+    """
     __type__ = 'Array'
     __name_field__ = ''
     __value_field__ = 'range'
@@ -298,6 +376,9 @@ class Array(AbstractNode):
 
 
 class Record(ComplexNode):
+    """
+    Class representing record node in IST
+    """
     __type__ = 'Record'
     __name_field__ = 'type_name'
     __value_field__ = 'type_name'
@@ -313,6 +394,9 @@ class Record(ComplexNode):
 
 
 class AbstractRecord(ComplexNode):
+    """
+    Class representing AbstractRecord node in IST
+    """
     __type__ = 'AbstractRecord'
     __name_field__ = 'name'
     __value_field__ = 'name'
@@ -326,6 +410,9 @@ class AbstractRecord(ComplexNode):
 
 
 class Selection(ComplexNode):
+    """
+    Class representing Selection node in IST
+    """
     __type__ = 'Selection'
     __name_field__ = 'name'
     __value_field__ = 'name'
