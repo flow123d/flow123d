@@ -462,9 +462,15 @@ std::string PathYAML::get_node_type() const {
 }
 
 
-bool PathYAML::get_record_key_set(std::set<std::string> &) const {
-	// TODO
-	return true;
+bool PathYAML::get_record_key_set(std::set<std::string> &keys_list) const {
+	if ( head()->IsMap() ) {
+		for (YAML::const_iterator it=head()->begin(); it!=head()->end(); ++it) {
+			keys_list.insert( it->first.as<std::string>() );
+		}
+        return true;
+    }
+
+	return false;
 }
 
 
