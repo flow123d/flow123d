@@ -380,32 +380,85 @@ bool PathYAML::is_null_type() const {
 
 
 bool PathYAML::get_bool_value() const {
-	// TODO
-	return true;
+	if (head()->IsScalar()) {
+		try {
+			return head()->as<bool>();
+		} catch (YAML::Exception) {
+	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON bool', but we found: ")
+	                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+	             );
+		}
+	} else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON bool', but we found: ")
+                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+             );
+	}
+	return false;
 }
 
 
 std::int64_t PathYAML::get_int_value() const {
-	// TODO
+	if (head()->IsScalar()) {
+		try {
+			return head()->as<std::int64_t>();
+		} catch (YAML::Exception) {
+	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON int', but we found: ")
+	                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+	             );
+		}
+	} else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON int', but we found: ")
+                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+             );
+	}
 	return 0;
 }
 
 
 double PathYAML::get_double_value() const {
-	// TODO
+	if (head()->IsScalar()) {
+		try {
+			return head()->as<double>();
+		} catch (YAML::Exception) {
+	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON double', but we found: ")
+	                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+	             );
+		}
+	} else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON double', but we found: ")
+                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+             );
+	}
 	return 0.0;
 }
 
 
 std::string PathYAML::get_string_value() const {
-	// TODO
+	if (head()->IsScalar()) {
+		try {
+			return head()->as<std::string>();
+		} catch (YAML::Exception) {
+	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON string', but we found: ")
+	                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+	             );
+		}
+	} else {
+        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON string', but we found: ")
+                << JSONToStorage::EI_ErrorYamlAddress(*this) << JSONToStorage::EI_JSON_Type( get_node_type() )
+             );
+	}
 	return "";
 }
 
 
 std::string PathYAML::get_node_type() const {
-	// TODO
-	return "";
+	switch (head()->Type()) {
+	  case YAML::NodeType::Null: return "JSON null";
+	  case YAML::NodeType::Scalar: return "other scalar type";
+	  case YAML::NodeType::Sequence: return "JSON array";
+	  case YAML::NodeType::Map: return "JSON object";
+	  default: return "undefined type";
+	}
 }
 
 
