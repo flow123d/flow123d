@@ -425,7 +425,6 @@ void Profiler::update_running_timers() {
 
 #ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
-    // only active communicator should be the one with mpi_rank 0
     int ierr, mpi_rank, mpi_size;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
@@ -464,13 +463,19 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     root.add_child ("children", children);
 
 
-    /**
-     * Flag to property_tree::write_json method
-     * resulting in json human readable format (indents, newlines)
-     */
-    const int FLOW123D_JSON_HUMAN_READABLE = 1;
-    // write result to stream
-    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    // create profiler output only once (on the first processor)
+    // only active communicator should be the one with mpi_rank 0
+    if (mpi_rank == 0) {
+        cout << "MPI_Comm_size writing: " << mpi_size << endl;
+        cout << "MPI_Comm_rank writing: " << mpi_rank << endl;
+        /**
+         * Flag to property_tree::write_json method
+         * resulting in json human readable format (indents, newlines)
+         */
+        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        // write result to stream
+        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    }
 }
 
 
@@ -483,20 +488,14 @@ void Profiler::output(MPI_Comm comm) {
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
-    cout << "MPI_Comm_size: " << mpi_size << endl;
-    cout << "MPI_Comm_rank: " << mpi_rank << endl;
-    // create profiler output only once (on the first processor)
+    char filename[PATH_MAX];
+    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
+    string full_fname =  FilePath(string(filename), FilePath::output_file);
 
-    if (mpi_rank == 0) {
-        char filename[PATH_MAX];
-        strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-        string full_fname =  FilePath(string(filename), FilePath::output_file);
-
-        xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-        ofstream os(full_fname.c_str());
-        output(comm, os);
-        os.close();
-    }
+    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
+    ofstream os(full_fname.c_str());
+    output(comm, os);
+    os.close();
 }
 
 #endif /* FLOW123D_HAVE_MPI */
