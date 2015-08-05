@@ -9,12 +9,15 @@ FLOW123D_FORCE_LINK_IN_CHILD(linearODEAnalytic)
 
 using namespace Input::Type;
 
-Record LinearODEAnalytic::input_type
-    = Record("LinearODEAnalytic", "Evaluate analytic solution of the system of ODEs.")
-    .derive_from(LinearODESolverBase::input_type);
+const Record & LinearODEAnalytic::get_input_type() {
+    return Record("LinearODEAnalytic", "Evaluate analytic solution of the system of ODEs.")
+    		.derive_from(LinearODESolverBase::get_input_type())
+			.close();
+}
     
 const int LinearODEAnalytic::registrar =
-		Input::register_class< LinearODEAnalytic, Input::Record >("LinearODEAnalytic");
+		Input::register_class< LinearODEAnalytic, Input::Record >("LinearODEAnalytic") +
+		LinearODEAnalytic::get_input_type().size();
 
 LinearODEAnalytic::LinearODEAnalytic(Input::Record in_rec)
 {

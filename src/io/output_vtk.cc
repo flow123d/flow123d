@@ -40,34 +40,44 @@ FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 using namespace Input::Type;
 
-Record OutputVTK::input_type
-    = Record("vtk", "Parameters of vtk output format.")
-    // It is derived from abstract class
-    .derive_from(OutputTime::input_format_type)
-    .declare_key("variant", input_type_variant, Default("ascii"),
-        "Variant of output stream file format.")
-    // The parallel or serial variant
-    .declare_key("parallel", Bool(), Default("false"),
-        "Parallel or serial version of file format.")
-    // Type of compression
-    .declare_key("compression", input_type_compression, Default("none"),
-        "Compression used in output stream file format.");
+const Record & OutputVTK::get_input_type() {
+    return Record("vtk", "Parameters of vtk output format.")
+		// It is derived from abstract class
+		.derive_from(OutputTime::get_input_format_type())
+		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("ascii"),
+			"Variant of output stream file format.")
+		// The parallel or serial variant
+		.declare_key("parallel", Bool(), Default("false"),
+			"Parallel or serial version of file format.")
+		// Type of compression
+		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("none"),
+			"Compression used in output stream file format.")
+		.close();
+}
 
 
-Selection OutputVTK::input_type_variant
-    = Selection("VTK variant (ascii or binary)")
-    .add_value(OutputVTK::VARIANT_ASCII, "ascii",
-        "ASCII variant of VTK file format")
-    .add_value(OutputVTK::VARIANT_BINARY, "binary",
-        "Binary variant of VTK file format (not supported yet)");
+const Selection & OutputVTK::get_input_type_variant() {
+    return Selection("VTK variant (ascii or binary)")
+		.add_value(OutputVTK::VARIANT_ASCII, "ascii",
+			"ASCII variant of VTK file format")
+		.add_value(OutputVTK::VARIANT_BINARY, "binary",
+			"Binary variant of VTK file format (not supported yet)")
+		.close();
+}
 
 
-Selection OutputVTK::input_type_compression
-    = Selection("Type of compression of VTK file format")
-    .add_value(OutputVTK::COMPRESSION_NONE, "none",
-        "Data in VTK file format are not compressed")
-    .add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-        "Data in VTK file format are compressed using zlib (not supported yet)");
+const Selection & OutputVTK::get_input_type_compression() {
+    return Selection("Type of compression of VTK file format")
+		.add_value(OutputVTK::COMPRESSION_NONE, "none",
+			"Data in VTK file format are not compressed")
+		.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
+			"Data in VTK file format are compressed using zlib (not supported yet)")
+		.close();
+}
+
+
+const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk") +
+		OutputVTK::get_input_type().size();
 
 
 OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)
@@ -173,9 +183,6 @@ void OutputVTK::make_subdirectory()
 
 
 
-
-
-const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk");
 
 void OutputVTK::write_vtk_vtu_head(void)
 {

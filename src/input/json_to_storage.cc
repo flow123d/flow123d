@@ -446,7 +446,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
 
         JSONPath type_path(p);
         if ( type_path.down("TYPE") == NULL ) {
-            if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+            if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
                 THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
             } else { // auto conversion
             	return abstract_rec_automatic_conversion(p, abstr_rec);
@@ -463,7 +463,7 @@ StorageBase * JSONToStorage::make_storage(JSONPath &p, const Type::AbstractRecor
             }
         }
     } else {
-        if ( ! abstr_rec->begin()->default_.has_value_at_declaration() ) {
+        if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
             THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
                 << EI_ErrorAddress(p) << EI_JSON_Type( json_type_names[ p.head()->type() ] ) << EI_InputType(abstr_rec->desc()) );
         } else { // auto conversion
@@ -641,7 +641,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {
-            if (a_record->begin()->default_.has_value_at_declaration() )    // a_record->bagin() ... TYPE key
+            if (a_record->get_selection_default().has_value_at_declaration() )
                 return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
             else
                 xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str());

@@ -183,6 +183,50 @@ else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
 endif()
 
+
+#########################################################################
+# Determining timer with highest resolution
+include(ProfilerTimerCheck)
+set(TIMER_RESOLUTION No)
+
+# try to get best timer on windows
+if (WIN32 OR CYGWIN)
+    # on windows and cygwin try to get access QueryPerformanceCounter timer
+    TEST_TIMER (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+      ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_queryperformance.cpp) 
+
+    # if success save theese values via flow_define and flow_define_constant macros
+    if (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER AND TIMER_RESOLUTION)
+        flow_define           (HAVE_TIMER_QUERY_PERFORMANCE_COUNTER)
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       QueryPerformanceCounter")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
+    else()
+        MESSAGE (WARNING "Couldn't access QueryPerformanceCounter timer")   
+    endif()
+endif()
+
+if (NOT TIMER_RESOLUTION)
+    # otherwise try to access chrono high resolution timer (multiplatform)
+    # expecting c++11 support
+    TEST_TIMER (HAVE_TIMER_CHRONO_HIGH_RESOLUTION
+      ${CMAKE_SOURCE_DIR}/CMake/TimerTest/timer_chrono_highresolution.cpp)
+
+    # if success save theese values via flow_define and flow_define_constant macros
+    if (HAVE_TIMER_CHRONO_HIGH_RESOLUTION AND TIMER_RESOLUTION)
+        flow_define           (HAVE_TIMER_CHRONO_HIGH_RESOLUTION)
+        # flow_define_constant  (TIMER_RESOLUTION "${TIMER_RESOLUTION}")
+
+        message(STATUS "Timer used:       chrono highresolution timer")
+        message(STATUS "Timer resolution: ${TIMER_RESOLUTION} [us]")
+    else()
+        MESSAGE (FATAL_ERROR "Couldn't access chrono timer")    
+    endif()
+endif ()
+
+
+
 #########################################################################
 # Check that glibc has working execinfo.h
 include(CheckIncludeFile)
@@ -216,7 +260,8 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS} 
 
 # store compiler flags (into config.h file)
 flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
-
+# store current source dir (for profiler purposes)
+flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
 ######################################################################### find libraries
 #
@@ -515,9 +560,13 @@ if (USE_PYTHON)
         message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
         message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
         message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+
+        # set extra python module path in src directory, if case PYTHON_COPY if OFF
+        set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
+            set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
 
             string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
             string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
@@ -549,7 +598,11 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
                 )
-            
+            # copy flow123d python scripts and modules
+            execute_process(
+                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
+                )
+
             # copy python include            
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -567,7 +620,39 @@ if (USE_PYTHON)
         set(PYTHON_INCLUDE_DIRS "")
         set(PYTHON_LIBRARIES "")
     endif()
+
+    # define varible for storing this extra module path
+    # this variable is used later to update search module path
+    # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+    # if not, default location is src/python dir in CMake_SOURCE_DIR location
+    flow_define(PYTHON_EXTRA_MODULES_PATH "${PYTHON_EXTRA_MODULES_PATH}")
 endif()  
+
+#################################################################################
+#  YAML_CPP_FOUND - set to true if the library is found
+
+message(STATUS "\n =======================================================")
+find_package(YamlCpp)
+if (NOT YamlCpp_FOUND)
+    message(STATUS "Try to install our own yaml-cpp library.")
+    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+    include(InstallYamlCpp)
+
+    unset(YamlCpp_FOUND CACHE) 
+    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
+    unset(YamlCpp_LIBRARY CACHE)
+
+    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
+    find_package(YamlCpp REQUIRED)
+    
+    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
+endif()
+
+message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
+
+
+
 
 message(STATUS "\n ======================================================= ")
 
@@ -590,8 +675,9 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
-    ${CMAKE_BINARY_DIR}/src/dealii/include
-    ${CMAKE_SOURCE_DIR}/src/dealii/include
+    ${YamlCpp_INCLUDE_DIR}
+#    ${CMAKE_BINARY_DIR}/src/dealii/include
+#    ${CMAKE_SOURCE_DIR}/src/dealii/include
     ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
@@ -706,8 +792,8 @@ message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
 
 # add tbb sources
-message(STATUS "add subdir TBB")
-add_subdirectory(third_party/tbb43_20150316oss)
+#message(STATUS "add subdir TBB")
+#add_subdirectory(third_party/tbb43_20150316oss)
 
 # add various our sources
 add_subdirectory(src)
@@ -763,6 +849,7 @@ message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "===========================================")
 
 

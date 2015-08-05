@@ -19,92 +19,100 @@ namespace IT=Input::Type;
 
 IT::Record get_loc_rec() {
     return IT::Record("loc_rec","")
-            .declare_key("key",Integer(),"");
+            .declare_key("key",Integer(),"").close();
 }
 
 IT::Selection get_loc_sel() {
     return IT::Selection("loc_sel")
-            .add_value(13,"happy");
-}
-
-// test local record derive from local abstract record
-IT::Record loc_a_rec_descendant(IT::AbstractRecord &type) {
-    return Record("loc_a_rec_descendant","")
-            .derive_from(type)
-            .declare_key("str", String(),"");
-}
-
-IT::AbstractRecord get_loc_a_rec() {
-    IT::AbstractRecord type = IT::AbstractRecord("loc_a_rec","")
-            .declare_key("key",Integer(),"");
-
-    // local instance of AbstractRecord has to call creation of its descendants
-    // in order to make them all derived from very same instance of AbstractRecord
-    // different calls to get_loc_a_rec() returns completely distinguish types even if they
-    // has same name and structure. In particular no static Record can derive from local AbstractRecord !!
-
-    loc_a_rec_descendant(type);
-    return type;
+            .add_value(13,"happy").close();
 }
 
 
 struct InputTypeCollection {
-    static IT::Record main_record;
-    static IT::Record & get_stat_rec();
-    static IT::Selection stat_sel;
-    static IT::AbstractRecord stat_a_rec;
-    static IT::Record stat_desc_stat_a_rec;
+    static const IT::Record & get_main_record();
+    static const IT::Record & get_stat_rec();
+    static const IT::Selection & get_stat_sel();
+    static const IT::AbstractRecord & get_stat_a_rec();
 };
 
 // test that declare_key method correctly deal with both static (not yet constructed) and local
 // types
 // The same we test for all types of Array
-IT::Record InputTypeCollection::main_record=
-        IT::Record("MainRecord","")
+const IT::Record & InputTypeCollection::get_main_record() {
+	return IT::Record("MainRecord","")
         .declare_key("stat_rec", InputTypeCollection::get_stat_rec(), "")
         .declare_key("loc_rec", get_loc_rec(), "")
         .declare_key("loc_rec_2", get_loc_rec(), "")
-        .declare_key("stat_sel", stat_sel, "")
+        .declare_key("stat_sel", InputTypeCollection::get_stat_sel(), "")
         .declare_key("loc_sel", get_loc_sel(), "")
-        .declare_key("stat_a_rec", stat_a_rec, "" )
-        .declare_key("loc_a_rec", get_loc_a_rec(), "" )
+        .declare_key("stat_a_rec", InputTypeCollection::get_stat_a_rec(), "" )
 
         .declare_key("arr_stat_rec", IT::Array(InputTypeCollection::get_stat_rec()), "")
         .declare_key("arr_loc_rec", IT::Array(get_loc_rec()), "")
         .declare_key("arr_loc_rec_2", IT::Array(get_loc_rec()), "")
-        .declare_key("arr_stat_sel", IT::Array(stat_sel), "")
+        .declare_key("arr_stat_sel", IT::Array(InputTypeCollection::get_stat_sel()), "")
         .declare_key("arr_loc_sel", IT::Array(get_loc_sel()), "")
-        .declare_key("arr_stat_a_rec", IT::Array(stat_a_rec), "" )
-        .declare_key("arr_loc_a_rec", IT::Array(get_loc_a_rec()), "" );
-
-
-
-
-IT::Record & InputTypeCollection::get_stat_rec() {
-	IT::Record type = IT::Record("stat_rec","").close();
-	return *( Input::TypeRepository<IT::Record>::getInstance().add_type( type ).get() );
+        .declare_key("arr_stat_a_rec", IT::Array(InputTypeCollection::get_stat_a_rec()), "" )
+		.close();
 }
 
-IT::Selection InputTypeCollection::stat_sel=IT::Selection("stat_sel");
-
-// test static record derive from static abstract record
-IT::Record InputTypeCollection::stat_desc_stat_a_rec=
-        IT::Record("stat_desc_stat_a_rec","")
-        .derive_from(stat_a_rec);
 
 
-IT::AbstractRecord InputTypeCollection::stat_a_rec=IT::AbstractRecord("stat_a_rec","");
+
+const IT::Record & InputTypeCollection::get_stat_rec() {
+	return IT::Record("stat_rec","").close();
+}
+
+const IT::Selection & InputTypeCollection::get_stat_sel() {
+	return IT::Selection("stat_sel").close();
+}
+
+
+const IT::AbstractRecord & InputTypeCollection::get_stat_a_rec() {
+	return IT::AbstractRecord("stat_a_rec","").close();
+}
 
 
 
 
 TEST(TypeRepository, all) {
-    TypeBase::lazy_finish();
+    IT::Record rec = InputTypeCollection::get_main_record();
 
-    std::cout << OutputText(&InputTypeCollection::main_record) << std::endl;
-
-    EXPECT_EQ( &(InputTypeCollection::get_stat_rec()), &(InputTypeCollection::get_stat_rec()) );
-    //std::cout << &(InputTypeCollection::get_stat_rec()) << endl;
-    //std::cout << &(InputTypeCollection::get_stat_rec()) << endl;
+    EXPECT_EQ( InputTypeCollection::get_stat_rec(), InputTypeCollection::get_stat_rec() );
 
 }
+
+
+
+
+
+TEST(TypeRepository, hash) {
+	TypeBase::TypeHash hash;
+
+	// test of Record
+	IT::Record rec = IT::Record("record", "Some record.")
+		.declare_key("int_key", Integer(),"")
+		.declare_key("double_key", Double(),"");
+
+	hash = rec.content_hash();
+	EXPECT_EQ( hash, rec.close().content_hash() ); // close() method get record from TypeRepository
+	EXPECT_EQ( IT::Record("stat_rec","").close().content_hash(), InputTypeCollection::get_stat_rec().content_hash() );
+
+	// test of AbstractRecord
+	IT::AbstractRecord a_rec = IT::AbstractRecord("abstract_record", "Some abstract record.");
+
+	hash = a_rec.content_hash();
+	EXPECT_EQ( hash, a_rec.close().content_hash() );
+	EXPECT_EQ( IT::AbstractRecord("stat_a_rec","").close().content_hash(), InputTypeCollection::get_stat_a_rec().content_hash() );
+
+	// test of Selection
+	IT::Selection sel = IT::Selection("selection", "Some selection.")
+		.add_value(0, "off")
+		.add_value(1, "on");
+
+	hash = sel.content_hash();
+	EXPECT_EQ( hash, sel.close().content_hash() );
+	EXPECT_EQ( IT::Selection("stat_sel").close().content_hash(), InputTypeCollection::get_stat_sel().content_hash() );
+
+}
+

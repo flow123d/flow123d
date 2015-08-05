@@ -15,16 +15,19 @@ FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)
 using namespace Input::Type;
     
     
-Record PadeApproximant::input_type
-    = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    .derive_from(LinearODESolverBase::input_type)
-    .declare_key("nominator_degree", Integer(1), Default("2"),
+const Record & PadeApproximant::get_input_type() {
+    return Record("PadeApproximant", "Record with an information about pade approximant parameters.")
+    	.derive_from(LinearODESolverBase::get_input_type())
+		.declare_key("nominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
-    .declare_key("denominator_degree", Integer(1), Default("2"),
-                "Polynomial degree of the nominator of Pade approximant");
+		.declare_key("denominator_degree", Integer(1), Default("2"),
+                "Polynomial degree of the nominator of Pade approximant")
+		.close();
+}
 
 const int PadeApproximant::registrar =
-		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant");
+		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant") +
+		PadeApproximant::get_input_type().size();
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {

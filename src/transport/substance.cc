@@ -38,11 +38,13 @@
 using namespace Input::Type;
 
 
-Record Substance::input_type
-	= Record("Substance", "Chemical substance.")
-	.declare_key("name", String(), Default::obligatory(), "Name of the substance.")
-	.declare_key("molar_mass", Double(0), Default("1"), "Molar mass of the substance [kg/mol].")
-	.allow_auto_conversion("name");
+const Record & Substance::get_input_type() {
+	return Record("Substance", "Chemical substance.")
+		.declare_key("name", String(), Default::obligatory(), "Name of the substance.")
+		.declare_key("molar_mass", Double(0), Default("1"), "Molar mass of the substance [kg/mol].")
+		.allow_auto_conversion("name")
+		.close();
+}
 
 
 

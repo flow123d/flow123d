@@ -171,7 +171,11 @@ public:
 
 
     bool finish()
-        { close(); return true; }
+        { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
+
+
+    /// Implements \p TypeBase::is_closed
+    virtual bool is_closed() const override;
 private:
 
     /**
@@ -191,7 +195,7 @@ private:
     public:
 
         SelectionData(const string &name)
-        : type_name_(name), /*made_extensive_doc(false),*/ finished(false)
+        : type_name_(name), closed_(false)
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
@@ -214,8 +218,8 @@ private:
         /// Text description of the whole Selection object.
         std::string description_;
 
-        /// Indicator of finished Selection.
-        mutable bool finished;
+        /// Indicator of closed Selection.
+        mutable bool closed_;
     };
 
     /// Handle to actual Selection data.
@@ -258,7 +262,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-    ASSERT(data_->finished, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
+    ASSERT(data_->closed_, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 
 

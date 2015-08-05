@@ -37,7 +37,7 @@ public:
     /**
      * Input record for class LinearODE_analytic.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
     
     ///Default constructor is possible because the input record is not needed.
     LinearODEAnalytic(){};

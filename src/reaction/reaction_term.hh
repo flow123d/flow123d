@@ -25,15 +25,8 @@ public:
   /**
    * Static variable for definition of common input record in reaction term.
    */
-  static Input::Type::AbstractRecord input_type;
+  static Input::Type::AbstractRecord & get_input_type();
   
-  /// Specification of the output record. 
-  /**
-   * Need not to be used by all reaction models, but they should
-   * allow output of similar fields.
-   */
-  static Input::Type::Record input_type_output_record;
-
   /// Constructor.
   /** @param init_mesh is the reference to the computational mesh
    *  @param in_rec is the input record

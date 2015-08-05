@@ -87,7 +87,7 @@ class LinSys
 friend class SchurComplement;
 public:
     // Abstract Input Record for LinSys initialization
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
     typedef enum {
         INSERT=INSERT_VALUES,

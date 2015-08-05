@@ -96,6 +96,15 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     return result;
 }
 
+PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+    initialize();
+
+    // import module by dot separated path and its name
+    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    PythonLoader::check_error();
+
+    return module_object;
+}
 
 
 void PythonLoader::check_error() {
@@ -239,8 +248,20 @@ PythonRunning::PythonRunning(const std::string& program_name)
         num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
         std::cout << "Python full: " << buff << std::endl;
 */
-#endif
+#endif //FLOW123D_PYTHON_PREFIX
+
+    // initialize the Python interpreter.
     Py_Initialize();
+
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, first get current system path (Py_GetPath)
+    // than append flow123d Python modules path to sys.path
+    std::string path = Py_GetPath();
+    path = path  + ":" + std::string(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    // conversion to non const char
+    char * path_char = const_cast<char *>(path.c_str());
+    PySys_SetPath (path_char);
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 

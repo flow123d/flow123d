@@ -47,16 +47,26 @@
 namespace it = Input::Type;
 
 
-it::Record LinSys_BDDC::input_type = it::Record("Bddc", "Solver setting.")
-    .derive_from(LinSys::input_type)
-    .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
-                 "Maximum number of iterations of the linear solver with non-decreasing residual.")
-    .declare_key("number_of_levels", it::Integer(0), it::Default("2"),
-                 "Number of levels in the multilevel method (=2 for the standard BDDC).")
-    .declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
-                 "Use adaptive selection of constraints in BDDCML.")
-    .declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
-                 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.");
+const it::Record & LinSys_BDDC::get_input_type() {
+	return it::Record("Bddc", "Solver setting.")
+		.derive_from(LinSys::get_input_type())
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+					"Relative residual tolerance (to initial error).")
+		.declare_key("max_it", it::Integer(0), it::Default("10000"),
+					"Maximum number of outer iterations of the linear solver.")
+		.declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
+					 "Maximum number of iterations of the linear solver with non-decreasing residual.")
+		.declare_key("number_of_levels", it::Integer(0), it::Default("2"),
+					 "Number of levels in the multilevel method (=2 for the standard BDDC).")
+		.declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
+					 "Use adaptive selection of constraints in BDDCML.")
+		.declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
+					 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.")
+		.close();
+}
+
+
+const int LinSys_BDDC::registrar = LinSys_BDDC::get_input_type().size();
 
 
 

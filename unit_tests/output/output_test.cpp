@@ -98,7 +98,7 @@ public:
 
     OutputTest()
     : OutputTime(
-    		Input::JSONToStorage(output_stream1, OutputTime::input_type)
+    		Input::JSONToStorage(output_stream1, OutputTime::get_input_type())
     		.get_root_interface<Input::Record>()
     		)
     {}
@@ -127,10 +127,10 @@ IT::Record OutputTest::input_type
  */
 TEST_F( OutputTest, test_create_output_stream ) {
 	// First stream is created in constructor, here we create two more.
-	Input::JSONToStorage reader_2(output_stream2, OutputTime::input_type);
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type());
     OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    Input::JSONToStorage reader_3(output_stream3, OutputTime::input_type);
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type());
     OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
@@ -154,13 +154,13 @@ TEST_F( OutputTest, test_create_output_stream ) {
  */
 /*
 TEST( OutputTest, find_outputstream_by_name ) {
-	Input::JSONToStorage reader_1(output_stream1, OutputTime::input_type);
+	Input::JSONToStorage reader_1(output_stream1, OutputTime::get_input_type());
     auto os_1 = OutputTime::output_stream(reader_1.get_root_interface<Input::Record>());
 
-	Input::JSONToStorage reader_2(output_stream2, OutputTime::input_type);
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type());
     auto os_2 = OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    Input::JSONToStorage reader_3(output_stream3, OutputTime::input_type);
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type());
     auto os_3 = OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     //ASSERT_EQ(OutputTime::output_streams.size(), 3);
@@ -190,16 +190,18 @@ const string test_output_time_input = R"JSON(
 }
 )JSON";
 
-Input::Type::Selection test_selection =
-		Input::Type::Selection("any")
+static const Input::Type::Selection & get_test_selection() {
+	return Input::Type::Selection("any")
 		.add_value(0,"black")
-		.add_value(3,"white");
+		.add_value(3,"white")
+		.close();
+}
 
 class TestOutputTime : public testing::Test, public OutputTime {
 public:
 	TestOutputTime()
 	: OutputTime(
-	    		Input::JSONToStorage(test_output_time_input, OutputTime::input_type)
+	    		Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type())
 	    		.get_root_interface<Input::Record>()
 	    		)
 	{
@@ -228,7 +230,7 @@ public:
 	    FieldType field("test_field", false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
-		field.input_selection(&test_selection);
+		field.input_selection(&get_test_selection());
 
 		field.set_mesh(*my_mesh);
 		field.set_limit_side(LimitSide::left);

@@ -54,12 +54,12 @@ public:
      *
      * \return This variable defines record for output stream
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * \brief The specification of output file format
      */
-    static Input::Type::AbstractRecord input_format_type;
+    static Input::Type::AbstractRecord & get_input_format_type();
 
     /**
      * Types of reference data

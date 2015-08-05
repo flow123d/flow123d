@@ -83,6 +83,7 @@ add_library(system_lib
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
+    system/time_point.cc
     system/system.cc
     system/xio.cc
     system/exceptions.cc
@@ -112,7 +113,8 @@ add_library(input_lib
     input/storage_transpose.cc
 )
 target_link_libraries(input_lib 
-    system_lib json_spirit)
+    system_lib json_spirit
+    ${YamlCpp_LIBRARY})
 
 
 # la_lib
