@@ -49,7 +49,7 @@ using namespace std;
 
 
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, bool is_scalar)
 {
     update_flags = flags;
@@ -103,7 +103,7 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
 
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::FEValuesBase()
 : mapping(NULL), quadrature(NULL), fe(NULL), mapping_data(NULL), fe_data(NULL)
 {
@@ -111,7 +111,7 @@ FEValuesBase<dim,spacedim>::FEValuesBase()
 
 
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::~FEValuesBase() {
     if (mapping_data) delete mapping_data;
     if (fe_data) delete fe_data;
@@ -136,7 +136,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
 
 
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags | fe->update_each(flags);
@@ -144,85 +144,85 @@ UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
     return f;
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const double FEValuesBase<dim,spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
 {
     return data.shape_values[point_no][function_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
 {
     return trans(data.shape_gradients[point_no].row(function_no));
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_vector(const unsigned int function_no, const unsigned int point_no)
 {
     return data.shape_vectors[point_no][function_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const mat::fixed<spacedim,spacedim> FEValuesBase<dim,spacedim>::shape_grad_vector(const unsigned int function_no, const unsigned int point_no)
 {
     return data.shape_grad_vectors[point_no][function_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const double FEValuesBase<dim,spacedim>::determinant(const unsigned int point_no)
 {
     return data.determinants[point_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const double FEValuesBase<dim,spacedim>::JxW(const unsigned int point_no)
 {
     return data.JxW_values[point_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::point(const unsigned int point_no)
 {
     return data.points[point_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const vector<vec::fixed<spacedim> > &FEValuesBase<dim,spacedim>::point_list()
 {
     return data.points;
 }
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 const vec::fixed<spacedim> FEValuesBase<dim,spacedim>::normal_vector(unsigned int point_no)
 {
     return data.normal_vectors[point_no];
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const unsigned int FEValuesBase<dim,spacedim>::n_points()
 {
     return quadrature->size();
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const unsigned int FEValuesBase<dim,spacedim>::n_dofs()
 {
     return fe->n_dofs();
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const Quadrature<dim> * FEValuesBase<dim,spacedim>::get_quadrature() const
 {
     return quadrature;
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const FiniteElement<dim,spacedim> * FEValuesBase<dim,spacedim>::get_fe() const
 {
     return fe;
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
+template<unsigned int dim, unsigned int spacedim>
 const Mapping<dim,spacedim> * FEValuesBase<dim,spacedim>::get_mapping() const
 {
     return mapping;
@@ -250,7 +250,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
 
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 {
     ASSERT_EQUAL( dim, cell->dim() );
@@ -275,7 +275,7 @@ void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 
 
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  Quadrature<dim-1> & _sub_quadrature,
                                  FiniteElement<dim,spacedim> & _fe,
@@ -318,7 +318,7 @@ FESideValues<dim,spacedim>::~FESideValues()
 }
 
 
-template<unsigned int dim,unsigned int spacedim> inline
+template<unsigned int dim,unsigned int spacedim>
 void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
 		unsigned int sid)
 {
