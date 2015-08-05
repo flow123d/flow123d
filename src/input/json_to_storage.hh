@@ -46,6 +46,15 @@ public:
      */
 	virtual int level() const =0;
 
+	virtual bool get_ref_from_head(string & ref_address) =0;
+
+	virtual PathBase * find_ref_node(const string& ref_address) =0;
+
+	/**
+	 * Create copy of derived class.
+	 */
+	virtual PathBase * clone() const =0;
+
     /**
      * Output to the given stream.
      */
@@ -128,7 +137,7 @@ public:
 
     typedef json_spirit::mValue Node;
 
-    PathJSON(const Node& root_node);
+    PathJSON(istream &in);
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
@@ -162,14 +171,14 @@ public:
      * Creates a new PathJSON object given by  address string possibly relative to the current
      * path.
      */
-    PathJSON find_ref_node(const string& ref_address);
+    virtual PathBase * find_ref_node(const string& ref_address);
 
     /**
      * Put actual address to previous_references_ set
      */
     void put_address();
 
-    // These methods will be derived from PathBase
+    // These methods are derived from PathBase
     virtual bool is_null_type() const;
     virtual bool get_bool_value() const;
     virtual std::int64_t get_int_value() const;
@@ -179,6 +188,7 @@ public:
     virtual bool get_record_key_set(std::set<std::string> &) const;
     virtual int get_array_size() const;
     virtual bool is_map_type() const;
+    virtual PathJSON * clone() const;
 
 protected:
 
@@ -216,7 +226,7 @@ class PathYAML : public PathBase {
 public:
     typedef YAML::Node Node;
 
-    PathYAML(const Node& root_node);
+    PathYAML(istream &in);
 
     /**
      * Returns level of actual path. Root has level == 0.
@@ -240,7 +250,7 @@ public:
      */
     virtual void go_to_root();
 
-    // These methods is derived from PathBase
+    // These methods are derived from PathBase
     virtual bool is_null_type() const;
     virtual bool get_bool_value() const;
     virtual std::int64_t get_int_value() const;
@@ -250,6 +260,19 @@ public:
     virtual bool get_record_key_set(std::set<std::string> &) const;
     virtual int get_array_size() const;
     virtual bool is_map_type() const;
+    virtual PathYAML * clone() const;
+
+    /**
+     * Check if current head node is a YAML Object containing one key REF of type string.
+     * If yes, returns the string through reference @p ref_address.
+     */
+    bool get_ref_from_head(string & ref_address);
+
+    /**
+     * Creates a new PathYAML object given by  address string possibly relative to the current
+     * path.
+     */
+    virtual PathBase * find_ref_node(const string& ref_address);
 
 protected:
     /**
@@ -297,9 +320,9 @@ public:
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
-    TYPEDEF_ERR_INFO( EI_ErrorAddress, PathJSON);
-    TYPEDEF_ERR_INFO( EI_ErrorYamlAddress, PathYAML);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << EI_ErrorYamlAddress::qval << "\n"
+    TYPEDEF_ERR_INFO( EI_ErrorAddress, const PathBase*);
+    TYPEDEF_ERR_INFO( EI_ErrorConstAddress, PathBase*);
+    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: '" << EI_ErrorAddress::val << EI_ErrorConstAddress::val << "'\n"
                                             << EI_Specification::val << "\n"
                                             << "JSON type: " << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
@@ -363,21 +386,21 @@ protected:
      * against type specification @p type. Die on input error (and return NULL).
      * For correct input, creates the storage tree and returns pointer to its root node.
      */
-    StorageBase * make_storage(PathJSON &p, const Type::TypeBase *type);
+    StorageBase * make_storage(PathBase *p, const Type::TypeBase *type);
 
-    StorageBase * make_storage(PathJSON &p, const Type::Record *record);
-    StorageBase * make_storage(PathJSON &p, const Type::AbstractRecord *abstr_rec);
-    StorageBase * make_storage(PathJSON &p, const Type::Array *array);
+    StorageBase * make_storage(PathBase *p, const Type::Record *record);
+    StorageBase * make_storage(PathBase *p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathBase *p, const Type::Array *array);
 
-    StorageBase * make_selection_storage_without_catch(PathJSON &p, const Type::Selection *selection);
-    StorageBase * make_storage(PathJSON &p, const Type::Selection *selection);
-    StorageBase * make_storage(PathJSON &p, const Type::Bool *bool_type);
-    StorageBase * make_storage(PathJSON &p, const Type::Integer *int_type);
-    StorageBase * make_storage(PathJSON &p, const Type::Double *double_type);
-    StorageBase * make_storage(PathJSON &p, const Type::String *string_type);
+    StorageBase * make_selection_storage_without_catch(PathBase *p, const Type::Selection *selection);
+    StorageBase * make_storage(PathBase *p, const Type::Selection *selection);
+    StorageBase * make_storage(PathBase *p, const Type::Bool *bool_type);
+    StorageBase * make_storage(PathBase *p, const Type::Integer *int_type);
+    StorageBase * make_storage(PathBase *p, const Type::Double *double_type);
+    StorageBase * make_storage(PathBase *p, const Type::String *string_type);
 
-    StorageBase * record_automatic_conversion(PathJSON &p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(PathJSON &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * record_automatic_conversion(PathBase *p, const Type::Record *record);
+    StorageBase * abstract_rec_automatic_conversion(PathBase *p, const Type::AbstractRecord *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
