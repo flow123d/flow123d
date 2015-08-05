@@ -430,9 +430,6 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     ASSERT(ierr == 0, "Error in MPI test of rank.");
     MPI_Comm_size(comm, &mpi_size);
 
-    cout << "opened stream MPI_Comm_size: " << mpi_size << endl;
-    cout << "opened stream MPI_Comm_rank: " << mpi_rank << endl;
-
     // output header
     property_tree::ptree root, children;
     output_header (root, mpi_size);
@@ -466,8 +463,6 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // create profiler output only once (on the first processor)
     // only active communicator should be the one with mpi_rank 0
     if (mpi_rank == 0) {
-        cout << "MPI_Comm_size writing: " << mpi_size << endl;
-        cout << "MPI_Comm_rank writing: " << mpi_rank << endl;
         /**
          * Flag to property_tree::write_json method
          * resulting in json human readable format (indents, newlines)
