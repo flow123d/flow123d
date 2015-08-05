@@ -113,6 +113,7 @@ public:
 	 * 		Record("SomeEquation","equation's description")
 	 * 		.declare_key("data",Input::Type::Array(EqData().make_field_descriptor_type()),"List of field descriptors.");
 	 * @endcode
+	 *
 	 */
     Input::Type::Record make_field_descriptor_type(const std::string &equation_name) const;
 
@@ -215,7 +216,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::output().
      */
-    void output(OutputTime *stream);
+    void output(std::shared_ptr<OutputTime> stream);
 
     /**
      * OBSOLETE

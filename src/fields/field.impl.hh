@@ -99,19 +99,10 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 it::AbstractRecord &Field<spacedim,Value>::get_input_type() {
-	/*
-	 * List of AbstratRecord types created by make_input_tree() in get_input_type() implementation.
-	 * We have to return reference, which may be reference to not yet initialized static object.
-	 *
-	 * TODO: Have method to get persistent copy of an Input Type (which exists nevertheless)
-	 */
-	static vector<it::AbstractRecord> ar_list;
-
 	if (is_enum_valued) {
-		ar_list.push_back(make_input_tree());
-		return ar_list.back();
+		return make_input_tree();
 	} else {
-		return FieldBaseType::input_type;
+		return FieldBaseType::get_input_type();
 	}
 }
 
@@ -129,7 +120,7 @@ it::Record &Field<spacedim,Value>::get_multifield_input_type() {
 
 /// ---------- Helper function template for make_input_tree method
 template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
+IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
 {
     ASSERT( sel != nullptr,
     		"NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
@@ -138,7 +129,7 @@ IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection *sel, 
 
 
 template <class FieldBaseType>
-IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
+IT::AbstractRecord & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
 {
     return FieldBaseType::get_input_type(nullptr);
 }
@@ -148,7 +139,7 @@ IT::AbstractRecord get_input_type_resolution(const Input::Type::Selection *sel, 
 
 
 template<int spacedim, class Value>
-it::AbstractRecord Field<spacedim,Value>::make_input_tree() {
+it::AbstractRecord & Field<spacedim,Value>::make_input_tree() {
 	ASSERT(is_enum_valued,
 			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
     return get_input_type_resolution<FieldBaseType>(
@@ -321,7 +312,7 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::output(OutputTime *stream)
+void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc())
@@ -479,8 +470,6 @@ typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase:
 	else
 		return FieldBasePtr();
 }
-
-
 
 
 

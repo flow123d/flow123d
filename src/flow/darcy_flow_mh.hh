@@ -115,7 +115,7 @@ public:
             robin=3,
             total_flux=4
         };
-        static Input::Type::Selection bc_type_selection;
+        static const Input::Type::Selection & get_bc_type_selection();
 
         /// Collect all fields
         EqData();
@@ -161,11 +161,8 @@ public:
     : EquationBase(mesh, in_rec)
     {}
 
-    static Input::Type::Selection mh_mortar_selection;
-    static Input::Type::AbstractRecord input_type;
-    static Input::Type::Record bc_segment_rec;
-    static Input::Type::AbstractRecord bc_input_type;
-    static std::vector<Input::Type::Record> bc_input_types;
+    static const Input::Type::Selection & get_mh_mortar_selection();
+    static Input::Type::AbstractRecord & get_input_type();
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
@@ -244,6 +241,7 @@ protected:
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     class EqData : public DarcyFlowMH::EqData {
     public:
@@ -254,7 +252,7 @@ public:
     
     DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     virtual void update_solution();
     virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
@@ -348,6 +346,10 @@ protected:
   friend class DarcyFlowMHOutput;
   friend class P0_CouplingAssembler;
   friend class P1_CouplingAssembler;
+
+private:
+  /// Registrar of class to factory
+  static const int registrar;
 };
 
 
@@ -436,17 +438,21 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 protected:
     void read_init_condition() override;
     void modify_system() override;
     void setup_time_term();
     
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
@@ -470,11 +476,12 @@ private:
 class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
+	typedef DarcyFlowMH FactoryBaseType;
   
     DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowLMH_Unsteady();
     
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 protected:
     void read_init_condition() override;
     void modify_system() override;
@@ -482,6 +489,9 @@ protected:
     void setup_time_term();
     virtual void postprocess();
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;

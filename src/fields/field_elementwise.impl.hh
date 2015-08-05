@@ -20,26 +20,23 @@
 namespace IT = Input::Type;
 
 template <int spacedim, class Value>
-it::Record FieldElementwise<spacedim, Value>::input_type
-    = FieldElementwise<spacedim, Value>::get_input_type(FieldAlgorithmBase<spacedim, Value>::input_type, NULL);
-
-
-template <int spacedim, class Value>
-Input::Type::Record FieldElementwise<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    it::Record type=
-        it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(a_type)
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the \\$ElementData section with field name given by this key.")
         .close();
-
-    return type;
 }
+
+
+template <int spacedim, class Value>
+const int FieldElementwise<spacedim, Value>::registrar =
+		Input::register_class< FieldElementwise<spacedim, Value>, unsigned int >("FieldElementwise");
 
 
 

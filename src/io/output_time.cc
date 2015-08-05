@@ -37,37 +37,42 @@
 #include "output_msh.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(vtk)
+FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
+
+
 using namespace Input::Type;
 
-Record OutputTime::input_type
-    = Record("OutputStream", "Parameters of output.")
-    // The stream
-    .declare_key("file", FileName::output(), Default::obligatory(),
-            "File path to the connected output file.")
-            // The format
-	.declare_key("format", OutputTime::input_format_type, Default::optional(),
-			"Format of output stream and possible parameters.")
-	.declare_key("time_step", Double(0.0),
-			"Time interval between outputs.\n"
-			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-			"The start time and the end time are always added. ")
-	.declare_key("time_list", Array(Double(0.0)),
-	        Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
-			"Explicit array of output time points (can be combined with 'time_step'.")
-	.declare_key("add_input_times", Bool(), Default("false"),
-			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
+const Record & OutputTime::get_input_type() {
+    return Record("OutputStream", "Parameters of output.")
+		// The stream
+		.declare_key("file", FileName::output(), Default::obligatory(),
+				"File path to the connected output file.")
+				// The format
+		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
+				"Format of output stream and possible parameters.")
+		.declare_key("time_step", Double(0.0),
+				"Time interval between outputs.\n"
+				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
+				"The start time and the end time are always added. ")
+		.declare_key("time_list", Array(Double(0.0)),
+				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
+				"Explicit array of output time points (can be combined with 'time_step'.")
+		.declare_key("add_input_times", Bool(), Default("false"),
+				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+		.close();
+}
 
 
-AbstractRecord OutputTime::input_format_type
-    = AbstractRecord("OutputTime",
-            "Format of output stream and possible parameters.");
+AbstractRecord & OutputTime::get_input_format_type() {
+	return AbstractRecord("OutputTime", "Format of output stream and possible parameters.")
+		.close();
+}
 
 
 OutputTime::OutputTime()
 : _mesh(nullptr)
-{
-
-}
+{}
 
 
 
@@ -138,24 +143,17 @@ void OutputTime::destroy_all(void)
     */
 
 
-OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
 {
-    OutputTime* output_time;
+	std::shared_ptr<OutputTime> output_time;
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
     if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            output_time = new OutputVTK(in_rec);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            output_time = new OutputMSH(in_rec);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            output_time = new OutputVTK(in_rec);
-        }
+    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
         output_time->format_record_ = *format;
     } else {
-        output_time = new OutputVTK(in_rec);
+        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
     }
 
     return output_time;

@@ -66,17 +66,18 @@
 namespace IT = Input::Type;
 
 
-IT::Record Mesh::input_type
-	= IT::Record("Mesh","Record with mesh related data." )
-	.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
-			"Input file with mesh description.")
-	.declare_key("regions", IT::Array( RegionDB::region_input_type ), IT::Default::optional(),
-	        "List of additional region definitions not contained in the mesh.")
-	.declare_key("sets", IT::Array( RegionDB::region_set_input_type), IT::Default::optional(),
-	        "List of region set definitions. There are three region sets implicitly defined:\n"
-	        "ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
-	.declare_key("partitioning", Partitioning::input_type, IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
-	.close();
+const IT::Record & Mesh::get_input_type() {
+	return IT::Record("Mesh","Record with mesh related data." )
+		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
+				"Input file with mesh description.")
+		.declare_key("regions", IT::Array( RegionDB::get_region_input_type() ), IT::Default::optional(),
+				"List of additional region definitions not contained in the mesh.")
+		.declare_key("sets", IT::Array( RegionDB::get_region_set_input_type()), IT::Default::optional(),
+				"List of region set definitions. There are three region sets implicitly defined:\n"
+				"ALL (all regions of the mesh), BOUNDARY (all boundary regions), and BULK (all bulk regions)")
+		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("any_neighboring"), "Parameters of mesh partitioning algorithms.\n" )
+		.close();
+}
 
 
 
@@ -86,7 +87,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::input_type );
+    Input::JSONToStorage reader( input_str, Mesh::get_input_type() );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);
@@ -411,8 +412,19 @@ void Mesh::make_neighbours_and_edges()
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
-                        edg->side_[ edg->n_sides++ ] = si;
+                        if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
+                            ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                            int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
+                            int new_bc_ele_idx=bc_ele.index();
+                            THROW( ExcDuplicateBoundary()
+                                    << EI_ElemLast(this->bc_elements.get_id(last_bc_ele_idx))
+                                    << EI_RegLast(this->bc_elements[last_bc_ele_idx].region().label())
+                                    << EI_ElemNew(this->bc_elements.get_id(new_bc_ele_idx))
+                                    << EI_RegNew(this->bc_elements[new_bc_ele_idx].region().label())
+                                    );
+                        }
                         elem->edge_idx_[ecs] = last_edge_idx;
+                        edg->side_[ edg->n_sides++ ] = si;
 
                         if (elem->boundary_idx_ == NULL) {
                             elem->boundary_idx_ = new unsigned int [ elem->n_sides() ];

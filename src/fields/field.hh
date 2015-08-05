@@ -187,7 +187,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(OutputTime *stream) override;
+    void output(std::shared_ptr<OutputTime> stream) override;
 
 
     /**
@@ -235,7 +235,7 @@ protected:
      * Input::Type::Selection object that represents particular C enum type. Therefore, we have to create whole tree for the selection
      * that was set through @p FieldBaseCommon::set_selection() method.
      */
-    IT::AbstractRecord make_input_tree();
+    IT::AbstractRecord & make_input_tree();
 
 
 
@@ -295,8 +295,6 @@ protected:
     friend class MultiField;
 
 };
-
-
 
 
 

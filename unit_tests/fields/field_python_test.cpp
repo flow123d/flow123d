@@ -13,7 +13,10 @@
 
 
 
-#ifdef HAVE_PYTHON
+#include "system/global_defs.h"
+
+
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
 #include "fields/field_python.hh"
@@ -41,6 +44,14 @@ def func_xyz(x,y,z):
 def func_circle(r,phi):
     return ( r * math.cos(phi), r * math.sin(phi) )
 )CODE";
+
+string python_call_object_err = R"CODE(
+import math
+
+def func_xyz(x,y,z,a):
+    return ( x*y*z+a , )     # one value tuple
+)CODE";
+
 
 string input = R"INPUT(
 {   
@@ -143,10 +154,10 @@ TEST(FieldPython, read_from_input) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Type::Record  rec_type("FieldPythonTest","");
-    rec_type.declare_key("field_string", VectorField::input_type, Input::Type::Default::obligatory(),"" );
-    rec_type.declare_key("field_file", ScalarField::input_type, Input::Type::Default::obligatory(), "" );
-    rec_type.finish();
+    Input::Type::Record rec_type = Input::Type::Record("FieldPythonTest","")
+        .declare_key("field_string", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
+        .declare_key("field_file", ScalarField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
+        .close();
 
     // read input string
     Input::JSONToStorage reader( input, rec_type );
@@ -184,9 +195,25 @@ TEST(FieldPython, read_from_input) {
 
 }
 
+TEST(FieldPython, python_exception) {
+    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
+        "Python Error: 'module' object has no attribute 'func_xxx'");
+
+}
+
+
+TEST(FieldPython, call_object_error) {
+    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+	EXPECT_THROW( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError);
+        //"Program Error: Python Error: func_xyz() takes exactly 4 arguments (3 given)"
+
+}
+
+
 #else
 TEST(FieldPython, python_not_supported) {
 
 }
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 

@@ -54,12 +54,12 @@ public:
      *
      * \return This variable defines record for output stream
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * \brief The specification of output file format
      */
-    static Input::Type::AbstractRecord input_format_type;
+    static Input::Type::AbstractRecord & get_input_format_type();
 
     /**
      * Types of reference data
@@ -81,7 +81,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static OutputTime* create_output_stream(const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
 
     /**
      * \brief Generic method for registering output data stored in MultiField

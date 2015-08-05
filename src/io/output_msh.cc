@@ -30,14 +30,23 @@
 #include "output_msh.hh"
 #include "mesh/mesh.h"
 #include "output_data_base.hh"
+#include "input/factory.hh"
+
+
+FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 
 
 using namespace Input::Type;
 
-Record OutputMSH::input_type
-	= Record("gmsh", "Parameters of gmsh output format.")
-	// It is derived from abstract class
-	.derive_from(OutputTime::input_format_type);
+const Record & OutputMSH::get_input_type() {
+	return Record("gmsh", "Parameters of gmsh output format.")
+		// It is derived from abstract class
+		.derive_from(OutputTime::get_input_format_type())
+		.close();
+}
+
+const int OutputMSH::registrar = Input::register_class< OutputMSH, const Input::Record & >("gmsh") +
+		OutputMSH::get_input_type().size();
 
 
 void OutputMSH::write_msh_header(void)

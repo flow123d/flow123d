@@ -42,10 +42,6 @@ public:
 	void SetUp() {
 	    Profiler::initialize();
 
-		test_selection = Input::Type::Selection("any")
-			.add_value(0,"black")
-			.add_value(1,"white");
-
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 	    my_mesh = new Mesh();
 	    ifstream in(string(mesh_file).c_str());
@@ -53,13 +49,15 @@ public:
 
 
 	    field_.name("test_field");
-	    field_.input_selection(&test_selection);
+	    field_.input_selection( &get_test_selection() );
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
-				this->field_.field_descriptor_record("any")
+				Input::Type::Record("any", FieldCommon::field_descriptor_record_decsription("any") )
+				.copy_keys( this->field_.field_descriptor_record("any") )
 				.declare_key("a", a_rec_type, "")
 				.declare_key("b", a_rec_type, "")
+				.close()
 				);
 		test_input_list = make_shared<Input::Type::Array>( *test_field_descriptor );
 		test_input_list->finish();
@@ -107,7 +105,7 @@ public:
 	}
 
 	// simple selection with values "black" and "White"
-	Input::Type::Selection test_selection;
+	static const Input::Type::Selection &get_test_selection();
 
 	// has to keep root accessor to prevent delete of the storage tree
 	Input::Array root_input;
@@ -142,6 +140,14 @@ public:
 	std::shared_ptr<Input::Type::Array>          test_input_list;
 
 };
+
+template <class F>
+const Input::Type::Selection &FieldFix<F>::get_test_selection() {
+	return Input::Type::Selection("any")
+				.add_value(0,"black")
+				.add_value(1,"white")
+				.close();
+}
 
 
 
@@ -565,6 +571,14 @@ string field_input = R"INPUT(
 )INPUT";
 
 namespace it = Input::Type;
+
+static const it::Selection &get_sorption_type_selection() {
+	return it::Selection("SorptionType")
+				.add_value(1,"linear")
+				.add_value(0,"none")
+				.close();
+}
+
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
@@ -574,12 +588,6 @@ TEST(Field, init_from_input) {
 	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
 	mesh.read_gmsh_from_stream(in);
 
-    it::Selection sorption_type_sel =
-            it::Selection("SorptionType")
-            .add_value(1,"linear")
-            .add_value(0,"none");
-
-
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::Vector > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
@@ -588,14 +596,15 @@ TEST(Field, init_from_input) {
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
 
-    sorption_type.input_selection(&sorption_type_sel);
+    sorption_type.input_selection( &get_sorption_type_selection() );
     init_conc.set_components(component_names);
 
     it::Record main_record =
             it::Record("main", "desc")
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
-            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
+            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
+			.close();
 
 
     // read input string
@@ -664,6 +673,13 @@ TEST(Field, init_from_input) {
 
 
 
+static const it::Selection &get_test_type_selection() {
+	return it::Selection("TestType")
+				.add_value(0, "none")
+				.add_value(1,"dirichlet")
+				.close();
+}
+
 TEST(Field, init_from_default) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -703,12 +719,8 @@ TEST(Field, init_from_default) {
 
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
-        Input::Type::Selection sel("TestType");
-        sel.add_value(0, "none")
-           .add_value(1,"dirichlet")
-           .close();
 
-        enum_field.input_selection(&sel);
+        enum_field.input_selection( &get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
         enum_field.set_limit_side(LimitSide::right);

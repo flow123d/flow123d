@@ -34,6 +34,7 @@
 
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "input/factory.hh"
 
 class GmshMeshReader;
 
@@ -42,6 +43,7 @@ class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldElementwise(unsigned int n_comp=0);
 
@@ -50,9 +52,7 @@ public:
      */
     FieldElementwise(std::shared_ptr< std::vector<typename Value::element_type> > data, unsigned int n_components);
 
-    static Input::Type::Record input_type;
-
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -108,6 +108,8 @@ private:
     FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

@@ -162,7 +162,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
             fprintf(sys_info.log,"[msg_id=%d] ", mpi_msg_id );
         mpi_msg_id++;
     }
-#ifndef DEBUG_MESSAGES
+#ifndef FLOW123D_DEBUG_MESSAGES
     if (type == Warn) mf.head="\nWarning: ";
 #endif
 	// print head

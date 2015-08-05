@@ -18,16 +18,13 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldAlgorithmBase<spacedim,Value>::input_type, NULL);
 
 template <int spacedim, class Value>
-Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    it::Record type
-            = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+    return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(a_type)
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
@@ -37,11 +34,15 @@ Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
                                         "* array of strings of size N to enter diagonal matrix\n"
                                         "* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
                                         "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
-                                        "Formula can contain variables x,y,z,t and usual operators and functions." );
-
-    return type;
+                                        "Formula can contain variables x,y,z,t and usual operators and functions." )
+			.close();
 }
 
+
+
+template <int spacedim, class Value>
+const int FieldFormula<spacedim, Value>::registrar =
+		Input::register_class< FieldFormula<spacedim, Value>, unsigned int >("FieldFormula");
 
 
 

@@ -65,17 +65,11 @@
 namespace IT = Input::Type;
 
 
-IT::Selection ConvectionTransport::EqData::sorption_type_selection = IT::Selection("TransportSorptionType")
-    .add_value(Isotherm::none,"none","No sorption considered")
-    .add_value(Isotherm::linear,"linear","Linear isotherm described sorption considered.")
-    .add_value(Isotherm::freundlich,"freundlich","Freundlich isotherm described sorption considered")
-    .add_value(Isotherm::langmuir,"langmuir","Langmuir isotherm described sorption considered")
-    .close();
-
-
-IT::Selection ConvectionTransport::EqData::output_selection =
-		EqData().output_fields.make_output_field_selection("ConvectionTransport_Output")
+const IT::Selection & ConvectionTransport::EqData::get_output_selection() {
+	return EqData().output_fields
+		.make_output_field_selection("ConvectionTransport_Output")
 		.close();
+}
 
 
 ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
@@ -211,8 +205,6 @@ ConvectionTransport::~ConvectionTransport()
     xfree(sources_sigma);
     xfree(cumulative_corr);
     
-    delete output_stream_;
-
 }
 
 

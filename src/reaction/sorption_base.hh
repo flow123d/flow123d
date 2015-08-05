@@ -31,17 +31,7 @@ public:
   /**
    *   Static variable for new input data types input
    */
-  static Input::Type::Record input_type;
-  
-  struct SorptionRecord {
-    typedef enum { simple,      ///< Only sorption model is considered in transport.
-                   mobile,      ///< Sorption model in mobile zone of dual porosity model is considered.
-                   immobile     ///< Sorption model in immobile zone of dual porosity model is considered. 
-    } Type;
-  };
-  
-  /// Creates the input record for different cases of sorption model (simple or in dual porosity).
-  static Input::Type::Record record_factory(SorptionRecord::Type);
+  static const Input::Type::Record & get_input_type();
   
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
@@ -55,7 +45,7 @@ public:
     /**
      * Sorption type specifies a kind of equilibrial description of adsorption.
      */
-    static Input::Type::Selection sorption_type_selection;
+    static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
     EqData(const string &output_field_name);
@@ -203,10 +193,11 @@ protected:
 
   Input::Type::Selection output_selection;
 
-  /** Reaction model that follows the sorption.
+  /**
+   * Reaction model that follows the sorption.
    */
-  ReactionTerm* reaction_liquid;
-  ReactionTerm* reaction_solid;
+  std::shared_ptr<ReactionTerm> reaction_liquid;
+  std::shared_ptr<ReactionTerm> reaction_solid;
                   
   ///@name members used in output routines
   //@{

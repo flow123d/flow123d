@@ -62,6 +62,10 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  */
 class TypeBase {
 public:
+	typedef std::size_t TypeHash;
+	typedef std::string json_string;
+	typedef std::map<std::string, json_string> attribute_map;
+
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
      * this say nothing about child types referenced in particular type object.
@@ -69,6 +73,13 @@ public:
      *
      */
     virtual bool is_finished() const
+    {return true;}
+
+    /**
+     * Returns true if the type is closed.
+     *
+     */
+    virtual bool is_closed() const
     {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
@@ -108,13 +119,13 @@ public:
         { return ! (*this == other); }
 
     /**
-     *  Destructor removes type object from lazy_object_set.
+     *  Destructor
      */
     virtual ~TypeBase();
 
 
 
-    /// Finishes all registered lazy types.
+    /// Finishes all types registered in type repositories.
     static void lazy_finish();
 
 
@@ -143,17 +154,23 @@ public:
      * Hash of the type specification. Provides unique id computed from its
      * content (definition) so that same types have same hash.
      */
-    virtual std::size_t content_hash() const =0;
+    virtual TypeHash content_hash() const =0;
+
+    /// Add attribute to map
+    void add_attribute(std::string name, json_string val);
+
+    /// Print JSON output of attributes to @p stream.
+    void write_attributes(ostream& stream) const;
 
 protected:
 
     /**
-     * Default constructor. Register type object into lazy_object_set.
+     * Default constructor.
      */
     TypeBase();
 
     /**
-     * Copy constructor. Register type object into lazy_object_set.
+     * Copy constructor.
      */
     TypeBase(const TypeBase& other);
 
@@ -178,34 +195,18 @@ protected:
      */
     static bool is_valid_identifier(const string& key);
 
+    /// Check if JSON string is valid
+    bool validate_json(json_string str) const;
+
     /**
-     * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
-     * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
-     * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
-     * Selections have to be finished after all other types since they are used by AbstractRecords to register all
-     * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
+     * Add attributes to hash of the type specification.
      *
-     * This is list of unique instances that may contain raw pointers to possibly not yet constructed
-     * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
-     * These has to be completed/finished before use.
-     *
+     * Method must be called in content_hash() method of TypeBase descendants.
      */
-    typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
+    void attribute_content_hash(std::size_t &seed) const;
 
-    /**
-     * The reference to the singleton instance of @p lazy_type_list.
-     */
-    static LazyTypeVector &lazy_type_list();
-
-    /**
-     * Set of  pointers to all constructed (even temporaries) lazy types. This list contains ALL instances
-     * (including copies and empty handles) of lazy types.
-     */
-    typedef std::set<const TypeBase *> LazyObjectsSet;
-
-    static LazyObjectsSet &lazy_object_set();
-
-    static bool was_constructed(const TypeBase * ptr);
+    /// map of type attributes (e. g. input_type, name etc.)
+    boost::shared_ptr<attribute_map> attributes_;
 
     friend class Array;
     friend class Record;
@@ -250,9 +251,8 @@ protected:
 
     	bool finish();
 
-    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
-    	const TypeBase *p_type_of_values;
     	bool finished;
 
     };
@@ -265,7 +265,7 @@ public:
     template <class ValueType>
     Array(const ValueType &type, unsigned int min_size=0, unsigned int max_size=std::numeric_limits<unsigned int>::max() );
 
-    std::size_t content_hash() const override;
+    TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
     virtual bool finish();
@@ -275,7 +275,6 @@ public:
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {
-        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
         return *data_->type_of_values_; }
 
     /// Checks size of particular array.
@@ -332,9 +331,9 @@ public:
 class Bool : public Scalar {
 public:
     Bool()
-    {}
+	{}
 
-    std::size_t content_hash() const   override;
+    TypeHash content_hash() const   override;
 
 
     bool from_default(const string &str) const;
@@ -357,15 +356,15 @@ class Integer : public Scalar {
 
 public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
-    std::size_t content_hash() const   override;
+    TypeHash content_hash() const   override;
 
     /**
      * Returns true if the given integer value conforms to the Type::Integer bounds.
      */
-    bool match(int value) const;
+    bool match(std::int64_t value) const;
 
     /**
      * As before but also returns converted integer in @p value.
@@ -377,7 +376,7 @@ public:
     virtual string type_name() const;
 private:
 
-    int lower_bound_, upper_bound_;
+    std::int64_t lower_bound_, upper_bound_;
 
 };
 
@@ -394,10 +393,10 @@ class Double : public Scalar {
 
 public:
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
-    std::size_t content_hash() const   override;
+    TypeHash content_hash() const   override;
 
     /**
      * Returns true if the given integer value conforms to the Type::Double bounds.
@@ -431,7 +430,7 @@ class String : public Scalar {
 public:
     virtual string type_name() const;
 
-    std::size_t content_hash() const   override;
+    TypeHash content_hash() const   override;
 
 
     string from_default(const string &str) const;
@@ -456,7 +455,7 @@ public:
 class FileName : public String {
 public:
 
-    std::size_t content_hash() const   override;
+	TypeHash content_hash() const   override;
 
     /**
      * Factory function for declaring type FileName for input files.

@@ -26,12 +26,9 @@ const double inf_time = TimeGovernor::inf_time;
  */
 Input::Record read_input(const string &json_input)
 {
-	static Input::Type::Record in_rec("RootInput", "Root record.");
-
-	if (! in_rec.is_finished()) {
-	in_rec.declare_key("time", TimeGovernor::input_type, Input::Type::Default::obligatory(), "");
-	in_rec.finish();
-	}
+	static Input::Type::Record in_rec = Input::Type::Record("RootInput", "Root record.")
+		.declare_key("time", TimeGovernor::get_input_type(), Input::Type::Default::obligatory(), "")
+		.close();
 
 	//json reading according to keys defined in in_rec
 	Input::JSONToStorage json_reader(json_input, in_rec);

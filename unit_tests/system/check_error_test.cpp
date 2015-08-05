@@ -29,7 +29,7 @@ TEST(CheckError, assert_message) {
 	err_code = 0;
 	chkerr_assert( err_code );
 
-#ifdef DEBUG_ASSERTS
+#ifdef FLOW123D_DEBUG_ASSERTS
 	err_code = 1;
 	EXPECT_THROW_WHAT( { chkerr_assert( err_code ); }, ExcChkErrAssert, "1" );
 #endif

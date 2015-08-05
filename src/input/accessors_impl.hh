@@ -120,6 +120,16 @@ inline bool Record::opt_val(const string &key, Ret &value) const {
 
 
 /******************************************************************************************
+ * Implementation of Input::AbstractRecord
+ */
+
+template<class Type, class... Arguments>
+const std::shared_ptr<Type> AbstractRecord::factory(Arguments... arguments) const {
+	return Input::Factory<Type, Arguments...>::instance()->create(this->type().type_name(), arguments...);
+}
+
+
+/******************************************************************************************
  * Implementation of Input::Array
  */
 

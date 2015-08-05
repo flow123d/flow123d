@@ -11,11 +11,11 @@
 #include <cstring>
 #include <boost/exception/diagnostic_information.hpp>
 
-#ifdef HAVE_EXEC_INFO
+#ifdef FLOW123D_HAVE_EXEC_INFO
 #include <execinfo.h>
 #endif
 
-#ifdef HAVE_DEMAGLER
+#ifdef FLOW123D_HAVE_DEMAGLER
 #include <cxxabi.h>
 #endif
 
@@ -56,7 +56,7 @@ ExceptionBase::~ExceptionBase() throw () {
 
 void ExceptionBase::fill_stacktrace()
 {
-#ifdef HAVE_EXEC_INFO
+#ifdef FLOW123D_HAVE_EXEC_INFO
     if (! stacktrace && ! n_stacktrace_frames) {
         void * array[25];
         n_stacktrace_frames = backtrace(array, 25);
@@ -96,7 +96,7 @@ void ExceptionBase::print_stacktrace(std::ostream &out) const {
         int status=-1;
         char *demagled_f_name = {0};
 
-#ifdef HAVE_DEMAGLER
+#ifdef FLOW123D_HAVE_DEMAGLER
         demagled_f_name = abi::__cxa_demangle(magled_fname.c_str(), 0, 0, &status);
 #endif
         if (status == 0) {

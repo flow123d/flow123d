@@ -80,9 +80,7 @@ public:
 
     class EqData : public TransportBase::TransportEqData {
     public:
-        static Input::Type::Selection sorption_type_selection;
-
-        static Input::Type::Selection output_selection;
+        static const Input::Type::Selection & get_output_selection();
 
         EqData();
         virtual ~EqData() {};
@@ -182,7 +180,7 @@ public:
 	 */
 	inline EqData *get_data() { return &data_; }
 
-	inline OutputTime *output_stream() { return output_stream_; }
+	inline std::shared_ptr<OutputTime> output_stream() { return output_stream_; }
 
 	double **get_concentration_matrix();
 	Vec *get_concentration_vector() { return vconc; }
@@ -273,7 +271,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream_;
+	std::shared_ptr<OutputTime> output_stream_;
 
 
 	int *row_4_el;

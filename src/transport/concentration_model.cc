@@ -95,25 +95,27 @@ UnitSI ConcentrationTransportModel::balance_units()
 }
 
 
-IT::Record &ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
-	static IT::Record rec = IT::Record(
+	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::input_type)
-			.declare_key("substances", IT::Array(Substance::input_type), IT::Default::obligatory(),
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+					"Time governor setting for the secondary equation.")
+			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+					"Parameters of output stream.")
+			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
 					"Names of transported substances.");
-
-	return rec;
 }
 
-IT::Selection &ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
 {
-	static IT::Selection sel = IT::Selection(
+	return IT::Selection(
 				std::string(ModelEqData::name()) + "_" + implementation + "_Output",
 				"Output record for " + description + " for solute transport.");
-
-	return sel;
 }
 
 
@@ -147,10 +149,10 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 {
     double vnorm = arma::norm(velocity, 2);
 
-	if (fabs(vnorm) > sqrt(numeric_limits<double>::epsilon()))
+	if (fabs(vnorm) > 0)
 		for (int i=0; i<3; i++)
 			for (int j=0; j<3; j++)
-				K(i,j) = velocity[i]*velocity[j]/(vnorm*vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
+				K(i,j) = (velocity[i]/vnorm)*(velocity[j]/vnorm)*(alphaL-alphaT) + alphaT*(i==j?1:0);
 	else
 		K.zeros();
 

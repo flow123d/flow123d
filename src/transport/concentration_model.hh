@@ -64,7 +64,7 @@ public:
 
 		static string default_output_field() { return "conc"; }
 
-		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
+		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 
 	};
 
@@ -79,7 +79,7 @@ protected:
 	 * @param description    Comment used to describe the record key.
 	 * @return
 	 */
-	static IT::Record &get_input_type(const string &implementation, const string &description);
+	static IT::Record get_input_type(const string &implementation, const string &description);
 
 	/**
 	 * Formula to calculate the dispersivity tensor.

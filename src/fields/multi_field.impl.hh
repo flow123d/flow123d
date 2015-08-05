@@ -45,7 +45,8 @@ it::Record &  MultiField<spacedim,Value>::get_multifield_input_type() {
 		.declare_key("common", transposed_field_.get_input_type(), it::Default::optional(),
 			"Supplied to components subtree.")
 		.declare_key("components", it::Array( sub_field_type_.get_input_type() ), it::Default::read_time("Converts from 'common' key."),
-			"Components of Multifield.");
+			"Components of Multifield.")
+		.close();
 
 	return type;
 }
@@ -97,7 +98,7 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::output(OutputTime *stream)
+void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc())

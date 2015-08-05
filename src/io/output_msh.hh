@@ -38,6 +38,7 @@
  */
 class OutputMSH : public OutputTime {
 public:
+	typedef OutputTime FactoryBaseType;
 
     /**
      * \brief The constructor of this class
@@ -57,7 +58,7 @@ public:
     /**
      * \brief The definition of input record for gmsh file format
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * \brief This method writes head of GMSH (.msh) file format
@@ -85,6 +86,9 @@ public:
 
 
 private:
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     bool header_written;
 

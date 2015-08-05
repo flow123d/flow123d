@@ -12,6 +12,7 @@
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
 #include "mesh/point.hh"
+#include "input/factory.hh"
 
 #include <string>
 using namespace std;
@@ -33,13 +34,12 @@ class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
 {
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+    typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     FieldFormula(unsigned int n_comp=0);
 
 
-    static Input::Type::Record input_type;
-
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     virtual void init_from_input(const Input::Record &rec);
 
@@ -78,6 +78,10 @@ private:
     // Full address of the FiledFormula 'value' key.
     // Necessary in the case of an error during parsing.
     std::string value_input_address_;
+
+    /// Registrar of class to factory
+    static const int registrar;
+
 
 };
 

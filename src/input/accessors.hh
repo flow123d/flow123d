@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdint>
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
@@ -31,6 +32,7 @@
 #include "system/exceptions.hh"
 
 #include "input/input_type.hh"
+#include "input/factory.hh"
 #include "input/storage.hh"
 
 
@@ -510,6 +512,17 @@ public:
     void transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size);
 
 
+    /**
+     * Construct classes given by TYPE key of AbstractRecord.
+     *
+     * Method uses Input::Factory class. All constructed classes (representing by descendants
+     * of AbstractRecord) must be registered to factory (see Input::Factory class) and must have
+     * constructors with same parameters (given by Arguments).
+     */
+    template<class Type, class... Arguments>
+    const std::shared_ptr<Type> factory(Arguments... arguments) const;
+
+
 private:
     /// Corresponding Type::AbstractRecord object.
     Input::Type::AbstractRecord record_type_ ;
@@ -653,37 +666,12 @@ private:
 
 namespace internal {
 
-/**
- *  This is primary type dispatch template. For given type it defines type that will be read from the storage.
- *  i.e. short int, char, and int are all translated to int.
- *
- *  TODO: us boost type traits to have this dispatch complete.
- *  following could work, but then the second dispatch do not work and probably has to be
- *  also implemented by mpl. The problem is, that TD<short int>::OT is not 'int', but unprocessed
- *  mpl construct. I don't know how to force compiler to process it before using it for the second dispatch.
- *
- @code
-    template<class T>
-    struct TD {
-        typedef typename
-                boost::mpl::if_< boost::is_integral<T>, int,
-                    boost::mpl::if_< boost::is_floating_point<T>, double,
-                        T
-                    >
-                >::type OT;
-    };
-  @endcode
-  */
-    template<class T>
-    struct TD {
-        typedef T OT;
-    };
     /**
-     * Secondary type dispatch. For every intermediate C++ type that can be read from input we have to define
+     * Primary type dispatch. For every intermediate C++ type that can be read from input we have to define
      * read function from a given storage and Input type i.e. descendant of Input::Type::TypeBase.
      */
 
-    template<class T>
+    template<class T, class Enable = void>
     struct TypeDispatch;
 } // close namespace internal
 
@@ -748,7 +736,7 @@ template <class T>
 class Iterator : public IteratorBase {
 public:
     /// Converts C++ type @p T (template parameter) to 'DispatchType' from smaller set of types.
-    typedef typename internal::TD<T>::OT DispatchType;
+    typedef T DispatchType;
     /**
      * For small set of C++ types and accessor classes Record, AbstractRecord, and Array,
      * returns type of value given by dereference of the iterator (just add const to C++ types).
@@ -821,27 +809,18 @@ private:
 namespace internal {
 
 /**
- *  Template specializations for primary type dispatch.
- */
-template<> struct TD<char> { typedef int OT; };
-template<> struct TD<unsigned char> { typedef int OT; };
-template<> struct TD<short int> { typedef int OT; };
-template<> struct TD<unsigned short int> { typedef int OT; };
-template<> struct TD<int> { typedef int OT; };
-template<> struct TD<unsigned int> { typedef int OT; };
-template<> struct TD<float> { typedef double OT; };
-template<> struct TD<double> { typedef double OT; };
-
-/**
- *  Template specializations for secondary type dispatch.
+ *  Template specializations for type dispatch.
  */
 
-// Generic implementation accepts only enum types
-template< class T>
+// Generic implementation can't be accepted.
+template< class T, class Enable >
 struct TypeDispatch {
+    class some_nonexisting_type;
+    static_assert( std::is_same<T, some_nonexisting_type>::value, "Wrong TypeDispatch type.");
+};
 
-    BOOST_STATIC_ASSERT( boost::is_enum<T>::value );
-
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_enum<T> >::type> {
     typedef T TmpType;
 
     typedef Input::Type::Selection InputType;
@@ -865,12 +844,21 @@ struct TypeDispatch<FullEnum> {
     static inline ReadType value(const Address &a, const InputType &t) { return ReadType( a.storage_head()->get_int(), t ); }
 };
 
-template<>
-struct TypeDispatch<int> {
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_integral<T> >::type> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
-    static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_int(); }
+    static inline ReadType value(const Address &a, const InputType&t) {
+    	std::int64_t val = a.storage_head()->get_int();
+    	if (val >= std::numeric_limits<T>::min() &&
+				val <= std::numeric_limits<T>::max() ) {
+        	return val;
+    	} else {
+    		THROW( ExcInputMessage()
+    				<< EI_Message("Error in input file at address " + a.make_full_address() + ".\nValue out of bounds.") );
+    	}
+    }
 };
 
 template<>
@@ -881,8 +869,8 @@ struct TypeDispatch<bool> {
     static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_bool(); }
 };
 
-template<>
-struct TypeDispatch<double> {
+template<class T>
+struct TypeDispatch<T, typename boost::enable_if<boost::is_float<T> >::type> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
     typedef int TmpType;

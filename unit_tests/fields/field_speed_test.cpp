@@ -9,7 +9,10 @@
 
 #include <flow_gtest_mpi.hh>
 
-#ifdef RUN_UNIT_BENCHMARKS
+#include "system/global_defs.h"
+
+
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
@@ -399,7 +402,7 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 }
 
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 TYPED_TEST(FieldSpeed, field_python) {
 	string key_name = "python_" + this->input_type_name_;
 	this->read_input(key_name);
@@ -411,7 +414,7 @@ TYPED_TEST(FieldSpeed, field_python) {
 	this->test_result( this->expect_const_val_, 21 );
 	this->profiler_output();
 }
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 
 TYPED_TEST(FieldSpeed, field_elementwise) {
@@ -467,5 +470,5 @@ TEST(FieldValue_, speed_test_direct) {
    cout << val << endl;
 }
 
-#endif // RUN_UNIT_BENCHMARKS
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
 

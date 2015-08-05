@@ -137,6 +137,7 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -148,9 +149,9 @@ public:
             neumann,
             robin
         };
-        static Input::Type::Selection bc_type_selection;
+        static const Input::Type::Selection & get_bc_type_selection();
 
-        static Input::Type::Selection output_selection;
+        static const Input::Type::Selection & get_output_selection();
 
 		EqData();
 
@@ -188,12 +189,12 @@ public:
 
      * @brief Declare input record type for the equation TransportDG.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * @brief Input type for the DG variant selection.
      */
-    static Input::Type::Selection dg_variant_selection_input_type;
+    static const Input::Type::Selection & get_dg_variant_selection_input_type();
 
     /**
      * @brief Initialize solution in the zero time.
@@ -231,6 +232,8 @@ public:
 	~TransportDG();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
@@ -506,7 +509,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream;
+	std::shared_ptr<OutputTime> output_stream;
 
 
 	// @}

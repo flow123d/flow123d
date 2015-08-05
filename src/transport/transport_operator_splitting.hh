@@ -47,7 +47,7 @@ public:
 
 
 	/// Common specification of the input record for secondary equations.
-    static Input::Type::AbstractRecord input_type;
+    static Input::Type::AbstractRecord & get_input_type();
 
 
 };
@@ -85,12 +85,6 @@ public:
 		Field<3, FieldValue<3>::Vector> sources_conc;
 
 	};
-
-    /**
-     * Specification of the output record. Need not to be used by all transport models, but they should
-     * allow output of similar fields.
-     */
-    static Input::Type::Record input_type_output_record;
 
     TransportBase(Mesh &mesh, const Input::Record in_rec);
     virtual ~TransportBase();
@@ -169,6 +163,7 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
@@ -177,7 +172,7 @@ public:
      * (e.g. allow coupling TranportDG with reactions even if it is not good idea for numerical reasons.)
      * To make this a coupling class we should modify all main input files for transport problems.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
@@ -196,9 +191,11 @@ public:
    
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
     ConvectionTransport *convection;
-    ReactionTerm *reaction;
+    std::shared_ptr<ReactionTerm> reaction;
 
     double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
     Semchem_interface *Semchem_reactions;

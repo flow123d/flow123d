@@ -24,7 +24,9 @@ class Isotherm;
 class SorptionSimple:  public SorptionBase
 {
 public:
-    static Input::Type::Record input_type;
+	typedef ReactionTerm FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionSimple(Mesh &init_mesh, Input::Record in_rec);
@@ -35,6 +37,10 @@ public:
 protected:
     /// Reinitializes the isotherm.
     void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
@@ -74,7 +80,9 @@ protected:
 class SorptionMob:  public SorptionDual
 {
 public:
-    static Input::Type::Record input_type;
+	typedef ReactionTerm FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionMob(Mesh &init_mesh, Input::Record in_rec);
@@ -87,6 +95,10 @@ protected:
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
 
     //double compute_sorbing_scale(double por_m, double por_imm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 
@@ -96,7 +108,9 @@ protected:
 class SorptionImmob:  public SorptionDual
 {
 public:
-    static Input::Type::Record input_type;
+	typedef ReactionTerm FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     /// Constructor.
     SorptionImmob(Mesh &init_mesh, Input::Record in_rec);
@@ -109,6 +123,10 @@ protected:
     void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
 
     //double compute_sorbing_scale(double por_m, double por_imm) override;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 

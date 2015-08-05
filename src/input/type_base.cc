@@ -27,6 +27,8 @@
 #include "type_base.hh"
 #include "type_record.hh"
 #include "type_output.hh"
+#include "type_repository.hh"
+#include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
 
@@ -43,25 +45,17 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase()
+: attributes_( boost::make_shared<attribute_map>() ) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-{
-    TypeBase::lazy_object_set().insert(this);
-}
+: attributes_(other.attributes_) {}
 
 
 
-TypeBase::~TypeBase() {
-    TypeBase::LazyObjectsSet &set=TypeBase::lazy_object_set();
-    TypeBase::LazyObjectsSet::iterator it =set.find(this);
-    ASSERT( it != set.end(), "Missing pointer in lazy_object_set to '%s'.\n", this->type_name().c_str());
-    TypeBase::lazy_object_set().erase(it);
-}
+TypeBase::~TypeBase() {}
 
 
 bool TypeBase::is_valid_identifier(const string& key) {
@@ -78,52 +72,58 @@ string TypeBase::desc() const {
 
 
 
-TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
-    static LazyTypeVector lazy_type_list;
-    return lazy_type_list;
-}
-
-
-
 void TypeBase::lazy_finish() {
-    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
+	Input::TypeRepository<Record>::get_instance().finish();
+	Input::TypeRepository<AbstractRecord>::get_instance().finish();
+	Input::TypeRepository<Selection>::get_instance().finish();
+}
 
-    // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
-            (*it)->finish();
+
+
+void TypeBase::add_attribute(std::string name, json_string val) {
+	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
+	if (validate_json(val)) {
+		(*attributes_)[name] = val;
+	} else {
+		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
+	}
+}
+
+
+void TypeBase::write_attributes(ostream& stream) const {
+	stream << "\"attributes\" : {" << endl;
+	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
+        if (it != attributes_->begin()) {
+        	stream << "," << endl;
         }
-    }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
+}
 
-    // then finalize abstract records so that no type can derive from them
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++)
-    {
-        boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
-        if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
-    }
 
-    // at last finish all selections (including those in AbstractRecord)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
+bool TypeBase::validate_json(json_string str) const {
+    try {
+    	json_spirit::mValue node;
+    	json_spirit::read_or_throw( str, node);
+    	return true;
+    } catch (json_spirit::Error_position &e ) {
+        return false;
     }
+}
 
-    lazy_type_list().clear();
+
+void TypeBase::attribute_content_hash(std::size_t &seed) const {
+	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
+		boost::hash_combine(seed, (*it).first );
+		boost::hash_combine(seed, (*it).second );
+	}
 
 }
 
 
 
 
-TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
-    static LazyObjectsSet set_;
-    return set_;
-}
-
-
-
-bool TypeBase::was_constructed(const TypeBase * ptr) {
-    return lazy_object_set().find(ptr) != lazy_object_set().end();
-}
 
 
 
@@ -137,13 +137,14 @@ std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
  * implementation of Type::Array
  */
 
-std::size_t Array::content_hash() const
+TypeBase::TypeHash Array::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
     boost::hash_combine(seed, data_->type_of_values_->content_hash() );
+    attribute_content_hash(seed);
     return seed;
 }
 
@@ -158,36 +159,7 @@ bool Array::ArrayData::finish()
 {
 	if (finished) return true;
 
-	if (p_type_of_values != 0)
-	{
-	    if (! was_constructed(p_type_of_values) ) return false;
-
-		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
-		{
-			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
-		{
-			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Selection *>(p_type_of_values) != 0)
-		{
-			Selection *s = (Selection *)dynamic_cast<const Selection *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Selection>(*s);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
-		    xprintf(PrgErr, "Should not happen!\n");
-	}
-
-	return (finished = true);
+	return (finished = type_of_values_->finish() );
 }
 
 
@@ -229,21 +201,10 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
 
-    // Records, AbstractRecords and Selections need not be initialized
-    // at the moment, so we save the reference of type and update
-    // the array later in finish().
-    if ( (boost::is_base_of<Record, ValueType>::value ||
-          boost::is_base_of<Selection, ValueType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
-        data_->p_type_of_values = &type;
-        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-    } else {
-        data_->p_type_of_values = NULL;
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        data_->type_of_values_ = type_copy;
-        data_->finished=true;
-    }
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
+	data_->type_of_values_ = type_copy;
 }
 
 // explicit instantiation
@@ -275,9 +236,9 @@ string Scalar::full_type_name() const {
  */
 
 
-std::size_t Bool::content_hash() const
+TypeBase::TypeHash Bool::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }
@@ -311,9 +272,9 @@ string Bool::type_name() const {
  * implementation of Type::Integer
  */
 
-std::size_t Integer::content_hash() const
+TypeBase::TypeHash Integer::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -322,7 +283,7 @@ std::size_t Integer::content_hash() const
 
 
 
-bool Integer::match(int value) const {
+bool Integer::match(std::int64_t value) const {
     return ( value >=lower_bound_ && value <= upper_bound_);
 }
 
@@ -360,9 +321,9 @@ string Integer::type_name() const {
  */
 
 
-std::size_t Double::content_hash() const
+TypeBase::TypeHash Double::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, lower_bound_);
     boost::hash_combine(seed, upper_bound_);
@@ -409,9 +370,9 @@ string Double::type_name() const {
  * implementation of Type::FileName
  */
 
-std::size_t FileName::content_hash() const
+TypeBase::TypeHash FileName::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     boost::hash_combine(seed, type_);
     return seed;
@@ -444,9 +405,9 @@ bool FileName::match(const string &str) const {
  */
 
 
-std::size_t String::content_hash() const
+TypeBase::TypeHash String::content_hash() const
 {
-    std::size_t seed=0;
+	TypeHash seed=0;
     boost::hash_combine(seed, type_name());
     return seed;
 }

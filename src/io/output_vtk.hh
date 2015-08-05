@@ -41,6 +41,7 @@
 class OutputVTK : public OutputTime {
 
 public:
+	typedef OutputTime FactoryBaseType;
 
     /**
      * \brief The constructor of this class. The head of file is written, when
@@ -62,17 +63,17 @@ public:
     /**
      * \brief The definition of input record for vtk file format
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
 	 * \brief The definition of input record for selection of variant of file format
 	 */
-    static Input::Type::Selection input_type_variant;
+    static const Input::Type::Selection & get_input_type_variant();
 
     /**
 	 * \brief The definition of input record for selection of compression type
 	 */
-    static Input::Type::Selection input_type_compression;
+    static const Input::Type::Selection & get_input_type_compression();
 
     /**
      * \brief This function write data to VTK (.pvd) file format
@@ -138,6 +139,9 @@ protected:
         VTK_TRIANGLE_SIZE = 3,
         VTK_TETRA_SIZE = 4
     } VTKElemSize;
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     /**
      * \brief Write header of VTK file (.vtu)

@@ -49,27 +49,30 @@ using namespace Input::Type;
 
 
 
-Record TimeGovernor::input_type = Record("TimeGovernor",
+const Record & TimeGovernor::get_input_type() {
+	return Record("TimeGovernor",
             "Setting of the simulation time. (can be specific to one equation)")
-	.allow_auto_conversion("max_dt")
-    .declare_key("start_time", Double(), Default("0.0"),
-                "Start time of the simulation.")
-    .declare_key("end_time", Double(), Default::read_time("Infinite end time."),
-                "End time of the simulation.")
-    .declare_key("init_dt", Double(0.0), Default("0.0"),
-            "Initial guess for the time step.\n"
-    		"Only useful for equations that use adaptive time stepping."
-    		"If set to 0.0, the time step is determined in fully autonomous"
-    		" way if the equation supports it.")
-    .declare_key("min_dt", Double(0.0),
-            Default::read_time("Machine precision."),
-            "Soft lower limit for the time step. Equation using adaptive time stepping can not"
-            "suggest smaller time step, but actual time step could be smaller in order to match "
-            "prescribed input or output times.")
-    .declare_key("max_dt", Double(0.0),
-            Default::read_time("Whole time of the simulation if specified, infinity else."),
-            "Hard upper limit for the time step. Actual length of the time step is also limited"
-            "by input and output times.");
+		.allow_auto_conversion("max_dt")
+		.declare_key("start_time", Double(), Default("0.0"),
+					"Start time of the simulation.")
+		.declare_key("end_time", Double(), Default::read_time("Infinite end time."),
+					"End time of the simulation.")
+		.declare_key("init_dt", Double(0.0), Default("0.0"),
+				"Initial guess for the time step.\n"
+				"Only useful for equations that use adaptive time stepping."
+				"If set to 0.0, the time step is determined in fully autonomous"
+				" way if the equation supports it.")
+		.declare_key("min_dt", Double(0.0),
+				Default::read_time("Machine precision."),
+				"Soft lower limit for the time step. Equation using adaptive time stepping can not"
+				"suggest smaller time step, but actual time step could be smaller in order to match "
+				"prescribed input or output times.")
+		.declare_key("max_dt", Double(0.0),
+				Default::read_time("Whole time of the simulation if specified, infinity else."),
+				"Hard upper limit for the time step. Actual length of the time step is also limited"
+				"by input and output times.")
+		.close();
+}
 
 
 
@@ -373,7 +376,8 @@ double TimeGovernor::estimate_dt() const {
     // this always selects shorter time step,
     // but allows time step larger then constraint by a number close to machine epsilon
     //
-    int n_steps = ceil( full_step / step_estimate - time_step_precision);
+    //DBGMSG("%g %g %g\n",full_step , step_estimate, full_step / step_estimate);
+    double n_steps = ceil( full_step / step_estimate - time_step_precision);
     step_estimate = full_step / n_steps;
     
     // try to avoid time_step changes
@@ -459,7 +463,7 @@ void TimeGovernor::view(const char *name) const
 {
     xprintf(Msg, "\nTG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>",
             name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
-#ifdef DEBUG_MESSAGES
+#ifdef FLOW123D_DEBUG_MESSAGES
     xprintf(Msg, "    end_time: %f end_fixed_time: %f type: 0x%x\n" , end_time_,  end_of_fixed_dt_interval_, eq_mark_type_);
 #else
     xprintf(Msg,"\n");

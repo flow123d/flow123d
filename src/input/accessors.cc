@@ -35,7 +35,7 @@ const char * Exception::what() const throw () {
         converter << "--------------------------------------------------------" << std::endl;
         converter << "User Error: ";
         print_info(converter);
-#ifdef DEBUG_MESSAGES
+#ifdef FLOW123D_DEBUG_MESSAGES
         converter << "\n** Diagnosting info **\n" ;
         converter << boost::diagnostic_information_what( *this );
         print_stacktrace(converter);
@@ -143,7 +143,7 @@ std::string Address::make_full_address() const {
 		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
 			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
 			const StorageInt * storage_type = static_cast<const StorageInt *>(storage->get_item(0));
-			input_type = & a_rec->get_descendant(storage_type->get_int());
+			input_type = & a_rec->get_descendant((unsigned int)storage_type->get_int());
 		} else
 		if (typeid(*input_type) == typeid(Type::Array)) {
 	    	storage = storage->get_item(path[i]);
@@ -234,7 +234,7 @@ AbstractRecord::operator Record() const
 
 Input::Type::Record AbstractRecord::type() const
 {
-    unsigned int type_id = address_.storage_head()->get_item(0)->get_int();
+	unsigned int type_id = (unsigned int)(address_.storage_head()->get_item(0)->get_int());
     return record_type_.get_descendant(type_id);
 }
 

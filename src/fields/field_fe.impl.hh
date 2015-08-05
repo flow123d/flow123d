@@ -25,6 +25,12 @@ namespace it = Input::Type;
 
 
 template <int spacedim, class Value>
+const int FieldFE<spacedim, Value>::registrar =
+		Input::register_class< FieldFE<spacedim, Value>, unsigned int >("FieldFE");
+
+
+
+template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr),
