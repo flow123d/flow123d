@@ -128,7 +128,7 @@ public:
 
     typedef json_spirit::mValue Node;
 
-    PathJSON(const Node& root_node);
+    PathJSON(istream &in);
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
@@ -216,7 +216,7 @@ class PathYAML : public PathBase {
 public:
     typedef YAML::Node Node;
 
-    PathYAML(const Node& root_node);
+    PathYAML(istream &in);
 
     /**
      * Returns level of actual path. Root has level == 0.

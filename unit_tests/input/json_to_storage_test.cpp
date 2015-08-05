@@ -22,9 +22,7 @@ TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    PathJSON::Node node;
-    json_spirit::read_or_throw( in_str, node);
-    PathJSON path(node);
+    PathJSON path(in_str);
 
     { ostringstream os;
     os << path;
@@ -64,11 +62,9 @@ TEST(PathJSON, all) {
 TEST(PathJSON, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-	PathJSON::Node node;
-    json_spirit::read_or_throw( in_str, node);
 
     string ref;
-    PathJSON path(node);
+    PathJSON path(in_str);
     path.down(8);
 
     EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);} ,PathJSON::ExcRefOfWrongType,"has wrong type, should by string." );
@@ -84,8 +80,8 @@ TEST(PathJSON, errors) {
 TEST(PathYAML, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    PathYAML::Node node = YAML::LoadFile((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
-    PathYAML path(node);
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
+    PathYAML path(in_str);
 
     { ostringstream os;
     os << path;
@@ -118,8 +114,8 @@ TEST(PathYAML, all) {
 TEST(PathYAML, values) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	PathYAML::Node node = YAML::LoadFile((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
-	PathYAML path(node);
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
+	PathYAML path(in_str);
 
 	path.down(0); // bool value
 	EXPECT_FALSE(path.get_bool_value());

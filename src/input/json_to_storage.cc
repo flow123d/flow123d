@@ -59,10 +59,24 @@ string PathBase::str() {
  */
 
 
-PathJSON::PathJSON(const Node& root_node)
+PathJSON::PathJSON(istream &in)
 : PathJSON()
 {
-    nodes_.push_back( &root_node );
+    io::filtering_istream filter_in;
+
+    filter_in.push(uncommenting_filter());
+    filter_in.push(in);
+
+    Node root_node;
+
+    try {
+        json_spirit::read_or_throw( filter_in, root_node);
+    } catch (json_spirit::Error_position &e ) {
+        THROW( JSONToStorage::ExcNotJSONFormat() << JSONToStorage::EI_JSONLine(e.line_) << JSONToStorage::EI_JSONColumn(e.column_)
+        	<< JSONToStorage::EI_JSONReason(e.reason_));
+    }
+
+    nodes_.push_back( new Node(root_node) );
 }
 
 
@@ -327,10 +341,11 @@ std::ostream& operator<<(std::ostream& stream, const PathJSON& path) {
  * Implementation of PathYAML
  */
 
-PathYAML::PathYAML(const Node& root_node)
+PathYAML::PathYAML(istream &in)
 : PathBase()
 {
-    nodes_.push_back( &root_node );
+	PathYAML::Node root_node = YAML::Load( in );
+    nodes_.push_back( new Node(root_node) );
 }
 
 
@@ -533,23 +548,7 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
     // finish all lazy input types
     Input::Type::TypeBase::lazy_finish();
 
-    io::filtering_istream filter_in;
-
-    filter_in.push(uncommenting_filter());
-    filter_in.push(in);
-
-    // TODO move this code to PathJSON - maybe move creating of filter
-    PathJSON::Node node;
-
-
-    // error in yaml https://code.google.com/p/yaml-cpp/wiki/HowToParseADocument
-    try {
-        json_spirit::read_or_throw( filter_in, node);
-    } catch (json_spirit::Error_position &e ) {
-        THROW( ExcNotJSONFormat() << EI_JSONLine(e.line_) << EI_JSONColumn(e.column_) << EI_JSONReason(e.reason_));
-    }
-
-    PathJSON root_path(node);
+    PathJSON root_path(in);
 
     root_type_ = &root_type;
     storage_ = make_storage(root_path, root_type_);
