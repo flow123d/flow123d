@@ -5,3 +5,4 @@ map_key:
 seq_key:
  - 6
  - 7
+tag_key: !my_int 13
