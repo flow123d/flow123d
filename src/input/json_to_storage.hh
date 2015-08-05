@@ -299,7 +299,7 @@ public:
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, PathJSON);
     TYPEDEF_ERR_INFO( EI_ErrorYamlAddress, PathYAML);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << EI_ErrorYamlAddress::qval << "\n"
+    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: '" << EI_ErrorAddress::val << EI_ErrorYamlAddress::val << "'\n"
                                             << EI_Specification::val << "\n"
                                             << "JSON type: " << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
