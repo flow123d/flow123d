@@ -22,40 +22,40 @@ TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    PathJSON path(in_str);
+    PathBase * path = new PathJSON(in_str);
 
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/",os.str());
     }
 
-    path.down(6);
+    path->down(6);
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6",os.str());
     }
 
-    path.down("a");
+    path->down("a");
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6/a",os.str());
     }
 
     string ref;
-    path.get_ref_from_head(ref);
+    path->get_ref_from_head(ref);
     EXPECT_EQ("../../7/b/c",ref);
 
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6/a",os.str());
     }
 
-    EXPECT_EQ(1,path.find_ref_node(ref).get_int_value() );
+    EXPECT_EQ(1,path->find_ref_node(ref)->get_int_value() );
 
-    path=path.find_ref_node("/6/b");
-    path.get_ref_from_head(ref);
+    path=path->find_ref_node("/6/b");
+    path->get_ref_from_head(ref);
     EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path.find_ref_node(ref).get_string_value() );
+    EXPECT_EQ("ctyri",path->find_ref_node(ref)->get_string_value() );
 }
 
 
