@@ -2,8 +2,10 @@ List of all changes in user interface and major internal changes.
 ************************************************
 
 #Flow123d version 1.8.3
-()
+(2015-06-19)
 
+* Experimental support for linear sorption in DG model.
+* Fix in calculation of dispersivity tensor.
 
 ************************************************
 
