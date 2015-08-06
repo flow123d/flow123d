@@ -455,7 +455,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
-    check_key_default_value(default_value, type, key);
+	check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
@@ -709,7 +709,7 @@ bool AbstractRecord::have_default_descendant() const {
 TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
 	AbstractRecord abstract = this->deep_copy();
 
-	// Set close flag - only for add descendants
+	// Set close flag - add_child method required closed child_data
 	abstract.child_data_->closed_ = true;
 	// make instances of all descendant records and add them into instance of abstract
 	for (auto &child : child_data_->list_of_childs) {

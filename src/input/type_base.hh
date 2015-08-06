@@ -62,11 +62,17 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  */
 class TypeBase {
 public:
+	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+	/// String stored in JSON format.
 	typedef std::string json_string;
+	/// Defines map of Input::Type attributes.
 	typedef std::map<std::string, json_string> attribute_map;
+	/// Defines pairs of (name, Input::Type), that are used for replace of parameters in generic types.
 	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	/// Defines map of used parameters
 	typedef std::map< std::string, TypeHash > ParameterMap;
+	/// Return type of make_instance methods, contains instance of generic type and map of used parameters
 	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
 
 
@@ -142,6 +148,9 @@ public:
      *
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
+     *
+     * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
+     * to true.
      */
     virtual bool finish(bool is_generic = false)
     { return true; };
@@ -166,7 +175,7 @@ public:
     /// Print JSON output of attributes to @p stream.
     void write_attributes(ostream& stream) const;
 
-    /// Create instance of generic type
+    /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
 protected:

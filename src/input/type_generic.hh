@@ -34,13 +34,17 @@ public:
     /// Parameter type name getter.
     virtual string type_name() const override;
 
+    /// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;
 
+    /// Implements @p TypeBase::valid_default.
     virtual bool valid_default(const string &str) const override;
 
+    /// Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
+    /// name of parameter
 	const string name_;
 };
 
@@ -53,8 +57,10 @@ class Instance : public TypeBase {
 public:
 	Instance(TypeBase &generic_type, std::vector<TypeBase::ParameterPair> parameters);
 
+	/// Implements @p TypeBase::content_hash.
     TypeHash content_hash() const  override;
 
+    /// Implements @p TypeBase::valid_default.
     virtual bool valid_default(const string &str) const override;
 
     /// Used for set Instance to TypeRepository
@@ -67,8 +73,10 @@ public:
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
+    /// Reference to generic types (contains some descendants of type @p Parameter).
 	TypeBase &generic_type_;
 
+	/// Stores pairs of (name, Input::Type), that are used for replace of parameters in generic types.
 	std::vector<TypeBase::ParameterPair> parameters_;
 };
 
