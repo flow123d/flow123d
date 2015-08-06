@@ -166,6 +166,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowMH_Steady *flow, Input::Record in_
 
     }
 
+    if(flow->balance_ != nullptr)
 	flow->balance_->units(
 	        get_output_fields().field_ele_pressure.units()
 	        *flow->data_.cross_section.units()*UnitSI().md(1)
