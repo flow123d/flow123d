@@ -270,22 +270,22 @@ public:
     /**
      * Implements @p TypeBase::is_finished.
      */
-    virtual bool is_finished() const;
+    virtual bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
     virtual bool is_closed() const override;
 
     /// Record type name getter.
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     /// Record type full name getter.
-    virtual string full_type_name() const;
+    virtual string full_type_name() const override;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /// Class comparison and Record type name comparision.
     virtual bool operator==(const TypeBase &other) const;
@@ -337,7 +337,7 @@ public:
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish(bool is_generic = false);
+    bool finish(bool is_generic = false) override;
 
     /**
      * Add TYPE key as obligatory.
@@ -347,7 +347,7 @@ public:
     Record &has_obligatory_type_key();
 
     /// Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
@@ -598,13 +598,13 @@ public:
     /**
      *  Finish declaration of the AbstractRecord type.
      */
-    bool finish(bool is_generic = false);
+    bool finish(bool is_generic = false) override;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
      * and the string is valid default value for the auto conversion key.
      */
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /**
      * Returns reference to the inherited Record with given name.
@@ -635,16 +635,16 @@ public:
     /**
      * Implements @p TypeBase::is_finished.
      */
-    virtual bool is_finished() const;
+    virtual bool is_finished() const override;
 
     /// Returns true if @p data_ is closed.
     virtual bool is_closed() const override;
 
     /// AbstractRecord type name getter.
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     /// AbstractRecord type full name getter.
-    virtual string full_type_name() const;
+    virtual string full_type_name() const override;
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.
@@ -696,7 +696,7 @@ public:
     Default &get_selection_default() const;
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
     /// Create deep copy of AbstractRecord (copy all data stored in shared pointers etc.)
     AbstractRecord deep_copy() const;
@@ -747,7 +747,7 @@ public:
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
      * calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish(bool is_generic = false);
+    bool finish(bool is_generic = false) override;
 
     /**
      * Add inherited Record.

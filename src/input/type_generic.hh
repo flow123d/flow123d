@@ -32,13 +32,13 @@ public:
 	Parameter(const Parameter & other);
 
     /// Parameter type name getter.
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     TypeHash content_hash() const  override;
 
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
 	const string name_;
@@ -55,16 +55,16 @@ public:
 
     TypeHash content_hash() const  override;
 
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /// Used for set Instance to TypeRepository
     const Instance &close() const;
 
     /// Finish declaration of the Instance type. Call finish of stored @p generic_type_
-    bool finish(bool is_generic = false);
+    bool finish(bool is_generic = false) override;
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
 protected:
 	TypeBase &generic_type_;

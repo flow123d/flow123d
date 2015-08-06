@@ -271,8 +271,8 @@ bool Record::finish(bool is_generic)
 const Record &Record::close() const {
     data_->closed_=true;
     const Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
-    for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
-    	(*it)->add_child(rec);
+    for (auto &parent : data_->parent_ptr_) {
+    	parent->add_child(rec);
     }
     data_->parent_ptr_.clear();
 
@@ -371,8 +371,8 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 	// check if parent exists in parent_ptr_ vector
 	if ( data_->parent_ptr_.size() ) {
 		TypeHash hash = parent.content_hash();
-		for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
-			if ( (*it)->content_hash() == hash ) {
+		for (auto &parent : data_->parent_ptr_) {
+			if ( parent->content_hash() == hash ) {
 				return *this;
 			}
 		}
@@ -648,14 +648,13 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
 
-	child_data_->finished_ = true;
-
 	child_data_->selection_of_childs->close();
 
-	for (std::vector< Record >::iterator child_it = child_data_->list_of_childs.begin();
-			child_it != child_data_->list_of_childs.end(); ++child_it) {
-		(*child_it).add_parent(*this);
-		child_data_->finished_ = child_data_->finished_ && (*child_it).finish(is_generic);
+	child_data_->finished_ = true;
+
+	for (auto &child : child_data_->list_of_childs) {
+		child.add_parent(*this);
+		child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
 	}
 
     // check validity of possible default value of TYPE key
@@ -727,8 +726,8 @@ TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<Param
 	// Set close flag - only for add descendants
 	abstract.child_data_->closed_ = true;
 	// make instances of all descendant records and add them into instance of abstract
-	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
-		MakeInstanceReturnType inst = (*child_it).make_instance(vec);
+	for (auto &child : child_data_->list_of_childs) {
+		MakeInstanceReturnType inst = child.make_instance(vec);
 		abstract.add_child( static_cast<Record &>( *(inst.first) ) );
 		abstract.add_to_parameter_map(inst.second);
 	}

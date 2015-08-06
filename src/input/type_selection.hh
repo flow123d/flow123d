@@ -108,13 +108,13 @@ public:
 
 
     /// Implements \p TypeBase::is_finished
-    virtual bool is_finished() const;
+    virtual bool is_finished() const override;
 
     /// Implements \p TypeBase::type_name
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     /// Implements \p TypeBase::full_type_name
-    virtual string full_type_name() const;
+    virtual string full_type_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     virtual bool operator==(const TypeBase &other) const;
@@ -152,7 +152,7 @@ public:
     int from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /**
      * Just check if there is a particular name in the Selection.
@@ -170,7 +170,7 @@ public:
     inline unsigned int size() const;
 
 
-    bool finish(bool is_generic = false)
+    bool finish(bool is_generic = false) override
         { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
 
 
@@ -179,7 +179,7 @@ public:
 
 
     // Implements @p TypeBase::make_instance.
-    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     /**
