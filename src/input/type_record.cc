@@ -178,7 +178,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 			"Derived record '%s' can have defined only TYPE key!\n", this->type_name().c_str() );
 
 	// add Abstract to vector of parents
-	data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
     	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default( type_name() ), "Sub-record Selection.");
@@ -268,10 +268,10 @@ bool Record::finish(bool is_generic)
 const Record &Record::close() const {
     data_->closed_=true;
     const Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
-    for (auto &parent : data_->parent_ptr_) {
+    for (auto &parent : data_->parent_vec_) {
     	parent->add_child(rec);
     }
-    data_->parent_ptr_.clear();
+    data_->parent_vec_.clear();
 
     return rec;
 }
@@ -284,8 +284,8 @@ string Record::type_name() const {
 
 
 string Record::full_type_name() const {
-	if (data_->parent_ptr_.size()) {
-		return data_->type_name_ + ":" + data_->parent_ptr_[0]->type_name();
+	if (data_->parent_vec_.size()) {
+		return data_->type_name_ + ":" + data_->parent_vec_[0]->type_name();
 	}
     return data_->type_name_;
 }
@@ -325,7 +325,7 @@ Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
 }
 
 Record &Record::has_obligatory_type_key() {
-	ASSERT( ! data_->parent_ptr_.size(), "Record with obligatory TYPE key can't be derived.\n");
+	ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
 	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
 	sel->add_value(0, type_name());
 	sel->close();
@@ -367,17 +367,15 @@ Record Record::deep_copy() const {
 const Record &Record::add_parent(AbstractRecord &parent) const {
 	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
 
-	// check if parent exists in parent_ptr_ vector
-	if ( data_->parent_ptr_.size() ) {
-		TypeHash hash = parent.content_hash();
-		for (auto &parent : data_->parent_ptr_) {
-			if ( parent->content_hash() == hash ) {
-				return *this;
-			}
+	// check if parent exists in parent_vec_ vector
+	TypeHash hash = parent.content_hash();
+	for (auto &parent : data_->parent_vec_) {
+		if ( parent->content_hash() == hash ) {
+			return *this;
 		}
 	}
 
-	data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
+	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",

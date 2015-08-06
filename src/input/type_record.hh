@@ -378,7 +378,7 @@ protected:
      * Set parent Abstract of Record.
      *
      * This method is created for correct functionality of generic types. It must be called
-     * in Abstract::finish() and refill @p parent_ptr_ vector of correct parents.
+     * in Abstract::finish() and refill @p parent_vec_ vector of correct parents.
      */
     const Record &add_parent(AbstractRecord &parent) const;
 
@@ -415,7 +415,7 @@ protected:
         const string type_name_;
 
         /// Permanent pointer to parent AbstractRecord, necessary for output.
-        std::vector< boost::shared_ptr<AbstractRecord> > parent_ptr_;
+        std::vector< boost::shared_ptr<AbstractRecord> > parent_vec_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
         bool finished;
