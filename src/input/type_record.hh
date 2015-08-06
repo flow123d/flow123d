@@ -390,9 +390,6 @@ protected:
         /// Constructor
         RecordData(const string & type_name_in, const string & description);
 
-        /// Copy constructor
-        RecordData(const RecordData &other);
-
         /**
          * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
          * If the parameter @p type_temporary is NULL, the parameter @p type provides pointer to
@@ -506,8 +503,6 @@ protected:
 		  closed_(false),
 		  selection_default_(Default::obligatory())
         {}
-
-        ChildData(const ChildData &other);
 
         /**
          * Selection composed from names of derived Records. Indices are according to

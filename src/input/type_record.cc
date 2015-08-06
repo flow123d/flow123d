@@ -360,6 +360,8 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 Record Record::deep_copy() const {
 	Record rec = Record();
 	rec.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	rec.data_->closed_ = false;
+	rec.data_->finished = false;
 	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	return rec;
 }
@@ -403,22 +405,6 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
  closed_(false),
  derived_(false),
  auto_conversion_key_idx(-1)    // auto conversion turned off
-{
-
-}
-
-
-Record::RecordData::RecordData(const RecordData &other)
-:key_to_index(other.key_to_index),
- keys(other.keys),
- description_(other.description_),
- type_name_(other.type_name_),
- parent_ptr_(other.parent_ptr_),
- finished(false),
- closed_(false),
- derived_(other.derived_),
- auto_conversion_key_idx(other.auto_conversion_key_idx),
- auto_conversion_key(other.auto_conversion_key)
 {
 
 }
@@ -747,6 +733,10 @@ TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<Param
 AbstractRecord AbstractRecord::deep_copy() const {
 	AbstractRecord abstract = AbstractRecord();
 	abstract.child_data_ =  boost::make_shared<AbstractRecord::ChildData>(*this->child_data_);
+	abstract.child_data_->closed_ = false;
+	abstract.child_data_->finished_ = false;
+	abstract.child_data_->list_of_childs.clear();
+	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
 	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	return abstract;
 }
@@ -759,18 +749,6 @@ AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
 AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
     return child_data_->list_of_childs.end();
 }
-
-
-AbstractRecord::ChildData::ChildData(const ChildData &other)
-: selection_of_childs( boost::make_shared<Selection> (other.type_name_ + "_TYPE_selection") ),
-  //list_of_childs(other.list_of_childs),
-  element_input_selection(other.element_input_selection),
-  description_(other.description_),
-  type_name_(other.type_name_),
-  finished_(false),
-  closed_(false),
-  selection_default_(other.selection_default_)
-{}
 
 
 /************************************************

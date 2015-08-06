@@ -237,6 +237,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 Array Array::deep_copy() const {
 	Array arr = Array(Integer()); // Type integer will be overwritten
 	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	arr.data_->finished = false;
 	return arr;
 }
 

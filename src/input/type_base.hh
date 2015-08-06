@@ -269,11 +269,6 @@ protected:
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
     	{}
 
-    	ArrayData(const ArrayData &other)
-    	: type_of_values_(other.type_of_values_), lower_bound_(other.lower_bound_),
-		  upper_bound_(other.upper_bound_), finished(false)
-    	{}
-
     	bool finish(bool is_generic = false);
 
     	boost::shared_ptr<TypeBase> type_of_values_;
