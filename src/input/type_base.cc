@@ -141,6 +141,11 @@ TypeBase::json_string TypeBase::print_parameter_map_to_json() {
 }
 
 
+void TypeBase::set_parameters_attribute() {
+	this->add_attribute("parameters", this->print_parameter_map_to_json());
+}
+
+
 
 
 

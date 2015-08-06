@@ -227,6 +227,9 @@ protected:
     /// Create JSON output from @p parameter_map_ formatted as attribute.
     json_string print_parameter_map_to_json();
 
+    /// Set attribute parameters from value stored in @p parameter_map_
+    void set_parameters_attribute();
+
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
 

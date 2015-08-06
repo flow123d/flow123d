@@ -345,7 +345,7 @@ TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair
 		}
 	}
 	// Set attributes
-	rec.add_attribute("parameters", rec.print_parameter_map_to_json());
+	rec.set_parameters_attribute();
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
 	rec.add_attribute("generic_type", type_stream.str());
@@ -716,7 +716,7 @@ TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<Param
 	abstract.child_data_->closed_ = false;
 
 	// Set parameters and generic type as attributes
-	abstract.add_attribute("parameters", abstract.print_parameter_map_to_json());
+	abstract.set_parameters_attribute();
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
 	abstract.add_attribute("generic_type", type_stream.str());
