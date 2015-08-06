@@ -43,6 +43,9 @@ public:
     /// Implements @p TypeBase::make_instance.
     virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 
+    /// Implements @p TypeBase::finish.
+    bool finish(bool is_generic = false) override;
+
 protected:
     /// name of parameter
 	const string name_;

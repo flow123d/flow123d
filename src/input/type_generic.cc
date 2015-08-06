@@ -45,7 +45,7 @@ TypeBase::TypeHash Parameter::content_hash() const {
 
 
 bool Parameter::valid_default(const string &str) const {
-    ASSERT(false, "Method valid_default can't be called for Parameter type.\n");
+    ASSERT(false, "Method valid_default can't be called for Parameter '%s'.\n", this->name_.c_str());
     return true;
 }
 
@@ -59,6 +59,12 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 	}
 	ASSERT(false, "Parameterized key '%s' in make_instance method wasn't replaced!\n", this->type_name().c_str());
 	return std::make_pair( boost::make_shared<Parameter>(*this), this->parameter_map_ );
+}
+
+
+bool Parameter::finish(bool is_generic) {
+	ASSERT(is_generic, "Finish of non-generic Parameter '%s'.\n", this->name_.c_str());
+	return true;
 }
 
 
@@ -99,14 +105,27 @@ bool Instance::finish(bool is_generic) {
 }
 
 
+#ifdef FLOW123D_DEBUG_ASSERTS
+std::string print_parameter_vec(std::vector<TypeBase::ParameterPair> vec) {
+	stringstream ss;
+	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = vec.begin(); vec_it!=vec.end(); vec_it++) {
+		if (vec_it != vec.begin()) ss << ", ";
+		ss << "'" << vec_it->first << "'" << endl;
+	}
+
+	return ss.str();
+}
+#endif
+
+
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPair> vec) const {
 	TypeBase::MakeInstanceReturnType ret = generic_type_.make_instance(parameters_);
 #ifdef FLOW123D_DEBUG_ASSERTS
 	for (std::vector<TypeBase::ParameterPair>::const_iterator vec_it = parameters_.begin(); vec_it!=parameters_.end(); vec_it++) {
 		ParameterMap::iterator map_it = ret.second.find( vec_it->first );
-		ASSERT(map_it != ret.second.end(), "Parameter '%s' in make_instance method of '%s' type must be used.\n",
-				vec_it->first.c_str(), generic_type_.type_name().c_str());
+		ASSERT(map_it != ret.second.end(), "Unused parameter '%s' in input type instance with parameters: %s.\n",
+				vec_it->first.c_str(), print_parameter_vec(parameters_).c_str());
 	}
 #endif
 	return ret;

@@ -239,9 +239,6 @@ bool Record::finish(bool is_generic)
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
     	if (it->key_ != "TYPE") {
-    		ASSERT(is_generic || typeid( *(it->type_) ) != typeid(Parameter),
-    			"Finished non-generic Record '%s' can't contain key '%s' of type Parameter.\n",
-        		this->type_name().c_str(), it->type_->type_name().c_str());
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
             data_->finished = data_->finished && it->type_->finish(is_generic);
 

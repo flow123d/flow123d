@@ -280,5 +280,5 @@ TEST(GenericType, parameter_during_lazy_finish) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "can't contain key 'param' of type Parameter");
+	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "Finish of non-generic Parameter 'param'");
 }

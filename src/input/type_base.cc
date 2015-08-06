@@ -178,10 +178,6 @@ bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
 
-    ASSERT(is_generic || typeid( *type_of_values_ ) != typeid(Parameter),
-    		"Finished non-generic Array can't be of type Parameter '%s'.\n",
-    		type_of_values_->type_name().c_str());
-
 	return (finished = type_of_values_->finish(is_generic) );
 }
 
