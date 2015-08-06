@@ -14,7 +14,7 @@ TEST(YamlCpp, parser) {
     EXPECT_TRUE(config["seq_key"][1].IsScalar());
     
     EXPECT_TRUE(config["tag_key"].IsScalar());
-    EXPECT_EQ("!my_tag", config["tag_key"].Tag());
-    EXPECT_EQ(13, config["seq_key"][1].as<int>());
+    EXPECT_EQ("!my_int", config["tag_key"].Tag());
+    EXPECT_EQ(13, config["tag_key"].as<int>());
 }
 
