@@ -199,10 +199,10 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
 //        string prefix = ;
         */
-        cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
-        cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
-        cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
-        cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
+        // cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
+        // cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
+        // cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
+        // cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
         
         // 1. set program name
         // 2. get prefix
