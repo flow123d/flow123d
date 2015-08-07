@@ -107,8 +107,7 @@ doxy-doc: cmake update-build-tree
 ref-doc: cmake update-build-tree
 	# generate json format specification (also contains flow123d open message text)
 	# remove flow123d open message text by searching for character '['
-	$(BUILD_DIR)/bin/flow123d --JSON_machine --no_log > $(DOC_DIR)/input_reference_raw.json
-	dd if=$(DOC_DIR)/input_reference_raw.json of=$(DOC_DIR)/input_reference.json bs=1 skip=`head -n 20 $(DOC_DIR)/input_reference_raw.json | grep -bo '\[' | sed 's/:.*//' | head -n 1`
+	$(BUILD_DIR)/bin/flow123d --JSON_machine "$(DOC_DIR)/input_reference.json"
 	python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.json.tex --format=tex
 	cp $(DOC_DIR)/input_reference.json.tex $(DOC_DIR)/input_reference.tex 
 	make -C $(BUILD_DIR)/doc/reference_manual pdf
