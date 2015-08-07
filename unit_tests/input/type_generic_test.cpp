@@ -244,7 +244,7 @@ TEST(GenericType, parameter_not_replaced) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "in make_instance method wasn't replaced");
+	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcParamaterNotSubsituted, "for input type parameter 'param'" );
 }
 
 
@@ -268,7 +268,7 @@ TEST(GenericType, parameter_not_used) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "must be used");
+	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "must be used");
 }
 
 
@@ -280,5 +280,5 @@ TEST(GenericType, parameter_during_lazy_finish) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( TypeBase::lazy_finish();, "Finish of non-generic Parameter 'param'");
+	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "Finish of non-generic Parameter 'param'");
 }

@@ -11,12 +11,21 @@
 
 
 #include <input/type_base.hh>
+#include <input/accessors.hh>
 
 
 
 namespace Input {
 
 namespace Type {
+
+// Declaration of exception
+TYPEDEF_ERR_INFO(EI_Object, std::string);
+TYPEDEF_ERR_INFO(EI_ParameterList, std::string);
+DECLARE_INPUT_EXCEPTION(ExcParamaterNotSubsituted,
+        << "No input type substitution for input type parameter " << EI_Object::qval
+		<< " found during creation of instance with parameter list: " << EI_ParameterList::val << ".");
+
 
 
 /**
