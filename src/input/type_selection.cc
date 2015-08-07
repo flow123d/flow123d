@@ -157,7 +157,7 @@ string Selection::key_list() const {
 
 // Implements @p TypeBase::make_instance.
 TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Selection>(*this), this->parameter_map_ );
+	return std::make_pair( boost::make_shared<Selection>(*this), ParameterMap() );
 }
 
 

@@ -124,16 +124,11 @@ void TypeBase::attribute_content_hash(std::size_t &seed) const {
 }
 
 
-void TypeBase::add_to_parameter_map(ParameterMap other) {
-	parameter_map_.insert(other.begin(), other.end());
-}
-
-
-TypeBase::json_string TypeBase::print_parameter_map_to_json() {
+TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap parameter_map) const {
 	std::stringstream ss;
 	ss << "[";
-	for (ParameterMap::iterator it=parameter_map_.begin(); it!=parameter_map_.end(); it++) {
-		if (it != parameter_map_.begin()) ss << "," << endl;
+	for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
+		if (it != parameter_map.begin()) ss << "," << endl;
 		ss << "{ \"" << (*it).first << "\" : \"" << (*it).second << "\" }";
 	}
 	ss << "]";
@@ -141,8 +136,8 @@ TypeBase::json_string TypeBase::print_parameter_map_to_json() {
 }
 
 
-void TypeBase::set_parameters_attribute() {
-	this->add_attribute("parameters", this->print_parameter_map_to_json());
+void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
+	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
 }
 
 
@@ -220,18 +215,18 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 	// Replace parameter stored in type_of_values_
 	MakeInstanceReturnType inst = arr.data_->type_of_values_->make_instance(vec);
 	arr.data_->type_of_values_ = inst.first;
-	arr.add_to_parameter_map(inst.second);
+	ParameterMap parameter_map = inst.second;
 	// Copy attributes
 	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	// Set parameters as attribute
-	json_string val = arr.print_parameter_map_to_json();
+	json_string val = this->print_parameter_map_to_json(parameter_map);
 	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
 	(*arr.attributes_)["parameters"] = val;
 	std::stringstream type_stream;
 	type_stream << "\"" << this->content_hash() << "\"";
 	(*arr.attributes_)["generic_type"] = type_stream.str();
 
-	return std::make_pair( boost::make_shared<Array>(arr), arr.parameter_map_ );
+	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
 }
 
 
@@ -324,7 +319,7 @@ string Bool::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Bool>(*this), this->parameter_map_ );
+	return std::make_pair( boost::make_shared<Bool>(*this), ParameterMap() );
 }
 
 /**********************************************************************************
@@ -376,7 +371,7 @@ string Integer::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Integer>(*this), this->parameter_map_ );
+	return std::make_pair( boost::make_shared<Integer>(*this), ParameterMap() );
 }
 
 
@@ -431,7 +426,7 @@ string Double::type_name() const {
 
 
 TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<Double>(*this), this->parameter_map_ );
+	return std::make_pair( boost::make_shared<Double>(*this), ParameterMap() );
 }
 
 
@@ -513,7 +508,7 @@ bool String::match(const string &str) const {
 
 
 TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
-	return std::make_pair( boost::make_shared<String>(*this), this->parameter_map_ );
+	return std::make_pair( boost::make_shared<String>(*this), ParameterMap() );
 }
 
 
