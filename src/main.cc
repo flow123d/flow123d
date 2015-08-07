@@ -178,7 +178,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	  ("JSON_machine", po::value< string >()->default_value("flow123d_ist.json"), "Writes full structure of the main input file as a valid CON file into given file")
+        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
     ;
