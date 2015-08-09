@@ -64,7 +64,7 @@ TEST(FieldConst, read_from_input) {
         .close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type );
+    Input::JSONToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;

@@ -141,18 +141,14 @@ Input::Record Application::read_input() {
     }
     
     // read main input file
-    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    std::ifstream in_stream(fname.c_str());
-    if (! in_stream) {
-        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
-    }
+    FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
-    	Input::JSONToStorage json_reader(in_stream, get_input_type() );
+    	Input::JSONToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
     } catch (Input::JSONToStorage::ExcInputError &e ) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
+      e << Input::JSONToStorage::EI_File(fpath); throw;
     } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
+      e << Input::JSONToStorage::EI_File(fpath); throw;
     }  
     
     return root_record;

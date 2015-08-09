@@ -94,7 +94,7 @@ const string mesh_input = R"JSON(
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::JSONToStorage reader( mesh_input, Mesh::get_input_type() );
+    Input::JSONToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     auto rec = reader.get_root_interface<Input::Record>();
     Mesh mesh( rec );
     mesh.init_from_input();

@@ -87,7 +87,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::get_input_type() );
+    Input::JSONToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON ); // TODO is this constructor used in code?
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);

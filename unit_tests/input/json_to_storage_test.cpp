@@ -171,7 +171,7 @@ protected:
     void read_stream(istream &in, const Type::TypeBase &root_type) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in,root_type);
+    	JSONToStorage::read_stream(in, root_type, FileFormat::format_JSON);
     }
 };
 
@@ -661,8 +661,7 @@ TEST(InputJSONToStorageTest_external, get_root_interface) {
 		.close();
     one_rec.finish();
 
-    stringstream ss("{ one=1 }");
-    JSONToStorage json_reader(ss, one_rec);
+    JSONToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);

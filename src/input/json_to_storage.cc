@@ -543,20 +543,35 @@ JSONToStorage::JSONToStorage()
 
 
 
-JSONToStorage::JSONToStorage(istream &in, const Type::TypeBase &root_type)
+JSONToStorage::JSONToStorage(const FilePath &in_file, const Type::TypeBase &root_type)
 : JSONToStorage()
 {
-	read_stream(in,root_type);
+	std::string fname = in_file;
+	std::string extension = fname.substr(fname.find_last_of(".") + 1);
+	FileFormat format;
+	if (extension == "con") {
+		format = FileFormat::format_JSON;
+	} else if (extension == "yaml") {
+		format = FileFormat::format_YAML;
+	} else {
+		THROW(ExcInputMessage() << EI_Message("Invalid extension of file " + fname + ".\nMust be 'con' od 'yaml'."));
+	}
+
+	std::ifstream in(fname.c_str());
+    if (! in) {
+        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
+    }
+	read_stream(in, root_type, format);
 }
 
 
 
-JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type)
+JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
 : JSONToStorage()
 {
 	try {
 		istringstream is(str);
-		read_stream(is, root_type);
+		read_stream(is, root_type, format);
 	} catch (ExcNotJSONFormat &e) {
 		e << EI_File("STRING: "+str); throw;
 	}
@@ -564,7 +579,7 @@ JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type
 
 
 
-void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
+void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
     namespace io = boost::iostreams;
     ASSERT(storage_==nullptr," ");
@@ -572,7 +587,12 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type)
     // finish all lazy input types
     Input::Type::TypeBase::lazy_finish();
 
-    PathJSON * root_path = new PathJSON(in);
+    PathBase * root_path;
+	if (format == FileFormat::format_JSON) {
+		root_path = new PathJSON(in);
+	} else {
+		root_path = new PathYAML(in);
+	}
 
     root_type_ = &root_type;
     storage_ = make_storage(root_path, root_type_);

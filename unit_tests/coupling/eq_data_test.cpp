@@ -202,7 +202,7 @@ protected:
 
     void read_input(const string &input) {
         // read input string
-        Input::JSONToStorage reader( input, get_input_type() );
+        Input::JSONToStorage reader( input, get_input_type(), Input::FileFormat::format_JSON );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);

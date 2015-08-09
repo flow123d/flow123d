@@ -69,7 +69,7 @@ TEST(InputAddress, address_output_test) {
 				"Simulation problem to be solved.")
 		.close();
 
-	Input::JSONToStorage json_reader( read_input_json,  root_record);
+	Input::JSONToStorage json_reader( read_input_json,  root_record, Input::FileFormat::format_JSON);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
 	EXPECT_EQ("/", i_rec.address_string() );

@@ -143,7 +143,7 @@ public:
             .declare_key("tensor_fixed", TensorField::get_input_type(FieldAlgorithmBase<3, FieldValue<2>::TensorFixed>::get_input_type(), NULL), Input::Type::Default::obligatory(),"" )
             .close();
 
-        Input::JSONToStorage reader( input, rec_type );
+        Input::JSONToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
         rec=reader.get_root_interface<Input::Record>();
 
         test_time[0] = 0.0;

@@ -38,6 +38,14 @@ namespace Input {
 
 
 
+/// Result type have sense only for larger Value types like vectors and tensors.
+typedef enum  {
+    format_JSON,
+    format_YAML
+} FileFormat;
+
+
+
 class PathBase {
 public:
 
@@ -345,12 +353,12 @@ public:
      * Read a storage from input stream. Parameter @p root_type
      * provides input type tree declaration. See @p read_from_stream for details.
      */
-    JSONToStorage(istream &in, const Type::TypeBase &root_type);
+    JSONToStorage(const FilePath &in_file, const Type::TypeBase &root_type);
 
     /**
      * Read a storage from string (e.g. complex default value).
      */
-    JSONToStorage( const string &default_str, const Type::TypeBase &root_type);
+    JSONToStorage( const string &default_str, const Type::TypeBase &root_type, FileFormat format);
 
     /**
      * Returns the root accessor. The template type \p T should correspond
@@ -372,7 +380,7 @@ protected:
      * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
      * store the data into private storage tree using \p StorageBase classes.
      */
-    void read_stream(istream &in, const Type::TypeBase &root_type);
+    void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
 
     /**
      * Getter for root of the storage tree.

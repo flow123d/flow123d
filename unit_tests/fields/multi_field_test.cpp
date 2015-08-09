@@ -39,7 +39,7 @@ TEST(TransposeTo, field_constant) {
 	    .declare_key("transposed", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 	    .close();
 
-	Input::JSONToStorage json_reader(field_constant_input, in_rec);
+	Input::JSONToStorage json_reader(field_constant_input, in_rec, Input::FileFormat::format_JSON);
 	Input::Record input = json_reader.get_root_interface<Input::Record>();
 
 	Input::Record common = input.val<Input::Record>("common");

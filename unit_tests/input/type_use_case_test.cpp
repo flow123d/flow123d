@@ -63,8 +63,8 @@ public:
     }
     void SetUp() override {
     	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
-    	ifstream in(f_name);
-    	json_reader = new Input::JSONToStorage(in, get_input_type() );
+    	FilePath fp(f_name, FilePath::FileType::input_file);
+    	json_reader = new Input::JSONToStorage(fp, get_input_type() );
     }
     void TearDown() override {
     	delete json_reader;

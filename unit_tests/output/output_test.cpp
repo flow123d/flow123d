@@ -98,7 +98,7 @@ public:
 
     OutputTest()
     : OutputTime(
-    		Input::JSONToStorage(output_stream1, OutputTime::get_input_type())
+    		Input::JSONToStorage(output_stream1, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
     		.get_root_interface<Input::Record>()
     		)
     {}
@@ -127,10 +127,10 @@ IT::Record OutputTest::input_type
  */
 TEST_F( OutputTest, test_create_output_stream ) {
 	// First stream is created in constructor, here we create two more.
-	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type());
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type());
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
@@ -154,13 +154,13 @@ TEST_F( OutputTest, test_create_output_stream ) {
  */
 /*
 TEST( OutputTest, find_outputstream_by_name ) {
-	Input::JSONToStorage reader_1(output_stream1, OutputTime::get_input_type());
+	Input::JSONToStorage reader_1(output_stream1, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     auto os_1 = OutputTime::output_stream(reader_1.get_root_interface<Input::Record>());
 
-	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type());
+	Input::JSONToStorage reader_2(output_stream2, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     auto os_2 = OutputTime::output_stream(reader_2.get_root_interface<Input::Record>());
 
-    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type());
+    Input::JSONToStorage reader_3(output_stream3, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     auto os_3 = OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     //ASSERT_EQ(OutputTime::output_streams.size(), 3);
@@ -201,7 +201,7 @@ class TestOutputTime : public testing::Test, public OutputTime {
 public:
 	TestOutputTime()
 	: OutputTime(
-	    		Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type())
+	    		Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
 	    		.get_root_interface<Input::Record>()
 	    		)
 	{
@@ -350,7 +350,7 @@ TEST_F(TestOutputTime, compute_field_data) {
 
 TEST_F( OutputTest, test_register_elem_fields_data ) {
     /* Read input for output */
-    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
 
     TimeGovernor tg(0.0, 1.0);
 
@@ -431,7 +431,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
 
 TEST_F( OutputTest, test_register_corner_fields_data ) {
     /* Read input for output */
-    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
     Profiler::initialize();
@@ -528,7 +528,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 
 TEST_F( OutputTest, test_register_node_fields_data ) {
     /* Read input for output */
-    Input::JSONToStorage reader_output(foo_output, Foo::input_type);
+    Input::JSONToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
     Profiler::initialize();

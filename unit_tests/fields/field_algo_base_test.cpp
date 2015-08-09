@@ -78,7 +78,7 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
-		Input::JSONToStorage reader(str, *test_input_list );
+		Input::JSONToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
 		return reader.get_root_interface<Input::Array>();
 	}
 
@@ -608,7 +608,7 @@ TEST(Field, init_from_input) {
 
 
     // read input string
-    Input::JSONToStorage reader( field_input, main_record );
+    Input::JSONToStorage reader( field_input, main_record, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     sorption_type.set_mesh(mesh);

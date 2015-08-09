@@ -65,7 +65,7 @@ protected:
     void read_stream(istream &in, const Input::Type::TypeBase &root_type) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in,root_type);
+    	JSONToStorage::read_stream(in, root_type, Input::FileFormat::format_JSON);
     }
 
     Input::Type::Record * root_record;
@@ -75,7 +75,7 @@ protected:
 
 TEST_F(InputTypeDispatchTest, all) {
 
-    Input::JSONToStorage json_reader(json_input, *root_record);
+    Input::JSONToStorage json_reader(json_input, *root_record, Input::FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );

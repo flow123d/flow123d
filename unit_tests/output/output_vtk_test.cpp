@@ -28,7 +28,7 @@ class TestOutputVTK : public testing::Test, public OutputVTK {
 public:
     TestOutputVTK()
     : OutputVTK(
-            Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type())
+            Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
             .get_root_interface<Input::Record>()
       )
     {
