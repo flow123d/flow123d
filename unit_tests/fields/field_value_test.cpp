@@ -295,7 +295,7 @@ TEST(FieldValue_, string_values_init_from_input) {
     	.close();
 
     // read input string
-    Input::JSONToStorage reader( formula_input, rec_type, input::FileFormat::format_JSON );
+    Input::JSONToStorage reader( formula_input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 
