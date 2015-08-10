@@ -22,9 +22,9 @@ ExternalProject_Add(htmldoc
 ")
 
 # run cmake
-message(STATUS \"Preparing external HTMLDOC project with cmake\")
+message(STATUS "Preparing external HTMLDOC project with cmake")
 execute_process(COMMAND ${CMAKE_COMMAND} ${HTMLDOC_INSTALL_DIR}
   WORKING_DIRECTORY ${HTMLDOC_INSTALL_DIR}
   OUTPUT_FILE ${HTMLDOC_INSTALL_DIR}/cmake.log
-RESULT_VARIABLE \"HTMLDOC_CMAKE_RESULT\")
-message(STATUS \"  Exit code ${HTMLDOC_CMAKE_RESULT}\")
+RESULT_VARIABLE "HTMLDOC_CMAKE_RESULT")
+message(STATUS "  Exit code ${HTMLDOC_CMAKE_RESULT}")
