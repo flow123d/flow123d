@@ -170,12 +170,16 @@ public:
     inline unsigned int size() const;
 
 
-    bool finish()
+    bool finish(bool is_generic = false)
         { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
 
 
     /// Implements \p TypeBase::is_closed
     virtual bool is_closed() const override;
+
+
+    // Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     /**

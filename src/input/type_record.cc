@@ -17,6 +17,7 @@
 #include <iomanip>
 
 #include "system/system.hh"
+#include "input/type_generic.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/type_traits.hpp>
@@ -180,7 +181,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default::obligatory(), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default( type_name() ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -228,45 +229,21 @@ bool Record::check_key_default_value(const Default &dflt, const TypeBase &type, 
 
 
 
-bool Record::finish()
+bool Record::finish(bool is_generic)
 {
 	if (data_->finished) return true;
 
 	ASSERT(data_->closed_, "Finished Record '%s' must be closed!", this->type_name().c_str());
 
-	// remove duplicate Abstracts in vector of parent pointers
-	if ( data_->parent_ptr_.size()>1 ) {
-	    /* Possible simplification using std library:
- 	     * sort( vec.begin(), vec.end() );
-         * vec.erase( unique( vec.begin(), vec.end() ), vec.end() );
-         *
-         * ... needs sort with particular comparator.
-	     */
-		for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
-			TypeHash hash = (*it)->content_hash();
-			for (auto in_it = it+1; in_it != data_->parent_ptr_.end(); ++in_it) {
-				if ( (*in_it)->content_hash() == hash ) { // same parent - remove
-					data_->parent_ptr_.erase( in_it );
-					--in_it;
-				}
-			}
-		}
-	}
-
-	// finish inheritance if parent is non-null
-    if ( data_->parent_ptr_.size() ) {
-    	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
-    				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-    	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( data_->parent_ptr_[0]->get_type_selection() );
-    	data_->keys[0].type_ = type_copy;
-    	data_->keys[0].default_ = Default( type_name() );
-    }
-
     data_->finished = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
-        if (it->key_ != "TYPE") {
-            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish();
+    	if (it->key_ != "TYPE") {
+    		ASSERT(is_generic || typeid( *(it->type_) ) != typeid(Parameter),
+    			"Finished non-generic Record '%s' can't contain key '%s' of type Parameter.\n",
+        		this->type_name().c_str(), it->type_->type_name().c_str());
+			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
+            data_->finished = data_->finished && const_cast<TypeBase *>( it->type_.get() )->finish(is_generic);
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -297,6 +274,7 @@ const Record &Record::close() const {
     for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
     	(*it)->add_child(rec);
     }
+    data_->parent_ptr_.clear();
 
     return rec;
 }
@@ -359,6 +337,61 @@ Record &Record::has_obligatory_type_key() {
 }
 
 
+TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) const {
+	Record rec = this->deep_copy();
+	// Replace keys of type Parameter
+	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
+		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
+			MakeInstanceReturnType inst = key_it->type_->make_instance(vec);
+			key_it->type_ = inst.first;
+			rec.add_to_parameter_map(inst.second);
+		}
+	}
+	// Set attributes
+	rec.add_attribute("parameters", rec.print_parameter_map_to_json());
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	rec.add_attribute("generic_type", type_stream.str());
+
+	return std::make_pair( boost::make_shared<Record>(rec.close()), rec.parameter_map_ );
+}
+
+
+Record Record::deep_copy() const {
+	Record rec = Record();
+	rec.data_ =  boost::make_shared<Record::RecordData>(*this->data_);
+	rec.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	return rec;
+}
+
+
+const Record &Record::add_parent(AbstractRecord &parent) const {
+	ASSERT( parent.is_closed(), "Parent AbstractRecord '%s' must be closed!\n", parent.type_name().c_str());
+
+	// check if parent exists in parent_ptr_ vector
+	if ( data_->parent_ptr_.size() ) {
+		TypeHash hash = parent.content_hash();
+		for (auto it = data_->parent_ptr_.begin(); it != data_->parent_ptr_.end(); ++it) {
+			if ( (*it)->content_hash() == hash ) {
+				return *this;
+			}
+		}
+	}
+
+	data_->parent_ptr_.push_back( boost::make_shared<AbstractRecord>(parent) );
+
+	// finish inheritance
+	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
+				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( parent.get_type_selection() );
+	data_->keys[0].type_ = type_copy;
+	data_->keys[0].default_ = Default( type_name() );
+
+	return *this;
+}
+
+
+
 /**********************************************************************************
  * implementation of Type::Record::RecordData
  */
@@ -370,6 +403,22 @@ Record::RecordData::RecordData(const string & type_name_in, const string & descr
  closed_(false),
  derived_(false),
  auto_conversion_key_idx(-1)    // auto conversion turned off
+{
+
+}
+
+
+Record::RecordData::RecordData(const RecordData &other)
+:key_to_index(other.key_to_index),
+ keys(other.keys),
+ description_(other.description_),
+ type_name_(other.type_name_),
+ parent_ptr_(other.parent_ptr_),
+ finished(false),
+ closed_(false),
+ derived_(other.derived_),
+ auto_conversion_key_idx(other.auto_conversion_key_idx),
+ auto_conversion_key(other.auto_conversion_key)
 {
 
 }
@@ -420,7 +469,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
     if (data_->closed_)
         xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
 
-	check_key_default_value(default_value, type, key);
+    check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
 	data_->declare_key(key, type_copy, default_value, description);
 
@@ -477,6 +526,8 @@ RECORD_DECLARE_KEY(Array);
 RECORD_DECLARE_KEY(Record);
 RECORD_DECLARE_KEY(AbstractRecord);
 RECORD_DECLARE_KEY(AdHocAbstractRecord);
+RECORD_DECLARE_KEY(Parameter);
+RECORD_DECLARE_KEY(Instance);
 
 
 
@@ -592,7 +643,7 @@ int AbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AbstractRecord::finish() {
+bool AbstractRecord::finish(bool is_generic) {
 	if (child_data_->finished_) return true;
 
 	ASSERT(child_data_->closed_, "Finished AbstractRecord '%s' must be closed!", this->type_name().c_str());
@@ -600,6 +651,12 @@ bool AbstractRecord::finish() {
 	child_data_->finished_ = true;
 
 	child_data_->selection_of_childs->close();
+
+	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
+		(*child_it).add_parent(*this);
+		child_data_->finished_ = child_data_->finished_ && const_cast<Record &>(*child_it).finish(is_generic);
+	}
+
     // check validity of possible default value of TYPE key
     if ( have_default_descendant() ) {
 		try {
@@ -663,6 +720,38 @@ bool AbstractRecord::have_default_descendant() const {
 
 
 
+TypeBase::MakeInstanceReturnType AbstractRecord::make_instance(std::vector<ParameterPair> vec) const {
+	AbstractRecord abstract = this->deep_copy();
+
+	// Set close flag - only for add descendants
+	abstract.child_data_->closed_ = true;
+	// make instances of all descendant records and add them into instance of abstract
+	for (ChildDataIter child_it = begin_child_data(); child_it != end_child_data(); ++child_it) {
+		MakeInstanceReturnType inst = (*child_it).make_instance(vec);
+		abstract.add_child( static_cast<Record &>( *(inst.first) ) );
+		abstract.add_to_parameter_map(inst.second);
+	}
+	// Unset close flag - necessary for set parameters
+	abstract.child_data_->closed_ = false;
+
+	// Set parameters and generic type as attributes
+	abstract.add_attribute("parameters", abstract.print_parameter_map_to_json());
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	abstract.add_attribute("generic_type", type_stream.str());
+
+	return std::make_pair( boost::make_shared<AbstractRecord>(abstract.close()), abstract.parameter_map_ );
+}
+
+
+AbstractRecord AbstractRecord::deep_copy() const {
+	AbstractRecord abstract = AbstractRecord();
+	abstract.child_data_ =  boost::make_shared<AbstractRecord::ChildData>(*this->child_data_);
+	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	return abstract;
+}
+
+
 AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
     return child_data_->list_of_childs.begin();
 }
@@ -670,6 +759,18 @@ AbstractRecord::ChildDataIter AbstractRecord::begin_child_data() const {
 AbstractRecord::ChildDataIter AbstractRecord::end_child_data() const {
     return child_data_->list_of_childs.end();
 }
+
+
+AbstractRecord::ChildData::ChildData(const ChildData &other)
+: selection_of_childs( boost::make_shared<Selection> (other.type_name_ + "_TYPE_selection") ),
+  //list_of_childs(other.list_of_childs),
+  element_input_selection(other.element_input_selection),
+  description_(other.description_),
+  type_name_(other.type_name_),
+  finished_(false),
+  closed_(false),
+  selection_default_(other.selection_default_)
+{}
 
 
 /************************************************
@@ -702,12 +803,12 @@ AdHocAbstractRecord &AdHocAbstractRecord::add_child(const Record &subrec)
 }
 
 
-bool AdHocAbstractRecord::finish()
+bool AdHocAbstractRecord::finish(bool is_generic)
 {
 	if (child_data_->finished_) return true;
 
 	if (tmp_ancestor_ != 0) {
-		const_cast<AbstractRecord *>(tmp_ancestor_)->finish();
+		const_cast<AbstractRecord *>(tmp_ancestor_)->finish(is_generic);
 
         parent_data_ = tmp_ancestor_->child_data_;
         parent_name_ = tmp_ancestor_->type_name();
@@ -734,7 +835,7 @@ bool AdHocAbstractRecord::finish()
 	    child_data_->list_of_childs.push_back(*it);
 	}
 
-	return AbstractRecord::finish();
+	return AbstractRecord::finish(is_generic);
 }
 
 

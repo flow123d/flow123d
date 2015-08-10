@@ -62,10 +62,13 @@ TEST(FieldConst, read_from_input) {
         .declare_key("tensor4", TensorField::get_input_type(nullptr), Input::Type::Default::obligatory(),"" )
         .declare_key("init_conc", VectorField::get_input_type(nullptr), Input::Type::Default::obligatory(), "" )
         .close();
+	cout << "1" << endl;
 
     // read input string
     Input::JSONToStorage reader( input, rec_type );
+	cout << "2" << endl;
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
+	cout << "3" << endl;
 
     Space<3>::Point point_1, point_2;
     point_1(0)=1.0; point_1(1)=2.0; point_1(2)=3.0;

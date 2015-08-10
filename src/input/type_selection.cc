@@ -155,6 +155,13 @@ string Selection::key_list() const {
 
 
 
+// Implements @p TypeBase::make_instance.
+TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Selection>(*this), this->parameter_map_ );
+}
+
+
+
 void Selection::SelectionData::add_value(const int value, const std::string &key, const std::string &description) {
     KeyHash key_h = TypeBase::key_hash(key);
     if (key_to_index_.find(key_h) != key_to_index_.end()) {

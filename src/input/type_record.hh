@@ -337,7 +337,7 @@ public:
     /**
      * Finish declaration of the Record type. Calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * Add TYPE key as obligatory.
@@ -345,6 +345,12 @@ public:
      * This method can't be used for derived record.
      */
     Record &has_obligatory_type_key();
+
+    /// Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
+    /// Create deep copy of Record (copy all data stored in shared pointers etc.)
+    Record deep_copy() const;
 
 
 protected:
@@ -369,11 +375,23 @@ protected:
     Record &declare_type_key(boost::shared_ptr<Selection> key_type);
 
     /**
+     * Set parent Abstract of Record.
+     *
+     * This method is created for correct functionality of generic types. It must be called
+     * in Abstract::finish() and refill @p parent_ptr_ vector of correct parents.
+     */
+    const Record &add_parent(AbstractRecord &parent) const;
+
+    /**
      * Internal data class.
      */
     class RecordData  {
     public:
+        /// Constructor
         RecordData(const string & type_name_in, const string & description);
+
+        /// Copy constructor
+        RecordData(const RecordData &other);
 
         /**
          * Declares a key and stores its type. The type parameter has to be finished at the call of declare_key().
@@ -489,6 +507,8 @@ protected:
 		  selection_default_(Default::obligatory())
         {}
 
+        ChildData(const ChildData &other);
+
         /**
          * Selection composed from names of derived Records. Indices are according to
          * the order of derivation (starting from zero).
@@ -578,7 +598,7 @@ public:
     /**
      *  Finish declaration of the AbstractRecord type.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
@@ -675,6 +695,12 @@ public:
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
 
+    // Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
+    /// Create deep copy of AbstractRecord (copy all data stored in shared pointers etc.)
+    AbstractRecord deep_copy() const;
+
 protected:
     /**
      * This method intentionally have no implementation to
@@ -721,7 +747,7 @@ public:
      * Finish declaration of the AdHocAbstractRecord type. Adds descendants of ancestor AbstractRecord,
      * calls close() and complete keys with non-null pointers to lazy types.
      */
-    bool finish();
+    bool finish(bool is_generic = false);
 
     /**
      * Add inherited Record.

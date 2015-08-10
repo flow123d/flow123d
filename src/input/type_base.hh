@@ -65,6 +65,10 @@ public:
 	typedef std::size_t TypeHash;
 	typedef std::string json_string;
 	typedef std::map<std::string, json_string> attribute_map;
+	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	typedef std::map< std::string, TypeHash > ParameterMap;
+	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
+
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -139,7 +143,7 @@ public:
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
      */
-    virtual bool finish()
+    virtual bool finish(bool is_generic = false)
     { return true; };
 
     /**
@@ -161,6 +165,9 @@ public:
 
     /// Print JSON output of attributes to @p stream.
     void write_attributes(ostream& stream) const;
+
+    /// Create instance of generic type
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
 
 protected:
 
@@ -205,8 +212,21 @@ protected:
      */
     void attribute_content_hash(std::size_t &seed) const;
 
+    /// Merge values @p other map to @p parameter_map_
+    void add_to_parameter_map(ParameterMap other);
+
+    /// Create JSON output from @p parameter_map_ formatted as attribute.
+    json_string print_parameter_map_to_json();
+
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
+
+    /**
+     * Map of used parameters in generic type (for non-generic types is empty).
+     *
+     * Contains all parameter pairs used in type and in all descendants (in subtree of type).
+     */
+    mutable ParameterMap parameter_map_;
 
     friend class Array;
     friend class Record;
@@ -249,7 +269,12 @@ protected:
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
     	{}
 
-    	bool finish();
+    	ArrayData(const ArrayData &other)
+    	: type_of_values_(other.type_of_values_), lower_bound_(other.lower_bound_),
+		  upper_bound_(other.upper_bound_), finished(false)
+    	{}
+
+    	bool finish(bool is_generic = false);
 
     	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
@@ -268,7 +293,7 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish();
+    virtual bool finish(bool is_generic = false);
 
     virtual bool is_finished() const {
         return data_->finished; }
@@ -296,6 +321,12 @@ public:
      *  if the default value is valid for the sub type of the array.
      */
     virtual bool valid_default(const string &str) const;
+
+    // Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
+
+    /// Create deep copy of Array (copy all data stored in shared pointers etc.)
+    Array deep_copy() const;
 
 protected:
 
@@ -341,6 +372,8 @@ public:
     virtual string type_name() const;
 
     virtual bool valid_default(const string &str) const;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 
@@ -374,6 +407,8 @@ public:
     virtual bool valid_default(const string &str) const;
 
     virtual string type_name() const;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -412,6 +447,8 @@ public:
     double from_default(const string &str) const;
 
     virtual string type_name() const;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 private:
 
 
@@ -442,6 +479,8 @@ public:
 
     /// Implements  @p Type::TypeBase::valid_defaults.
     virtual bool valid_default(const string &str) const;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const;
 };
 
 

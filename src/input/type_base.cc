@@ -28,6 +28,7 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "type_generic.hh"
 #include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
@@ -73,6 +74,7 @@ string TypeBase::desc() const {
 
 
 void TypeBase::lazy_finish() {
+	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
@@ -122,6 +124,23 @@ void TypeBase::attribute_content_hash(std::size_t &seed) const {
 }
 
 
+void TypeBase::add_to_parameter_map(ParameterMap other) {
+	parameter_map_.insert(other.begin(), other.end());
+}
+
+
+TypeBase::json_string TypeBase::print_parameter_map_to_json() {
+	std::stringstream ss;
+	ss << "[";
+	for (ParameterMap::iterator it=parameter_map_.begin(); it!=parameter_map_.end(); it++) {
+		if (it != parameter_map_.begin()) ss << "," << endl;
+		ss << "{ \"" << (*it).first << "\" : \"" << (*it).second << "\" }";
+	}
+	ss << "]";
+	return ss.str();
+}
+
+
 
 
 
@@ -149,17 +168,21 @@ TypeBase::TypeHash Array::content_hash() const
 }
 
 
-bool Array::finish() {
-	return data_->finish();
+bool Array::finish(bool is_generic) {
+	return data_->finish(is_generic);
 }
 
 
 
-bool Array::ArrayData::finish()
+bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
 
-	return (finished = type_of_values_->finish() );
+    ASSERT(is_generic || typeid( *type_of_values_ ) != typeid(Parameter),
+    		"Finished non-generic Array can't be of type Parameter '%s'.\n",
+    		type_of_values_->type_name().c_str());
+
+	return (finished = type_of_values_->finish(is_generic) );
 }
 
 
@@ -187,6 +210,34 @@ bool Array::valid_default(const string &str) const {
     } else {
         THROW( ExcWrongDefault() << EI_DefaultStr( str ) << EI_TypeName(type_name()));
     }
+}
+
+
+TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
+	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
+	Array arr = this->deep_copy();
+	// Replace parameter stored in type_of_values_
+	MakeInstanceReturnType inst = arr.data_->type_of_values_->make_instance(vec);
+	arr.data_->type_of_values_ = inst.first;
+	arr.add_to_parameter_map(inst.second);
+	// Copy attributes
+	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	// Set parameters as attribute
+	json_string val = arr.print_parameter_map_to_json();
+	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+	(*arr.attributes_)["parameters"] = val;
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	(*arr.attributes_)["generic_type"] = type_stream.str();
+
+	return std::make_pair( boost::make_shared<Array>(arr), arr.parameter_map_ );
+}
+
+
+Array Array::deep_copy() const {
+	Array arr = Array(Integer()); // Type integer will be overwritten
+	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	return arr;
 }
 
 
@@ -221,6 +272,8 @@ ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
 ARRAY_CONSTRUCT(AbstractRecord);
+ARRAY_CONSTRUCT(Parameter);
+ARRAY_CONSTRUCT(Instance);
 
 
 /**********************************************************************************
@@ -268,6 +321,10 @@ string Bool::type_name() const {
 }
 
 
+TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Bool>(*this), this->parameter_map_ );
+}
+
 /**********************************************************************************
  * implementation of Type::Integer
  */
@@ -313,6 +370,11 @@ bool Integer::valid_default(const string &str) const
 
 string Integer::type_name() const {
     return "Integer";
+}
+
+
+TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Integer>(*this), this->parameter_map_ );
 }
 
 
@@ -363,6 +425,11 @@ bool Double::valid_default(const string &str) const
 
 string Double::type_name() const {
     return "Double";
+}
+
+
+TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Double>(*this), this->parameter_map_ );
 }
 
 
@@ -439,6 +506,12 @@ string String::from_default(const string &str) const {
 
 bool String::match(const string &str) const {
     return true;
+}
+
+
+
+TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<String>(*this), this->parameter_map_ );
 }
 
 
