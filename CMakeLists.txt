@@ -657,6 +657,17 @@ message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
 message(STATUS "\n ======================================================= ")
 
 
+set(HTMLDOC_INSTALL_URL \"http://hybs.nti.tul.cz/test/ist.zip\")
+set(HTMLDOC_INSTALL_DIR "${CMAKE_BINARY_DIR}/htmldoc")
+set(HTMLDOC_SOURCE_DIR  "${CMAKE_BINARY_DIR}/htmldoc/html")
+
+message(STATUS "Installing HTML documentation to ${HTMLDOC_INSTALL_DIR}")
+include(InstallHTMLDOC)
+
+
+message(STATUS "\n ======================================================= ")
+
+
 # directory containing includes  (header files)
 set(CONFIG_FILE_INCLUDES_DIRECTORY "${CMAKE_BINARY_DIR}/includes")
 
