@@ -20,7 +20,7 @@ class htmltree(object):
         self.counter = 0
         self.roots = [self.root]
 
-    def tag(self, tag_name, value='', attrib={ }, no_escape=True):
+    def tag(self, tag_name, value='', attrib={ }, no_escape=True, **kwargs):
         """
         Method will create and append element with tag based on tag_name value
         :param tag_name: tag name
@@ -29,7 +29,14 @@ class htmltree(object):
         :param no_escape: whether to escape value
         :return: element
         """
-        element = ET.Element(tag_name, attrib)
+        attrib_copy = {}
+        if 'cls' in kwargs:
+            attrib_copy['class'] = kwargs.pop('cls')
+
+        attrib_copy.update(attrib)
+        attrib_copy.update(kwargs)
+
+        element = ET.Element(tag_name, attrib_copy)
         element.text = cgi.escape(value) if not no_escape else value
         self.current().append(element)
         return element
@@ -71,7 +78,7 @@ class htmltree(object):
         return self
 
 
-    def h2(self, value='', attrib={ }):
+    def h2(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 2 header also with "on the side" href with icon
           to this href
@@ -86,115 +93,115 @@ class htmltree(object):
                 self.span(' ', { 'class': 'glyphicon glyphicon-link', 'aria-hidden': 'true' })
 
         # attrib.update(self.generate_id(value))
-        self.tag('h2', value, attrib)
+        self.tag('h2', value, attrib, **kwargs)
 
-    def h3(self, value='', attrib={ }):
+    def h3(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 3 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('h3', value, attrib)
+        return self.tag('h3', value, attrib, **kwargs)
 
-    def h4(self, value='', attrib={ }):
+    def h4(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 4 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('h4', value, attrib)
+        return self.tag('h4', value, attrib, **kwargs)
 
-    def h5(self, value='', attrib={ }):
+    def h5(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 5 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('h5', value, attrib)
+        return self.tag('h5', value, attrib, **kwargs)
 
-    def h6(self, value='', attrib={ }):
+    def h6(self, value='', attrib={ }, **kwargs):
         """
         Method creates level 6 header
         :param value: header title
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('h6', value, attrib)
+        return self.tag('h6', value, attrib, **kwargs)
 
-    def ul(self, value='', attrib={ }):
+    def ul(self, value='', attrib={ }, **kwargs):
         """
         Method creates ul element
         :param value: ul optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('ul', value, attrib)
+        return self.tag('ul', value, attrib, **kwargs)
 
-    def ol(self, value='', attrib={ }):
+    def ol(self, value='', attrib={ }, **kwargs):
         """
         Method creates ol element
         :param value: ol optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('ol', value, attrib)
+        return self.tag('ol', value, attrib, **kwargs)
 
-    def span(self, value='', attrib={ }):
+    def span(self, value='', attrib={ }, **kwargs):
         """
         Method creates span element
         :param value: span optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('span', value, attrib)
+        return self.tag('span', value, attrib, **kwargs)
 
-    def info(self, value='', attrib={"class": 'leading-text'}):
+    def info(self, value='', attrib={"class": 'leading-text'}, **kwargs):
         """
         Method creates info element
         :param value: span optional text
         :param attrib: optional attribute, default has class of 'leading-text'
         :return: element
         """
-        return self.tag('span', value, attrib)
+        return self.tag('span', value, attrib, **kwargs)
 
-    def div(self, value='', attrib={ }):
+    def div(self, value='', attrib={ }, **kwargs):
         """
         Method creates div element
         :param value: div optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('div', value, attrib)
+        return self.tag('div', value, attrib, **kwargs)
 
-    def bold(self, value='', attrib={ }):
+    def bold(self, value='', attrib={ }, **kwargs):
         """
         Method creates bold element
         :param value: bold optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('strong', value, attrib)
+        return self.tag('strong', value, attrib, **kwargs)
 
-    def italic(self, value='', attrib={ }):
+    def italic(self, value='', attrib={ }, **kwargs):
         """
         Method creates em element
         :param value: em optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('em', value, attrib)
+        return self.tag('em', value, attrib, **kwargs)
 
-    def li(self, value='', attrib={ }):
+    def li(self, value='', attrib={ }, **kwargs):
         """
         Method creates li element
         :param value: li optional text
         :param attrib: optional attribute
         :return: element
         """
-        return self.tag('li', value, attrib)
+        return self.tag('li', value, attrib, **kwargs)
 
     def link(self, target, text='', ns=''):
         """
@@ -203,9 +210,9 @@ class htmltree(object):
         :param text: link title
         :param ns: namespace for link
         """
-        return self.tag('a', text if text else target, self.generate_href(target, ns))
+        return self.tag('a', text if text else target, attrib=self.generate_href(target, ns))
 
-    def open(self, tag_name, value='', attrib={ }):
+    def open(self, tag_name, value='', attrib={ }, **kwargs):
         """
         Method opens current element, shifts current top.
           When adding new elements, current top is this newly created
@@ -214,7 +221,7 @@ class htmltree(object):
         :param attrib: optional attribs
         :return: self
         """
-        element = self.tag(tag_name, value, attrib)
+        element = self.tag(tag_name, value, attrib, **kwargs)
         self.roots.append(element)
         return self
 
@@ -226,7 +233,7 @@ class htmltree(object):
         :return:
         """
         if not value:
-            return self.tag('div', 'no description provided', { 'class': 'description no-description' })
+            return self.tag('div', 'no description provided', cls='description no-description')
 
         value = self.m2h.parse(value, reduce_to_tree=True)
         value.attrib['class'] = 'description'
@@ -270,7 +277,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('link', '', { 'rel': 'stylesheet', 'type': 'text/css', 'media': 'screen', 'href': location })
+        self.tag('link', '', rel='stylesheet', type='text/css', media='screen', href=location )
 
     def script(self, location):
         """
@@ -278,7 +285,7 @@ class htmltree(object):
         :param location: css file location relative to server
         :return: element
         """
-        self.tag('script', '', { 'type': 'text/javascript', 'src': location })
+        self.tag('script', '', attrib={}, type='text/javascript', src=location)
 
     def id(self, id):
         """

@@ -420,14 +420,14 @@ class HTMLFormatter(object):
 
         sorted_items = sorted(items, cmp=HTMLFormatter.__cmp)
 
-        html.bold('Records: ')
-        HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=True)
+        html.bold('Records ')
+        HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False)
 
-        html.bold('Abstract record: ')
-        HTMLFormatter._add_items(sorted_items, html, 'AbstractRecord', reverse=True)
+        html.bold('Abstract record ')
+        HTMLFormatter._add_items(sorted_items, html, 'AbstractRecord', reverse=False)
 
-        html.bold('Selections: ')
-        HTMLFormatter._add_items(sorted_items, html, 'Selection', reverse=True)
+        html.bold('Selections ')
+        HTMLFormatter._add_items(sorted_items, html, 'Selection', reverse=False)
 
         return html
 
@@ -442,7 +442,7 @@ class HTMLFormatter(object):
         html = htmltree('div')
 
         # sorted_items = sorted(items, cmp=HTMLFormatter.__cmp)
-
+        html.bold('All items ')
         HTMLFormatter._add_items(items, html)
 
         return html
@@ -450,6 +450,7 @@ class HTMLFormatter(object):
 
     @staticmethod
     def _add_items(items, html, type=None, reverse=False):
+        prev_name = ''
         with html.open('ul', attrib={ 'class': 'nav-bar' }):
             for item in items:
                 if issubclass(item.__class__, ComplexNode):
@@ -460,7 +461,12 @@ class HTMLFormatter(object):
                     if type and not item.input_type == type:
                         continue
 
-                    with html.open('li'):
+                    if prev_name == item.get_name():
+                        continue
+
+                    prev_name = item.get_name()
+
+                    with html.open('li', attrib={'data-name': item.get_name()}):
                         with html.open('a', '', html.generate_href(item.get_name())):
                             if reverse:
                                 html.span(item.get_name())
