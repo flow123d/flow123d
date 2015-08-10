@@ -71,6 +71,10 @@ public:
      */
 	virtual int level() const =0;
 
+    /**
+     * Check if current head node is a JSON / YAML Object containing one key REF of type string.
+     * If yes, returns the string through reference @p ref_address.
+     */
 	virtual bool get_ref_from_head(string & ref_address) =0;
 
     /**
@@ -89,15 +93,34 @@ public:
      */
     void output(ostream &stream) const;
 
+    /// Check if type of head node is null
     virtual bool is_null_type() const =0;
+
+    /// Get boolean value of head node or throw exception
     virtual bool get_bool_value() const =0;
+
+    /// Get integer value of head node or throw exception
     virtual std::int64_t get_int_value() const =0;
+
+    /// Get double value of head node or throw exception
     virtual double get_double_value() const =0;
+
+    /// Get string value of head node or throw exception
     virtual std::string get_string_value() const =0;
+
+    /// Get short string description of head type, method is used for printout of messages
     virtual std::string get_node_type() const =0;
+
+    /// Get set of keys of head type record, if head type is not record return false
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
+
+    /// Get size of array (sequence type), if object is not array return -1
     virtual int get_array_size() const =0;
+
+    /// Check if type of head node is map (record)
     virtual bool is_map_type() const =0;
+
+    /// Check if type of head node is sequence (array)
     virtual bool is_sequence_type() const =0;
 
     /**
@@ -161,18 +184,18 @@ public:
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
      */
-    virtual bool down(unsigned int index);
-    virtual bool down(const string& key);
+    virtual bool down(unsigned int index) override;
+    virtual bool down(const string& key) override;
 
     /**
      * Return one level up in the hierarchy.
      */
-    virtual void up();
+    virtual void up() override;
 
     /**
      * Move to root node.
      */
-    virtual void go_to_root();
+    virtual void go_to_root() override;
 
     /**
      * Returns level of actual path. Root has level == 0.
@@ -184,20 +207,20 @@ public:
      * Check if current head node is a JSON Object containing one key REF of type string.
      * If yes, returns the string through reference @p ref_address.
      */
-    bool get_ref_from_head(string & ref_address);
+    bool get_ref_from_head(string & ref_address) override;
 
     // These methods are derived from PathBase
-    virtual bool is_null_type() const;
-    virtual bool get_bool_value() const;
-    virtual std::int64_t get_int_value() const;
-    virtual double get_double_value() const;
-    virtual std::string get_string_value() const;
-    virtual std::string get_node_type() const;
-    virtual bool get_record_key_set(std::set<std::string> &) const;
-    virtual int get_array_size() const;
-    virtual bool is_map_type() const;
-    virtual bool is_sequence_type() const;
-    virtual PathJSON * clone() const;
+    virtual bool is_null_type() const override;
+    virtual bool get_bool_value() const override;
+    virtual std::int64_t get_int_value() const override;
+    virtual double get_double_value() const override;
+    virtual std::string get_string_value() const override;
+    virtual std::string get_node_type() const override;
+    virtual bool get_record_key_set(std::set<std::string> &) const override;
+    virtual int get_array_size() const override;
+    virtual bool is_map_type() const override;
+    virtual bool is_sequence_type() const override;
+    virtual PathJSON * clone() const override;
 
 protected:
 
@@ -245,37 +268,37 @@ public:
     /**
      * Dive into yaml-cpp hierarchy. Store current path and returns true if pointer to new yaml node is not NULL.
      */
-    virtual bool down(unsigned int index);
-    virtual bool down(const string& key);
+    virtual bool down(unsigned int index) override;
+    virtual bool down(const string& key) override;
 
     /**
      * Return one level up in the hierarchy.
      */
-    virtual void up();
+    virtual void up() override;
 
     /**
      * Move to root node.
      */
-    virtual void go_to_root();
+    virtual void go_to_root() override;
 
     // These methods are derived from PathBase
-    virtual bool is_null_type() const;
-    virtual bool get_bool_value() const;
-    virtual std::int64_t get_int_value() const;
-    virtual double get_double_value() const;
-    virtual std::string get_string_value() const;
-    virtual std::string get_node_type() const;
-    virtual bool get_record_key_set(std::set<std::string> &) const;
-    virtual int get_array_size() const;
-    virtual bool is_map_type() const;
-    virtual bool is_sequence_type() const;
-    virtual PathYAML * clone() const;
+    virtual bool is_null_type() const override;
+    virtual bool get_bool_value() const override;
+    virtual std::int64_t get_int_value() const override;
+    virtual double get_double_value() const override;
+    virtual std::string get_string_value() const override;
+    virtual std::string get_node_type() const override;
+    virtual bool get_record_key_set(std::set<std::string> &) const override;
+    virtual int get_array_size() const override;
+    virtual bool is_map_type() const override;
+    virtual bool is_sequence_type() const override;
+    virtual PathYAML * clone() const override;
 
     /**
      * Check if current head node is a YAML Object containing one key REF of type string.
      * If yes, returns the string through reference @p ref_address.
      */
-    bool get_ref_from_head(string & ref_address);
+    bool get_ref_from_head(string & ref_address) override;
 
 protected:
     /**
