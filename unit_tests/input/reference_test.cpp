@@ -96,7 +96,7 @@ TEST(JSONReference, cyclic_reference_rec_test) {
 
     EXPECT_THROW_WHAT(
     		{JSONToStorage json_reader( cyclic_record_json, get_type_record(), FileFormat::format_JSON);},
-			PathJSON::ExcReferenceNotFound,
+			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }
 
@@ -105,6 +105,6 @@ TEST(JSONReference, cyclic_reference_arr_test) {
 
     EXPECT_THROW_WHAT(
     		{JSONToStorage json_reader( cyclic_array_json, get_type_record(), FileFormat::format_JSON);},
-			PathJSON::ExcReferenceNotFound,
+			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }

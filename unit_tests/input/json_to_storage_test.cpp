@@ -67,12 +67,12 @@ TEST(PathJSON, errors) {
     PathJSON path(in_str);
     path.down(8);
 
-    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);} ,PathJSON::ExcRefOfWrongType,"has wrong type, should by string." );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, PathJSON::ExcReferenceNotFound, "there should be Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, PathJSON::ExcReferenceNotFound, "index out of size of Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, PathJSON::ExcReferenceNotFound, "can not go up from root" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, PathJSON::ExcReferenceNotFound, "there should be Record" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, PathJSON::ExcReferenceNotFound, "key 'key' not found" );
+    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, PathBase::ExcReferenceNotFound, "there should be Array" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, PathBase::ExcReferenceNotFound, "can not go up from root" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, PathBase::ExcReferenceNotFound, "there should be Record" );
+    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
 }
 
 
@@ -81,33 +81,41 @@ TEST(PathYAML, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
-    PathYAML path(in_str);
+    PathBase * path = new PathYAML(in_str);
 
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/",os.str());
     }
 
-    path.down(6);
+    path->down(6);
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6",os.str());
     }
 
-    path.down("a");
+    path->down("a");
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6/a",os.str());
     }
 
-    path.up();
+    path->up();
     { ostringstream os;
-    os << path;
+    path->output(os);
     EXPECT_EQ("/6",os.str());
     }
 
-    path.down("b");
-    //TODO: test of references
+    path->down("b");
+    string ref;
+    path->get_ref_from_head(ref);
+    EXPECT_EQ("../../7/b/c",ref);
+    EXPECT_EQ(1, path->find_ref_node(ref)->get_int_value() );
+
+    path=path->find_ref_node("/8");
+    path->get_ref_from_head(ref);
+    EXPECT_EQ("/4", ref);
+    EXPECT_EQ("ctyri",path->find_ref_node(ref)->get_string_value() );
 }
 
 

@@ -50,13 +50,34 @@ class PathBase {
 public:
 
     /**
+     * Thrown if a reference in the input file
+     */
+    TYPEDEF_ERR_INFO(EI_ErrorAddress, const PathBase*);
+    TYPEDEF_ERR_INFO(EI_RefAddress, const PathBase*);
+    TYPEDEF_ERR_INFO(EI_JsonFile, const string);
+    TYPEDEF_ERR_INFO(EI_RefStr, const string);
+    TYPEDEF_ERR_INFO(EI_Specification, const string);
+    DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
+            << "Reference at address "
+            << EI_ErrorAddress::qval << " has wrong type, should by string.");
+    DECLARE_INPUT_EXCEPTION(ExcReferenceNotFound,
+            << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
+            << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
+
+
+
+    /**
      * Returns level of actual path. Root has level == 0.
      */
 	virtual int level() const =0;
 
 	virtual bool get_ref_from_head(string & ref_address) =0;
 
-	virtual PathBase * find_ref_node(const string& ref_address) =0;
+    /**
+     * Creates a new path object given by address string possibly relative to the current
+     * path.
+     */
+	PathBase * find_ref_node(const string& ref_address);
 
 	/**
 	 * Create copy of derived class.
@@ -77,6 +98,7 @@ public:
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
     virtual int get_array_size() const =0;
     virtual bool is_map_type() const =0;
+    virtual bool is_sequence_type() const =0;
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
@@ -95,12 +117,19 @@ public:
     virtual void go_to_root() =0;
 
     /**
+     * Put actual address to previous_references_ set
+     */
+    void put_address();
+
+    /**
      * Returns string address of current position.
      */
     string str();
 
 protected:
     PathBase();
+
+    std::set<string> previous_references_;
 
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
@@ -125,24 +154,6 @@ protected:
  */
 class PathJSON : public PathBase {
 public:
-    /**
-     * Thrown if a reference in the input file
-     */
-
-    TYPEDEF_ERR_INFO(EI_ErrorAddress, PathJSON);
-    TYPEDEF_ERR_INFO(EI_RefAddress, PathJSON);
-    TYPEDEF_ERR_INFO(EI_JsonFile, const string);
-    TYPEDEF_ERR_INFO(EI_RefStr, const string);
-    TYPEDEF_ERR_INFO(EI_Specification, const string);
-    DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
-            << "Reference at address "
-            << EI_ErrorAddress::qval << " has wrong type, should by string.");
-    DECLARE_INPUT_EXCEPTION(ExcReferenceNotFound,
-            << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
-            << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
-
-
-
     typedef json_spirit::mValue Node;
 
     PathJSON(istream &in);
@@ -175,17 +186,6 @@ public:
      */
     bool get_ref_from_head(string & ref_address);
 
-    /**
-     * Creates a new PathJSON object given by  address string possibly relative to the current
-     * path.
-     */
-    virtual PathBase * find_ref_node(const string& ref_address);
-
-    /**
-     * Put actual address to previous_references_ set
-     */
-    void put_address();
-
     // These methods are derived from PathBase
     virtual bool is_null_type() const;
     virtual bool get_bool_value() const;
@@ -196,6 +196,7 @@ public:
     virtual bool get_record_key_set(std::set<std::string> &) const;
     virtual int get_array_size() const;
     virtual bool is_map_type() const;
+    virtual bool is_sequence_type() const;
     virtual PathJSON * clone() const;
 
 protected:
@@ -213,7 +214,6 @@ protected:
     { return nodes_.back(); }
 
     vector<const Node *> nodes_;
-    std::set<string> previous_references_;
 
     /**
      * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
@@ -268,6 +268,7 @@ public:
     virtual bool get_record_key_set(std::set<std::string> &) const;
     virtual int get_array_size() const;
     virtual bool is_map_type() const;
+    virtual bool is_sequence_type() const;
     virtual PathYAML * clone() const;
 
     /**
@@ -275,12 +276,6 @@ public:
      * If yes, returns the string through reference @p ref_address.
      */
     bool get_ref_from_head(string & ref_address);
-
-    /**
-     * Creates a new PathYAML object given by  address string possibly relative to the current
-     * path.
-     */
-    virtual PathBase * find_ref_node(const string& ref_address);
 
 protected:
     /**
