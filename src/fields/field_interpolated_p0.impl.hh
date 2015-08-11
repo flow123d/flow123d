@@ -41,7 +41,7 @@
 
 namespace it = Input::Type;
 
-//FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
+FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
 
 
 
@@ -49,7 +49,7 @@ template <int spacedim, class Value>
 const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
-        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_abstract_input_type())
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),

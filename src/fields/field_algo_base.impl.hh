@@ -31,6 +31,7 @@ namespace it = Input::Type;
 
 
 
+
 /*FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
@@ -61,50 +62,28 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
-Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_abstract_input_type() {
-	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
+	/*return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
-			.close();
-}
-
-
-template <int spacedim, class Value>
-const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
-	std::vector<it::TypeBase::ParameterPair> param_vec;
-	if (element_input_type == nullptr) {
-		param_vec.push_back( std::make_pair("value", boost::make_shared<typename Value::ElementInputType>()) );
-	}
-	else {
-		param_vec.push_back( std::make_pair("value", boost::make_shared<typename Value::ElementInputType>(*element_input_type)) );
-	}
-
-	return it::Instance( FieldAlgorithmBase<spacedim, Value>::get_abstract_input_type(), param_vec )
-			.close();
-
-	/*const it::Selection *element_input_sel = nullptr;
-	if (element_input_type != nullptr) {
-		const it::Selection * sel_type = dynamic_cast<const it::Selection *>(element_input_type);
-		if (sel_type != NULL ) element_input_sel = sel_type;
-	}
+			.close();*/
 
 	it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
     	.allow_auto_conversion("FieldConstant")
-		.set_element_input(element_input_sel)
 		.close();
 
 	if ( !type.is_finished() ) {
-		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type(type, element_input_type)) );
-		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type()) );
+		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type()) );
 #ifdef FLOW123D_HAVE_PYTHON
-		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type()) );
 #endif
-		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type)) );
-		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type()) );
+		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type()) );
 
 		type.finish();
     }
 
-    return type.close();*/
+    return type.close();
 }
 
 

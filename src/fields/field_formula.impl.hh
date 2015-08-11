@@ -18,15 +18,15 @@
 
 namespace it = Input::Type;
 
-//FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
+FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 
 
 template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
-            .derive_from(FieldAlgorithmBase<spacedim, Value>::get_abstract_input_type())
-            .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
+            .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+            .declare_key("value", StringValue::get_input_type(), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"

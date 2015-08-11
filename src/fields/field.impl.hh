@@ -102,7 +102,10 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 	if (is_enum_valued) {
 		return make_input_tree();
 	} else {
-		return FieldBaseType::get_input_type();
+		std::vector<it::TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("element_input_type", boost::shared_ptr<it::TypeBase>(nullptr)) );
+		cout << "Field::get_input_type() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
+		return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
 	}
 }
 
@@ -118,33 +121,19 @@ it::Record &Field<spacedim,Value>::get_multifield_input_type() {
 
 
 
-/// ---------- Helper function template for make_input_tree method
-template <class FieldBaseType>
-const IT::Instance & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::true_type&)
-{
-    ASSERT( sel != nullptr,
-    		"NULL pointer to selection in Field::get_input_type(), while Value==FieldEnum.\n");
-    return FieldBaseType::get_input_type(sel);
-}
-
-
-template <class FieldBaseType>
-const IT::Instance & get_input_type_resolution(const Input::Type::Selection *sel,  const boost::false_type&)
-{
-    return FieldBaseType::get_input_type(nullptr);
-}
-/// ---------- end helper function template
-
-
-
-
 template<int spacedim, class Value>
 const it::Instance & Field<spacedim,Value>::make_input_tree() {
 	ASSERT(is_enum_valued,
 			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
-    return get_input_type_resolution<FieldBaseType>(
-            shared_->input_element_selection_ ,
-            boost::is_same<typename Value::element_type, FieldEnum>());
+
+	std::vector<it::TypeBase::ParameterPair> param_vec;
+	if ( boost::is_same<typename Value::element_type, FieldEnum>::value ) {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*shared_->input_element_selection_)) );
+	} else {
+		param_vec.push_back( std::make_pair("element_input_type", boost::shared_ptr<it::TypeBase>(nullptr)) );
+	}
+	cout << "Field::make_input_tree() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
+    return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
 }
 
 
