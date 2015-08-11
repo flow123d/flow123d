@@ -85,6 +85,7 @@
     builders:
       - shell: |
           cd flow123d
+          make html-doc || echo "No such step in makefile"
           make ref-doc
           make doxy-doc
 #    publishers:
