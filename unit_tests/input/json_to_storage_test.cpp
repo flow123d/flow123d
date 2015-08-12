@@ -107,15 +107,11 @@ TEST(PathYAML, all) {
     }
 
     path->down("b");
-    string ref;
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("../../7/b/c",ref);
-    EXPECT_EQ(1, path->find_ref_node(ref)->get_int_value() );
+    { ostringstream os;
+    path->output(os);
+    EXPECT_EQ("/6/b",os.str());
+    }
 
-    path=path->find_ref_node("/8");
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path->find_ref_node(ref)->get_string_value() );
 }
 
 
@@ -164,6 +160,9 @@ TEST(PathYAML, values) {
 	EXPECT_TRUE( set.find("a")!=set.end() );
 	EXPECT_TRUE( set.find("b")!=set.end() );
 	EXPECT_FALSE( set.find("c")!=set.end() );
+
+	path.down("b"); // reference
+	EXPECT_STREQ("ctyri", path.get_string_value().c_str());
 }
 
 

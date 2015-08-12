@@ -526,24 +526,7 @@ PathYAML * PathYAML::clone() const {
 
 bool PathYAML::get_ref_from_head(string & ref_address)
 {
-    if (!head()->IsMap()) return false;
-    if (head()->size() != 1) return false;
-    YAML::const_iterator it=head()->begin();
-    std::string str_val;
-	try {
-		str_val = it->first.as<std::string>();
-	} catch (YAML::Exception) {
-        return false;
-	}
-    if (str_val != "REF") return false;
-
-	try {
-		str_val = it->second.as<std::string>();
-		ref_address = str_val;
-	} catch (YAML::Exception) {
-		THROW( ExcRefOfWrongType() << EI_ErrorAddress(this) );
-	}
-    return true;
+	return false;
 }
 
 
