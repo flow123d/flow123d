@@ -34,6 +34,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"
 #include "fields/unit_si.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -89,9 +90,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 UnitSI ConcentrationTransportModel::balance_units()
 {
-	return data().cross_section.units()*UnitSI().md(1)
-	        *data().porosity.units()
-	        *data().output_field.units();
+	return UnitSI().kg();
 }
 
 
