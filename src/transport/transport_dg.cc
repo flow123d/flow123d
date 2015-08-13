@@ -71,7 +71,7 @@ const Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
                        //"or the piezometric head through the 'bc_piezo_head' field."
                       )
                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($sigma (h - h^R)$)). "
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\\\sigma (h - h^R)$)). "
                        //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        //"through 'bc_pressure' and 'bc_piezo_head' respectively."
                        )

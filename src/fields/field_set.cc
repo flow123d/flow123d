@@ -54,7 +54,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
 
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
-            string description =  field->description() + " $[" + field->units().format_latex() + "]$";
+            string description =  field->description() + " (($[" + field->units().format_latex() + "]$))";
 
             // Adding units is not so simple.
             // 1) It must be correct for Latex.
