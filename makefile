@@ -169,11 +169,6 @@ checkout-submodule-branches:
 #	$(BUILD_DIR)/bin/flow123d --version | grep "This is Flow123d" | head -n1 | cut -d" " -f4-5 \
 #	  > $(DOC_DIR)/flow_version.tex
 
-# call flow123d and make raw input_reference file
-$(DOC_DIR)/input_reference_raw.tex: update-build-tree build-flow123d
-	echo 'file is now generated using python ist_script'
-
-
 # make empty file with replace rules if we do not have one
 $(DOC_DIR)/add_to_ref_doc.txt: 
 	touch $(DOC_DIR)/add_to_ref_doc.txt
