@@ -2,6 +2,8 @@
 
 #include "yaml-cpp/yaml.h"
 
+using namespace std;
+
 TEST(YamlCpp, parser) {
     YAML::Node config = YAML::LoadFile("test_input.yaml");
     EXPECT_TRUE(config["test_key"]);
@@ -16,5 +18,17 @@ TEST(YamlCpp, parser) {
     EXPECT_TRUE(config["tag_key"].IsScalar());
     EXPECT_EQ("!my_int", config["tag_key"].Tag());
     EXPECT_EQ(13, config["tag_key"].as<int>());
+
+    EXPECT_EQ(2, config["map_2"].size());
+    EXPECT_EQ(0, config["map_2"]["a"].as<int>());
+    EXPECT_EQ(1, config["map_2"]["b"].as<int>());
+    EXPECT_EQ(3, config["map_3"].size());
+    EXPECT_EQ(2, config["map_3"]["a"].as<int>());
+
+    // YamlCpp do not have support for merge '<<:' key yet.
+    // There is an pull-request from 2015, Apr 4 and there are some patches
+    // with temporary solution. Until it is complete we can live without this functionality.
+    EXPECT_EQ(1, config["map_3"]["b"].as<int>());
+    EXPECT_EQ(3, config["map_3"]["c"].as<int>());
 }
 
