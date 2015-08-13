@@ -3,6 +3,11 @@
 ## HTMLDOC_INSTALL_URL - from where to download file (zip/tarball)
 ## HTMLDOC_INSTALL_DIR - directory where helper files will be stored such as CMakeLists.cmake file makefile
 ## HTMLDOC_SOURCE_DIR - direcotry which will contain unpacked files from server
+
+set(HTMLDOC_INSTALL_URL \"http://hybs.nti.tul.cz/test/ist.zip\")
+set(HTMLDOC_INSTALL_DIR "${CMAKE_BINARY_DIR}/htmldoc")
+set(HTMLDOC_SOURCE_DIR  "${CMAKE_BINARY_DIR}/htmldoc/html")
+
 set (cmakelists_fname "${HTMLDOC_INSTALL_DIR}/CMakeLists.txt")
 message(STATUS "Creating temp CMakeLists file")
 file (WRITE "${cmakelists_fname}"
