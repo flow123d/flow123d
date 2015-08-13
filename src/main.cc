@@ -235,9 +235,14 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         // write ist to json file
         string json_filename = vm["JSON_machine"].as<string>();
         ofstream json_stream(json_filename);
-        Input::Type::TypeBase::lazy_finish();
-        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
-        json_stream.close();
+        // check open operation
+        if (json_stream.fail()) {
+    		cerr << "Failed to open file '" << json_filename << "'" << endl;
+        } else {
+	        Input::Type::TypeBase::lazy_finish();
+	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream.close();
+        }
         exit( exit_output );
     }
 
