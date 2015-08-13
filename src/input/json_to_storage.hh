@@ -149,6 +149,13 @@ public:
      */
     string str();
 
+    /**
+     * Check if index of Abstract descendant can be loaded from TYPE key (return true)
+     * or return false if automatic conversion can be performed. In other cases throw
+     * input exception.
+     */
+    virtual bool has_descendent_index(bool value_at_declaration) =0;
+
 protected:
     PathBase();
 
@@ -221,6 +228,7 @@ public:
     virtual bool is_map_type() const override;
     virtual bool is_sequence_type() const override;
     virtual PathJSON * clone() const override;
+    virtual bool has_descendent_index(bool value_at_declaration) override;
 
 protected:
 
@@ -293,6 +301,7 @@ public:
     virtual bool is_map_type() const override;
     virtual bool is_sequence_type() const override;
     virtual PathYAML * clone() const override;
+    virtual bool has_descendent_index(bool value_at_declaration) override;
 
     /**
      * Check if current head node is a YAML Object containing one key REF of type string.

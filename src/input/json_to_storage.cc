@@ -343,6 +343,33 @@ PathJSON * PathJSON::clone() const {
 
 
 
+bool PathJSON::has_descendent_index(bool value_at_declaration) {
+	if ( this->is_map_type() ) {
+
+		PathBase *type_path = this->clone();
+		if ( !type_path->down("TYPE") ) {
+            if ( !value_at_declaration ) {
+                THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("Missing key 'TYPE' in AbstractRecord.") << JSONToStorage::EI_ErrorAddress(this) );
+            } else { // auto conversion
+            	return false;
+            }
+		} else {
+			return true;
+		}
+	} else {
+        if ( !value_at_declaration ) {
+            THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON object', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(this) << JSONToStorage::EI_JSON_Type( this->get_node_type() ) );
+        } else { // auto conversion
+        	return false;
+        }
+	}
+
+	return false;
+}
+
+
+
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path) {
     path.output(stream);
     return stream;
@@ -528,6 +555,33 @@ bool PathYAML::get_ref_from_head(string & ref_address)
 {
 	return false;
 }
+
+
+bool PathYAML::has_descendent_index(bool value_at_declaration) {
+	const Node & head_node = *( nodes_.back() );
+	if (head_node.Tag() == "!type") {
+
+		if (head_node["TYPE"]) {
+			return true;
+		} else {
+            if ( !value_at_declaration ) {
+                THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("Missing key 'TYPE' in AbstractRecord.") << JSONToStorage::EI_ErrorAddress(this) );
+            } else { // auto conversion
+            	return false;
+            }
+		}
+	} else {
+        if ( !value_at_declaration ) {
+            THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON object', but we found: ")
+                << JSONToStorage::EI_ErrorAddress(this) << JSONToStorage::EI_JSON_Type( this->get_node_type() ) );
+        } else { // auto conversion
+        	return false;
+        }
+	}
+
+	return false;
+}
+
 
 
 std::ostream& operator<<(std::ostream& stream, const PathYAML& path) {
@@ -769,7 +823,32 @@ StorageBase * JSONToStorage::record_automatic_conversion(PathBase *p, const Type
 
 StorageBase * JSONToStorage::make_storage(PathBase *p, const Type::AbstractRecord *abstr_rec)
 {
-    if ( p->is_map_type() ) {
+	bool has_desc_index;
+	try {
+		has_desc_index = p->has_descendent_index( abstr_rec->get_selection_default().has_value_at_declaration() );
+	} catch(ExcInputError &e) {
+		e << EI_InputType(abstr_rec->desc());
+		throw;
+	}
+
+	if ( !has_desc_index ) {
+		return abstract_rec_automatic_conversion(p, abstr_rec);
+	}
+
+	unsigned int descendant_index;
+	PathBase *type_path = p->clone();
+	type_path->down("TYPE");
+    try {
+        // convert to base type to force type dispatch and reference chatching
+        const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
+        descendant_index = (unsigned int)make_storage(type_path, type_of_type )->get_int();
+    } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
+
+        THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
+    }
+    return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
+
+	/*if ( p->is_map_type() ) {
 
     	PathBase *type_path = p->clone();
         if ( !type_path->down("TYPE") ) {
@@ -798,7 +877,7 @@ StorageBase * JSONToStorage::make_storage(PathBase *p, const Type::AbstractRecor
         }
     }
 
-    return NULL;
+    return NULL;*/
 }
 
 

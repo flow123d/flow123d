@@ -10,7 +10,9 @@
   - 3
   - 4
   - 5
-- a: 1
+- !type
+  TYPE: problem
+  a: 1
   b: *id002
 - b:
     c: 1
