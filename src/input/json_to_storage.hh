@@ -156,6 +156,15 @@ public:
      */
     virtual bool has_descendent_index(bool value_at_declaration) =0;
 
+    /// Returns name of input format (e. g. "JSON")
+    virtual std::string input_format_name() const =0;
+
+    /// Returns name of sequence type (e. g. "JSON array")
+    virtual std::string sequence_name() const =0;
+
+    /// Returns name of map type (e. g. "JSON object")
+    virtual std::string map_name() const =0;
+
 protected:
     PathBase();
 
@@ -229,6 +238,18 @@ public:
     virtual bool is_sequence_type() const override;
     virtual PathJSON * clone() const override;
     virtual bool has_descendent_index(bool value_at_declaration) override;
+
+    virtual inline std::string input_format_name() const override {
+    	return "JSON";
+    }
+
+    virtual inline std::string sequence_name() const override {
+    	return "JSON array";
+    }
+
+    virtual inline std::string map_name() const override {
+    	return "JSON object";
+    }
 
 protected:
 
@@ -309,6 +330,18 @@ public:
      */
     bool get_ref_from_head(string & ref_address) override;
 
+    virtual inline std::string input_format_name() const override {
+    	return "YAML";
+    }
+
+    virtual inline std::string sequence_name() const override {
+    	return "YAML sequence";
+    }
+
+    virtual inline std::string map_name() const override {
+    	return "YAML map";
+    }
+
 protected:
     /**
      * Pointer to YAML Value object at current path.
@@ -354,12 +387,13 @@ public:
     TYPEDEF_ERR_INFO(EI_InputType, string );
     TYPEDEF_ERR_INFO(EI_File, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);
+    TYPEDEF_ERR_INFO(EI_Format, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
     TYPEDEF_ERR_INFO( EI_ErrorAddress, const PathBase*);
     TYPEDEF_ERR_INFO( EI_ErrorConstAddress, PathBase*);
     DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: '" << EI_ErrorAddress::val << EI_ErrorConstAddress::val << "'\n"
                                             << EI_Specification::val << "\n"
-                                            << "JSON type: " << EI_JSON_Type::qval << "\n"
+                                            << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
 
 

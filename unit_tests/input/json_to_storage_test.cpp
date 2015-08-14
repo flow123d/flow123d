@@ -123,29 +123,29 @@ TEST(PathYAML, values) {
 
 	path.down(0); // bool value
 	EXPECT_FALSE(path.get_bool_value());
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'JSON int'" );
-	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'JSON double'" );
+	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
+	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'YAML double'" );
 	EXPECT_STREQ("false", path.get_string_value().c_str());
 	path.up();
 
 	path.down(1); // int value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'JSON bool'" );
+	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
 	EXPECT_EQ(1, path.get_int_value());
 	EXPECT_FLOAT_EQ(1.0, path.get_double_value());
 	EXPECT_STREQ("1", path.get_string_value().c_str());
 	path.up();
 
 	path.down(3); // double value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'JSON bool'" );
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'JSON int'" );
+	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
+	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
 	EXPECT_FLOAT_EQ(3.3, path.get_double_value());
 	EXPECT_STREQ("3.3", path.get_string_value().c_str());
 	path.up();
 
 	path.down(4); // string value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'JSON bool'" );
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'JSON int'" );
-	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'JSON double'" );
+	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
+	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
+	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'YAML double'" );
 	EXPECT_STREQ("ctyri", path.get_string_value().c_str());
 	path.up();
 
