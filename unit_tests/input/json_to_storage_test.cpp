@@ -175,10 +175,10 @@ protected:
     };
 
     // overload parent class method in order to reset pointers
-    void read_stream(istream &in, const Type::TypeBase &root_type) {
+    void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in, root_type, FileFormat::format_JSON);
+    	JSONToStorage::read_stream(in, root_type, format);
     }
 };
 
@@ -304,11 +304,19 @@ TEST_F(InputJSONToStorageTest, Bool) {
     }
 }
 
+
+const string input_yaml_array = R"YAML(
+- 3.2
+- 4
+- 4.01
+)YAML";
+
+
 TEST_F(InputJSONToStorageTest, Array) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Array darr_type( Type::Double(3.1,4.1), 2,4);
 
-    {
+    {  //JSON format
         stringstream ss("[ 3.2, 4, 4.01 ]");
         read_stream(ss, darr_type);
 
@@ -318,9 +326,24 @@ TEST_F(InputJSONToStorageTest, Array) {
         EXPECT_EQ(4, storage_->get_item(1)->get_double() );
     }
 
-    {
+    {  //YAML format
+        stringstream ss( input_yaml_array );
+        read_stream(ss, darr_type, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3, storage_->get_array_size());
+        EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
+        EXPECT_EQ(4, storage_->get_item(1)->get_double() );
+    }
+
+    {  //JSON format
         stringstream ss("[ 3.2 ]");
         EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit into size limits of the Array.");
+    }
+
+    {  //YAML format
+        stringstream ss("- 3.2");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit into size limits of the Array.");
     }
 
     {
@@ -367,7 +390,7 @@ TEST_F(InputJSONToStorageTest, Record) {
     	.declare_key("str_key", Type::String(), "")
 		.close();
 
-    {
+    { // JSON format
         stringstream ss("{ int_key=5 }");
         read_stream(ss, rec_type);
 
@@ -377,9 +400,24 @@ TEST_F(InputJSONToStorageTest, Record) {
         EXPECT_EQ(true, storage_->get_item(1)->is_null() );
     }
 
-    {
+    { // YAML format
+        stringstream ss("int_key: 5");
+        read_stream(ss, rec_type, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(2, storage_->get_array_size());
+        EXPECT_EQ(5, storage_->get_item(0)->get_int() );
+        EXPECT_EQ(true, storage_->get_item(1)->is_null() );
+    }
+
+    { // JSON format
         stringstream ss("{ str_key=\"ahoj\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Missing obligatory key 'int_key'.");
+    }
+
+    { // YAML format
+        stringstream ss("str_key: ahoj}");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type, FileFormat::format_YAML);} , ExcInputError, "Missing obligatory key 'int_key'.");
     }
 
     {
@@ -487,6 +525,16 @@ TEST_F(InputJSONToStorageTest, Record) {
 
 }
 
+
+const string input_yaml_abstract = R"YAML(
+!type
+TYPE: EqDarcy
+b_val: 10
+a_val: prime
+mesh: some.msh
+)YAML";
+
+
 TEST_F(InputJSONToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -550,6 +598,18 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
         EXPECT_EQ(4, storage_->get_item(3)->get_int() );
     }
 
+    {   //Try YAML correct type
+        stringstream ss(input_yaml_abstract);
+        read_stream(ss, a_rec, FileFormat::format_YAML);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(4, storage_->get_array_size());
+        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
+        EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
+        EXPECT_EQ(10, storage_->get_item(3)->get_int() );
+    }
+
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
         EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
@@ -587,15 +647,29 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
        ar.add_child(br);
        br.finish();
 
-       stringstream ss("20");
-       this->read_stream(ss, ar);
+       { // YAML format
+		   stringstream ss("20");
+		   this->read_stream(ss, ar, FileFormat::format_YAML);
 
-       EXPECT_NE((void *)NULL, storage_);
-       storage_->get_array_size();
-       EXPECT_EQ(3, storage_->get_array_size());
-       EXPECT_EQ(0, storage_->get_item(0)->get_int());
-       EXPECT_EQ(10, storage_->get_item(1)->get_int());
-       EXPECT_EQ(20, storage_->get_item(2)->get_int());
+		   EXPECT_NE((void *)NULL, storage_);
+		   storage_->get_array_size();
+		   EXPECT_EQ(3, storage_->get_array_size());
+		   EXPECT_EQ(0, storage_->get_item(0)->get_int());
+		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
+		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
+       }
+
+       { // JSON format
+		   stringstream ss("20");
+		   this->read_stream(ss, ar);
+
+		   EXPECT_NE((void *)NULL, storage_);
+		   storage_->get_array_size();
+		   EXPECT_EQ(3, storage_->get_array_size());
+		   EXPECT_EQ(0, storage_->get_item(0)->get_int());
+		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
+		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
+       }
     }
 
 
