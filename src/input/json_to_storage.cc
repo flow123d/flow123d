@@ -619,7 +619,7 @@ JSONToStorage::JSONToStorage(const FilePath &in_file, const Type::TypeBase &root
 
 	std::ifstream in(fname.c_str());
     if (! in) {
-        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
+    	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
     }
 	read_stream(in, root_type, format);
 }
@@ -715,7 +715,7 @@ StorageBase * JSONToStorage::make_storage(PathBase *p, const Type::TypeBase *typ
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        ASSERT(false, "Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
     }
 
     return new StorageNull();
@@ -1056,40 +1056,38 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
         // an auto-convertible AbstractRecord can be initialized form default value
     	const Type::AbstractRecord *a_record = dynamic_cast<const Type::AbstractRecord *>(type);
     	if (a_record != NULL ) {
-            if (a_record->get_selection_default().has_value_at_declaration() )
-                return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
-            else
-                xprintf(PrgErr,"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str());
+    		ASSERT( a_record->get_selection_default().has_value_at_declaration(),
+    				"Can not initialize (non-auto-convertible) AbstractRecord '%s' by default value\n", type->type_name().c_str() );
+            return make_storage_from_default( dflt_str, a_record->get_default_descendant() );
         } else
         if (typeid(*type) == typeid(Type::Record) ) {
             // an auto-convertible Record can be initialized form default value
             const Type::Record *record = static_cast<const Type::Record *>(type);
             Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
-            if ( auto_key_it != record->end() ) {
-                StorageArray *storage_array = new StorageArray(record->size());
-                for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-                    if ( it == auto_key_it ) {
-                        // one key is initialized by the record default string
-                        storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
-                    } else {
 
-                        ASSERT( ! it->default_.is_obligatory(),
-                                "Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
+            ASSERT( auto_key_it != record->end(), "Can not initialize (non-auto-convertible) Record '%s' by default value\n",
+            		type->type_name().c_str());
+			StorageArray *storage_array = new StorageArray(record->size());
+			for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+				if ( it == auto_key_it ) {
+					// one key is initialized by the record default string
+					storage_array->new_item(it->key_index, make_storage_from_default(dflt_str, it->type_.get()) );
+				} else {
 
-                        if (it->default_.has_value_at_declaration() ) {
-                           storage_array->new_item(it->key_index,
-                                   make_storage_from_default( it->default_.value(), it->type_.get() ) );
-                        } else { // defalut - optional or default at read time
-                            // set null
-                            storage_array->new_item(it->key_index, new StorageNull() );
-                        }
-                    }
-                }
+					ASSERT( ! it->default_.is_obligatory(),
+							"Missing default value for key: '%s' in auto-convertible record, wrong check during finish().", it->key_.c_str());
 
-                return storage_array;
-            } else {
-                xprintf(PrgErr,"Can not initialize (non-auto-convertible) Record '%s' by default value\n", type->type_name().c_str());
-            }
+					if (it->default_.has_value_at_declaration() ) {
+					   storage_array->new_item(it->key_index,
+							   make_storage_from_default( it->default_.value(), it->type_.get() ) );
+					} else { // defalut - optional or default at read time
+						// set null
+						storage_array->new_item(it->key_index, new StorageNull() );
+					}
+				}
+			}
+
+			return storage_array;
         } else
         if (typeid(*type) == typeid(Type::Array) ) {
             const Type::Array *array = static_cast<const Type::Array *>(type);
@@ -1100,7 +1098,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
                 storage_array->new_item(0, make_storage_from_default(dflt_str, &sub_type) );
                 return storage_array;
             } else {
-                xprintf(PrgErr,"Can not initialize Array '%s' by default value, size 1 not allowed.\n", type->type_name().c_str());
+            	THROW(ExcInputMessage() << EI_Message("Can not initialize Array '" + type->type_name() + "' by default value, size 1 not allowed.\n"));
             }
 
         } else
@@ -1120,7 +1118,7 @@ StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, c
             if (string_type != NULL ) return new StorageString( string_type->from_default(dflt_str) );
 
             // default error
-            xprintf(PrgErr,"Can not store default value for type: %s\n", typeid(type).name());
+            ASSERT(false, "Can not store default value for type: %s\n", typeid(type).name());
         }
 
 
