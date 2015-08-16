@@ -96,6 +96,7 @@ if(FLOW_CC_FLAGS)
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
+  set(CMAKE_BUILD_TYPE Debug)
   
 else(FLOW_CC_FLAGS)
  
@@ -105,11 +106,13 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-g -O0")
     set(CMAKE_C_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
+    set(CMAKE_BUILD_TYPE Debug)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
-    set(CMAKE_CXX_FLAGS "-O3")
-    set(CMAKE_C_FLAGS "-O3")
+    set(CMAKE_CXX_FLAGS "-O3 -NDEBUG" )
+    set(CMAKE_C_FLAGS "-O3 -NDEBUG")
+    set(CMAKE_BUILD_TYPE Release)
     # armadillo is configured using this definition
     add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
     flow_define(DEBUG_PROFILER)
@@ -118,13 +121,15 @@ else(FLOW_CC_FLAGS)
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
+    set(CMAKE_BUILD_TYPE Debug)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
     SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
     SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
     SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-
+    set(CMAKE_BUILD_TYPE Debug)
+    
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
@@ -134,9 +139,13 @@ else(FLOW_CC_FLAGS)
     COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
-  
 endif(FLOW_CC_FLAGS)
 
+# unset predefined build type resolution variables to have better control over
+# used compiler flags
+set(CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE} "")
+set(CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE} "")
+set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 
 # Compiler-specific C++11 activation.
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        

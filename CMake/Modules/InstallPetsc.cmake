@@ -19,7 +19,7 @@
 #     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
 #
 # We automatically reuse compiler and their flags. Further we set "--with-debugging=1" 
-# if FLOW_BUILD_TYPE == "debug", otherwise we turn debugging off.
+# if CMAKE_BUILD_TYPE == "debug", otherwise we turn debugging off.
 #
 # CAUTION: Never use semicolon a part of compiler options or PETSC_INSTALL_OPTIONS.
 
@@ -46,7 +46,7 @@ if (CMAKE_Fortran_COMPILER)
 endif()
 
 # set debugging
-if (FLOW_BUILD_TYPE STREQUAL "debug")
+if (CMAKE_BUILD_TYPE STREQUAL "debug")
   set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-debugging=1)
 else()
   set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-debugging=0)
