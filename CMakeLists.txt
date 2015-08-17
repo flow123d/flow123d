@@ -110,8 +110,8 @@ else(FLOW_CC_FLAGS)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
-    set(CMAKE_CXX_FLAGS "-O3 -NDEBUG" )
-    set(CMAKE_C_FLAGS "-O3 -NDEBUG")
+    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
+    set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
     set(CMAKE_BUILD_TYPE Release)
     # armadillo is configured using this definition
     add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
