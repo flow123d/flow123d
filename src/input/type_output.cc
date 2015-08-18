@@ -1279,7 +1279,12 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+    std::string tmp = std:string(desc);
+    // replace single slash with two slashes 
+    tmp = boost::regex_replace(tmp, boost::regex("\\\\"), "\\\\\\\\");
+    // replace newline with pritable newline
+    tmp = boost::regex_replace(tmp, boost::regex("\\n"), "\\\\n");
+    return tmp;
 }
 
 
