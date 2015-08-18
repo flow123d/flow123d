@@ -1271,6 +1271,19 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
  */
 
 
+const OutputJSONMachine::RewriteRule OutputJSONMachine::rewrite_rules[] = {
+    // replace single slash with two slashes 
+    OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
+    // replace quote with slash quote
+    OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
+    // replace special chars with escaped slash + special chars
+    OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
+    OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
+    OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
+};
+
+
+
 std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
     stringstream ss;
     ss << std::hex << hash;
@@ -1280,10 +1293,11 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
     std::string tmp = std::string(desc);
-    // replace single slash with two slashes 
-    tmp = boost::regex_replace(tmp, boost::regex("\\\\"), "\\\\\\\\");
-    // replace newline with pritable newline
-    tmp = boost::regex_replace(tmp, boost::regex("\\n"), "\\\\n");
+
+    for (OutputJSONMachine::RewriteRule rewrite_rule : OutputJSONMachine::rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    }
+
     return tmp;
 }
 
