@@ -1003,9 +1003,9 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 
 
     if (mortar_method_ == MortarP0) {
-        P0_CouplingAssembler(*this).assembly(*schur0);
+        P0_CouplingAssembler(*this).assembly(*ls);
     } else if (mortar_method_ == MortarP1) {
-        P1_CouplingAssembler(*this).assembly(*schur0);
+        P1_CouplingAssembler(*this).assembly(*ls);
     }  
 }
 
