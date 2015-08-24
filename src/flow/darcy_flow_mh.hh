@@ -65,6 +65,7 @@
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
 
+class A;
 
 /// external types:
 class LinSys;
@@ -76,8 +77,10 @@ class SparseGraph;
 class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
+class VectorSeqDouble;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
 
@@ -205,14 +208,6 @@ protected:
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-    
-    
-    FE_RT0<1,3> *fe_rt1_;
-    FE_RT0<2,3> *fe_rt2_;
-    FE_RT0<3,3> *fe_rt3_;
-    MappingP1<1,3> *map1_;
-    MappingP1<2,3> *map2_;
-    MappingP1<3,3> *map3_;
 
     MortarMethod mortar_method_;
 
@@ -277,6 +272,74 @@ public:
 
 
 protected:
+    class AssemblyBase;
+    template<unsigned int dim> class Assembly;
+    
+    class AssemblyData
+    {
+    public:
+        AssemblyData(Mesh *mesh,
+                     EqData *data,
+                     LinSys *ls, 
+                     Distribution *edge_dist, 
+                     Distribution *el_dist,
+                     Distribution *side_dist,
+                     boost::shared_ptr<Balance> balance,
+                     MH_DofHandler *mh_dh,
+                     unsigned int water_balance_idx,
+                     int n_schur,
+                     int *el_for_loc,
+                     int *row_4_el,
+                     int *side_row_4_id,
+                     int *row_4_edge
+                     );
+    private:
+        Mesh *mesh;
+        LinSys *ls;
+        Distribution *edge_ds;          
+        Distribution *el_ds;            
+        Distribution *side_ds;          
+        EqData* data;
+        boost::shared_ptr<Balance> balance;
+        unsigned int water_balance_idx;
+        MH_DofHandler *mh_dh;
+        
+        int n_schur_compls;
+        int *el_4_loc;
+        int *row_4_el;
+        int *side_row_4_id;
+        int *row_4_edge;
+        
+    template<unsigned int dim>
+    friend class Assembly;
+    };
+    
+    class AssemblyBase
+    {
+    public:
+        virtual void assembly_matrix() = 0;
+        virtual void make_element_vector(VectorSeqDouble &ele_flux) = 0;
+        void set_data(AssemblyData *data);
+    protected:
+        AssemblyData *d;
+    };
+    
+    template<unsigned int dim>
+    class Assembly : public AssemblyBase
+    {
+    public:
+        Assembly<dim>();
+        ~Assembly<dim>();
+        void assembly_matrix() override;
+        void make_element_vector(VectorSeqDouble &ele_flux) override;
+        void assembly_local_matrix(arma::mat &local_matrix, 
+                                   ElementFullIter ele, 
+                                   FEValues<dim,3> & fe_values);
+    private:
+        FE_RT0<dim,3> *fe_rt_;
+        MappingP1<dim,3> *map_;
+    };
+    
     void make_serial_scatter();
     virtual void modify_system()
     { ASSERT(0, "Modify system called for Steady darcy.\n"); };
@@ -339,6 +402,9 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
+	AssemblyData *assembly_data_;
+	std::vector<AssemblyBase *> assembly_;
+	
 	// parallel
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
