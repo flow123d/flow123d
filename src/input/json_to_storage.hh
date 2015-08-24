@@ -147,7 +147,7 @@ public:
     /**
      * Returns string address of current position.
      */
-    string str();
+    string as_string() const;
 
     /**
      * Check if index of Abstract descendant can be loaded from TYPE key (return true)
@@ -391,9 +391,8 @@ public:
     TYPEDEF_ERR_INFO(EI_Specification, const string);
     TYPEDEF_ERR_INFO(EI_Format, const string);
     TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
-    TYPEDEF_ERR_INFO( EI_ErrorAddress, const PathBase*);
-    TYPEDEF_ERR_INFO( EI_ErrorConstAddress, PathBase*);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: '" << EI_ErrorAddress::val << EI_ErrorConstAddress::val << "'\n"
+    TYPEDEF_ERR_INFO( EI_ErrorAddress, string);
+    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
                                             << EI_Specification::val << "\n"
                                             << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
                                             << "Expected type:\n" << EI_InputType::val );
@@ -457,21 +456,21 @@ protected:
      * against type specification @p type. Die on input error (and return NULL).
      * For correct input, creates the storage tree and returns pointer to its root node.
      */
-    StorageBase * make_storage(PathBase *p, const Type::TypeBase *type);
+    StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
-    StorageBase * make_storage(PathBase *p, const Type::Record *record);
-    StorageBase * make_storage(PathBase *p, const Type::AbstractRecord *abstr_rec);
-    StorageBase * make_storage(PathBase *p, const Type::Array *array);
+    StorageBase * make_storage(PathBase &p, const Type::Record *record);
+    StorageBase * make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * make_storage(PathBase &p, const Type::Array *array);
 
-    StorageBase * make_selection_storage_without_catch(PathBase *p, const Type::Selection *selection);
-    StorageBase * make_storage(PathBase *p, const Type::Selection *selection);
-    StorageBase * make_storage(PathBase *p, const Type::Bool *bool_type);
-    StorageBase * make_storage(PathBase *p, const Type::Integer *int_type);
-    StorageBase * make_storage(PathBase *p, const Type::Double *double_type);
-    StorageBase * make_storage(PathBase *p, const Type::String *string_type);
+    StorageBase * make_selection_storage_without_catch(PathBase &p, const Type::Selection *selection);
+    StorageBase * make_storage(PathBase &p, const Type::Selection *selection);
+    StorageBase * make_storage(PathBase &p, const Type::Bool *bool_type);
+    StorageBase * make_storage(PathBase &p, const Type::Integer *int_type);
+    StorageBase * make_storage(PathBase &p, const Type::Double *double_type);
+    StorageBase * make_storage(PathBase &p, const Type::String *string_type);
 
-    StorageBase * record_automatic_conversion(PathBase *p, const Type::Record *record);
-    StorageBase * abstract_rec_automatic_conversion(PathBase *p, const Type::AbstractRecord *abstr_rec);
+    StorageBase * record_automatic_conversion(PathBase &p, const Type::Record *record);
+    StorageBase * abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec);
 
     /**
      * Dispatch according to @p type and create corresponding storage from the given string.
