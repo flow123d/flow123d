@@ -80,9 +80,12 @@ class Balance;
 class VectorSeqDouble;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<unsigned int dim, unsigned int spacedim> class FESideValues;
+template<unsigned int dim> class QGauss;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -280,35 +283,35 @@ protected:
     public:
         AssemblyData(Mesh *mesh,
                      EqData *data,
-                     LinSys *ls, 
-                     Distribution *edge_dist, 
-                     Distribution *el_dist,
-                     Distribution *side_dist,
-                     boost::shared_ptr<Balance> balance,
-                     MH_DofHandler *mh_dh,
-                     unsigned int water_balance_idx,
-                     int n_schur,
-                     int *el_for_loc,
-                     int *row_4_el,
-                     int *side_row_4_id,
-                     int *row_4_edge
+//                      LinSys *ls, 
+//                      Distribution *edge_dist, 
+//                      Distribution *el_dist,
+//                      Distribution *side_dist,
+//                      boost::shared_ptr<Balance> balance,
+                     MH_DofHandler *mh_dh
+//                      unsigned int water_balance_idx,
+//                      int n_schur,
+//                      int *el_for_loc,
+//                      int *row_4_el,
+//                      int *side_row_4_id,
+//                      int *row_4_edge
                      );
     private:
         Mesh *mesh;
-        LinSys *ls;
-        Distribution *edge_ds;          
-        Distribution *el_ds;            
-        Distribution *side_ds;          
+//         LinSys *ls;
+//         Distribution *edge_ds;          
+//         Distribution *el_ds;            
+//         Distribution *side_ds;          
         EqData* data;
-        boost::shared_ptr<Balance> balance;
-        unsigned int water_balance_idx;
+//         boost::shared_ptr<Balance> balance;
+//         unsigned int water_balance_idx;
         MH_DofHandler *mh_dh;
         
-        int n_schur_compls;
-        int *el_4_loc;
-        int *row_4_el;
-        int *side_row_4_id;
-        int *row_4_edge;
+//         int n_schur_compls;
+//         int *el_4_loc;
+//         int *row_4_el;
+//         int *side_row_4_id;
+//         int *row_4_edge;
         
     template<unsigned int dim>
     friend class Assembly;
@@ -317,7 +320,11 @@ protected:
     class AssemblyBase
     {
     public:
-        virtual void assembly_matrix() = 0;
+        virtual void assembly_local_matrix(arma::mat &local_matrix, 
+                                           ElementFullIter ele) = 0;
+        virtual void assembly_local_vb(double *local_vb, 
+                                       ElementFullIter ele,
+                                       Neighbour *ngh) = 0;
         virtual void make_element_vector(VectorSeqDouble &ele_flux) = 0;
         void set_data(AssemblyData *data);
     protected:
@@ -330,14 +337,22 @@ protected:
     public:
         Assembly<dim>();
         ~Assembly<dim>();
-        void assembly_matrix() override;
-        void make_element_vector(VectorSeqDouble &ele_flux) override;
         void assembly_local_matrix(arma::mat &local_matrix, 
-                                   ElementFullIter ele, 
-                                   FEValues<dim,3> & fe_values);
+                                   ElementFullIter ele) override;
+        void assembly_local_vb(double *local_vb, 
+                               ElementFullIter ele,
+                               Neighbour *ngh
+                              ) override;
+        void make_element_vector(VectorSeqDouble &ele_flux) override;
     private:
-        FE_RT0<dim,3> *fe_rt_;
-        MappingP1<dim,3> *map_;
+        FE_RT0<dim,3> fe_rt_;
+        MappingP1<dim,3> map_;
+        QGauss<dim> quad_;
+        FEValues<dim,3> fe_values_;
+        
+        QGauss<dim-1> side_quad_;
+        FiniteElement<dim,3> *fe_p_disc_;
+        FESideValues<dim,3> fe_side_values_;
     };
     
     void make_serial_scatter();
@@ -374,12 +389,12 @@ protected:
      */
     void assembly_steady_mh_matrix();
     
-    /** Assembly of a local mass matrix on and element.
-     * Auxiliary function for @p assembly_steady_mh_matrix.
-     */
-    template<unsigned int dim>
-    void assembly_steady_mh_local_matrix(arma::mat &local_matrix, ElementFullIter ele, 
-                                         FEValues<dim,3> & fe_values);
+//     /** Assembly of a local mass matrix on and element.
+//      * Auxiliary function for @p assembly_steady_mh_matrix.
+//      */
+//     template<unsigned int dim>
+//     void assembly_steady_mh_local_matrix(arma::mat &local_matrix, ElementFullIter ele, 
+//                                          FEValues<dim,3> & fe_values);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();

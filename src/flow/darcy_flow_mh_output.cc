@@ -245,6 +245,9 @@ void DarcyFlowMHOutput::make_element_scalar() {
  *
  */
 void DarcyFlowMHOutput::make_element_vector() {
+    // need to call this to create mh solution vector
+    const MH_DofHandler &mhdh = darcy_flow->get_mh_dofhandler();
+    
     for(unsigned int d = 0; d < 3; d++)
         darcy_flow->assembly_[d]->make_element_vector(ele_flux);
     
