@@ -1,17 +1,20 @@
-- false
+- &id001
+  false
 - 1
 - 2
 - 3.3
-- ctyri
+- &id002
+  ctyri
 - - 1
   - 2
   - 3
   - 4
   - 5
-- a: 1
-  b: 
-    REF: ../../7/b/c
+- !type
+  TYPE: problem
+  a: 1
+  b: *id002
 - b:
     c: 1
-- REF: /4
+- *id001
 - 5000000000000
