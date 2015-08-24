@@ -906,6 +906,8 @@ if (PYTHON_COPY)
             PATTERN *.py EXCLUDE)
     install(DIRECTORY build_tree/${PYTHON_COPY_INCLUDE_TARGET} 
             DESTINATION include)
+    install(DIRECTORY ${PYTHON_EXTRA_MODULES_PATH} 
+            DESTINATION lib)
 endif()
 
 install(TARGETS    bin/flow123d  
