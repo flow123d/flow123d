@@ -38,7 +38,7 @@ namespace Input {
 
 
 
-/// Result type have sense only for larger Value types like vectors and tensors.
+/// Possible formats of input files.
 typedef enum  {
     format_JSON,
     format_YAML
@@ -117,11 +117,11 @@ public:
     /// Get size of array (sequence type), if object is not array return -1
     virtual int get_array_size() const =0;
 
-    /// Check if type of head node is map (record)
-    virtual bool is_map_type() const =0;
+    /// Check if type of head node is record
+    virtual bool is_record_type() const =0;
 
-    /// Check if type of head node is sequence (array)
-    virtual bool is_sequence_type() const =0;
+    /// Check if type of head node is array
+    virtual bool is_array_type() const =0;
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
@@ -140,9 +140,9 @@ public:
     virtual void go_to_root() =0;
 
     /**
-     * Put actual address to previous_references_ set
+     * Put address of actual reference to previous_references_ set
      */
-    void put_address();
+    void remember_reference();
 
     /**
      * Returns string address of current position.
@@ -153,6 +153,8 @@ public:
      * Check if index of Abstract descendant can be loaded from TYPE key (return true)
      * or return false if automatic conversion can be performed. In other cases throw
      * input exception.
+     *
+     * Index can be got in methods JSONToSTorage class if true is returned.
      */
     virtual bool has_descendent_index(bool value_at_declaration) =0;
 
@@ -200,23 +202,23 @@ public:
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
      */
-    virtual bool down(unsigned int index) override;
-    virtual bool down(const string& key) override;
+    bool down(unsigned int index) override;
+    bool down(const string& key) override;
 
     /**
      * Return one level up in the hierarchy.
      */
-    virtual void up() override;
+    void up() override;
 
     /**
      * Move to root node.
      */
-    virtual void go_to_root() override;
+    void go_to_root() override;
 
     /**
      * Returns level of actual path. Root has level == 0.
      */
-    virtual inline int level() const
+    inline int level() const
     { return nodes_.size() - 1; }
 
     /**
@@ -226,28 +228,28 @@ public:
     bool get_ref_from_head(string & ref_address) override;
 
     // These methods are derived from PathBase
-    virtual bool is_null_type() const override;
-    virtual bool get_bool_value() const override;
-    virtual std::int64_t get_int_value() const override;
-    virtual double get_double_value() const override;
-    virtual std::string get_string_value() const override;
-    virtual std::string get_node_type() const override;
-    virtual bool get_record_key_set(std::set<std::string> &) const override;
-    virtual int get_array_size() const override;
-    virtual bool is_map_type() const override;
-    virtual bool is_sequence_type() const override;
-    virtual PathJSON * clone() const override;
-    virtual bool has_descendent_index(bool value_at_declaration) override;
+    bool is_null_type() const override;
+    bool get_bool_value() const override;
+    std::int64_t get_int_value() const override;
+    double get_double_value() const override;
+    std::string get_string_value() const override;
+    std::string get_node_type() const override;
+    bool get_record_key_set(std::set<std::string> &) const override;
+    int get_array_size() const override;
+    bool is_record_type() const override;
+    bool is_array_type() const override;
+    PathJSON * clone() const override;
+    bool has_descendent_index(bool value_at_declaration) override;
 
-    virtual inline std::string input_format_name() const override {
+    inline std::string input_format_name() const override {
     	return "JSON";
     }
 
-    virtual inline std::string sequence_name() const override {
+    inline std::string sequence_name() const override {
     	return "JSON array";
     }
 
-    virtual inline std::string map_name() const override {
+    inline std::string map_name() const override {
     	return "JSON object";
     }
 
@@ -291,38 +293,38 @@ public:
     /**
      * Returns level of actual path. Root has level == 0.
      */
-    virtual inline int level() const
+    inline int level() const
     { return nodes_.size() - 1; }
 
     /**
      * Dive into yaml-cpp hierarchy. Store current path and returns true if pointer to new yaml node is not NULL.
      */
-    virtual bool down(unsigned int index) override;
-    virtual bool down(const string& key) override;
+    bool down(unsigned int index) override;
+    bool down(const string& key) override;
 
     /**
      * Return one level up in the hierarchy.
      */
-    virtual void up() override;
+    void up() override;
 
     /**
      * Move to root node.
      */
-    virtual void go_to_root() override;
+    void go_to_root() override;
 
     // These methods are derived from PathBase
-    virtual bool is_null_type() const override;
-    virtual bool get_bool_value() const override;
-    virtual std::int64_t get_int_value() const override;
-    virtual double get_double_value() const override;
-    virtual std::string get_string_value() const override;
-    virtual std::string get_node_type() const override;
-    virtual bool get_record_key_set(std::set<std::string> &) const override;
-    virtual int get_array_size() const override;
-    virtual bool is_map_type() const override;
-    virtual bool is_sequence_type() const override;
-    virtual PathYAML * clone() const override;
-    virtual bool has_descendent_index(bool value_at_declaration) override;
+    bool is_null_type() const override;
+    bool get_bool_value() const override;
+    std::int64_t get_int_value() const override;
+    double get_double_value() const override;
+    std::string get_string_value() const override;
+    std::string get_node_type() const override;
+    bool get_record_key_set(std::set<std::string> &) const override;
+    int get_array_size() const override;
+    bool is_record_type() const override;
+    bool is_array_type() const override;
+    PathYAML * clone() const override;
+    bool has_descendent_index(bool value_at_declaration) override;
 
     /**
      * Check if current head node is a YAML Object containing one key REF of type string.
@@ -330,15 +332,15 @@ public:
      */
     bool get_ref_from_head(string & ref_address) override;
 
-    virtual inline std::string input_format_name() const override {
+    inline std::string input_format_name() const override {
     	return "YAML";
     }
 
-    virtual inline std::string sequence_name() const override {
+    inline std::string sequence_name() const override {
     	return "YAML sequence";
     }
 
-    virtual inline std::string map_name() const override {
+    inline std::string map_name() const override {
     	return "YAML map";
     }
 

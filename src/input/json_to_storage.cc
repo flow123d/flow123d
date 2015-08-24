@@ -46,7 +46,7 @@ void PathBase::output(ostream &stream) const {
 
 
 
-void PathBase::put_address() {
+void PathBase::remember_reference() {
 	previous_references_.insert(str());
 }
 
@@ -92,7 +92,7 @@ PathBase * PathBase::find_ref_node(const string& ref_address)
 
         } else if ( ba::all( tmp_str, ba::is_digit()) ) {
             // integer == index in array
-            if ( !ref_path->is_sequence_type() ) {
+            if ( !ref_path->is_array_type() ) {
                 THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("there should be Array") );
             }
@@ -111,7 +111,7 @@ PathBase * PathBase::find_ref_node(const string& ref_address)
             ref_path->up();
 
         } else {
-            if ( !ref_path->is_map_type() )
+            if ( !ref_path->is_record_type() )
                 THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
                         << EI_Specification("there should be Record") );
             if ( !ref_path->down(tmp_str) )
@@ -297,7 +297,7 @@ std::string PathJSON::get_node_type() const {
 
 
 bool PathJSON::get_record_key_set(std::set<std::string> &keys_list) const {
-	if ( this->is_map_type() ) {
+	if ( this->is_record_type() ) {
     	const json_spirit::mObject & j_map = head()->get_obj();
         json_spirit::mObject::const_iterator map_it;
         std::set<string>::iterator set_it;
@@ -325,13 +325,13 @@ int PathJSON::get_array_size() const {
 
 
 
-bool PathJSON::is_map_type() const {
+bool PathJSON::is_record_type() const {
 	return head()->type() == json_spirit::obj_type;
 }
 
 
 
-bool PathJSON::is_sequence_type() const {
+bool PathJSON::is_array_type() const {
 	return head()->type() == json_spirit::array_type;
 }
 
@@ -344,11 +344,11 @@ PathJSON * PathJSON::clone() const {
 
 
 bool PathJSON::has_descendent_index(bool value_at_declaration) {
-	if ( this->is_map_type() ) {
+	if ( this->is_record_type() ) {
 
 		PathBase *type_path = this->clone();
 		if ( !type_path->down("TYPE") ) {
-            if ( !value_at_declaration ) {
+			if ( !value_at_declaration ) {
                 THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("Missing key 'TYPE' in AbstractRecord.")
                 	<< JSONToStorage::EI_ErrorAddress(this) << JSONToStorage::EI_Format("JSON") );
             } else { // auto conversion
@@ -537,12 +537,12 @@ int PathYAML::get_array_size() const {
 }
 
 
-bool PathYAML::is_map_type() const {
+bool PathYAML::is_record_type() const {
 	return head()->IsMap();
 }
 
 
-bool PathYAML::is_sequence_type() const {
+bool PathYAML::is_array_type() const {
 	return head()->IsSequence();
 }
 
@@ -852,37 +852,6 @@ StorageBase * JSONToStorage::make_storage(PathBase *p, const Type::AbstractRecor
         		<< EI_Format( p->input_format_name() ) << EI_InputType(abstr_rec->desc()) );
     }
     return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
-
-	/*if ( p->is_map_type() ) {
-
-    	PathBase *type_path = p->clone();
-        if ( !type_path->down("TYPE") ) {
-            if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-                THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
-            } else { // auto conversion
-            	return abstract_rec_automatic_conversion(p, abstr_rec);
-            }
-        } else {
-            try {
-                // convert to base type to force type dispatch and reference chatching
-                const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
-                unsigned int descendant_index = (unsigned int)make_storage(type_path, type_of_type )->get_int();
-                return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
-            } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
-
-                THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p) << EI_InputType(abstr_rec->desc()) );
-            }
-        }
-    } else {
-        if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-            THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ")
-                << EI_ErrorAddress(p) << EI_JSON_Type( p->get_node_type() ) << EI_InputType(abstr_rec->desc()) );
-        } else { // auto conversion
-        	return abstract_rec_automatic_conversion(p, abstr_rec);
-        }
-    }
-
-    return NULL;*/
 }
 
 
