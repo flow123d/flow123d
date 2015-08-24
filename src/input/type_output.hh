@@ -449,8 +449,6 @@ public:
 	    format_tail="{}]\n";
     }
 
-protected:
-
     /**
      * @brief Simple internal class for storing JSON description rewrite rule
      */
@@ -473,8 +471,9 @@ protected:
 
             };
     };
-    static const RewriteRule rewrite_rules[];
 
+
+protected:
 	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 
