@@ -33,9 +33,10 @@ message(STATUS "===========================================")
 # Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
 set(DEAL_II_WITH_MUPARSER OFF)
 set(DEAL_II_WITH_MPI ON)
+set(DEAL_II_WITH_THREADS OFF)
 set(BOOST_DIR "${BOOST_ROOT}")
 set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
-set(TBB_FOUND "true")
+#set(TBB_FOUND "true")
 set(DEAL_II_WITH_UMFPACK OFF)
 ## Check if UMFPACK is installed with PETSc
 #if (PETSC_VAR_UMFPACK_LIB)

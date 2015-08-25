@@ -685,9 +685,9 @@ include_directories(
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
     ${YamlCpp_INCLUDE_DIR}
-#    ${CMAKE_BINARY_DIR}/src/dealii/include
-#    ${CMAKE_SOURCE_DIR}/src/dealii/include
-    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
+    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
+    ${CMAKE_SOURCE_DIR}/src/dealii/include
+#    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
 ######################################################################################################################
