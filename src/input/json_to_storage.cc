@@ -186,8 +186,7 @@ bool PathJSON::down(unsigned int index)
     if (  index >= array.size()) return false;
     path_.push_back( make_pair( index, string("") ) );
     nodes_.push_back( &( array[index] ) );
-
-    return (nodes_.back() != NULL);
+    return true;
 }
 
 
@@ -203,7 +202,7 @@ bool PathJSON::down(const string& key)
         path_.push_back( make_pair( (int)(-1), key) );
         nodes_.push_back( &( it->second ) );
     }
-    return (nodes_.back() != NULL);
+    return true;
 }
 
 
@@ -399,7 +398,7 @@ bool PathYAML::down(unsigned int index) {
     path_.push_back( make_pair( index, string("") ) );
     nodes_.push_back( new Node( head_node[index] ) );
 
-    return (nodes_.back() != NULL);
+    return true;
 }
 
 
@@ -413,7 +412,7 @@ bool PathYAML::down(const string& key) {
     } else {
         return false;
     }
-    return (nodes_.back() != NULL);
+    return true;
 }
 
 
