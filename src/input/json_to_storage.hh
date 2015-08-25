@@ -67,6 +67,11 @@ public:
 
 
     /**
+     * Require virtual destructor also for child classes.
+     */
+    virtual ~PathBase() {};
+
+    /**
      * Returns level of actual path. Root has level == 0.
      */
 	virtual int level() const =0;
