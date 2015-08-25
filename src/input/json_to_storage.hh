@@ -137,7 +137,7 @@ public:
     /**
      * Move to root node.
      */
-    virtual void go_to_root() =0;
+    void go_to_root();
 
     /**
      * Put address of actual reference to previous_references_ set
@@ -209,11 +209,6 @@ public:
      * Return one level up in the hierarchy.
      */
     void up() override;
-
-    /**
-     * Move to root node.
-     */
-    void go_to_root() override;
 
     /**
      * Returns level of actual path. Root has level == 0.
@@ -306,11 +301,6 @@ public:
      * Return one level up in the hierarchy.
      */
     void up() override;
-
-    /**
-     * Move to root node.
-     */
-    void go_to_root() override;
 
     // These methods are derived from PathBase
     bool is_null_type() const override;

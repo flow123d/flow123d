@@ -128,6 +128,14 @@ PathBase * PathBase::find_ref_node(const string& ref_address)
 
 
 
+void PathBase::go_to_root() {
+	while (path_.size() > 1) {
+		this->up();
+	}
+}
+
+
+
 /********************************************
  * Implementation of  internal::PathJSON
  */
@@ -206,12 +214,6 @@ void PathJSON::up()
         nodes_.pop_back();
     }
 }
-
-void PathJSON::go_to_root() {
-    path_.resize(1);
-    nodes_.resize(1);
-}
-
 
 bool PathJSON::get_ref_from_head(string & ref_address)
 {
@@ -418,14 +420,11 @@ bool PathYAML::down(const string& key) {
 void PathYAML::up() {
     if (path_.size() > 1) {
         path_.pop_back();
-        nodes_.pop_back();
+        int size = nodes_.size();
+        const Node * node = nodes_.back();
+        delete node;
+        nodes_.resize(size-1);
     }
-}
-
-
-void PathYAML::go_to_root() {
-    path_.resize(1);
-    nodes_.resize(1);
 }
 
 
