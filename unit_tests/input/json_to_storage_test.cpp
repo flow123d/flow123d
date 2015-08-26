@@ -22,40 +22,30 @@ TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    PathBase * path = new PathJSON(in_str);
+    PathJSON path(in_str);
 
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/",os.str());
     }
 
-    path->down(6);
+    path.down(6);
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("a");
+    path.down("a");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/a",os.str());
     }
+    EXPECT_EQ(1,path.find_ref_node()->get_int_value() );
 
-    string ref;
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("../../7/b/c",ref);
-
-    { ostringstream os;
-    path->output(os);
-    EXPECT_EQ("/6/a",os.str());
-    }
-
-    EXPECT_EQ(1,path->find_ref_node(ref)->get_int_value() );
-
-    path=path->find_ref_node("/6/b");
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path->find_ref_node(ref)->get_string_value() );
+    path.go_to_root();
+    path.down(6);
+    path.down("b");
+    EXPECT_EQ("ctyri",path.find_ref_node()->get_string_value() );
 }
 
 
@@ -63,16 +53,25 @@ TEST(PathJSON, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
 
-    string ref;
     PathJSON path(in_str);
     path.down(8);
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
 
-    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, PathBase::ExcReferenceNotFound, "there should be Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, PathBase::ExcReferenceNotFound, "can not go up from root" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, PathBase::ExcReferenceNotFound, "there should be Record" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
+    path.go_to_root();
+    path.down(9); // "REF":"/5/10"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
+
+    path.go_to_root();
+    path.down(10); // "REF":"/6/../.."
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "can not go up from root" );
+
+    path.go_to_root();
+    path.down(11); // "REF":"/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "there should be Record" );
+
+    path.go_to_root();
+    path.down(12); // "REF":"/6/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
 }
 
 
@@ -81,34 +80,34 @@ TEST(PathYAML, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
-    PathBase * path = new PathYAML(in_str);
+	PathYAML path(in_str);
 
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/",os.str());
     }
 
-    path->down(6);
+    path.down(6);
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("a");
+    path.down("a");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/a",os.str());
     }
 
-    path->up();
+    path.up();
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("b");
+    path.down("b");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/b",os.str());
     }
 
@@ -552,7 +551,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     	.declare_key("b_val", Type::Integer(), "")
 		.close();
 
-    EXPECT_EQ(false, b_rec.is_finished());
+    EXPECT_FALSE(b_rec.is_finished());
 
     static Type::Record c_rec = Type::Record("EqTransp","")
     	.derive_from(a_rec)
