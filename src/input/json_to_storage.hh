@@ -157,9 +157,6 @@ public:
      */
     virtual bool has_descendent_index(bool value_at_declaration) =0;
 
-    /// Returns name of input format (e. g. "JSON")
-    virtual std::string input_format_name() const =0;
-
     /// Returns name of sequence type (e. g. "JSON array")
     virtual std::string sequence_name() const =0;
 
@@ -226,10 +223,6 @@ public:
     bool is_array_type() const override;
     PathJSON * clone() const override;
     bool has_descendent_index(bool value_at_declaration) override;
-
-    inline std::string input_format_name() const override {
-    	return "JSON";
-    }
 
     inline std::string sequence_name() const override {
     	return "JSON array";
@@ -315,10 +308,6 @@ public:
     bool is_array_type() const override;
     PathYAML * clone() const override;
     bool has_descendent_index(bool value_at_declaration) override;
-
-    inline std::string input_format_name() const override {
-    	return "YAML";
-    }
 
     inline std::string sequence_name() const override {
     	return "YAML sequence";
