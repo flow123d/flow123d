@@ -155,7 +155,7 @@ TEST(PathYAML, values) {
 	path.down(6); // record
 	std::set<std::string> set;
 	path.get_record_key_set(set);
-	EXPECT_EQ(3, set.size());
+	EXPECT_EQ(2, set.size());
 	EXPECT_TRUE( set.find("a")!=set.end() );
 	EXPECT_TRUE( set.find("b")!=set.end() );
 	EXPECT_FALSE( set.find("c")!=set.end() );
@@ -526,8 +526,7 @@ TEST_F(InputJSONToStorageTest, Record) {
 
 
 const string input_yaml_abstract = R"YAML(
-!type
-TYPE: EqDarcy
+!EqDarcy
 b_val: 10
 a_val: prime
 mesh: some.msh

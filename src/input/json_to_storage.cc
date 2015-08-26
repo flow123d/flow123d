@@ -333,30 +333,15 @@ PathJSON * PathJSON::clone() const {
 
 
 
-bool PathJSON::has_descendent_index(bool value_at_declaration) {
-	if ( this->is_record_type() ) {
-
-		PathBase *type_path = this->clone();
-		if ( !type_path->down("TYPE") ) {
-			if ( !value_at_declaration ) {
-                THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("Missing key 'TYPE' in AbstractRecord.")
-                	<< JSONToStorage::EI_ErrorAddress(this->as_string()) );
-            } else { // auto conversion
-            	return false;
-            }
-		} else {
-			return true;
-		}
-	} else {
-        if ( !value_at_declaration ) {
-            THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON object', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( this->get_node_type() ) );
-        } else { // auto conversion
-        	return false;
-        }
+std::string PathJSON::get_descendant_name() const {
+	std::string desc_name = "";
+	PathBase *type_path = this->clone();
+	if ( type_path->down("TYPE") ) {
+		desc_name = type_path->get_string_value();
 	}
+	delete type_path;
 
-	return false;
+	return desc_name;
 }
 
 
@@ -552,30 +537,14 @@ PathBase * PathYAML::find_ref_node()
 
 
 
-bool PathYAML::has_descendent_index(bool value_at_declaration) {
+std::string PathYAML::get_descendant_name() const {
 	const Node & head_node = *( nodes_.back() );
-	if (head_node.Tag() == "!type") {
-
-		if (head_node["TYPE"]) {
-			return true;
-		} else {
-            if ( !value_at_declaration ) {
-                THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("Missing key 'TYPE' in AbstractRecord.")
-                	<< JSONToStorage::EI_ErrorAddress(this->as_string()) );
-            } else { // auto conversion
-            	return false;
-            }
-		}
+	std::string tag = head_node.Tag();
+	if (tag == "?") {
+		return "";
 	} else {
-        if ( !value_at_declaration ) {
-            THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML map', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( this->get_node_type() ) );
-        } else { // auto conversion
-        	return false;
-        }
+		return tag.erase(0, 1); // tag starts with '!' char
 	}
-
-	return false;
 }
 
 
@@ -832,31 +801,49 @@ StorageBase * JSONToStorage::record_automatic_conversion(PathBase &p, const Type
 
 StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec)
 {
-	bool has_desc_index;
-	try {
-		has_desc_index = p.has_descendent_index( abstr_rec->get_selection_default().has_value_at_declaration() );
-	} catch(ExcInputError &e) {
-		e << EI_InputType(abstr_rec->desc());
-		throw;
+	if ( p.is_record_type() ) {
+
+		string descendant_name = p.get_descendant_name();
+		if ( descendant_name == "" ) {
+			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
+				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
+			} else { // auto conversion
+				return abstract_rec_automatic_conversion(p, abstr_rec);
+			}
+		} else {
+			try {
+				unsigned int descendant_index = (unsigned int)abstr_rec->get_type_selection().name_to_int( descendant_name );
+				return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
+			} catch (ExcInputError & e) {
+				e << EI_InputType(abstr_rec->get_type_selection().desc());
+				throw;
+			} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+				THROW( ExcInputError() << EI_Specification("Wrong value '" + descendant_name + "' of the Selection.")
+						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
+			}
+
+			/*try {
+
+				// convert to base type to force type dispatch and reference catching
+				PathBase *type_path = p.clone();
+				type_path->down("TYPE");
+				const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
+				unsigned int descendant_index = (unsigned int)make_storage(*type_path, type_of_type )->get_int();
+				return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
+			} catch(Type::Selection::ExcSelectionKeyNotFound &e) {
+ 				THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
+			}*/
+		}
+	} else {
+		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
+			THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ") // TODO: replace JSON object
+				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type() ) << EI_InputType(abstr_rec->desc()) );
+		} else { // auto conversion
+			return abstract_rec_automatic_conversion(p, abstr_rec);
+		}
 	}
 
-	if ( !has_desc_index ) {
-		return abstract_rec_automatic_conversion(p, abstr_rec);
-	}
-
-	unsigned int descendant_index;
-	PathBase *type_path = p.clone();
-	type_path->down("TYPE");
-    try {
-        // convert to base type to force type dispatch and reference chatching
-        const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
-        descendant_index = (unsigned int)make_storage(*type_path, type_of_type )->get_int();
-    } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
-
-        THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.")
-        		<< EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
-    }
-    return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
+	return NULL;
 }
 
 

@@ -149,13 +149,13 @@ public:
     string as_string() const;
 
     /**
-     * Check if index of Abstract descendant can be loaded from TYPE key (return true)
-     * or return false if automatic conversion can be performed. In other cases throw
-     * input exception.
+     * Gets name of descendant of Abstract:
+     * - for JSON returns value of TYPE key
+     * - for YAML returns value of tag
      *
-     * Index can be got in methods JSONToSTorage class if true is returned.
+     * If descendant name is not found returns empty string.
      */
-    virtual bool has_descendent_index(bool value_at_declaration) =0;
+    virtual std::string get_descendant_name() const =0;
 
     /// Returns name of sequence type (e. g. "JSON array")
     virtual std::string sequence_name() const =0;
@@ -222,7 +222,6 @@ public:
     bool is_record_type() const override;
     bool is_array_type() const override;
     PathJSON * clone() const override;
-    bool has_descendent_index(bool value_at_declaration) override;
 
     inline std::string sequence_name() const override {
     	return "JSON array";
@@ -238,6 +237,8 @@ public:
      * Put address of actual reference to previous_references_ set
      */
     void remember_reference();
+
+    std::string get_descendant_name() const;
 
 protected:
 
@@ -307,7 +308,6 @@ public:
     bool is_record_type() const override;
     bool is_array_type() const override;
     PathYAML * clone() const override;
-    bool has_descendent_index(bool value_at_declaration) override;
 
     inline std::string sequence_name() const override {
     	return "YAML sequence";
@@ -318,6 +318,8 @@ public:
     }
 
     PathBase * find_ref_node();
+
+    std::string get_descendant_name() const;
 
 protected:
     /**
