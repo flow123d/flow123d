@@ -52,8 +52,8 @@ public:
     /**
      * Thrown if a reference in the input file
      */
-    TYPEDEF_ERR_INFO(EI_ErrorAddress, const PathBase*);
-    TYPEDEF_ERR_INFO(EI_RefAddress, const PathBase*);
+    TYPEDEF_ERR_INFO(EI_ErrorAddress, string);
+    TYPEDEF_ERR_INFO(EI_RefAddress, string);
     TYPEDEF_ERR_INFO(EI_JsonFile, const string);
     TYPEDEF_ERR_INFO(EI_RefStr, const string);
     TYPEDEF_ERR_INFO(EI_Specification, const string);

@@ -157,7 +157,7 @@ PathBase * PathJSON::find_ref_node()
 
     const Node &ref_node = obj.begin()->second;
     if (ref_node.type() != json_spirit::str_type) {
-        THROW( ExcRefOfWrongType() << EI_ErrorAddress(this) );
+        THROW( ExcRefOfWrongType() << EI_ErrorAddress(this->as_string()) );
 
     }
     string ref_address = ref_node.get_str();
@@ -173,7 +173,7 @@ PathBase * PathJSON::find_ref_node()
     if (it == previous_references_.end()) {
     	ref_path->previous_references_.insert(ref_address);
     } else {
-    	THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+    	THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
     	       << EI_Specification("cannot follow reference") );
     }
 
@@ -186,29 +186,29 @@ PathBase * PathJSON::find_ref_node()
         } else if ( ba::all( tmp_str, ba::is_digit()) ) {
             // integer == index in array
             if ( !ref_path->is_array_type() ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
                         << EI_Specification("there should be Array") );
             }
 
             if ( !ref_path->down( atoi(tmp_str.c_str()) ) ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
                         << EI_Specification("index out of size of Array") );
             }
 
         } else if (tmp_str == "..") {
         	relative_ref = true;
             if (ref_path->level() <= 0 ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
                         << EI_Specification("can not go up from root") );
             }
             ref_path->up();
 
         } else {
             if ( !ref_path->is_record_type() )
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
                         << EI_Specification("there should be Record") );
             if ( !ref_path->down(tmp_str) )
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this->as_string()) << EI_ErrorAddress(ref_path->as_string()) << EI_RefStr(ref_address)
                         << EI_Specification("key '"+tmp_str+"' not found") );
         }
         pos = new_pos+1;
@@ -821,18 +821,6 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecor
 				THROW( ExcInputError() << EI_Specification("Wrong value '" + descendant_name + "' of the Selection.")
 						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
 			}
-
-			/*try {
-
-				// convert to base type to force type dispatch and reference catching
-				PathBase *type_path = p.clone();
-				type_path->down("TYPE");
-				const Type::TypeBase * type_of_type = &( abstr_rec->get_type_selection() );
-				unsigned int descendant_index = (unsigned int)make_storage(*type_path, type_of_type )->get_int();
-				return make_storage(p, &( abstr_rec->get_descendant(descendant_index) ) );
-			} catch(Type::Selection::ExcSelectionKeyNotFound &e) {
- 				THROW( ExcInputError() << EI_Specification("Wrong TYPE='"+Type::EI_KeyName::ref(e)+"' of AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
-			}*/
 		}
 	} else {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
