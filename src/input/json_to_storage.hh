@@ -77,16 +77,15 @@ public:
 	virtual int level() const =0;
 
     /**
-     * Check if current head node is a JSON / YAML Object containing one key REF of type string.
-     * If yes, returns the string through reference @p ref_address.
+     * Check if current head node is containing one key REF of type string.
+     *
+     * If yes, creates a new path object given by address string possibly relative to the current
+     * path. In other else return NULL.
+     *
+     * This method has the meaning only for JSON. For YAML (YAML has native references) return
+     * always NULL.
      */
-	virtual bool get_ref_from_head(string & ref_address) =0;
-
-    /**
-     * Creates a new path object given by address string possibly relative to the current
-     * path.
-     */
-	PathBase * find_ref_node(const string& ref_address);
+	virtual PathBase * find_ref_node() =0;
 
 	/**
 	 * Create copy of derived class.
@@ -145,11 +144,6 @@ public:
     void go_to_root();
 
     /**
-     * Put address of actual reference to previous_references_ set
-     */
-    void remember_reference();
-
-    /**
      * Returns string address of current position.
      */
     string as_string() const;
@@ -175,8 +169,6 @@ public:
 protected:
     PathBase();
 
-    std::set<string> previous_references_;
-
     /**
      * One level of the @p path_ is either index (nonnegative int) in array or string key in a json object.
      * For the first type we save index into first part of the pair and empty string to the second.
@@ -195,8 +187,8 @@ protected:
  * and address of the node in \p path_.
  *
  * The class also contains methods for processing of special keys 'REF' and 'TYPE'. The reference is record with only one key
- * 'REF' with a string value that contains address of the reference. The string with the address is extracted by \p JSONToStorage::get_ref_from_head
- * then the PathJSON corresponding to the address is provided by method \p JSONtoStorage::find_ref_node.
+ * 'REF' with a string value that contains address of the reference. The string with the address is extracted and provided by
+ * method \p JSONtoStorage::find_ref_node.
  */
 class PathJSON : public PathBase {
 public:
@@ -220,12 +212,6 @@ public:
      */
     inline int level() const
     { return nodes_.size() - 1; }
-
-    /**
-     * Check if current head node is a JSON Object containing one key REF of type string.
-     * If yes, returns the string through reference @p ref_address.
-     */
-    bool get_ref_from_head(string & ref_address) override;
 
     // These methods are derived from PathBase
     bool is_null_type() const override;
@@ -253,6 +239,13 @@ public:
     	return "JSON object";
     }
 
+    PathBase * find_ref_node();
+
+    /**
+     * Put address of actual reference to previous_references_ set
+     */
+    void remember_reference();
+
 protected:
 
     /**
@@ -266,6 +259,8 @@ protected:
      */
     inline const Node * head() const
     { return nodes_.back(); }
+
+    std::set<string> previous_references_;
 
     vector<const Node *> nodes_;
 
@@ -321,12 +316,6 @@ public:
     PathYAML * clone() const override;
     bool has_descendent_index(bool value_at_declaration) override;
 
-    /**
-     * Check if current head node is a YAML Object containing one key REF of type string.
-     * If yes, returns the string through reference @p ref_address.
-     */
-    bool get_ref_from_head(string & ref_address) override;
-
     inline std::string input_format_name() const override {
     	return "YAML";
     }
@@ -338,6 +327,8 @@ public:
     inline std::string map_name() const override {
     	return "YAML map";
     }
+
+    PathBase * find_ref_node();
 
 protected:
     /**

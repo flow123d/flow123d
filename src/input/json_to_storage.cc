@@ -46,84 +46,10 @@ void PathBase::output(ostream &stream) const {
 
 
 
-void PathBase::remember_reference() {
-	previous_references_.insert(as_string());
-}
-
-
-
 string PathBase::as_string() const {
     stringstream ss;
     output(ss);
     return ss.str();
-}
-
-
-
-/**
- * This returns path to reference given by address in ref_address.
- *
- */
-PathBase * PathBase::find_ref_node(const string& ref_address)
-{
-    namespace ba = boost::algorithm;
-
-    PathBase * ref_path = this->clone();
-
-    string::size_type pos = 0;
-    string::size_type new_pos = 0;
-    string address = ref_address + '/';
-    string tmp_str;
-    bool relative_ref = false;
-
-    std::set<string>::iterator it = previous_references_.find(ref_address);
-    if (it == previous_references_.end()) {
-    	ref_path->previous_references_.insert(ref_address);
-    } else {
-    	THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-    	       << EI_Specification("cannot follow reference") );
-    }
-
-    while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
-        tmp_str = address.substr(pos, new_pos - pos);
-        if (pos==0 && tmp_str == "") {
-            // absolute path
-            ref_path->go_to_root();
-
-        } else if ( ba::all( tmp_str, ba::is_digit()) ) {
-            // integer == index in array
-            if ( !ref_path->is_array_type() ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-                        << EI_Specification("there should be Array") );
-            }
-
-            if ( !ref_path->down( atoi(tmp_str.c_str()) ) ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-                        << EI_Specification("index out of size of Array") );
-            }
-
-        } else if (tmp_str == "..") {
-        	relative_ref = true;
-            if (ref_path->level() <= 0 ) {
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-                        << EI_Specification("can not go up from root") );
-            }
-            ref_path->up();
-
-        } else {
-            if ( !ref_path->is_record_type() )
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-                        << EI_Specification("there should be Record") );
-            if ( !ref_path->down(tmp_str) )
-                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
-                        << EI_Specification("key '"+tmp_str+"' not found") );
-        }
-        pos = new_pos+1;
-    }
-    if (relative_ref) {
-    	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->as_string().c_str(), ref_path->as_string().c_str());
-    }
-    return ref_path;
 }
 
 
@@ -214,22 +140,85 @@ void PathJSON::up()
     }
 }
 
-bool PathJSON::get_ref_from_head(string & ref_address)
+
+/**
+ * This returns path to reference given by address in ref_address.
+ *
+ */
+PathBase * PathJSON::find_ref_node()
 {
+    namespace ba = boost::algorithm;
+
     const Node * head_node = nodes_.back();
-    if (head_node->type() != json_spirit::obj_type) return false;
+    if (head_node->type() != json_spirit::obj_type) return NULL;
     const json_spirit::mObject &obj = head_node->get_obj();
-    if (obj.size() != 1) return false;
-    if (obj.begin()->first != "REF") return false;
+    if (obj.size() != 1) return NULL;
+    if (obj.begin()->first != "REF") return NULL;
 
     const Node &ref_node = obj.begin()->second;
     if (ref_node.type() != json_spirit::str_type) {
         THROW( ExcRefOfWrongType() << EI_ErrorAddress(this) );
 
     }
-    ref_address = ref_node.get_str();
-    return true;
+    string ref_address = ref_node.get_str();
+
+    PathJSON * ref_path = this->clone();
+    string::size_type pos = 0;
+    string::size_type new_pos = 0;
+    string address = ref_address + '/';
+    string tmp_str;
+    bool relative_ref = false;
+
+    std::set<string>::iterator it = previous_references_.find(ref_address);
+    if (it == previous_references_.end()) {
+    	ref_path->previous_references_.insert(ref_address);
+    } else {
+    	THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+    	       << EI_Specification("cannot follow reference") );
+    }
+
+    while ( ( new_pos=address.find('/',pos) ) != string::npos ) {
+        tmp_str = address.substr(pos, new_pos - pos);
+        if (pos==0 && tmp_str == "") {
+            // absolute path
+            ref_path->go_to_root();
+
+        } else if ( ba::all( tmp_str, ba::is_digit()) ) {
+            // integer == index in array
+            if ( !ref_path->is_array_type() ) {
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                        << EI_Specification("there should be Array") );
+            }
+
+            if ( !ref_path->down( atoi(tmp_str.c_str()) ) ) {
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                        << EI_Specification("index out of size of Array") );
+            }
+
+        } else if (tmp_str == "..") {
+        	relative_ref = true;
+            if (ref_path->level() <= 0 ) {
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                        << EI_Specification("can not go up from root") );
+            }
+            ref_path->up();
+
+        } else {
+            if ( !ref_path->is_record_type() )
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                        << EI_Specification("there should be Record") );
+            if ( !ref_path->down(tmp_str) )
+                THROW( ExcReferenceNotFound() << EI_RefAddress(this) << EI_ErrorAddress(ref_path) << EI_RefStr(ref_address)
+                        << EI_Specification("key '"+tmp_str+"' not found") );
+        }
+        pos = new_pos+1;
+    }
+    if (relative_ref) {
+    	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->as_string().c_str(), ref_path->as_string().c_str());
+    }
+    return ref_path;
 }
+
 
 
 bool PathJSON::is_null_type() const {
@@ -368,6 +357,12 @@ bool PathJSON::has_descendent_index(bool value_at_declaration) {
 	}
 
 	return false;
+}
+
+
+
+void PathJSON::remember_reference() {
+	previous_references_.insert(as_string());
 }
 
 
@@ -550,10 +545,11 @@ PathYAML * PathYAML::clone() const {
 }
 
 
-bool PathYAML::get_ref_from_head(string & ref_address)
+PathBase * PathYAML::find_ref_node()
 {
-	return false;
+    return NULL;
 }
+
 
 
 bool PathYAML::has_descendent_index(bool value_at_declaration) {
@@ -675,13 +671,12 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::TypeBase *typ
 {
     ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
 
-    // first check reference
-    string ref_address;
-    if (p.get_ref_from_head(ref_address)) {
+    // find reference node, if doesn't exist return NULL
+    PathBase * ref_path = p.find_ref_node();
+    if (ref_path) {
         // todo: mark passed references and check cyclic references
 
         // dereference and take data from there
-    	PathBase * ref_path = p.find_ref_node(ref_address);
     	StorageBase * storage = make_storage( *ref_path, type );
     	delete ref_path;
         return storage;
