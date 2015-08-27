@@ -75,6 +75,16 @@ public:
      */
     static PyObject * load_module_from_string(const std::string& module_name, const std::string& source_string);
     /**
+     * Method which loads module by given module_name
+     * module_name can (and probably will) contain packages path (will contain dots '.' which detonates package)
+     *
+     * Example:
+     *   PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module")
+     *
+     * will import module 'profiler_formatter_module' from package 'profiler'
+     */
+    static PyObject * load_module_by_name(const std::string& module_name);
+    /**
      * Tests whether the error indicator is set, if yes formats and throws exception.
      */
     static void check_error();

@@ -100,8 +100,9 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	if (rec.data_->parent_ptr_.size()) {
-		parent_ptr = rec.data_->parent_ptr_[0];
+	if (rec.data_->parent_vec_.size()) {
+		// temporary solution, if we need this method in new input, it must return vector of parents
+		parent_ptr = rec.data_->parent_vec_[0];
 	} else {
 		parent_ptr = boost::shared_ptr<AbstractRecord>();
 	}
@@ -1279,7 +1280,25 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+    static OutputJSONMachine::RewriteRule rewrite_rules[] = {
+        // replace single slash with two slashes 
+        OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
+        // replace quote with slash quote
+        OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
+        // replace special chars with escaped slash + special chars
+        OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
+    };
+
+
+    std::string tmp = std::string(desc);
+
+    for (OutputJSONMachine::RewriteRule rewrite_rule : rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    }
+
+    return tmp;
 }
 
 

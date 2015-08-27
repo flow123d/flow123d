@@ -34,6 +34,7 @@
 #include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
 #include "fields/unit_si.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -178,11 +179,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
 UnitSI HeatTransferModel::balance_units()
 {
-	return data().cross_section.units()*UnitSI().md(1)
-	        *data().output_field.units()
-			*data().porosity.units()
-			*data().fluid_density.units()
-			*data().fluid_heat_capacity.units();
+	return UnitSI().m(2).kg().s(-2);
 }
 
 IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)

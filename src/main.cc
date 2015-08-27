@@ -120,7 +120,7 @@ void Application::display_version() {
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);
     string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
-    
+
 
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
     xprintf(Msg,
@@ -139,7 +139,7 @@ Input::Record Application::read_input() {
         cout << program_arguments_desc_ << "\n";
         exit( exit_failure );
     }
-    
+
     // read main input file
     FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
@@ -150,7 +150,6 @@ Input::Record Application::read_input() {
     } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
       e << Input::JSONToStorage::EI_File(fpath); throw;
     }  
-    
     return root_record;
 }
 
@@ -174,7 +173,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
     ;
@@ -228,8 +227,17 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     if (vm.count("JSON_machine")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONMachine(&get_input_type());
+        // write ist to json file
+        string json_filename = vm["JSON_machine"].as<string>();
+        ofstream json_stream(json_filename);
+        // check open operation
+        if (json_stream.fail()) {
+    		cerr << "Failed to open file '" << json_filename << "'" << endl;
+        } else {
+	        Input::Type::TypeBase::lazy_finish();
+	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream.close();
+        }
         exit( exit_output );
     }
 
@@ -241,7 +249,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
         split_path(input_filename, main_input_dir_, main_input_filename_);
-    } 
+    }
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
@@ -322,7 +330,14 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
-        Profiler::instance()->output(PETSC_COMM_WORLD);
+        // log profiler data to this stream
+        Profiler::instance()->output (PETSC_COMM_WORLD);
+
+        // call python script which transforms json file at given location
+        // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+
+        // finally uninitialize
         Profiler::uninitialize();
     }
 }
@@ -348,4 +363,3 @@ int main(int argc, char **argv) {
     // Say Goodbye
     return ApplicationBase::exit_success;
 }
-

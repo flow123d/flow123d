@@ -74,7 +74,7 @@
 #include "fields/field_values.hh"
 #include "system/sys_profiler.hh"
 
-#include "transport/mass_balance.hh"
+#include "coupling/balance.hh"
 #include "input/factory.hh"
 
 
@@ -104,7 +104,7 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
                        "Specify the pressure head through the 'bc_pressure' field "
                        "or the piezometric head through the 'bc_piezo_head' field.")
                .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to $\\sigma (h - h^R)$. "
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
                        "Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
                        "through 'bc_pressure' and 'bc_piezo_head' respectively.")
                //.add_value(total_flux, "total_flux")
@@ -303,9 +303,9 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     if (it->val<bool>("balance_on"))
     {
         balance_ = boost::make_shared<Balance>("water", mesh_, el_ds, el_4_loc, *it);
-        //if (time_ != nullptr && time_->is_steady())
         water_balance_idx_ = balance_->add_quantity("water_volume");
         balance_->allocate(rows_ds->lsize(), 1);
+        balance_->units(UnitSI().m(3));
     }
 
 

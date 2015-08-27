@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include <new>          // std::bad_alloc
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -70,7 +71,13 @@ int main(int argc, char * argv[]) {
     char *dummy;
     int total=0, size=memory/2;
     for(; size >0; size=(memory-total)/2) {
-        dummy = new char[size*1024];
+        // try catch alloc
+        try {
+            dummy = new char[size*1024];
+        } catch (std::bad_alloc& ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
+
         if (dummy) {
           total+=size;
           cout << "allocated [kB]: " << total << endl;

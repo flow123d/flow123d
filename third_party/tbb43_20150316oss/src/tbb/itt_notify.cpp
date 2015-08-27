@@ -24,7 +24,7 @@
     #ifndef UNICODE
         #define UNICODE
     #endif
-#else
+#elif !defined(__CYGWIN__)
     #pragma weak dlopen
     #pragma weak dlsym
     #pragma weak dlerror

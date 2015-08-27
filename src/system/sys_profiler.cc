@@ -31,22 +31,24 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/param.h>
+#include "Python.h"
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
+#include "Python.h"
+#include "system/python_loader.hh"
 #include <boost/format.hpp>
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 #include "system/file_path.hh"
+#include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
 
 // namespace alias
 namespace property_tree = boost::property_tree;
-
-using namespace std;
 
 /*
  * These should be replaced by using boost MPI interface
@@ -425,9 +427,6 @@ void Profiler::update_running_timers() {
 
 #ifdef FLOW123D_HAVE_MPI
 void Profiler::output(MPI_Comm comm, ostream &os) {
-    //wait until profiling on all processors is finished
-    MPI_Barrier(comm);
-    update_running_timers();
     int ierr, mpi_rank, mpi_size;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     ASSERT(ierr == 0, "Error in MPI test of rank.");
@@ -463,23 +462,35 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     root.add_child ("children", children);
 
 
-    /**
-     * Flag to property_tree::write_json method
-     * resulting in json human readable format (indents, newlines)
-     */
-    const int FLOW123D_JSON_HUMAN_READABLE = 1;
-    // write result to stream
-    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    // create profiler output only once (on the first processor)
+    // only active communicator should be the one with mpi_rank 0
+    if (mpi_rank == 0) {
+        /**
+         * Flag to property_tree::write_json method
+         * resulting in json human readable format (indents, newlines)
+         */
+        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        // write result to stream
+        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    }
 }
 
 
 void Profiler::output(MPI_Comm comm) {
+    //wait until profiling on all processors is finished
+    MPI_Barrier(comm);
+    update_running_timers();
+    int ierr, mpi_rank, mpi_size;
+    ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    ASSERT(ierr == 0, "Error in MPI test of rank.");
+    MPI_Comm_size(comm, &mpi_size);
+
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
+    json_filepath = FilePath(string(filename), FilePath::output_file);
 
-    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-    ofstream os(full_fname.c_str());
+    xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
     output(comm, os);
     os.close();
 }
@@ -536,10 +547,10 @@ void Profiler::output(ostream &os) {
 void Profiler::output() {
     char filename[PATH_MAX];
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-    string full_fname =  FilePath(string(filename), FilePath::output_file);
+    json_filepath = FilePath(string(filename), FilePath::output_file);
 
-    xprintf(MsgLog, "output into: %s\n", full_fname.c_str());
-    ofstream os(full_fname.c_str());
+    xprintf(MsgLog, "output into: %s\n", this->json_filepath.c_str());
+    ofstream os(json_filepath.c_str());
     output(os);
     os.close();
 }
@@ -565,7 +576,6 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
     // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
     #ifdef FLOW123D_SOURCE_DIR
-        root.put ("source-dir",     string(FLOW123D_SOURCE_DIR));
     #endif
 
     // print some information about the task at the beginning
@@ -576,6 +586,72 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("run-process-count",  mpi_size);
     root.put ("run-started-at",     start_time_string);
     root.put ("run-finished-at",    end_time_string);
+}
+
+
+void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
+    PyObject * python_module;
+    PyObject * convert_method;
+    PyObject * arguments;
+    PyObject * return_value;
+    PyObject * tmp;
+    int argument_index = 0;
+
+
+
+    // debug info
+    // cout << "Py_GetProgramFullPath: " << Py_GetProgramFullPath() << endl;
+    // cout << "Py_GetPythonHome:      " << Py_GetPythonHome() << endl;
+    // cout << "Py_GetExecPrefix:      " << Py_GetExecPrefix() << endl;
+    // cout << "Py_GetProgramName:     " << Py_GetProgramName() << endl;
+    // cout << "Py_GetPath:            " << Py_GetPath() << endl;
+    // cout << "Py_GetVersion:         " << Py_GetVersion() << endl;
+    // cout << "Py_GetCompiler:        " << Py_GetCompiler() << endl;
+
+
+    // grab module and function by importing module profiler_formatter_module.py
+    python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    convert_method  = PythonLoader::get_callable (python_module, "convert" );
+
+    //
+    // def convert (json_location, output_file, formatter):
+    //
+
+    arguments = PyTuple_New (3);
+
+    // set json path location as first argument
+    tmp = PyString_FromString (json_filepath.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // set output path location as second argument
+    tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // set Formatter class as third value
+    tmp = PyString_FromString (formatter.c_str());
+    PyTuple_SetItem (arguments, argument_index++, tmp);
+
+    // execute method with arguments
+    return_value = PyObject_CallObject (convert_method, arguments);
+    //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
+
+
+    if (PyBool_Check (return_value)) {
+        // is boolean
+
+        if (return_value == Py_True) {
+            cout << "Python execution was successful" << endl;
+        }else{
+            cout << "Error when executing Python" << endl;
+        }
+    } else if (PyString_Check (return_value)) {
+        // is string (holds error)
+
+        char* error_msg = PyString_AsString (return_value);
+        cout << "Error when executing Python: " << error_msg << endl;
+    } else {
+        cout << "Unknown result when executing Python: "<< endl;
+    }
 }
 
 
@@ -606,5 +682,3 @@ void Profiler::uninitialize() {
 
 
 #endif // def FLOW123D_DEBUG_PROFILER
-
-

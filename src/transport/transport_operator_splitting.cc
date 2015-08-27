@@ -19,6 +19,7 @@
 #include "tools/time_governor.hh"
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
+#include "coupling/balance.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
 #include "flow/old_bcd.hh"
@@ -190,13 +191,13 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
   Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
   if (it->val<bool>("balance_on"))
   {
-//	  convection->get_par_info(el_4_loc, el_distribution);
-
 	  balance_ = boost::make_shared<Balance>("mass", mesh_, el_distribution, el_4_loc, *it);
 
 	  convection->set_balance_object(balance_);
 
 	  balance_->allocate(el_distribution->lsize(), 1);
+
+	  balance_->units(UnitSI().kg(1));
   }
 }
 
@@ -239,14 +240,7 @@ void TransportOperatorSplitting::zero_time_step()
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
     convection->output_stream_->write_time_frame();
-    if (balance_ != nullptr)
-    {
-    	balance_->units(
-    	        convection->data_.cross_section.units()*UnitSI().md(1)
-    	        *convection->data_.porosity.units()
-    	        *convection->data_.conc_mobile.units());
-    	balance_->output(time_->t());
-    }
+    if (balance_ != nullptr) balance_->output(time_->t());
 
 }
 
