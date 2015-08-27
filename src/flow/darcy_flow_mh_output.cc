@@ -246,64 +246,18 @@ void DarcyFlowMHOutput::make_element_scalar() {
  */
 void DarcyFlowMHOutput::make_element_vector() {
     // need to call this to create mh solution vector
-    const MH_DofHandler &mhdh = darcy_flow->get_mh_dofhandler();
-    
-    for(unsigned int d = 0; d < 3; d++)
-        darcy_flow->assembly_[d]->make_element_vector(ele_flux);
-    
-//     const MH_DofHandler &mhdh = darcy_flow->get_mh_dofhandler();
-// 
-//     // All templates are dimension dependent here.
-//     // Prepare guadratures - 1 point at the barycenter.
-//     const unsigned int q_order = 0;
-//     QGauss<1> q1(q_order);
-//     QGauss<2> q2(q_order);
-//     QGauss<3> q3(q_order);
-//     // Prepare FEValues for computing velocity at the barycenter.
-//     FEValues<1,3> fv_rt1(*(darcy_flow->map1_),q1, *(darcy_flow->fe_rt1_), update_values | update_quadrature_points);
-//     FEValues<2,3> fv_rt2(*(darcy_flow->map2_),q2, *(darcy_flow->fe_rt2_), update_values | update_quadrature_points);
-//     FEValues<3,3> fv_rt3(*(darcy_flow->map3_),q3, *(darcy_flow->fe_rt3_), update_values | update_quadrature_points);
-//     
-//     unsigned int i=0;
-//     FOR_ELEMENTS(mesh_, ele) {
-//         unsigned int dim = ele->dim();
-//         
-//         arma::vec3 flux_in_center;
-//         flux_in_center.zeros();
-//         
-//         switch(dim)
-//         {
-//             case 1: 
-//                 fv_rt1.reinit(ele);
-//                 for (unsigned int li = 0; li < ele->n_sides(); li++) {
-//                     flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
-//                               * fv_rt1.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
-//                 }
-//                 break;
-//             case 2: 
-//                 fv_rt2.reinit(ele);
-//                 for (unsigned int li = 0; li < ele->n_sides(); li++) {
-//                     flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
-//                               * fv_rt2.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
-//                 }
-//                 break;
-//             case 3: 
-//                 fv_rt3.reinit(ele);
-//                 for (unsigned int li = 0; li < ele->n_sides(); li++) {
-//                     flux_in_center += mhdh.side_flux( *(ele->side( li ) ) )
-//                               * fv_rt3.shape_vector(li,0); //fe_values.RT0_value( ele, ele->centre(), li )
-//                 }
-//                 break;
-//         }
-//         
-//         flux_in_center /= darcy_flow->data_.cross_section.value(ele->centre(), ele->element_accessor() );
-//         
-//         // place it in the sequential vector
-//         for(unsigned int j=0; j<3; j++) 
-//             ele_flux[3*i+j]=flux_in_center[j];
-//         
-//         i++;
-//     }
+    darcy_flow->get_mh_dofhandler();
+
+    unsigned int i=0;
+    arma::vec3 flux_in_center;
+    FOR_ELEMENTS(mesh_, ele) {
+        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->make_element_vector(ele);
+
+        // place it in the sequential vector
+        for(unsigned int j=0; j<3; j++) ele_flux[3*i+j]=flux_in_center[j];
+
+        i++;
+    }
 }
 
 

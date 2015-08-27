@@ -241,9 +241,14 @@ DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
 : quad_(3),
   fe_values_(map_, quad_, fe_rt_, 
             update_values | update_gradients | update_JxW_values | update_quadrature_points),
+
   side_quad_(1),
   fe_p_disc_(new FE_P_disc<0,dim,3>()),
   fe_side_values_(map_, side_quad_, *fe_p_disc_, update_normal_vectors),
+
+  velocity_interpolation_quad_(0), // veloctiy values in barycenter
+  velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
+
   d(ad)
 {
 }
@@ -504,40 +509,19 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(VectorSeqDouble &ele_flux)
+arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
 {
-    // Prepare guadratures - 1 point at the barycenter.
-    const unsigned int q_order = 0;
-    QGauss<dim> quad(q_order);
-    // Prepare FEValues for computing velocity at the barycenter.
-    FEValues<dim,3> fv_rt(map_,quad, fe_rt_, update_values | update_quadrature_points);
+    arma::vec3 flux_in_center;
+    flux_in_center.zeros();
     
-    unsigned int i=0;
-    FOR_ELEMENTS(d.mesh, ele) {
-        
-        if( ele->dim() != dim) 
-        {
-            i++;
-            continue;
-        }
-        
-        arma::vec3 flux_in_center;
-        flux_in_center.zeros();
-        
-        fv_rt.reinit(ele);
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += d.mh_dh->side_flux( *(ele->side( li ) ) )
-                      * fv_rt.shape_vector(li,0);
-        }
-                
-        flux_in_center /= d.data->cross_section.value(ele->centre(), ele->element_accessor() );
-        
-        // place it in the sequential vector
-        for(unsigned int j=0; j<3; j++) 
-            ele_flux[3*i+j]=flux_in_center[j];
-        
-        i++;
+    velocity_interpolation_fv_.reinit(ele);
+    for (unsigned int li = 0; li < ele->n_sides(); li++) {
+        flux_in_center += d.mh_dh->side_flux( *(ele->side( li ) ) )
+                  * velocity_interpolation_fv_.shape_vector(li,0);
     }
+
+    flux_in_center /= d.data->cross_section.value(ele->centre(), ele->element_accessor() );
+    return flux_in_center;
 }
 
 
@@ -550,240 +534,6 @@ void DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(VectorSeqDouble &ele
 
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
-//     LinSys *ls = schur0;
-//     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-//     
-//     /// Quadratures used in assembling methods.
-//     unsigned int q_order = 3;
-//     QGauss<1> qq1(q_order);
-//     QGauss<2> qq2(q_order);
-//     QGauss<3> qq3(q_order);
-// 
-//     // We use FESideValues for calculating normal vectors.
-//     // For initialization of FESideValues some auxiliary objects are needed.
-//     QGauss<0> q0(1);
-//     QGauss<1> q1(1);
-//     QGauss<2> q2(1);
-//     FE_P_disc<1,1,3> fe1;
-//     FE_P_disc<0,2,3> fe2;
-//     FE_P_disc<0,3,3> fe3;
-//     FESideValues<1,3> fe_side_values1(*map1_, q0, fe1, update_normal_vectors);
-//     FESideValues<2,3> fe_side_values2(*map2_, q1, fe2, update_normal_vectors);
-//     FESideValues<3,3> fe_side_values3(*map3_, q2, fe3, update_normal_vectors);
-// 
-//     FEValues<1,3> fv_rt1(*map1_, qq1, *fe_rt1_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-//     FEValues<2,3> fv_rt2(*map2_, qq2, *fe_rt2_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-//     FEValues<3,3> fv_rt3(*map3_, qq3, *fe_rt3_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-// 
-//     class Boundary *bcd;
-//     class Neighbour *ngh;
-// 
-//     bool fill_matrix = schur0->is_preallocated();
-//     int el_row, side_row, edge_row, loc_b = 0;
-//     int tmp_rows[100];
-//     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
-//     double local_vb[4]; // 2x2 matrix
-// 
-//     // to make space for second schur complement, max. 10 neighbour edges of one el.
-//     double zeros[1000];
-//     for(int i=0; i<1000; i++) zeros[i]=0.0;
-// 
-//     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
-//     double loc_side_rhs[4];
-// 
-//     if (balance_ != nullptr)
-//         balance_->start_flux_assembly(water_balance_idx_);
-// 
-//     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-//         arma::mat local_matrix;
-//         ele = mesh_->element(el_4_loc[i_loc]);
-//         el_row = row_4_el[el_4_loc[i_loc]];
-//         unsigned int nsides = ele->n_sides();
-//         
-//         if (fill_matrix) {
-//             switch( ele->dim() ) {
-//             case 1:
-//             {
-//                 assembly_steady_mh_local_matrix<1>(local_matrix, ele, fv_rt1);
-//                 break;
-//             }
-//             case 2:
-//             {
-//                 assembly_steady_mh_local_matrix<2>(local_matrix, ele, fv_rt2);
-//                 break;
-//             }
-//             case 3:
-//             {
-//                 assembly_steady_mh_local_matrix<3>(local_matrix, ele, fv_rt3);
-//                 break;
-//             }
-//             }
-//         }
-//         
-//         double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
-// 
-//         for (unsigned int i = 0; i < nsides; i++) {
-//             side_row = side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele->side(i) ) ];
-//             edge_row = edge_rows[i] = row_4_edge[ele->side(i)->edge_idx()];
-//             bcd=ele->side(i)->cond();
-// 
-//             // gravity term on RHS
-//             loc_side_rhs[i] = (ele->centre()[ 2 ] - ele->side(i)->centre()[ 2 ]);
-// 
-//             // set block C and C': side-edge, edge-side
-//             double c_val = 1.0;
-// 
-//             if (bcd) {
-//                 ElementAccessor<3> b_ele = bcd->element_accessor();
-//                 EqData::BC_Type type = (EqData::BC_Type)data_.bc_type.value(b_ele.centre(), b_ele);
-//                 if ( type == EqData::none) {
-//                     // homogeneous neumann
-//                 } else if ( type == EqData::dirichlet ) {
-//                     c_val = 0.0;
-//                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-//                     loc_side_rhs[i] -= bc_pressure;
-//                     ls->rhs_set_value(edge_row, -bc_pressure);
-//                     ls->mat_set_value(edge_row, edge_row, -1.0);
-// 
-//                 } else if ( type == EqData::neumann) {
-//                     double bc_flux = data_.bc_flux.value(b_ele.centre(), b_ele);
-//                     ls->rhs_set_value(edge_row, bc_flux * bcd->element()->measure() * cross_section);
-// 
-//                 } else if ( type == EqData::robin) {
-//                     double bc_pressure = data_.bc_pressure.value(b_ele.centre(), b_ele);
-//                     double bc_sigma = data_.bc_robin_sigma.value(b_ele.centre(), b_ele);
-//                     ls->rhs_set_value(edge_row, -bcd->element()->measure() * bc_sigma * bc_pressure * cross_section );
-//                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-// 
-//                 } else {
-//                     xprintf(UsrErr, "BC type not supported.\n");
-//                 }
-// 
-//                 if (balance_ != nullptr)
-//                 {
-//                     balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
-//                 }
-//                 ++loc_b;
-//             }
-//             ls->mat_set_value(side_row, edge_row, c_val);
-//             ls->mat_set_value(edge_row, side_row, c_val);
-// 
-//             // assemble matrix for weights in BDDCML
-//             // approximation to diagonal of 
-//             // S = -C - B*inv(A)*B'
-//             // as 
-//             // diag(S) ~ - diag(C) - 1./diag(A)
-//             // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-//             // to a continuous one
-//             // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-//             // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-//             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-//                double val_side =  local_matrix(i,i);
-//                double val_edge =  -1./local_matrix(i,i);
-// 
-//                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_row, val_side );
-//                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_row, val_edge );
-//             }
-//         }
-// 
-//         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
-// 
-//         
-//         // set block A: side-side on one element - block diagonal matrix
-//         ls->mat_set_values(nsides, side_rows, nsides, side_rows, local_matrix.memptr());
-//         // set block B, B': element-side, side-element
-//         ls->mat_set_values(1, &el_row, nsides, side_rows, minus_ones);
-//         ls->mat_set_values(nsides, side_rows, 1, &el_row, minus_ones);
-// 
-// 
-//         // D block: non-compatible conections and diagonal: element-element
-// 
-//         ls->mat_set_value(el_row, el_row, 0.0);         // maybe this should be in virtual block for schur preallocation
-// 
-//         if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-//            double val_ele =  1.;
-//            static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( el_row, val_ele );
-//         }
-// 
-//         // D, E',E block: compatible connections: element-edge
-//         
-//         for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
-//             // every compatible connection adds a 2x2 matrix involving
-//             // current element pressure  and a connected edge pressure
-//             ngh= ele->neigh_vb[i];
-//             tmp_rows[0]=el_row;
-//             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
-// 
-//             // compute normal vector to side
-//             arma::vec3 nv;
-//             ElementFullIter ele_higher = mesh_->element.full_iter(ngh->side()->element());
-//             switch (ele_higher->dim()) {
-//             case 1:
-//                 fe_side_values1.reinit(ele_higher, ngh->side()->el_idx());
-//                 nv = fe_side_values1.normal_vector(0);
-//                 break;
-//             case 2:
-//                 fe_side_values2.reinit(ele_higher, ngh->side()->el_idx());
-//                 nv = fe_side_values2.normal_vector(0);
-//                 break;
-//             case 3:
-//                 fe_side_values3.reinit(ele_higher, ngh->side()->el_idx());
-//                 nv = fe_side_values3.normal_vector(0);
-//                 break;
-//             }
-// 
-//             double value = data_.sigma.value( ele->centre(), ele->element_accessor()) *
-//                     2*data_.conductivity.value( ele->centre(), ele->element_accessor()) *
-//                     arma::dot(data_.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-//                     data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-//                     data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-//                     data_.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
-//                     ngh->side()->measure();
-// 
-// 
-//             local_vb[0] = -value;   local_vb[1] = value;
-//             local_vb[2] = value;    local_vb[3] = -value;
-// 
-//             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
-// 
-//             // update matrix for weights in BDDCML
-//             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-//                int ind = tmp_rows[1];
-//                // there is -value on diagonal in block C!
-//                double new_val = - value;
-//                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ind, new_val );
-//             }
-// 
-//             if (n_schur_compls == 2) {
-//                 // for 2. Schur: N dim edge is conected with N dim element =>
-//                 // there are nz between N dim edge and N-1 dim edges of the element
-// 
-//                 ls->mat_set_values(nsides, edge_rows, 1, tmp_rows+1, zeros);
-//                 ls->mat_set_values(1, tmp_rows+1, nsides, edge_rows, zeros);
-// 
-//                 // save all global edge indices to higher positions
-//                 tmp_rows[2+i] = tmp_rows[1];
-//             }
-//         }
-// 
-// 
-//         // add virtual values for schur complement allocation
-//         switch (n_schur_compls) {
-//         case 2:
-//             // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
-//             ASSERT(ele->n_neighs_vb*ele->n_neighs_vb<1000, "Too many values in E block.");
-//             ls->mat_set_values(ele->n_neighs_vb, tmp_rows+2,
-//                                ele->n_neighs_vb, tmp_rows+2, zeros);
-// 
-//         case 1: // included also for case 2
-//             // -(C')*(A-)*B block and its transpose conect edge with its elements
-//             ls->mat_set_values(1, &el_row, nsides, edge_rows, zeros);
-//             ls->mat_set_values(nsides, edge_rows, 1, &el_row, zeros);
-//             // -(C')*(A-)*C block conect all edges of every element
-//             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
-//         }
-//     }
-
     
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);

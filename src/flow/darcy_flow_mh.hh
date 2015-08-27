@@ -286,7 +286,7 @@ protected:
     class AssemblyBase
     {
     public:
-        // assembly just A block of locak matrix
+        // assembly just A block of local matrix
         virtual void assembly_local_matrix(arma::mat &local_matrix, 
                                            ElementFullIter ele) = 0;
 
@@ -295,10 +295,9 @@ protected:
                                        ElementFullIter ele,
                                        Neighbour *ngh) = 0;
 
-        // add to vector of velocities in barycenters
-        // TODO: make single pass implementation
-        virtual void make_element_vector(VectorSeqDouble &ele_flux) = 0;
-
+        // compute velocity value in the barycenter
+        // TOTO: implement and use general interpolations between discrete spaces
+        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
     };
     
     template<unsigned int dim>
@@ -313,16 +312,22 @@ protected:
                                ElementFullIter ele,
                                Neighbour *ngh
                               ) override;
-        void make_element_vector(VectorSeqDouble &ele_flux) override;
+        arma::vec3 make_element_vector(ElementFullIter ele) override;
 
+        // assembly volume integrals
         FE_RT0<dim,3> fe_rt_;
         MappingP1<dim,3> map_;
         QGauss<dim> quad_;
         FEValues<dim,3> fe_values_;
         
+        // assembly face integrals (BC)
         QGauss<dim-1> side_quad_;
         FiniteElement<dim,3> *fe_p_disc_;
         FESideValues<dim,3> fe_side_values_;
+
+        // Interpolation of velocity into barycenters
+        QGauss<dim> velocity_interpolation_quad_;
+        FEValues<dim,3> velocity_interpolation_fv_;
 
         // data shared by assemblers of different dimension
         AssemblyData d;
