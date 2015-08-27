@@ -77,7 +77,7 @@
 #include "transport/mass_balance.hh"
 #include "input/factory.hh"
 
-
+#include "fields/vec_seq_double.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(steady_MH);
@@ -236,6 +236,27 @@ DarcyFlowMH::EqData::EqData()
 }
 
 
+template<unsigned int dim>
+DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
+: quad_(3),
+  fe_values_(map_, quad_, fe_rt_, 
+            update_values | update_gradients | update_JxW_values | update_quadrature_points),
+
+  side_quad_(1),
+  fe_p_disc_(new FE_P_disc<0,dim,3>()),
+  fe_side_values_(map_, side_quad_, *fe_p_disc_, update_normal_vectors),
+
+  velocity_interpolation_quad_(0), // veloctiy values in barycenter
+  velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
+
+  d(ad)
+{
+}
+
+template<unsigned int dim>
+DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
+{
+}
 
 
 //=============================================================================
@@ -290,17 +311,14 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
     mh_dh.reinit(mesh_);
     
-    
-     
-    fe_rt1_ = new FE_RT0<1,3>();
-    fe_rt2_ = new FE_RT0<2,3>();
-    fe_rt3_ = new FE_RT0<3,3>();
+    AssemblyData assembly_data;
+    assembly_data.data = &data_;
+    assembly_data.mesh = mesh_;
+    assembly_data.mh_dh = &mh_dh;
+    assembly_.push_back(new Assembly<1>(assembly_data));
+    assembly_.push_back(new Assembly<2>(assembly_data));
+    assembly_.push_back(new Assembly<3>(assembly_data));
 
-    map1_ = new MappingP1<1,3>();
-    map2_ = new MappingP1<2,3>();
-    map3_ = new MappingP1<3,3>();
-
-    
     
     prepare_parallel(in_rec.val<AbstractRecord>("solver"));
 
@@ -331,9 +349,6 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     	create_linear_system();
     	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
     }
-
-
-
 }
 
 
@@ -444,15 +459,15 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::assembly_steady_mh_local_matrix(arma::mat& local_matrix, ElementFullIter ele, FEValues< dim, 3  >& fe_values)
+void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
-    fe_values.reinit(ele);
-    const unsigned int ndofs = fe_values.get_fe()->n_dofs(), qsize = fe_values.get_quadrature()->size();
+    fe_values_.reinit(ele);
+    const unsigned int ndofs = fe_values_.get_fe()->n_dofs(), qsize = fe_values_.get_quadrature()->size();
     local_matrix.zeros(ndofs, ndofs);
 
     double scale = 1
-                   / data_.conductivity.value( ele->centre(), ele->element_accessor() ) 
-                   / data_.cross_section.value( ele->centre(), ele->element_accessor() );
+                   / d.data->conductivity.value( ele->centre(), ele->element_accessor() )
+                   / d.data->cross_section.value( ele->centre(), ele->element_accessor() );
                            
     for (unsigned int k=0; k<qsize; k++)
     {
@@ -461,13 +476,52 @@ void DarcyFlowMH_Steady::assembly_steady_mh_local_matrix(arma::mat& local_matrix
              for (unsigned int j=0; j<ndofs; j++)
                 local_matrix[i*ndofs+j] += 
                         scale
-                        * arma::dot(fe_values.shape_vector(i,k),
-                                    (data_.anisotropy.value(ele->centre(), ele->element_accessor() )).i() 
-                                     * fe_values.shape_vector(j,k)
+                        * arma::dot(fe_values_.shape_vector(i,k),
+                                    (d.data->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
+                                     * fe_values_.shape_vector(j,k)
                                    ) 
-                        * fe_values.JxW(k);
+                        * fe_values_.JxW(k);
         }
     }
+}
+
+template<unsigned int dim>
+void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
+{
+    // compute normal vector to side
+    arma::vec3 nv;
+    ElementFullIter ele_higher = d.mesh->element.full_iter(ngh->side()->element());
+    fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+    nv = fe_side_values_.normal_vector(0);
+
+    double value = d.data->sigma.value( ele->centre(), ele->element_accessor()) *
+                    2*d.data->conductivity.value( ele->centre(), ele->element_accessor()) *
+                    arma::dot(d.data->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    d.data->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                    d.data->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+                    ngh->side()->measure();
+
+    local_vb[0] = -value;   local_vb[1] = value;
+    local_vb[2] = value;    local_vb[3] = -value;
+}
+
+
+
+template<unsigned int dim>
+arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
+{
+    arma::vec3 flux_in_center;
+    flux_in_center.zeros();
+    
+    velocity_interpolation_fv_.reinit(ele);
+    for (unsigned int li = 0; li < ele->n_sides(); li++) {
+        flux_in_center += d.mh_dh->side_flux( *(ele->side( li ) ) )
+                  * velocity_interpolation_fv_.shape_vector(li,0);
+    }
+
+    flux_in_center /= d.data->cross_section.value(ele->centre(), ele->element_accessor() );
+    return flux_in_center;
 }
 
 
@@ -480,35 +534,14 @@ void DarcyFlowMH_Steady::assembly_steady_mh_local_matrix(arma::mat& local_matrix
 
 void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
 {
+    
     LinSys *ls = schur0;
     ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
-    
-    /// Quadratures used in assembling methods.
-    unsigned int q_order = 3;
-    QGauss<1> qq1(q_order);
-    QGauss<2> qq2(q_order);
-    QGauss<3> qq3(q_order);
-
-    // We use FESideValues for calculating normal vectors.
-    // For initialization of FESideValues some auxiliary objects are needed.
-    QGauss<0> q0(1);
-    QGauss<1> q1(1);
-    QGauss<2> q2(1);
-    FE_P_disc<1,1,3> fe1;
-    FE_P_disc<0,2,3> fe2;
-    FE_P_disc<0,3,3> fe3;
-    FESideValues<1,3> fe_side_values1(*map1_, q0, fe1, update_normal_vectors);
-    FESideValues<2,3> fe_side_values2(*map2_, q1, fe2, update_normal_vectors);
-    FESideValues<3,3> fe_side_values3(*map3_, q2, fe3, update_normal_vectors);
-
-    FEValues<1,3> fv_rt1(*map1_, qq1, *fe_rt1_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FEValues<2,3> fv_rt2(*map2_, qq2, *fe_rt2_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FEValues<3,3> fv_rt3(*map3_, qq3, *fe_rt3_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
 
     class Boundary *bcd;
     class Neighbour *ngh;
 
-    bool fill_matrix = schur0->is_preallocated();
+    bool fill_matrix = ls->is_preallocated();
     int el_row, side_row, edge_row, loc_b = 0;
     int tmp_rows[100];
     int side_rows[4], edge_rows[4]; // rows for sides and edges of one element
@@ -530,25 +563,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         el_row = row_4_el[el_4_loc[i_loc]];
         unsigned int nsides = ele->n_sides();
         
-        if (fill_matrix) {
-            switch( ele->dim() ) {
-            case 1:
-            {
-                assembly_steady_mh_local_matrix<1>(local_matrix, ele, fv_rt1);
-                break;
-            }
-            case 2:
-            {
-                assembly_steady_mh_local_matrix<2>(local_matrix, ele, fv_rt2);
-                break;
-            }
-            case 3:
-            {
-                assembly_steady_mh_local_matrix<3>(local_matrix, ele, fv_rt3);
-                break;
-            }
-            }
-        }
+        if (fill_matrix) 
+            assembly_[ele->dim()-1]->assembly_local_matrix(local_matrix, ele);
         
         double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
 
@@ -643,44 +659,16 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
             ngh= ele->neigh_vb[i];
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
-
-            // compute normal vector to side
-            arma::vec3 nv;
-            ElementFullIter ele_higher = mesh_->element.full_iter(ngh->side()->element());
-            switch (ele_higher->dim()) {
-            case 1:
-                fe_side_values1.reinit(ele_higher, ngh->side()->el_idx());
-                nv = fe_side_values1.normal_vector(0);
-                break;
-            case 2:
-                fe_side_values2.reinit(ele_higher, ngh->side()->el_idx());
-                nv = fe_side_values2.normal_vector(0);
-                break;
-            case 3:
-                fe_side_values3.reinit(ele_higher, ngh->side()->el_idx());
-                nv = fe_side_values3.normal_vector(0);
-                break;
-            }
-
-            double value = data_.sigma.value( ele->centre(), ele->element_accessor()) *
-                    2*data_.conductivity.value( ele->centre(), ele->element_accessor()) *
-                    arma::dot(data_.anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                    data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                    data_.cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                    data_.cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
-                    ngh->side()->measure();
-
-
-            local_vb[0] = -value;   local_vb[1] = value;
-            local_vb[2] = value;    local_vb[3] = -value;
-
+            
+            assembly_[ngh->side()->element()->dim()-1]->assembly_local_vb(local_vb, ele, ngh);
+            
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
             // update matrix for weights in BDDCML
             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
                int ind = tmp_rows[1];
                // there is -value on diagonal in block C!
-               double new_val = - value;
+               double new_val = local_vb[0];
                static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( ind, new_val );
             }
 
@@ -712,8 +700,8 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
             // -(C')*(A-)*C block conect all edges of every element
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
-    }
-
+    }    
+    
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
 
@@ -1300,13 +1288,6 @@ DarcyFlowMH_Steady::~DarcyFlowMH_Steady() {
 	delete output_object;
 
 	VecScatterDestroy(&par_to_all);
-    
-    delete fe_rt1_;
-    delete fe_rt2_;
-    delete fe_rt3_;
-    delete map1_;
-    delete map2_;
-    delete map3_;
     
 }
 

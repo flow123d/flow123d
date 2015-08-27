@@ -76,10 +76,15 @@ class SparseGraph;
 class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
+class VectorSeqDouble;
 
 template<unsigned int dim, unsigned int spacedim> class FE_RT0;
+template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<unsigned int dim, unsigned int spacedim> class FESideValues;
+template<unsigned int dim> class QGauss;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -156,8 +161,7 @@ public:
      * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
      *
      * TODO:
-     * - how we can reuse values computed during assembly
-     *   we want to make this class see values in
+     * - how we can reuse field values computed during assembly
      *
      */
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
@@ -205,14 +209,6 @@ protected:
     bool solution_changed_for_scatter;
     Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-    
-    
-    FE_RT0<1,3> *fe_rt1_;
-    FE_RT0<2,3> *fe_rt2_;
-    FE_RT0<3,3> *fe_rt3_;
-    MappingP1<1,3> *map1_;
-    MappingP1<2,3> *map2_;
-    MappingP1<3,3> *map3_;
 
     MortarMethod mortar_method_;
 
@@ -277,6 +273,67 @@ public:
 
 
 protected:
+    class AssemblyBase;
+    template<unsigned int dim> class Assembly;
+    
+    struct AssemblyData
+    {
+        Mesh *mesh;
+        EqData* data;
+        MH_DofHandler *mh_dh;
+    };
+    
+    class AssemblyBase
+    {
+    public:
+        // assembly just A block of local matrix
+        virtual void assembly_local_matrix(arma::mat &local_matrix, 
+                                           ElementFullIter ele) = 0;
+
+        // assembly compatible neighbourings
+        virtual void assembly_local_vb(double *local_vb, 
+                                       ElementFullIter ele,
+                                       Neighbour *ngh) = 0;
+
+        // compute velocity value in the barycenter
+        // TOTO: implement and use general interpolations between discrete spaces
+        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
+    };
+    
+    template<unsigned int dim>
+    class Assembly : public AssemblyBase
+    {
+    public:
+        Assembly<dim>(AssemblyData ad);
+        ~Assembly<dim>();
+        void assembly_local_matrix(arma::mat &local_matrix, 
+                                   ElementFullIter ele) override;
+        void assembly_local_vb(double *local_vb, 
+                               ElementFullIter ele,
+                               Neighbour *ngh
+                              ) override;
+        arma::vec3 make_element_vector(ElementFullIter ele) override;
+
+        // assembly volume integrals
+        FE_RT0<dim,3> fe_rt_;
+        MappingP1<dim,3> map_;
+        QGauss<dim> quad_;
+        FEValues<dim,3> fe_values_;
+        
+        // assembly face integrals (BC)
+        QGauss<dim-1> side_quad_;
+        FiniteElement<dim,3> *fe_p_disc_;
+        FESideValues<dim,3> fe_side_values_;
+
+        // Interpolation of velocity into barycenters
+        QGauss<dim> velocity_interpolation_quad_;
+        FEValues<dim,3> velocity_interpolation_fv_;
+
+        // data shared by assemblers of different dimension
+        AssemblyData d;
+
+    };
+    
     void make_serial_scatter();
     virtual void modify_system()
     { ASSERT(0, "Modify system called for Steady darcy.\n"); };
@@ -311,12 +368,6 @@ protected:
      */
     void assembly_steady_mh_matrix();
     
-    /** Assembly of a local mass matrix on and element.
-     * Auxiliary function for @p assembly_steady_mh_matrix.
-     */
-    template<unsigned int dim>
-    void assembly_steady_mh_local_matrix(arma::mat &local_matrix, ElementFullIter ele, 
-                                         FEValues<dim,3> & fe_values);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
@@ -339,6 +390,9 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
+	AssemblyData *assembly_data_;
+	std::vector<AssemblyBase *> assembly_;
+	
 	// parallel
 	Distribution *edge_ds;          //< optimal distribution of edges
 	Distribution *el_ds;            //< optimal distribution of elements
