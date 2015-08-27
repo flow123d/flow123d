@@ -333,13 +333,19 @@ PathJSON * PathJSON::clone() const {
 
 
 
-std::string PathJSON::get_descendant_name() const {
+std::string PathJSON::get_descendant_name(const Type::Selection &sel) const {
 	std::string desc_name = "";
-	PathBase *type_path = this->clone();
-	if ( type_path->down("TYPE") ) {
-		desc_name = type_path->get_string_value();
+	PathJSON type_path(*this);
+	if ( type_path.down("TYPE") ) {
+	    //check if TYPE key is reference
+		PathBase * ref_path = type_path.find_ref_node();
+	    if (ref_path) {
+	        desc_name = ref_path->get_string_value();
+	    	delete ref_path;
+	    } else {
+	    	desc_name = type_path.get_string_value();
+		}
 	}
-	delete type_path;
 
 	return desc_name;
 }
@@ -537,7 +543,7 @@ PathBase * PathYAML::find_ref_node()
 
 
 
-std::string PathYAML::get_descendant_name() const {
+std::string PathYAML::get_descendant_name(const Type::Selection &sel) const {
 	const Node & head_node = *( nodes_.back() );
 	std::string tag = head_node.Tag();
 	if (tag == "?") {
@@ -803,7 +809,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecor
 {
 	if ( p.is_record_type() ) {
 
-		string descendant_name = p.get_descendant_name();
+		string descendant_name = p.get_descendant_name( abstr_rec->get_type_selection() );
 		if ( descendant_name == "" ) {
 			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
 				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in AbstractRecord.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
