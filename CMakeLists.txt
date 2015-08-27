@@ -666,6 +666,13 @@ message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
 message(STATUS "\n ======================================================= ")
 
 
+message(STATUS "Installing HTML documentation")
+include(InstallHTMLDOC)
+
+
+message(STATUS "\n ======================================================= ")
+
+
 # directory containing includes  (header files)
 set(CONFIG_FILE_INCLUDES_DIRECTORY "${CMAKE_BINARY_DIR}/includes")
 

@@ -1280,7 +1280,25 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+    static OutputJSONMachine::RewriteRule rewrite_rules[] = {
+        // replace single slash with two slashes 
+        OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
+        // replace quote with slash quote
+        OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
+        // replace special chars with escaped slash + special chars
+        OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
+    };
+
+
+    std::string tmp = std::string(desc);
+
+    for (OutputJSONMachine::RewriteRule rewrite_rule : rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    }
+
+    return tmp;
 }
 
 

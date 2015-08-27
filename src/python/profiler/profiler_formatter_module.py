@@ -13,7 +13,6 @@ Package contains:
 """
 
 import system.versions
-from utils.dotdict import DotDict
 
 system.versions.require_version_2 ()
 

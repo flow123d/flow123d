@@ -449,8 +449,31 @@ public:
 	    format_tail="{}]\n";
     }
 
-protected:
+    /**
+     * @brief Simple internal class for storing JSON description rewrite rule
+     */
+    class RewriteRule {
+        public:
+            /** boost regex regular expression */
+            boost::regex search;
 
+            /** simple string replacement */
+            std::string replacement;
+
+            /**
+             * Constructor
+             * @param _search boost::regex regular expression match pattern
+             * @param _replacement std::string string _replacement
+             */
+            RewriteRule (boost::regex _search, std::string _replacement):
+                search(_search),
+                replacement(_replacement) {
+
+            };
+    };
+
+
+protected:
 	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 
