@@ -12,7 +12,7 @@
 
 #include "input/accessors.hh"
 #include "input/input_type.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 const string json_input = R"JSON(
 {
@@ -31,7 +31,7 @@ enum Colors {
 };
 
 
-class InputTypeDispatchTest : public testing::Test, public Input::JSONToStorage {
+class InputTypeDispatchTest : public testing::Test, public Input::ReaderToStorage {
 protected:
 
     virtual void SetUp() {
@@ -65,7 +65,7 @@ protected:
     void read_stream(istream &in, const Input::Type::TypeBase &root_type) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in, root_type, Input::FileFormat::format_JSON);
+    	ReaderToStorage::read_stream(in, root_type, Input::FileFormat::format_JSON);
     }
 
     Input::Type::Record * root_record;
@@ -75,7 +75,7 @@ protected:
 
 TEST_F(InputTypeDispatchTest, all) {
 
-    Input::JSONToStorage json_reader(json_input, *root_record, Input::FileFormat::format_JSON);
+    Input::ReaderToStorage json_reader(json_input, *root_record, Input::FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("int_val")) );
     EXPECT_EQ("some_string", *(rec.find<std::string>("str_val")) );

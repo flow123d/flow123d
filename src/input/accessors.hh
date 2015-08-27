@@ -173,7 +173,7 @@ private:
 class IteratorBase;
 template <class T> class Iterator;
 
-class JSONToStorage;
+class ReaderToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -425,7 +425,7 @@ protected:
      * Set address (currently necessary for creating root accessor)
      */
     void set_address(const Address &address);
-    friend class JSONToStorage;
+    friend class ReaderToStorage;
 
     /// Corresponding Type::Record object.
     Input::Type::Record record_type_ ;

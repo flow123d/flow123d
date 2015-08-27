@@ -1,5 +1,5 @@
 /*
- * json_to_storage.hh
+ * reader_to_storage.hh
  *
  *  Created on: May 7, 2012
  *      Author: jb
@@ -20,8 +20,8 @@
  *   output of true stack for GNU.
  */
 
-#ifndef JSON_TO_STORAGE_HH_
-#define JSON_TO_STORAGE_HH_
+#ifndef READER_TO_STORAGE_HH_
+#define READER_TO_STORAGE_HH_
 
 
 #include <sstream>
@@ -189,7 +189,7 @@ protected:
 
 
 /**
- * @brief Class used by JSONToStorage class to iterate over the JSON tree provided by json_spirit library.
+ * @brief Class used by ReaderToStorage class to iterate over the JSON tree provided by json_spirit library.
  *
  * This class keeps whole path from the root of the JSON tree to the current node. We store nodes along path in \p nodes_
  * and address of the node in \p path_.
@@ -338,14 +338,14 @@ std::ostream& operator<<(std::ostream& stream, const PathYAML& path);
  *  Note, however, that our input interface allows only C identifiers for keys. The reader use json_spirit library
  *  (based on Spirit parser from Boost) with slightly modified grammar.
  *
- *  The input file is at first read and parsed by json_spirit. Then JSONToStorage pass through tree with parsed data along
+ *  The input file is at first read and parsed by json_spirit. Then ReaderToStorage pass through tree with parsed data along
  *  with passing through declaration tree. The input data are check against declaration and stored in the Storage tree.
  *
- *  Accessor to the root record is provided by JSONToStorage::get_root_interface<T> method template.
+ *  Accessor to the root record is provided by ReaderToStorage::get_root_interface<T> method template.
  *
  *  @ingroup input
  */
-class JSONToStorage {
+class ReaderToStorage {
 public:
     /*
      * Exceptions.
@@ -380,12 +380,12 @@ public:
      * Read a storage from input stream. Parameter @p root_type
      * provides input type tree declaration. See @p read_from_stream for details.
      */
-    JSONToStorage(const FilePath &in_file, const Type::TypeBase &root_type);
+    ReaderToStorage(const FilePath &in_file, const Type::TypeBase &root_type);
 
     /**
      * Read a storage from string (e.g. complex default value).
      */
-    JSONToStorage( const string &default_str, const Type::TypeBase &root_type, FileFormat format);
+    ReaderToStorage( const string &default_str, const Type::TypeBase &root_type, FileFormat format);
 
     /**
      * Returns the root accessor. The template type \p T should correspond
@@ -401,7 +401,7 @@ protected:
      * Default constructor.
      * Provides common initialization for public constructors.
      */
-    JSONToStorage();
+    ReaderToStorage();
 
     /**
      * This method actually reads the given stream \p in, checks the data just read against the declaration tree given by \p root_type, and
@@ -462,7 +462,7 @@ protected:
  */
 
 template <class T>
-T JSONToStorage::get_root_interface() const
+T ReaderToStorage::get_root_interface() const
 {
 	ASSERT(storage_, "NULL pointer to storage !!! \n");
 
@@ -481,4 +481,4 @@ T JSONToStorage::get_root_interface() const
 
 
 
-#endif /* JSON_TO_STORAGE_HH_ */
+#endif /* READER_TO_STORAGE_HH_ */

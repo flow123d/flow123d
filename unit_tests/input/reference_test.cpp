@@ -7,7 +7,7 @@
 #include "input/type_base.hh"
 #include "input/accessors.hh"
 #include "input/type_output.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 namespace IT = Input::Type;
 
@@ -88,14 +88,14 @@ IT::Record get_type_record() {
 TEST(JSONReference, valid_reference_rec_test) {
 	using namespace Input;
 
-	JSONToStorage json_reader( valid_record_json, get_type_record(), FileFormat::format_JSON);
+	ReaderToStorage json_reader( valid_record_json, get_type_record(), FileFormat::format_JSON);
 }
 
 TEST(JSONReference, cyclic_reference_rec_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{JSONToStorage json_reader( cyclic_record_json, get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_record_json, get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }
@@ -104,7 +104,7 @@ TEST(JSONReference, cyclic_reference_arr_test) {
 	using namespace Input;
 
     EXPECT_THROW_WHAT(
-    		{JSONToStorage json_reader( cyclic_array_json, get_type_record(), FileFormat::format_JSON);},
+    		{ReaderToStorage json_reader( cyclic_array_json, get_type_record(), FileFormat::format_JSON);},
 			PathBase::ExcReferenceNotFound,
 			"cannot follow reference");
 }

@@ -34,7 +34,7 @@
 
 #include "system/system.hh"
 #include "system/xio.h"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
 
@@ -87,7 +87,7 @@ Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
 :comm_(comm)
 {
 
-    Input::JSONToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     in_record_ = reader.get_root_interface<Input::Record>();
 
     reinit(in_record_);

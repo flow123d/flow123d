@@ -1,5 +1,5 @@
 /*
- * json_to_storage.cc
+ * reader_to_storage.cc
  *
  *  Created on: May 7, 2012
  *      Author: jb
@@ -10,7 +10,7 @@
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
-#include "json_to_storage.hh"
+#include "reader_to_storage.hh"
 #include "input/comment_filter.hh"
 
 #include "json_spirit/json_spirit_error_position.h"
@@ -86,8 +86,8 @@ PathJSON::PathJSON(istream &in)
     try {
         json_spirit::read_or_throw( filter_in, root_node);
     } catch (json_spirit::Error_position &e ) {
-        THROW( JSONToStorage::ExcNotJSONFormat() << JSONToStorage::EI_JSONLine(e.line_) << JSONToStorage::EI_JSONColumn(e.column_)
-        	<< JSONToStorage::EI_JSONReason(e.reason_));
+        THROW( ReaderToStorage::ExcNotJSONFormat() << ReaderToStorage::EI_JSONLine(e.line_) << ReaderToStorage::EI_JSONColumn(e.column_)
+        	<< ReaderToStorage::EI_JSONReason(e.reason_));
     }
 
     nodes_.push_back( new Node(root_node) );
@@ -238,7 +238,7 @@ bool PathJSON::get_bool_value() const {
     if (head()->type() == json_spirit::bool_type) {
         return head()->get_bool();
     } else {
-        THROW( JSONToStorage::ExcInputError()  );
+        THROW( ReaderToStorage::ExcInputError()  );
     }
 	return false;
 }
@@ -249,7 +249,7 @@ std::int64_t PathJSON::get_int_value() const {
     if (head()->type() == json_spirit::int_type) {
         return head()->get_int64();
     } else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
     }
 	return 0;
 }
@@ -262,7 +262,7 @@ double PathJSON::get_double_value() const {
          || value_type == json_spirit::int_type) {
         return head()->get_real();
     } else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
     }
 	return 0.0;
 }
@@ -273,7 +273,7 @@ std::string PathJSON::get_string_value() const {
     if (head()->type() == json_spirit::str_type) {
         return head()->get_str();
     } else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
     }
 	return "";
 }
@@ -433,10 +433,10 @@ bool PathYAML::get_bool_value() const {
 		try {
 			return head()->as<bool>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() );
+	        THROW( ReaderToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
 	}
 	return false;
 }
@@ -447,10 +447,10 @@ std::int64_t PathYAML::get_int_value() const {
 		try {
 			return head()->as<std::int64_t>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() );
+	        THROW( ReaderToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
 	}
 	return 0;
 }
@@ -461,10 +461,10 @@ double PathYAML::get_double_value() const {
 		try {
 			return head()->as<double>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() );
+	        THROW( ReaderToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
 	}
 	return 0.0;
 }
@@ -475,10 +475,10 @@ std::string PathYAML::get_string_value() const {
 		try {
 			return head()->as<std::string>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() );
+	        THROW( ReaderToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() );
+        THROW( ReaderToStorage::ExcInputError() );
 	}
 	return "";
 }
@@ -556,18 +556,18 @@ std::ostream& operator<<(std::ostream& stream, const PathYAML& path) {
 
 
 /********************************************
- * Implementation of public part of JSONToStorage
+ * Implementation of public part of ReaderToStorage
  */
 
-JSONToStorage::JSONToStorage()
+ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
   root_type_(nullptr)
 {}
 
 
 
-JSONToStorage::JSONToStorage(const FilePath &in_file, const Type::TypeBase &root_type)
-: JSONToStorage()
+ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &root_type)
+: ReaderToStorage()
 {
 	std::string fname = in_file;
 	std::string extension = fname.substr(fname.find_last_of(".") + 1);
@@ -589,8 +589,8 @@ JSONToStorage::JSONToStorage(const FilePath &in_file, const Type::TypeBase &root
 
 
 
-JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
-: JSONToStorage()
+ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
+: ReaderToStorage()
 {
 	try {
 		istringstream is(str);
@@ -602,7 +602,7 @@ JSONToStorage::JSONToStorage( const string &str, const Type::TypeBase &root_type
 
 
 
-void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
+void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
     namespace io = boost::iostreams;
     ASSERT(storage_==nullptr," ");
@@ -640,11 +640,11 @@ void JSONToStorage::read_stream(istream &in, const Type::TypeBase &root_type, Fi
 
 
 /********************************************
- * Implementation of private part of JSONToStorage - make_storage dispatch
+ * Implementation of private part of ReaderToStorage - make_storage dispatch
  */
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *type)
 {
     ASSERT(type != NULL, "Can not dispatch, NULL pointer to TypeBase.\n");
 
@@ -696,7 +696,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::TypeBase *typ
 }
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Record *record)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
 	std::set<string> keys_to_process;
 	if ( p.get_record_key_set(keys_to_process) ) {
@@ -761,7 +761,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Record *recor
 }
 
 
-StorageBase * JSONToStorage::record_automatic_conversion(PathBase &p, const Type::Record *record)
+StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Type::Record *record)
 {
 	Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
 	if ( auto_key_it != record->end() ) {
@@ -799,7 +799,7 @@ StorageBase * JSONToStorage::record_automatic_conversion(PathBase &p, const Type
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::AbstractRecord *abstr_rec)
 {
 	if ( p.is_record_type() ) {
 
@@ -833,7 +833,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecor
 
 
 
-StorageBase * JSONToStorage::abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec)
+StorageBase * ReaderToStorage::abstract_rec_automatic_conversion(PathBase &p, const Type::AbstractRecord *abstr_rec)
 {
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
@@ -847,7 +847,7 @@ StorageBase * JSONToStorage::abstract_rec_automatic_conversion(PathBase &p, cons
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Array *array)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *array)
 {
 	int arr_size;
 	if ( (arr_size = p.get_array_size()) != -1 ) {
@@ -886,7 +886,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Array *array)
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Selection *selection)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *selection)
 {
     string item_name;
 	try {
@@ -909,7 +909,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Selection *se
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Bool *bool_type)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_type)
 {
 	try {
 		return new StorageBool( p.get_bool_value() );
@@ -926,7 +926,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Bool *bool_ty
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Integer *int_type)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *int_type)
 {
 	std::int64_t value;
 	try {
@@ -953,7 +953,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Integer *int_
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Double *double_type)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *double_type)
 {
     double value;
 
@@ -980,7 +980,7 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Double *doubl
 
 
 
-StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::String *string_type)
+StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *string_type)
 {
 	string value;
 	try {
@@ -1005,11 +1005,11 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::String *strin
 
 
 
-StorageBase * JSONToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
+StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str, const Type::TypeBase *type) {
     try {
     	/*
     	// Possible simplification of this method (need default strings to be valid JSON)
-    	JSONToStorage  tmp_storage(dflt_str, *type);
+    	ReaderToStorage  tmp_storage(dflt_str, *type);
     	return tmp_storage.storage_;
 		*/
 
