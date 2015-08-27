@@ -62,6 +62,12 @@ void PathBase::go_to_root() {
 
 
 
+std::string PathBase::get_node_type(unsigned int type_idx) const {
+	return json_type_names[ type_idx ];
+}
+
+
+
 /********************************************
  * Implementation of  internal::PathJSON
  */
@@ -101,6 +107,8 @@ PathJSON::PathJSON()
     json_type_names.push_back("JSON int");
     json_type_names.push_back("JSON real");
     json_type_names.push_back("JSON null");
+    json_type_names.push_back(""); //scalar type
+    json_type_names.push_back(""); //undefined type
 }
 
 
@@ -230,9 +238,7 @@ bool PathJSON::get_bool_value() const {
     if (head()->type() == json_spirit::bool_type) {
         return head()->get_bool();
     } else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON bool', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError()  );
     }
 	return false;
 }
@@ -243,9 +249,7 @@ std::int64_t PathJSON::get_int_value() const {
     if (head()->type() == json_spirit::int_type) {
         return head()->get_int64();
     } else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON int', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
     }
 	return 0;
 }
@@ -258,9 +262,7 @@ double PathJSON::get_double_value() const {
          || value_type == json_spirit::int_type) {
         return head()->get_real();
     } else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON real', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-        	 );
+        THROW( JSONToStorage::ExcInputError() );
     }
 	return 0.0;
 }
@@ -271,17 +273,15 @@ std::string PathJSON::get_string_value() const {
     if (head()->type() == json_spirit::str_type) {
         return head()->get_str();
     } else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'JSON string', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
     }
 	return "";
 }
 
 
 
-std::string PathJSON::get_node_type() const {
-	return json_type_names[ head()->type() ];
+unsigned int PathJSON::get_node_type_index() const {
+	return head()->type();
 }
 
 
@@ -373,6 +373,16 @@ PathYAML::PathYAML(istream &in)
 {
 	PathYAML::Node root_node = YAML::Load( in );
     nodes_.push_back( new Node(root_node) );
+
+    json_type_names.push_back("YAML map");
+    json_type_names.push_back("YAML sequence");
+    json_type_names.push_back("YAML string");
+    json_type_names.push_back("YAML bool");
+    json_type_names.push_back("YAML int");
+    json_type_names.push_back("YAML real");
+    json_type_names.push_back("YAML null");
+    json_type_names.push_back("other scalar type");
+    json_type_names.push_back("undefined type");
 }
 
 
@@ -423,14 +433,10 @@ bool PathYAML::get_bool_value() const {
 		try {
 			return head()->as<bool>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML bool', but we found: ")
-	                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-	             );
+	        THROW( JSONToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML bool', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
 	}
 	return false;
 }
@@ -441,14 +447,10 @@ std::int64_t PathYAML::get_int_value() const {
 		try {
 			return head()->as<std::int64_t>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML int', but we found: ")
-	                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-	             );
+	        THROW( JSONToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML int', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
 	}
 	return 0;
 }
@@ -459,14 +461,10 @@ double PathYAML::get_double_value() const {
 		try {
 			return head()->as<double>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML double', but we found: ")
-	                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-	             );
+	        THROW( JSONToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML double', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
 	}
 	return 0.0;
 }
@@ -477,26 +475,22 @@ std::string PathYAML::get_string_value() const {
 		try {
 			return head()->as<std::string>();
 		} catch (YAML::Exception) {
-	        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML string', but we found: ")
-	                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-	             );
+	        THROW( JSONToStorage::ExcInputError() );
 		}
 	} else {
-        THROW( JSONToStorage::ExcInputError() << JSONToStorage::EI_Specification("The value should be 'YAML string', but we found: ")
-                << JSONToStorage::EI_ErrorAddress(this->as_string()) << JSONToStorage::EI_JSON_Type( get_node_type() )
-             );
+        THROW( JSONToStorage::ExcInputError() );
 	}
 	return "";
 }
 
 
-std::string PathYAML::get_node_type() const {
+unsigned int PathYAML::get_node_type_index() const {
 	switch (head()->Type()) {
-	  case YAML::NodeType::Null: return "YAML null";
-	  case YAML::NodeType::Scalar: return "other scalar type";
-	  case YAML::NodeType::Sequence: return "YAML sequence";
-	  case YAML::NodeType::Map: return "YAML map";
-	  default: return "undefined type";
+	  case YAML::NodeType::Null: return ValueTypes::null_type;
+	  case YAML::NodeType::Scalar: return ValueTypes::scalar_type;
+	  case YAML::NodeType::Sequence: return ValueTypes::array_type;
+	  case YAML::NodeType::Map: return ValueTypes::obj_type;
+	  default: return ValueTypes::undef_type;
 	}
 }
 
@@ -795,8 +789,8 @@ StorageBase * JSONToStorage::record_automatic_conversion(PathBase &p, const Type
 	    }
 
 	} else {
-	    THROW( ExcInputError() << EI_Specification("The value should be '" + p.map_name() + "', but we found: ")
-	            << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type() )
+	    THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
+	            << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
 				<< EI_InputType( record->desc()) );
 	}
 
@@ -830,8 +824,8 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::AbstractRecor
 		}
 	} else {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-			THROW( ExcInputError() << EI_Specification("The value should be 'JSON object', but we found: ") // TODO: replace JSON object
-				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type() ) << EI_InputType(abstr_rec->desc()) );
+			THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
+				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
 		} else { // auto conversion
 			return abstract_rec_automatic_conversion(p, abstr_rec);
 		}
@@ -885,8 +879,8 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Array *array)
 
             return storage_array;
         } else {
-            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.sequence_name() + "', but we found: ")
-                    << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type() ) << EI_InputType(array->desc()) );
+            THROW( ExcInputError() << EI_Specification("Automatic conversion to array not allowed. The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ")
+                    << EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(array->desc()) );
         }
     }
 
@@ -903,6 +897,9 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Selection *se
 		int value = selection->name_to_int( item_name  );
 		return new StorageInt( value );
 	} catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+        e << EI_ErrorAddress(p.as_string());
+        e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 		e << EI_InputType(selection->desc());
 		throw;
 	} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
@@ -921,6 +918,9 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Bool *bool_ty
 		return new StorageBool( p.get_bool_value() );
 	}
 	catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::bool_type) + "', but we found: ");
+		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << EI_ErrorAddress(p.as_string());
 		e << EI_InputType(bool_type->desc());
 		throw;
 	}
@@ -936,6 +936,9 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Integer *int_
 		value = p.get_int_value();
 	}
 	catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+		e << EI_ErrorAddress(p.as_string());
+		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 		e << EI_InputType(int_type->desc());
 		throw;
 	}
@@ -961,6 +964,9 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::Double *doubl
 		value = p.get_double_value();
 	}
 	catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::real_type) + "', but we found: ");
+		e << EI_ErrorAddress(p.as_string());
+		e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 		e << EI_InputType(double_type->desc());
 		throw;
 	}
@@ -984,6 +990,9 @@ StorageBase * JSONToStorage::make_storage(PathBase &p, const Type::String *strin
 		value = p.get_string_value();
 	}
 	catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+        e << EI_ErrorAddress(p.as_string());
+        e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 		e << EI_InputType(string_type->desc());
 		throw;
 	}

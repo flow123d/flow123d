@@ -46,6 +46,13 @@ typedef enum  {
 
 
 
+/// Enum of possible input types. Values in @p json_type_names must be stored in same order.
+typedef enum {
+	obj_type, array_type, str_type, bool_type, int_type, real_type, null_type, scalar_type, undef_type
+} ValueTypes;
+
+
+
 class PathBase {
 public:
 
@@ -112,8 +119,11 @@ public:
     /// Get string value of head node or throw exception
     virtual std::string get_string_value() const =0;
 
-    /// Get short string description of head type, method is used for printout of messages
-    virtual std::string get_node_type() const =0;
+    /// Get short string description of node type, method is used for printout of messages
+    std::string get_node_type(unsigned int type_idx) const;
+
+    /// Get index of head type, value corresponds with order in @p json_type_names vector
+    virtual unsigned int get_node_type_index() const =0;
 
     /// Get set of keys of head type record, if head type is not record return false
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
@@ -157,12 +167,6 @@ public:
      */
     virtual std::string get_descendant_name(const Type::Selection &sel) const =0;
 
-    /// Returns name of sequence type (e. g. "JSON array")
-    virtual std::string sequence_name() const =0;
-
-    /// Returns name of map type (e. g. "JSON object")
-    virtual std::string map_name() const =0;
-
 protected:
     PathBase();
 
@@ -172,6 +176,13 @@ protected:
      * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
      */
     vector< pair<int, string> > path_;
+
+    /**
+     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
+     * Initialized in constructor.
+     *
+     */
+    vector<string> json_type_names;
 
 };
 
@@ -216,20 +227,12 @@ public:
     std::int64_t get_int_value() const override;
     double get_double_value() const override;
     std::string get_string_value() const override;
-    std::string get_node_type() const override;
+    unsigned int get_node_type_index() const override;
     bool get_record_key_set(std::set<std::string> &) const override;
     int get_array_size() const override;
     bool is_record_type() const override;
     bool is_array_type() const override;
     PathJSON * clone() const override;
-
-    inline std::string sequence_name() const override {
-    	return "JSON array";
-    }
-
-    inline std::string map_name() const override {
-    	return "JSON object";
-    }
 
     PathBase * find_ref_node();
 
@@ -257,13 +260,6 @@ protected:
     std::set<string> previous_references_;
 
     vector<const Node *> nodes_;
-
-    /**
-     * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
-     * Initialized in constructor.
-     *
-     */
-    vector<string> json_type_names;
 
 };
 
@@ -302,20 +298,12 @@ public:
     std::int64_t get_int_value() const override;
     double get_double_value() const override;
     std::string get_string_value() const override;
-    std::string get_node_type() const override;
+    unsigned int get_node_type_index() const override;
     bool get_record_key_set(std::set<std::string> &) const override;
     int get_array_size() const override;
     bool is_record_type() const override;
     bool is_array_type() const override;
     PathYAML * clone() const override;
-
-    inline std::string sequence_name() const override {
-    	return "YAML sequence";
-    }
-
-    inline std::string map_name() const override {
-    	return "YAML map";
-    }
 
     PathBase * find_ref_node();
 
