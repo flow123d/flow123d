@@ -165,7 +165,7 @@ public:
      *
      * If descendant name is not found returns empty string.
      */
-    virtual std::string get_descendant_name(const Type::Selection &sel) const =0;
+    virtual std::string get_descendant_name() const =0;
 
 protected:
     PathBase();
@@ -241,7 +241,7 @@ public:
      */
     void remember_reference();
 
-    std::string get_descendant_name(const Type::Selection &sel) const;
+    std::string get_descendant_name() const;
 
 protected:
 
@@ -307,7 +307,7 @@ public:
 
     PathBase * find_ref_node();
 
-    std::string get_descendant_name(const Type::Selection &sel) const;
+    std::string get_descendant_name() const;
 
 protected:
     /**
