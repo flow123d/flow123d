@@ -125,7 +125,7 @@ double_fix_tensor_cdiag=1.3
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 TEST(FieldValue_, init_from_input) {
     // setup FilePath directories
@@ -159,7 +159,7 @@ TEST(FieldValue_, init_from_input) {
     	.close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 
@@ -295,7 +295,7 @@ TEST(FieldValue_, string_values_init_from_input) {
     	.close();
 
     // read input string
-    Input::JSONToStorage reader( formula_input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( formula_input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
 

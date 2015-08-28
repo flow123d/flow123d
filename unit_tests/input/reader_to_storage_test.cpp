@@ -1,5 +1,5 @@
 /*
- * json_to_storage.cpp
+ * reader_to_storage_test.cpp
  *
  *  Created on: May 7, 2012
  *      Author: jb
@@ -12,7 +12,10 @@
 #include <flow_gtest.hh>
 #include <fstream>
 
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
+#include "input/path_base.hh"
+#include "input/path_json.hh"
+#include "input/path_yaml.hh"
 
 using namespace std;
 
@@ -21,58 +24,57 @@ using namespace Input;
 TEST(PathJSON, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-    ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
-    PathBase * path = new PathJSON(in_str);
+    ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.con").c_str());
+    PathJSON path(in_str);
 
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/",os.str());
     }
 
-    path->down(6);
+    path.down(6);
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("a");
+    path.down("a");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/a",os.str());
     }
+    EXPECT_EQ(1,path.find_ref_node()->get_int_value() );
 
-    string ref;
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("../../7/b/c",ref);
-
-    { ostringstream os;
-    path->output(os);
-    EXPECT_EQ("/6/a",os.str());
-    }
-
-    EXPECT_EQ(1,path->find_ref_node(ref)->get_int_value() );
-
-    path=path->find_ref_node("/6/b");
-    path->get_ref_from_head(ref);
-    EXPECT_EQ("/4", ref);
-    EXPECT_EQ("ctyri",path->find_ref_node(ref)->get_string_value() );
+    path.go_to_root();
+    path.down(6);
+    path.down("b");
+    EXPECT_EQ("ctyri",path.find_ref_node()->get_string_value() );
 }
 
 
 TEST(PathJSON, errors) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.con").c_str());
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.con").c_str());
 
-    string ref;
     PathJSON path(in_str);
     path.down(8);
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
 
-    EXPECT_THROW_WHAT( { path.get_ref_from_head(ref);}, PathBase::ExcRefOfWrongType,"has wrong type, should by string." );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/4");}, PathBase::ExcReferenceNotFound, "there should be Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/5/10");}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/../..");}, PathBase::ExcReferenceNotFound, "can not go up from root" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/key");}, PathBase::ExcReferenceNotFound, "there should be Record" );
-    EXPECT_THROW_WHAT( { path.find_ref_node("/6/key");}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
+    path.go_to_root();
+    path.down(9); // "REF":"/5/10"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "index out of size of Array" );
+
+    path.go_to_root();
+    path.down(10); // "REF":"/6/../.."
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "can not go up from root" );
+
+    path.go_to_root();
+    path.down(11); // "REF":"/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "there should be Record" );
+
+    path.go_to_root();
+    path.down(12); // "REF":"/6/key"
+    EXPECT_THROW_WHAT( { path.find_ref_node();}, PathBase::ExcReferenceNotFound, "key 'key' not found" );
 }
 
 
@@ -80,35 +82,35 @@ TEST(PathJSON, errors) {
 TEST(PathYAML, all) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
-    PathBase * path = new PathYAML(in_str);
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.yaml").c_str());
+	PathYAML path(in_str);
 
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/",os.str());
     }
 
-    path->down(6);
+    path.down(6);
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("a");
+    path.down("a");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/a",os.str());
     }
 
-    path->up();
+    path.up();
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6",os.str());
     }
 
-    path->down("b");
+    path.down("b");
     { ostringstream os;
-    path->output(os);
+    os << path;
     EXPECT_EQ("/6/b",os.str());
     }
 
@@ -118,34 +120,34 @@ TEST(PathYAML, all) {
 TEST(PathYAML, values) {
 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/json_to_storage_test.yaml").c_str());
+	ifstream in_str((string(UNIT_TESTS_SRC_DIR) + "/input/reader_to_storage_test.yaml").c_str());
 	PathYAML path(in_str);
 
 	path.down(0); // bool value
 	EXPECT_FALSE(path.get_bool_value());
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
-	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'YAML double'" );
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_double_value(); }, ReaderToStorage::ExcInputError );
 	EXPECT_STREQ("false", path.get_string_value().c_str());
 	path.up();
 
 	path.down(1); // int value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
 	EXPECT_EQ(1, path.get_int_value());
 	EXPECT_FLOAT_EQ(1.0, path.get_double_value());
 	EXPECT_STREQ("1", path.get_string_value().c_str());
 	path.up();
 
 	path.down(3); // double value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
 	EXPECT_FLOAT_EQ(3.3, path.get_double_value());
 	EXPECT_STREQ("3.3", path.get_string_value().c_str());
 	path.up();
 
 	path.down(4); // string value
-	EXPECT_THROW_WHAT( { path.get_bool_value(); }, JSONToStorage::ExcInputError, "should be 'YAML bool'" );
-	EXPECT_THROW_WHAT( { path.get_int_value(); }, JSONToStorage::ExcInputError, "should be 'YAML int'" );
-	EXPECT_THROW_WHAT( { path.get_double_value(); }, JSONToStorage::ExcInputError, "should be 'YAML double'" );
+	EXPECT_THROW( { path.get_bool_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_int_value(); }, ReaderToStorage::ExcInputError );
+	EXPECT_THROW( { path.get_double_value(); }, ReaderToStorage::ExcInputError );
 	EXPECT_STREQ("ctyri", path.get_string_value().c_str());
 	path.up();
 
@@ -156,7 +158,7 @@ TEST(PathYAML, values) {
 	path.down(6); // record
 	std::set<std::string> set;
 	path.get_record_key_set(set);
-	EXPECT_EQ(3, set.size());
+	EXPECT_EQ(2, set.size());
 	EXPECT_TRUE( set.find("a")!=set.end() );
 	EXPECT_TRUE( set.find("b")!=set.end() );
 	EXPECT_FALSE( set.find("c")!=set.end() );
@@ -166,7 +168,7 @@ TEST(PathYAML, values) {
 }
 
 
-class InputJSONToStorageTest : public testing::Test, public Input::JSONToStorage {
+class InputReaderToStorageTest : public testing::Test, public Input::ReaderToStorage {
 protected:
 
     virtual void SetUp() {
@@ -178,11 +180,11 @@ protected:
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	JSONToStorage::read_stream(in, root_type, format);
+    	ReaderToStorage::read_stream(in, root_type, format);
     }
 };
 
-TEST_F(InputJSONToStorageTest, Integer) {
+TEST_F(InputReaderToStorageTest, Integer) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Integer int_type(1,10);
     Type::Integer any_int;
@@ -207,7 +209,7 @@ TEST_F(InputJSONToStorageTest, Integer) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Double) {
+TEST_F(InputReaderToStorageTest, Double) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Double dbl_type(1.1,10.1);
     Type::Double any_double;
@@ -244,7 +246,7 @@ TEST_F(InputJSONToStorageTest, Double) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Selection) {
+TEST_F(InputReaderToStorageTest, Selection) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Selection sel_type = Type::Selection("IntSelection")
     	.add_value(10,"ten","")
@@ -270,7 +272,7 @@ TEST_F(InputJSONToStorageTest, Selection) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, String) {
+TEST_F(InputReaderToStorageTest, String) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::String str_type;
 
@@ -287,7 +289,7 @@ TEST_F(InputJSONToStorageTest, String) {
     }
 }
 
-TEST_F(InputJSONToStorageTest, Bool) {
+TEST_F(InputReaderToStorageTest, Bool) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Bool bool_type;
 
@@ -312,7 +314,7 @@ const string input_yaml_array = R"YAML(
 )YAML";
 
 
-TEST_F(InputJSONToStorageTest, Array) {
+TEST_F(InputReaderToStorageTest, Array) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Type::Array darr_type( Type::Double(3.1,4.1), 2,4);
 
@@ -383,7 +385,7 @@ TEST_F(InputJSONToStorageTest, Array) {
 }
 
 
-TEST_F(InputJSONToStorageTest, Record) {
+TEST_F(InputReaderToStorageTest, Record) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     static Type::Record rec_type = Type::Record( "SomeRec","desc.")
     	.declare_key("int_key", Type::Integer(0,5), Type::Default::obligatory(), "")
@@ -527,15 +529,14 @@ TEST_F(InputJSONToStorageTest, Record) {
 
 
 const string input_yaml_abstract = R"YAML(
-!type
-TYPE: EqDarcy
+!EqDarcy
 b_val: 10
 a_val: prime
 mesh: some.msh
 )YAML";
 
 
-TEST_F(InputJSONToStorageTest, AbstractRec) {
+TEST_F(InputReaderToStorageTest, AbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	static Type::Record copy_rec = Type::Record("Copy","")
@@ -552,7 +553,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     	.declare_key("b_val", Type::Integer(), "")
 		.close();
 
-    EXPECT_EQ(false, b_rec.is_finished());
+    EXPECT_FALSE(b_rec.is_finished());
 
     static Type::Record c_rec = Type::Record("EqTransp","")
     	.derive_from(a_rec)
@@ -675,7 +676,7 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
 
 }
 
-/*TEST_F(InputJSONToStorageTest, AdHocAbstractRec) {
+/*TEST_F(InputReaderToStorageTest, AdHocAbstractRec) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::Selection sel_type("TYPE_selection");
@@ -736,20 +737,20 @@ TEST_F(InputJSONToStorageTest, AbstractRec) {
     }
 } */
 
-TEST(InputJSONToStorageTest_external, get_root_interface) {
+TEST(InputReaderToStorageTest_external, get_root_interface) {
     static Type::Record one_rec = Type::Record("One","")
     	.declare_key("one",Input::Type::Integer(),"")
 		.close();
     one_rec.finish();
 
-    JSONToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
+    ReaderToStorage json_reader("{ one=1 }", one_rec, FileFormat::format_JSON);
     Input::Record rec=json_reader.get_root_interface<Input::Record>();
     EXPECT_EQ(1, *(rec.find<int>("one")) );
     //json_reader.get_storage()->print(cout);
 
 }
 
-TEST_F(InputJSONToStorageTest, default_values) {
+TEST_F(InputReaderToStorageTest, default_values) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
     static Type::Selection sel_type = Type::Selection("tmp selection")

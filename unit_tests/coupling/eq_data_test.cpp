@@ -31,7 +31,7 @@
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
@@ -202,7 +202,7 @@ protected:
 
     void read_input(const string &input) {
         // read input string
-        Input::JSONToStorage reader( input, get_input_type(), Input::FileFormat::format_JSON );
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_JSON );
         Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
         TimeGovernor tg(0.0, 1.0);

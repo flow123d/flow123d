@@ -3,7 +3,10 @@
 
 #include <flow_gtest_mpi.hh>
 #include "dealii/include/deal.II/lac/vector.templates.h"
-#include "dealii/include/deal.II/lac/sparse_direct.h"
+#include "dealii/include/deal.II/lac/precondition.h"
+#include "dealii/include/deal.II/lac/sparsity_pattern.h"
+#include "dealii/include/deal.II/lac/sparse_matrix.h"
+#include "dealii/include/deal.II/lac/solver_cg.h"
 #include "la/distribution.hh"
 
 
@@ -37,17 +40,19 @@ TEST(vector, petsc_mpi)
 
 TEST(solver, sparse_direct_umfpack)
 {
-	// Test UMFPACK solver on the system
+	// Test CG solver on the system
 	//
 	// ( 1 1 ) ( x ) = ( 5 )
 	// ( 1 0 ) ( y ) = ( 2 )
 	//
 	// with the solution x = 2, y = 3.
 
-	dealii::SparseDirectUMFPACK solver;
 	dealii::SparsityPattern pattern(2, 2);
 	dealii::SparseMatrix<double> mat;
-	dealii::Vector<double> rhs(2);
+	dealii::Vector<double> rhs(2), sol(2);
+	
+	
+
 
 	pattern.add(0, 1);
 	pattern.add(1, 0);
@@ -61,10 +66,12 @@ TEST(solver, sparse_direct_umfpack)
 	rhs(0) = 5;
 	rhs(1) = 2;
 	
-	solver.solve(mat, rhs);
+	dealii::SolverControl solver_control (10, 1e-12);
+	dealii::SolverCG<> solver (solver_control);
+	solver.solve (mat, sol, rhs, dealii::PreconditionIdentity());
 	
-	EXPECT_DOUBLE_EQ( 2, rhs(0) );
-	EXPECT_DOUBLE_EQ( 3, rhs(1) );
+	EXPECT_DOUBLE_EQ( 2, sol(0) );
+	EXPECT_DOUBLE_EQ( 3, sol(1) );
 }
 
 

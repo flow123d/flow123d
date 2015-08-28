@@ -407,42 +407,6 @@ private:
 	template<unsigned int dim>
 	void prepare_initial_condition();
 
-	/**
-	 * @brief Calculates flux through boundary of each region.
-	 *
-	 * This actually calls calc_fluxes<dim>() for each space dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates flux through boundary of each region of specific dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	template<unsigned int dim>
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region.
-	 *
-	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region of specific dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	template<unsigned int dim>
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
-
 
 
 	/// @name Physical parameters

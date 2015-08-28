@@ -27,7 +27,7 @@
 #endif /* TBB_USE_DEBUG */
 
 // RML_SERVER_NAME is the name of the RML server library.
-#if _WIN32||_WIN64
+#if _WIN32||_WIN64||__CYGWIN__
 #define RML_SERVER_NAME "irml" DEBUG_SUFFIX ".dll"
 #elif __APPLE__
 #define RML_SERVER_NAME "libirml" DEBUG_SUFFIX ".dylib"

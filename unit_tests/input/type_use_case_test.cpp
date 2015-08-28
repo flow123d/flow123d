@@ -11,7 +11,7 @@
 
 #include <fstream>
 #include <input/input_type.hh>
-#include <input/json_to_storage.hh>
+#include <input/reader_to_storage.hh>
 #include <input/accessors.hh>
 #include <input/factory.hh>
 
@@ -64,13 +64,13 @@ public:
     void SetUp() override {
     	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
     	FilePath fp(f_name, FilePath::FileType::input_file);
-    	json_reader = new Input::JSONToStorage(fp, get_input_type() );
+    	json_reader = new Input::ReaderToStorage(fp, get_input_type() );
     }
     void TearDown() override {
     	delete json_reader;
     }
 private:
-    Input::JSONToStorage *json_reader;
+    Input::ReaderToStorage *json_reader;
     Input::Record root_rec;
 
 };

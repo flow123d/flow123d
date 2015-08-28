@@ -28,7 +28,12 @@ ifndef tbb_os
   endif
 
   ifeq ($(OS), Windows_NT)
-    export tbb_os=windows
+    OS:=$(shell uname -o)
+    ifeq ($(OS),Cygwin)
+      export tbb_os=cygwin
+	else
+	  export tbb_os=windows
+    endif
   endif
   ifeq ($(OS), Linux)
     export tbb_os=linux

@@ -40,7 +40,7 @@
 #include <petscmat.h>
 #include "mesh/mesh.h"
 
-#include "transport/mass_balance.hh"
+#include "coupling/balance.hh"
 #include "fields/unit_si.hh"
 
 using namespace Input::Type;

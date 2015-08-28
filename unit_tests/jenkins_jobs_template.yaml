@@ -86,6 +86,7 @@
     builders:
       - shell: |
           cd flow123d
+          make html-doc || echo "No such step in makefile"
           make ref-doc
           make doxy-doc
 #    publishers:
@@ -196,12 +197,13 @@
     defaults: flow123d-build
     builders:
       - shell: |
+          make -C flow123d clean-tests
           cd flow123d/build_tree
-          rm -rf _CPack_Packages         
-          make package_source
           rm -rf _CPack_Packages
           make -i package
           make post_package
+          rm -rf _CPack_Packages
+          make package_source
       - shell: |
           cd flow123d
           bin/prepare_to_publish.sh
@@ -763,7 +765,7 @@
 #      4) uninstall - cmd uninstall and file removal
 - project:
     name: "Windows package tests"
-    action: [ install, run_inside, run_outside, uninstall ]
+    action: [ install, run_inside, run_outside, python_test, uninstall ]
     arch: [ 32, 64 ]
     jobs:
       - "Windows-{arch}-package-{action}"
@@ -784,7 +786,7 @@
 ########################################################################
 # Main multijob - release
 #
-# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED}
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED, FAILURE}
 - job-template:
     name: "Windows-{arch}-package-all"
     node: packages
@@ -808,10 +810,14 @@
           projects:  
             - name: "Windows-{arch}-package-run_outside"
       - multijob:
+          name: "Embedded Python test"
+          condition: COMPLETED
+          projects:
+            - name: "Windows-{arch}-package-python_test"
+      - multijob:
           name: "Uninstall"
           condition: SUCCESSFUL
           projects:  
             - name: "Windows-{arch}-package-uninstall"
-
 
 

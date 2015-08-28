@@ -96,6 +96,15 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     return result;
 }
 
+PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+    initialize();
+
+    // import module by dot separated path and its name
+    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    PythonLoader::check_error();
+
+    return module_object;
+}
 
 
 void PythonLoader::check_error() {
@@ -137,7 +146,7 @@ string from_py_string(const wstring &wstr) {
     char buff[ wstr.size() ];
     size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
     return string( buff, str_size );
-}  
+}
 
 // currently we support only Python 2.7
 //
@@ -160,19 +169,19 @@ PythonRunning::PythonRunning(const std::string& program_name)
         static PY_STRING _python_program_name = to_py_string(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         PY_STRING full_program_name = Py_GetProgramFullPath();
-        cout << "full program name: " << from_py_string(full_program_name) << std::endl;
+        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
 
         size_t pos = full_program_name.rfind( to_py_string("flow123d") );
         DBGMSG("pos: %d\n", pos);
         ASSERT(pos != PY_STRING::npos, "non flow123d binary");
         PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
-        cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
+        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
         PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
-        cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
+        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
 
         static PY_STRING our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
-        
+
         /*
         Py_GetPath();
 
@@ -190,11 +199,11 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
 //        string prefix = ;
         */
-        cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
-        cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
-        cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
-        cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
-        
+        // cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
+        // cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
+        // cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
+        // cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
+
         // 1. set program name
         // 2. get prefix
         // 3. get python full path
@@ -239,8 +248,20 @@ PythonRunning::PythonRunning(const std::string& program_name)
         num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
         std::cout << "Python full: " << buff << std::endl;
 */
-#endif
+#endif //FLOW123D_PYTHON_PREFIX
+
+    // initialize the Python interpreter.
     Py_Initialize();
+
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, first get current system path (Py_GetPath)
+    // than append flow123d Python modules path to sys.path
+    std::string path = Py_GetPath();
+    path = path  + ":" + std::string(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    // conversion to non const char
+    char * path_char = const_cast<char *>(path.c_str());
+    PySys_SetPath (path_char);
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 

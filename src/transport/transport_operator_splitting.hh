@@ -10,7 +10,6 @@
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "transport/mass_balance.hh"
 #include "transport/substance.hh"
 
 
@@ -19,6 +18,7 @@ class Mesh;
 class ReactionTerm;
 class ConvectionTransport;
 class Semchem_interface;
+class Balance;
 
 
 
