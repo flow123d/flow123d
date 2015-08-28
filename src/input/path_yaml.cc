@@ -18,8 +18,7 @@ using namespace std;
 PathYAML::PathYAML(istream &in)
 : PathBase()
 {
-	PathYAML::Node root_node = YAML::Load( in );
-    nodes_.push_back( new Node(root_node) );
+    nodes_.push_back( YAML::Load( in ) );
 
     json_type_names.push_back("YAML map");
     json_type_names.push_back("YAML sequence");
@@ -35,29 +34,27 @@ PathYAML::PathYAML(istream &in)
 PathYAML::~PathYAML()
 {
     this->go_to_root();
-    if (nodes_[0]) delete nodes_[0];
 }
 
 
 bool PathYAML::down(unsigned int index) {
-    const Node & head_node = *( nodes_.back() );
-    ASSERT(head_node.IsSequence(), "Head node must be of type Array.\n");
 
-    if ( index >= head_node.size() ) return false;
+    ASSERT(head().IsSequence(), "Head node must be of type Array.\n");
+
+    if ( index >= head().size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
-    nodes_.push_back( new Node( head_node[index] ) );
+    nodes_.push_back( head()[index] );
 
     return true;
 }
 
 
 bool PathYAML::down(const string& key) {
-    const Node & head_node = *( nodes_.back() );
-    ASSERT(head_node.IsMap(), "Head node must be of type Record.\n");
+    ASSERT(head().IsMap(), "Head node must be of type Record.\n");
 
-    if (head_node[key]) {
+    if ( head()[key] ) {
     	path_.push_back( make_pair( (int)(-1), key) );
-    	nodes_.push_back( new Node( head_node[key] ) );
+    	nodes_.push_back( head()[key] );
     } else {
         return false;
     }
@@ -68,23 +65,20 @@ bool PathYAML::down(const string& key) {
 void PathYAML::up() {
     if (path_.size() > 1) {
         path_.pop_back();
-        int size = nodes_.size();
-        const Node * node = nodes_.back();
-        delete node;
-        nodes_.resize(size-1);
+        nodes_.pop_back();
     }
 }
 
 
 bool PathYAML::is_null_type() const {
-	return head()->IsNull();
+	return head().IsNull();
 }
 
 
 bool PathYAML::get_bool_value() const {
-	if (head()->IsScalar()) {
+	if (head().IsScalar()) {
 		try {
-			return head()->as<bool>();
+			return head().as<bool>();
 		} catch (YAML::Exception) {
 	        THROW( ReaderToStorage::ExcInputError() );
 		}
@@ -96,9 +90,9 @@ bool PathYAML::get_bool_value() const {
 
 
 std::int64_t PathYAML::get_int_value() const {
-	if (head()->IsScalar()) {
+	if (head().IsScalar()) {
 		try {
-			return head()->as<std::int64_t>();
+			return head().as<std::int64_t>();
 		} catch (YAML::Exception) {
 	        THROW( ReaderToStorage::ExcInputError() );
 		}
@@ -110,9 +104,9 @@ std::int64_t PathYAML::get_int_value() const {
 
 
 double PathYAML::get_double_value() const {
-	if (head()->IsScalar()) {
+	if (head().IsScalar()) {
 		try {
-			return head()->as<double>();
+			return head().as<double>();
 		} catch (YAML::Exception) {
 	        THROW( ReaderToStorage::ExcInputError() );
 		}
@@ -124,9 +118,9 @@ double PathYAML::get_double_value() const {
 
 
 std::string PathYAML::get_string_value() const {
-	if (head()->IsScalar()) {
+	if (head().IsScalar()) {
 		try {
-			return head()->as<std::string>();
+			return head().as<std::string>();
 		} catch (YAML::Exception) {
 	        THROW( ReaderToStorage::ExcInputError() );
 		}
@@ -138,7 +132,7 @@ std::string PathYAML::get_string_value() const {
 
 
 unsigned int PathYAML::get_node_type_index() const {
-	switch (head()->Type()) {
+	switch (head().Type()) {
 	  case YAML::NodeType::Null: return ValueTypes::null_type;
 	  case YAML::NodeType::Scalar: return ValueTypes::scalar_type;
 	  case YAML::NodeType::Sequence: return ValueTypes::array_type;
@@ -149,8 +143,8 @@ unsigned int PathYAML::get_node_type_index() const {
 
 
 bool PathYAML::get_record_key_set(std::set<std::string> &keys_list) const {
-	if ( head()->IsMap() ) {
-		for (YAML::const_iterator it=head()->begin(); it!=head()->end(); ++it) {
+	if ( head().IsMap() ) {
+		for (YAML::const_iterator it=head().begin(); it!=head().end(); ++it) {
 			keys_list.insert( it->first.as<std::string>() );
 		}
         return true;
@@ -161,20 +155,20 @@ bool PathYAML::get_record_key_set(std::set<std::string> &keys_list) const {
 
 
 int PathYAML::get_array_size() const {
-	if (head()->IsSequence()) {
-		return head()->size();
+	if (head().IsSequence()) {
+		return head().size();
 	}
 	return -1;
 }
 
 
 bool PathYAML::is_record_type() const {
-	return head()->IsMap();
+	return head().IsMap();
 }
 
 
 bool PathYAML::is_array_type() const {
-	return head()->IsSequence();
+	return head().IsSequence();
 }
 
 
@@ -191,8 +185,7 @@ PathBase * PathYAML::find_ref_node()
 
 
 std::string PathYAML::get_descendant_name() const {
-	const Node & head_node = *( nodes_.back() );
-	std::string tag = head_node.Tag();
+	std::string tag = head().Tag();
 	if (tag == "?") {
 		return "";
 	} else {

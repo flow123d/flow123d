@@ -81,6 +81,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 		root_path = new PathYAML(in);
 	}
 
+	// guarantee to delete root_path on function return even on exception
 	std::unique_ptr<PathBase> root_path_ptr(root_path);
 
     root_type_ = &root_type;

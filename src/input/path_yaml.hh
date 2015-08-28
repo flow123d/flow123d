@@ -77,10 +77,10 @@ protected:
     /**
      * Pointer to YAML Value object at current path.
      */
-    inline const Node * head() const
+    inline const Node &head() const
     { return nodes_.back(); }
 
-    vector<const Node *> nodes_;
+    vector<Node> nodes_;
 };
 
 
