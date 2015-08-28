@@ -53,6 +53,13 @@ typedef enum {
 
 
 
+/**
+ * @brief Base abstract class used by ReaderToStorage class to iterate over the input tree.
+ *
+ * Currently this class has two descendants
+ *  - PathJSON: work with JSON input tree
+ *  - PathYAML: work with YAML input tree
+ */
 class PathBase {
 public:
 
@@ -234,14 +241,14 @@ public:
     bool is_array_type() const override;
     PathJSON * clone() const override;
 
-    PathBase * find_ref_node();
+    PathBase * find_ref_node() override;
 
     /**
      * Put address of actual reference to previous_references_ set
      */
     void remember_reference();
 
-    std::string get_descendant_name() const;
+    std::string get_descendant_name() const override;
 
 protected:
 
@@ -269,6 +276,15 @@ protected:
 std::ostream& operator<<(std::ostream& stream, const PathJSON& path);
 
 
+/**
+ * @brief Class used by ReaderToStorage class to iterate over the YAML tree provided by yaml-cpp library.
+ *
+ * This class keeps whole path from the root of the YAML tree to the current node. We store nodes along path in \p nodes_
+ * and address of the node in \p path_.
+ *
+ * The class also contains methods for processing of special tags for 'TYPE' key. Class doesn't need special methods
+ * for work with references. YAML tree used own native references.
+ */
 class PathYAML : public PathBase {
 public:
     typedef YAML::Node Node;
@@ -305,9 +321,9 @@ public:
     bool is_array_type() const override;
     PathYAML * clone() const override;
 
-    PathBase * find_ref_node();
+    PathBase * find_ref_node() override;
 
-    std::string get_descendant_name() const;
+    std::string get_descendant_name() const override;
 
 protected:
     /**
