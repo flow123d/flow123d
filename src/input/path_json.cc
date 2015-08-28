@@ -28,16 +28,16 @@ PathJSON::PathJSON(istream &in)
     filter_in.push(uncommenting_filter());
     filter_in.push(in);
 
-    Node root_node;
+    root_node_ = std::make_shared<Node>();
 
     try {
-        json_spirit::read_or_throw( filter_in, root_node);
+        json_spirit::read_or_throw( filter_in, *root_node_);
     } catch (json_spirit::Error_position &e ) {
         THROW( ReaderToStorage::ExcNotJSONFormat() << ReaderToStorage::EI_JSONLine(e.line_) << ReaderToStorage::EI_JSONColumn(e.column_)
         	<< ReaderToStorage::EI_JSONReason(e.reason_));
     }
 
-    nodes_.push_back( new Node(root_node) );
+    nodes_.push_back( root_node_.get() );
 }
 
 
@@ -58,6 +58,11 @@ PathJSON::PathJSON()
     json_type_names.push_back(""); //undefined type
 }
 
+
+PathJSON::~PathJSON()
+{
+    this->go_to_root();
+}
 
 bool PathJSON::down(unsigned int index)
 {

@@ -33,6 +33,11 @@ public:
     PathYAML(istream &in);
 
     /**
+     * Destructor. Clean nodes_.
+     */
+    ~PathYAML() override;
+
+    /**
      * Returns level of actual path. Root has level == 0.
      */
     inline int level() const
@@ -67,6 +72,8 @@ public:
     std::string get_descendant_name() const override;
 
 protected:
+
+
     /**
      * Pointer to YAML Value object at current path.
      */

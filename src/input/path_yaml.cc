@@ -32,6 +32,12 @@ PathYAML::PathYAML(istream &in)
     json_type_names.push_back("undefined type");
 }
 
+PathYAML::~PathYAML()
+{
+    this->go_to_root();
+    if (nodes_[0]) delete nodes_[0];
+}
+
 
 bool PathYAML::down(unsigned int index) {
     const Node & head_node = *( nodes_.back() );

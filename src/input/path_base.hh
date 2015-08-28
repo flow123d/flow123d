@@ -41,12 +41,11 @@ public:
             << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
 
-
-
     /**
-     * Require virtual destructor also for child classes.
+     * Must have virtual destructor to call the right one form child.
      */
     virtual ~PathBase() {};
+
 
     /**
      * Returns level of actual path. Root has level == 0.

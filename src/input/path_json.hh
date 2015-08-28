@@ -8,7 +8,7 @@
 #ifndef PATH_JSON_HH_
 #define PATH_JSON_HH_
 
-
+#include <memory>
 #include "input/path_base.hh"
 #include "json_spirit/json_spirit.h"
 
@@ -29,9 +29,18 @@ namespace Input {
  */
 class PathJSON : public PathBase {
 public:
-    typedef json_spirit::mValue Node;
 
+
+    /**
+     * Call JSON parser for given stream and create PathJSON for the root
+     * of parsed data tree.
+     */
     PathJSON(istream &in);
+
+    /**
+     * Destructor. Have to cleanup nodes_.
+     */
+    ~PathJSON() override;
 
     /**
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
@@ -62,7 +71,10 @@ public:
     bool is_record_type() const override;
     bool is_array_type() const override;
     PathJSON * clone() const override;
+    std::string get_descendant_name() const override;
 
+    // Implements reading of reference keys, and check of
+    // cyclic references.
     PathBase * find_ref_node() override;
 
     /**
@@ -70,7 +82,7 @@ public:
      */
     void remember_reference();
 
-    std::string get_descendant_name() const override;
+
 
 protected:
 
@@ -80,14 +92,22 @@ protected:
      */
     PathJSON();
 
+    typedef json_spirit::mValue Node;
+
     /**
      * Pointer to JSON Value object at current path.
      */
     inline const Node * head() const
     { return nodes_.back(); }
 
+    // Remember used references in order to avoid detect cyclic references.
+    // In JSON we allow usage of references using special key 'REF'.
     std::set<string> previous_references_;
 
+    // Root node has to be automatically deleted.
+    std::shared_ptr<Node> root_node_;
+
+    // Pointers to all nodes from the root up to the current path.
     vector<const Node *> nodes_;
 
 };
