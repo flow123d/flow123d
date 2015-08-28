@@ -8,12 +8,15 @@
 #ifndef PATH_BASE_HH_
 #define PATH_BASE_HH_
 
+#include <utility>
+#include <set>
+#include <string>
+#include <vector>
 
-#include "input/accessors.hh"
+#include "input/input_exception.hh"
 
 
 namespace Input {
-using namespace std;
 
 
 /**
@@ -29,11 +32,11 @@ public:
     /**
      * Thrown if a reference in the input file
      */
-    TYPEDEF_ERR_INFO(EI_ErrorAddress, string);
-    TYPEDEF_ERR_INFO(EI_RefAddress, string);
-    TYPEDEF_ERR_INFO(EI_JsonFile, const string);
-    TYPEDEF_ERR_INFO(EI_RefStr, const string);
-    TYPEDEF_ERR_INFO(EI_Specification, const string);
+    TYPEDEF_ERR_INFO(EI_ErrorAddress, std::string);
+    TYPEDEF_ERR_INFO(EI_RefAddress, std::string);
+    TYPEDEF_ERR_INFO(EI_JsonFile, std::string);
+    TYPEDEF_ERR_INFO(EI_RefStr, std::string);
+    TYPEDEF_ERR_INFO(EI_Specification, std::string);
     DECLARE_INPUT_EXCEPTION(ExcRefOfWrongType,
             << "Reference at address "
             << EI_ErrorAddress::qval << " has wrong type, should by string.");
@@ -71,7 +74,7 @@ public:
     /**
      * Output to the given stream.
      */
-    void output(ostream &stream) const;
+    void output(std::ostream &stream) const;
 
     /// Check if type of head node is null
     virtual bool is_null_type() const =0;
@@ -110,7 +113,7 @@ public:
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
      */
     virtual bool down(unsigned int index) =0;
-    virtual bool down(const string& key) =0;
+    virtual bool down(const std::string& key) =0;
 
     /**
      * Return one level up in the hierarchy.
@@ -125,7 +128,7 @@ public:
     /**
      * Returns string address of current position.
      */
-    string as_string() const;
+    std::string as_string() const;
 
     /**
      * Gets name of descendant of Abstract:
@@ -144,14 +147,14 @@ protected:
      * For the first type we save index into first part of the pair and empty string to the second.
      * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
      */
-    vector< pair<int, string> > path_;
+    std::vector< std::pair<int, std::string> > path_;
 
     /**
      * Names of all possible node types in parsed JSON tree provided by JSON Spirit library.
      * Initialized in constructor.
      *
      */
-    vector<string> json_type_names;
+    std::vector<std::string> json_type_names;
 
 };
 

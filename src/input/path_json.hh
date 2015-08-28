@@ -35,7 +35,7 @@ public:
      * Call JSON parser for given stream and create PathJSON for the root
      * of parsed data tree.
      */
-    PathJSON(istream &in);
+    PathJSON(std::istream &in);
 
     /**
      * Destructor. Have to cleanup nodes_.
@@ -46,7 +46,7 @@ public:
      * Dive into json_spirit hierarchy. Store current path and returns true if pointer to new json_spirit node is not NULL.
      */
     bool down(unsigned int index) override;
-    bool down(const string& key) override;
+    bool down(const std::string& key) override;
 
     /**
      * Return one level up in the hierarchy.
@@ -102,13 +102,13 @@ protected:
 
     // Remember used references in order to avoid detect cyclic references.
     // In JSON we allow usage of references using special key 'REF'.
-    std::set<string> previous_references_;
+    std::set<std::string> previous_references_;
 
     // Root node has to be automatically deleted.
     std::shared_ptr<Node> root_node_;
 
     // Pointers to all nodes from the root up to the current path.
-    vector<const Node *> nodes_;
+    std::vector<const Node *> nodes_;
 
 };
 

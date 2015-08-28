@@ -4,20 +4,6 @@
  *  Created on: May 7, 2012
  *      Author: jb
  *
- * TODO:
- *  EI_InputType - passing pointer is not save. The object can be deleted during stack unfolding.
- *  Error_info can not be used for abstract types (of course), the only save way is to
- *  use  boost::shared_ptr, so make the copy our self by make_shared and then only pass the pointer.
- *
- *  These problems can be eliminated, when all Type instances are static.
- *
- * TODO:
- * - check cyclic references, drop const for json_spirit pointers and modify REF keys
- *   when dereferenced and modify it back when we return.
- *   (e.g.  add a new entry into map
- * TODO:
- *   Find deleting of a null pointer in json_spirit library. Possibly implement
- *   output of true stack for GNU.
  */
 
 #ifndef READER_TO_STORAGE_HH_
@@ -28,7 +14,7 @@
 
 #include "input/input_type.hh"
 
-#include "input/accessors.hh"
+#include "input/input_exception.hh"
 #include "input/storage.hh"
 #include "input/path_base.hh"
 
@@ -183,22 +169,6 @@ protected:
 
 
 
-/********************************************88
- * Implementation
- */
-
-template <class T>
-T ReaderToStorage::get_root_interface() const
-{
-	ASSERT(storage_, "NULL pointer to storage !!! \n");
-
-	Address addr(storage_, root_type_);
-	// try to create an iterator just to check type
-	Iterator<T>( *root_type_, addr, 0);
-
-	auto tmp_root_type = static_cast<const typename T::InputType &>(*root_type_);
-    return T( addr, tmp_root_type );
-}
 
 
 

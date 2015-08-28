@@ -30,7 +30,7 @@ class PathYAML : public PathBase {
 public:
     typedef YAML::Node Node;
 
-    PathYAML(istream &in);
+    PathYAML(std::istream &in);
 
     /**
      * Destructor. Clean nodes_.
@@ -47,7 +47,7 @@ public:
      * Dive into yaml-cpp hierarchy. Store current path and returns true if pointer to new yaml node is not NULL.
      */
     bool down(unsigned int index) override;
-    bool down(const string& key) override;
+    bool down(const std::string& key) override;
 
     /**
      * Return one level up in the hierarchy.
@@ -80,7 +80,7 @@ protected:
     inline const Node &head() const
     { return nodes_.back(); }
 
-    vector<Node> nodes_;
+    std::vector<Node> nodes_;
 };
 
 

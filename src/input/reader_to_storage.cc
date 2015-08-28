@@ -13,6 +13,7 @@
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
+#include "input/accessors.hh"
 
 namespace Input {
 using namespace std;
@@ -557,6 +558,30 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
     return NULL;
 }
 
+
+
+/********************************************88
+ * Implementation
+ */
+
+template <class T>
+T ReaderToStorage::get_root_interface() const
+{
+    ASSERT(storage_, "NULL pointer to storage !!! \n");
+
+    Address addr(storage_, root_type_);
+    // try to create an iterator just to check type
+    Iterator<T>( *root_type_, addr, 0);
+
+    auto tmp_root_type = static_cast<const typename T::InputType &>(*root_type_);
+    return T( addr, tmp_root_type );
+}
+
+
+template ::Input::Record ReaderToStorage::get_root_interface<::Input::Record>() const;
+template ::Input::Array ReaderToStorage::get_root_interface<::Input::Array>() const;
+template ::Input::AbstractRecord ReaderToStorage::get_root_interface<::Input::AbstractRecord>() const;
+//template ReaderToStorage::get_root_interface<::Input::>()->::Input::AbstractRecord const;
 
 
 } // namespace Input

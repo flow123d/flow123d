@@ -6,8 +6,8 @@
  */
 
 
-
 #include "input/path_base.hh"
+#include "input/input_exception.hh"
 
 
 namespace Input {
