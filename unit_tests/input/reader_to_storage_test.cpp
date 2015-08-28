@@ -13,6 +13,9 @@
 #include <fstream>
 
 #include "input/reader_to_storage.hh"
+#include "input/path_base.hh"
+#include "input/path_json.hh"
+#include "input/path_yaml.hh"
 
 using namespace std;
 

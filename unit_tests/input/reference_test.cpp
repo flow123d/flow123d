@@ -8,6 +8,7 @@
 #include "input/accessors.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
+#include "input/path_base.hh"
 
 namespace IT = Input::Type;
 
