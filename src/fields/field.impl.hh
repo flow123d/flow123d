@@ -12,7 +12,7 @@
 
 #include "field.hh"
 #include "mesh/region.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 
 /******************************************************************************************
@@ -437,7 +437,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
     	auto input_type = get_input_type();
-        Input::JSONToStorage reader( default_input, input_type );
+        Input::ReaderToStorage reader( default_input, input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
         auto field_ptr = FieldBaseType::function_factory( a_rec , n_comp() );

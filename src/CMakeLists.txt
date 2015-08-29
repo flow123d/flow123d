@@ -103,7 +103,10 @@ add_library(input_lib
     input/type_selection.cc
     input/type_generic.cc
     input/storage.cc
-    input/json_to_storage.cc
+    input/reader_to_storage.cc
+    input/path_base.cc
+    input/path_json.cc
+    input/path_yaml.cc
     input/type_output.cc
     
     input/accessors.cc

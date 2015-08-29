@@ -7,7 +7,7 @@
 #include "input/type_base.hh"
 #include "input/accessors.hh"
 #include "input/type_output.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "input/storage.hh"
 
 namespace IT = Input::Type;
@@ -69,7 +69,7 @@ TEST(InputAddress, address_output_test) {
 				"Simulation problem to be solved.")
 		.close();
 
-	Input::JSONToStorage json_reader( read_input_json,  root_record);
+	Input::ReaderToStorage json_reader( read_input_json,  root_record, Input::FileFormat::format_JSON);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
 	EXPECT_EQ("/", i_rec.address_string() );
