@@ -12,7 +12,9 @@
 #include <flow_gtest.hh>
 #include <fstream>
 
+
 #include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
 #include "input/path_base.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
