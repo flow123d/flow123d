@@ -24,10 +24,20 @@ TEST(YamlCpp, parser) {
     EXPECT_EQ(1, config["map_2"]["b"].as<int>());
     EXPECT_EQ(3, config["map_3"].size());
     EXPECT_EQ(2, config["map_3"]["a"].as<int>());
+}
 
+TEST(YamlCpp, merge_support) {
+    YAML::Node config = YAML::LoadFile("test_input.yaml");
     // YamlCpp do not have support for merge '<<:' key yet.
     // There is an pull-request from 2015, Apr 4 and there are some patches
     // with temporary solution. Until it is complete we can live without this functionality.
+    EXPECT_TRUE( config["map_3"]);
+    EXPECT_TRUE( config["map_3"]["b"]);
+    EXPECT_TRUE( config["map_3"]["c"]);
+    EXPECT_TRUE( config["map_3"]["b"].IsScalar());
+    EXPECT_TRUE( config["map_3"]["c"].IsScalar());
+    EXPECT_EQ("1", config["map_3"]["b"].as<string>());
+    EXPECT_EQ("3", config["map_3"]["c"].as<string>());
     EXPECT_EQ(1, config["map_3"]["b"].as<int>());
     EXPECT_EQ(3, config["map_3"]["c"].as<int>());
 }
