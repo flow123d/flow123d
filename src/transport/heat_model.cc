@@ -349,6 +349,66 @@ void HeatTransferModel::get_dirichlet_bc_data(const std::vector<arma::vec3> &poi
 		bc_values[i] = bc_value[i];
 }
 
+void HeatTransferModel::get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_ad_value,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	vector<double> bc_flux_scalar(point_list.size()),
+			bc_ad_temperature(point_list.size()),
+			bc_robin_sigma(point_list.size()),
+			bc_temperature(point_list.size());
+
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux_scalar);
+	data().bc_ad_temperature.value_list(point_list, ele_acc, bc_ad_temperature);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
+	data().bc_temperature.value_list(point_list, ele_acc, bc_temperature);
+
+	for (unsigned int i=0; i<point_list.size(); i++)
+	{
+		bc_flux[i] = bc_flux_scalar[i];
+		bc_ad_value[i] = bc_ad_temperature[i];
+		bc_sigma[i] = bc_robin_sigma[i];
+		bc_ref_value[i] = bc_temperature[i];
+	}
+}
+
+void HeatTransferModel::get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_flux,
+		std::vector< arma::vec > &bc_sigma,
+		std::vector< arma::vec > &bc_ref_value)
+{
+	vector<double> bc_flux_scalar(point_list.size()),
+			bc_robin_sigma(point_list.size()),
+			bc_temperature(point_list.size());
+
+	data().bc_flux.value_list(point_list, ele_acc, bc_flux_scalar);
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
+	data().bc_temperature.value_list(point_list, ele_acc, bc_temperature);
+
+	for (unsigned int i=0; i<point_list.size(); i++)
+	{
+		bc_flux[i] = bc_flux_scalar[i];
+		bc_sigma[i] = bc_robin_sigma[i];
+		bc_ref_value[i] = bc_temperature[i];
+	}
+
+}
+
+void HeatTransferModel::get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+		const ElementAccessor<3> &ele_acc,
+		std::vector< arma::vec > &bc_sigma)
+{
+	vector<double> bc_robin_sigma(point_list.size());
+
+	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
+	for (unsigned int i=0; i<point_list.size(); i++)
+		bc_sigma[i] = bc_robin_sigma[i];
+}
+
 
 void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,

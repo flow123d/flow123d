@@ -57,11 +57,11 @@ public:
 		/// Dirichlet boundary condition for temperature.
 		BCField<3, FieldValue<3>::Scalar> bc_temperature;
 		/// Advected temperature for total flux b.c.
-		BCField<3, FieldValue<3>::Vector> bc_ad_temperature;
+		BCField<3, FieldValue<3>::Scalar> bc_ad_temperature;
 		/// Flux value in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Vector > bc_flux;
+		BCField<3, FieldValue<3>::Scalar > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
+		BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
 		Field<3, FieldValue<3>::Scalar> init_temperature;
 		/// Porosity of solid.
@@ -167,17 +167,17 @@ public:
 			std::vector< arma::vec > &bc_flux,
 			std::vector< arma::vec > &bc_ad_value,
 			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) override {};
+			std::vector< arma::vec > &bc_ref_value) override;
 
 	void get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_flux,
 			std::vector< arma::vec > &bc_sigma,
-			std::vector< arma::vec > &bc_ref_value) override {};
+			std::vector< arma::vec > &bc_ref_value) override;
 
 	void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_sigma) override {};
+			std::vector< arma::vec > &bc_sigma) override;
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
