@@ -208,11 +208,10 @@
           bin/prepare_to_publish.sh
       - inject:
           properties-file: prop.file
-          
     publishers:
       - cifs: 
-          site: 'bacula'
-          target: 'jan.brezina/public_html/flow123d_packages'
+          site: 'flow123d@intec'
+          target: '/'
           source: build-${{GIT_BRANCH}}/publish_dir/**/*
           remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
