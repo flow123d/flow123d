@@ -46,12 +46,12 @@ namespace IT = Input::Type;
 class AdvectionDiffusionModel {
 public:
 
-    enum BC_Type {
-        none,
-        inflow,
-        dirichlet,
-        neumann,
-        robin
+    enum Abstract_bc_types {
+        abc_none,
+        abc_inflow,
+        abc_dirichlet,
+        abc_total_flux,
+        abc_diffusive_flux
     };
 
 	/// Read or set names of solution components.
@@ -106,9 +106,65 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param bc_values    Vector of b.c. values (output).
 	 */
-	virtual void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+	virtual void get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_values) = 0;
+
+	/**
+	 * \brief Return data for total flux b.c.
+	 *
+	 * The total flux can in general be of the form
+	 *
+	 *   cross_section*(flux + water_flux*ad_value + sigma*(solution - ref_value))
+	 *
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param bc_flux      Neumann flux (output).
+	 * @param bc_ad_value  Advected value (output).
+	 * @param bc_sigma     Transition parameter (output).
+	 * @param bc_ref_value Reference value (output).
+	 */
+	virtual void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_ad_value,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) = 0;
+
+	/**
+	 * \brief Return data for diffusive flux b.c.
+	 *
+	 * The diffusive flux condition can be seen as a special case of total flux,
+	 * with ad_value = solution.
+	 * The diffusive flux can in general take the form
+	 *
+	 *   cross_section*(flux + sigma*(solution - ref_value))
+	 *
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param bc_flux      Neumann flux (output).
+	 * @param bc_sigma     Transition parameter (output).
+	 * @param bc_ref_value Reference value (output).
+	 */
+	virtual void get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) = 0;
+
+	/**
+	 * \brief Return transition coefficient for flux b.c.
+	 *
+	 * In assembly of system matrix one does not teed all data for total/diffusive flux b.c.
+	 * This method therefore returns only the sigma coefficient.
+	 *
+	 * @param point_list   Points at which to evaluate.
+	 * @param ele_acc      Element accessor.
+	 * @param bc_sigma     Transition parameter (output).
+	 */
+	virtual void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.

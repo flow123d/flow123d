@@ -42,10 +42,27 @@ public:
 	class ModelEqData : public TransportBase::TransportEqData {
 	public:
 
+		enum Concentration_bc_types {
+			bc_none,
+			bc_inflow,
+			bc_dirichlet,
+			bc_neumann,
+			bc_robin
+		};
+
+		/// Convert bc_type in model to bc_type in abstract setting.
+		static const std::map<unsigned int,unsigned int> bc_type_conversion;
+
 		/// Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::EnumVector > bc_type;
-		/// Boundary conditions (Dirichlet) for concentrations.
+		/// Prescribed concentration for Dirichlet/reference concentration for flux b.c.
 		BCField<3, FieldValue<3>::Vector> bc_conc;
+		/// Advected concentration for total flux b.c.
+		BCField<3, FieldValue<3>::Vector> bc_ad_conc;
+		/// Flux value in total/diffusive flux b.c.
+		BCField<3, FieldValue<3>::Vector > bc_flux;
+		/// Transition coefficient in total/diffusive flux b.c.
+		BCField<3, FieldValue<3>::Vector > bc_robin_sigma;
 		/// Initial concentrations.
 		Field<3, FieldValue<3>::Vector> init_conc;
 		/// Longitudal dispersivity (for each substance).
@@ -136,9 +153,26 @@ public:
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
 
-	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+	void get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &bc_values) override;
+
+	void get_total_flux_bc_data(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_ad_value,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) override;
+
+	void get_diffusive_flux_bc_data(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_flux,
+			std::vector< arma::vec > &bc_sigma,
+			std::vector< arma::vec > &bc_ref_value) override;
+
+	void get_flux_bc_sigma(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_sigma) override;
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,

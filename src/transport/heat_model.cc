@@ -42,17 +42,26 @@ using namespace std;
 using namespace Input::Type;
 
 
+const std::map<unsigned int,unsigned int> HeatTransferModel::ModelEqData::bc_type_conversion = {
+		{ bc_none,      abc_none },
+		{ bc_inflow,    abc_inflow },
+		{ bc_dirichlet, abc_dirichlet },
+		{ bc_neumann,   abc_diffusive_flux },
+		{ bc_robin,     abc_diffusive_flux }
+};
+
+
 
 
 
 
 const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
 	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
-              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
-              .add_value(dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe temperature.")
-              .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-              .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
-              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+              .add_value(bc_none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
+              .add_value(bc_dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe temperature.")
+              .add_value(bc_neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+              .add_value(bc_robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
+              .add_value(bc_inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
 			  .close();
 }
 
@@ -73,6 +82,24 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .units( UnitSI().K() )
             .input_default("0.0")
             .flags_add(in_rhs);
+    *this+=bc_ad_temperature
+            .name("bc_ad_temperature")
+            .units( UnitSI().kg().m(-3) )
+            .description("Advected temperature in total flux b.c.")
+            .input_default("0.0")
+            .flags_add( in_rhs );
+	*this+=bc_flux
+			.name("bc_flux")
+			.description("Flux in Neumann boundary condition.")
+			.units( UnitSI().kg().m().s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs);
+	*this+=bc_robin_sigma
+			.name("bc_robin_sigma")
+			.description("Conductivity coefficient in Robin boundary condition.")
+			.units( UnitSI().m(4).s(-1).md() )
+			.input_default("0.0")
+			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this+=init_temperature
             .name("init_temperature")
@@ -308,11 +335,11 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
-	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
+	bc_types = { ModelEqData::bc_type_conversion.find(data().bc_type.value(ele_acc.centre(), ele_acc))->second };
 }
 
 
-void HeatTransferModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::get_dirichlet_bc_data(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< arma::vec > &bc_values)
 {
