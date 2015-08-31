@@ -46,6 +46,14 @@ namespace IT = Input::Type;
 class AdvectionDiffusionModel {
 public:
 
+    enum BC_Type {
+        none,
+        inflow,
+        dirichlet,
+        neumann,
+        robin
+    };
+
 	/// Read or set names of solution components.
 	virtual void set_components(SubstanceList &substances, const Input::Record &in_rec) = 0;
 
@@ -83,6 +91,14 @@ public:
 	virtual void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &init_values) = 0;
+
+	/**
+	 * Return types of boundary conditions for each solution component.
+	 * @param ele_acc  Element accessor.
+	 * @param bc_types Vector of bc. types (output, see BC_Type)
+	 */
+	virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types) = 0;
 
 	/**
 	 * Computes the Dirichlet boundary condition values.

@@ -43,6 +43,15 @@ using namespace Input::Type;
 
 
 
+const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
+	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
+              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
+              .add_value(dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe concentration.")
+              .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+              .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
+              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+			  .close();
+}
 
 
 
@@ -50,6 +59,14 @@ using namespace Input::Type;
 ConcentrationTransportModel::ModelEqData::ModelEqData()
 : TransportBase::TransportEqData()
 {
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_conc
             .name("bc_conc")
             .units( UnitSI().kg().m(-3) )
@@ -198,6 +215,11 @@ void ConcentrationTransportModel::compute_init_cond(const std::vector<arma::vec3
 	data().init_conc.value_list(point_list, ele_acc, init_values);
 }
 
+void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
+{
+	bc_types = data().bc_type.value(ele_acc.centre(), ele_acc);
+}
 
 void ConcentrationTransportModel::compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,

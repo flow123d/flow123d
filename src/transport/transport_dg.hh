@@ -142,15 +142,6 @@ public:
 	class EqData : public Model::ModelEqData {
 	public:
 
-        enum BC_Type {
-            none,
-            inflow,
-            dirichlet,
-            neumann,
-            robin
-        };
-        static const Input::Type::Selection & get_bc_type_selection();
-
         static const Input::Type::Selection & get_output_selection();
 
 		EqData();
@@ -158,7 +149,6 @@ public:
 		Field<3, FieldValue<3>::Vector> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		Field<3, FieldValue<3>::Vector> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
 
-        BCField<3, FieldValue<3>::EnumVector > bc_type;    ///< Type of boundary condition (see also BC_Type)
         BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 

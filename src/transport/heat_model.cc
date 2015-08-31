@@ -46,12 +46,27 @@ using namespace Input::Type;
 
 
 
-
+const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
+	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
+              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
+              .add_value(dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe temperature.")
+              .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+              .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
+              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+			  .close();
+}
 
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-
+    *this+=bc_type
+            .name("bc_type")
+            .description(
+            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            .units( UnitSI::dimensionless() )
+            .input_default("\"inflow\"")
+            .input_selection( &get_bc_type_selection() )
+            .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
     *this+=bc_temperature
             .name("bc_temperature")
             .description("Boundary value of temperature.")
@@ -287,6 +302,13 @@ void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_l
 	data().init_temperature.value_list(point_list, ele_acc, init_value);
 	for (unsigned int i=0; i<point_list.size(); i++)
 		init_values[i] = init_value[i];
+}
+
+
+void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+			arma::uvec &bc_types)
+{
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
 }
 
 

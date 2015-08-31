@@ -41,6 +41,8 @@ public:
 	class ModelEqData : public FieldSet {
 	public:
 
+		/// Type of boundary condition (see also BC_Type)
+        BCField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
 		BCField<3, FieldValue<3>::Scalar> bc_temperature;
 		/// Initial temperature.
@@ -90,6 +92,8 @@ public:
 
 		static string default_output_field() { return "temperature"; }
 
+        static const Input::Type::Selection & get_bc_type_selection();
+
 		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 	};
 
@@ -133,6 +137,9 @@ public:
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< arma::vec > &init_values) override;
+
+	void get_bc_type(const ElementAccessor<3> &ele_acc,
+				arma::uvec &bc_types) override;
 
 	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
