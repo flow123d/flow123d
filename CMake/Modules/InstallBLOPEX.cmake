@@ -31,7 +31,7 @@ file (WRITE "${cmakelists_fname}"
   include(ExternalProject)
   ExternalProject_Add(BLOPEX
     DOWNLOAD_DIR ${EXTERNAL_BLOPEX_DIR} 
-    URL \"http://bacula.nti.tul.cz/~jan.brezina/flow123d_libraries/blopex-read-only.tar.gz\"
+    URL \"http://flow.nti.tul.cz/libraries/blopex-read-only.tar.gz\"
     #URL \"/home/jb/local/blopex_src/blopex-read-only.tar.gz\"
     SOURCE_DIR ${EXTERNAL_BLOPEX_DIR}/src
     BINARY_DIR ${EXTERNAL_BLOPEX_DIR}/src
