@@ -43,21 +43,36 @@ using namespace Input::Type;
 
 
 const std::map<unsigned int,unsigned int> ConcentrationTransportModel::ModelEqData::bc_type_conversion = {
-		{ bc_none,      abc_none },
-		{ bc_inflow,    abc_inflow },
-		{ bc_dirichlet, abc_dirichlet },
-		{ bc_neumann,   abc_diffusive_flux },
-		{ bc_robin,     abc_diffusive_flux }
+		{ bc_inflow,         abc_inflow },
+		{ bc_dirichlet,      abc_dirichlet },
+		{ bc_total_flux,     abc_total_flux },
+		{ bc_diffusive_flux, abc_diffusive_flux }
 };
 
 
 const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
 	return Selection("SoluteTransport_BC_Type", "Types of boundary conditions for solute transport model.")
-              .add_value(bc_none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
-              .add_value(bc_dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe concentration.")
-              .add_value(bc_neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-              .add_value(bc_robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
-              .add_value(bc_inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+              .add_value(bc_inflow, "inflow",
+            		  "Default transport boundary condition.\n"
+            		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
+            		  "On water outflow we prescribe zero diffusive flux, "
+            		  "i.e. the mass flows out only due to advection.")
+              .add_value(bc_dirichlet, "dirichlet",
+            		  "Dirichlet boundary condition (($ c = c_D $)).\n"
+            		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
+              .add_value(bc_total_flux, "total_flux",
+            		  "Total mass flux boundary condition.\n"
+            		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )+q_wc_A$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the advected concentration (($c_A$)) by 'bc_ad_conc', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+              .add_value(bc_diffusive_flux, "diffusive_flux",
+            		  "Diffusive flux boundary condition.\n"
+            		  "The prescribed mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c-c_R) )$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
 			  .close();
 }
 
