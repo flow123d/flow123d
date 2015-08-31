@@ -562,11 +562,11 @@ if (USE_PYTHON)
         message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
 
         # set extra python module path in src directory, if case PYTHON_COPY if OFF
-        set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
+        set(PYTHON_EXTRA_MODULES_PATH "src/python")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
-            set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
+            set(PYTHON_EXTRA_MODULES_PATH "lib/flow123d")
 
             string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
             string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
