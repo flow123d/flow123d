@@ -103,7 +103,7 @@ const it::Instance &Field<spacedim,Value>::get_input_type() {
 		return make_input_tree();
 	} else {
 		std::vector<it::TypeBase::ParameterPair> param_vec;
-		param_vec.push_back( std::make_pair("element_input_type", boost::shared_ptr<it::TypeBase>(nullptr)) );
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
 		cout << "Field::get_input_type() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
 		return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
 	}
@@ -130,7 +130,7 @@ const it::Instance & Field<spacedim,Value>::make_input_tree() {
 	if ( boost::is_same<typename Value::element_type, FieldEnum>::value ) {
 		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*shared_->input_element_selection_)) );
 	} else {
-		param_vec.push_back( std::make_pair("element_input_type", boost::shared_ptr<it::TypeBase>(nullptr)) );
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
 	}
 	cout << "Field::make_input_tree() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
     return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
