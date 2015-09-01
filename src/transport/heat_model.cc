@@ -43,11 +43,10 @@ using namespace Input::Type;
 
 
 const std::map<unsigned int,unsigned int> HeatTransferModel::ModelEqData::bc_type_conversion = {
-		{ bc_none,      abc_none },
-		{ bc_inflow,    abc_inflow },
-		{ bc_dirichlet, abc_dirichlet },
-		{ bc_neumann,   abc_diffusive_flux },
-		{ bc_robin,     abc_diffusive_flux }
+		{ bc_inflow,    	 abc_inflow },
+		{ bc_dirichlet, 	 abc_dirichlet },
+		{ bc_total_flux,     abc_total_flux },
+		{ bc_diffusive_flux, abc_diffusive_flux }
 };
 
 
@@ -57,11 +56,27 @@ const std::map<unsigned int,unsigned int> HeatTransferModel::ModelEqData::bc_typ
 
 const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
 	return Selection("HeatTransfer_BC_Type", "Types of boundary conditions for heat transfer model.")
-              .add_value(bc_none, "none", "Homogeneous Neumann boundary condition. Zero flux.")
-              .add_value(bc_dirichlet, "dirichlet", "Dirichlet boundary condition. Prescribe temperature.")
-              .add_value(bc_neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
-              .add_value(bc_robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)).")
-              .add_value(bc_inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+            .add_value(bc_inflow, "inflow",
+          		  "Default heat transfer boundary condition.\n"
+          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
+          		  "On water outflow we prescribe zero diffusive flux, "
+          		  "i.e. the energy flows out only due to advection.")
+            .add_value(bc_dirichlet, "dirichlet",
+          		  "Dirichlet boundary condition (($T = T_D $)).\n"
+          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
+            .add_value(bc_total_flux, "total_flux",
+          		  "Total energy flux boundary condition.\n"
+          		  "The prescribed total flux can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )+q_wT_A$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the advected temperature (($T_A$)) by 'bc_ad_temperature', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+            .add_value(bc_diffusive_flux, "diffusive_flux",
+          		  "Diffusive flux boundary condition.\n"
+          		  "The prescribed energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T-T_R) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
 			  .close();
 }
 
@@ -356,17 +371,18 @@ void HeatTransferModel::get_total_flux_bc_data(const std::vector<arma::vec3> &po
 		std::vector< arma::vec > &bc_sigma,
 		std::vector< arma::vec > &bc_ref_value)
 {
-	vector<double> bc_flux_scalar(point_list.size()),
-			bc_ad_temperature(point_list.size()),
-			bc_robin_sigma(point_list.size()),
-			bc_temperature(point_list.size());
+	const unsigned int np = point_list.size();
+	vector<double> bc_flux_scalar(np),
+			bc_ad_temperature(np),
+			bc_robin_sigma(np),
+			bc_temperature(np);
 
 	data().bc_flux.value_list(point_list, ele_acc, bc_flux_scalar);
 	data().bc_ad_temperature.value_list(point_list, ele_acc, bc_ad_temperature);
 	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_robin_sigma);
 	data().bc_temperature.value_list(point_list, ele_acc, bc_temperature);
 
-	for (unsigned int i=0; i<point_list.size(); i++)
+	for (unsigned int i=0; i<np; i++)
 	{
 		bc_flux[i] = bc_flux_scalar[i];
 		bc_ad_value[i] = bc_ad_temperature[i];

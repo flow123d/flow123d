@@ -42,11 +42,10 @@ public:
 	public:
 
 		enum Heat_bc_types {
-			bc_none,
 			bc_inflow,
 			bc_dirichlet,
-			bc_neumann,
-			bc_robin
+			bc_total_flux,
+			bc_diffusive_flux
 		};
 
 		/// Convert bc_type in model to bc_type in abstract setting.

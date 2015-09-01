@@ -47,7 +47,7 @@ class AdvectionDiffusionModel {
 public:
 
     enum Abstract_bc_types {
-        abc_none,
+//        abc_none,
         abc_inflow,
         abc_dirichlet,
         abc_total_flux,
