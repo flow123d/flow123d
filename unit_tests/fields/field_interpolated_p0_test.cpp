@@ -31,7 +31,7 @@
 #include "system/system.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/region.hh"
 #include "input/type_output.hh"
@@ -142,7 +142,7 @@ public:
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
-        Input::JSONToStorage reader( input, rec_type );
+        Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
         rec=reader.get_root_interface<Input::Record>();
 
         test_time[0] = 0.0;

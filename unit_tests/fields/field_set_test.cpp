@@ -18,7 +18,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
@@ -276,7 +276,7 @@ TEST_F(SomeEquation, input_related) {
 
     data.set_components(component_names_);
     Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
-    Input::JSONToStorage reader( eq_data_input, list_type);
+    Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
     Input::Array in=reader.get_root_interface<Input::Array>();
     data.set_input_list(in);
     data.set_mesh(*mesh_);

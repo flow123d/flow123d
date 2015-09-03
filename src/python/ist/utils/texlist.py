@@ -206,6 +206,11 @@ class texlist(list):
         :param traceback:
         :return:
         """
+        # add debug info
+        if exception_type:
+            print exception_type, exception_value, traceback
+            raise exception_value
+
         self.counter -= 1
         if self.counter == 0:
             self.close_element(self.name)
