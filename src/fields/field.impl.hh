@@ -100,12 +100,9 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 template<int spacedim, class Value>
 const it::Instance &Field<spacedim,Value>::get_input_type() {
 	if (is_enum_valued) {
-		return make_input_tree();
+		return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 	} else {
-		std::vector<it::TypeBase::ParameterPair> param_vec;
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
-		cout << "Field::get_input_type() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
-		return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
+		return FieldBaseType::get_input_type_instance();
 	}
 }
 
@@ -117,23 +114,6 @@ it::Record &Field<spacedim,Value>::get_multifield_input_type() {
 
 	static it::Record rec = it::Record();
 	return rec;
-}
-
-
-
-template<int spacedim, class Value>
-const it::Instance & Field<spacedim,Value>::make_input_tree() {
-	ASSERT(is_enum_valued,
-			"Can not use make_input_tree() for non-enum valued fields, use get_inout_type() instead.\n" );
-
-	std::vector<it::TypeBase::ParameterPair> param_vec;
-	if ( boost::is_same<typename Value::element_type, FieldEnum>::value ) {
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*shared_->input_element_selection_)) );
-	} else {
-		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
-	}
-	cout << "Field::make_input_tree() is closed: " << FieldBaseType::get_input_type().is_closed() << endl;
-    return it::Instance( FieldBaseType::get_input_type(), param_vec ).close();
 }
 
 
@@ -425,8 +405,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     	std::string region_list;
     	// has to deal with fact that reader can not deal with input consisting of simple values
     	string default_input=input_default();
-    	auto input_type = get_input_type();
-        Input::JSONToStorage reader( default_input, input_type );
+    	auto input_type = get_input_type().make_instance().first;
+        Input::JSONToStorage reader( default_input, *input_type );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
         auto field_ptr = FieldBaseType::function_factory( a_rec , n_comp() );

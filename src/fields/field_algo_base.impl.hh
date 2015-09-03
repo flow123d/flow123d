@@ -63,11 +63,11 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 template <int spacedim, class Value>
 Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
-	/*return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+	return it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
-			.close();*/
+			.close();
 
-	it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+	/*it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
     	.allow_auto_conversion("FieldConstant")
 		.close();
 
@@ -83,7 +83,20 @@ Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 		type.finish();
     }
 
-    return type.close();
+    return type.close();*/
+}
+
+
+template <int spacedim, class Value>
+const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(const Input::Type::Selection *value_selection) {
+	std::vector<it::TypeBase::ParameterPair> param_vec;
+	if ( boost::is_same<typename Value::element_type, FieldEnum>::value && value_selection) {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<it::Selection>(*value_selection)) );
+	} else {
+		param_vec.push_back( std::make_pair("element_input_type", boost::make_shared<typename Value::ElementInputType>()) );
+	}
+
+	return it::Instance(get_input_type(), param_vec).close();
 }
 
 
