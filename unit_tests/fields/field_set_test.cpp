@@ -21,6 +21,9 @@
 #include "input/json_to_storage.hh"
 
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
+
 enum {
 	r_first,
 	r_second,

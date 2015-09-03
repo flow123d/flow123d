@@ -17,6 +17,8 @@
 #include <iostream>
 using namespace std;
 
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+
 string field_constant_input = R"JSON(
 {
     common={ 
