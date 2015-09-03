@@ -226,6 +226,47 @@ TEST(GenericType, record_with_record) {
 }
 
 
+TEST(GenericType, parameter_in_deep) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+
+	static Record with_array = Record("inner_rec", "")
+			.declare_key("array", Array( Array( Parameter("param") ) ), "desc.")
+			.declare_key("some_double", Double(), "Double key")
+			.close();
+
+	static Instance inst = Instance(with_array, param_vec).close();
+
+	static Record record = Record("parametrized_record", "")
+			.declare_key("generic_rec", inst, "desc.")
+			.declare_key("some_int", Integer(), "Int key")
+			.close();
+
+	TypeBase::lazy_finish();
+}
+
+
+TEST(GenericType, array_of_instances) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec;
+	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+
+	static Parameter param = Parameter("param");
+
+	static Instance inst = Instance(param, param_vec).close();
+
+	static Array array = Array( inst );
+
+	array.finish();
+	TypeBase::lazy_finish();
+
+	EXPECT_EQ( typeid( array.get_sub_type() ), typeid(Double) );
+}
+
+
 TEST(GenericType, parameter_not_replaced) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
