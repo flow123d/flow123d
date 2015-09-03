@@ -178,6 +178,8 @@ bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
 
+	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) type_of_values_ = type_of_values_->make_instance().first;
+
 	return (finished = type_of_values_->finish(is_generic) );
 }
 
