@@ -211,7 +211,7 @@
     publishers:
       - cifs: 
           site: 'flow123d@intec'
-          target: '/'
+          target: '/packages/'
           source: build-${{GIT_BRANCH}}/publish_dir/**/*
           remove-prefix: build-${{GIT_BRANCH}}/publish_dir
 
