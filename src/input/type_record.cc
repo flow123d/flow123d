@@ -470,33 +470,11 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 
 
 
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const Default &default_value, const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    //Record::declare_key(key, type, default_value, description);
-    return *this;
-}
-
-
-
-template <class KeyType>
-AbstractRecord &AbstractRecord::declare_key(const string &key, const KeyType &type,
-                        const string &description)
-{
-	ASSERT( false, "AbstractRecord::declare_key is not allowed!\n");
-    return declare_key(key,type, Default::optional(), description);
-}
-
-
 // explicit instantiation of template methods
 
 #define RECORD_DECLARE_KEY(TYPE) \
 template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const Default &default_value, const string &description); \
-template AbstractRecord &AbstractRecord::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
+template Record & Record::declare_key<TYPE>(const string &key, const TYPE &type, const string &description)
 
 
 RECORD_DECLARE_KEY(String);

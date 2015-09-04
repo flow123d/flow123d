@@ -573,19 +573,6 @@ public:
     AbstractRecord &allow_auto_conversion(const string &type_default);
 
     /**
-     * Same as Record::declare_key but returning reference to AbstractRecord.
-     */
-    template <class KeyType>
-    AbstractRecord &declare_key(const string &key, const KeyType &type,
-                            const Default &default_value, const string &description);
-    /**
-     * Same as previous method but without given default value (same as Default() - optional key )
-     */
-    template <class KeyType>
-    AbstractRecord &declare_key(const string &key, const KeyType &type,
-                            const string &description);
-
-    /**
      *  Can be used to close the AbstractRecord for further declarations of keys.
      */
     AbstractRecord &close();
