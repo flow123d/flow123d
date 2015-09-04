@@ -78,9 +78,10 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec) {
     if (it) {
         set_python_field_from_string( *it, rec.val<string>("function") );
     } else {
-        Input::Iterator<FilePath> it = rec.find<FilePath>("script_file");
+        Input::Iterator<string> it = rec.find<string>("script_file");
         if (! it) xprintf(UsrErr, "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.");
-        set_python_field_from_file( *it, rec.val<string>("function") );
+        FilePath source_file( *it, FilePath::input_file);
+        set_python_field_from_file( source_file, rec.val<string>("function") );
     }
 }
 
