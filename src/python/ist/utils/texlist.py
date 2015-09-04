@@ -135,7 +135,8 @@ class texlist(list):
         Add \AddDoc{value}
         :return: self
         """
-        self.slash('AddDoc', self.escape(value))
+        self.slash('AddDoc')
+        self.add(self.escape(value))
 
     def textlangle(self, value, namespace='\\it '):
         """
