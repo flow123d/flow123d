@@ -97,6 +97,6 @@ IT::AbstractRecord InputTypeCollection::stat_a_rec=IT::AbstractRecord("stat_a_re
 TEST(LazyTypes, all) {
     TypeBase::lazy_finish();
 
-    std::cout << OutputText(&InputTypeCollection::main_record) << std::endl;
+    std::cout << OutputJSONMachine(&InputTypeCollection::main_record) << std::endl;
 
 }
