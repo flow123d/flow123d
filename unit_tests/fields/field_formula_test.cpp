@@ -131,6 +131,7 @@ TEST(FieldFormula, set_time) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Input::Type::Array  input_type(VectorField::get_input_type_instance());
+    input_type.finish();
 
     // read input string
     Input::ReaderToStorage reader( set_time_input, input_type, Input::FileFormat::format_JSON );
