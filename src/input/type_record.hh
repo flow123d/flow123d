@@ -39,7 +39,7 @@ namespace Type {
 class Default {
 	friend class Record;
 	friend class OutputBase;
-	friend class OutputJSONTemplate;
+	//friend class OutputJSONTemplate;
 
 private:
     /**
@@ -277,9 +277,6 @@ public:
 
     /// Record type name getter.
     virtual string type_name() const override;
-
-    /// Record type full name getter.
-    virtual string full_type_name() const override;
 
     /**
      * The default string can initialize an Record if the record is auto-convertible
@@ -624,9 +621,6 @@ public:
 
     /// AbstractRecord type name getter.
     virtual string type_name() const override;
-
-    /// AbstractRecord type full name getter.
-    virtual string full_type_name() const override;
 
     /**
      * Container-like access to the data of the Record. Returns iterator to the first data.

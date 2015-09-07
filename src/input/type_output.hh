@@ -306,7 +306,7 @@ protected:
  *
  * @ingroup input_types
  */
-class OutputText : public OutputBase {
+/*class OutputText : public OutputBase {
 public:
 	OutputText(const TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
@@ -324,7 +324,7 @@ protected:
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
 
-};
+};*/
 
 
 
@@ -342,17 +342,13 @@ protected:
  *
  * @ingroup input_types
  */
-class OutputJSONTemplate : public OutputBase {
+/*class OutputJSONTemplate : public OutputBase {
 public:
-    /**
-     * Constructor for output of the input type tree with root @p type.
-     * The input type tree is searched by DFS algorithm into @p depth.
-     */
+    /// Constructor for output of the input type tree with root @p type.
+    /// The input type tree is searched by DFS algorithm into @p depth.
 	OutputJSONTemplate(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
-	/**
-	 * Perform output of the documentation into given stream.
-	 */
+	/// Perform output of the documentation into given stream.
 	ostream& print(ostream& stream);
 
 protected:
@@ -374,16 +370,14 @@ protected:
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
 private:
-    /**
-     * Prints value according to DefaultType
-     * Respects obligatory, optional and read time flag
-     *
-     * @param stream Output stream
-     * @param depth Depth of output
-     * @param empty_val Default empty value (zero for numeric types, empty string ...)
-     * @param invalid_val Flag if value is invalid for its type
-     * @param has_quote Flag if value is enclosed in quotes
-     */
+    /// Prints value according to DefaultType
+    /// Respects obligatory, optional and read time flag
+    ///
+    /// @param stream Output stream
+    /// @param depth Depth of output
+    /// @param empty_val Default empty value (zero for numeric types, empty string ...)
+    /// @param invalid_val Flag if value is invalid for its type
+    /// @param has_quote Flag if value is enclosed in quotes
     void print_default_value(ostream& stream, unsigned int depth, string empty_val, bool invalid_val, bool has_quote = false);
 
     /// temporary value of actually record type
@@ -392,7 +386,7 @@ private:
     string reference_;
     /// temporary value of actually record value
     Default value_;
-};
+};*/
 
 
 
@@ -402,7 +396,7 @@ private:
  *
  * @ingroup input_types
  */
-class OutputLatex : public OutputBase {
+/*class OutputLatex : public OutputBase {
 public:
     OutputLatex(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
 
@@ -427,7 +421,7 @@ protected:
     void print_impl(ostream& stream, const FileName *type, unsigned int depth);
 
 
-};
+};*/
 
 
 /**
@@ -497,9 +491,9 @@ protected:
 /**
  * Overrides output operator for simple output of the input type tree.
  */
-std::ostream& operator<<(std::ostream& stream, OutputText type_output);
-std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
-std::ostream& operator<<(std::ostream& stream, OutputLatex type_output);
+//std::ostream& operator<<(std::ostream& stream, OutputText type_output);
+//std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output);
+//std::ostream& operator<<(std::ostream& stream, OutputLatex type_output);
 std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output);
 
 

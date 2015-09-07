@@ -67,7 +67,7 @@ bool TypeBase::is_valid_identifier(const string& key) {
 
 string TypeBase::desc() const {
     stringstream ss;
-    ss << OutputText(this,1);
+    //ss << OutputText(this,1);
     return ss.str();
 }
 
@@ -147,7 +147,7 @@ void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return ( stream << OutputText(&type, 1) );
+    return ( stream << "" );
 }
 
 
@@ -185,10 +185,6 @@ bool Array::ArrayData::finish(bool is_generic)
 
 string Array::type_name() const {
     return "array_of_" + data_->type_of_values_->type_name();
-}
-
-string Array::full_type_name() const {
-	return "array_of_" + data_->type_of_values_->type_name();
 }
 
 
@@ -276,10 +272,6 @@ ARRAY_CONSTRUCT(Instance);
 /**********************************************************************************
  * implementation of Type::Scalar ... and descendants.
  */
-
-string Scalar::full_type_name() const {
-    return type_name();
-}
 
 /**********************************************************************************
  * implementation of Type::Bool

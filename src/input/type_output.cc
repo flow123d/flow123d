@@ -325,7 +325,7 @@ const string OutputBase::ProcessedTypes::get_reference(const void * type_data) c
  * implementation of OutputText
  */
 
-void OutputText::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+/*void OutputText::print_impl(ostream& stream, const Record *type, unsigned int depth) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
 	}
@@ -560,7 +560,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
 			break;
 		}
 	}
-}
+}*/
 
 
 
@@ -571,7 +571,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int 
  * implementation of OutputJSONTemplate
  */
 
-ostream& OutputJSONTemplate::print(ostream& stream) {
+/*ostream& OutputJSONTemplate::print(ostream& stream) {
     key_name_ = "";
     return OutputBase::print(stream);
 }
@@ -922,7 +922,7 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
 	} else {
 		stream << "" << value_.value() << "";
 	}
-}
+}*/
 
 
 
@@ -931,7 +931,7 @@ void OutputJSONTemplate::print_default_value(ostream& stream, unsigned int depth
  */
 
 namespace internal {
-class output_filter : public boost::iostreams::multichar_output_filter {
+/*class output_filter : public boost::iostreams::multichar_output_filter {
 public:
     template<typename Sink>
     std::streamsize write(Sink& snk, const char* s, streamsize n)
@@ -946,14 +946,14 @@ public:
         }
         return n_out;
     }
-};
+};*/
 
 
 /**
  * Prints range specification for Array size, Integer, and Double. Omit natural bounds (very long),
  * Omit whole specification if  both limits are natural.
  */
-template <class T>
+/*template <class T>
 ostream & print_range(ostream& stream, T range_min, T range_max) {
     T min_val = std::numeric_limits<T>::min();
     T max_val = std::numeric_limits<T>::max();
@@ -969,7 +969,7 @@ ostream & print_range(ostream& stream, T range_min, T range_max) {
         }
     }
     return stream;
-}
+}*/
 
 /**
  * Make \HTRaised{prefix::str}. Hyper target raised to scroll to correct position.
@@ -986,30 +986,30 @@ std::string hyper_target( const std::string &prefix, const std::string &str) {
 /**
  * Make \hyperlink{prefix::str, str}.
  */
-std::string hyper_link( const std::string &prefix, const std::string &str) {
+/*std::string hyper_link( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \Alink{<prefix>::str}{str}
     return "\\Alink{" + label + "}{" + str +"}";
-}
+}*/
 
 /**
  * Make bidirectional link.
  */
-std::string hyper_B( const std::string &prefix, const std::string &str) {
+/*std::string hyper_B( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \hyper_B{<prefix>::str}{str}
     return "\\hyperB{" + label + "}{" + str +"}";
-}
+}*/
 
 } // namespace internal
 
 
 
-ostream& OutputLatex::print(ostream& stream) {
+/*ostream& OutputLatex::print(ostream& stream) {
     boost::iostreams::filtering_ostream out;
     out.push(internal::output_filter());
     out.push(stream);
@@ -1263,7 +1263,7 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
             break;
         }
     }
-}
+}*/
 
 
 
@@ -1311,7 +1311,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Record\"," << endl;
     stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
-    stream << "\"type_full_name\" : \"" << type->full_type_name() << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl << endl;
     stream << "\"description\" : \"" <<
@@ -1396,7 +1395,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AbstractRecord\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-    stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
     type->write_attributes(stream);
     stream << "," << endl;
     stream << "\"description\" : \"" <<
@@ -1466,7 +1464,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Selection\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 	stream << "\"description\" : \"" <<
@@ -1498,7 +1495,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Integer\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
@@ -1518,7 +1514,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Double\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
@@ -1535,7 +1530,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Bool\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
@@ -1550,7 +1544,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"String\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
@@ -1564,7 +1557,6 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
 	type->write_attributes(stream);
     stream << "," << endl;
 
@@ -1587,7 +1579,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
 
 
 
-std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
+/*std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
     return type_output.print(stream) << endl;
 }
 
@@ -1601,7 +1593,7 @@ std::ostream& operator<<(std::ostream& stream, OutputJSONTemplate type_output) {
 
 std::ostream& operator<<(std::ostream& stream, OutputLatex type_output) {
     return type_output.print(stream) << endl;
-}
+}*/
 
 std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output) {
     return type_output.print(stream) << endl;
