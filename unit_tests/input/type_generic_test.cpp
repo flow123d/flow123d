@@ -267,6 +267,41 @@ TEST(GenericType, array_of_instances) {
 }
 
 
+TEST(GenericType, instance_in_instance) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	std::vector<TypeBase::ParameterPair> param_vec1, param_vec2;
+	param_vec1.push_back( std::make_pair("param", boost::make_shared<Double>()) );
+	param_vec2.push_back( std::make_pair("param", boost::make_shared<String>()) );
+
+	static Parameter param = Parameter("param");
+	static Instance inst_in = Instance(param, param_vec2).close();
+
+	static Record in_rec = Record("Inner record", "")
+			.declare_key("key1", inst_in, "Inner instance.")
+			.declare_key("param", Parameter("param"), "Parameterized key")
+			.close();
+
+	static Instance inst = Instance(in_rec, param_vec1).close();
+
+	static Record root_rec = Record("Root record", "")
+			.declare_key("rec", inst, "First instance.")
+			.declare_key("some_int", Integer(), "Int key")
+			.close();
+
+	TypeBase::lazy_finish();
+
+	Record::KeyIter key_it = root_rec.begin();
+	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
+	const Record *inner_rec = static_cast<const Record *>(key_it->type_.get());
+	EXPECT_EQ(inner_rec->size(), 2);
+	Record::KeyIter key_it_in = inner_rec->begin();
+	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(String) );
+	++key_it_in;
+	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(Double) );
+}
+
+
 TEST(GenericType, parameter_not_replaced) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
