@@ -1,6 +1,7 @@
 # encoding: utf-8
 # author:   Jan Hybs
 import re
+import traceback
 from ist.formatters.html2latex import Html2Latex
 from ist.formatters.markdown2html import markdown2html
 from ist.utils.htmltree import htmltree
@@ -199,17 +200,19 @@ class texlist(list):
         self.counter += 1
         return self
 
-    def __exit__(self, exception_type, exception_value, traceback):
+    def __exit__(self, exception_type, exception_value, tb):
         """
         Exit the runtime context related to this object.
         :param exception_type:
         :param exception_value:
-        :param traceback:
+        :param tb:
         :return:
         """
         # add debug info
         if exception_type:
-            print exception_type, exception_value, traceback
+            print exception_type, exception_value, tb
+            traceback.print_exception(exception_type, exception_value, tb)
+            traceback.print_stack()
             raise exception_value
 
         self.counter -= 1

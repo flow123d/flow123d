@@ -438,11 +438,6 @@ class LatexRecord (LatexItemFormatter):
         tex = texlist (self.tag_name)
         reference_list = record.implements
 
-
-        print record, type(record)
-        try: print record.keys
-        except Exception as e: print e
-    
         with tex.element ():
             with tex:
                 tex.hyperB (record.type_name)
@@ -467,10 +462,10 @@ class LatexRecord (LatexItemFormatter):
             tex.add_description_field (record.description)
 
             # record keys
-            # for record_key in record.keys:
-            #     tex.newline ()
-            #     fmt = LatexFormatter.get_formatter_for (record_key)
-            #     tex.extend (fmt.format (record_key, record))
+            for record_key in record.keys:
+                tex.newline ()
+                fmt = LatexFormatter.get_formatter_for (record_key)
+                tex.extend (fmt.format (record_key, record))
             tex.newline ()
 
         return tex
