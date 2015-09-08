@@ -209,23 +209,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     	exit( exit_output );
     }
 
-    // if there is "full_doc" option
-    /*if (vm.count("full_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&get_input_type());
-        type_output.set_filter(":Field:.*");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
-    /*if (vm.count("latex_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&get_input_type());
-        type_output.set_filter("");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
+    // if there is "JSON_machine" option
     if (vm.count("JSON_machine")) {
         // write ist to json file
         string json_filename = vm["JSON_machine"].as<string>();
