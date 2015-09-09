@@ -11,14 +11,17 @@ Package contains:
 
 @url https://github.com/flow123d/flow123d
 """
-
+import sys
 import system.versions
+from utils.logger import Logger
 
 system.versions.require_version_2 ()
 
 import json
 import datetime
 import importlib
+
+logger = Logger(__name__)
 
 
 class ProfilerJSONDecoder (json.JSONDecoder):
@@ -111,41 +114,58 @@ class ProfilerFormatter (object):
                 pass
         return result
 
-    def convert (self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
+    def convert(self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
         """Converts file @ json_location to output_file (if set) using given formatter name"""
         # read file to JSON
         try:
-            with open (json_location, 'r') as fp:
-                jsonObj = json.load (fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-        except Exception as exception:
+            with open(json_location, 'r') as fp:
+                json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
+
+                if not json_data:
+                    logger.error('Empty json file "%s"', json_location)
+                    sys.exit (1)
+
+                if 'program-name' not in json_data:
+                    logger.error('No "program-name" in json file "%s"', json_location)
+                    sys.exit (1)
+
+                if json_data['program-name'] != 'Flow123d':
+                    logger.error('Incorrect "program-name" value in json file "%s"', json_location)
+                    sys.exit (1)
+
+        except Exception as ex:
             # return string with message on error
-            return str (exception)
+            logger.exception('Error while parsing json file ' + json_location, ex)
+            sys.exit (1)
+
 
         try:
             # split styles fields declaration
-            styles = [value.replace ('\\n', '\n').replace ('\\t', '\t').replace ('\\r', '\r') for value in styles]
-            styles = dict (item.split (":", 1) for item in styles)
+            styles = [value.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') for value in styles]
+            styles = dict(item.split(":", 1) for item in styles)
             # grab instance and hand over styles
-            instance = ProfilerFormatter.get_class_instance (formatter)
-            instance.set_styles (styles)
+            instance = ProfilerFormatter.get_class_instance(formatter)
+            instance.set_styles(styles)
             # format json object
-            output = instance.format (jsonObj)
-        except Exception as exception:
+            output = instance.format(json_data)
+        except Exception as ex:
             # return string with message on error
-            return str (exception)
+            logger.exception('Error while formatting file ' + json_location, ex)
+            sys.exit (1)
 
         try:
             # if output file is specified write result there
             if output_file is not None:
-                with open (output_file, "w") as fp:
-                    fp.write (output)
-                print '{} file generated'.format (output_file)
+                with open(output_file, "w") as fp:
+                    fp.write(output)
+                print '{} file generated'.format(output_file)
             # otherwise just print result to stdout
             else:
                 print output
-        except Exception as exception:
+        except Exception as ex:
             # return string with message on error
-            return str (exception)
+            logger.exception('Cannot save file ' + output_file, ex)
+            sys.exit (1)
 
 
         # return True on success
