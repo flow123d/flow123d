@@ -633,6 +633,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
     // execute method with arguments
     return_value = PyObject_CallObject (convert_method, arguments);
+    PythonLoader::check_error();
     //    cout << "calling python convert ('"<<json_filepath<<"', '"<<(json_filepath + output_file_suffix)<<"', '"<<formatter<<"')" << endl;
 
 
