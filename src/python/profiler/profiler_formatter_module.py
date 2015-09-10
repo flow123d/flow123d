@@ -11,6 +11,7 @@ Package contains:
 
 @url https://github.com/flow123d/flow123d
 """
+import os
 import sys
 import system.versions
 from utils.logger import Logger
@@ -118,6 +119,11 @@ class ProfilerFormatter (object):
         """Converts file @ json_location to output_file (if set) using given formatter name"""
         # read file to JSON
         logger.info('Processing file "%s"', json_location)
+
+        if not os.path.exists(json_location):
+            logger.error('File "%s" does not exists', json_location)
+            raise IOError('Empty json file {:s}'.format(json_location))
+
         try:
             with open(json_location, 'r') as fp:
                 json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
@@ -137,6 +143,7 @@ class ProfilerFormatter (object):
         except Exception as ex:
             # return string with message on error
             logger.exception('Error while parsing json file ' + json_location, ex)
+            logger.error("File size: %d %s", os.stat(json_location).st_size, str(os.stat(json_location)))
             raise ex
 
 

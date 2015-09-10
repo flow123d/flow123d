@@ -15,7 +15,6 @@ class Logger(object):
         self.logger = logging.getLogger(name)
 
         # add console log
-        print __debug__
         if __debug__:
             stream = logging.StreamHandler()
             stream.setLevel(logging.WARNING)
