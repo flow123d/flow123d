@@ -38,7 +38,7 @@ public:
      * @brief Performs output of the documentation into given @p stream. The same effect has the reloaded operator '<<'.
      * Returns reference to the same stream.
      */
-    virtual ostream& print(ostream& stream);
+    ostream& print(ostream& stream);
 
 protected:
     /**
@@ -92,6 +92,18 @@ protected:
      * Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
      */
     void print(ostream& stream, const TypeBase *type, unsigned int depth);
+
+
+    /**
+     * Print actual version of program.
+     */
+    virtual void print_program_info(ostream& stream, const TypeBase *type) = 0;
+
+
+    /**
+     * Print @p ProcessedTypes::full_hash key.
+     */
+    virtual void print_full_hash(ostream& stream) = 0;
 
 
     /**
@@ -163,9 +175,15 @@ protected:
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 
-    /// Header of the format, printed before first call of recursive print.
+    /// Header of the format, printed before call of version print.
     /// see @p print(stream) method
     std::string format_head;
+    /// Inner part of the format, printed before first call of recursive print.
+    /// see @p print(stream) method
+    std::string format_inner;
+    /// Tail of the format, printed after all recursive prints are finished and before full hash prints.
+    /// see @p print(stream) method
+    std::string format_full_hash;
     /// Tail of the format, printed after all recursive prints are finished.
     /// see @p print(stream) method
     std::string format_tail;
@@ -206,6 +224,9 @@ protected:
 
         /// Set of hashes of outputed types. Should replace keys.
         std::set<std::size_t> output_hash;
+
+        /// Content hash of full IST, value is used for key IST_hash
+        TypeBase::TypeHash full_hash;
     };
 
     /// Stores flags and references of processed type
@@ -231,8 +252,10 @@ class OutputJSONMachine : public OutputBase {
 public:
 	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth)
     {
-	    format_head="[\n";
-	    format_tail="{}]\n";
+	    format_head="{ \"version\" :";
+	    format_inner=",\n\"ist_nodes\" : [\n";
+	    format_full_hash="{}],\n";
+	    format_tail="}\n";
     }
 
     /**
@@ -277,6 +300,18 @@ protected:
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
     void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
+
+    /**
+     * Print actual version of program.
+     */
+    void print_program_info(ostream& stream, const TypeBase *type) override;
+
+    /**
+     * Print @p ProcessedTypes::full_hash key.
+     */
+    void print_full_hash(ostream& stream) override;
+
+
 };
 
 

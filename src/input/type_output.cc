@@ -3,6 +3,7 @@
  */
 
 #include "input/type_output.hh"
+#include "rev_num.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/concepts.hpp>
@@ -26,22 +27,26 @@ OutputBase::~OutputBase() {}
 
 
 
-OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
-: type_(type), depth_(depth)
-{
-    TypeBase::lazy_finish();
-}
-
-
-
-ostream&  OutputBase::print(ostream& stream) {
+ostream& OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	doc_flags_.clear();
 
 	stream << format_head;
+	print_program_info(stream, type_);
+	stream << format_inner;
 	print(stream, type_, depth_);
+	stream << format_full_hash;
+	print_full_hash(stream);
 	stream << format_tail;
 	return stream;
+}
+
+
+
+OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
+: type_(type), depth_(depth)
+{
+    TypeBase::lazy_finish();
 }
 
 
@@ -123,6 +128,7 @@ const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_re
 
 
 void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth) {
+
 	if (typeid(*type) == typeid(Type::Record)) {
 		print_impl(stream, static_cast<const Type::Record *>(type), depth );
 	} else
@@ -202,6 +208,7 @@ OutputBase::ProcessedTypes::~ProcessedTypes() {}
 
 void OutputBase::ProcessedTypes::clear() {
 	output_hash.clear();
+	full_hash = 0;
 }
 
 
@@ -300,6 +307,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
             print(stream, it->type_.get(), depth+1);
         }
     }
+
+    boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -324,6 +333,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 	stream << "}," << endl;
 
 	print(stream, array_type.get() ,depth+1);
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -347,6 +358,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
         print(stream, &*it, depth+1);
     }
+
+    boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -368,6 +381,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
         print(stream, &*it, depth+1);
     }
 
+    boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -422,6 +436,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 
 	stream << "]" << endl;
 	stream << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -441,6 +457,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
 
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -460,6 +478,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
 
     stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -474,6 +494,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -488,6 +510,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
 	type->write_attributes(stream);
     stream << endl;
 	stream << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
@@ -513,6 +537,28 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
 	}
 
 	stream << endl << "},";
+
+	boost::hash_combine(doc_flags_.full_hash, hash);
+}
+
+
+
+void OutputJSONMachine::print_program_info(ostream& stream, const TypeBase *type) {
+    string revision(_GIT_REVISION_);
+	string version(_VERSION_NAME_);
+	string build_date = string(__DATE__) + ", " + string(__TIME__);
+
+    stream << "{" << endl;
+    stream << "\"flow123d_commit\" : \"" << revision << "\"," << endl;
+    stream << "\"flow123d_version\" : \"" << version << "\"," << endl;
+    stream << "\"date\" : \"" << build_date << "\"" << endl;
+	stream << "}";
+}
+
+
+
+void OutputJSONMachine::print_full_hash(ostream& stream) {
+	stream << "\"IST_hash\" : \"" << format_hash(doc_flags_.full_hash) << "\"" << endl;
 }
 
 
