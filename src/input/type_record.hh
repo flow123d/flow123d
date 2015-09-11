@@ -369,7 +369,7 @@ protected:
     /**
      * Declares a TYPE key of the Record.
      */
-    Record &declare_type_key(boost::shared_ptr<Selection> key_type);
+    Record &declare_type_key();
 
     /**
      * Set parent Abstract of Record.

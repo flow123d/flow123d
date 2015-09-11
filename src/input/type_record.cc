@@ -181,7 +181,7 @@ Record &Record::derive_from(AbstractRecord &parent) {
 	data_->parent_vec_.push_back( boost::make_shared<AbstractRecord>(parent) );
 
 	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", boost::shared_ptr<TypeBase>(NULL), Default( type_name() ), "Sub-record Selection.");
+    	data_->declare_key("TYPE", boost::make_shared<String>(), Default( type_name() ), "Sub-record Selection.");
     }
 
 	return *this;
@@ -309,19 +309,16 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key(boost::shared_ptr<Selection> key_type) {
+Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0, "Declaration of TYPE key must be carried as the first.");
-	data_->declare_key("TYPE", key_type, Default::obligatory(),
+	data_->declare_key("TYPE", boost::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.");
 	return *this;
 }
 
 Record &Record::has_obligatory_type_key() {
 	ASSERT( ! data_->parent_vec_.size(), "Record with obligatory TYPE key can't be derived.\n");
-	boost::shared_ptr<Selection> sel = boost::make_shared<Selection>(type_name() + "_TYPE_selection");
-	sel->add_value(0, type_name());
-	sel->close();
-	declare_type_key( sel );
+	declare_type_key();
 	return *this;
 }
 
@@ -374,8 +371,6 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 	// finish inheritance
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE",
 				"Derived record '%s' must have defined TYPE key!\n", this->type_name().c_str() );
-	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<Selection>( parent.get_type_selection() );
-	data_->keys[0].type_ = type_copy;
 	data_->keys[0].default_ = Default( type_name() );
 
 	return *this;

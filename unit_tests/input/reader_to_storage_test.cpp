@@ -583,7 +583,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
         EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
         EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
         EXPECT_EQ(10, storage_->get_item(3)->get_int() );
@@ -595,7 +595,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(1, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqTransp", storage_->get_item(0)->get_string());
         EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
         EXPECT_EQ(5.5, storage_->get_item(2)->get_double() );
         EXPECT_EQ(4, storage_->get_item(3)->get_int() );
@@ -607,7 +607,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(4, storage_->get_array_size());
-        EXPECT_EQ(0, storage_->get_item(0)->get_int());
+        EXPECT_EQ("EqDarcy", storage_->get_item(0)->get_string());
         EXPECT_EQ("some.msh", storage_->get_item(1)->get_string() );
         EXPECT_EQ("prime", storage_->get_item(2)->get_string() );
         EXPECT_EQ(10, storage_->get_item(3)->get_int() );
@@ -657,7 +657,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 		   EXPECT_NE((void *)NULL, storage_);
 		   storage_->get_array_size();
 		   EXPECT_EQ(3, storage_->get_array_size());
-		   EXPECT_EQ(0, storage_->get_item(0)->get_int());
+		   EXPECT_EQ("BR", storage_->get_item(0)->get_string());
 		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
 		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
        }
@@ -669,7 +669,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 		   EXPECT_NE((void *)NULL, storage_);
 		   storage_->get_array_size();
 		   EXPECT_EQ(3, storage_->get_array_size());
-		   EXPECT_EQ(0, storage_->get_item(0)->get_int());
+		   EXPECT_EQ("BR", storage_->get_item(0)->get_string());
 		   EXPECT_EQ(10, storage_->get_item(1)->get_int());
 		   EXPECT_EQ(20, storage_->get_item(2)->get_int());
        }
