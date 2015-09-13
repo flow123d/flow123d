@@ -46,15 +46,13 @@ using namespace Input::Type;
 
 
    // errors during declaration
-   Record rec_empty;
-
 #ifdef FLOW123D_DEBUG_ASSERTS
-   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcXprintfMsg, ".*into closed record 'EmptyRecord'.");
-#endif
+   Record rec_empty;
+   EXPECT_THROW_WHAT( {rec_empty.declare_key("xx", Integer(), "");}, ExcAssertMsg, ".*into closed record 'EmptyRecord'.");
 
-   Record rec_fin = Record("xx","")
-	  .close();
-   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcXprintfMsg, "Can not add .* into closed record");
+   Record rec_fin = Record("xx","").close();
+   EXPECT_THROW_WHAT( {rec_fin.declare_key("xx", String(),"");}, ExcAssertMsg, "Can not add .* into closed record");
+#endif
 
 
 //   This no more fails: Declaration of incomplete (unfinished) keys is possible.

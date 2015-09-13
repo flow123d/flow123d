@@ -418,6 +418,8 @@ void Record::RecordData::declare_key(const string &key,
                          boost::shared_ptr<TypeBase> type,
                          const Default &default_value, const string &description)
 {
+    ASSERT(!closed_, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name_.c_str());
+
     if (finished) xprintf(PrgErr, "Declaration of key: %s in finished Record type: %s\n", key.c_str(), type_name_.c_str());
 
     if (key!="TYPE" && ! TypeBase::is_valid_identifier(key))
@@ -440,6 +442,13 @@ void Record::RecordData::declare_key(const string &key,
 
 }
 
+Record &Record::declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                        const Default &default_value, const string &description)
+{
+    check_key_default_value(default_value, *type, key);
+    data_->declare_key(key, type, default_value, description);
+    return *this;
+}
 
 
 template <class KeyType>
@@ -449,14 +458,8 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
-    if (data_->closed_)
-        xprintf(PrgErr, "Can not add key '%s' into closed record '%s'.\n", key.c_str(), type_name().c_str());
-
-	check_key_default_value(default_value, type, key);
 	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<KeyType>(type);
-	data_->declare_key(key, type_copy, default_value, description);
-
-    return *this;
+	return declare_key(key, type_copy, default_value, description);
 }
 
 
@@ -467,6 +470,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 {
     return declare_key(key,type, Default::optional(), description);
 }
+
 
 
 

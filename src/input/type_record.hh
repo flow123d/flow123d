@@ -243,11 +243,17 @@ public:
     Record &allow_auto_conversion(const string &from_key);
 
     /**
+     * Declares a key of the Record with name given by parameter @p key, the type given by target of pointer @p type,
+     * default value by parameter @p default_value, and with given @p description.
+     * The parameter @p type points to a descendant of TypeBase.
+     */
+    Record &declare_key(const string &key, boost::shared_ptr<TypeBase> type,
+                            const Default &default_value, const string &description);
+
+    /**
      * Declares a key of the Record with name given by parameter @p key, the type given by parameter @p type,
      * default value by parameter @p default_value, and with given @p description.
-     * The parameter @p type has a descendant of TypeBase. If @p type is an instance of Record, Selection, or AbstractRecord,
-     * we support references to static objects of these types that may not be yet constructed at the point when the declare_key method
-     * is called. This method can detect this case and postpone completion of the key.
+     * The parameter @p type has a descendant of TypeBase.
      */
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
@@ -260,6 +266,7 @@ public:
     template <class KeyType>
     Record &declare_key(const string &key, const KeyType &type,
                             const string &description);
+
 
     /**
      *  Can be used to close the Record for further declarations of keys.
