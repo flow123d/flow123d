@@ -77,7 +77,7 @@ private:
     std::shared_ptr<DarcyFlowMH> water;
 
     /// explicit transport with chemistry through operator splitting
-    std::shared_ptr<AdvectionProcessBase> transport_reaction;
+    std::shared_ptr<AdvectionProcessBase> secondary_eq;
 
 };
 
