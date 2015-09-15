@@ -4,7 +4,7 @@
 ## HTMLDOC_INSTALL_DIR - directory where helper files will be stored such as CMakeLists.cmake file makefile
 ## HTMLDOC_SOURCE_DIR - direcotry which will contain unpacked files from server
 
-set(HTMLDOC_INSTALL_URL \"https://github.com/x3mSpeedy/Flow123d-htmldoc/archive/master.zip\")
+set(HTMLDOC_INSTALL_URL \"https://github.com/flow123d/Flow123d-htmldoc/archive/master.zip\")
 set(HTMLDOC_INSTALL_DIR "${CMAKE_BINARY_DIR}/htmldoc")
 set(HTMLDOC_SOURCE_DIR  "${CMAKE_BINARY_DIR}/htmldoc/html")
 
