@@ -14,7 +14,7 @@
 #include "fields/field_constant.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 
 
@@ -64,7 +64,7 @@ TEST(FieldConst, read_from_input) {
         .close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;

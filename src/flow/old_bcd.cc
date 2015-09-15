@@ -47,9 +47,9 @@ void OldBcdInput::read_flow(const Mesh &mesh, const FilePath &flow_bcd)
     old_to_new_side_numbering.push_back( sides_0 );
     unsigned int sides_1 [2] = {0,1};
     old_to_new_side_numbering.push_back(  sides_1 );
-    unsigned int sides_2 [3] = {0,1,2}; //{0,2,1};
+    unsigned int sides_2 [3] = {0,2,1};     // {0,1,2};
     old_to_new_side_numbering.push_back(  sides_2 );
-    unsigned int sides_3 [4] = {0,1,2,3}; //{3,2,1,0};
+    unsigned int sides_3 [4] = {3,2,1,0};   // {0,1,2,3};
     old_to_new_side_numbering.push_back(  sides_3 );
 
     // check that all fields has same mesh, reuse it for reader

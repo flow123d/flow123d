@@ -1,1 +1,18 @@
 test_key: 42
+map_key:
+ a: 4
+ b: 5
+seq_key:
+ - 6
+ - 7
+tag_key: !my_int 13
+
+
+map_1: &anchor
+    a: 0
+    b: 1
+map_2: *anchor
+map_3:
+    <<: *anchor
+    a: 2
+    c: 3

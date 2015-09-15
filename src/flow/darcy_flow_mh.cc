@@ -904,31 +904,44 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
 
         arma::vec point_Y(1);
         point_Y.fill(1.0);
-        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); // local coordinates of  Y on slave
-        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //  local coordinates of  Y on master
+        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); // local coordinates of  Y on slave (1, t0, t1)
+        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //  local coordinates of  Y on master (1, t0)
 
         arma::vec point_X(1);
         point_X.fill(0.0);
-        arma::vec point_2D_X(intersec.map_to_slave(point_X)); // local coordinates of  X on slave
-        arma::vec point_1D_X(intersec.map_to_master(point_X)); // local coordinates of  X on master
+        arma::vec point_2D_X(intersec.map_to_slave(point_X)); // local coordinates of  X on slave (1, t0, t1)
+        arma::vec point_1D_X(intersec.map_to_master(point_X)); // local coordinates of  X on master (1, t0)
 
         arma::mat base_2D(3, 3);
-        // base fce = a0 + a1*t0 + a2*t1
+        // basis functions are numbered as sides
+        // TODO:
+        // Use RT finite element to evaluate following matrices.
+
+        // Ravirat - Thomas base functions evaluated in points (0,0), (1,0), (0,1)
+        // 2D RT_i(t0, t1) = a0 + a1*t0 + a2*t1
         //         a0     a1      a2
-        base_2D << 1.0 << 0.0 << -2.0 << arma::endr //point on side 0
-                << -1.0 << 2.0 << 2.0 << arma::endr // point on side 1
-                << 1.0 << -2.0 << 0.0 << arma::endr;// point on side 2
+        base_2D << 1.0 << 0.0 << -2.0 << arma::endr // RT for side 0
+                << 1.0 << -2.0 << 0.0 << arma::endr // RT for side 1
+                << -1.0 << 2.0 << 2.0 << arma::endr;// RT for side 2
+                
 
         arma::mat base_1D(2, 2);
-        //    base fce =   a0 + a1 * t0
+        // Ravirat - Thomas base functions evaluated in points (0,0), (1,0), (0,1)
+        // 1D RT_i(t0) =   a0 + a1 * t0
         //          a0     a1
-        base_1D << 1.0 << -1.0 << arma::endr // point on side 0,
-                << 0.0 << 1.0 << arma::endr; // point on side 1,
+        base_1D << 1.0 << -1.0 << arma::endr // RT for side 0,
+                << 0.0 << 1.0 << arma::endr; // RT for side 1,
 
+
+
+        // Consider both 2D and 1D value are defined for the test function
+        // related to the each of 5 DOFs involved in the intersection.
+        // One of these values is always zero.
+        // Compute difference of the 2D and 1D value for every DOF.
+        // Compute value of this difference in both endpoints X,Y of the intersection.
 
         arma::vec difference_in_Y(5);
         arma::vec difference_in_X(5);
-
         // slave sides 0,1,2
         difference_in_Y.subvec(0, 2) = -base_2D * point_2D_Y;
         difference_in_X.subvec(0, 2) = -base_2D * point_2D_X;
@@ -936,7 +949,9 @@ void P1_CouplingAssembler::assembly(LinSys &ls) {
         difference_in_Y.subvec(3, 4) = base_1D * point_1D_Y;
         difference_in_X.subvec(3, 4) = base_1D * point_1D_X;
 
-        //prvky matice A[i,j]
+        // applying the Simpson's rule
+        // to the product of two linear functions f, g we get
+        // (b-a)/6 * ( 3*f(a)*g(a) + 3*f(b)*g(b) + 2*f(a)*g(b) + 2*f(b)*g(a) )
         arma::mat A(5, 5);
         for (int i = 0; i < 5; ++i) {
             for (int j = 0; j < 5; ++j) {

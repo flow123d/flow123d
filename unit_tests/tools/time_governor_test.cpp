@@ -8,7 +8,7 @@
 #include <flow_gtest.hh>
 #include "system/system.hh"
 #include <input/input_type.hh>
-#include <input/json_to_storage.hh>
+#include <input/reader_to_storage.hh>
 #include <input/accessors.hh>
 #include "tools/time_governor.hh"
 #include "tools/time_marks.hh"
@@ -31,7 +31,7 @@ Input::Record read_input(const string &json_input)
 		.close();
 
 	//json reading according to keys defined in in_rec
-	Input::JSONToStorage json_reader(json_input, in_rec);
+	Input::ReaderToStorage json_reader(json_input, in_rec, Input::FileFormat::format_JSON);
 
 	//getting root record
 	static Input::Record rec;
