@@ -71,7 +71,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 	cout << string(reader_file_) << endl;
     ASSERT( internal_raw_data, "Trying to initialize internal FieldElementwise from input.");
     ASSERT( reader_file_ == FilePath(), "Multiple call of init_from_input.\n");
-    reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+    reader_file_ = FilePath( rec.val<string>("gmsh_file"), FilePath::input_file );
     ReaderInstances::instance()->get_reader(reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
