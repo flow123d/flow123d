@@ -42,11 +42,9 @@ public:
 
     FieldPython(unsigned int n_comp=0);
 
-    static Input::Type::Record input_type;
-
     virtual void init_from_input(const Input::Record &rec);
 
-    static Input::Type::Record get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
+    static const Input::Type::Record & get_input_type(Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit);
 
     /**
      * Set the file and field to be called.
@@ -87,12 +85,12 @@ private:
      */
     inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PyObject *p_func_;
     PyObject *p_module_;
     mutable PyObject *p_args_;
     mutable PyObject *p_value_;
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON
 
 };
 

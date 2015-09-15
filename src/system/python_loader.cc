@@ -5,11 +5,12 @@
  *      Author: jb
  */
 
+#include "global_defs.h"
 
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
-#include "global_defs.h"
+
 #include "system/system.hh"
 #include <string>
 #include <iostream>
@@ -57,21 +58,80 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     // for unknown reason module name is non-const, so we have to make char * copy
     char * tmp_name = new char[ module_name.size() + 2 ];
     strcpy( tmp_name, module_name.c_str() );
-    PyObject * compiled_string = Py_CompileString( source_string.c_str(), "flow123d_python_loader", Py_file_input );
-    if (! compiled_string) {
-        PyErr_Print();
-        std::cerr << "Error: Can not compile python string:\n'" << source_string << std::endl;
-    }
-    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
 
-    if (result == NULL) {
-        PyErr_Print();
-        std::cerr << "Error: Can not load python module '" << module_name << "' from string:" << std::endl;
-        std::cerr << source_string << std::endl;
+    PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+
+		if ( !PyString_Check(pvalue) ) { // syntax error
+			stringstream ss;
+			PyObject* err_type = PySequence_GetItem(pvalue, 0);
+			pystr = PyObject_Str(err_type);
+			ss << PyString_AsString(pystr) << endl;
+			PyObject* descr = PySequence_GetItem(pvalue, 1);
+			PyObject* file = PySequence_GetItem(descr, 0);
+			pystr = PyObject_Str(file);
+			ss << "  File \"" << PyString_AsString(pystr) << "\"";
+			PyObject* row = PySequence_GetItem(descr, 1);
+			pystr = PyObject_Str(row);
+			ss << ", line " << PyString_AsString(pystr) << endl;
+			PyObject* line = PySequence_GetItem(descr, 3);
+			pystr = PyObject_Str(line);
+			ss << PyString_AsString(pystr);
+			PyObject* col = PySequence_GetItem(descr, 2);
+			pystr = PyObject_Str(col);
+			int pos = atoi( PyString_AsString(pystr) );
+			ss << setw(pos) << "^" << endl;
+			THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    	} else {
+    		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pvalue) ));
+    	}
     }
+
+    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
+    PythonLoader::check_error();
 
     delete[] tmp_name;
     return result;
+}
+
+PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+    initialize();
+
+    // import module by dot separated path and its name
+    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    PythonLoader::check_error();
+
+    return module_object;
+}
+
+
+void PythonLoader::check_error() {
+    if (PyErr_Occurred()) {
+    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+
+    	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+		pystr = PyObject_Str(pvalue);
+		THROW(ExcPythonError() << EI_PythonMessage( PyString_AsString(pystr) ));
+    }
+}
+
+
+
+PyObject * PythonLoader::get_callable(PyObject *module, const std::string &func_name) {
+    char func_char[func_name.size()+2];
+    strcpy(func_char, func_name.c_str());
+    PyObject * func = PyObject_GetAttrString(module, func_char );
+    PythonLoader::check_error();
+
+    if (! PyCallable_Check(func)) {
+    	stringstream ss;
+    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
+    	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    }
+
+    return func;
 }
 
 
@@ -86,11 +146,11 @@ string from_py_string(const wstring &wstr) {
     char buff[ wstr.size() ];
     size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
     return string( buff, str_size );
-}  
+}
 
 // currently we support only Python 2.7
 //
-#if PYTHONLIBS_VERSION_MAJOR<3
+#if FLOW123D_PYTHONLIBS_VERSION_MAJOR<3
     #define to_py_string      string
     #define from_py_string    string
     #define PY_STRING string
@@ -105,28 +165,28 @@ namespace internal {
 
 PythonRunning::PythonRunning(const std::string& program_name)
 {
-#ifdef PYTHON_PREFIX
+#ifdef FLOW123D_PYTHON_PREFIX
         static PY_STRING _python_program_name = to_py_string(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         PY_STRING full_program_name = Py_GetProgramFullPath();
-        cout << "full program name: " << from_py_string(full_program_name) << std::endl;
+        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
 
         size_t pos = full_program_name.rfind( to_py_string("flow123d") );
         DBGMSG("pos: %d\n", pos);
         ASSERT(pos != PY_STRING::npos, "non flow123d binary");
         PY_STRING full_flow_prefix=full_program_name.substr(0,pos-string("/bin/").size() );
-        cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-        PY_STRING default_py_prefix(to_py_string(STR(PYTHON_PREFIX)));
-        cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
+        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
+        PY_STRING default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
+        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
 
         static PY_STRING our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
-        
+
         /*
         Py_GetPath();
 
         static PY_STRING our_py_path;
-        string python_subdir("/lib/python" + STR(PYTHONLIBS_VERSION_MAJOR) + "." + STR(PYTHONLIBS_VERSION_MINOR));
+        string python_subdir("/lib/python" + STR(FLOW123D_PYTHONLIBS_VERSION_MAJOR) + "." + STR(FLOW123D_PYTHONLIBS_VERSION_MINOR));
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/plat-cygwin:");
         our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/lib-dynload:");
@@ -139,11 +199,11 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
 //        string prefix = ;
         */
-        cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
-        cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
-        cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
-        cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
-        
+        // cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
+        // cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
+        // cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
+        // cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
+
         // 1. set program name
         // 2. get prefix
         // 3. get python full path
@@ -188,8 +248,20 @@ PythonRunning::PythonRunning(const std::string& program_name)
         num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
         std::cout << "Python full: " << buff << std::endl;
 */
-#endif
+#endif //FLOW123D_PYTHON_PREFIX
+
+    // initialize the Python interpreter.
     Py_Initialize();
+
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, first get current system path (Py_GetPath)
+    // than append flow123d Python modules path to sys.path
+    std::string path = Py_GetPath();
+    path = path  + ":" + std::string(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    // conversion to non const char
+    char * path_char = const_cast<char *>(path.c_str());
+    PySys_SetPath (path_char);
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 
@@ -200,4 +272,4 @@ PythonRunning::~PythonRunning() {
 
 } // close namespace internal
 
-#endif // HAVE_PYTHON
+#endif // FLOW123D_HAVE_PYTHON

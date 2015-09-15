@@ -90,6 +90,8 @@ void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
 
 
 Element::~Element() {
+    // Can not make deallocation here since then resize of
+    // vectors of elements deallocates what should be keeped.
 }
 
 

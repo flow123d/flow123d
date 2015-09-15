@@ -32,10 +32,12 @@
 class LinearODEAnalytic : public LinearODESolver<LinearODEAnalytic>
 {
 public:
+	typedef LinearODESolverBase FactoryBaseType;
+
     /**
      * Input record for class LinearODE_analytic.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
     
     ///Default constructor is possible because the input record is not needed.
     LinearODEAnalytic(){};
@@ -56,6 +58,11 @@ protected:
     
     /// The solution is computed only by a matrix multiplication (standard fundamental matrix).
     arma::mat solution_matrix_;
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
+
 };
 
 #endif // LINEAR_ODE_ANALYTIC_H_

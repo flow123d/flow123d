@@ -86,6 +86,7 @@
     builders:
       - shell: |
           cd flow123d
+          make html-doc || echo "No such step in makefile"
           make ref-doc
           make doxy-doc
 #    publishers:
@@ -196,12 +197,13 @@
     defaults: flow123d-build
     builders:
       - shell: |
+          make -C flow123d clean-tests
           cd flow123d/build_tree
-          rm -rf _CPack_Packages         
-          make package_source
           rm -rf _CPack_Packages
           make -i package
           make post_package
+          rm -rf _CPack_Packages
+          make package_source
       - shell: |
           cd flow123d
           bin/prepare_to_publish.sh
@@ -309,12 +311,10 @@
           wipe-workspace: yes
           branches:
             - master
-            - 1.8.0_master
-            - 1.8.1_patch
-            - 1.8.2_rc
+            - 1.8.2
     triggers:
-      # once a day same time between 00:00 to 06:00; if source changed
-      - pollscm: "H * * * *"
+      # run every day around 3 AM even if there is no change in code
+      - timed: "H 3 * * *"
       #- github
     wrappers:
       - build-name:
@@ -338,7 +338,6 @@
           name: "Build Flow123d libraries"
           condition: COMPLETED
           projects:
-            - name: "Flow123d-{platform}-release-make-doc"
             - name: "Flow123d-{platform}-release-build-libs"
       - multijob:
           name: "Unit tests"
@@ -355,6 +354,11 @@
           condition: COMPLETED
           projects:
             - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+      - multijob:
+          name: "Make Docs"
+          condition: COMPLETED
+          projects:
+            - name: "Flow123d-{platform}-release-make-doc"
       - multijob:
           name: "Pack and Install"
           condition: COMPLETED
@@ -488,7 +492,7 @@
           find . -name *.gcda -type f -delete
           find . -name *.gcov -type f -delete
           # filter out only current package
-          python -u flow123d/python/merge-xml-coverage.py -f -k src.{unit-dir} -k src.{unit-dir}.* flow123d/build_tree/coverage-unit-test-{unit-dir}.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -f -k src.{unit-dir} -k src.{unit-dir}.* flow123d/build_tree/coverage-unit-test-{unit-dir}.cobertura
 
     publishers:
       - cobertura:
@@ -526,9 +530,9 @@
     builders:
       - shell: |
           # merge unit test xml files in specified directory
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-unit-test.cobertura
           # create filtered copy of src package only
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src -s .filtered coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src -s .filtered coverage-unit-test.cobertura
           # remove old xml files 
           cd flow123d/build_tree/
           rm -f *.xml
@@ -626,9 +630,9 @@
     builders:
       - shell: |
           # merge integration test xml files
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-test.cobertura
           # create filtered copy of src package only
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src --suffix .filtered coverage-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -f -k src.* -k src --suffix .filtered coverage-test.cobertura
           # remove old xml files 
           cd flow123d/build_tree/
           rm -f *.xml
@@ -680,10 +684,11 @@
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/
           branches: 
-            - JHy-coverage
+            - master
 
     triggers: 
-      - github
+      # run every week around 4 AM even if there is no change in code
+      - timed: "H 4  * * H"
     wrappers:
 
       # injection doesn't work under cygwin; see other solution for release multijob
@@ -703,7 +708,7 @@
         - { project: "Flow123d-{platform}-coveragetest-test-$PLACEHOLDER_test_list$", block: true }
         - { project: "Flow123d-{platform}-coveragetest-coverage-test", block: true }
       - shell: |
-          python -u flow123d/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-all.cobertura coverage-test.cobertura coverage-unit-test.cobertura
+          python -u flow123d/bin/python/merge-xml-coverage.py -p flow123d/build_tree/ -o coverage-all.cobertura coverage-test.cobertura coverage-unit-test.cobertura
           cd flow123d/build_tree/
           rm -f *.xml
           cp coverage-all.cobertura coverage-all.xml
@@ -746,3 +751,73 @@
       #     parse-rules: "/home/builder/jenkins/F123-linux-coveragetest/rules.txt"
       #     unstable-on-warning: true
       #     fail-on-error: true
+
+
+
+####################################################################
+# Multijob  project - (windows package tests)
+#
+# Simple multijob which test whether are packed installators functional
+#   Testing consist of 4 steps:
+#      1) install - donwload and install package from cmd
+#      2) run_inside - run binary flow123d from within bin folder
+#      3) run_outside - run binary flow123d from outside of bin folder (currently not working, path value is not updated)
+#      4) uninstall - cmd uninstall and file removal
+- project:
+    name: "Windows package tests"
+    action: [ install, run_inside, run_outside, python_test, uninstall ]
+    arch: [ 32, 64 ]
+    jobs:
+      - "Windows-{arch}-package-{action}"
+      - "Windows-{arch}-package-all"
+
+#################################################################
+# template for single testing step (install, uninstall, ...)
+- job-template:
+    name: "Windows-{arch}-package-{action}"
+    node: packages
+    workspace: c:\package_tests\
+    display-name: "Windows {arch} package - {action}"
+    builders:
+      - batch: |
+          "C:/Program Files (x86)/python27/python" install.py -a {arch} -m {action}
+
+
+########################################################################
+# Main multijob - release
+#
+# possible values for condition: {SUCCESSFUL, UNSTABLE, COMPLETED, FAILURE}
+- job-template:
+    name: "Windows-{arch}-package-all"
+    node: packages
+    workspace: c:\package_tests\
+    display-name: "Windows {arch} package multijob"
+    project-type: multijob
+    builders:            
+      - multijob:
+          name: "Install"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-install"
+      - multijob:
+          name: "Run inside"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-run_inside"
+      - multijob:
+          name: "Run outside"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-run_outside"
+      - multijob:
+          name: "Embedded Python test"
+          condition: COMPLETED
+          projects:
+            - name: "Windows-{arch}-package-python_test"
+      - multijob:
+          name: "Uninstall"
+          condition: SUCCESSFUL
+          projects:  
+            - name: "Windows-{arch}-package-uninstall"
+
+

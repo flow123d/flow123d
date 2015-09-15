@@ -19,7 +19,7 @@
 #     PETSC_INSTALL_OPTIONS - additional options used as parameters to configure.py,
 #
 # We automatically reuse compiler and their flags. Further we set "--with-debugging=1" 
-# if FLOW_BUILD_TYPE == "debug", otherwise we turn debugging off.
+# if CMAKE_BUILD_TYPE == "debug", otherwise we turn debugging off.
 #
 # CAUTION: Never use semicolon a part of compiler options or PETSC_INSTALL_OPTIONS.
 
@@ -46,7 +46,7 @@ if (CMAKE_Fortran_COMPILER)
 endif()
 
 # set debugging
-if (FLOW_BUILD_TYPE STREQUAL "debug")
+if (CMAKE_BUILD_TYPE STREQUAL "debug")
   set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-debugging=1)
 else()
   set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --with-debugging=0)
@@ -84,7 +84,8 @@ elseif(PETSC_INSTALL_CONFIG STREQUAL "bddcml")
     set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes)
 elseif(PETSC_INSTALL_CONFIG STREQUAL "full")
     if (CMAKE_HOST_WIN32 OR WIN32 OR CYGWIN) # CMAKE_HOST_WIN32 should include win32, win64, and cygwin; but doesn't work
-        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes  --download-blacs=yes --download-scalapack=yes --download-mumps=yes )
+    # PETSc does not work with umfpack on Windows
+        set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes  --download-blacs=yes --download-scalapack=yes --download-mumps=yes)
     else()    
         set(PETSC_CONF_LINE ${PETSC_CONF_LINE} --download-metis=yes --download-parmetis=yes --download-hypre=yes --download-blacs=yes --download-scalapack=yes --download-mumps=yes --download-blopex=yes --download-umfpack=yes --download-sundials=yes)
     endif()

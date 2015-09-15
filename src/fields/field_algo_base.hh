@@ -32,6 +32,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/point.hh"
 #include "fields/field_values.hh"
+#include "tools/time_governor.hh"
 
 
 
@@ -71,16 +72,10 @@ public:
        static std::string template_name();
 
        /**
-        * Declaration of input type data member.
-        */
-       static Input::Type::AbstractRecord input_type;
-
-       /**
         * Returns whole tree of input types for FieldBase with all descendants based on element input type (namely for FieldConstant)
-        * given by element_input_type pointer. USE ONLY IF YOU CAN NOT USE
-        * static member FieldBase<...>::input_type.
+        * given by element_input_type pointer.
         */
-       static Input::Type::AbstractRecord get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
+       static Input::Type::AbstractRecord & get_input_type(const typename Value::ElementInputType *element_input_type=nullptr);
 
        /**
         * This static method gets accessor to abstract record with function input,
@@ -106,7 +101,7 @@ public:
         *
         * The method returns true if the value of the field has changed in the new time step.
         */
-       virtual bool set_time(double time);
+       virtual bool set_time(const TimeStep &time);
 
        /**
         * Is used only by some Field implementations, but can be used to check validity of incoming ElementAccessor in value methods.
@@ -115,6 +110,12 @@ public:
         * TODO: make separate mesh for the boundary, then we can drop this parameter.
         */
        virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
+
+       /**
+        * Sets @p component_idx_
+        */
+       void set_component_idx(unsigned int idx)
+       { this->component_idx_ = idx; }
 
        /**
         * Returns number of rows, i.e. number of components for variable size vectors. For values of fixed size returns zero.
@@ -174,12 +175,14 @@ public:
 
 protected:
        /// Actual time level; initial value is -infinity.
-       double time_;
+       TimeStep time_;
        /// Last value, prevents passing large values (vectors) by value.
        Value value_;
        typename Value::return_type r_value_;
        /// Indicator of particular values (zero, one) constant over space.
        FieldResult field_result_;
+       /// Specify if the field is part of a MultiField and which component it is
+       unsigned int component_idx_;
 };
 
 

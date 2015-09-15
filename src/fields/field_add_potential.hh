@@ -81,7 +81,7 @@ public:
     /**
      * Update time and possibly update data.
      */
-    virtual bool set_time(double time);
+    bool set_time(const TimeStep &time) override;
     
     
     virtual ~FieldAddPotential();

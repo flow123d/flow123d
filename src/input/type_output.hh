@@ -82,6 +82,8 @@ protected:
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
     /// Gets description of the given record type.
     const string & get_record_description(const Record *rec);
+    /// Gets description of the given abstract type.
+    const string & get_abstract_description(const AbstractRecord *a_rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
@@ -91,7 +93,7 @@ protected:
     /// Gets pointer of parent AbstractRecord for given Record
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
     /// Gets pointer of inner type for given Array
-    void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
@@ -189,6 +191,13 @@ protected:
     /// temporary value for printout of description (used in std::setw function)
     unsigned int size_setw_;
 
+    /// Header of the format, printed before first call of recursive print.
+    /// see @p print(stream) method
+    std::string format_head;
+    /// Tail of the format, printed after all recursive prints are finished.
+    /// see @p print(stream) method
+    std::string format_tail;
+
     /**
      * @brief Internal data class.
      * Contains flags of written Input::Types objects and functionality of regular expression filter of Input::Types full names.
@@ -248,6 +257,17 @@ protected:
          */
         const string get_reference(const void * type_data) const;
 
+        /**
+         * Combines was_sritten and mark_written for hashes.
+         */
+        bool was_written(std::size_t hash)
+        {
+            bool in_set = ( output_hash.find(hash) != output_hash.end() );
+            if (! in_set) output_hash.insert(hash);
+            return in_set;
+        }
+
+
         /// Database of valid keys
         std::map<const void *, unsigned int> key_to_index;
         typedef std::map<const void *, unsigned int>::const_iterator key_to_index_const_iter;
@@ -263,6 +283,9 @@ protected:
 
         /// Set of processed types by regular expression and full names
         std::set<string> full_type_names;
+
+        /// Set of hashes of outputed types. Should replace keys.
+        std::set<std::size_t> output_hash;
     };
 
     /// Stores flags and references of processed type
@@ -420,9 +443,39 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth)
+    {
+	    format_head="[\n";
+	    format_tail="{}]\n";
+    }
+
+    /**
+     * @brief Simple internal class for storing JSON description rewrite rule
+     */
+    class RewriteRule {
+        public:
+            /** boost regex regular expression */
+            boost::regex search;
+
+            /** simple string replacement */
+            std::string replacement;
+
+            /**
+             * Constructor
+             * @param _search boost::regex regular expression match pattern
+             * @param _replacement std::string string _replacement
+             */
+            RewriteRule (boost::regex _search, std::string _replacement):
+                search(_search),
+                replacement(_replacement) {
+
+            };
+    };
+
 
 protected:
+	std::string format_hash(TypeBase::TypeHash hash);
+	std::string escape_description(std::string desc);
 
     void print_impl(ostream& stream, const Record *type, unsigned int depth);
     void print_impl(ostream& stream, const Array *type, unsigned int depth);
@@ -437,9 +490,7 @@ protected:
 
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
-
-
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
 };
 
 

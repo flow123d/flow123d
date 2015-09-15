@@ -31,7 +31,7 @@
 #define HEAT_MODEL_HH_
 
 #include "advection_diffusion_model.hh"
-
+#include "fields/multi_field.hh"
 
 
 
@@ -90,7 +90,7 @@ public:
 
 		static string default_output_field() { return "temperature"; }
 
-		static IT::Selection &get_output_selection_input_type(const string &implementation, const string &description);
+		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 	};
 
 protected:
@@ -104,7 +104,7 @@ protected:
 	 * @param description    Comment used to describe the record key.
 	 * @return
 	 */
-	static IT::Record &get_input_type(const string &implementation, const string &description);
+	static IT::Record get_input_type(const string &implementation, const string &description);
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
@@ -113,6 +113,10 @@ protected:
 public:
 
 	HeatTransferModel();
+
+	static string balance_prefix() { return "energy"; }
+
+	UnitSI balance_units();
 
 	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
 

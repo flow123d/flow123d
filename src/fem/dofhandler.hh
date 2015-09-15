@@ -100,6 +100,14 @@ public:
     virtual void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const = 0;
 
     /**
+     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     *
+     * @param cell The cell.
+     * @param indices Array of dof indices on the cell.
+     */
+    virtual void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const =0;
+    
+    /**
      * @brief Returns the dof values associated to the @p cell.
      *
      * @param cell The cell.
@@ -289,6 +297,14 @@ public:
      * @param indices Array of dof indices on the cell.
      */
     void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
+    
+    /**
+     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     *
+     * @param cell The cell.
+     * @param indices Array of dof indices on the cell.
+     */
+    void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -304,6 +320,8 @@ public:
      * @brief Returns the distribution of number of element to local processes.
      */
     inline Distribution *el_ds() const { return el_ds_; }
+
+    inline int *get_el_4_loc() const { return el_4_loc; }
 
     /**
      * @brief Returns the global index of local element.

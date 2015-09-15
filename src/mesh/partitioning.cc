@@ -14,28 +14,31 @@
 
 
 namespace IT = Input::Type;
-IT::Selection Partitioning::graph_type_sel
-    =IT::Selection("GraphType",
+const IT::Selection & Partitioning::get_graph_type_sel() {
+	return IT::Selection("GraphType",
             "Different algorithms to make the sparse graph with weighted edges\n"
             "from the multidimensional mesh. Main difference is dealing with \n"
             "neighborings of elements of different dimension.")
-    .add_value(any_neighboring, "any_neighboring", "Add edge for any pair of neighboring elements.")
-    .add_value(any_weight_lower_dim_cuts, "any_wight_lower_dim_cuts",  "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.")
-    .add_value(same_dimension_neighboring, "same_dimension_neghboring", "Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).")
-    .close();
+		.add_value(any_neighboring, "any_neighboring", "Add edge for any pair of neighboring elements.")
+		.add_value(any_weight_lower_dim_cuts, "any_wight_lower_dim_cuts",  "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.")
+		.add_value(same_dimension_neighboring, "same_dimension_neghboring", "Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).")
+		.close();
+}
 
-IT::Selection Partitioning::tool_sel
-    =IT::Selection("PartTool", "Select the partitioning tool to use.")
-    .add_value(PETSc, "PETSc", "Use PETSc interface to various partitioning tools.")
-    .add_value(METIS, "METIS", "Use direct interface to Metis.")
-    .close();
+const IT::Selection & Partitioning::get_tool_sel() {
+	return IT::Selection("PartTool", "Select the partitioning tool to use.")
+		.add_value(PETSc, "PETSc", "Use PETSc interface to various partitioning tools.")
+		.add_value(METIS, "METIS", "Use direct interface to Metis.")
+		.close();
+}
 
-IT::Record Partitioning::input_type
-    = IT::Record("Partition","Setting for various types of mesh partitioning." )
-    .declare_key("tool", Partitioning::tool_sel, IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
-    .declare_key("graph_type", Partitioning::graph_type_sel, IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
-    .allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
-    .close();
+const IT::Record & Partitioning::get_input_type() {
+    return IT::Record("Partition","Setting for various types of mesh partitioning." )
+		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("METIS"),  "Software package used for partitioning. See corresponding selection.")
+		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("any_neighboring"), "Algorithm for generating graph and its weights from a multidimensional mesh.")
+		.allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
+		.close();
+}
 
 
 Partitioning::Partitioning(Mesh *mesh, Input::Record in)
@@ -204,23 +207,20 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, in
 
 
 
-vector<double> &Partitioning::subdomain_id_field_data() {
+shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
     ASSERT(loc_part_, "Partition is not yet computed.\n");
-    if (seq_part_.size() == 0) {
+    if (!seq_part_) {
     	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
-    	seq_part_.resize(seq_size);
-    	vector<int> int_seq_part_(seq_size);
+    	//seq_part_.resize(seq_size);
+    	seq_part_ = make_shared< vector<int> >(seq_size);
+        std::vector<int> &vec = *( seq_part_.get() );
 
         MPI_Gatherv(loc_part_, init_el_ds_->lsize(), MPI_INT,
-                &int_seq_part_[0],
+                &vec[0],
                 (int *)(init_el_ds_->get_lsizes_array()),
                 (int *)(init_el_ds_->get_starts_array()),
                 MPI_INT, 0,init_el_ds_->get_comm() );
 
-        // Following is terrible since FieldElementwise stores everything as array of doubles.
-        auto it_2=seq_part_.begin();
-        for(auto it_1=int_seq_part_.begin(); it_1 != int_seq_part_.end(); ++it_1, ++it_2)
-        	*((int *)&(*it_2))=*it_1;
     }
     return seq_part_;
 

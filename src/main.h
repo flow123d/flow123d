@@ -42,7 +42,7 @@ using namespace std;
 class Application : public ApplicationBase {
 public:
     /// Root of the Input::Type tree. Description of whole input structure.
-    static Input::Type::Record input_type;
+    static Input::Type::Record & get_input_type();
     
     /// Application constructor. 
     Application(int argc, char ** argv);

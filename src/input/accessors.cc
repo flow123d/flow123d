@@ -6,9 +6,11 @@
  */
 
 
+#include <memory>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
+#include "input/storage_transpose.hh"
 
 
 namespace Input {
@@ -33,7 +35,7 @@ const char * Exception::what() const throw () {
         converter << "--------------------------------------------------------" << std::endl;
         converter << "User Error: ";
         print_info(converter);
-#ifdef DEBUG_MESSAGES
+#ifdef FLOW123D_DEBUG_MESSAGES
         converter << "\n** Diagnosting info **\n" ;
         converter << boost::diagnostic_information_what( *this );
         print_stacktrace(converter);
@@ -98,9 +100,9 @@ Address::Address(const Address& other)
 {}
 
 
-const Address * Address::down(unsigned int idx) const {
+std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
-	Address *addr = new Address(this->data_->root_storage_, this->data_->root_type_);
+	auto addr = std::make_shared<Address>(this->data_->root_storage_, this->data_->root_type_);
 	addr->data_->parent_ = this->data_.get();
 	addr->data_->descendant_order_ = idx;
 	addr->data_->actual_storage_ = data_->actual_storage_->get_item(idx);
@@ -141,7 +143,7 @@ std::string Address::make_full_address() const {
 		if (typeid(*input_type) == typeid(Type::AbstractRecord)) {
 			const Type::AbstractRecord * a_rec = static_cast<const Type::AbstractRecord *>(input_type);
 			const StorageInt * storage_type = static_cast<const StorageInt *>(storage->get_item(0));
-			input_type = & a_rec->get_descendant(storage_type->get_int());
+			input_type = & a_rec->get_descendant((unsigned int)storage_type->get_int());
 		} else
 		if (typeid(*input_type) == typeid(Type::Array)) {
 	    	storage = storage->get_item(path[i]);
@@ -232,7 +234,7 @@ AbstractRecord::operator Record() const
 
 Input::Type::Record AbstractRecord::type() const
 {
-    unsigned int type_id = address_.storage_head()->get_item(0)->get_int();
+	unsigned int type_id = (unsigned int)(address_.storage_head()->get_item(0)->get_int());
     return record_type_.get_descendant(type_id);
 }
 
@@ -245,6 +247,27 @@ Input::EI_Address AbstractRecord::ei_address() const
 string AbstractRecord::address_string() const
 {
 	return address_.make_full_address();
+}
+
+void AbstractRecord::transpose_to(Input::Record &target_rec, string target_key, unsigned int vec_size) {
+	Input::Iterator<Array> it = target_rec.find<Array>(target_key);
+	if (it) { // target_key is set by user
+		return;
+	}
+
+	Type::Record::KeyIter key_it = target_rec.record_type_.key_iterator(target_key);
+	const Type::Array *in_arr = static_cast<const Type::Array *>(key_it->type_.get());
+	const Type::TypeBase *target_type = &(in_arr->get_sub_type());
+
+	StorageTranspose trans(target_type, &(this->record_type_), this->address_.storage_head(), vec_size);
+    StorageArray* result_storage = new StorageArray(vec_size);
+    for(unsigned int i=0; i<vec_size; i++) {
+    	result_storage->new_item(i, trans.get_item(i));
+    }
+    StorageArray* storage_arr =
+            const_cast<StorageArray *>(
+            static_cast<const StorageArray *>(target_rec.address_.storage_head()));
+    storage_arr->set_item(target_rec.record_type_.key_index(target_key), result_storage);
 }
 
 

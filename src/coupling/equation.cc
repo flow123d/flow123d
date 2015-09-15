@@ -29,7 +29,7 @@
  */
 
 #include <petscmat.h>
-#include "time_governor.hh"
+#include "tools/time_governor.hh"
 
 
 #include "equation.hh"
@@ -39,19 +39,6 @@
 
 #include <boost/foreach.hpp>
 
-
-#ifdef CYGWIN
-#include <sstream>
-
-namespace std {
-	template<typename T>
-	string to_string (T &x) {
-		ostringstream str;
-		str << x;
-		return str.str();
-	}
-}
-#endif // CYGWIN
 
 
 /*****************************************************************************************

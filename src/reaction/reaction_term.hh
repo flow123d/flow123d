@@ -25,15 +25,8 @@ public:
   /**
    * Static variable for definition of common input record in reaction term.
    */
-  static Input::Type::AbstractRecord input_type;
+  static Input::Type::AbstractRecord & get_input_type();
   
-  /// Specification of the output record. 
-  /**
-   * Need not to be used by all reaction models, but they should
-   * allow output of similar fields.
-   */
-  static Input::Type::Record input_type_output_record;
-
   /// Constructor.
   /** @param init_mesh is the reference to the computational mesh
    *  @param in_rec is the input record
@@ -51,8 +44,8 @@ public:
   {substances_.initialize(substances); return *this;}
 
   ///Sets the output stream which is given from transport class.
-  ReactionTerm &output_stream(OutputTime &ostream)
-  {output_stream_=&ostream; return *this;}
+  ReactionTerm &output_stream(std::shared_ptr<OutputTime> ostream)
+  {output_stream_=ostream; return *this;}
 
   /**
    * Sets the pointer to concentration matrix for the mobile zone, 
@@ -113,7 +106,7 @@ protected:
   SubstanceList substances_;
 
   /// Pointer to a transport output stream.
-  OutputTime *output_stream_;
+  std::shared_ptr<OutputTime> output_stream_;
 
 };
 

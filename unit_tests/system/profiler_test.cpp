@@ -19,7 +19,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#ifdef DEBUG_PROFILER
+#ifdef FLOW123D_DEBUG_PROFILER
 
 /*************************
  * We test collisions of hash function on strings with max length 13.
@@ -37,9 +37,9 @@ unsigned int random_string(char *str){
 }
 
 TEST(Profiler, str_hash) {
-    EXPECT_EQ(0, str_hash(""));
-    EXPECT_EQ(65, str_hash("A"));
-    EXPECT_EQ(6597, str_hash(" A"));
+    EXPECT_EQ(0, str_hash("", PROFILER_HASH_DEFAULT));
+    EXPECT_EQ(65, str_hash("A", PROFILER_HASH_DEFAULT));
+    EXPECT_EQ(6597, str_hash(" A", PROFILER_HASH_DEFAULT));
 
     srand ( time(NULL) );
     char a[16];
@@ -51,7 +51,7 @@ TEST(Profiler, str_hash) {
         random_string(a);
         random_string(b);
         if (string(a) != string(b) )
-            EXPECT_NE( str_hash(a) , str_hash(b) );
+            EXPECT_NE( str_hash(a, PROFILER_HASH_DEFAULT) , str_hash(b, PROFILER_HASH_DEFAULT) );
     }
 }
 
@@ -60,7 +60,7 @@ TEST(Profiler, str_hash) {
 TEST(Profiler, CodePoint) {
     CodePoint cp = CODE_POINT("my_tag");    unsigned int line_save = __LINE__;
     EXPECT_EQ("my_tag", cp.tag_);
-    EXPECT_EQ( str_hash("my_tag"), cp.hash_);
+    EXPECT_EQ( str_hash("my_tag", PROFILER_HASH_DEFAULT), cp.hash_);
     EXPECT_EQ( line_save, cp.line_ );
     //EXPECT_EQ(string("(profiler_test.cpp, xxx(), 130)"), string(CODE_POINT) );
 }
@@ -86,6 +86,19 @@ double wait( double time) {
     return time_in_ms;
 }
 
+// wait given amount of time (in sec) and return it in sec
+double wait_sec( double time) {
+	TimePoint t1, t2;
+
+	t2 = t1 = TimePoint();
+	while ((t2-t1) < time)  {
+		t2 = TimePoint();
+//		cout << "difference: " << (t2-t1) << endl;
+	}
+
+	return (t2-t1);
+}
+
 // return smallest amount of time resoluted by clock() function
 double clock_resolution() {
 //    cout << "wait function\n" <<endl;
@@ -100,32 +113,66 @@ double clock_resolution() {
 
 
 #define AT    string(Profiler::instance()->actual_tag())
-#define ACT    Profiler::instance()->actual_cumulative_time()
+#define ACT   Profiler::instance()->actual_cumulative_time()
 #define AC    Profiler::instance()->actual_count()
+
 
 TEST(Profiler, one_timer) {
 
+//	TimePoint t0 = TimePoint();
+//	wait(1000);
+//	TimePoint t1 = TimePoint();
+//
+//	cout << "CURRENT " << t1-t0 << endl;
+
+	const double TIMER_RESOLUTION = Profiler::get_resolution();
+	const double DELTA = TIMER_RESOLUTION*100;
+	double total=0;
     Profiler::initialize();
-    double wait_time = clock_resolution();
-    double total=0;
+
+
     { // uninitialize can not be in the same block as the START_TIMER
+
+
     START_TIMER("test_tag");
-    EXPECT_EQ( 1, AC);
-    total += wait(wait_time);
+    	// test that number of calls of current timer is
+	    EXPECT_EQ( 1, AC);
+
+	    // wait a TIMER_RESOLUTION time
+		total += wait_sec(TIMER_RESOLUTION);
     END_TIMER("test_tag");
 
+
+
     START_TIMER("test_tag");
-    EXPECT_EQ( total, ACT);
-    EXPECT_EQ( 2, AC);
-    total += wait(wait_time);
-    total += wait(wait_time);
+    	// test that number of calls of current timer is
+		EXPECT_EQ( 2, AC);
+
+		// test whether difference between measured time and total time is within TIMER_RESOLUTION
+		EXPECT_LE( abs(ACT-total), DELTA);
+		cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
+
+		// wait a TIMER_RESOLUTION time
+		total += wait_sec (TIMER_RESOLUTION);
+		total += wait_sec (TIMER_RESOLUTION);
+
     END_TIMER("test_tag");
 
-    START_TIMER("test_tag");
-    EXPECT_EQ( total, ACT);
-    EXPECT_EQ( 3, AC);
+//    for (int i = 0; i < 100; i++) {
+//        START_TIMER("test_tag");
+//            EXPECT_LE( abs(ACT-total), DELTA);
+//            cout << i+1 <<". difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
+//            total += wait_sec (TIMER_RESOLUTION);
+//    	END_TIMER("test_tag");
+//    }
 
+    START_TIMER("test_tag");
+    	EXPECT_EQ( 3, AC);
+		EXPECT_LE( abs(ACT-total), DELTA);
+		cout << "difference: " << abs(total-ACT) << ", tolerance: " << DELTA << endl;
     }
+
+
 
     // test add_call
     {
@@ -135,7 +182,6 @@ TEST(Profiler, one_timer) {
     }
 
     Profiler::uninitialize();
-
 }
 
 
@@ -224,14 +270,15 @@ TEST(Profiler, structure) {
     Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::instance()->output(MPI_COMM_WORLD, sout);
 
-    EXPECT_TRUE( sout.str().find("Whole Program   0") );
-    EXPECT_TRUE( sout.str().find("  sub1          2") );
+    // when using find, we need to compare result to string::npos value (which indicates not found)
+    EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+    EXPECT_NE( sout.str().find("\"tag\": \"sub1\""), string::npos );
 
     Profiler::uninitialize();
 
 }
 
-#else // DEBUG_PROFILER
+#else // FLOW123D_DEBUG_PROFILER
 
 
 TEST(Profiler, test_calls_only) {
@@ -244,6 +291,6 @@ TEST(Profiler, test_calls_only) {
 }
 
 
-#endif // DEBUG_PROFILER
+#endif // FLOW123D_DEBUG_PROFILER
 
 

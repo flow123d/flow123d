@@ -18,7 +18,9 @@ map<string,string> FilePath::placeholder;
 string FilePath::output_dir="";
 string FilePath::root_dir="";
 
-FilePath::FilePath(const string file_path, const  FileType ft) {
+FilePath::FilePath(string file_path, const  FileType ft)
+: file_type_(ft)
+{
     if (output_dir == "") {
         xprintf(Warn, "Creating FileName object before set_io_dirs is called. No file path resolving.\n");
         abs_file_path = file_path;
@@ -29,8 +31,12 @@ FilePath::FilePath(const string file_path, const  FileType ft) {
         abs_file_path = root_dir + DIR_DELIMITER + file_path;
         substitute_value();
     } else if (ft == output_file) {
-        if (file_path[0] == DIR_DELIMITER) {
-            THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
+        if ( FilePath::is_absolute_path(file_path) ) {
+            if (file_path.substr(0, output_dir.size()) == output_dir) {
+                file_path=file_path.substr(output_dir.size()+1);
+            } else {
+                THROW( ExcAbsOutputPath() << EI_Path( file_path ) );
+            }
         }
         abs_file_path = output_dir + DIR_DELIMITER + file_path;
         substitute_value();
@@ -52,15 +58,15 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
     	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
     	    if ( !(*it).size() ) continue;
     	    if ( !output_dir.size() ) {
-#ifdef CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     	    	output_dir = (*it);
 #else
     	    	output_dir = DIR_DELIMITER + *it;
-#endif
+#endif // FLOW123D_HAVE_CYGWIN
     	    } else {
             	output_dir = output_dir + DIR_DELIMITER + *it;
     	    }
-    	    FilePath::create_output_dir();
+    	    FilePath::create_dir(output_dir);
         }
     } else {
     	vector<string> dirs;
@@ -70,7 +76,7 @@ void FilePath::set_io_dirs(const string working_dir, const string root_input_dir
     	    if ( !(*it).size() ) continue;
     	    if ( !output_dir.size() ) output_dir = *it;
     	    else output_dir = output_dir + DIR_DELIMITER + *it;
-    	    FilePath::create_output_dir();
+    	    FilePath::create_dir(output_dir);
         }
 
     	FilePath::create_canonical_path(working_dir, output);
@@ -100,30 +106,39 @@ void FilePath::substitute_value() {
 
 bool FilePath::is_absolute_path(const string path) {
 	if (path.size() == 0) xprintf(UsrErr, "Path can't be empty!\n");
-#ifdef CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
 	if (path.size() == 1) return false;
 	return isalpha(path[0]) && (path[1] == ':');
 #else
 	return path[0] == DIR_DELIMITER;
-#endif
+#endif // FLOW123D_HAVE_CYGWIN
 }
 
 
 const string FilePath::get_absolute_working_dir() {
     string abs_path = boost::filesystem::current_path().string();
-#ifdef CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     boost::replace_all(abs_path, "\\", "/");
-#endif
+#endif // FLOW123D_HAVE_CYGWIN
 	return abs_path;
 }
 
 
-bool FilePath::create_output_dir() {
-    if (!boost::filesystem::is_directory(output_dir)) {
-    	boost::filesystem::create_directory(output_dir);
-    	return true;
+
+void FilePath::create_output_dir() {
+    if (file_type_ == output_file) {
+        boost::filesystem::create_directories(
+                boost::filesystem::path(abs_file_path).parent_path()
+                );
     }
-	return false;
+}
+
+
+
+void FilePath::create_dir(string dir) {
+    if (!boost::filesystem::is_directory(dir)) {
+    	boost::filesystem::create_directory(dir);
+    }
 }
 
 
@@ -141,7 +156,7 @@ void FilePath::create_canonical_path(const string working_dir, const string outp
 
     boost::filesystem::path curr = boost::filesystem::current_path();
 	output_dir = full_path.string();
-#ifdef CYGWIN
+#ifdef FLOW123D_HAVE_CYGWIN
     boost::replace_all(output_dir, "\\", "/");
-#endif
+#endif // FLOW123D_HAVE_CYGWIN
 }

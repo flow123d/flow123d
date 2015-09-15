@@ -18,7 +18,7 @@
 
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
 
 #include "system/sys_profiler.hh"
@@ -42,10 +42,6 @@ public:
 	void SetUp() {
 	    Profiler::initialize();
 
-		test_selection = Input::Type::Selection("any")
-			.add_value(0,"black")
-			.add_value(1,"white");
-
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 	    my_mesh = new Mesh();
 	    ifstream in(string(mesh_file).c_str());
@@ -53,13 +49,15 @@ public:
 
 
 	    field_.name("test_field");
-	    field_.input_selection(&test_selection);
+	    field_.input_selection( &get_test_selection() );
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
-				this->field_.field_descriptor_record("any")
+				Input::Type::Record("any", FieldCommon::field_descriptor_record_decsription("any") )
+				.copy_keys( this->field_.field_descriptor_record("any") )
 				.declare_key("a", a_rec_type, "")
 				.declare_key("b", a_rec_type, "")
+				.close()
 				);
 		test_input_list = make_shared<Input::Type::Array>( *test_field_descriptor );
 		test_input_list->finish();
@@ -80,7 +78,7 @@ public:
 	}
 
 	Input::Array input_list(const string& str) {
-		Input::JSONToStorage reader(str, *test_input_list );
+		Input::ReaderToStorage reader(str, *test_input_list, Input::FileFormat::format_JSON );
 		return reader.get_root_interface<Input::Array>();
 	}
 
@@ -107,7 +105,7 @@ public:
 	}
 
 	// simple selection with values "black" and "White"
-	Input::Type::Selection test_selection;
+	static const Input::Type::Selection &get_test_selection();
 
 	// has to keep root accessor to prevent delete of the storage tree
 	Input::Array root_input;
@@ -142,6 +140,14 @@ public:
 	std::shared_ptr<Input::Type::Array>          test_input_list;
 
 };
+
+template <class F>
+const Input::Type::Selection &FieldFix<F>::get_test_selection() {
+	return Input::Type::Selection("any")
+				.add_value(0,"black")
+				.add_value(1,"white")
+				.close();
+}
 
 
 
@@ -347,7 +353,7 @@ TYPED_TEST(FieldFix, update_history) {
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
-	this->update_history(tg);
+	this->update_history(tg.step());
 
     Region diagonal_1d = this->mesh()->region_db().find_label("1D diagonal");
     Region diagonal_2d = this->mesh()->region_db().find_label("2D XY diagonal");
@@ -371,7 +377,7 @@ TYPED_TEST(FieldFix, update_history) {
 
 	tg.estimate_dt();
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 1.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -388,7 +394,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 2.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -405,7 +411,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 3.0
     EXPECT_EQ( 2 , this->rh(diagonal_1d.idx()).size() );
@@ -422,7 +428,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 4.0
     EXPECT_EQ( 3 , this->rh(diagonal_1d.idx()).size() );
@@ -439,7 +445,7 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
 
 	tg.next_time();
-	this->update_history(tg);
+	this->update_history(tg.step());
 
 	// time = 5.0
     EXPECT_EQ( 3 , this->rh(diagonal_1d.idx()).size() );
@@ -479,7 +485,7 @@ TYPED_TEST(FieldFix, set_time) {
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
-	this->set_time(tg);
+	this->set_time(tg.step());
 	this->_value_( *this );
 
 }
@@ -525,26 +531,26 @@ TYPED_TEST(FieldFix, constructors) {
 	f2.set_limit_side(LimitSide::right);
 
 	// tg = 2.0
-	f2.set_time(tg);
+	f2.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(f2));
 	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 3.0
 	tg.next_time();
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(0,this->_value_(this->field_));
 
 	// tg = 4.0
 	tg.next_time();
-	this->field_.set_time(tg);
+	this->field_.set_time(tg.step());
 	EXPECT_EQ(1,this->_value_(this->field_));
 	EXPECT_EQ(0,this->_value_(f2));
 	EXPECT_ASSERT_DEATH( {field_default.set_time(tg);}, "Must set limit side");
 
 	field_default.set_limit_side(LimitSide::right);
-	field_default.set_time(tg);
+	field_default.set_time(tg.step());
 	EXPECT_EQ(1,this->_value_(field_default));
 }
 
@@ -565,6 +571,14 @@ string field_input = R"INPUT(
 )INPUT";
 
 namespace it = Input::Type;
+
+static const it::Selection &get_sorption_type_selection() {
+	return it::Selection("SorptionType")
+				.add_value(1,"linear")
+				.add_value(0,"none")
+				.close();
+}
+
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
@@ -574,29 +588,27 @@ TEST(Field, init_from_input) {
 	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
 	mesh.read_gmsh_from_stream(in);
 
-    it::Selection sorption_type_sel =
-            it::Selection("SorptionType")
-            .add_value(1,"linear")
-            .add_value(0,"none");
-
-
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::Vector > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
-    sorption_type.input_selection(&sorption_type_sel);
-    init_conc.set_n_components(3);
+    std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+
+
+    sorption_type.input_selection( &get_sorption_type_selection() );
+    init_conc.set_components(component_names);
 
     it::Record main_record =
             it::Record("main", "desc")
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
-            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc");
+            .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
+			.close();
 
 
     // read input string
-    Input::JSONToStorage reader( field_input, main_record );
+    Input::ReaderToStorage reader( field_input, main_record, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     sorption_type.set_mesh(mesh);
@@ -613,9 +625,9 @@ TEST(Field, init_from_input) {
     init_conc.set_limit_side(LimitSide::right);
     conductivity.set_limit_side(LimitSide::right);
 
-    sorption_type.set_time(TimeGovernor());
-    init_conc.set_time(TimeGovernor());
-    conductivity.set_time(TimeGovernor());
+    sorption_type.set_time(TimeGovernor().step());
+    init_conc.set_time(TimeGovernor().step());
+    conductivity.set_time(TimeGovernor().step());
 
     {	
 
@@ -661,6 +673,13 @@ TEST(Field, init_from_input) {
 
 
 
+static const it::Selection &get_test_type_selection() {
+	return it::Selection("TestType")
+				.add_value(0, "none")
+				.add_value(1,"dirichlet")
+				.close();
+}
+
 TEST(Field, init_from_default) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -681,7 +700,7 @@ TEST(Field, init_from_default) {
         scalar_field.input_default( "45.0" );
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        scalar_field.set_time(TimeGovernor());
+        scalar_field.set_time(TimeGovernor().step());
 
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
         EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
@@ -695,21 +714,17 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(mesh);
         scalar_field.set_limit_side(LimitSide::right);
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor());} , ExcXprintfMsg, "Missing value of the input field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step());} , ExcXprintfMsg, "Missing value of the input field");
     }
 
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
-        Input::Type::Selection sel("TestType");
-        sel.add_value(0, "none")
-           .add_value(1,"dirichlet")
-           .close();
 
-        enum_field.input_selection(&sel);
+        enum_field.input_selection( &get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
         enum_field.set_mesh(mesh);
         enum_field.set_limit_side(LimitSide::right);
-        enum_field.set_time(TimeGovernor());
+        enum_field.set_time(TimeGovernor().step());
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
 
@@ -785,10 +800,10 @@ TEST(Field, disable_where) {
     bc_value.set_limit_side(LimitSide::right);
     bc_sigma.set_limit_side(LimitSide::right);
 
-    bc_type.set_time(TimeGovernor());
-    bc_flux.set_time(TimeGovernor());
-    bc_value.set_time(TimeGovernor());
-    bc_sigma.set_time(TimeGovernor());
+    bc_type.set_time(TimeGovernor().step());
+    bc_flux.set_time(TimeGovernor().step());
+    bc_value.set_time(TimeGovernor().step());
+    bc_sigma.set_time(TimeGovernor().step());
 }
 
 

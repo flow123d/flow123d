@@ -6,6 +6,8 @@
  */
 
 #include "input/type_selection.hh"
+#include "input/type_repository.hh"
+#include <boost/functional/hash.hpp>
 
 namespace Input {
 namespace Type {
@@ -22,16 +24,13 @@ Selection::Selection()
 
 Selection::Selection(const Selection& other)
 : Scalar(other), data_(other.data_)
-{
-    ASSERT( TypeBase::was_constructed(&other), "Trying to copy non-constructed Selection.\n");
-}
+{ }
 
 
 
 Selection::Selection(const string &name, const string &desc)
 : data_(boost::make_shared<SelectionData>(name))
 {
-    TypeBase::lazy_type_list().push_back( boost::make_shared<Selection>( *this) );
     data_->description_=desc;
 }
 
@@ -47,8 +46,25 @@ Selection &Selection::add_value(const int value, const std::string &key, const s
 
 
 const Selection & Selection::close() const {
-    data_->finished=true;
-    return *this;
+    data_->closed_=true;
+    return *( Input::TypeRepository<Selection>::get_instance().add_type( *this ) );
+}
+
+
+
+TypeBase::TypeHash Selection::content_hash() const
+{
+    std::size_t seed=0;
+    boost::hash_combine(seed, "Selection");
+    boost::hash_combine(seed, type_name());
+    boost::hash_combine(seed, data_->description_);
+    for( Key &key : data_->keys_) {
+        boost::hash_combine(seed, key.key_);
+        boost::hash_combine(seed, key.description_);
+        boost::hash_combine(seed, key.value);
+    }
+    attribute_content_hash(seed);
+    return seed;
 }
 
 
@@ -61,9 +77,13 @@ bool Selection::valid_default(const string &str) const {
 
 
 bool Selection::is_finished() const {
-    return data_->finished;
+    return is_closed();
 }
 
+
+bool Selection::is_closed() const {
+	return data_->closed_;
+}
 
 string Selection::type_name() const {
    return data_->type_name_;
@@ -131,6 +151,13 @@ string Selection::key_list() const {
     ostringstream os;
     for(unsigned int i=0; i<size(); i++) os << "'" <<data_->keys_[i].key_ << "' ";
     return os.str();
+}
+
+
+
+// Implements @p TypeBase::make_instance.
+TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Selection>(*this), ParameterMap() );
 }
 
 

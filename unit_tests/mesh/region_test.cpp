@@ -9,7 +9,7 @@
 #include "mesh/region.hh"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include <map>
 
 #include <boost/lexical_cast.hpp>
@@ -179,8 +179,8 @@ const string read_sets_json = R"JSON(
 )JSON";
 
 TEST(Region, read_sets_from_input) {
-	Input::Type::Array region_set_array_input_type( RegionDB::region_set_input_type );
-	Input::JSONToStorage json_reader( read_sets_json,  region_set_array_input_type);
+	Input::Type::Array region_set_array_input_type( RegionDB::get_region_set_input_type() );
+	Input::ReaderToStorage json_reader( read_sets_json, region_set_array_input_type, Input::FileFormat::format_JSON);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
@@ -236,8 +236,8 @@ const string read_element_map_json = R"JSON(
 
 TEST(Region, read_element_map_from_input) {
 
-	Input::Type::Array element_map_array_input_type( RegionDB::region_input_type );
-	Input::JSONToStorage json_reader( read_element_map_json,  element_map_array_input_type);
+	Input::Type::Array element_map_array_input_type( RegionDB::get_region_input_type() );
+	Input::ReaderToStorage json_reader( read_element_map_json, element_map_array_input_type, Input::FileFormat::format_JSON);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
 	RegionDB region_db;
@@ -301,7 +301,7 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check  825
  * O3       100     add_region_consistancy_check && using iterators  446
  */
-#ifdef RUN_UNIT_BENCHMARKS
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 #define STEPS (10*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
@@ -342,4 +342,4 @@ TEST(RegionDB, speed_map) {
         }
    cout << ii << endl;
 }
-#endif // RUN_UNIT_BENCHMARKS
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS

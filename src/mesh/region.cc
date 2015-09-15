@@ -42,18 +42,19 @@ namespace IT=Input::Type;
 
 
 
-IT::Record RegionDB::region_input_type =
-        IT::Record("Region", "Definition of region of elements.")
-        .declare_key("name",IT::String(), IT::Default::obligatory(),
-                "Label (name) of the region. Has to be unique in one mesh.\n")
-        .declare_key("id", IT::Integer(0), IT::Default::obligatory(),
-                "The ID of the region to which you assign label.")
-        .declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
-                "Specification of the region by the list of elements. This is not recomended")
-        .close();
+const IT::Record & RegionDB::get_region_input_type() {
+	return IT::Record("Region", "Definition of region of elements.")
+		.declare_key("name",IT::String(), IT::Default::obligatory(),
+				"Label (name) of the region. Has to be unique in one mesh.\n")
+		.declare_key("id", IT::Integer(0), IT::Default::obligatory(),
+				"The ID of the region to which you assign label.")
+		.declare_key("element_list", IT::Array( IT::Integer(0) ), IT::Default::optional(),
+				"Specification of the region by the list of elements. This is not recomended")
+		.close();
+}
 
-IT::Record RegionDB::region_set_input_type =
-        IT::Record("RegionSet", "Definition of one region set.")
+const IT::Record & RegionDB::get_region_set_input_type() {
+	return IT::Record("RegionSet", "Definition of one region set.")
         .declare_key("name", IT::String(), IT::Default::obligatory(),
                 "Unique name of the region set.")
         .declare_key("region_ids", IT::Array( IT::Integer(0)),
@@ -67,6 +68,7 @@ IT::Record RegionDB::region_set_input_type =
         .declare_key("difference", IT::Array( IT::String(), 2,2),
                 "Defines region set as a difference of given pair of sets. Overrides previous keys.")
         .close();
+}
 
 const unsigned int RegionDB::undefined_dim = 10;
 

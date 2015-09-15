@@ -10,6 +10,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/unit_si.hh"
+#include "fields/bc_field.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -17,7 +18,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 
 enum {
@@ -29,7 +30,8 @@ enum {
 auto reaction_type_sel = Input::Type::Selection("ReactionType")
 		.add_value(r_first, "r_first")
 		.add_value(r_second, "r_second")
-		.add_value(r_third, "r_third");
+		.add_value(r_third, "r_third")
+		.close();
 
 // Test input for 'values' test
 const string eq_data_input = R"JSON(
@@ -97,6 +99,7 @@ public:
 	}
 
 	Mesh    *mesh_;
+	std::vector<string> component_names_;
 };
 
 
@@ -187,7 +190,7 @@ TEST_F(SomeEquation, output_field_selection) {
         .name("bc_pressure");
 
     Input::Type::Selection sel
-        = data.make_output_field_selection("Sel");
+        = data.make_output_field_selection("Sel").close();
     sel.finish();
 
     // Selection should not contain BC field bc_pressure.
@@ -220,9 +223,10 @@ TEST_F(SomeEquation, set_field) {
 
 TEST_F(SomeEquation, collective_interface) {
     auto data = EqData();
+    component_names_ = { "component_0", "component_1", "component_2", "component_3" };
 
     EXPECT_EQ(1,data["velocity"].n_comp());
-    data.set_n_components(4);
+    data.set_components(component_names_);
     EXPECT_EQ(0,data["init_pressure"].n_comp());
     EXPECT_EQ(4,data["velocity"].n_comp());
     EXPECT_EQ(0,data["reaction_type"].n_comp());
@@ -265,10 +269,11 @@ TEST_F(SomeEquation, collective_interface) {
 
 TEST_F(SomeEquation, input_related) {
     auto data = EqData();
+    component_names_ = { "component_0", "component_1" };
 
-    data.set_n_components(2);
+    data.set_components(component_names_);
     Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
-    Input::JSONToStorage reader( eq_data_input, list_type);
+    Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
     Input::Array in=reader.get_root_interface<Input::Array>();
     data.set_input_list(in);
     data.set_mesh(*mesh_);
@@ -278,23 +283,23 @@ TEST_F(SomeEquation, input_related) {
     data.mark_input_times(tg.equation_mark_type());
     Region front_3d = mesh_->region_db().find_id(40);
     // time = 0.0
-    data.set_time(tg);
+    data.set_time(tg.step());
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_TRUE(data.changed());
     EXPECT_TRUE(tg.is_current(tg.marks().type_input()));
-    data.set_time(tg);
+    data.set_time(tg.step());
     EXPECT_TRUE(data.changed());
     tg.next_time();
 
     // time = 0.5
-    data.set_time(tg);
+    data.set_time(tg.step());
     EXPECT_FALSE(data.changed());
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_FALSE(tg.is_current(tg.marks().type_input()));
     tg.next_time();
 
     // time = 1.0
-    data.set_time(tg);
+    data.set_time(tg.step());
     EXPECT_TRUE(data.changed());
     EXPECT_TRUE(data.is_constant(front_3d));
     EXPECT_TRUE(tg.is_current(tg.marks().type_input()));

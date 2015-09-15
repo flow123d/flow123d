@@ -19,7 +19,7 @@
 
 //#include "new_mesh/ngh/include/point.h"
 
-#define Flow123d_DEBUG
+#define FLOW123D_DEBUG
 
 // Test rychlosti algoritmu, pro vyhledávání průsečíků sítě line_cube.msh
 TEST(intersections, 1d_3d){

@@ -1,0 +1,110 @@
+problem: !SequentialCoupling
+# secondary_equation
+  description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption,
+    sources).'
+  mesh:
+  # mesh
+    mesh_file: ./input/mesh_with_boundary.msh
+    sets:
+    - name: 1d_domain
+      region_labels:
+      - 1d_upper
+      - 1d_lower
+      - 1d_left_branch
+  primary_equation: !Steady_MH
+  # primary equation
+    balance: true
+    input_fields:
+    - conductivity: 1.0e-06
+      cross_section: 0.04
+      r_set: 1d_domain
+      sigma: 0.9
+    - conductivity: 1.0e-07
+      region: 2d
+    - bc_pressure: !FieldFormula
+        value: x+y
+      bc_type: dirichlet
+      r_set: BOUNDARY
+    output:
+      output_fields:
+      - pressure_p0
+      - pressure_p1
+      - velocity_p0
+      output_stream:
+        file: flow.pvd
+        format: !vtk
+          variant: ascii
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+  secondary_equation: !TransportOperatorSplitting
+    balance:
+      cumulative: true
+    input_fields:
+    - init_conc: 0
+      porosity: 0.25
+      r_set: ALL
+      sources_density:
+      - 0.25
+      - 0
+    - bc_conc:
+      - 0.0
+      - 1.0
+      r_set: BOUNDARY
+    output_stream:
+      file: transport.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 100000
+    reaction_term: !DualPorosity
+      reaction_mobile: !SorptionMobile
+        input_fields: &anchor1
+        - isotherm_mult:
+          - 0
+          - 0.68
+          isotherm_other:
+          - 0
+          - 1.0
+          r_set: ALL
+          rock_density: 2800.0
+          sorption_type:
+          - none
+          - freundlich
+        output_fields: []
+        solubility:
+        - 1.0
+        - 1.0
+        solvent_density: 1000.0
+        substances:
+        - age
+        - U235
+    
+      input_fields:
+      - diffusion_rate_immobile:
+        - 0.01
+        - 0.01
+        init_conc_immobile:
+        - 0.0
+        - 0.0
+        porosity_immobile: 0.25
+        r_set: ALL
+      output_fields: []
+      reaction_immobile: !SorptionImmobile
+        input_fields: *anchor1
+        output_fields: []
+        solubility:
+        - 1.0
+        - 1.0
+        solvent_density: 1000.0
+        substances:
+        - age
+        - U235
+    substances:
+    - molar_mass: 0.018
+    # water age
+      name: age
+    - molar_mass: 0.235
+    # uranium 235
+      name: U235
+    time:
+      end_time: 1000000

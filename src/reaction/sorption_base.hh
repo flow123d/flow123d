@@ -14,6 +14,8 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_set.hh"
+#include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 #include "reaction/reaction_term.hh"
 
 class Isotherm;
@@ -29,17 +31,7 @@ public:
   /**
    *   Static variable for new input data types input
    */
-  static Input::Type::Record input_type;
-  
-  struct SorptionRecord {
-    typedef enum { simple,      ///< Only sorption model is considered in transport.
-                   mobile,      ///< Sorption model in mobile zone of dual porosity model is considered.
-                   immobile     ///< Sorption model in immobile zone of dual porosity model is considered. 
-    } Type;
-  };
-  
-  /// Creates the input record for different cases of sorption model (simple or in dual porosity).
-  static Input::Type::Record record_factory(SorptionRecord::Type);
+  static const Input::Type::Record & get_input_type();
   
   static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
   {
@@ -53,7 +45,7 @@ public:
     /**
      * Sorption type specifies a kind of equilibrial description of adsorption.
      */
-    static Input::Type::Selection sorption_type_selection;
+    static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
     EqData(const string &output_field_name);
@@ -167,10 +159,6 @@ protected:
    */
   unsigned int n_interpolation_steps_;
   /**
-   * Molar masses of dissolved species (substances)
-   */
-  std::vector<double> molar_masses_;
-  /**
    * Density of the solvent. 
    *  TODO: Could be done region dependent, easily.
    */
@@ -205,17 +193,17 @@ protected:
 
   Input::Type::Selection output_selection;
 
-  /** Reaction model that follows the sorption.
+  /**
+   * Reaction model that follows the sorption.
    */
-  ReactionTerm* reaction_liquid;
-  ReactionTerm* reaction_solid;
+  std::shared_ptr<ReactionTerm> reaction_liquid;
+  std::shared_ptr<ReactionTerm> reaction_solid;
                   
   ///@name members used in output routines
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
-  Vec *vconc_solid_out; ///< PETSC sorbed concentration vector output (gathered - sequential)
-  double **conc_solid_out; ///< sorbed concentration array output (gathered - sequential)  
+  std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
 };
 

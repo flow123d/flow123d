@@ -10,7 +10,7 @@
 
 #include "mesh/partitioning.hh"
 #include "la/distribution.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 
@@ -32,7 +32,7 @@ TEST(Partitioning, all) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::JSONToStorage reader( mesh_input, Mesh::input_type );
+    Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_JSON );
     auto rec = reader.get_root_interface<Input::Record>();
     Mesh mesh( rec );
     mesh.init_from_input();
@@ -58,7 +58,7 @@ TEST(Partitioning, all) {
 
     /*
     for(unsigned int i=0; i < old_ids.size(); i++) cout << "proc: " << new_ds->myp() << " id: " << old_ids[i] << " new: " << new_4_id[old_ids[i]] << endl;
-    vector<int> &global_part = mesh.get_part()->subdomain_id_field_data();
+    vector<int> &global_part = mesh.get_part()->subdomain_id_field_data().get();
     if (global_part.size() > 1) {
         for(unsigned int i=0; i< old_ids.size(); i++) {
             EXPECT_EQ( new_ds->get_proc( new_4_id[ old_ids[i] ]),  global_part[i] );

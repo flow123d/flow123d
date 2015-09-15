@@ -39,7 +39,9 @@ ostream&  OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
 	doc_flags_.clear();
 
+	stream << format_head;
 	print(stream, type_, depth_);
+	stream << format_tail;
 	return stream;
 }
 
@@ -72,7 +74,7 @@ void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int
 
 
 
-void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+void OutputBase::get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type) {
     arr_type = array.data_->type_of_values_;
 }
 
@@ -80,6 +82,12 @@ void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &
 
 const string & OutputBase::get_record_description(const Record *rec) {
     return rec->data_->description_;
+}
+
+
+
+const string & OutputBase::get_abstract_description(const AbstractRecord *a_rec) {
+    return a_rec->child_data_->description_;
 }
 
 
@@ -92,7 +100,12 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	parent_ptr = rec.data_->parent_ptr_;
+	if (rec.data_->parent_vec_.size()) {
+		// temporary solution, if we need this method in new input, it must return vector of parents
+		parent_ptr = rec.data_->parent_vec_[0];
+	} else {
+		parent_ptr = boost::shared_ptr<AbstractRecord>();
+	}
 }
 
 
@@ -254,6 +267,7 @@ void OutputBase::ProcessedTypes::clear() {
 	if (filter_ != NULL) {
 		full_type_names.erase(full_type_names.begin(), full_type_names.end());
 	}
+	output_hash.clear();
 }
 
 
@@ -375,7 +389,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 
 
 void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
 	switch (doc_type_) {
@@ -410,7 +424,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
-            write_description(stream, OutputBase::get_record_description( type ), 0);
+            write_description(stream, OutputBase::get_abstract_description( type ), 0);
             stream << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
@@ -638,7 +652,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			break;
 		case full_record:
 			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
-			boost::shared_ptr<const TypeBase> array_type;
+			boost::shared_ptr<TypeBase> array_type;
 			const void * data_ptr = get_array_data(type); // get pointer to type->data_
 
 			get_array_type(*type, array_type);
@@ -960,13 +974,14 @@ ostream & print_range(ostream& stream, T range_min, T range_max) {
 /**
  * Make \HTRaised{prefix::str}. Hyper target raised to scroll to correct position.
  */
+/*
 std::string hyper_target( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
     // \hyperlink{<prefix>::str}{str}
     return "\\HTRaised{" + label + "}{" + str + "}";
-}
+}*/
 
 /**
  * Make \hyperlink{prefix::str, str}.
@@ -975,8 +990,8 @@ std::string hyper_link( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
-    // \hyperlink{<prefix>::str}{str}
-    return "\\hyperlink{" + label + "}{" + str +"}";
+    // \Alink{<prefix>::str}{str}
+    return "\\Alink{" + label + "}{" + str +"}";
 }
 
 /**
@@ -986,7 +1001,7 @@ std::string hyper_B( const std::string &prefix, const std::string &str) {
     string label=prefix + "::" + str;
     boost::replace_all(label, "_", "-");
     boost::replace_all(label, ">", "");
-    // \hyperlink{<prefix>::str}{str}
+    // \hyper_B{<prefix>::str}{str}
     return "\\hyperB{" + label + "}{" + str +"}";
 }
 
@@ -1019,7 +1034,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
             // header
             stream << endl <<"\\begin{RecordType}{"
-                   << internal::hyper_target("IT", type->type_name()) << "}";
+                   << internal::hyper_B("IT", type->type_name()) << "}";
 
             // parent record
             boost::shared_ptr<AbstractRecord> parent_ptr;
@@ -1051,9 +1066,9 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
                 stream << "}";
 
                 if (it->default_.is_obligatory()) {
-                    stream << "{\\textless\\it obligatory\\textgreater}";
+                    stream << "{\\textlangle{\\it obligatory }\\textrangle}";
                 } else if (it->default_.is_optional()) {
-                    stream << "{\\textless\\it optional\\textgreater}";
+                    stream << "{\\textlangle{\\it optional }\\textrangle}";
                 } else if (it->default_.has_value_at_read_time()) {
                     stream << "{\"" << it->default_.value() << "\"}";
                 } else {
@@ -1085,7 +1100,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
 
 void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
     switch (doc_type_) {
@@ -1120,7 +1135,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
 
             // header
             stream << endl << "\\begin{AbstractType}{"
-                   << internal::hyper_target("IT", type->type_name() ) << "}";
+                   << internal::hyper_B("IT", type->type_name() ) << "}";
             const Record *default_desc = type->get_default_descendant();
             if (default_desc) {
                 stream << "{" << internal::hyper_link( "IT", default_desc->type_name()) << "}";
@@ -1128,7 +1143,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_record_description(type) << "}" << endl;
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_abstract_description(type) << "}" << endl;
 
             // descendants
             doc_type_ = key_record;
@@ -1190,7 +1205,7 @@ void OutputLatex::print_impl(ostream& stream, const Selection *type, unsigned in
     	if (! doc_flags_.was_written(data_ptr, type->full_type_name()) ) {
 			doc_flags_.mark_written(data_ptr, type->full_type_name());
 
-            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_target("IT", type->type_name() ) << "}";
+            stream <<endl << "\\begin{SelectionType}{" << internal::hyper_B("IT", type->type_name() ) << "}";
             stream << "{" << OutputBase::get_selection_description(type) << "}" <<endl;
             // keys
             for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
@@ -1256,98 +1271,206 @@ void OutputLatex::print_impl(ostream& stream, const FileName *type, unsigned int
  * implementation of OutputJSONMachine
  */
 
-void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
-	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Record\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace(OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
-	// parent record
-	boost::shared_ptr<AbstractRecord> parent_ptr;
-	get_parent_ptr(*type, parent_ptr);
-	stream << "\"parent\" : \"";
-	if (parent_ptr) {
-		stream << parent_ptr->type_name();
-	}
-	stream << "\"," << endl;
-
-	// reducible to key
-	Record::KeyIter key_it = type->auto_conversion_key_iter();
-	stream << "\"reducible_to_key\" : \"";
-	if (key_it != type->end()) {
-		stream << key_it->key_;
-	}
-	stream << "\"," << endl;
-
-	stream << "\"keys\" : [" << endl;
-
-	for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-		string dft_type, dft_value;
-		get_default(it, dft_type, dft_value);
-
-		if (it != type->begin()) {
-			stream << "," << endl;
-		}
-		stream << "{ \"key\" : \"" << it->key_ << "\"," << endl;
-		stream << "\"description\" : \"" << boost::regex_replace(it->description_, boost::regex("\\n"), "\\\\n") << "\"," << endl;
-		stream << "\"default\" : { \"type\" : \"" << dft_type << "\",  \"value\" : \"" << dft_value << "\" }," << endl;
-		stream << "\"type\" : ";
-		print(stream, it->type_.get(), 0);
-		stream << "}";
-	}
-
-	stream << "]" << endl;
-	stream << "}";
+std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
+    stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();
 }
 
 
+std::string OutputJSONMachine::escape_description(std::string desc) {
+    static OutputJSONMachine::RewriteRule rewrite_rules[] = {
+        // replace single slash with two slashes 
+        OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
+        // replace quote with slash quote
+        OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
+        // replace special chars with escaped slash + special chars
+        OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
+    };
+
+
+    std::string tmp = std::string(desc);
+
+    for (OutputJSONMachine::RewriteRule rewrite_rule : rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    }
+
+    return tmp;
+}
+
+
+void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Record\"," << endl;
+    stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"type_full_name\" : \"" << type->full_type_name() << "\"," << endl;
+    type->write_attributes(stream);
+    stream << "," << endl << endl;
+    stream << "\"description\" : \"" <<
+            escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
+
+    // parent records, implemented abstracts
+    boost::shared_ptr<AbstractRecord> parent_ptr;
+    get_parent_ptr(*type, parent_ptr);
+    if (parent_ptr) {
+        stream << "\"implements\" : [ \"" << format_hash(parent_ptr->content_hash()) << "\" ]," << endl;
+    }
+
+    // reducible to key
+    Record::KeyIter key_it = type->auto_conversion_key_iter();
+    if (key_it != type->end()) {
+        stream << "\"reducible_to_key\" : \"" << key_it->key_ << "\"," << endl;
+    }
+
+    stream << "\"keys\" : [" << endl;
+
+    doc_type_ = key_record;
+    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+        string dft_type, dft_value;
+        get_default(it, dft_type, dft_value);
+
+        if (it != type->begin()) {
+            stream << "," << endl;
+        }
+        stream << "{ \"key\" : \"" << it->key_ << "\"," << endl;
+        stream << "\"description\" : \"" <<
+                escape_description(it->description_) << "\"," << endl;
+        stream << "\"default\" : { "
+                <<"\"type\" : \"" << dft_type << "\"," << endl
+                <<"\"value\" : \"" << escape_description(dft_value) << "\" }," << endl;
+        stream << "\"type\" : \"" << format_hash(it->type_->content_hash()) << "\"" << endl;
+        stream << "}";
+    }
+
+    stream << "]" << endl;
+    stream << "},";
+
+    // Full documentation of embedded record types.
+    doc_type_ = full_record;
+    if (depth_ == 0 || depth_ > depth) {
+        for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+            print(stream, it->type_.get(), depth+1);
+        }
+    }
+}
+
+
+
 void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
     unsigned int lower_size, upper_size;
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);
 
 	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Array\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Array\"," << endl;
 	stream << "\"range\" : [" << lower_size << ", " << upper_size << "]," << endl;
-	stream << "\"subtype\" : ";
-	print(stream, array_type.get(), 0);
-	stream << endl << "}";
+	stream << "\"subtype\" : \"" << format_hash(array_type->content_hash()) << "\"," << endl;
+	type->write_attributes(stream);
+	stream << endl;
+	stream << "}," << endl;
+
+	print(stream, array_type.get() ,depth+1);
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
-	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"AbstractRecord\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
 
-	print_abstract_record_keys(stream, type);
-	stream << "}";
+void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"AbstractRecord\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+    type->write_attributes(stream);
+    stream << "," << endl;
+    stream << "\"description\" : \"" <<
+            escape_description( OutputBase::get_abstract_description(type)) << "\"," << endl;
+
+    print_abstract_record_keys(stream, type, depth);
+    stream << "},";
+
+    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+        print(stream, &*it, depth+1);
+    }
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
-	stream << "{" << endl;
-	stream << "\"type\" : \"AdHocAbstractRecord\"," << endl;
-	stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
 
-	print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type));
-	stream << "}";
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"AdHocAbstractRecord\"," << endl;
+    stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
+    type->write_attributes(stream);
+    stream << "," << endl;
+
+    print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type), depth);
+    stream << "},";
+
+    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+        print(stream, &*it, depth+1);
+    }
+
 }
 
 
+
+void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+
+    // Print documentation of abstract record
+    const Record * desc = type->get_default_descendant();
+
+    // default descendant
+    if (desc) {
+        stream << "\"default_descendant\" : \"" << format_hash(desc->content_hash())  << "\"," << endl;
+    }
+    stream << "\"implementations\" : [" << endl;
+    for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+        if (it != type->begin_child_data()) {
+            stream << ",\n" << endl;
+        }
+
+        stream << "\"" << format_hash(it->content_hash()) << "\"";
+    }
+    stream << "]";
+
+}
+
+
+
+
+
 void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
 	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Selection\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Selection\"," << endl;
-	stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_selection_description(type), boost::regex("\\n"), "\\\\n") << "\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
+	stream << "\"description\" : \"" <<
+	        escape_description(OutputBase::get_selection_description(type)) << "\"," << endl;
 
 	stream << "\"values\" : [" << endl;
 
@@ -1355,107 +1478,111 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 		if (it != type->begin()) {
 			stream << "," << endl;
 		}
-		stream << "{ \"value\" : \"" << it->value << "\", \"name\" : \"" << it->key_ << "\", \"description\" : \"" << it->description_ << "\" }";
+		stream << "{ \"name\" : \"" << it->key_ << "\"," << endl
+		       << "\"description\" : \"" << escape_description(it->description_) << "\" }";
 	}
 
 	stream << "]" << endl;
-	stream << "}";
+	stream << "},";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
-	int lower, upper;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    int lower, upper;
 	get_integer_bounds(*type, lower, upper);
 
 	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Integer\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Integer\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
+
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
-	stream << "}";
+	stream << "},";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned int depth) {
-	double lower, upper;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    double lower, upper;
 	get_double_bounds(*type, lower, upper);
 
 	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Double\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Double\"," << endl;
-	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
-	stream << "}";
+	type->write_attributes(stream);
+    stream << "," << endl;
+
+    stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
+	stream << "},";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
-	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"Bool\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"Bool\"" << endl;
-	stream << "}";
+	type->write_attributes(stream);
+    stream << endl;
+	stream << "},";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned int depth) {
-	stream << "{" << endl;
-	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
+    stream << "\"input_type\" : \"String\"," << endl;
+    stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"type\" : \"String\"" << endl;
-	stream << "}";
+	type->write_attributes(stream);
+    stream << endl;
+	stream << "},";
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
-	stream << "{" << endl;
+	TypeBase::TypeHash hash=type->content_hash();
+    if (doc_flags_.was_written(hash)) return;
+
+    stream << "{" << endl;
+    stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
 
-	stream << "\"type\" : \"FileName of ";
-
+	stream << "\"input_type\" : \"FileName\"," << endl;
+	stream << "\"file_mode\" : \"";
 	switch (type->get_file_type()) {
 	case ::FilePath::input_file:
-		stream << "input file\"";
+		stream << "input\"";
 		break;
 	case ::FilePath::output_file:
-		stream << "output file\"";
-		break;
-	default:
-		stream << "file with unknown type\"";
+		stream << "output\"";
 		break;
 	}
 
-	stream << "}";
+	stream << endl << "},";
 }
 
 
-void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type) {
-	// default descendant
-	const Record * desc = type->get_default_descendant();
-	stream << "\"default_descendant\" : \"";
-	if (desc) {
-		stream << desc->type_name();
-	}
-	stream << "\"," << endl;
-
-	// all keys
-	stream << "\"keys\" : [" << endl;
-
-	for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-		if (it != type->begin_child_data()) {
-			stream << "," << endl;
-		}
-
-		stream << "{ \"key\" : \"" << it->type_name() << "\"," << endl;
-		stream << "\"description\" : \"" << boost::regex_replace( OutputBase::get_record_description( &(*it) ), boost::regex("\\n"), "\\\\n") << "\"," << endl;
-		stream << "\"type\" : ";
-		print(stream, &*it, 0);
-		stream << "}";
-	}
-
-	stream << "]" << endl;
-}
 
 
 

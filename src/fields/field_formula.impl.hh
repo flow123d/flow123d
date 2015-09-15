@@ -18,28 +18,24 @@
 
 namespace it = Input::Type;
 
-template <int spacedim, class Value>
-it::Record FieldFormula<spacedim, Value>::input_type = get_input_type(FieldAlgorithmBase<spacedim,Value>::input_type, NULL);
 
 template <int spacedim, class Value>
-Input::Type::Record FieldFormula<spacedim, Value>::get_input_type(
+const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
         Input::Type::AbstractRecord &a_type, const typename Value::ElementInputType *eit
         )
 {
-    it::Record type
-            = it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
+    return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(a_type)
             .declare_key("value", StringValue::get_input_type(NULL), it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"
-                                        "For square NxN-matrix values, you can use:\n"
-                                        "* array of strings of size N to enter diagonal matrix\n"
-                                        "* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                        "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
-                                        "Formula can contain variables x,y,z,t and usual operators and functions." );
-
-    return type;
+                                        "For square (($N\\times N$))-matrix values, you can use:\n\n"
+                                        " - array of strings of size (($N$)) to enter diagonal matrix\n"
+                                        " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
+                                        " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
+                                        "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
+			.close();
 }
 
 
@@ -72,7 +68,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec) {
 
 
 template <int spacedim, class Value>
-bool FieldFormula<spacedim, Value>::set_time(double time) {
+bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 
     bool any_parser_changed = false;
@@ -104,14 +100,14 @@ bool FieldFormula<spacedim, Value>::set_time(double time) {
                             value_input_address_.c_str() );
             }
             if (time_dependent) {
-                parser_matrix_[row][col].AddConstant("t", time);
+                parser_matrix_[row][col].AddConstant("t", time.end());
             }
 
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
 
-            if (time_dependent || this->time_ == -numeric_limits<double>::infinity() ) {
+            if (time_dependent || this->time_ == TimeStep() ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
                 if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {

@@ -13,6 +13,7 @@
         { rid = 100,
           anisotropy = 1,         // default
           cross_section = 1,            // default
+          storativity=1,
           water_source_density = {
             TYPE = "FieldFormula",
             value = "-x"
@@ -32,15 +33,21 @@
         }, 
         output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
+
+      balance = {
+        cumulative = true
+      },
+
       solver = {
         TYPE = "Petsc", 
-        accuracy = 1e-07, 
-        parameters = ""
+        a_tol = 1e-12, 
+        r_tol = 1e-12
       }, 
  
       time = {
         end_time = 2.0, 
-        init_dt = 0.01
+        max_dt = 0.01,
+        min_dt = 0.01
       }
     }, 
 
@@ -94,6 +101,10 @@
       
       time = {
         end_time = 2.0
+      },
+
+      balance = {
+        cumulative = true
       }
     } 
   }, 

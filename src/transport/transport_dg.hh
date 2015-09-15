@@ -137,19 +137,21 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
+	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
 
         enum BC_Type {
-            inflow=0,
-            dirichlet=1,
-            neumann=2,
-            robin=3
+            none,
+            inflow,
+            dirichlet,
+            neumann,
+            robin
         };
-        static Input::Type::Selection bc_type_selection;
+        static const Input::Type::Selection & get_bc_type_selection();
 
-        static Input::Type::Selection output_selection;
+        static const Input::Type::Selection & get_output_selection();
 
 		EqData();
 
@@ -160,7 +162,7 @@ public:
         BCField<3, FieldValue<3>::Vector > bc_flux;        ///< Flux in Neumann or Robin b.c.
         BCField<3, FieldValue<3>::Vector > bc_robin_sigma; ///< Transition coefficient in Robin b.c.
 
-        Field<3, FieldValue<3>::Integer> region_ids;
+        Field<3, FieldValue<3>::Integer> region_id;
 
 	};
 
@@ -187,12 +189,12 @@ public:
 
      * @brief Declare input record type for the equation TransportDG.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
 
     /**
      * @brief Input type for the DG variant selection.
      */
-    static Input::Type::Selection dg_variant_selection_input_type;
+    static const Input::Type::Selection & get_dg_variant_selection_input_type();
 
     /**
      * @brief Initialize solution in the zero time.
@@ -224,18 +226,20 @@ public:
 	 */
 	virtual EqData *get_data() { return &data_; }
 
-	TimeIntegrationScheme time_scheme() { return implicit_euler; }
-
 	/**
 	 * @brief Destructor.
 	 */
 	~TransportDG();
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
 	void output_vector_gather();
+
+	void preallocate();
 
 	/**
 	 * @brief Assembles the mass matrix.
@@ -403,42 +407,6 @@ private:
 	template<unsigned int dim>
 	void prepare_initial_condition();
 
-	/**
-	 * @brief Calculates flux through boundary of each region.
-	 *
-	 * This actually calls calc_fluxes<dim>() for each space dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates flux through boundary of each region of specific dimension.
-	 * @param bcd_balance       Total fluxes.
-	 * @param bcd_plus_balance  Incoming fluxes.
-	 * @param bcd_minus_balance Outgoing fluxes.
-	 */
-	template<unsigned int dim>
-	void calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region.
-	 *
-	 * This method actually calls calc_elem_sources<dim>() for each space dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
-
-	/**
-	 * @brief Calculates volume sources for each region of specific dimension.
-	 * @param mass        Vector of substance mass per region.
-	 * @param src_balance Vector of sources per region.
-	 */
-	template<unsigned int dim>
-	void calc_elem_sources(vector<vector<double> > &mass, vector< vector<double> > &src_balance);
-
 
 
 	/// @name Physical parameters
@@ -480,6 +448,9 @@ private:
 
 	/// The mass matrix.
 	Mat mass_matrix;
+	
+	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
+	Vec *mass_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
@@ -502,7 +473,7 @@ private:
 	/// Record with output specification.
 	Input::Record output_rec;
 
-	OutputTime *output_stream;
+	std::shared_ptr<OutputTime> output_stream;
 
 
 	// @}
@@ -521,6 +492,8 @@ private:
 	vector<vector<vector<arma::vec3> > > ad_coef_edg;
 	/// Diffusion coefficients on edges.
 	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
 	// @}
 

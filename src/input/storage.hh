@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstdint>
 #include "system/exceptions.hh"
 
 
@@ -56,7 +57,7 @@ DECLARE_EXCEPTION(ExcStorageTypeMismatch, << "Storage type mismatch. You want va
  */
 class StorageBase {
 public:
-    virtual int get_int() const;
+    virtual std::int64_t get_int() const;
     virtual double get_double() const;
     virtual bool get_bool() const;
     virtual const std::string &get_string() const;
@@ -64,7 +65,7 @@ public:
     virtual bool is_null() const =0;
     virtual unsigned int get_array_size() const;
 
-    virtual StorageBase *deep_copy()=0;
+    virtual StorageBase *deep_copy() const =0;
     virtual void print(std::ostream &stream, int pad=0) const =0;
 
     virtual ~StorageBase();
@@ -80,10 +81,11 @@ public:
     StorageArray(unsigned int size);
     StorageArray(const StorageArray &); // deep copy for test purpose
     void new_item(unsigned int index, StorageBase* item);
+    void set_item(unsigned int index, StorageBase* item);
     virtual const StorageBase * get_item(const unsigned int index) const;
     virtual unsigned int get_array_size() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageArray();
 private:
@@ -98,7 +100,7 @@ public:
     StorageBool(bool value);
     virtual bool get_bool() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageBool();
 private:
@@ -108,14 +110,14 @@ private:
 class StorageInt : public StorageBase {
 public:
     StorageInt(int value);
-    virtual int get_int() const;
+    virtual std::int64_t get_int() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageInt();
 
 private:
-    int value_;
+    std::int64_t value_;
 };
 
 class StorageDouble : public StorageBase {
@@ -123,7 +125,7 @@ public:
     StorageDouble(double value);
     virtual double get_double() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageDouble();
 
@@ -136,7 +138,7 @@ public:
     StorageString(const std::string & value);
     virtual const std::string & get_string() const;
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageString();
 
@@ -146,7 +148,7 @@ private:
 
 class StorageNull : public StorageBase {
     virtual bool is_null() const;
-    virtual StorageBase *deep_copy();
+    virtual StorageBase *deep_copy() const;
     virtual void print(std::ostream &stream, int pad=0) const;
     virtual ~StorageNull();
 

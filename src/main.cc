@@ -37,7 +37,7 @@
 #include "input/input_type.hh"
 #include "input/type_output.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 #include <iostream>
 #include <fstream>
@@ -60,20 +60,24 @@
     #define _PROGRAM_BRANCH_ "(unknown branch)"
 #endif
 
-#ifndef _COMPILER_FLAGS_
-    #define _COMPILER_FLAGS_ "(unknown compiler flags)"
+#ifndef FLOW123D_COMPILER_FLAGS_
+    #define FLOW123D_COMPILER_FLAGS_ "(unknown compiler flags)"
 #endif
 
 
 namespace it = Input::Type;
 
 // this should be part of a system class containing all support information
-it::Record Application::input_type
-    = it::Record("Root", "Root record of JSON input for Flow123d.")
-    .declare_key("problem", CouplingBase::input_type, it::Default::obligatory(),
+it::Record & Application::get_input_type() {
+    static it::Record type = it::Record("Root", "Root record of JSON input for Flow123d.")
+    .declare_key("problem", CouplingBase::get_input_type(), it::Default::obligatory(),
     		"Simulation problem to be solved.")
     .declare_key("pause_after_run", it::Bool(), it::Default("false"),
-    		"If true, the program will wait for key press before it terminates.");
+    		"If true, the program will wait for key press before it terminates.")
+	.close();
+
+    return type;
+}
 
 
 
@@ -87,7 +91,7 @@ Application::Application( int argc,  char ** argv)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-#ifdef HAVE_PYTHON
+#ifdef FLOW123D_HAVE_PYTHON
     PythonLoader::initialize(argv[0]);
 #endif
 
@@ -115,8 +119,8 @@ void Application::display_version() {
     string revision(_GIT_REVISION_);
     string branch(_GIT_BRANCH_);
     string url(_GIT_URL_);
-    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(_COMPILER_FLAGS_);
-    
+    string build = string(__DATE__) + ", " + string(__TIME__) + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
+
 
     xprintf(Msg, "This is Flow123d, version %s revision: %s\n", version.c_str(), revision.c_str());
     xprintf(Msg,
@@ -135,22 +139,17 @@ Input::Record Application::read_input() {
         cout << program_arguments_desc_ << "\n";
         exit( exit_failure );
     }
-    
+
     // read main input file
-    string fname = main_input_dir_ + DIR_DELIMITER + main_input_filename_;
-    std::ifstream in_stream(fname.c_str());
-    if (! in_stream) {
-        xprintf(UsrErr, "Can not open main input file: '%s'.\n", fname.c_str());
-    }
+    FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
     try {
-    	Input::JSONToStorage json_reader(in_stream, input_type );
+    	Input::ReaderToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
-    } catch (Input::JSONToStorage::ExcInputError &e ) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
-    } catch (Input::JSONToStorage::ExcNotJSONFormat &e) {
-      e << Input::JSONToStorage::EI_File(fname); throw;
+    } catch (Input::ReaderToStorage::ExcInputError &e ) {
+      e << Input::ReaderToStorage::EI_File(fpath); throw;
+    } catch (Input::ReaderToStorage::ExcNotJSONFormat &e) {
+      e << Input::ReaderToStorage::EI_File(fpath); throw;
     }  
-    
     return root_record;
 }
 
@@ -173,9 +172,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_profiler", "Turn off profiler output.")
         ("full_doc", "Prints full structure of the main input file.")
-        ("JSON_template", "Prints description of the main input file as a valid CON file.")
         ("latex_doc", "Prints description of the main input file in Latex format using particular macros.")
-    	("JSON_machine", "Prints full structure of the main input file as a valid CON file.")
+        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
         ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
 
     ;
@@ -214,29 +212,32 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     // if there is "full_doc" option
     if (vm.count("full_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&input_type);
+        Input::Type::OutputText type_output(&get_input_type());
         type_output.set_filter(":Field:.*");
         cout << type_output;
         exit( exit_output );
     }
 
-    if (vm.count("JSON_template")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONTemplate(&input_type);
-        exit( exit_output );
-    }
-
     if (vm.count("latex_doc")) {
         Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputLatex type_output(&input_type);
+        Input::Type::OutputLatex type_output(&get_input_type());
         type_output.set_filter("");
         cout << type_output;
         exit( exit_output );
     }
 
     if (vm.count("JSON_machine")) {
-        Input::Type::TypeBase::lazy_finish();
-        cout << Input::Type::OutputJSONMachine(&input_type);
+        // write ist to json file
+        string json_filename = vm["JSON_machine"].as<string>();
+        ofstream json_stream(json_filename);
+        // check open operation
+        if (json_stream.fail()) {
+    		cerr << "Failed to open file '" << json_filename << "'" << endl;
+        } else {
+	        Input::Type::TypeBase::lazy_finish();
+	        json_stream << Input::Type::OutputJSONMachine(&get_input_type());
+	        json_stream.close();
+        }
         exit( exit_output );
     }
 
@@ -248,7 +249,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (vm.count("solve")) {
         string input_filename = vm["solve"].as<string>();
         split_path(input_filename, main_input_dir_, main_input_filename_);
-    } 
+    }
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
@@ -299,7 +300,7 @@ void Application::run() {
         // read record with problem configuration
         Input::AbstractRecord i_problem = i_rec.val<AbstractRecord>("problem");
 
-        if (i_problem.type() == HC_ExplicitSequential::input_type ) {
+        if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
 
             HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
 
@@ -329,7 +330,14 @@ void Application::after_run() {
 
 Application::~Application() {
     if (use_profiler && Profiler::is_initialized()) {
-        Profiler::instance()->output(PETSC_COMM_WORLD);
+        // log profiler data to this stream
+        Profiler::instance()->output (PETSC_COMM_WORLD);
+
+        // call python script which transforms json file at given location
+        // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+
+        // finally uninitialize
         Profiler::uninitialize();
     }
 }
@@ -355,4 +363,3 @@ int main(int argc, char **argv) {
     // Say Goodbye
     return ApplicationBase::exit_success;
 }
-

@@ -41,10 +41,20 @@
 
 namespace it = Input::Type;
 
-it::Record LinSys_PETSC::input_type = it::Record("Petsc", "Solver setting.")
-    .derive_from(LinSys::input_type)
-    .declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
-    .declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.");
+const it::Record & LinSys_PETSC::get_input_type() {
+	return it::Record("Petsc", "Solver setting.")
+		.derive_from(LinSys::get_input_type())
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default("1.0e-7"),
+					"Relative residual tolerance (to initial error).")
+		.declare_key("max_it", it::Integer(0), it::Default("10000"),
+					"Maximum number of outer iterations of the linear solver.")
+		.declare_key("a_tol", it::Double(0.0), it::Default("1.0e-9"), "Absolute residual tolerance.")
+		.declare_key("options", it::String(), it::Default(""),  "Options passed to PETSC before creating KSP instead of default setting.")
+		.close();
+}
+
+
+const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
 LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
@@ -309,8 +319,8 @@ int LinSys_PETSC::solve()
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
-           //petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           //petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
        else
            petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
@@ -318,7 +328,8 @@ int LinSys_PETSC::solve()
     else {
         // serial setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           //petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    	   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
            petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }

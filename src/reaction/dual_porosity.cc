@@ -17,32 +17,44 @@
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
 #include "semchem/semchem_interface.hh"
+#include "input/factory.hh"
+
+FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
+
 
 using namespace Input::Type;
 
 
-Selection DualPorosity::EqData::output_selection
-		= EqData().output_fields.make_output_field_selection("DualPorosity_Output")
+const Selection & DualPorosity::EqData::get_output_selection() {
+	return EqData().output_fields
+		.make_output_field_selection("DualPorosity_Output")
 		.close();
+}
 
-Record DualPorosity::input_type
-        = Record("DualPorosity",
+const Record & DualPorosity::get_input_type() {
+    return Record("DualPorosity",
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
-    .derive_from(ReactionTerm::input_type)
-    .declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
-                    "Containes region specific data necessary to construct dual porosity model.")
-    .declare_key("scheme_tolerance", Double(0.0), Default("1e-3"), 
-                 "Tolerance according to which the explicit Euler scheme is used or not."
-                 "Set 0.0 to use analytic formula only (can be slower).")
+		.derive_from(ReactionTerm::get_input_type())
+		.declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
+						"Containes region specific data necessary to construct dual porosity model.")
+		.declare_key("scheme_tolerance", Double(0.0), Default("1e-3"),
+					 "Tolerance according to which the explicit Euler scheme is used or not."
+					 "Set 0.0 to use analytic formula only (can be slower).")
+
+		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
+		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
+
+		.declare_key("output_fields", Array(EqData::get_output_selection()),
+					Default("conc_immobile"), "List of fields to write to output stream.")
+		.close();
+}
     
-    .declare_key("reaction_mobile", ReactionTerm::input_type, Default::optional(), "Reaction model in mobile zone.")
-    .declare_key("reaction_immobile", ReactionTerm::input_type, Default::optional(), "Reaction model in immobile zone.")
-    
-    .declare_key("output_fields", Array(EqData::output_selection),
-                Default("conc_immobile"), "List of fields to write to output stream.");
-    
+const int DualPorosity::registrar =
+		Input::register_class< DualPorosity, Mesh &, Input::Record >("DualPorosity") +
+		DualPorosity::get_input_type().size();
+
 DualPorosity::EqData::EqData()
 {
   *this += diffusion_rate_immobile
@@ -86,22 +98,16 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
-  if(reaction_mobile != nullptr) delete reaction_mobile;
-  if(reaction_immobile != nullptr) delete reaction_immobile;
-
   VecScatterDestroy(&(vconc_out_scatter));
   VecDestroy(vconc_immobile);
-  VecDestroy(vconc_immobile_out);
 
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
       //no mpi vectors
       xfree(conc_immobile[sbi]);
-      xfree(conc_immobile_out[sbi]);
   }
 
   xfree(conc_immobile);
-  xfree(conc_immobile_out);
 }
 
 
@@ -109,32 +115,9 @@ void DualPorosity::make_reactions() {
     Input::Iterator<Input::AbstractRecord> reactions_it = input_record_.find<Input::AbstractRecord>("reaction_mobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == FirstOrderReaction::input_type ) {
-          reaction_mobile =  new FirstOrderReaction(*mesh_, *reactions_it);
-
-      } else
-      if (reactions_it->type() == RadioactiveDecay::input_type) {
-          reaction_mobile = new RadioactiveDecay(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == SorptionMob::input_type ) {
-          reaction_mobile =  new SorptionMob(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-      } else
-      if (reactions_it->type() == Semchem_interface::input_type )
-      { THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-      } else
-      { //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-      }
+      // TODO: allowed instances in this case are only
+      // FirstOrderReaction, RadioactiveDecay and SorptionMob
+      reaction_mobile = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
     } else
     {
       reaction_mobile = nullptr;
@@ -143,32 +126,9 @@ void DualPorosity::make_reactions() {
     reactions_it = input_record_.find<Input::AbstractRecord>("reaction_immobile");
     if ( reactions_it )
     {
-      if (reactions_it->type() == FirstOrderReaction::input_type ) {
-          reaction_immobile =  new FirstOrderReaction(*mesh_, *reactions_it);
-
-      } else
-      if (reactions_it->type() == RadioactiveDecay::input_type) {
-          reaction_immobile = new RadioactiveDecay(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == SorptionImmob::input_type ) {
-          reaction_immobile =  new SorptionImmob(*mesh_, *reactions_it);
-      } else
-      if (reactions_it->type() == DualPorosity::input_type ) {
-        THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name()) 
-                << (*reactions_it).ei_address());
-      } else
-      if (reactions_it->type() == Semchem_interface::input_type )
-      { THROW( ReactionTerm::ExcWrongDescendantModel() 
-                << ReactionTerm::EI_Model((*reactions_it).type().type_name())
-                << EI_Message("This model is not currently supported!") 
-                << (*reactions_it).ei_address());
-      } else
-      { //This point cannot be reached. The TYPE_selection will throw an error first. 
-        THROW( ExcMessage() 
-                << EI_Message("Descending model type selection failed (SHOULD NEVER HAPPEN).") 
-                << (*reactions_it).ei_address());
-      }
+      // TODO: allowed instances in this case are only
+      // FirstOrderReaction, RadioactiveDecay and SorptionImmob
+      reaction_immobile = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(*mesh_, *reactions_it);
     } else
     {
       reaction_immobile = nullptr;
@@ -185,29 +145,30 @@ void DualPorosity::initialize()
   
   //allocating memory for immobile concentration matrix
   conc_immobile = (double**) xmalloc(substances_.size() * sizeof(double*));
-  conc_immobile_out = (double**) xmalloc(substances_.size() * sizeof(double*));
+  conc_immobile_out.clear();
+  conc_immobile_out.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_immobile[sbi] = (double*) xmalloc(distribution_->lsize() * sizeof(double));
-    conc_immobile_out[sbi] = (double*) xmalloc(distribution_->size() * sizeof(double));
+    conc_immobile_out[sbi].resize( distribution_->size() );
   }
   allocate_output_mpi();
   
   initialize_fields();
 
-  if(reaction_mobile != nullptr)
+  if(reaction_mobile)
   {
     reaction_mobile->substances(substances_)
-                .output_stream(*output_stream_)
+                .output_stream(output_stream_)
                 .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
     reaction_mobile->initialize();
   }
 
-  if(reaction_immobile != nullptr)
+  if(reaction_immobile)
   {
     reaction_immobile->substances(substances_)
-                .output_stream(*output_stream_)
+                .output_stream(output_stream_)
                 .concentration_matrix(conc_immobile, distribution_, el_4_loc_, row_4_el_)
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
@@ -217,32 +178,28 @@ void DualPorosity::initialize()
 
 void DualPorosity::initialize_fields()
 {
-  //setting fields in data
-  data_.set_n_components(substances_.size());
-
   //setting fields that are set from input file
   input_data_set_+=data_;
   input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
 
+  //setting fields in data
+  data_.set_components(substances_.names());
   data_.set_mesh(*mesh_);
   data_.set_limit_side(LimitSide::right);
   
   //initialization of output
   output_array = input_record_.val<Input::Array>("output_fields");
-  
-  //initialization of output
-  data_.conc_immobile.init(substances_.names());
-  data_.conc_immobile.set_mesh(*mesh_);
+  data_.output_fields.set_components(substances_.names());
+  data_.output_fields.set_mesh(*mesh_);
+  data_.output_fields.set_limit_side(LimitSide::right);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
-
+  data_.conc_immobile.set_up_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-    std::shared_ptr<FieldElementwise<3, FieldValue<3>::Scalar> > output_field_ptr(
-        new FieldElementwise<3, FieldValue<3>::Scalar>(conc_immobile_out[sbi], substances_.size(), mesh_->n_elements()));
+	auto output_field_ptr = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
-  data_.output_fields.set_limit_side(LimitSide::right);
   output_stream_->add_admissible_field_names(output_array);
 }
 
@@ -258,28 +215,28 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-          reaction_mobile->data().set_field("porosity", data_["porosity"]);
-          reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_mobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-      reaction_immobile->data().set_field("porosity", data_["porosity"]);
-      reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_immobile->data().set_field("porosity", data_["porosity"]);
+	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
-  data_.set_time(*time_);
+  data_.set_time(time_->step(0));
   set_initial_condition();
   
   // write initial condition
   output_vector_gather();
-  data_.output_fields.set_time(*time_);
+  data_.output_fields.set_time(time_->step(0));
   data_.output_fields.output(output_stream_);
   
-  if(reaction_mobile != nullptr)
+  if(reaction_mobile)
     reaction_mobile->zero_time_step();
 
-  if(reaction_immobile != nullptr)
+  if(reaction_immobile)
     reaction_immobile->zero_time_step();
 }
 
@@ -301,7 +258,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
-  data_.set_time(*time_);
+  data_.set_time(time_->step(-2));
  
   START_TIMER("dual_por_exchange_step");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++) 
@@ -310,8 +267,8 @@ void DualPorosity::update_solution(void)
   }
   END_TIMER("dual_por_exchange_step");
   
-  if(reaction_mobile != nullptr) reaction_mobile->update_solution();
-  if(reaction_immobile != nullptr) reaction_immobile->update_solution();
+  if(reaction_mobile) reaction_mobile->update_solution();
+  if(reaction_immobile) reaction_immobile->update_solution();
 }
 
 
@@ -383,7 +340,6 @@ void DualPorosity::allocate_output_mpi(void )
     n_subst = substances_.size();
 
     vconc_immobile = (Vec*) xmalloc(n_subst * (sizeof(Vec)));
-    vconc_immobile_out = (Vec*) xmalloc(n_subst * (sizeof(Vec))); // extend to all
 
 
     for (sbi = 0; sbi < n_subst; sbi++) {
@@ -392,14 +348,13 @@ void DualPorosity::allocate_output_mpi(void )
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        VecCreateSeqWithArray(PETSC_COMM_SELF,1, mesh_->n_elements(), conc_immobile_out[sbi], &vconc_immobile_out[sbi]);
-        VecZeroEntries(vconc_immobile_out[sbi]);
+        VecZeroEntries(conc_immobile_out[sbi].get_data_petsc());
     }
     
     // create output vector scatter
     IS is;
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, vconc_immobile_out[0], PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_immobile[0], is, conc_immobile_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
     ISDestroy(&(is));
 }
 
@@ -409,8 +364,8 @@ void DualPorosity::output_vector_gather()
     unsigned int sbi;
 
     for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], vconc_immobile_out[sbi], INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
 }
 
@@ -420,10 +375,9 @@ void DualPorosity::output_data(void )
     output_vector_gather();
 
     // Register fresh output data
-    data_.output_fields.set_time(*time_);
+    data_.output_fields.set_time(time_->step());
     data_.output_fields.output(output_stream_);
     
     if (reaction_mobile) reaction_mobile->output_data();
     if (reaction_immobile) reaction_immobile->output_data();
 }
-

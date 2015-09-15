@@ -90,9 +90,9 @@ uname -a
 echo JOB START: `date` 
 pwd
 
-echo mpirun -np $NP "$FLOW123D" $FLOW_PARAMS  
+echo mpirun -n $NP "$FLOW123D" $FLOW_PARAMS  
 
-mpirun "$FLOW123D" $FLOW_PARAMS  
+mpirun -n $NP "$FLOW123D" $FLOW_PARAMS  
   
 	
 # End of flow123d.qsub
@@ -101,7 +101,7 @@ xxEOFxx
 
 	if [ -f ${QSUB_FILE} ]
 	then    
-                OPTIONS="-l nodes=${NNodes}:ppn=${PPN}:x86_64:nfs4:debian60 -l mem=${MEM}gb ${SET_WALLTIME} ${UNRESOLVED_PARAMS} -q ${QUEUE}"
+                OPTIONS="-l nodes=${NNodes}:ppn=${PPN}:x86_64:nfs4:debian60 -l mem=${MEM}mb ${SET_WALLTIME} ${UNRESOLVED_PARAMS} -q ${QUEUE}"
 		# Add new PBS job to the queue
 		echo "qsub ${OPTIONS} ${QSUB_FILE}"
 		

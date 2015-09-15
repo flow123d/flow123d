@@ -16,7 +16,7 @@ using namespace std;
  * Implements StorageBase
  */
 
-int StorageBase::get_int() const {
+std::int64_t StorageBase::get_int() const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("int") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }
@@ -79,7 +79,7 @@ StorageArray::StorageArray(unsigned int size)
         *it=NULL;
 }
 
- StorageBase * StorageArray::deep_copy() {
+ StorageBase * StorageArray::deep_copy() const {
     StorageArray *copy = new StorageArray(this->get_array_size());
 
     for(unsigned int i=0; i< array_.size(); i++)
@@ -88,11 +88,22 @@ StorageArray::StorageArray(unsigned int size)
     return copy;
 }
 
-void StorageArray::new_item(unsigned int index, StorageBase* item) {
-    ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
-    if (array_[index] == NULL) array_[index] = item;
-    else xprintf(PrgErr, "Can not replace non NULL pointer.");
-}
+ void StorageArray::new_item(unsigned int index, StorageBase* item) {
+     ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+     if (array_[index] == NULL) array_[index] = item;
+     else xprintf(PrgErr, "Can not replace non NULL pointer.");
+ }
+
+
+ void StorageArray::set_item(unsigned int index, StorageBase* item) {
+     ASSERT( index < array_.size() , "Index %d out of array of size: %d", index, array_.size());
+     if (array_[index] == NULL) array_[index] = item;
+     else if ( typeid(*array_[index]) == typeid(StorageNull) ) {
+    	 delete array_[index];
+    	 array_[index] = item;
+     } else xprintf(PrgErr, "Can not replace non NULL pointer.");
+
+ }
 
 
 
@@ -150,7 +161,7 @@ bool StorageBool::is_null() const {
 
 
 
-StorageBase * StorageBool::deep_copy() {
+StorageBase * StorageBool::deep_copy() const {
     return new StorageBool(value_);
 }
 
@@ -173,7 +184,7 @@ StorageInt::StorageInt(int value)
 
 
 
-int StorageInt::get_int() const {
+std::int64_t StorageInt::get_int() const {
     return value_;
 }
 
@@ -183,7 +194,7 @@ bool StorageInt::is_null() const {
     return false;
 }
 
- StorageBase * StorageInt::deep_copy() {
+ StorageBase * StorageInt::deep_copy() const {
     return new StorageInt(value_);
 }
 
@@ -218,7 +229,7 @@ bool StorageDouble::is_null() const {
     return false;
 }
 
- StorageBase * StorageDouble::deep_copy() {
+ StorageBase * StorageDouble::deep_copy() const {
     return new StorageDouble(value_);
 }
 
@@ -254,7 +265,7 @@ bool StorageString::is_null() const {
 }
 
 
-StorageBase * StorageString::deep_copy() {
+StorageBase * StorageString::deep_copy() const {
     return new StorageString(value_);
 }
 
@@ -279,7 +290,7 @@ bool StorageNull::is_null() const {
 
 
 
- StorageBase * StorageNull::deep_copy() {
+ StorageBase * StorageNull::deep_copy() const {
     return new StorageNull();
 }
 

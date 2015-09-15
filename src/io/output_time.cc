@@ -28,72 +28,106 @@
  */
 
 #include <string>
-#include <typeinfo>
-#include <petsc.h>
-#include <boost/any.hpp>
-#include <assert.h>
 
-#include "system/xio.h"
-#include "io/output_data.hh"
-#include "io/output_vtk.h"
-#include "io/output_msh.h"
+#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
-#include "system/sys_profiler.hh"
+#include "output_time.impl.hh"
+#include "output_vtk.hh"
+#include "output_msh.hh"
+
+
+FLOW123D_FORCE_LINK_IN_PARENT(vtk)
+FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 
 
 using namespace Input::Type;
 
-Record OutputTime::input_type
-    = Record("OutputStream", "Parameters of output.")
-    // The stream
-    .declare_key("file", FileName::output(), Default::obligatory(),
-            "File path to the connected output file.")
-            // The format
-	.declare_key("format", OutputTime::input_format_type, Default::optional(),
-			"Format of output stream and possible parameters.")
-	.declare_key("time_step", Double(0.0),
-			"Time interval between outputs.\n"
-			"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
-			"The start time and the end time are always added. ")
-	.declare_key("time_list", Array(Double(0.0)),
-			"Explicit array of output time points (can be combined with 'time_step'.")
-	.declare_key("add_input_times", Bool(), Default("false"),
-			"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.");
-
-
-AbstractRecord OutputTime::input_format_type
-    = AbstractRecord("OutputTime",
-            "Format of output stream and possible parameters.");
-
-OutputDataBase *OutputTime::output_data_by_field_name
-		(const std::string &field_name, DiscreteSpace ref_type)
-{
-    std::vector<OutputDataBase*> *data_vector;
-
-    switch(ref_type) {
-    case NODE_DATA:
-        data_vector = &this->node_data;
-        break;
-    case CORNER_DATA:
-        data_vector = &this->corner_data;
-        break;
-    case ELEM_DATA:
-        data_vector = &this->elem_data;
-        break;
-    }
-
-    /* Try to find existing data */
-    for(auto &data : *data_vector)
-        if (data->field_name == field_name)     return data;
-
-    return nullptr;
+const Record & OutputTime::get_input_type() {
+    return Record("OutputStream", "Parameters of output.")
+		// The stream
+		.declare_key("file", FileName::output(), Default::obligatory(),
+				"File path to the connected output file.")
+				// The format
+		.declare_key("format", OutputTime::get_input_format_type(), Default::optional(),
+				"Format of output stream and possible parameters.")
+		.declare_key("time_step", Double(0.0),
+				"Time interval between outputs.\n"
+				"Regular grid of output time points starts at the initial time of the equation and ends at the end time which must be specified.\n"
+				"The start time and the end time are always added. ")
+		.declare_key("time_list", Array(Double(0.0)),
+				Default::read_time("List containing the initial time of the equation. \n You can prescribe an empty list to override this behavior."),
+				"Explicit array of output time points (can be combined with 'time_step'.")
+		.declare_key("add_input_times", Bool(), Default("false"),
+				"Add all input time points of the equation, mentioned in the 'input_fields' list, also as the output points.")
+		.close();
 }
 
+
+AbstractRecord & OutputTime::get_input_format_type() {
+	return AbstractRecord("OutputTime", "Format of output stream and possible parameters.")
+		.close();
+}
+
+
+OutputTime::OutputTime()
+: _mesh(nullptr)
+{}
+
+
+
+OutputTime::OutputTime(const Input::Record &in_rec)
+: input_record_(in_rec)
+{
+
+    this->_base_filename = in_rec.val<FilePath>("file");
+    this->current_step = 0;
+    this->_mesh = NULL;
+    this->time = -1.0;
+    this->write_time = -1.0;
+
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+
+}
+
+
+
+OutputTime::~OutputTime(void)
+{
+    /* It's possible now to do output to the file only in the first process */
+     //if(rank != 0) {
+     //    /* TODO: do something, when support for Parallel VTK is added */
+     //    return;
+    // }
+
+    if (this->_base_file.is_open()) this->_base_file.close();
+
+     xprintf(MsgLog, "O.K.\n");
+}
+
+
+
+
+
+
+
+void OutputTime::fix_main_file_extension(std::string extension)
+{
+    if(this->_base_filename.compare(this->_base_filename.size()-extension.size(), extension.size(), extension) != 0) {
+        string new_name = this->_base_filename + extension;
+        xprintf(Warn, "Renaming output file: %s to %s\n",
+                this->_base_filename.c_str(), new_name.c_str());
+        this->_base_filename = new_name;
+    }
+}
+
+
 /* Initialize static member of the class */
-std::vector<OutputTime*> OutputTime::output_streams;
+//std::vector<OutputTime*> OutputTime::output_streams;
 
 
+/*
 void OutputTime::destroy_all(void)
 {
     // Delete all objects
@@ -106,81 +140,41 @@ void OutputTime::destroy_all(void)
 
     OutputTime::output_streams.clear();
 }
+    */
 
-OutputTime* OutputTime::create_output_stream(const Input::Record &in_rec)
+
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const Input::Record &in_rec)
 {
-    OutputTime* output_time;
+	std::shared_ptr<OutputTime> output_time;
 
     Input::Iterator<Input::AbstractRecord> format = Input::Record(in_rec).find<Input::AbstractRecord>("format");
 
     if(format) {
-        if((*format).type() == OutputVTK::input_type) {
-            output_time = new OutputVTK(in_rec);
-        } else if ( (*format).type() == OutputMSH::input_type) {
-            output_time = new OutputMSH(in_rec);
-        } else {
-            xprintf(Warn, "Unsupported file format, using default VTK\n");
-            output_time = new OutputVTK(in_rec);
-        }
+    	output_time = (*format).factory< OutputTime, const Input::Record & >(in_rec);
         output_time->format_record_ = *format;
     } else {
-        output_time = new OutputVTK(in_rec);
+        output_time = Input::Factory< OutputTime, const Input::Record & >::instance()->create("OutputVTK", in_rec);
     }
 
     return output_time;
 }
+
 
 void OutputTime::add_admissible_field_names(const Input::Array &in_array)
 {
     vector<Input::FullEnum> field_ids;
     in_array.copy_to(field_ids);
 
-    for (auto it: field_ids) {
-        this->output_names.insert(std::pair<std::string, bool>((string)it, true));
+    for (auto field_full_enum: field_ids) {
+        /* Setting flags to zero means use just discrete space
+         * provided as default in the field.
+         */
+        DiscreteSpaceFlags flags = 0;
+        this->output_names[(std::string)field_full_enum]=flags;
     }
 }
 
 
-OutputTime::OutputTime(const Input::Record &in_rec)
-: input_record_(in_rec)
-{
-    ofstream *base_file;
-
-    string fname = in_rec.val<FilePath>("file");
-
-    base_file = new ofstream;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
-    if(this->rank == 0) {
-    	base_file->open(fname.c_str());
-    	INPUT_CHECK( base_file->is_open() , "Can not open output file: %s\n", fname.c_str() );
-    	xprintf(MsgLog, "Writing flow output file: %s ... \n", fname.c_str());
-    }
-
-    this->current_step = 0;
-    this->_base_file = base_file;
-    this->_base_filename = fname;
-    this->_data_file = NULL;
-    this->_mesh = NULL;
-    this->time = -1.0;
-    this->write_time = -1.0;
-}
-
-OutputTime::~OutputTime(void)
-{
-    /* It's possible now to do output to the file only in the first process */
-     //if(rank != 0) {
-     //    /* TODO: do something, when support for Parallel VTK is added */
-     //    return;
-    // }
-
-     if(this->_base_file != NULL) {
-         this->_base_file->close();
-         delete this->_base_file;
-     }
-
-     xprintf(MsgLog, "O.K.\n");
-}
 
 
 void OutputTime::mark_output_times(const TimeGovernor &tg)
@@ -197,6 +191,8 @@ void OutputTime::mark_output_times(const TimeGovernor &tg)
 		vector<double> list;
 		time_list.copy_to(list);
 		for( double time : list) tg.marks().add(TimeMark(time, output_mark_type));
+	} else {
+	    tg.marks().add( TimeMark(tg.init_time(), output_mark_type) );
 	}
 
 	bool add_flag;
@@ -238,9 +234,7 @@ void OutputTime::write_time_frame()
 
 void OutputTime::clear_data(void)
 {
-	node_data.clear();
-    corner_data.clear();
-    elem_data.clear();
+    for(auto &map : output_data_vec_)  map.clear();
 }
 
 

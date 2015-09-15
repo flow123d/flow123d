@@ -5,12 +5,24 @@
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/accessors.hh"
+#include "input/factory.hh"
 
-/*********************************                 *********************************************************/
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_CHILD(sorption)
+
+
 /********************************* SORPTION_SIMPLE *********************************************************/
 /*********************************                 *********************************************************/
 
-IT::Record SorptionSimple::input_type = SorptionBase::record_factory(SorptionRecord::simple);
+const IT::Record & SorptionSimple::get_input_type() {
+	return IT::Record("Sorption", "Sorption model in the reaction term of transport.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
+                     IT::Default("conc_solid"), "List of fields to write to output stream.")
+		.close();
+}
 
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
@@ -19,6 +31,10 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
     this->eq_data_ = data_;
 	output_selection = make_output_selection("conc_solid", "SorptionSimple_Output");
 }
+
+const int SorptionSimple::registrar =
+		Input::register_class< SorptionSimple, Mesh &, Input::Record >("Sorption") +
+		SorptionSimple::get_input_type().size();
 
 SorptionSimple::~SorptionSimple(void)
 {}
@@ -42,8 +58,8 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 		Isotherm & isotherm = isotherms_vec[i_subst];
 
 		//scales are different for the case of sorption in mobile and immobile pores
-		double scale_aqua = por_m, 
-               scale_sorbed = (1 - por_m) * rock_density * molar_masses_[i_subst];
+		double scale_aqua = por_m,
+               scale_sorbed = (1 - por_m) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
 
 		bool limited_solubility_on = false;
 		double table_limit;
@@ -55,15 +71,12 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 			table_limit=solubility_vec_[i_subst];
 		}
 		
-        if( (1-por_m) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
+		if( (1-por_m) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
         {
-            //switching off sorption using zero coefficients and putting scale_sorbed (so there is no zero division)
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, limited_solubility_on,
-                            solvent_density_, scale_aqua, scale_sorbed, table_limit, 0.0,0.0);
-            return;
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,table_limit,0,0);
+            continue;
         }
-        
+
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         
@@ -100,7 +113,20 @@ SorptionDual::~SorptionDual(void)
 /*********************************** SORPTION_MOBILE *******************************************************/
 /**********************************                  *******************************************************/
 
-IT::Record SorptionMob::input_type = SorptionBase::record_factory(SorptionRecord::mobile);
+const IT::Record & SorptionMob::get_input_type() {
+	return IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
+            IT::Default("conc_solid"), "List of fields to write to output stream.")
+		.close();
+}
+
+
+const int SorptionMob::registrar =
+		Input::register_class< SorptionMob, Mesh &, Input::Record >("SorptionMobile") +
+		SorptionMob::get_input_type().size();
+
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
     : SorptionDual(init_mesh, in_rec, "conc_solid", "SorptionMobile_Output")
@@ -141,8 +167,8 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_m,
-               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * molar_masses_[i_subst];
-               
+               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
+
         bool limited_solubility_on;
         double table_limit;
         if (solubility_vec_[i_subst] <= 0.0) {
@@ -156,12 +182,10 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         
         if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
         {
-            //switching off sorption using zero coefficients and putting scale_sorbed (so there is no zero division)
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, limited_solubility_on,
-                            solvent_density_, scale_aqua, scale_sorbed, table_limit, 0.0,0.0);
-            return;
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,table_limit,0,0);
+            continue;
         }
+        
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         
@@ -178,7 +202,18 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 /*********************************** SORPTION_IMMOBILE *****************************************************/
 /***********************************                   *****************************************************/
 
-IT::Record SorptionImmob::input_type = SorptionBase::record_factory(SorptionRecord::immobile);
+const IT::Record & SorptionImmob::get_input_type() {
+	return IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
+        .derive_from( ReactionTerm::get_input_type() )
+        .copy_keys(SorptionBase::get_input_type())
+        .declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
+            IT::Default("conc_immobile_solid"), "List of fields to write to output stream.")
+		.close();
+}
+
+const int SorptionImmob::registrar =
+		Input::register_class< SorptionImmob, Mesh &, Input::Record >("SorptionImmobile") +
+		SorptionImmob::get_input_type().size();
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 : SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")
@@ -218,8 +253,8 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_imm,
-               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * molar_masses_[i_subst];
-               
+               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
+
         bool limited_solubility_on;
         double table_limit;
         if (solubility_vec_[i_subst] <= 0.0) {
@@ -233,12 +268,10 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         
         if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
         {
-            //switching off sorption using zero coefficients and putting scale_sorbed (so there is no zero division)
-            scale_sorbed = 1.0;
-            isotherm.reinit(Isotherm::none, limited_solubility_on,
-                            solvent_density_, scale_aqua, scale_sorbed, table_limit, 0.0,0.0);
-            return;
+            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
+            continue;
         }
+        
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         

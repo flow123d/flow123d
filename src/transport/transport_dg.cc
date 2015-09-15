@@ -29,57 +29,84 @@
 
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
+
+#include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
-#include "io/output_data.hh"
 #include "fields/field_fe.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "la/linsys_PETSC.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
-
+#include "coupling/balance.hh"
 #include "fields/generic_field.hh"
+#include "input/factory.hh"
+
+FLOW123D_FORCE_LINK_IN_CHILD(soluteTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(heatTransfer);
+
 
 using namespace Input::Type;
 
 template<class Model>
-Selection TransportDG<Model>::dg_variant_selection_input_type
-	= Selection("DG_variant", "Type of penalty term.")
-	.add_value(non_symmetric, "non-symmetric", "non-symmetric weighted interior penalty DG method")
-	.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
-	.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method");
+const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
+	return Selection("DG_variant", "Type of penalty term.")
+		.add_value(non_symmetric, "non-symmetric", "non-symmetric weighted interior penalty DG method")
+		.add_value(incomplete,    "incomplete",    "incomplete weighted interior penalty DG method")
+		.add_value(symmetric,     "symmetric",     "symmetric weighted interior penalty DG method")
+		.close();
+}
 
 template<class Model>
-Selection TransportDG<Model>::EqData::bc_type_selection =
-              Selection("TransportDG_EqData_bc_Type")
-               .add_value(inflow, "inflow", "Dirichlet BC on inflow and homogeneous Neumann BC on outflow.")
-               .add_value(dirichlet, "dirichlet")
-               .add_value(neumann, "neumann")
-               .add_value(robin, "robin");
+const Selection & TransportDG<Model>::EqData::get_bc_type_selection() {
+	return Selection("TransportDG_BC_Type", "Types of boundary condition supported by the transport DG model (solute transport or heat transfer).")
+              .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
+              .add_value(dirichlet, "dirichlet",
+                       "Dirichlet boundary condition."
+                       //"Specify the pressure head through the 'bc_pressure' field "
+                       //"or the piezometric head through the 'bc_piezo_head' field."
+                      )
+               .add_value(neumann, "neumann", "Neumann boundary condition. Prescribe water outflow by the 'bc_flux' field.")
+               .add_value(robin, "robin", "Robin boundary condition. Water outflow equal to (($\\sigma (h - h^R)$)). "
+                       //"Specify the transition coefficient by 'bc_sigma' and the reference pressure head or pieaozmetric head "
+                       //"through 'bc_pressure' and 'bc_piezo_head' respectively."
+                       )
+              .add_value(inflow, "inflow", "Prescribes the concentration in the inflow water on the inflow part of the boundary.")
+			  .close();
+}
 
 template<class Model>
-Selection TransportDG<Model>::EqData::output_selection =
-		Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
+const Selection & TransportDG<Model>::EqData::get_output_selection() {
+	return Model::ModelEqData::get_output_selection_input_type("DG", "DG solver")
 		.copy_values(EqData().make_output_field_selection("").close())
 		.close();
+}
 
 template<class Model>
-Record TransportDG<Model>::input_type
-	= Model::get_input_type("DG", "DG solver")
-    .declare_key("solver", LinSys_PETSC::input_type, Default::obligatory(),
-            "Linear solver for MH problem.")
-    .declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
-    .declare_key("dg_variant", TransportDG<Model>::dg_variant_selection_input_type, Default("non-symmetric"),
-    		"Variant of interior penalty discontinuous Galerkin method.")
-    .declare_key("dg_order", Integer(0,3), Default("1"),
-    		"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-    .declare_key("output_fields", Array(EqData::output_selection),
-    		Default(Model::ModelEqData::default_output_field()),
-       		"List of fields to write to output file.");
+const Record & TransportDG<Model>::get_input_type() {
+	return Model::get_input_type("DG", "DG solver")
+		.declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+				"Linear solver for MH problem.")
+		.declare_key("input_fields", Array(TransportDG<Model>::EqData().make_field_descriptor_type(std::string(Model::ModelEqData::name()) + "_DG")), IT::Default::obligatory(), "")
+		.declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("non-symmetric"),
+				"Variant of interior penalty discontinuous Galerkin method.")
+		.declare_key("dg_order", Integer(0,3), Default("1"),
+				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+		.declare_key("output_fields", Array(EqData::get_output_selection()),
+				Default(Model::ModelEqData::default_output_field()),
+				"List of fields to write to output file.")
+		.close();
+}
+
+template<class Model>
+const int TransportDG<Model>::registrar =
+		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG") +
+		TransportDG<Model>::get_input_type().size();
+
 
 
 
@@ -211,7 +238,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
-            .input_selection( &bc_type_selection)
+            .input_selection( &get_bc_type_selection() )
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
     *this+=bc_flux
@@ -227,7 +254,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
             .input_default("0.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this += region_ids.name("region_ids")
+    *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
 
@@ -250,7 +277,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 	this->eq_data_ = &data_;
 
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    time_->fix_dt_until_mark();
+
 
     // Read names of transported substances.
     // TODO: Substances should be held in TransportOperatorSplitting only.
@@ -262,16 +289,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     Model::set_components(substances_, in_rec);
     n_subst_ = substances_.size();
 
-    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("mass_balance");
-    if (it)
-    	mass_balance_ = new MassBalance(this, *it);
-
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
-    data_.set_n_components(n_subst_);
+    data_.set_components(substances_.names());
     data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-    data_.set_limit_side(LimitSide::left);
-    data_.region_ids = GenericField<3>::region_id(*mesh_);
+    data_.set_limit_side(LimitSide::right);
+    data_.region_id = GenericField<3>::region_id(*mesh_);
 
 
     // DG variant and order
@@ -321,10 +344,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
 		output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		VecCreateSeqWithArray(PETSC_COMM_SELF, 1, feo->dh()->n_global_dofs(), output_solution[sbi], &output_vec[sbi]);
 	}
-	data_.output_field.init(substances_.names());
+	data_.output_field.set_components(substances_.names());
 	data_.output_field.set_mesh(*mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
 
+    data_.output_field.set_up_components();
 	for (unsigned int sbi=0; sbi<n_subst_; sbi++)
 	{
 		// create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
@@ -350,6 +374,26 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
     }
     stiffness_matrix = new Mat[n_subst_];
     rhs = new Vec[n_subst_];
+    mass_vec = new Vec[n_subst_];
+
+
+    // initialization of balance object
+    Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
+    if (it->val<bool>("balance_on"))
+    {
+    	balance_ = boost::make_shared<Balance>(Model::balance_prefix(), mesh_, feo->dh()->el_ds(), feo->dh()->get_el_4_loc(), *it);
+
+    	// a not very nice workaround for model with single solution component with no name
+    	if (typeid(Model) == typeid(HeatTransferModel))
+    		subst_idx = {balance_->add_quantity("energy")};
+    	else
+    		subst_idx = balance_->add_quantities(substances_.names());
+
+	    balance_->allocate(feo->dh()->distr()->lsize(),
+	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
+
+	    balance_->units(Model::balance_units());
+    }
 
 }
 
@@ -373,15 +417,15 @@ TransportDG<Model>::~TransportDG()
     	delete ls[i];
     	MatDestroy(&stiffness_matrix[i]);
     	VecDestroy(&rhs[i]);
+    	VecDestroy(&mass_vec[i]);
     }
     delete[] ls;
     delete[] stiffness_matrix;
     delete[] rhs;
+    delete[] mass_vec;
     delete feo;
-    if (mass_balance_ != NULL) delete mass_balance_;
 
     gamma.clear();
-    delete output_stream;
 }
 
 
@@ -409,15 +453,54 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
 	START_TIMER(Model::ModelEqData::name());
-    data_.set_time(*time_);
+	data_.mark_input_times(time_->equation_fixed_mark_type());
+	data_.set_time(time_->step());
+
 
     // set initial conditions
     set_initial_condition();
     for (unsigned int sbi = 0; sbi < n_subst_; sbi++)
     	( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
 
+    // during preallocation we assemble the matrices and vectors required for mass balance
+    if (balance_ != nullptr)
+    {
+        if (!allocation_done) preallocate();
+
+		for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
+		{
+			balance_->calculate_mass(subst_idx[sbi], ls[sbi]->get_solution());
+			balance_->calculate_source(subst_idx[sbi], ls[sbi]->get_solution());
+			balance_->calculate_flux(subst_idx[sbi], ls[sbi]->get_solution());
+		}
+    }
+
 	output_data();
 }
+
+
+template<class Model>
+void TransportDG<Model>::preallocate()
+{
+	// preallocate mass matrix
+	ls_dt->start_allocation();
+	assemble_mass_matrix();
+	mass_matrix = NULL;
+
+	// preallocate system matrix
+	for (unsigned int i=0; i<n_subst_; i++)
+	{
+		ls[i]->start_allocation();
+		stiffness_matrix[i] = NULL;
+		rhs[i] = NULL;
+	}
+	assemble_stiffness_matrix();
+	set_sources();
+	set_boundary_conditions();
+
+	allocation_done = true;
+}
+
 
 
 template<class Model>
@@ -429,30 +512,11 @@ void TransportDG<Model>::update_solution()
     time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(*time_);
+    data_.set_time(time_->step());
     END_TIMER("data reinit");
     
     // check first time assembly - needs preallocation
-    if (!allocation_done)
-    {
-    	// preallocate mass matrix
-    	ls_dt->start_allocation();
-    	assemble_mass_matrix();
-    	mass_matrix = NULL;
-
-		// preallocate system matrix
-		for (unsigned int i=0; i<n_subst_; i++)
-		{
-			ls[i]->start_allocation();
-			stiffness_matrix[i] = NULL;
-			rhs[i] = NULL;
-		}
-		assemble_stiffness_matrix();
-		set_sources();
-		set_boundary_conditions();
-
-		allocation_done = true;
-    }
+    if (!allocation_done) preallocate();
 
 	// assemble mass matrix
     if (mass_matrix == NULL || data_.subset(FieldFlag::in_time_term).changed() )
@@ -461,6 +525,17 @@ void TransportDG<Model>::update_solution()
 		ls_dt->mat_zero_entries();
 		assemble_mass_matrix();
 		ls_dt->finish_assembly();
+		
+		// construct mass_vec for initial time
+		if (mass_matrix == NULL)
+		{
+		  for (unsigned int i=0; i<n_subst_; i++)
+		  {
+		    VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
+                    MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+                  }
+		}
+		
 		mass_matrix = *(ls_dt->get_matrix());
 	}
 
@@ -535,23 +610,34 @@ void TransportDG<Model>::update_solution()
     	MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
 		MatAXPY(m, 1./time_->dt(), mass_matrix, SUBSET_NONZERO_PATTERN);
 		ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
-		Vec y,w;
-		VecDuplicate(rhs[i], &y);
+		Vec w;
 		VecDuplicate(rhs[i], &w);
-		MatMult(mass_matrix, ls[i]->get_solution(), y);
-		VecWAXPY(w, 1./time_->dt(), y, rhs[i]);
+		VecWAXPY(w, 1./time_->dt(), mass_vec[i], rhs[i]);
 		ls[i]->set_rhs(w);
 
-		VecDestroy(&y);
 		VecDestroy(&w);
 		MatDestroy(&m);
 
 		ls[i]->solve();
+		
+		MatMult(*(ls_dt->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
-    if (mass_balance() != NULL)
-    	mass_balance()->calculate(time_->t());
+    if (balance_ != nullptr)
+    {
+    	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
+    	{
+    		balance_->calculate_mass(subst_idx[sbi], ls[sbi]->get_solution());
+			balance_->calculate_source(subst_idx[sbi], ls[sbi]->get_solution());
+			balance_->calculate_flux(subst_idx[sbi], ls[sbi]->get_solution());
+    		if (balance_->cumulative())
+    		{
+    			balance_->calculate_cumulative_sources(subst_idx[sbi], ls[sbi]->get_solution(), time_->dt());
+    			balance_->calculate_cumulative_fluxes(subst_idx[sbi], ls[sbi]->get_solution(), time_->dt());
+    		}
+    	}
+    }
 
     END_TIMER("DG-ONE STEP");
 }
@@ -578,12 +664,12 @@ void TransportDG<Model>::output_data()
 
     // gather the solution from all processors
     output_vector_gather();
-    data_.subset(FieldFlag::allow_output).set_time( *time_);
+    data_.subset(FieldFlag::allow_output).set_time( time_->step());
     data_.output(output_stream);
 	output_stream->write_time_frame();
 
-	if (mass_balance() != NULL)
-		mass_balance()->output(time_->t());
+	if (balance_ != nullptr)
+		balance_->output(time_->t());
 
     END_TIMER("DG-OUTPUT");
 }
@@ -593,9 +679,13 @@ template<class Model>
 void TransportDG<Model>::assemble_mass_matrix()
 {
   START_TIMER("assemble_mass");
+  	if (balance_ != nullptr)
+  		balance_->start_mass_assembly(subst_idx);
 	assemble_mass_matrix<1>();
 	assemble_mass_matrix<2>();
 	assemble_mass_matrix<3>();
+	if (balance_ != nullptr)
+		balance_->finish_mass_assembly(subst_idx);
   END_TIMER("assemble_mass");
 }
 
@@ -605,8 +695,9 @@ void TransportDG<Model>::assemble_mass_matrix()
 {
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    unsigned int dof_indices[ndofs];
+    vector<int> dof_indices(ndofs);
     PetscScalar local_mass_matrix[ndofs*ndofs];
+    vector<PetscScalar> local_mass_balance_vector(ndofs);
 
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
@@ -615,7 +706,7 @@ void TransportDG<Model>::assemble_mass_matrix()
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        feo->dh()->get_dof_indices(cell, (unsigned int*)&(dof_indices[0]));
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
         Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
@@ -631,7 +722,20 @@ void TransportDG<Model>::assemble_mass_matrix()
             }
         }
 
-        ls_dt->mat_set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_mass_matrix);
+        if (balance_ != nullptr)
+        {
+            for (unsigned int i=0; i<ndofs; i++)
+            {
+            	local_mass_balance_vector[i] = 0;
+            	for (unsigned int k=0; k<qsize; k++)
+            		local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+            }
+
+        	for (unsigned int sbi=0; sbi<n_subst_; ++sbi)
+        		balance_->add_mass_matrix_values(subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+        }
+
+        ls_dt->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
     }
 }
 
@@ -729,9 +833,13 @@ template<class Model>
 void TransportDG<Model>::set_sources()
 {
   START_TIMER("assemble_sources");
+    if (balance_ != nullptr)
+    	balance_->start_source_assembly(subst_idx);
 	set_sources<1>();
 	set_sources<2>();
 	set_sources<3>();
+	if (balance_ != nullptr)
+		balance_->finish_source_assembly(subst_idx);
   END_TIMER("assemble_sources");
 }
 
@@ -743,10 +851,11 @@ void TransportDG<Model>::set_sources()
     		update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
-    				  sources_density(qsize, arma::vec(n_substances())),
-    				  sources_sigma(qsize,  arma::vec(n_substances()));
-    unsigned int dof_indices[ndofs];
+    		sources_density(qsize, arma::vec(n_substances())),
+			sources_sigma(qsize, arma::vec(n_substances()));
+    vector<int> dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
+    vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
     double source;
 
 	// assemble integral over elements
@@ -756,15 +865,16 @@ void TransportDG<Model>::set_sources()
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        feo->dh()->get_dof_indices(cell, (unsigned int *)&(dof_indices[0]));
 
         Model::compute_source_coefficients(fe_values.point_list(), cell->element_accessor(), sources_conc, sources_density, sources_sigma);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<n_subst_; sbi++)
         {
-        	for (unsigned int i=0; i<ndofs; i++)
-        		local_rhs[i] = 0;
+        	fill_n(local_rhs, ndofs, 0);
+        	local_source_balance_vector.assign(ndofs, 0);
+        	local_source_balance_rhs.assign(ndofs, 0);
 
         	// compute sources
         	for (unsigned int k=0; k<qsize; k++)
@@ -773,8 +883,21 @@ void TransportDG<Model>::set_sources()
 
         		for (unsigned int i=0; i<ndofs; i++)
         			local_rhs[i] += source*fe_values.shape_value(i,k);
-            }
-        	ls[sbi]->rhs_set_values(ndofs, (int *)dof_indices, local_rhs);
+        	}
+        	ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
+
+        	if (balance_ != nullptr)
+        	{
+        		for (unsigned int i=0; i<ndofs; i++)
+        		{
+        			for (unsigned int k=0; k<qsize; k++)
+        				local_source_balance_vector[i] -= sources_sigma[k][sbi]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+
+        			local_source_balance_rhs[i] += local_rhs[i];
+        		}
+        		balance_->add_source_matrix_values(subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
+        		balance_->add_source_rhs_values(subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
+        	}
         }
     }
 }
@@ -984,6 +1107,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 					flux_times_JxW = transport_flux*fe_values_side.JxW(k);
 
 				for (unsigned int i=0; i<ndofs; i++)
+				{
 					for (unsigned int j=0; j<ndofs; j++)
 					{
 					    // flux due to advection and penalty
@@ -995,7 +1119,9 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 									+ arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
 									)*fe_values_side.JxW(k);
 					}
+				}
 			}
+
 			ls[sbi]->mat_set_values(ndofs, (int *)side_dof_indices, ndofs, (int *)side_dof_indices, local_matrix);
         }
     }
@@ -1121,9 +1247,13 @@ template<class Model>
 void TransportDG<Model>::set_boundary_conditions()
 {
   START_TIMER("assemble_bc");
+    if (balance_ != nullptr)
+    	balance_->start_flux_assembly(subst_idx);
 	set_boundary_conditions<1>();
 	set_boundary_conditions<2>();
 	set_boundary_conditions<3>();
+	if (balance_ != nullptr)
+		balance_->finish_flux_assembly(subst_idx);
   END_TIMER("assemble_bc");
 }
 
@@ -1137,92 +1267,169 @@ void TransportDG<Model>::set_boundary_conditions()
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
            		update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
-    unsigned int side_dof_indices[ndofs];
+    vector<int> side_dof_indices(ndofs);
+    unsigned int loc_b=0;
     double local_rhs[ndofs];
+    vector<PetscScalar> local_flux_balance_vector(ndofs);
+    PetscScalar local_flux_balance_rhs;
     vector<arma::vec> bc_values(qsize, arma::vec(n_substances())),
     		bc_fluxes(qsize, arma::vec(n_substances())),
-    		bc_sigma(qsize, arma::vec(n_substances()));
+			bc_sigma(qsize, arma::vec(n_substances()));
 	vector<arma::vec3> velocity;
-    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+
+    for (unsigned int loc_el = 0; loc_el < feo->dh()->el_ds()->lsize(); loc_el++)
     {
-    	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-    	if (edg->n_sides > 1) continue;
-    	if (edg->side(0)->dim() != dim-1) continue;
-    	// skip edges lying not on the boundary
-    	if (edg->side(0)->cond() == NULL) continue;
+        ElementFullIter elm = mesh_->element(feo->dh()->el_index(loc_el));
+        if (elm->boundary_idx_ == nullptr) continue;
 
-    	SideIter side = edg->side(0);
-    	typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
-        ElementAccessor<3> ele_acc = side->cond()->element_accessor();
-
-        arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), ele_acc);
-
-        fe_values_side.reinit(cell, side->el_idx());
-		fsv_rt.reinit(cell, side->el_idx());
-		calculate_velocity(cell, velocity, fsv_rt);
-
-        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element()->element_accessor(), ad_coef, dif_coef);
-        Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
-        data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
-        data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
-
-        feo->dh()->get_dof_indices(cell, side_dof_indices);
-
-        for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+        FOR_ELEMENT_SIDES(elm,si)
         {
-        	for (unsigned int i=0; i<ndofs; i++) local_rhs[i] = 0;
+			Edge *edg = elm->side(si)->edge();
+			if (edg->n_sides > 1) continue;
+			// skip edges lying not on the boundary
+			if (edg->side(0)->cond() == NULL) continue;
 
-    		double side_flux = 0;
-    		for (unsigned int k=0; k<qsize; k++)
-    			side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-    		double transport_flux = side_flux/side->measure();
-
-        	for (unsigned int k=0; k<qsize; k++)
-        	{
-        		double bc_term = 0;
-        		arma::vec3 bc_grad;
-        		bc_grad.zeros();
-                if (bc_type[sbi] == EqData::inflow && side_flux < 0)
-                {
-                	bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == EqData::dirichlet)
-                {
-                	bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
-                	bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
-                }
-                else if (bc_type[sbi] == EqData::neumann)
-                {
-                	bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == EqData::robin)
-                {
-                	bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
-                }
-
-        		for (unsigned int i=0; i<ndofs; i++)
-					local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
-							+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
+			if (edg->side(0)->dim() != dim-1)
+			{
+				if (edg->side(0)->cond() != nullptr) ++loc_b;
+				continue;
 			}
-			ls[sbi]->rhs_set_values(ndofs, (int *)side_dof_indices, local_rhs);
+
+			SideIter side = edg->side(0);
+			typename DOFHandlerBase::CellIterator cell = mesh().element.full_iter(side->element());
+			ElementAccessor<3> ele_acc = side->cond()->element_accessor();
+
+			arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), ele_acc);
+
+			fe_values_side.reinit(cell, side->el_idx());
+			fsv_rt.reinit(cell, side->el_idx());
+			calculate_velocity(cell, velocity, fsv_rt);
+
+			Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element()->element_accessor(), ad_coef, dif_coef);
+			Model::compute_dirichlet_bc(fe_values_side.point_list(), ele_acc, bc_values);
+			data_.bc_flux.value_list(fe_values_side.point_list(), ele_acc, bc_fluxes);
+			data_.bc_robin_sigma.value_list(fe_values_side.point_list(), ele_acc, bc_sigma);
+
+			feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
+
+			for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+			{
+				fill_n(local_rhs, ndofs, 0);
+				local_flux_balance_vector.assign(ndofs, 0);
+				local_flux_balance_rhs = 0;
+
+				double side_flux = 0;
+				for (unsigned int k=0; k<qsize; k++)
+					side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+				double transport_flux = side_flux/side->measure();
+
+				if (bc_type[sbi] == EqData::inflow && side_flux < 0)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = -transport_flux*bc_values[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
+					}
+					if (balance_ != nullptr)
+						for (unsigned int i=0; i<ndofs; i++)
+							local_flux_balance_rhs -= local_rhs[i];
+				}
+				else if (bc_type[sbi] == EqData::dirichlet)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						arma::vec3 bc_grad = -bc_values[k][sbi]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
+									+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
+					}
+					if (balance_ != nullptr)
+					{
+						for (unsigned int k=0; k<qsize; k++)
+						{
+							for (unsigned int i=0; i<ndofs; i++)
+							{
+								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
+										- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
+										+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
+							}
+						}
+						if (time_->tlevel() > 0)
+							for (unsigned int i=0; i<ndofs; i++)
+								local_flux_balance_rhs -= local_rhs[i];
+					}
+				}
+				else if (bc_type[sbi] == EqData::neumann)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = -bc_fluxes[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
+					}
+
+					if (balance_ != nullptr)
+					{
+						for (unsigned int i=0; i<ndofs; i++)
+						{
+							for (unsigned int k=0; k<qsize; k++)
+								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							local_flux_balance_rhs -= local_rhs[i];
+						}
+					}
+				}
+				else if (bc_type[sbi] == EqData::robin)
+				{
+					for (unsigned int k=0; k<qsize; k++)
+					{
+						double bc_term = bc_sigma[k][sbi]*bc_values[k][sbi]*fe_values_side.JxW(k);
+						for (unsigned int i=0; i<ndofs; i++)
+							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
+					}
+
+					if (balance_ != nullptr)
+					{
+						for (unsigned int i=0; i<ndofs; i++)
+						{
+							for (unsigned int k=0; k<qsize; k++)
+								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k][sbi])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+							local_flux_balance_rhs -= local_rhs[i];
+						}
+					}
+				}
+				else if (bc_type[sbi] == EqData::none || (bc_type[sbi] == EqData::inflow && side_flux >= 0))
+				{
+					if (balance_ != nullptr)
+					{
+						for (unsigned int k=0; k<qsize; k++)
+						{
+							for (unsigned int i=0; i<ndofs; i++)
+								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+						}
+					}
+				}
+				ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
+
+				if (balance_ != nullptr)
+				{
+					balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
+					balance_->add_flux_vec_value(subst_idx[sbi], loc_b, local_flux_balance_rhs);
+				}
+			}
+			++loc_b;
         }
     }
 }
 
 
 
-// TODO: The detection of side number from SideIter
-// in TransportDG::calculate_velocity()
-// should be done with help of class RefElement. This however requires
-// that the MH_DofHandler uses the node/side ordering defined in
-// the respective RefElement.
 template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
 {
-    std::map<const Node*, int> node_nums;
-    for (unsigned int i=0; i<cell->n_nodes(); i++)
-        node_nums[cell->node[i]] = i;
+	ASSERT(cell->dim() == dim, "Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
 
@@ -1230,13 +1437,7 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
     {
         velocity[k].zeros();
         for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-        {
-            if (cell->side(sid)->dim() != dim-1) continue;
-            int num = dim*(dim+1)/2;
-            for (unsigned int i=0; i<cell->side(sid)->n_nodes(); i++)
-                num -= node_nums[cell->side(sid)->node(i)];
-            velocity[k] += fv.shape_vector(num,k) * mh_dh->side_flux( *(cell->side(sid)) );
-        }
+            velocity[k] += fv.shape_vector(sid,k) * mh_dh->side_flux( *(cell->side(sid)) );
     }
 }
 
@@ -1456,165 +1657,6 @@ void TransportDG<Model>::prepare_initial_condition()
     }
 }
 
-
-template<class Model>
-void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
-{
-	calc_fluxes<1>(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-	calc_fluxes<2>(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-	calc_fluxes<3>(bcd_balance, bcd_plus_balance, bcd_minus_balance);
-}
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::calc_fluxes(vector<vector<double> > &bcd_balance, vector<vector<double> > &bcd_plus_balance, vector<vector<double> > &bcd_minus_balance)
-{
-	FESideValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
-			update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
-	FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-			update_values);
-	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
-	unsigned int dof_indices[ndofs];
-	vector<arma::vec3> side_velocity(qsize);
-    vector<arma::vec> bc_values(qsize, arma::vec(n_subst_)), bc_fluxes(qsize, arma::vec(n_subst_)), bc_sigma(qsize, arma::vec(n_subst_));
-	arma::vec3 conc_grad;
-
-    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
-    {
-    	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-    	if (edg->n_sides > 1) continue;
-    	if (edg->side(0)->dim() != dim-1) continue;
-    	// skip edges lying not on the boundary
-    	if (edg->side(0)->cond() == NULL) continue;
-
-    	SideIter side = edg->side(0);
-    	DOFHandlerMultiDim::CellIterator cell = side->element();
-        ElementAccessor<3> ele_acc = cell->element_accessor();
-        Region r = side->cond()->element_accessor().region();
-        if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d, edg: % d\n", side->cond()->bc_ele_idx_, side->cond()->edge_idx_);
-        unsigned int bc_region_idx = r.boundary_idx();
-
-		fe_values.reinit(cell, side->el_idx());
-		fsv_rt.reinit(cell, side->el_idx());
-		feo->dh()->get_dof_indices(cell, dof_indices);
-		calculate_velocity(cell, side_velocity, fsv_rt);
-		Model::compute_advection_diffusion_coefficients(fe_values.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
-		Model::compute_dirichlet_bc(fe_values.point_list(), side->cond()->element_accessor(), bc_values);
-        data_.bc_flux.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_fluxes);
-        data_.bc_robin_sigma.value_list(fe_values.point_list(), side->cond()->element_accessor(), bc_sigma);
-		arma::uvec bc_type = data_.bc_type.value(side->cond()->element()->centre(), side->cond()->element_accessor());
-
-		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
-		{
-			double mass_flux = 0;
-			double water_flux = 0;
-			for (unsigned int k=0; k<qsize; k++)
-				water_flux += arma::dot(ad_coef[sbi][k], fe_values.normal_vector(k))*fe_values.JxW(k);
-			water_flux /= side->measure();
-
-			for (unsigned int k=0; k<qsize; k++)
-			{
-				double conc = 0;
-				conc_grad.zeros();
-				for (unsigned int i=0; i<ndofs; i++)
-				{
-					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
-					conc_grad += fe_values.shape_grad(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
-				}
-
-				// flux due to advection
-				if (bc_type[sbi] == EqData::inflow && water_flux < 0)
-					mass_flux += water_flux*bc_values[k][sbi]*fe_values.JxW(k);
-				else
-					mass_flux += water_flux*conc*fe_values.JxW(k);
-
-				if (bc_type[sbi] == EqData::dirichlet)
-				{
-					// flux due to diffusion
-					mass_flux -= arma::dot(dif_coef[sbi][k]*conc_grad,fe_values.normal_vector(k))*fe_values.JxW(k);
-
-					// the penalty term has to be added otherwise the mass balance will not hold
-					mass_flux -= gamma[sbi][side->cond_idx()]*(bc_values[k][sbi] - conc)*fe_values.JxW(k);
-				}
-				else if (bc_type[sbi] == EqData::neumann)
-				{
-					// flux due to Neumann b.c.
-					mass_flux += bc_fluxes[k][sbi]*fe_values.JxW(k);
-				}
-				else if (bc_type[sbi] == EqData::robin)
-				{
-					// flux due to Robin b.c.
-					mass_flux += bc_sigma[k][sbi]*(conc - bc_values[k][sbi])*fe_values.JxW(k);
-				}
-
-			}
-			bcd_balance[sbi][bc_region_idx] += mass_flux;
-			if (mass_flux >= 0) bcd_plus_balance[sbi][bc_region_idx] += mass_flux;
-			else bcd_minus_balance[sbi][bc_region_idx] += mass_flux;
-		}
-    }
-
-}
-
-template<class Model>
-void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
-{
-	calc_elem_sources<1>(mass, src_balance);
-	calc_elem_sources<2>(mass, src_balance);
-	calc_elem_sources<3>(mass, src_balance);
-}
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::calc_elem_sources(vector<vector<double> > &mass, vector<vector<double> > &src_balance)
-{
-	FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
-			update_values | update_JxW_values | update_quadrature_points);
-	const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-	unsigned int dof_indices[ndofs];
-    vector<arma::vec> sources_conc(qsize, arma::vec(n_substances())),
-    				  sources_density(qsize, arma::vec(n_substances())),
-    				  sources_sigma(qsize,  arma::vec(n_substances()));
-	double mass_sum, sources_sum, conc, conc_diff;
-
-    for (unsigned int i_cell=0; i_cell<feo->dh()->el_ds()->lsize(); i_cell++)
-    {
-    	typename DOFHandlerBase::CellIterator elem = mesh_->element(feo->dh()->el_index(i_cell));
-		if (elem->dim() != dim) continue;
-
-		Region r = elem->element_accessor().region();
-		if (! r.is_valid()) xprintf(Msg, "Invalid region, ele % d\n", elem.index());
-		unsigned int region_idx = r.bulk_idx();
-
-		ElementAccessor<3> ele_acc = elem->element_accessor();
-		fe_values.reinit(elem);
-		feo->dh()->get_dof_indices(elem, dof_indices);
-
-		Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
-		Model::compute_source_coefficients(fe_values.point_list(), ele_acc, sources_conc, sources_density, sources_sigma);
-
-		for (unsigned int sbi=0; sbi<n_subst_; sbi++)
-		{
-			mass_sum = 0;
-			sources_sum = 0;
-
-			for (unsigned int k=0; k<qsize; k++)
-			{
-				conc = 0;
-				for (unsigned int i=0; i<ndofs; i++)
-					conc += fe_values.shape_value(i,k)*ls[sbi]->get_solution_array()[dof_indices[i]-feo->dh()->loffset()];
-
-				mass_sum += mm_coef[k]*conc*fe_values.JxW(k);
-
-				conc_diff = sources_conc[k][sbi] - conc;
-				sources_sum += (sources_density[k][sbi] + conc_diff*sources_sigma[k][sbi])*fe_values.JxW(k);
-			}
-
-			mass[sbi][region_idx] += mass_sum;
-			src_balance[sbi][region_idx] += sources_sum;
-		}
-	}
-}
 
 
 

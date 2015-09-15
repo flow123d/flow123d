@@ -27,27 +27,27 @@ set(libs coupling_lib mesh_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armad
 add_test_directory("${libs}")
 
 
-if(CMAKE_HAVE_CXX11)
 
-    define_test(field_value)
-    
-    define_mpi_test(field_algo_base 1)
-    define_mpi_test(field_algo_base 2)
-    
-    define_mpi_test(field_set 1)
+define_test(field_value)
 
-    define_test(field_const)
-    define_test(field_formula)
-    define_test(field_python)
-    define_mpi_test(field_elementwise 1)   
-    define_mpi_test(field_interpolated_p0 1)
-    define_mpi_test(field_fe 1)
-    define_test(unit_si)
-    define_mpi_test(field_speed 1)
-    
-    define_mpi_test(generic_field 1)
+define_mpi_test(field_algo_base 1)
+define_mpi_test(field_algo_base 2)
+
+define_mpi_test(field_set 1)
+
+define_test(field_const)
+define_test(field_formula)
+define_test(field_python)
+define_mpi_test(field_elementwise 1)   
+define_mpi_test(field_interpolated_p0 1)
+define_mpi_test(field_fe 1)
+define_test(unit_si)
+define_mpi_test(field_speed 1)
+define_test(multi_field)
+
+define_mpi_test(generic_field 1)
+define_mpi_test(vec_seq_double 1)
        
-endif()
 
 
 

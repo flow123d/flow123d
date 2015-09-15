@@ -1,22 +1,33 @@
-#include "reaction/pade_approximant.hh"
-#include "reaction/linear_ode_solver.hh"
+
+#include <armadillo>
 
 #include "system/global_defs.h"
-
 #include "input/accessors.hh"
+#include "input/factory.hh"
+#include "system/sys_profiler.hh"
+#include "reaction/linear_ode_solver.hh"
+#include "reaction/pade_approximant.hh"
 
-#include "armadillo"
+
+FLOW123D_FORCE_LINK_IN_CHILD(padeApproximant)
+
 
 using namespace Input::Type;
     
     
-Record PadeApproximant::input_type
-    = Record("PadeApproximant", "Record with an information about pade approximant parameters.")
-    .derive_from(LinearODESolverBase::input_type)
-    .declare_key("nominator_degree", Integer(1), Default("2"),
+const Record & PadeApproximant::get_input_type() {
+    return Record("PadeApproximant", "Record with an information about pade approximant parameters.")
+    	.derive_from(LinearODESolverBase::get_input_type())
+		.declare_key("nominator_degree", Integer(1), Default("2"),
                 "Polynomial degree of the nominator of Pade approximant.")
-    .declare_key("denominator_degree", Integer(1), Default("2"),
-                "Polynomial degree of the nominator of Pade approximant");
+		.declare_key("denominator_degree", Integer(1), Default("2"),
+                "Polynomial degree of the nominator of Pade approximant")
+		.close();
+}
+
+const int PadeApproximant::registrar =
+		Input::register_class< PadeApproximant, Input::Record >("PadeApproximant") +
+		PadeApproximant::get_input_type().size();
 
 PadeApproximant::PadeApproximant(Input::Record in_rec)
 {
@@ -49,6 +60,8 @@ void PadeApproximant::update_solution(arma::vec& init_vector, arma::vec& output_
 
 void PadeApproximant::approximate_matrix(arma::mat &matrix)
 {
+    START_TIMER("ODEAnalytic::compute_matrix");
+
     ASSERT(matrix.n_rows == matrix.n_cols, "Matrix is not square.");
     
     unsigned int size = matrix.n_rows;

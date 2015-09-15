@@ -23,10 +23,12 @@
 class PadeApproximant : public LinearODESolver<PadeApproximant>
 {
 public:
+	typedef LinearODESolverBase FactoryBaseType;
+
     /**
      * Input record for class PadeApproximant.
      */
-    static Input::Type::Record input_type;
+    static const Input::Type::Record & get_input_type();
     
     /// Constructor from input record.
     PadeApproximant(Input::Record in_rec);
@@ -70,6 +72,10 @@ protected:
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
     
     arma::mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
+
+private:
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 #endif // PADE_APPROXIMANT_H_

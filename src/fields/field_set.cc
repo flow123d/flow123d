@@ -48,21 +48,30 @@ FieldSet FieldSet::subset( FieldFlag::Flags::Mask mask) const {
 
 
 Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equation_name) const {
-    Input::Type::Record rec = FieldCommon::field_descriptor_record(equation_name + "_Data");
+    Input::Type::Record rec = Input::Type::Record(equation_name + "_Data",
+    		FieldCommon::field_descriptor_record_decsription(equation_name + "_Data"))
+    	.copy_keys(FieldCommon::field_descriptor_record(equation_name + "_Data"));
+
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
-            string description =  field->description() + " " + field->units().format();
+            string description =  field->description() + " (($[" + field->units().format_latex() + "]$))";
 
             // Adding units is not so simple.
             // 1) It must be correct for Latex.
             // 2) It should be consistent with rest of documentation.
             // 3) Should be specified for all fields.
             //if (units != "") description+= " [" +field->units() + "]";
-            rec.declare_key(field->input_name(), field->get_input_type(), description);
+
+            // TODO: temporary solution, see FieldCommon::multifield_
+            if (field->is_multifield()) {
+            	rec.declare_key(field->input_name(), field->get_multifield_input_type(), description);
+            } else {
+            	rec.declare_key(field->input_name(), field->get_input_type(), description);
+            }
         }
 
     }
-    return rec;
+    return rec.close();
 }
 
 
@@ -77,7 +86,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     {
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
-            string desc = "Output of the field " + field->name() + " " + field->units().format();
+            string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
             if (field->description().length() > 0)
                 desc += " (" + field->description() + ").";
             else
@@ -134,7 +143,7 @@ bool FieldSet::is_constant(Region reg) const {
 
 
 
-void FieldSet::output(OutputTime *stream) {
+void FieldSet::output(std::shared_ptr<OutputTime> stream) {
 	START_TIMER("Fill OutputData");
     for(auto field : field_list)
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )

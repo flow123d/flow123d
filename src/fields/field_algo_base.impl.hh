@@ -23,10 +23,12 @@ using namespace std;
 
 #include "fields/field_values.hh"
 
+#include "tools/time_governor.hh"
 #include "input/factory.hh"
 
 
 namespace it = Input::Type;
+
 
 
 /******************************************************************************************
@@ -35,8 +37,8 @@ namespace it = Input::Type;
 
 template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
-: time_( -numeric_limits<double>::infinity() ),
-  value_(r_value_)
+: value_(r_value_),
+  component_idx_(std::numeric_limits<unsigned int>::max())
 {
     value_.set_n_comp(n_comp);
 }
@@ -51,26 +53,31 @@ string FieldAlgorithmBase<spacedim, Value>::template_name() {
 
 
 template <int spacedim, class Value>
-it::AbstractRecord FieldAlgorithmBase<spacedim, Value>::input_type
-    = it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
-          .allow_auto_conversion("FieldConstant");
+Input::Type::AbstractRecord & FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
+	const it::Selection *element_input_sel = nullptr;
+	if (element_input_type != nullptr) {
+		const it::Selection * sel_type = dynamic_cast<const it::Selection *>(element_input_type);
+		if (sel_type != NULL ) element_input_sel = sel_type;
+	}
 
+	it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.")
+    	.allow_auto_conversion("FieldConstant")
+		.set_element_input(element_input_sel)
+		.close();
 
-
-template <int spacedim, class Value>
-Input::Type::AbstractRecord FieldAlgorithmBase<spacedim, Value>::get_input_type(const typename Value::ElementInputType *element_input_type) {
-    it::AbstractRecord type= it::AbstractRecord("Field:"+template_name(), "Abstract record for all time-space functions.");
-    type.allow_auto_conversion("FieldConstant");
-
-    FieldConstant<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldFormula<spacedim,Value>::get_input_type(type, element_input_type);
-#ifdef HAVE_PYTHON
-    FieldPython<spacedim,Value>::get_input_type(type, element_input_type);
+	if ( !type.is_finished() ) {
+		type.add_child( const_cast<it::Record &>(FieldConstant<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldFormula<spacedim,Value>::get_input_type(type, element_input_type)) );
+#ifdef FLOW123D_HAVE_PYTHON
+		type.add_child( const_cast<it::Record &>(FieldPython<spacedim,Value>::get_input_type(type, element_input_type)) );
 #endif
-    FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type);
-    FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type);
+		type.add_child( const_cast<it::Record &>(FieldInterpolatedP0<spacedim,Value>::get_input_type(type, element_input_type)) );
+		type.add_child( const_cast<it::Record &>(FieldElementwise<spacedim,Value>::get_input_type(type, element_input_type)) );
 
-    return type;
+		type.finish();
+    }
+
+    return type.close();
 }
 
 
@@ -96,7 +103,7 @@ void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &r
 
 
 template <int spacedim, class Value>
-bool FieldAlgorithmBase<spacedim, Value>::set_time(double time) {
+bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
     time_ = time;
     return false; // no change
 }

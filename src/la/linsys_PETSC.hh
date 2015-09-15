@@ -43,7 +43,9 @@ class LinSys_PETSC : public LinSys
 {
 
 public:
-    static Input::Type::Record input_type;
+	typedef LinSys FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
 
     LinSys_PETSC(const  Distribution * rows_ds);
 
@@ -137,6 +139,9 @@ public:
     ~LinSys_PETSC( );
 
 private:
+    /// Registrar of class to factory
+    static const int registrar;
+
     // make a pointer to the data array out of a std::vector
     template<typename T> 
     T *  makePetscPointer_( std::vector<T> & array )
