@@ -28,6 +28,8 @@
 #include "type_record.hh"
 #include "type_output.hh"
 #include "type_repository.hh"
+#include "type_generic.hh"
+#include "json_spirit/json_spirit.h"
 #include <boost/algorithm/string.hpp>
 
 
@@ -44,25 +46,17 @@ using namespace std;
 
 
 
-TypeBase::TypeBase() {
-    TypeBase::lazy_object_set().insert(this);
-}
+TypeBase::TypeBase()
+: attributes_( boost::make_shared<attribute_map>() ) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-{
-    TypeBase::lazy_object_set().insert(this);
-}
+: attributes_(other.attributes_) {}
 
 
 
-TypeBase::~TypeBase() {
-    TypeBase::LazyObjectsSet &set=TypeBase::lazy_object_set();
-    TypeBase::LazyObjectsSet::iterator it =set.find(this);
-    ASSERT( it != set.end(), "Missing pointer in lazy_object_set to '%s'.\n", this->type_name().c_str());
-    TypeBase::lazy_object_set().erase(it);
-}
+TypeBase::~TypeBase() {}
 
 
 bool TypeBase::is_valid_identifier(const string& key) {
@@ -79,60 +73,76 @@ string TypeBase::desc() const {
 
 
 
-TypeBase::LazyTypeVector &TypeBase::lazy_type_list() {
-    static LazyTypeVector lazy_type_list;
-    return lazy_type_list;
-}
-
-
-
 void TypeBase::lazy_finish() {
-    // TODO: dynamic cast as the switch may be expensive, in such case use some notification about type
+	Input::TypeRepository<Instance>::get_instance().finish();
 	Input::TypeRepository<Record>::get_instance().finish();
 	Input::TypeRepository<AbstractRecord>::get_instance().finish();
 	Input::TypeRepository<Selection>::get_instance().finish();
-
-    // first finish all lazy input types save Selection (we have to leave open Selection in AbstractType key TYPE)
-    /*for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (boost::dynamic_pointer_cast<Selection>(*it) == 0) {
-            (*it)->finish();
-        }
-    }
-
-    // then finalize abstract records so that no type can derive from them
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++)
-    {
-        boost::shared_ptr<AbstractRecord> a_rec_ptr = boost::dynamic_pointer_cast<AbstractRecord>(*it);
-        if ( a_rec_ptr!= 0) a_rec_ptr->no_more_descendants();
-    }
-
-    // at last finish all selections (including those in AbstractRecord)
-    for (LazyTypeVector::iterator it=lazy_type_list().begin(); it!=lazy_type_list().end(); it++) {
-        if (! (*it)->finish()) xprintf(PrgErr, "Can not finish '%s' during lazy_finish.\n", (*it)->type_name().c_str() );
-    }
-
-    lazy_type_list().clear();*/
-
 }
 
 
 
-
-TypeBase::LazyObjectsSet &TypeBase::lazy_object_set() {
-    static LazyObjectsSet set_;
-    return set_;
-}
-
-
-
-bool TypeBase::was_constructed(const TypeBase * ptr) {
-	bool ret = lazy_object_set().find(ptr) != lazy_object_set().end();
-	// TODO: temporary test for development, method will be removed
-	if (!ret) {
-		xprintf(Warn, "Development note - non-constructed record '%s'\n", ptr->type_name().c_str());
+void TypeBase::add_attribute(std::string name, json_string val) {
+	ASSERT( !this->is_closed(), "Attribute can be add only to non-closed type: '%s'.\n", this->type_name().c_str());
+	if (validate_json(val)) {
+		(*attributes_)[name] = val;
+	} else {
+		xprintf(PrgErr, "Invalid JSON format of attribute '%s'.\n", name.c_str());
 	}
-    return ret;
 }
+
+
+void TypeBase::write_attributes(ostream& stream) const {
+	stream << "\"attributes\" : {" << endl;
+	for (std::map<std::string, json_string>::iterator it=attributes_->begin(); it!=attributes_->end(); ++it) {
+        if (it != attributes_->begin()) {
+        	stream << "," << endl;
+        }
+		stream << "\"" << it->first << "\" : " << it->second;
+	}
+	stream << endl << "}";
+}
+
+
+bool TypeBase::validate_json(json_string str) const {
+    try {
+    	json_spirit::mValue node;
+    	json_spirit::read_or_throw( str, node);
+    	return true;
+    } catch (json_spirit::Error_position &e ) {
+        return false;
+    }
+}
+
+
+void TypeBase::attribute_content_hash(std::size_t &seed) const {
+	for (attribute_map::iterator it=attributes_->begin(); it!=attributes_->end(); it++) {
+		boost::hash_combine(seed, (*it).first );
+		boost::hash_combine(seed, (*it).second );
+	}
+
+}
+
+
+TypeBase::json_string TypeBase::print_parameter_map_to_json(ParameterMap parameter_map) const {
+	std::stringstream ss;
+	ss << "[";
+	for (ParameterMap::iterator it=parameter_map.begin(); it!=parameter_map.end(); it++) {
+		if (it != parameter_map.begin()) ss << "," << endl;
+		ss << "{ \"" << (*it).first << "\" : \"" << (*it).second << "\" }";
+	}
+	ss << "]";
+	return ss.str();
+}
+
+
+void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
+	this->add_attribute("parameters", this->print_parameter_map_to_json(parameter_map));
+}
+
+
+
+
 
 
 
@@ -153,50 +163,22 @@ TypeBase::TypeHash Array::content_hash() const
     boost::hash_combine(seed, data_->lower_bound_);
     boost::hash_combine(seed, data_->upper_bound_);
     boost::hash_combine(seed, data_->type_of_values_->content_hash() );
+    attribute_content_hash(seed);
     return seed;
 }
 
 
-bool Array::finish() {
-	return data_->finish();
+bool Array::finish(bool is_generic) {
+	return data_->finish(is_generic);
 }
 
 
 
-bool Array::ArrayData::finish()
+bool Array::ArrayData::finish(bool is_generic)
 {
 	if (finished) return true;
 
-	if (p_type_of_values != 0)
-	{
-	    if (! was_constructed(p_type_of_values) ) return false;
-
-		if (dynamic_cast<const AbstractRecord *>(p_type_of_values) != 0)
-		{
-			AbstractRecord *ar = (AbstractRecord *)dynamic_cast<const AbstractRecord *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const AbstractRecord>(*ar);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Record *>(p_type_of_values) != 0)
-		{
-			Record *r = (Record *)dynamic_cast<const Record *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Record>(*r);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Selection *>(p_type_of_values) != 0)
-		{
-			Selection *s = (Selection *)dynamic_cast<const Selection *>(p_type_of_values);
-			boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<const Selection>(*s);
-			type_of_values_ = type_copy;
-			p_type_of_values = 0;
-		}
-		else if (dynamic_cast<const Array *>(p_type_of_values) != 0)
-		    xprintf(PrgErr, "Should not happen!\n");
-	}
-
-	return (finished = true);
+	return (finished = type_of_values_->finish(is_generic) );
 }
 
 
@@ -227,6 +209,35 @@ bool Array::valid_default(const string &str) const {
 }
 
 
+TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair> vec) const {
+	// Create copy of array, we can't set type from parameter vector directly (it's TypeBase that is not allowed)
+	Array arr = this->deep_copy();
+	// Replace parameter stored in type_of_values_
+	MakeInstanceReturnType inst = arr.data_->type_of_values_->make_instance(vec);
+	arr.data_->type_of_values_ = inst.first;
+	ParameterMap parameter_map = inst.second;
+	// Copy attributes
+	arr.attributes_ = boost::make_shared<attribute_map>(*attributes_);
+	// Set parameters as attribute
+	json_string val = this->print_parameter_map_to_json(parameter_map);
+	ASSERT( this->validate_json(val), "Invalid JSON format of attribute 'parameters'.\n" );
+	(*arr.attributes_)["parameters"] = val;
+	std::stringstream type_stream;
+	type_stream << "\"" << this->content_hash() << "\"";
+	(*arr.attributes_)["generic_type"] = type_stream.str();
+
+	return std::make_pair( boost::make_shared<Array>(arr), parameter_map );
+}
+
+
+Array Array::deep_copy() const {
+	Array arr = Array(Integer()); // Type integer will be overwritten
+	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
+	arr.data_->finished = false;
+	return arr;
+}
+
+
 /**********************************************************************************
  * implementation and explicit instantiation of Array constructor template
  */
@@ -238,21 +249,10 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
     BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
     ASSERT( min_size <= max_size, "Wrong limits for size of Input::Type::Array, min: %d, max: %d\n", min_size, max_size);
+    ASSERT( type.is_closed(), "Sub-type '%s' of Input::Type::Array must be closed!", type.type_name().c_str());
 
-    // Records, AbstractRecords and Selections need not be initialized
-    // at the moment, so we save the reference of type and update
-    // the array later in finish().
-    if ( (boost::is_base_of<Record, ValueType>::value ||
-          boost::is_base_of<Selection, ValueType>::value)
-         && ! TypeBase::was_constructed(&type) ) {
-        data_->p_type_of_values = &type;
-        TypeBase::lazy_type_list().push_back( boost::make_shared<Array>( *this ) );
-    } else {
-        data_->p_type_of_values = NULL;
-        boost::shared_ptr<const TypeBase> type_copy = boost::make_shared<ValueType>(type);
-        data_->type_of_values_ = type_copy;
-        data_->finished=true;
-    }
+	boost::shared_ptr<TypeBase> type_copy = boost::make_shared<ValueType>(type);
+	data_->type_of_values_ = type_copy;
 }
 
 // explicit instantiation
@@ -269,6 +269,8 @@ ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
 ARRAY_CONSTRUCT(AbstractRecord);
+ARRAY_CONSTRUCT(Parameter);
+ARRAY_CONSTRUCT(Instance);
 
 
 /**********************************************************************************
@@ -316,6 +318,10 @@ string Bool::type_name() const {
 }
 
 
+TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Bool>(*this), ParameterMap() );
+}
+
 /**********************************************************************************
  * implementation of Type::Integer
  */
@@ -361,6 +367,11 @@ bool Integer::valid_default(const string &str) const
 
 string Integer::type_name() const {
     return "Integer";
+}
+
+
+TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Integer>(*this), ParameterMap() );
 }
 
 
@@ -411,6 +422,11 @@ bool Double::valid_default(const string &str) const
 
 string Double::type_name() const {
     return "Double";
+}
+
+
+TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<Double>(*this), ParameterMap() );
 }
 
 
@@ -487,6 +503,12 @@ string String::from_default(const string &str) const {
 
 bool String::match(const string &str) const {
     return true;
+}
+
+
+
+TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<String>(*this), ParameterMap() );
 }
 
 

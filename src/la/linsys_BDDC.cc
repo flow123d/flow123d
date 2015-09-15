@@ -61,12 +61,12 @@ const it::Record & LinSys_BDDC::get_input_type() {
 		.declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
 					 "Use adaptive selection of constraints in BDDCML.")
 		.declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
-					 "Level of verbosity of the BDDCML library: 0 - no output, 1 - mild output, 2 - detailed output.")
+					 "Level of verbosity of the BDDCML library:\n\n - 0 - no output\n - 1 - mild output\n - 2 - detailed output.")
 		.close();
 }
 
 
-const int LinSys_BDDC::registrar = LinSys::get_input_type().add_child( LinSys_BDDC::get_input_type() );
+const int LinSys_BDDC::registrar = LinSys_BDDC::get_input_type().size();
 
 
 

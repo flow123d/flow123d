@@ -96,6 +96,7 @@ if(FLOW_CC_FLAGS)
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
+  set(CMAKE_BUILD_TYPE Debug)
   
 else(FLOW_CC_FLAGS)
  
@@ -105,11 +106,13 @@ else(FLOW_CC_FLAGS)
     set(CMAKE_CXX_FLAGS "-g -O0")
     set(CMAKE_C_FLAGS "-g -O0")
     set(CMAKE_EXE_LINKER_FLAGS "-g ")
+    set(CMAKE_BUILD_TYPE Debug)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "release")
     # Release mode
-    set(CMAKE_CXX_FLAGS "-O3")
-    set(CMAKE_C_FLAGS "-O3")
+    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
+    set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
+    set(CMAKE_BUILD_TYPE Release)
     # armadillo is configured using this definition
     add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
     flow_define(DEBUG_PROFILER)
@@ -118,13 +121,15 @@ else(FLOW_CC_FLAGS)
     # Release mode with debug info 
     set(CMAKE_CXX_FLAGS "-O3")
     set(CMAKE_C_FLAGS "-O3")
+    set(CMAKE_BUILD_TYPE Debug)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
     SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
     SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
     SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-
+    set(CMAKE_BUILD_TYPE Debug)
+    
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
@@ -134,9 +139,13 @@ else(FLOW_CC_FLAGS)
     COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
-  
 endif(FLOW_CC_FLAGS)
 
+# unset predefined build type resolution variables to have better control over
+# used compiler flags
+set(CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE} "")
+set(CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE} "")
+set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 
 # Compiler-specific C++11 activation.
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
@@ -148,7 +157,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       if (CYGWIN)
           # is version 4.8 or higher?
           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fext-numeric-literals")
             flow_define(HAVE_CYGWIN)
           # version is too low
           else ()
@@ -560,9 +569,13 @@ if (USE_PYTHON)
         message(STATUS "Python minor version: ${PYTHONLIBS_VERSION_MINOR}\n")
         message(STATUS "Python include: ${PYTHON_INCLUDE_DIRS}")
         message(STATUS "Python libs: ${PYTHON_LIBRARIES}")
+
+        # set extra python module path in src directory, if case PYTHON_COPY if OFF
+        set(PYTHON_EXTRA_MODULES_PATH "${CMAKE_SOURCE_DIR}/src/python")
         
         if (PYTHON_COPY)
             set(TARGET_PREFIX "${CMAKE_BINARY_DIR}")
+            set(PYTHON_EXTRA_MODULES_PATH "${TARGET_PREFIX}/lib/flow123d")
 
             string(REGEX MATCH "python[^/]*$" PYTHON_SUBDIR ${PYTHON_INCLUDE_DIRS})
             string(REGEX MATCH "python[0-9]\\.[0-9]" PYTHON_SUBDIR_MINOR ${PYTHON_SUBDIR})
@@ -594,7 +607,11 @@ if (USE_PYTHON)
             execute_process(
                 COMMAND cp -rn ${PY_PREFIX}/lib/${PYTHON_SUBDIR_MINOR} ${TARGET_PREFIX}/lib 
                 )
-            
+            # copy flow123d python scripts and modules
+            execute_process(
+                COMMAND cp -rT ${CMAKE_SOURCE_DIR}/src/python ${TARGET_PREFIX}/lib/flow123d 
+                )
+
             # copy python include            
             set(PYTHON_COPY_INCLUDE_TARGET include/${PYTHON_SUBDIR})
             execute_process(          
@@ -612,7 +629,46 @@ if (USE_PYTHON)
         set(PYTHON_INCLUDE_DIRS "")
         set(PYTHON_LIBRARIES "")
     endif()
+
+    # define varible for storing this extra module path
+    # this variable is used later to update search module path
+    # if PYTHON_COPY is present it points to lib/flow123d dir in build tree
+    # if not, default location is src/python dir in CMake_SOURCE_DIR location
+    flow_define(PYTHON_EXTRA_MODULES_PATH "${PYTHON_EXTRA_MODULES_PATH}")
 endif()  
+
+#################################################################################
+#  YAML_CPP_FOUND - set to true if the library is found
+
+message(STATUS "\n =======================================================")
+find_package(YamlCpp)
+if (NOT YamlCpp_FOUND)
+    message(STATUS "Try to install our own yaml-cpp library.")
+    set(EXTERNAL_YamlCpp_DIR  ${EXTERNAL_PROJECT_DIR}/yaml_cpp_build)
+    include(InstallYamlCpp)
+
+    unset(YamlCpp_FOUND CACHE) 
+    unset(YamlCpp_INCLUDE_DIR CACHE)        # overwrite cache    
+    unset(YamlCpp_LIBRARY CACHE)
+
+    set(YamlCpp_ROOT_HINT ${EXTERNAL_YamlCpp_DIR})  
+    find_package(YamlCpp REQUIRED)
+    
+    message(STATUS "${YamlCpp_INCLUDE_DIR}\n ${YamlCpp_LIBRARY}")
+endif()
+
+message(STATUS "YamlCpp_LIBRARY: ${YamlCpp_LIBRARY}")
+message(STATUS "YamlCpp_INCLUDE_DIR: ${YamlCpp_INCLUDE_DIR}")
+
+
+
+
+message(STATUS "\n ======================================================= ")
+
+
+message(STATUS "Installing HTML documentation")
+include(InstallHTMLDOC)
+
 
 message(STATUS "\n ======================================================= ")
 
@@ -635,8 +691,9 @@ include_directories(
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
-#    ${CMAKE_BINARY_DIR}/src/dealii/include
-#    ${CMAKE_SOURCE_DIR}/src/dealii/include
+    ${YamlCpp_INCLUDE_DIR}
+    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
+    ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
@@ -808,6 +865,7 @@ message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "===========================================")
 
 

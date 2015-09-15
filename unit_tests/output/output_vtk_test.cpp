@@ -10,7 +10,7 @@
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "mesh/mesh.h"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
 const string test_output_time_input = R"JSON(
@@ -28,7 +28,7 @@ class TestOutputVTK : public testing::Test, public OutputVTK {
 public:
     TestOutputVTK()
     : OutputVTK(
-            Input::JSONToStorage(test_output_time_input, OutputTime::get_input_type())
+            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
             .get_root_interface<Input::Record>()
       )
     {

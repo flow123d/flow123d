@@ -33,7 +33,8 @@ find_program(AR_EXECUTABLE NAMES ar)
 set(TBB_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
 set(TBB_LIBRARY_DIR "${PROJECT_BINARY_DIR}/lib")
 set(TBB_LIBRARIES "${TBB_LIBRARY_DIR}/libtbb.a"
-                  "${TBB_LIBRARY_DIR}/libtbbmalloc.a")
+                  "${TBB_LIBRARY_DIR}/libtbbmalloc.a"
+)
 set(TBB_LIBRARIES ${TBB_LIBRARIES} PARENT_SCOPE)
 set(TBB_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include/" PARENT_SCOPE)
 
@@ -69,6 +70,8 @@ endmacro(PREPEND_DIRECTORY_NAME)
 # save object files for TBB libraries
 TBB_GET_VARIABLE(TBB.OBJ tbb_obj)
 TBB_GET_VARIABLE(MALLOC.OBJ tbb_malloc_obj)
+TBB_GET_VARIABLE(TBB.RES tbb_res)
+TBB_GET_VARIABLE(MALLOC.RES tbb_malloc_res)
 #TBB_GET_VARIABLE(PROXY.OBJ tbb_proxy_obj)
 prepend_directory_name(tbb_obj "${CMAKE_CURRENT_BINARY_DIR}/build_${FLOW_BUILD_TYPE}")
 prepend_directory_name(tbb_malloc_obj "${CMAKE_CURRENT_BINARY_DIR}/build_${FLOW_BUILD_TYPE}")
@@ -82,8 +85,8 @@ file(REMOVE "${tbb_config_makefile}")
 # run make
 add_custom_command(OUTPUT ${TBB_LIBRARIES}
        COMMAND "${MAKE_EXECUTABLE}" tbb_build_dir=${CMAKE_CURRENT_BINARY_DIR} tbb_build_prefix=build VERBOSE=1
-       COMMAND "${AR_EXECUTABLE}" cr ${TBB_LIBRARY_DIR}/libtbb.a ${tbb_obj}
-       COMMAND "${AR_EXECUTABLE}" cr ${TBB_LIBRARY_DIR}/libtbbmalloc.a ${tbb_malloc_obj}
+       COMMAND ${AR_EXECUTABLE} cr ${TBB_LIBRARY_DIR}/libtbb.a ${tbb_obj} ${tbb_res}
+       COMMAND "${AR_EXECUTABLE}" cr ${TBB_LIBRARY_DIR}/libtbbmalloc.a ${tbb_malloc_obj} ${tbb_malloc_res}
 #       COMMAND "${AR_EXECUTABLE}" cr ${TBB_LIBRARY_DIR}/libtbbmalloc_proxy.a ${tbb_proxy_obj}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       )

@@ -82,6 +82,8 @@ protected:
     void get_array_sizes(Array array, unsigned int &lower , unsigned int &upper );
     /// Gets description of the given record type.
     const string & get_record_description(const Record *rec);
+    /// Gets description of the given abstract type.
+    const string & get_abstract_description(const AbstractRecord *a_rec);
     /// Gets record key for given index
     void get_record_key(Record rec, unsigned int key_idx, Record::Key &key);
     /// Gets range of integer
@@ -91,7 +93,7 @@ protected:
     /// Gets pointer of parent AbstractRecord for given Record
     void get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr);
     /// Gets pointer of inner type for given Array
-    void get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type);
+    void get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type);
     /// Gets values of default for given record key
     void get_default(Record::KeyIter it, string &type, string &value);
     /// Gets description of the given selection type.
@@ -447,8 +449,31 @@ public:
 	    format_tail="{}]\n";
     }
 
-protected:
+    /**
+     * @brief Simple internal class for storing JSON description rewrite rule
+     */
+    class RewriteRule {
+        public:
+            /** boost regex regular expression */
+            boost::regex search;
 
+            /** simple string replacement */
+            std::string replacement;
+
+            /**
+             * Constructor
+             * @param _search boost::regex regular expression match pattern
+             * @param _replacement std::string string _replacement
+             */
+            RewriteRule (boost::regex _search, std::string _replacement):
+                search(_search),
+                replacement(_replacement) {
+
+            };
+    };
+
+
+protected:
 	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 

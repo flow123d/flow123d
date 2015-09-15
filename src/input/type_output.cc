@@ -74,7 +74,7 @@ void OutputBase::get_array_sizes(Array array, unsigned int &lower , unsigned int
 
 
 
-void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &arr_type) {
+void OutputBase::get_array_type(Array array, boost::shared_ptr<TypeBase> &arr_type) {
     arr_type = array.data_->type_of_values_;
 }
 
@@ -82,6 +82,12 @@ void OutputBase::get_array_type(Array array, boost::shared_ptr<const TypeBase> &
 
 const string & OutputBase::get_record_description(const Record *rec) {
     return rec->data_->description_;
+}
+
+
+
+const string & OutputBase::get_abstract_description(const AbstractRecord *a_rec) {
+    return a_rec->child_data_->description_;
 }
 
 
@@ -94,7 +100,12 @@ void OutputBase::get_record_key(Record rec, unsigned int key_idx, Record::Key &k
 
 
 void OutputBase::get_parent_ptr(Record rec, boost::shared_ptr<AbstractRecord> &parent_ptr) {
-	parent_ptr = rec.data_->parent_ptr_;
+	if (rec.data_->parent_vec_.size()) {
+		// temporary solution, if we need this method in new input, it must return vector of parents
+		parent_ptr = rec.data_->parent_vec_[0];
+	} else {
+		parent_ptr = boost::shared_ptr<AbstractRecord>();
+	}
 }
 
 
@@ -378,7 +389,7 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 
 
 void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
 	switch (doc_type_) {
@@ -413,7 +424,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
-            write_description(stream, OutputBase::get_record_description( type ), 0);
+            write_description(stream, OutputBase::get_abstract_description( type ), 0);
             stream << endl;
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
             // descendants
@@ -641,7 +652,7 @@ void OutputJSONTemplate::print_impl(ostream& stream, const Array *type, unsigned
 			break;
 		case full_record:
 			bool has_opt_prefix = value_.is_optional() | value_.has_value_at_read_time(); // key contains OPT_ prefix
-			boost::shared_ptr<const TypeBase> array_type;
+			boost::shared_ptr<TypeBase> array_type;
 			const void * data_ptr = get_array_data(type); // get pointer to type->data_
 
 			get_array_type(*type, array_type);
@@ -1089,7 +1100,7 @@ void OutputLatex::print_impl(ostream& stream, const Record *type, unsigned int d
 
 
 void OutputLatex::print_impl(ostream& stream, const Array *type, unsigned int depth) {
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 
     switch (doc_type_) {
@@ -1132,7 +1143,7 @@ void OutputLatex::print_impl(ostream& stream, const AbstractRecord *type, unsign
                 stream << "{}";
             }
             // add info and description
-            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_record_description(type) << "}" << endl;
+            stream << "{\\AddDoc{" << type->type_name() << "}}{"  << OutputBase::get_abstract_description(type) << "}" << endl;
 
             // descendants
             doc_type_ = key_record;
@@ -1269,7 +1280,25 @@ std::string OutputJSONMachine::format_hash( TypeBase::TypeHash hash) {
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-    return boost::regex_replace(desc, boost::regex("\\n"), "\\\\n");
+    static OutputJSONMachine::RewriteRule rewrite_rules[] = {
+        // replace single slash with two slashes 
+        OutputJSONMachine::RewriteRule (boost::regex("\\\\"), "\\\\\\\\"),
+        // replace quote with slash quote
+        OutputJSONMachine::RewriteRule (boost::regex("\\\""), "\\\\\""),
+        // replace special chars with escaped slash + special chars
+        OutputJSONMachine::RewriteRule (boost::regex("\\n"), "\\\\n"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\t"), "\\\\t"),
+        OutputJSONMachine::RewriteRule (boost::regex("\\r"), "\\\\r")
+    };
+
+
+    std::string tmp = std::string(desc);
+
+    for (OutputJSONMachine::RewriteRule rewrite_rule : rewrite_rules) {
+        tmp = boost::regex_replace(tmp, rewrite_rule.search, rewrite_rule.replacement);
+    }
+
+    return tmp;
 }
 
 
@@ -1283,7 +1312,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
     stream << "\"input_type\" : \"Record\"," << endl;
     stream << "\"type_name\" : \"" << type->type_name() << "\"," << endl;
     stream << "\"type_full_name\" : \"" << type->full_type_name() << "\"," << endl;
-    stream << endl;
+    type->write_attributes(stream);
+    stream << "," << endl << endl;
     stream << "\"description\" : \"" <<
             escape_description( OutputBase::get_record_description(type) ) << "\"," << endl;
 
@@ -1339,7 +1369,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
     if (doc_flags_.was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
-	boost::shared_ptr<const TypeBase> array_type;
+	boost::shared_ptr<TypeBase> array_type;
 
     get_array_sizes(*type, lower_size, upper_size);
 	get_array_type(*type, array_type);
@@ -1348,7 +1378,9 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Array\"," << endl;
 	stream << "\"range\" : [" << lower_size << ", " << upper_size << "]," << endl;
-	stream << "\"subtype\" : \"" << format_hash(array_type->content_hash()) << "\"" << endl;
+	stream << "\"subtype\" : \"" << format_hash(array_type->content_hash()) << "\"," << endl;
+	type->write_attributes(stream);
+	stream << endl;
 	stream << "}," << endl;
 
 	print(stream, array_type.get() ,depth+1);
@@ -1365,8 +1397,10 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     stream << "\"input_type\" : \"AbstractRecord\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
     stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+    type->write_attributes(stream);
+    stream << "," << endl;
     stream << "\"description\" : \"" <<
-            escape_description( OutputBase::get_record_description(type)) << "\"," << endl;
+            escape_description( OutputBase::get_abstract_description(type)) << "\"," << endl;
 
     print_abstract_record_keys(stream, type, depth);
     stream << "},";
@@ -1385,6 +1419,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"AdHocAbstractRecord\"," << endl;
     stream << "\"parent\" : \"" << get_adhoc_parent_name(type) << "\"," << endl;
+    type->write_attributes(stream);
+    stream << "," << endl;
 
     print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type), depth);
     stream << "},";
@@ -1431,6 +1467,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
     stream << "\"input_type\" : \"Selection\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
 	stream << "\"description\" : \"" <<
 	        escape_description(OutputBase::get_selection_description(type)) << "\"," << endl;
 
@@ -1461,6 +1499,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
     stream << "\"input_type\" : \"Integer\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
 
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
@@ -1479,7 +1519,10 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
     stream << "\"input_type\" : \"Double\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
-	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
+
+    stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
 }
 
@@ -1492,7 +1535,9 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"Bool\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"" << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << endl;
 	stream << "},";
 }
 
@@ -1505,7 +1550,9 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
     stream << "\"input_type\" : \"String\"," << endl;
     stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
-	stream << "\"full_name\" : \"" << type->full_type_name() << "\"" << endl;
+	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << endl;
 	stream << "},";
 }
 
@@ -1518,6 +1565,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsign
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
 	stream << "\"name\" : \"" << type->type_name() << "\"," << endl;
 	stream << "\"full_name\" : \"" << type->full_type_name() << "\"," << endl;
+	type->write_attributes(stream);
+    stream << "," << endl;
 
 	stream << "\"input_type\" : \"FileName\"," << endl;
 	stream << "\"file_mode\" : \"";

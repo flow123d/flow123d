@@ -77,7 +77,7 @@ const Selection & OutputVTK::get_input_type_compression() {
 
 
 const int OutputVTK::registrar = Input::register_class< OutputVTK, const Input::Record & >("vtk") +
-		OutputTime::get_input_format_type().add_child(OutputVTK::get_input_type());
+		OutputVTK::get_input_type().size();
 
 
 OutputVTK::OutputVTK(const Input::Record &in_rec) : OutputTime(in_rec)

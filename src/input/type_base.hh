@@ -62,7 +62,19 @@ DECLARE_EXCEPTION( ExcWrongDefault, << "Default value " << EI_DefaultStr::qval
  */
 class TypeBase {
 public:
+	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+	/// String stored in JSON format.
+	typedef std::string json_string;
+	/// Defines map of Input::Type attributes.
+	typedef std::map<std::string, json_string> attribute_map;
+	/// Defines pairs of (name, Input::Type), that are used for replace of parameters in generic types.
+	typedef std::pair< std::string, boost::shared_ptr<TypeBase> > ParameterPair;
+	/// Defines map of used parameters
+	typedef std::map< std::string, TypeHash > ParameterMap;
+	/// Return type of make_instance methods, contains instance of generic type and map of used parameters
+	typedef std::pair< boost::shared_ptr<TypeBase>, ParameterMap > MakeInstanceReturnType;
+
 
     /**
      * Returns true if the type is fully specified and ready for read access. For Record and Array types
@@ -71,6 +83,13 @@ public:
      *
      */
     virtual bool is_finished() const
+    {return true;}
+
+    /**
+     * Returns true if the type is closed.
+     *
+     */
+    virtual bool is_closed() const
     {return true;}
 
     /// Returns an identification of the type. Useful for error messages.
@@ -110,13 +129,13 @@ public:
         { return ! (*this == other); }
 
     /**
-     *  Destructor removes type object from lazy_object_set.
+     *  Destructor
      */
     virtual ~TypeBase();
 
 
 
-    /// Finishes all registered lazy types.
+    /// Finishes all types registered in type repositories.
     static void lazy_finish();
 
 
@@ -129,8 +148,11 @@ public:
      *
      * Finish try to convert all raw pointers pointing to lazy types into smart pointers to valid objects. If there
      * are still raw pointers to not constructed objects the method returns false.
+     *
+     * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
+     * to true.
      */
-    virtual bool finish()
+    virtual bool finish(bool is_generic = false)
     { return true; };
 
     /**
@@ -147,15 +169,24 @@ public:
      */
     virtual TypeHash content_hash() const =0;
 
+    /// Add attribute to map
+    void add_attribute(std::string name, json_string val);
+
+    /// Print JSON output of attributes to @p stream.
+    void write_attributes(ostream& stream) const;
+
+    /// Create instance of generic type, replace parameters in input tree by type stored in @p vec.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const =0;
+
 protected:
 
     /**
-     * Default constructor. Register type object into lazy_object_set.
+     * Default constructor.
      */
     TypeBase();
 
     /**
-     * Copy constructor. Register type object into lazy_object_set.
+     * Copy constructor.
      */
     TypeBase(const TypeBase& other);
 
@@ -180,34 +211,24 @@ protected:
      */
     static bool is_valid_identifier(const string& key);
 
+    /// Check if JSON string is valid
+    bool validate_json(json_string str) const;
+
     /**
-     * The Singleton class LazyTypes serves for handling the lazy-evaluated input types, derived from the base class
-     * LazyType. When all static variables are initialized, the method LazyTypes::instance().finish() can be called
-     * in order to finish initialization of lazy types such as Records, AbstractRecords, Arrays and Selections.
-     * Selections have to be finished after all other types since they are used by AbstractRecords to register all
-     * derived types. For this reason LazyTypes contains two arrays - one for Selections, one for the rest.
+     * Add attributes to hash of the type specification.
      *
-     * This is list of unique instances that may contain raw pointers to possibly not yet constructed
-     * (static) objects. Unique instance is the instance that creates unique instance of the data class in pimpl idiom.
-     * These has to be completed/finished before use.
-     *
+     * Method must be called in content_hash() method of TypeBase descendants.
      */
-    typedef std::vector< boost::shared_ptr<TypeBase> > LazyTypeVector;
+    void attribute_content_hash(std::size_t &seed) const;
 
-    /**
-     * The reference to the singleton instance of @p lazy_type_list.
-     */
-    static LazyTypeVector &lazy_type_list();
+    /// Create JSON output from @p parameter_map formatted as attribute.
+    json_string print_parameter_map_to_json(ParameterMap parameter_map) const;
 
-    /**
-     * Set of  pointers to all constructed (even temporaries) lazy types. This list contains ALL instances
-     * (including copies and empty handles) of lazy types.
-     */
-    typedef std::set<const TypeBase *> LazyObjectsSet;
+    /// Set attribute parameters from value stored in @p parameter_map
+    void set_parameters_attribute(ParameterMap parameter_map);
 
-    static LazyObjectsSet &lazy_object_set();
-
-    static bool was_constructed(const TypeBase * ptr);
+    /// map of type attributes (e. g. input_type, name etc.)
+    boost::shared_ptr<attribute_map> attributes_;
 
     friend class Array;
     friend class Record;
@@ -250,11 +271,10 @@ protected:
     	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
     	{}
 
-    	bool finish();
+    	bool finish(bool is_generic = false);
 
-    	boost::shared_ptr<const TypeBase> type_of_values_;
+    	boost::shared_ptr<TypeBase> type_of_values_;
     	unsigned int lower_bound_, upper_bound_;
-    	const TypeBase *p_type_of_values;
     	bool finished;
 
     };
@@ -270,14 +290,13 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    virtual bool finish();
+    virtual bool finish(bool is_generic = false) override;
 
-    virtual bool is_finished() const {
+    virtual bool is_finished() const override {
         return data_->finished; }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {
-        ASSERT( data_->finished, "Getting sub-type from unfinished Array.\n");
         return *data_->type_of_values_; }
 
     /// Checks size of particular array.
@@ -285,10 +304,10 @@ public:
         return size >=data_->lower_bound_ && size<=data_->upper_bound_; }
 
     /// @brief Implements @p Type::TypeBase::type_name. Name has form \p array_of_'subtype name'
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     /// @brief Implements @p Type::TypeBase::full_type_name.
-    virtual string full_type_name() const;
+    virtual string full_type_name() const override;
 
     /// @brief Implements @p Type::TypeBase::operator== Compares also subtypes.
     virtual bool operator==(const TypeBase &other) const;
@@ -298,7 +317,13 @@ public:
      *  that is initialized by given default value. So this method check
      *  if the default value is valid for the sub type of the array.
      */
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
+
+    // Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+
+    /// Create deep copy of Array (copy all data stored in shared pointers etc.)
+    Array deep_copy() const;
 
 protected:
 
@@ -319,7 +344,7 @@ private:
 class Scalar : public TypeBase {
 public:
 
-	virtual string full_type_name() const;
+	virtual string full_type_name() const override;
 
 };
 
@@ -334,16 +359,18 @@ public:
 class Bool : public Scalar {
 public:
     Bool()
-    {}
+	{}
 
     TypeHash content_hash() const   override;
 
 
     bool from_default(const string &str) const;
 
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
 
 
@@ -359,8 +386,8 @@ class Integer : public Scalar {
 
 public:
     Integer(int lower_bound=std::numeric_limits<int>::min(), int upper_bound=std::numeric_limits<int>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -374,9 +401,11 @@ public:
      */
     int from_default(const string &str) const;
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
-    virtual string type_name() const;
+    virtual string type_name() const override;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     std::int64_t lower_bound_, upper_bound_;
@@ -396,8 +425,8 @@ class Double : public Scalar {
 
 public:
     Double(double lower_bound= -std::numeric_limits<double>::max(), double upper_bound=std::numeric_limits<double>::max())
-    : lower_bound_(lower_bound), upper_bound_(upper_bound)
-    {}
+	: lower_bound_(lower_bound), upper_bound_(upper_bound)
+	{}
 
     TypeHash content_hash() const   override;
 
@@ -407,14 +436,16 @@ public:
     bool match(double value) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /**
      * As before but also returns converted integer in @p value.
      */
     double from_default(const string &str) const;
 
-    virtual string type_name() const;
+    virtual string type_name() const override;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
 
@@ -431,7 +462,7 @@ private:
  */
 class String : public Scalar {
 public:
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     TypeHash content_hash() const   override;
 
@@ -444,7 +475,9 @@ public:
     virtual bool match(const string &value) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
+
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 };
 
 
@@ -472,7 +505,7 @@ public:
     static FileName output()
     { return FileName(::FilePath::output_file); }
 
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     virtual bool operator==(const TypeBase &other) const
     { return  typeid(*this) == typeid(other) &&

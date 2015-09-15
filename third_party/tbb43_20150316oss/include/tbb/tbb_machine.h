@@ -228,7 +228,17 @@ template<> struct atomic_selector<8> {
     #else
         #include "machine/linux_intel64.h"
     #endif
-
+#elif __CYGWIN64__ || __CYGWIN__
+	#if (TBB_USE_GCC_BUILTINS && __TBB_GCC_BUILTIN_ATOMICS_PRESENT)
+		#include "machine/gcc_generic.h"
+	#elif __CYGWIN64__
+		#include "machine/linux_intel64.h"
+	#elif __CYGWIN__
+		#include "machine/linux_ia32.h"
+	#endif
+	
+	#include <sched.h>
+    #define __TBB_Yield() sched_yield()
 #elif __linux__ || __FreeBSD__ || __NetBSD__
 
     #if (TBB_USE_GCC_BUILTINS && __TBB_GCC_BUILTIN_ATOMICS_PRESENT)

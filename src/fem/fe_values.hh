@@ -153,7 +153,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    virtual const double shape_value(const unsigned int function_no, const unsigned int point_no) = 0;
+    virtual double shape_value(const unsigned int function_no, const unsigned int point_no) = 0;
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -162,7 +162,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    virtual const arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) = 0;
+    virtual arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) = 0;
 
     /**
      * @brief Return the product of Jacobian determinant and the quadrature
@@ -170,19 +170,19 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    virtual const double JxW(const unsigned int point_no) = 0;
+    virtual double JxW(const unsigned int point_no) = 0;
 
     /**
      * @brief Returns the normal vector to a side at given quadrature point.
      *
      * @param point_no Number of the quadrature point.
      */
-    virtual const arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) = 0;
+    virtual arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) = 0;
 
     /**
      * @brief Returns the number of shape functions.
      */
-    virtual const unsigned int n_dofs() = 0;
+    virtual unsigned int n_dofs() = 0;
 
 };
 
@@ -233,7 +233,11 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    const double shape_value(const unsigned int function_no, const unsigned int point_no);
+    inline double shape_value(const unsigned int function_no, const unsigned int point_no)
+    {
+        return data.shape_values[point_no][function_no];
+    }
+
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -242,7 +246,11 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    const arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no)
+    {
+        return trans(data.shape_gradients[point_no].row(function_no));
+
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -253,7 +261,10 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    const arma::vec::fixed<spacedim> shape_vector(const unsigned int function_no, const unsigned int point_no);
+    inline arma::vec::fixed<spacedim> shape_vector(const unsigned int function_no, const unsigned int point_no)
+    {
+        return data.shape_vectors[point_no][function_no];
+    }
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -264,7 +275,10 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    const arma::mat::fixed<spacedim,spacedim> shape_grad_vector(const unsigned int function_no, const unsigned int point_no);
+    inline arma::mat::fixed<spacedim,spacedim> shape_grad_vector(const unsigned int function_no, const unsigned int point_no)
+    {
+        return data.shape_grad_vectors[point_no][function_no];
+    }
 
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
@@ -274,7 +288,10 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    const double determinant(const unsigned int point_no);
+    inline double determinant(const unsigned int point_no)
+    {
+        return data.determinants[point_no];
+    }
 
     /**
      * @brief Return the product of Jacobian determinant and the quadrature
@@ -282,52 +299,81 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    const double JxW(const unsigned int point_no);
+    inline double JxW(const unsigned int point_no)
+    {
+        return data.JxW_values[point_no];
+    }
 
     /**
      * @brief Return coordinates of the quadrature point in the actual cell system.
      *
      * @param point_no Number of the quadrature point.
      */
-    const arma::vec::fixed<spacedim> point(const unsigned int point_no);
+    inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
+    {
+        return data.points[point_no];
+    }
 
     /**
 	 * @brief Return coordinates of all quadrature points in the actual cell system.
 	 *
 	 */
-	const vector<arma::vec::fixed<spacedim> > &point_list();
+	inline vector<arma::vec::fixed<spacedim> > &point_list()
+	{
+	    return data.points;
+	}
+
 
     /**
      * @brief Returns the normal vector to a side at given quadrature point.
      *
      * @param point_no Number of the quadrature point.
      */
-    const arma::vec::fixed<spacedim> normal_vector(unsigned int point_no);
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
+	{
+	    return data.normal_vectors[point_no];
+	}
 
     /**
      * @brief Returns the number of quadrature points.
      */
-    const unsigned int n_points();
+    inline unsigned int n_points()
+    {
+        return quadrature->size();
+    }
 
     /**
      * @brief Returns the number of shape functions.
      */
-    const unsigned int n_dofs();
+    inline unsigned int n_dofs()
+    {
+        return fe->n_dofs();
+    }
+
 
     /**
      * @brief Returns the quadrature in use.
      */
-    const Quadrature<dim> * get_quadrature() const;
+    inline Quadrature<dim> * get_quadrature() const
+    {
+        return quadrature;
+    }
     
     /**
      * @brief Returns the finite element in use.
      */
-    const FiniteElement<dim,spacedim> * get_fe() const;
+    inline FiniteElement<dim,spacedim> * get_fe() const
+    {
+        return fe;
+    }
     
     /**
      * @brief Returns the mapping in use.
      */
-    const Mapping<dim,spacedim> * get_mapping() const;
+    inline Mapping<dim,spacedim> * get_mapping() const
+    {
+        return mapping;
+    }
 
 protected:
 

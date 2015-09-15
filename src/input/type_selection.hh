@@ -108,13 +108,13 @@ public:
 
 
     /// Implements \p TypeBase::is_finished
-    virtual bool is_finished() const;
+    virtual bool is_finished() const override;
 
     /// Implements \p TypeBase::type_name
-    virtual string type_name() const;
+    virtual string type_name() const override;
 
     /// Implements \p TypeBase::full_type_name
-    virtual string full_type_name() const;
+    virtual string full_type_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     virtual bool operator==(const TypeBase &other) const;
@@ -152,7 +152,7 @@ public:
     int from_default(const string &str) const;
 
     /// Implements  @p Type::TypeBase::valid_defaults.
-    virtual bool valid_default(const string &str) const;
+    virtual bool valid_default(const string &str) const override;
 
     /**
      * Just check if there is a particular name in the Selection.
@@ -170,8 +170,16 @@ public:
     inline unsigned int size() const;
 
 
-    bool finish()
-        { close(); return true; }
+    bool finish(bool is_generic = false) override
+        { ASSERT(data_->closed_, "Finished Selection '%s' must be closed!", this->type_name().c_str()); return true; }
+
+
+    /// Implements \p TypeBase::is_closed
+    virtual bool is_closed() const override;
+
+
+    // Implements @p TypeBase::make_instance.
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
 private:
 
     /**
@@ -191,7 +199,7 @@ private:
     public:
 
         SelectionData(const string &name)
-        : type_name_(name), /*made_extensive_doc(false),*/ finished(false)
+        : type_name_(name), closed_(false)
         {}
 
         void add_value(const int value, const std::string &key, const std::string &description);
@@ -214,8 +222,8 @@ private:
         /// Text description of the whole Selection object.
         std::string description_;
 
-        /// Indicator of finished Selection.
-        mutable bool finished;
+        /// Indicator of closed Selection.
+        mutable bool closed_;
     };
 
     /// Handle to actual Selection data.
@@ -258,7 +266,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-    ASSERT(data_->finished, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
+    ASSERT(data_->closed_, "Accessing unfinished Selection '%s'\n", type_name().c_str() );
 }
 
 

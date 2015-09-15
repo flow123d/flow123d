@@ -30,11 +30,11 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type(
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"
-                                        "For square NxN-matrix values, you can use:\n"
-                                        "* array of strings of size N to enter diagonal matrix\n"
-                                        "* array of strings of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                        "* just one string to enter (spatially variable) multiple of the unit matrix.\n"
-                                        "Formula can contain variables x,y,z,t and usual operators and functions." )
+                                        "For square (($N\\times N$))-matrix values, you can use:\n\n"
+                                        " - array of strings of size (($N$)) to enter diagonal matrix\n"
+                                        " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
+                                        " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
+                                        "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
 			.close();
 }
 

@@ -12,7 +12,7 @@
 #include "fields/field_constant.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/json_to_storage.hh"
+#include "input/reader_to_storage.hh"
 
 
 string input = R"INPUT(
@@ -42,7 +42,7 @@ TEST(FieldFormula, read_from_input) {
         .close();
 
     // read input string
-    Input::JSONToStorage reader( input, rec_type );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;
@@ -130,7 +130,7 @@ TEST(FieldFormula, set_time) {
     Input::Type::Array  input_type(VectorField::get_input_type(nullptr));
 
     // read input string
-    Input::JSONToStorage reader( set_time_input, input_type );
+    Input::ReaderToStorage reader( set_time_input, input_type, Input::FileFormat::format_JSON );
     Input::Array in_array=reader.get_root_interface<Input::Array>();
 
     auto it = in_array.begin<Input::AbstractRecord>();

@@ -11,7 +11,7 @@
 
 #include <fstream>
 #include <input/input_type.hh>
-#include <input/json_to_storage.hh>
+#include <input/reader_to_storage.hh>
 #include <input/accessors.hh>
 #include <input/factory.hh>
 
@@ -63,14 +63,14 @@ public:
     }
     void SetUp() override {
     	std::string f_name = string(UNIT_TESTS_SRC_DIR) + "/input/type_use_case_test.con";
-    	ifstream in(f_name);
-    	json_reader = new Input::JSONToStorage(in, get_input_type() );
+    	FilePath fp(f_name, FilePath::FileType::input_file);
+    	json_reader = new Input::ReaderToStorage(fp, get_input_type() );
     }
     void TearDown() override {
     	delete json_reader;
     }
 private:
-    Input::JSONToStorage *json_reader;
+    Input::ReaderToStorage *json_reader;
     Input::Record root_rec;
 
 };
@@ -122,7 +122,7 @@ const it::Record & EquationA::get_input_rec() {
 
 const int EquationA::registrar =
 		Input::register_class< EquationA, Input::Record >("EquationA") +
-		Equation::get_input_type().add_child(EquationA::get_input_rec());
+		EquationA::get_input_rec().size();
 
 
 
@@ -139,7 +139,7 @@ const it::Record & EquationB::get_input_rec() {
 
 const int EquationB::registrar =
 		Input::register_class< EquationB, Input::Record >("EquationB") +
-		Equation::get_input_type().add_child(EquationB::get_input_rec());
+		EquationB::get_input_rec().size();
 
 
 

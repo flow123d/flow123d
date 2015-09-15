@@ -27,10 +27,10 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type(
         .declare_key("value", Value::get_input_type(eit), it::Default::obligatory(),
                                     "Value of the constant field.\n"
                                     "For vector values, you can use scalar value to enter constant vector.\n"
-                                    "For square NxN-matrix values, you can use:\n"
-                                    "* vector of size N to enter diagonal matrix\n"
-                                    "* vector of size (N+1)*N/2 to enter symmetric matrix (upper triangle, row by row)\n"
-                                    "* scalar to enter multiple of the unit matrix." )
+                                    "For square (($N\\times N$))-matrix values, you can use:\n"
+                                    " - vector of size (($N$)) to enter diagonal matrix\n\n"
+                                    " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
+                                    " - scalar to enter multiple of the unit matrix." )
         .allow_auto_conversion("value")
 		.close();
 }

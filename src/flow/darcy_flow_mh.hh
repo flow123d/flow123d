@@ -161,8 +161,7 @@ public:
      * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
      *
      * TODO:
-     * - how we can reuse values computed during assembly
-     *   we want to make this class see values in
+     * - how we can reuse field values computed during assembly
      *
      */
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
@@ -277,64 +276,35 @@ protected:
     class AssemblyBase;
     template<unsigned int dim> class Assembly;
     
-    class AssemblyData
+    struct AssemblyData
     {
-    public:
-        AssemblyData(Mesh *mesh,
-                     EqData *data,
-//                      LinSys *ls, 
-//                      Distribution *edge_dist, 
-//                      Distribution *el_dist,
-//                      Distribution *side_dist,
-//                      boost::shared_ptr<Balance> balance,
-                     MH_DofHandler *mh_dh
-//                      unsigned int water_balance_idx,
-//                      int n_schur,
-//                      int *el_for_loc,
-//                      int *row_4_el,
-//                      int *side_row_4_id,
-//                      int *row_4_edge
-                     );
-    private:
         Mesh *mesh;
-//         LinSys *ls;
-//         Distribution *edge_ds;          
-//         Distribution *el_ds;            
-//         Distribution *side_ds;          
         EqData* data;
-//         boost::shared_ptr<Balance> balance;
-//         unsigned int water_balance_idx;
         MH_DofHandler *mh_dh;
-        
-//         int n_schur_compls;
-//         int *el_4_loc;
-//         int *row_4_el;
-//         int *side_row_4_id;
-//         int *row_4_edge;
-        
-    template<unsigned int dim>
-    friend class Assembly;
     };
     
     class AssemblyBase
     {
     public:
+        // assembly just A block of local matrix
         virtual void assembly_local_matrix(arma::mat &local_matrix, 
                                            ElementFullIter ele) = 0;
+
+        // assembly compatible neighbourings
         virtual void assembly_local_vb(double *local_vb, 
                                        ElementFullIter ele,
                                        Neighbour *ngh) = 0;
-        virtual void make_element_vector(VectorSeqDouble &ele_flux) = 0;
-        void set_data(AssemblyData *data);
-    protected:
-        AssemblyData *d;
+
+        // compute velocity value in the barycenter
+        // TOTO: implement and use general interpolations between discrete spaces
+        virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
     };
     
     template<unsigned int dim>
     class Assembly : public AssemblyBase
     {
     public:
-        Assembly<dim>();
+        Assembly<dim>(AssemblyData ad);
         ~Assembly<dim>();
         void assembly_local_matrix(arma::mat &local_matrix, 
                                    ElementFullIter ele) override;
@@ -342,16 +312,26 @@ protected:
                                ElementFullIter ele,
                                Neighbour *ngh
                               ) override;
-        void make_element_vector(VectorSeqDouble &ele_flux) override;
-    private:
+        arma::vec3 make_element_vector(ElementFullIter ele) override;
+
+        // assembly volume integrals
         FE_RT0<dim,3> fe_rt_;
         MappingP1<dim,3> map_;
         QGauss<dim> quad_;
         FEValues<dim,3> fe_values_;
         
+        // assembly face integrals (BC)
         QGauss<dim-1> side_quad_;
         FiniteElement<dim,3> *fe_p_disc_;
         FESideValues<dim,3> fe_side_values_;
+
+        // Interpolation of velocity into barycenters
+        QGauss<dim> velocity_interpolation_quad_;
+        FEValues<dim,3> velocity_interpolation_fv_;
+
+        // data shared by assemblers of different dimension
+        AssemblyData d;
+
     };
     
     void make_serial_scatter();

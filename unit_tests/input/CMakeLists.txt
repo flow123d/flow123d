@@ -34,10 +34,12 @@ add_test_directory("${libs}")
 define_test(type_base)
 define_test(type_output)
 define_test(type_record)
+define_test(type_abstract)
+define_test(type_generic)
 
 define_test(storage)
 define_test(comment_filter)
-define_test(json_to_storage)
+define_test(reader_to_storage)
 define_test(input_interface)
 define_test(type_use_case)
 define_test(address)
@@ -48,6 +50,8 @@ define_test(type_repository)
 
 define_test(factory)
 define_test(type_dispatch)
+
+define_test(yaml_lib)
 
 
 
