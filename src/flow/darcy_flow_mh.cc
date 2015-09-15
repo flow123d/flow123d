@@ -243,8 +243,7 @@ DarcyFlowMH_Steady::Assembly<dim>::Assembly(AssemblyData ad)
             update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
   side_quad_(1),
-  fe_p_disc_(new FE_P_disc<0,dim,3>()),
-  fe_side_values_(map_, side_quad_, *fe_p_disc_, update_normal_vectors),
+  fe_side_values_(map_, side_quad_, fe_p_disc_, update_normal_vectors),
 
   velocity_interpolation_quad_(0), // veloctiy values in barycenter
   velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
@@ -660,7 +659,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
             tmp_rows[0]=el_row;
             tmp_rows[1]=row_4_edge[ ngh->edge_idx() ];
             
-            assembly_[ngh->side()->element()->dim()-1]->assembly_local_vb(local_vb, ele, ngh);
+            assembly_[ngh->side()->dim()]->assembly_local_vb(local_vb, ele, ngh);
             
             ls->mat_set_values(2, tmp_rows, 2, tmp_rows, local_vb);
 
