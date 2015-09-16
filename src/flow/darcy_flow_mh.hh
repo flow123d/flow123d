@@ -123,7 +123,6 @@ public:
             robin=3,
             total_flux=4
         };
-        static const Input::Type::Selection & get_bc_type_selection();
 
         /// Collect all fields
         EqData();
@@ -156,6 +155,10 @@ public:
         FieldSet	rhs_fields;
     };
 
+    static Input::Type::Selection & get_bc_type_selection();
+    static Input::Type::Selection & get_mh_mortar_selection();
+    static Input::Type::AbstractRecord & get_input_type();
+
 
     /**
      * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
@@ -168,8 +171,6 @@ public:
     : EquationBase(mesh, in_rec)
     {}
 
-    static const Input::Type::Selection & get_mh_mortar_selection();
-    static Input::Type::AbstractRecord & get_input_type();
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }

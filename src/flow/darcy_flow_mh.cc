@@ -87,7 +87,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(unsteady_LMH);
 
 namespace it = Input::Type;
 
-const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
+it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
@@ -96,7 +96,7 @@ const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
+it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
 	return it::Selection("DarcyFlow_BC_Type")
                .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
                .add_value(dirichlet, "dirichlet",
