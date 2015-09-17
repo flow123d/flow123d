@@ -231,8 +231,8 @@ private:
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
     
-    double **sources_corr_x;
-    Vec *v_sources_corr_x;
+    double **sources_corr;
+    Vec *v_sources_corr;
     
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.

@@ -278,6 +278,8 @@ void TransportOperatorSplitting::update_solution() {
 	    			source[sbi] -= region_mass[ri];
 	    	}
 
+	    	//TODO: idea: call this function inside convection->update_solution() before updating concentration vector
+	    	// then it will not be neccessary to keep vector of previous concentrations of all substances
 	    	convection->calculate_cumulative_balance();
 
 	    	END_TIMER("TOS-balance");
