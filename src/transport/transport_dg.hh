@@ -31,6 +31,8 @@
 #define TRANSPORT_DG_HH_
 
 #include "transport_operator_splitting.hh"
+#include "fields/bc_field.hh"
+#include "fields/field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 

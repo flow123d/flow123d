@@ -44,6 +44,7 @@
 #include "transport/transport_operator_splitting.hh"
 
 #include "fields/field_algo_base.hh"
+#include "fields/bc_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
