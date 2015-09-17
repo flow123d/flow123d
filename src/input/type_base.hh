@@ -524,6 +524,9 @@ public:
     }
 
 
+    virtual MakeInstanceReturnType make_instance(std::vector<ParameterPair> vec = std::vector<ParameterPair>()) const override;
+
+
 
 private:
     ::FilePath::FileType    type_;

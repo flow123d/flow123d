@@ -466,6 +466,12 @@ bool FileName::match(const string &str) const {
 }
 
 
+
+TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec) const {
+	return std::make_pair( boost::make_shared<FileName>(*this), ParameterMap() );
+}
+
+
 /**********************************************************************************
  * implementation of Type::String
  */
