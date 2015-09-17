@@ -29,17 +29,18 @@
  */
 
 #include "hc_explicit_sequential.hh"
-#include "flow/darcy_flow_mh.hh"
-#include "flow/darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_interface.hh"
+#include "transport/advection_process_base.hh"
+// TODO:
+// After having general default values:
+// make TransportNoting default for AdvectionProcessBase abstract
+// use default "{}" for secondary equation.
+// Then we can remove following include.
 #include "transport/transport_operator_splitting.hh"
-#include "transport/transport.h"
-#include "transport/transport_dg.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
-#include "transport/concentration_model.hh"
-#include "transport/heat_model.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
@@ -48,7 +49,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
 
 FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
 FLOW123D_FORCE_LINK_IN_PARENT(unsteady_MH);
-FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH)
+FLOW123D_FORCE_LINK_IN_PARENT(unsteady_LMH);
 
 
 namespace it = Input::Type;
@@ -70,7 +71,8 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
 				"Computational mesh common to all equations.")
 		.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
 				"Simulation time frame and time step.")
-		.declare_key("primary_equation", DarcyFlowMH::get_input_type(), it::Default::obligatory(),
+		.declare_key("primary_equation", DarcyFlowInterface::get_input_type(),
+		        it::Default::obligatory(),
 				"Primary equation, have all data given.")
 		.declare_key("secondary_equation", AdvectionProcessBase::get_input_type(),
 				"The equation that depends (the velocity field) on the result of the primary equation.")
@@ -108,14 +110,14 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
-    water = prim_eq.factory< DarcyFlowMH, Mesh &, const Input::Record >(*mesh, prim_eq);
+    water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
 
 
 
     // TODO: optionally setup transport objects
     Iterator<AbstractRecord> it = in_record.find<AbstractRecord>("secondary_equation");
     if (it) {
-    	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record & >(*mesh, *it);
+    	transport_reaction = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record>(*mesh, *it);
 
         // setup fields
         transport_reaction->data()["cross_section"]

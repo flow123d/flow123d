@@ -37,7 +37,6 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fields/field_fe.hh"
-#include "flow/darcy_flow_mh.hh"
 #include "la/linsys_PETSC.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"

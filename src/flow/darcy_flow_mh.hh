@@ -55,15 +55,13 @@
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
-#include "fields/field_add_potential.hh"
-#include "flow/old_bcd.hh"
+#include "flow/darcy_flow_interface.hh"
 
 
 /// external types:
@@ -98,10 +96,9 @@ template<unsigned int dim> class QGauss;
  *
  */
 
-class DarcyFlowMH : public EquationBase {
+class DarcyFlowMH : public DarcyFlowInterface {
 public:
-    /// Typedef for usage of Input::Factory in child classes.
-    typedef DarcyFlowMH FactoryBaseType;
+
 
     /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
     enum MortarMethod {
@@ -161,7 +158,7 @@ public:
 
 
     static const Input::Type::Selection & get_mh_mortar_selection();
-    static Input::Type::AbstractRecord & get_input_type();
+
 
 
     /**
@@ -172,7 +169,7 @@ public:
      *
      */
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec)
+    : DarcyFlowInterface(mesh, in_rec)
     {}
 
 
@@ -196,8 +193,6 @@ public:
        return mh_dh;
     }
     
-    virtual void set_concentration_vector(Vec &vc){};
-
 
 protected:
     void setup_velocity_vector() {
@@ -276,8 +271,8 @@ public:
 
 
 protected:
-    class AssemblyBase;
-    template<unsigned int dim> class Assembly;
+    //class AssemblyBase;
+    //template<unsigned int dim> class Assembly;
     
     struct AssemblyData
     {

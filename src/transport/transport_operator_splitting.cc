@@ -49,11 +49,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(sorption);
 
 using namespace Input::Type;
 
-AbstractRecord & AdvectionProcessBase::get_input_type() {
-	return AbstractRecord("Transport",
-			"Secondary equation for transport of substances.")
-			.close();
-}
+
 
 
 const Record & TransportOperatorSplitting::get_input_type() {

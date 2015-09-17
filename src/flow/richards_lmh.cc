@@ -26,7 +26,7 @@
 namespace it=Input::Type;
 const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
     return it::Record("Unsteady_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
-        .derive_from(DarcyFlowMH::get_input_type())
+        .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyFlowMH_Steady::get_input_type())
         .declare_key("time",         TimeGovernor::get_input_type(), it::Default::obligatory(),
                                     "Time governor setting for the unsteady Darcy flow model.")
