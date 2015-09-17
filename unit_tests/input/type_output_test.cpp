@@ -91,8 +91,10 @@ TEST(OutputTypeTypeBase, record_output_test) {
     main.declare_key("array_record", array_record, "no commment on array_record");
     main.close();
 
-    cout << "## " << "OutputJSONMachine printout" << endl;
+    cout << "## " << "OutputText printout" << endl;
+    cout << OutputText(&main) << endl << endl;
 
+    cout << "## " << "OutputJSONMachine printout" << endl;
     cout << OutputJSONMachine(&main) << endl;
 }
 
@@ -120,11 +122,11 @@ TEST(OutputTypeTypeBase, record_output_test) {
     c_rec.close();
     b_rec.close();
 
-    cout << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_text( &b_rec, 0);
+    cout << "## " << "OutputText printout" << endl;
+    OutputText output_text( &b_rec, 0);
     output_text.print(cout);
 
-    OutputJSONMachine output_text2( &c_rec, 0);
+    OutputText output_text2( &c_rec, 0);
     output_text2.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
@@ -201,9 +203,9 @@ public:
     root_rec.declare_key("pause", Bool(), Default("false"), "");
     root_rec.close();
 
-    cout << "## " << "OutputLatex printout";
-    OutputLatex output_latex( &root_rec, 0);
-    output_latex.print(cout);
+    cout << "## " << "OutputText printout";
+    OutputText output_text( &root_rec, 0);
+    output_text.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
     OutputJSONMachine output_json_machine( &root_rec, 0);
@@ -228,10 +230,13 @@ TEST(OutputTypeArray, array_of_array_test) {
         array_record.close();
     }
 
-    cout << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_text( &array_record, 0);
+    cout << "## " << "OutputText printout" << endl;
+    OutputText output_text( &array_record, 0);
     output_text.print(cout);
 
+    cout << endl << "## " << "OutputJSONMachine printout" << endl;
+    OutputJSONMachine output_machine( &array_record, 0);
+    output_machine.print(cout);
 }
 
 /*

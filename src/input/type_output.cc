@@ -121,6 +121,12 @@ const string & OutputBase::get_selection_description(const Selection *sel) {
 }
 
 
+AbstractRecord::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstractRecord *a_rec) {
+	return a_rec->parent_data_->list_of_childs.begin();
+}
+
+
+
 const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_rec) {
 	return a_rec->parent_name_;
 }
@@ -210,6 +216,212 @@ void OutputBase::ProcessedTypes::clear() {
 	output_hash.clear();
 	full_hash = 0;
 }
+
+
+
+
+
+/*******************************************************************
+ * implementation of OutputText
+ */
+
+void OutputText::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+	if (! type->is_finished()) {
+		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
+	}
+	switch (doc_type_) {
+	case key_record:
+		stream << "" << "Record '" << type->type_name() << "' (" << type->size() << " keys).";
+		break;
+	case full_record:
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash)) {
+			// header
+			stream << endl;
+			stream << "" << "Record '" << type->type_name() << "'";
+			// parent record
+			boost::shared_ptr<AbstractRecord> parent_ptr;
+			get_parent_ptr(*type, parent_ptr);
+			if (parent_ptr) {
+				stream << ", implementation of " << parent_ptr->type_name();
+			}
+			// reducible to key
+			Record::KeyIter key_it = type->auto_conversion_key_iter();
+			if (key_it != type->end()) {
+				stream << ", reducible to key '" << key_it->key_ << "'";
+			}
+			stream << "" << " (" << type->size() << " keys).";
+		    write_description(stream, OutputBase::get_record_description(type), 0);
+		    stream << endl;
+		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+		    // keys
+		    doc_type_ = key_record;
+		    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+		    	size_setw_ = it->key_.size() + 3;
+		        stream << setw(padding_size) << "" << it->key_ << " = ";
+		        write_default_value(stream, it->default_);
+		        stream << endl;
+		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
+		        print(stream, it->type_.get(), 0);
+		        write_description(stream, it->description_, padding_size+size_setw_);
+		        stream << endl;
+		    }
+		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
+		    // Full documentation of embedded record types.
+		    doc_type_ = full_record;
+		    if (depth_ == 0 || depth_ > depth) {
+			    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+			    	print(stream, it->type_.get(), depth+1);
+			    }
+		    }
+		}
+		break;
+	}
+}
+void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+	boost::shared_ptr<TypeBase> array_type;
+	get_array_type(*type, array_type);
+	switch (doc_type_) {
+	case key_record:
+		unsigned int lower_size, upper_size;
+		get_array_sizes(*type, lower_size, upper_size);
+		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
+		stream << setw(padding_size + size_setw_) << "" << "#### ";
+		print(stream, array_type.get(), 0);
+		break;
+	case full_record:
+		print(stream, array_type.get(), depth);
+		break;
+	}
+}
+void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+	// Print documentation of abstract record
+	switch (doc_type_) {
+	case key_record:
+		stream << "AbstractRecord '" << type->type_name() << "' with "<< type->child_size() << " descendants.";
+		break;
+	case full_record:
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash) ) {
+            // header
+            stream << endl;
+            stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
+            write_description(stream, OutputBase::get_abstract_description( type ), 0);
+            stream << endl;
+            stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+            // descendants
+            doc_type_ = key_record;
+            for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+            	size_setw_ = 0;
+                stream << setw(padding_size) << "";
+                stream << "" << "Record '" << (*it).type_name() << "'";
+                write_description(stream, OutputBase::get_record_description( &(*it) ), padding_size+size_setw_);
+                stream << endl;
+            }
+            stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
+            // Full documentation of embedded record types.
+            doc_type_ = full_record;
+            if (depth_ == 0 || depth_ > depth) {
+                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+                    print(stream, &*it, depth+1);
+                }
+            }
+        }
+		break;
+	}
+}
+void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+	// Print documentation of adhoc abstract record
+	if (doc_type_ == key_record) {
+		stream << "AdHocAbstractRecord" << endl;
+		stream << setw(padding_size + size_setw_) << "";
+		stream << "#### Derived from AbstractRecord '" << get_adhoc_parent_name(type) << "', ";
+		stream << "added Records: ";
+		{
+			AbstractRecord::ChildDataIter parent_it = get_adhoc_parent_data(type);
+			bool add_comma = false;
+			for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
+				if ((*it).type_name() == (*parent_it).type_name()) {
+					++parent_it;
+				} else {
+					if (add_comma) stream << ", ";
+					else add_comma = true;
+					stream << "'" << (*it).type_name() << "'";
+				}
+			}
+		}
+	}
+}
+void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+	if (! type->is_finished()) {
+		xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
+	}
+	switch (doc_type_) {
+	case key_record:
+		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
+		break;
+	case full_record:
+		TypeBase::TypeHash hash=type->content_hash();
+		if (! doc_flags_.was_written(hash) ) {
+			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
+			write_description(stream, OutputBase::get_selection_description( type ), 0);
+			stream << endl;
+		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << endl;
+		    // keys
+		    for (Selection::keys_const_iterator it = type->begin(); it != type->end(); ++it) {
+		        stream << setw(padding_size) << "" << it->key_ << " = " << it->value;
+		        if (it->description_ != "") {
+		        	stream << endl;
+		        	stream << setw(padding_size + it->key_.size() + 3) << "" << "# " << it->description_ << "";
+		        }
+		        stream << endl;
+		    }
+		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
+		}
+		break;
+	}
+}
+void OutputText::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
+	if (doc_type_ == key_record) {
+		int lower_bound, upper_bound;
+		get_integer_bounds(*type, lower_bound, upper_bound);
+		stream << "Integer in [" << lower_bound << ", " << upper_bound << "]";
+	}
+}
+void OutputText::print_impl(ostream& stream, const Double *type, unsigned int depth) {
+	if (doc_type_ == key_record) {
+		double lower_bound, upper_bound;
+		get_double_bounds(*type, lower_bound, upper_bound);
+		stream << "Double in [" << lower_bound << ", " << upper_bound << "]";
+	}
+}
+void OutputText::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
+	if (doc_type_ == key_record) {
+		stream << "Bool";
+	}
+}
+void OutputText::print_impl(ostream& stream, const String *type, unsigned int depth) {
+	if (doc_type_ == key_record) {
+		stream << "String (generic)";
+	}
+}
+void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
+	if (doc_type_ == key_record) {
+		stream << "FileName of ";
+		switch (type->get_file_type()) {
+		case ::FilePath::input_file:
+			stream << "input file";
+			break;
+		case ::FilePath::output_file:
+			stream << "output file";
+			break;
+		default:
+			stream << "file with unknown type";
+			break;
+		}
+	}
+}
+
 
 
 
@@ -564,6 +776,11 @@ void OutputJSONMachine::print_full_hash(ostream& stream) {
 
 
 
+
+
+std::ostream& operator<<(std::ostream& stream, OutputText type_output) {
+    return type_output.print(stream) << endl;
+}
 
 
 std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output) {

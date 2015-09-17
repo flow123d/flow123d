@@ -86,6 +86,8 @@ protected:
     const string & get_selection_description(const Selection *sel);
     /// Gets parent_name_ of the given AdHocAbstractRecord type.
     const string & get_adhoc_parent_name(const AdHocAbstractRecord *a_rec);
+    /// Gets iterator to begin of parent_data_ of the given AdHocAbstractRecord type.
+    AbstractRecord::ChildDataIter get_adhoc_parent_data(const AdHocAbstractRecord *a_rec);
 
 
     /**
@@ -237,6 +239,43 @@ protected:
 
 
 
+/**********************************************************************************************************************/
+
+/**
+ * @brief Class for create text documentation
+ *
+ * Record, AbstractRecord and Selection are represented by block of text that contains type name, name, description
+ * and count and list of keys (for Record), descendants (for AbstractRecord) or values (for Selection).
+ *
+ * In list are displayed information about subtypes, e.g. type name, description, value, range of numeric values etc.
+ *
+ * @ingroup input_types
+ */
+class OutputText : public OutputBase {
+public:
+	OutputText(const TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+protected:
+    void print_impl(ostream& stream, const Record *type, unsigned int depth);
+    void print_impl(ostream& stream, const Array *type, unsigned int depth);
+    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
+    void print_impl(ostream& stream, const Selection *type, unsigned int depth);
+	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
+	void print_impl(ostream& stream, const Double *type, unsigned int depth);
+	void print_impl(ostream& stream, const Bool *type, unsigned int depth);
+	void print_impl(ostream& stream, const String *type, unsigned int depth);
+    void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+
+    void print_program_info(ostream& stream, const TypeBase *type) override {};
+    void print_full_hash(ostream& stream) override {};
+};
+
+
+
+
+
+
+
 /**
  * @brief Class for create JSON machine readable documentation
  *
@@ -318,6 +357,7 @@ protected:
 /**
  * Overrides output operator for simple output of the input type tree.
  */
+std::ostream& operator<<(std::ostream& stream, OutputText type_output);
 std::ostream& operator<<(std::ostream& stream, OutputJSONMachine type_output);
 
 
