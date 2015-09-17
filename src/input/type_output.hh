@@ -57,9 +57,8 @@ protected:
      * Constructor
      *
      * @param type Stores input sequence
-     * @param depth Depth of output
      */
-    OutputBase(const TypeBase *type, unsigned int depth = 0);
+    OutputBase(const TypeBase *type);
 
 
     /// Destructor
@@ -93,7 +92,7 @@ protected:
     /**
      * Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
      */
-    void print(ostream& stream, const TypeBase *type, unsigned int depth);
+    void print(ostream& stream, const TypeBase *type);
 
 
     /**
@@ -111,43 +110,43 @@ protected:
     /**
      * Implements printout of Record @p type
      */
-    virtual void print_impl(ostream& stream, const Record *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const Record *type) = 0;
     /**
      * Implements printout of Array @p type
      */
-    virtual void print_impl(ostream& stream, const Array *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const Array *type) = 0;
     /**
      * Implements printout of AbstractRecord @p type
      */
-    virtual void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const AbstractRecord *type) = 0;
     /**
      * Implements printout of AdHocAbstractRecord @p type
      */
-    virtual void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const AdHocAbstractRecord *type) = 0;
     /**
      * Implements printout of Selection @p type
      */
-    virtual void print_impl(ostream& stream, const Selection *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const Selection *type) = 0;
     /**
      * Implements printout of Integer @p type
      */
-	virtual void print_impl(ostream& stream, const Integer *type, unsigned int depth) = 0;
+	virtual void print_impl(ostream& stream, const Integer *type) = 0;
     /**
      * Implements printout of Double @p type
      */
-	virtual void print_impl(ostream& stream, const Double *type, unsigned int depth) = 0;
+	virtual void print_impl(ostream& stream, const Double *type) = 0;
     /**
      * Implements printout of Bool @p type
      */
-	virtual void print_impl(ostream& stream, const Bool *type, unsigned int depth) = 0;
+	virtual void print_impl(ostream& stream, const Bool *type) = 0;
     /**
      * Implements printout of String @p type
      */
-	virtual void print_impl(ostream& stream, const String *type, unsigned int depth) = 0;
+	virtual void print_impl(ostream& stream, const String *type) = 0;
     /**
      * Implements printout of FileName @p type
      */
-    virtual void print_impl(ostream& stream, const FileName *type, unsigned int depth) = 0;
+    virtual void print_impl(ostream& stream, const FileName *type) = 0;
 
     /**
      * Write out a string with given padding of every new line.
@@ -170,8 +169,6 @@ protected:
     static const unsigned int padding_size = 4;
     /// Object for which is created printout
     const TypeBase *type_;
-    /// Depth of printout (for value 0 is printed all input tree)
-    unsigned int depth_;
     /// Type of documentation output
     DocumentationType doc_type_;
     /// temporary value for printout of description (used in std::setw function)
@@ -253,18 +250,18 @@ protected:
  */
 class OutputText : public OutputBase {
 public:
-	OutputText(const TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth) {}
+	OutputText(const TypeBase *type) : OutputBase(type) {}
 protected:
-    void print_impl(ostream& stream, const Record *type, unsigned int depth);
-    void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
-    void print_impl(ostream& stream, const Selection *type, unsigned int depth);
-	void print_impl(ostream& stream, const Integer *type, unsigned int depth);
-	void print_impl(ostream& stream, const Double *type, unsigned int depth);
-	void print_impl(ostream& stream, const Bool *type, unsigned int depth);
-	void print_impl(ostream& stream, const String *type, unsigned int depth);
-    void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+    void print_impl(ostream& stream, const Record *type);
+    void print_impl(ostream& stream, const Array *type);
+    void print_impl(ostream& stream, const AbstractRecord *type);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type);
+    void print_impl(ostream& stream, const Selection *type);
+	void print_impl(ostream& stream, const Integer *type);
+	void print_impl(ostream& stream, const Double *type);
+	void print_impl(ostream& stream, const Bool *type);
+	void print_impl(ostream& stream, const String *type);
+    void print_impl(ostream& stream, const FileName *type);
 
     void print_program_info(ostream& stream, const TypeBase *type) override {};
     void print_full_hash(ostream& stream) override {};
@@ -289,7 +286,7 @@ protected:
  */
 class OutputJSONMachine : public OutputBase {
 public:
-	OutputJSONMachine(TypeBase *type, unsigned int depth = 0) : OutputBase(type, depth)
+	OutputJSONMachine(TypeBase *type) : OutputBase(type)
     {
 	    format_head="{ \"version\" :";
 	    format_inner=",\n\"ist_nodes\" : [\n";
@@ -325,20 +322,20 @@ protected:
 	std::string format_hash(TypeBase::TypeHash hash);
 	std::string escape_description(std::string desc);
 
-    void print_impl(ostream& stream, const Record *type, unsigned int depth);
-    void print_impl(ostream& stream, const Array *type, unsigned int depth);
-    void print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth);
-    void print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth);
-    void print_impl(ostream& stream, const Selection *type, unsigned int depth);
-    void print_impl(ostream& stream, const Integer *type, unsigned int depth);
-    void print_impl(ostream& stream, const Double *type, unsigned int depth);
-    void print_impl(ostream& stream, const Bool *type, unsigned int depth);
-    void print_impl(ostream& stream, const String *type, unsigned int depth);
-    void print_impl(ostream& stream, const FileName *type, unsigned int depth);
+    void print_impl(ostream& stream, const Record *type);
+    void print_impl(ostream& stream, const Array *type);
+    void print_impl(ostream& stream, const AbstractRecord *type);
+    void print_impl(ostream& stream, const AdHocAbstractRecord *type);
+    void print_impl(ostream& stream, const Selection *type);
+    void print_impl(ostream& stream, const Integer *type);
+    void print_impl(ostream& stream, const Double *type);
+    void print_impl(ostream& stream, const Bool *type);
+    void print_impl(ostream& stream, const String *type);
+    void print_impl(ostream& stream, const FileName *type);
 
 
     /// Print all keys of AbstractRecord type or AdHocAbstractRecord type
-    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth);
+    void print_abstract_record_keys(ostream& stream, const AbstractRecord *type);
 
     /**
      * Print actual version of program.

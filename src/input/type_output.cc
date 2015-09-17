@@ -34,7 +34,7 @@ ostream& OutputBase::print(ostream& stream) {
 	stream << format_head;
 	print_program_info(stream, type_);
 	stream << format_inner;
-	print(stream, type_, depth_);
+	print(stream, type_);
 	stream << format_full_hash;
 	print_full_hash(stream);
 	stream << format_tail;
@@ -43,8 +43,8 @@ ostream& OutputBase::print(ostream& stream) {
 
 
 
-OutputBase::OutputBase(const TypeBase *type, unsigned int depth)
-: type_(type), depth_(depth)
+OutputBase::OutputBase(const TypeBase *type)
+: type_(type)
 {
     TypeBase::lazy_finish();
 }
@@ -133,41 +133,41 @@ const string & OutputBase::get_adhoc_parent_name(const AdHocAbstractRecord *a_re
 
 
 
-void OutputBase::print(ostream& stream, const TypeBase *type, unsigned int depth) {
+void OutputBase::print(ostream& stream, const TypeBase *type) {
 
 	if (typeid(*type) == typeid(Type::Record)) {
-		print_impl(stream, static_cast<const Type::Record *>(type), depth );
+		print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
-		print_impl(stream, static_cast<const Type::Array *>(type), depth );
+		print_impl(stream, static_cast<const Type::Array *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::AbstractRecord)) {
-			print_impl(stream, static_cast<const Type::AbstractRecord *>(type), depth );
+			print_impl(stream, static_cast<const Type::AbstractRecord *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::AdHocAbstractRecord)) {
-		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type), depth );
+		print_impl(stream, static_cast<const Type::AdHocAbstractRecord *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Selection)) {
-		print_impl(stream, static_cast<const Type::Selection *>(type), depth );
+		print_impl(stream, static_cast<const Type::Selection *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Integer)) {
-		print_impl(stream, static_cast<const Type::Integer *>(type), depth );
+		print_impl(stream, static_cast<const Type::Integer *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Double)) {
-		print_impl(stream, static_cast<const Type::Double *>(type), depth );
+		print_impl(stream, static_cast<const Type::Double *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Bool)) {
-		print_impl(stream, static_cast<const Type::Bool *>(type), depth );
+		print_impl(stream, static_cast<const Type::Bool *>(type) );
 	} else {
 		const Type::FileName * file_name_type = dynamic_cast<const Type::FileName *>(type);
         if (file_name_type != NULL ) {
-        	print_impl(stream, file_name_type, depth );
+        	print_impl(stream, file_name_type );
         	return;
         }
 
 		const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) {
-        	print_impl(stream, string_type, depth );
+        	print_impl(stream, string_type );
         	return;
         }
 
@@ -225,7 +225,7 @@ void OutputBase::ProcessedTypes::clear() {
  * implementation of OutputText
  */
 
-void OutputText::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Record *type) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Record!\n");
 	}
@@ -262,23 +262,18 @@ void OutputText::print_impl(ostream& stream, const Record *type, unsigned int de
 		        write_default_value(stream, it->default_);
 		        stream << endl;
 		        stream << setw(padding_size + size_setw_) << "" <<"#### is ";
-		        print(stream, it->type_.get(), 0);
+		        print(stream, it->type_.get());
 		        write_description(stream, it->description_, padding_size+size_setw_);
 		        stream << endl;
 		    }
 		    stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
 		    // Full documentation of embedded record types.
 		    doc_type_ = full_record;
-		    if (depth_ == 0 || depth_ > depth) {
-			    for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-			    	print(stream, it->type_.get(), depth+1);
-			    }
-		    }
 		}
 		break;
 	}
 }
-void OutputText::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Array *type) {
 	boost::shared_ptr<TypeBase> array_type;
 	get_array_type(*type, array_type);
 	switch (doc_type_) {
@@ -287,14 +282,14 @@ void OutputText::print_impl(ostream& stream, const Array *type, unsigned int dep
 		get_array_sizes(*type, lower_size, upper_size);
 		stream << "Array, size limits: [" << lower_size << ", " << upper_size << "] of type: " << endl;
 		stream << setw(padding_size + size_setw_) << "" << "#### ";
-		print(stream, array_type.get(), 0);
+		print(stream, array_type.get());
 		break;
 	case full_record:
-		print(stream, array_type.get(), depth);
+		print(stream, array_type.get());
 		break;
 	}
 }
-void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const AbstractRecord *type) {
 	// Print documentation of abstract record
 	switch (doc_type_) {
 	case key_record:
@@ -321,16 +316,11 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type, unsigne
             stream << "" << std::setfill('-') << setw(10) << "" << std::setfill(' ') << " " << type->type_name() << endl;
             // Full documentation of embedded record types.
             doc_type_ = full_record;
-            if (depth_ == 0 || depth_ > depth) {
-                for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-                    print(stream, &*it, depth+1);
-                }
-            }
         }
 		break;
 	}
 }
-void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
 		stream << "AdHocAbstractRecord" << endl;
@@ -352,7 +342,7 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstractRecord *type, un
 		}
 	}
 }
-void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Selection *type) {
 	if (! type->is_finished()) {
 		xprintf(Warn, "Printing documentation of unfinished Input::Type::Selection!\n");
 	}
@@ -381,31 +371,31 @@ void OutputText::print_impl(ostream& stream, const Selection *type, unsigned int
 		break;
 	}
 }
-void OutputText::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Integer *type) {
 	if (doc_type_ == key_record) {
 		int lower_bound, upper_bound;
 		get_integer_bounds(*type, lower_bound, upper_bound);
 		stream << "Integer in [" << lower_bound << ", " << upper_bound << "]";
 	}
 }
-void OutputText::print_impl(ostream& stream, const Double *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Double *type) {
 	if (doc_type_ == key_record) {
 		double lower_bound, upper_bound;
 		get_double_bounds(*type, lower_bound, upper_bound);
 		stream << "Double in [" << lower_bound << ", " << upper_bound << "]";
 	}
 }
-void OutputText::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const Bool *type) {
 	if (doc_type_ == key_record) {
 		stream << "Bool";
 	}
 }
-void OutputText::print_impl(ostream& stream, const String *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const String *type) {
 	if (doc_type_ == key_record) {
 		stream << "String (generic)";
 	}
 }
-void OutputText::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
+void OutputText::print_impl(ostream& stream, const FileName *type) {
 	if (doc_type_ == key_record) {
 		stream << "FileName of ";
 		switch (type->get_file_type()) {
@@ -462,7 +452,7 @@ std::string OutputJSONMachine::escape_description(std::string desc) {
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
 
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
@@ -514,18 +504,16 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type, unsigned
 
     // Full documentation of embedded record types.
     doc_type_ = full_record;
-    if (depth_ == 0 || depth_ > depth) {
-        for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
-            print(stream, it->type_.get(), depth+1);
-        }
-    }
+	for (Record::KeyIter it = type->begin(); it != type->end(); ++it) {
+		print(stream, it->type_.get());
+	}
 
     boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -544,14 +532,14 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type, unsigned 
 	stream << endl;
 	stream << "}," << endl;
 
-	print(stream, array_type.get() ,depth+1);
+	print(stream, array_type.get());
 
 	boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -564,18 +552,18 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type, 
     stream << "\"description\" : \"" <<
             escape_description( OutputBase::get_abstract_description(type)) << "\"," << endl;
 
-    print_abstract_record_keys(stream, type, depth);
+    print_abstract_record_keys(stream, type);
     stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        print(stream, &*it, depth+1);
+        print(stream, &*it);
     }
 
     boost::hash_combine(doc_flags_.full_hash, hash);
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -586,11 +574,11 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
     type->write_attributes(stream);
     stream << "," << endl;
 
-    print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type), depth);
+    print_abstract_record_keys(stream, dynamic_cast<const Type::AbstractRecord *>(type));
     stream << "},";
 
     for (AbstractRecord::ChildDataIter it = type->begin_child_data(); it != type->end_child_data(); ++it) {
-        print(stream, &*it, depth+1);
+        print(stream, &*it);
     }
 
     boost::hash_combine(doc_flags_.full_hash, hash);
@@ -598,7 +586,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
 
 
 
-void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type, unsigned int depth) {
+void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const AbstractRecord *type) {
 
     // Print documentation of abstract record
     const Record * desc = type->get_default_descendant();
@@ -623,7 +611,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -653,7 +641,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type, unsig
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Integer *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -674,7 +662,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type, unsigne
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Double *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -695,7 +683,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type, unsigned
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const Bool *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -711,7 +699,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type, unsigned i
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const String *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 
@@ -727,7 +715,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type, unsigned
 }
 
 
-void OutputJSONMachine::print_impl(ostream& stream, const FileName *type, unsigned int depth) {
+void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 	TypeBase::TypeHash hash=type->content_hash();
     if (doc_flags_.was_written(hash)) return;
 

@@ -123,10 +123,10 @@ TEST(OutputTypeTypeBase, record_output_test) {
     b_rec.close();
 
     cout << "## " << "OutputText printout" << endl;
-    OutputText output_text( &b_rec, 0);
+    OutputText output_text( &b_rec);
     output_text.print(cout);
 
-    OutputText output_text2( &c_rec, 0);
+    OutputText output_text2( &c_rec);
     output_text2.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
@@ -204,11 +204,11 @@ public:
     root_rec.close();
 
     cout << "## " << "OutputText printout";
-    OutputText output_text( &root_rec, 0);
+    OutputText output_text( &root_rec);
     output_text.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_json_machine( &root_rec, 0);
+    OutputJSONMachine output_json_machine( &root_rec);
     output_json_machine.print(cout);
 }*/
 
@@ -231,11 +231,11 @@ TEST(OutputTypeArray, array_of_array_test) {
     }
 
     cout << "## " << "OutputText printout" << endl;
-    OutputText output_text( &array_record, 0);
+    OutputText output_text( &array_record);
     output_text.print(cout);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    OutputJSONMachine output_machine( &array_record, 0);
+    OutputJSONMachine output_machine( &array_record);
     output_machine.print(cout);
 }
 
@@ -264,7 +264,7 @@ TEST(OutputTypeRegEx, regex_filter_test) {
     main.declare_key("c", c_rec, "second record of flow");
     main.close();
 
-    OutputText output_text( &main, 0);
+    OutputText output_text( &main);
     // finds expressions in format '[N,N]' or '[N]' where N is dimension (0-3)
     //output_text.set_filter("(\\[[0-3]\\,?[0-3]?\\])");
     output_text.set_filter(":Field:.*");

@@ -67,7 +67,7 @@ bool TypeBase::is_valid_identifier(const string& key) {
 
 string TypeBase::desc() const {
     stringstream ss;
-    ss << OutputText(this,1);
+    ss << OutputText(this);
     return ss.str();
 }
 
@@ -147,7 +147,7 @@ void TypeBase::set_parameters_attribute(ParameterMap parameter_map) {
 
 
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type) {
-    return ( stream << OutputText(&type, 1) );
+    return ( stream << OutputText(&type) );
 }
 
 
