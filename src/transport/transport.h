@@ -230,18 +230,10 @@ private:
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
 	bool is_convection_matrix_scaled, need_time_rescaling;
-
-    double *sources_corr;
-    Vec v_sources_corr;
     
     double **sources_corr_x;
     Vec *v_sources_corr_x;
     
-    ///temporary arrays to store constant values of fields over time interval
-    //(avoiding calling "field.value()" too often)
-    double **sources_density, 
-           **sources_conc,
-           **sources_sigma;
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;
