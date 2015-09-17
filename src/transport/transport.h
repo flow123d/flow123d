@@ -206,8 +206,11 @@ private:
 	void set_boundary_conditions();
   
   //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-	void compute_concentration_sources(unsigned int sbi);
+// 	void compute_concentration_sources(unsigned int sbi);
 
+    //note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
+    void compute_concentration_sources();
+    
 	/**
 	 * Finish explicit transport matrix (time step scaling)
 	 */
@@ -231,6 +234,9 @@ private:
     double *sources_corr;
     Vec v_sources_corr;
     
+    double **sources_corr_x;
+    Vec *v_sources_corr_x;
+    
     ///temporary arrays to store constant values of fields over time interval
     //(avoiding calling "field.value()" too often)
     double **sources_density, 
@@ -245,6 +251,8 @@ private:
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
+    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
+    double **tm_diag;
 
     /// Time when the transport matrix was created.
     /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
