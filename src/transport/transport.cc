@@ -466,11 +466,7 @@ void ConvectionTransport::compute_concentration_sources() {
           || (data_.porosity.changed() ))
     {
         START_TIMER("sources_reinit"); 
-        if (balance_ != nullptr) 
-        {
-            for (sbi = 0; sbi < n_subst_; sbi++)
-                balance_->start_source_assembly(sbi);
-        }
+        if (balance_ != nullptr) balance_->start_source_assembly(subst_idx);
         
         for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
         {
@@ -506,11 +502,7 @@ void ConvectionTransport::compute_concentration_sources() {
             }
         }
         
-        if (balance_ != nullptr)
-        {
-            for (sbi = 0; sbi < n_subst_; sbi++)
-                balance_->finish_source_assembly(sbi);
-        }
+        if (balance_ != nullptr) balance_->finish_source_assembly(subst_idx);
         END_TIMER("sources_reinit");
     }
 }
@@ -614,6 +606,7 @@ void ConvectionTransport::update_solution() {
 
     END_TIMER("data reinit");
 
+    
     for (unsigned int sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
       START_TIMER("mat mult");
@@ -624,7 +617,7 @@ void ConvectionTransport::update_solution() {
       // Computation: first, we compute this diagonal addition D*pconc and save it temporaly into RHS
         
       // RHS = D*pconc, where D is diagonal matrix represented by a vector
-      VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vpconc[sbi]); //w = x.*y
+      VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vconc[sbi]); //w = x.*y
       
       // Then we add boundary terms ans other source terms into RHS.
       // RHS = 1.0 * bcvcorr + 1.0 * v_sources_corr_x + 1.0 * rhs
