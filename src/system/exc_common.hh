@@ -26,6 +26,8 @@ DECLARE_EXCEPTION( ExcAssertMsg, << "[" << EI_MPI_Rank::val << "] "
 
 /**
  * General exception with message.
+ * Usage:
+ * THROW( ExcMessage() << EI_Message("Some message.") )
  */
 DECLARE_EXCEPTION( ExcMessage, << EI_Message::val);
 
