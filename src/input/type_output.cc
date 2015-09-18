@@ -29,10 +29,10 @@ OutputBase::~OutputBase() {}
 
 ostream& OutputBase::print(ostream& stream) {
 	doc_type_ = full_record;
-	doc_flags_.clear();
+	clear_processed_types();
 
 	stream << format_head;
-	print_program_info(stream, type_);
+	print_program_info(stream);
 	stream << format_inner;
 	print(stream, type_);
 	stream << format_full_hash;
@@ -202,21 +202,10 @@ void OutputBase::write_description(std::ostream& stream, const string& str,
 }
 
 
-
-
-/*******************************************************************
- * implementation of OutputBase::ProcessedTypes
- */
-
-
-OutputBase::ProcessedTypes::~ProcessedTypes() {}
-
-
-void OutputBase::ProcessedTypes::clear() {
-	output_hash.clear();
-	full_hash = 0;
+void OutputBase::clear_processed_types() {
+	processed_types_hash_.clear();
+	full_hash_ = 0;
 }
-
 
 
 
@@ -235,7 +224,7 @@ void OutputText::print_impl(ostream& stream, const Record *type) {
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
-		if (! doc_flags_.was_written(hash)) {
+		if (! was_written(hash)) {
 			// header
 			stream << endl;
 			stream << "" << "Record '" << type->type_name() << "'";
@@ -297,7 +286,7 @@ void OutputText::print_impl(ostream& stream, const AbstractRecord *type) {
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
-		if (! doc_flags_.was_written(hash) ) {
+		if (! was_written(hash) ) {
             // header
             stream << endl;
             stream << "" << "AbstractRecord '" << type->type_name() << "' with " << type->child_size() << " descendants.";
@@ -352,7 +341,7 @@ void OutputText::print_impl(ostream& stream, const Selection *type) {
 		break;
 	case full_record:
 		TypeBase::TypeHash hash=type->content_hash();
-		if (! doc_flags_.was_written(hash) ) {
+		if (! was_written(hash) ) {
 			stream << endl << "Selection '" << type->type_name() << "' of " << type->size() << " values.";
 			write_description(stream, OutputBase::get_selection_description( type ), 0);
 			stream << endl;
@@ -455,7 +444,7 @@ std::string OutputJSONMachine::escape_description(std::string desc) {
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
 
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -508,14 +497,14 @@ void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
 		print(stream, it->type_.get());
 	}
 
-    boost::hash_combine(doc_flags_.full_hash, hash);
+    boost::hash_combine(full_hash_, hash);
 }
 
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     unsigned int lower_size, upper_size;
 	boost::shared_ptr<TypeBase> array_type;
@@ -534,14 +523,14 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
 
 	print(stream, array_type.get());
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -559,13 +548,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const AbstractRecord *type) 
         print(stream, &*it);
     }
 
-    boost::hash_combine(doc_flags_.full_hash, hash);
+    boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -581,7 +570,7 @@ void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstractRecord *t
         print(stream, &*it);
     }
 
-    boost::hash_combine(doc_flags_.full_hash, hash);
+    boost::hash_combine(full_hash_, hash);
 }
 
 
@@ -613,7 +602,7 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
 void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
 	stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -637,13 +626,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
 	stream << "]" << endl;
 	stream << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Integer *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     int lower, upper;
 	get_integer_bounds(*type, lower, upper);
@@ -658,13 +647,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Integer *type) {
 	stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Double *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     double lower, upper;
 	get_double_bounds(*type, lower, upper);
@@ -679,13 +668,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Double *type) {
     stream << "\"range\" : [" << lower << ", " << upper << "]" << endl;
 	stream << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Bool *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -695,13 +684,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const Bool *type) {
     stream << endl;
 	stream << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const String *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -711,13 +700,13 @@ void OutputJSONMachine::print_impl(ostream& stream, const String *type) {
     stream << endl;
 	stream << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 	TypeBase::TypeHash hash=type->content_hash();
-    if (doc_flags_.was_written(hash)) return;
+    if (was_written(hash)) return;
 
     stream << "{" << endl;
     stream << "\"id\" : \"" << format_hash(hash) << "\"," << endl;
@@ -738,12 +727,12 @@ void OutputJSONMachine::print_impl(ostream& stream, const FileName *type) {
 
 	stream << endl << "},";
 
-	boost::hash_combine(doc_flags_.full_hash, hash);
+	boost::hash_combine(full_hash_, hash);
 }
 
 
 
-void OutputJSONMachine::print_program_info(ostream& stream, const TypeBase *type) {
+void OutputJSONMachine::print_program_info(ostream& stream) {
     string revision(_GIT_REVISION_);
 	string version(_VERSION_NAME_);
 	string build_date = string(__DATE__) + ", " + string(__TIME__);
@@ -758,7 +747,7 @@ void OutputJSONMachine::print_program_info(ostream& stream, const TypeBase *type
 
 
 void OutputJSONMachine::print_full_hash(ostream& stream) {
-	stream << "\"IST_hash\" : \"" << format_hash(doc_flags_.full_hash) << "\"" << endl;
+	stream << "\"IST_hash\" : \"" << format_hash(full_hash_) << "\"" << endl;
 }
 
 

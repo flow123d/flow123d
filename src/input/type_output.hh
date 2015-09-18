@@ -22,11 +22,12 @@ namespace Type {
  * @brief Base abstract class for output description of the Input::Type tree.
  *
  * Output into various formats is implemented by derived classes:
+ * - OutputText - for human readable description (e. g. used for printout of errors)
  * - OutputJSONMachine - for full machine readable description in standard JSON format
  *
  * Usage example:
  * @code
- * cout << OutputText( &my_record, 3) << endl;
+ * cout << OutputText( &my_record) << endl;
  * @endcode
  *
  * @ingroup input_types
@@ -98,11 +99,11 @@ protected:
     /**
      * Print actual version of program.
      */
-    virtual void print_program_info(ostream& stream, const TypeBase *type) = 0;
+    virtual void print_program_info(ostream& stream) = 0;
 
 
     /**
-     * Print @p ProcessedTypes::full_hash key.
+     * Print @p full_hash_ key.
      */
     virtual void print_full_hash(ostream& stream) = 0;
 
@@ -163,6 +164,20 @@ protected:
      * Enclose value in quotes if it's needed or write info that value is optional or obligatory.
      */
     void write_default_value(std::ostream& stream, Default dft);
+	/// Clear all data of processed types
+	void clear_processed_types();
+
+    /**
+     * Returns true if the type was printed out
+     *
+     * Checks if the @p processed_types_hash_ contains hash of given type.
+     */
+    bool was_written(std::size_t hash)
+    {
+        bool in_set = ( processed_types_hash_.find(hash) != processed_types_hash_.end() );
+        if (! in_set) processed_types_hash_.insert(hash);
+        return in_set;
+    }
 
 
     /// Padding of new level of printout, used where we use indentation.
@@ -186,50 +201,10 @@ protected:
     /// Tail of the format, printed after all recursive prints are finished.
     /// see @p print(stream) method
     std::string format_tail;
-
-    /**
-     * @brief Internal data class.
-     * Contains flags of written Input::Types objects and functionality of regular expression filter of Input::Types full names.
-     *
-     * Flags are stored to struct that contains unique internal data pointer of complex Input::Type,
-     * flag if extensive documentation was printed and reference to Input::Type.
-     *
-     * Regular expression filter is optional and stores printed Input::Type by filtered full_name.
-     * Input::Types with similar full names are printed only once.
-     */
-    class ProcessedTypes {
-    public:
-
-    	/// Clear all data of processed types
-    	void clear();
-
-
-    	/// Destructor
-    	~ProcessedTypes();
-
-
-        /**
-         * Returns true if the type was printed out
-         *
-         * Checks if the ProcessedTypes contains key of given type and key has true flag extensive_doc_.
-         */
-        bool was_written(std::size_t hash)
-        {
-            bool in_set = ( output_hash.find(hash) != output_hash.end() );
-            if (! in_set) output_hash.insert(hash);
-            return in_set;
-        }
-
-
-        /// Set of hashes of outputed types. Should replace keys.
-        std::set<std::size_t> output_hash;
-
-        /// Content hash of full IST, value is used for key IST_hash
-        TypeBase::TypeHash full_hash;
-    };
-
-    /// Stores flags and references of processed type
-    ProcessedTypes doc_flags_;
+    /// Set of hashes of outputed types. Should replace keys.
+    std::set<std::size_t> processed_types_hash_;
+    /// Content hash of full IST, value is used for key IST_hash
+    TypeBase::TypeHash full_hash_;
 
 };
 
@@ -263,7 +238,7 @@ protected:
 	void print_impl(ostream& stream, const String *type);
     void print_impl(ostream& stream, const FileName *type);
 
-    void print_program_info(ostream& stream, const TypeBase *type) override {};
+    void print_program_info(ostream& stream) override {};
     void print_full_hash(ostream& stream) override {};
 };
 
@@ -340,10 +315,10 @@ protected:
     /**
      * Print actual version of program.
      */
-    void print_program_info(ostream& stream, const TypeBase *type) override;
+    void print_program_info(ostream& stream) override;
 
     /**
-     * Print @p ProcessedTypes::full_hash key.
+     * Print @p full_hash_ key.
      */
     void print_full_hash(ostream& stream) override;
 
