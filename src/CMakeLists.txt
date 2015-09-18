@@ -258,6 +258,7 @@ add_library(flow123d_lib
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/richards_lmh.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc

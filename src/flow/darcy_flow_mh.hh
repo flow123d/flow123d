@@ -55,20 +55,17 @@
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "input/input_type.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/linsys_PETSC.hh"
 
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
-#include "fields/field_add_potential.hh"
-#include "flow/old_bcd.hh"
+#include "flow/darcy_flow_interface.hh"
 
 
 /// external types:
 class LinSys;
-struct Solver;
 class Mesh;
 class SchurComplement;
 class Distribution;
@@ -99,17 +96,20 @@ template<unsigned int dim> class QGauss;
  *
  */
 
-class DarcyFlowMH : public EquationBase {
+class DarcyFlowMH : public DarcyFlowInterface {
 public:
+
+
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
     enum MortarMethod {
         NoMortar = 0,
         MortarP0 = 1,
         MortarP1 = 2
     };
     
-    /** @brief Data for Darcy flow equation.
-     *  
-     */
+    /// Class with all fields used in the equation DarcyFlow.
+    /// This is common to all implementations since this provides interface
+    /// to this equation for possible coupling.
     class EqData : public FieldSet {
     public:
 
@@ -123,9 +123,11 @@ public:
             robin=3,
             total_flux=4
         };
+
+        /// Return a Selection corresponding to enum BC_Type.
         static const Input::Type::Selection & get_bc_type_selection();
 
-        /// Collect all fields
+        /// Creation of all fields.
         EqData();
 
 
@@ -140,8 +142,6 @@ public:
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
         
-        //TODO: these belong to Unsteady flow classes
-        //as long as Unsteady is descendant from Steady, these cannot be transfered..
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
@@ -151,10 +151,14 @@ public:
          */
         arma::vec4 gravity_;
 
-        FieldSet	time_term_fields;
-        FieldSet	main_matrix_fields;
-        FieldSet	rhs_fields;
+        //FieldSet	time_term_fields;
+        //FieldSet	main_matrix_fields;
+        //FieldSet	rhs_fields;
     };
+
+
+    static const Input::Type::Selection & get_mh_mortar_selection();
+
 
 
     /**
@@ -165,11 +169,9 @@ public:
      *
      */
     DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec)
+    : DarcyFlowInterface(mesh, in_rec)
     {}
 
-    static const Input::Type::Selection & get_mh_mortar_selection();
-    static Input::Type::AbstractRecord & get_input_type();
 
     void get_velocity_seq_vector(Vec &velocity_vec)
         { velocity_vec = velocity_vector; }
@@ -191,8 +193,6 @@ public:
        return mh_dh;
     }
     
-    virtual void set_concentration_vector(Vec &vc){};
-
 
 protected:
     void setup_velocity_vector() {
@@ -242,13 +242,11 @@ protected:
  *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
  *
  *
- *   TODO:
- *   - consider create auxiliary classes for creation of inverse of block A
  */
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
 public:
-	typedef DarcyFlowMH FactoryBaseType;
+
   
     class EqData : public DarcyFlowMH::EqData {
     public:
@@ -273,8 +271,8 @@ public:
 
 
 protected:
-    class AssemblyBase;
-    template<unsigned int dim> class Assembly;
+    //class AssemblyBase;
+    //template<unsigned int dim> class Assembly;
     
     struct AssemblyData
     {
@@ -510,8 +508,7 @@ void mat_count_off_proc_values(Mat m, Vec v);
 class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
 {
 public:
-	typedef DarcyFlowMH FactoryBaseType;
-  
+
     DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
     DarcyFlowMH_Unsteady();
 
@@ -532,44 +529,6 @@ private:
 
 };
 
-/**
- * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
- *
- * The time term and sources are evenly distributed form an element to its edges.
- * This applies directly to the second Schur complement. After this system for pressure traces is solved we reconstruct pressures and side flows as follows:
- *
- * -# Element pressure is  average of edge pressure. This is in fact same as the MH for steady case so we let SchurComplement class do its job.
- *
- * -# We let SchurComplement to reconstruct fluxes and then account time term and sources which are evenly distributed from an element to its sides.
- *    It can be proved, that this keeps continuity of the fluxes over the edges.
- *
- * This lumping technique preserves discrete maximum principle for any time step provided one use acute mesh. But in practice even worse meshes are tractable.
- */
-class DarcyFlowLMH_Unsteady : public DarcyFlowMH_Steady
-{
-public:
-	typedef DarcyFlowMH FactoryBaseType;
-  
-    DarcyFlowLMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    DarcyFlowLMH_Unsteady();
-    
-    static const Input::Type::Record & get_input_type();
-protected:
-    void read_init_condition() override;
-    void modify_system() override;
-    void assembly_source_term() override;
-    void setup_time_term();
-    virtual void postprocess();
-private:
-    /// Registrar of class to factory
-    static const int registrar;
-
-    Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
-    //Vec time_term;
-};
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------
