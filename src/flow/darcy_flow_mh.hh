@@ -100,12 +100,6 @@ class DarcyFlowMH : public DarcyFlowInterface {
 public:
 
 
-    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
-    enum MortarMethod {
-        NoMortar = 0,
-        MortarP0 = 1,
-        MortarP1 = 2
-    };
     
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -156,7 +150,13 @@ public:
         //FieldSet	rhs_fields;
     };
 
-
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
+    enum MortarMethod {
+        NoMortar = 0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
+    /// Selection for enum MortarMethod.
     static const Input::Type::Selection & get_mh_mortar_selection();
 
 
@@ -173,8 +173,8 @@ public:
     {}
 
 
-    void get_velocity_seq_vector(Vec &velocity_vec)
-        { velocity_vec = velocity_vector; }
+    //void get_velocity_seq_vector(Vec &velocity_vec)
+    //    { velocity_vec = velocity_vector; }
 
     const MH_DofHandler &get_mh_dofhandler() {
         double *array;
@@ -195,6 +195,7 @@ public:
     
 
 protected:
+    /*
     void setup_velocity_vector() {
         double *velocity_array;
         unsigned int size;
@@ -202,12 +203,12 @@ protected:
         get_solution_vector(velocity_array, size);
         VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
 
-    }
+    }*/
 
     virtual double solution_precision() const = 0;
 
     bool solution_changed_for_scatter;
-    Vec velocity_vector;
+    //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
     MortarMethod mortar_method_;
@@ -241,7 +242,12 @@ protected:
  * @f]
  *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
  *
+ * The time key is optional, when not specified the equation is forced to steady regime. Using Steady TimeGovernor which have no dt constraints.
  *
+ *
+ * TODO:
+ * Make solution regular field (need FeSeystem and parallel DofHandler for edge pressures), then remove get_solution_vector from
+ * Equation interface.
  */
 class DarcyFlowMH_Steady : public DarcyFlowMH
 {
@@ -260,8 +266,9 @@ public:
     static const Input::Type::Record & get_input_type();
 
     virtual void update_solution();
-    virtual void get_solution_vector(double * &vec, unsigned int &vec_size);
-    virtual void get_parallel_solution_vector(Vec &vector);
+    void zero_time_step() override;
+    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
+    void get_parallel_solution_vector(Vec &vector) override;
     
     /// postprocess velocity field (add sources)
     virtual void postprocess();
@@ -334,13 +341,15 @@ protected:
     
     void make_serial_scatter();
     virtual void modify_system()
-    { ASSERT(0, "Modify system called for Steady darcy.\n"); };
+    { ASSERT(0, "Method modify_system not implemented in DarcyFlowMH.\n"); };
     virtual void setup_time_term()
-    { ASSERT(0, "Setup time term called for Steady darcy.\n"); };
+    { ASSERT(0, "Method setup_time_term not implemented in Steady darcy.\n"); };
 
 
-    void prepare_parallel( const Input::AbstractRecord in_rec);
+    void prepare_parallel();
     void make_row_numberings();
+    /// Initialize global_row_4_sub_row.
+    void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -388,7 +397,7 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-	AssemblyData *assembly_data_;
+	//AssemblyData *assembly_data_;
 	std::vector<AssemblyBase *> assembly_;
 	
 	// parallel
@@ -404,8 +413,8 @@ protected:
 	int *edge_4_loc;		//< array of indexes of local edges
 	int	*row_4_edge;		//< edge index to matrix row
 
-	// MATIS related arrays
-        boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
+	/// Necessary only for BDDC solver.
+    boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
 
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array

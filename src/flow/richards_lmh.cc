@@ -49,8 +49,6 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 {
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
     data_.mark_input_times(this->mark_type());
-
-
     data_.set_limit_side(LimitSide::right);
     data_.set_time(time_->step());
 

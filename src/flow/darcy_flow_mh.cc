@@ -30,11 +30,16 @@
  *
  */
 
+//#include <limits>
+#include <vector>
+//#include <iostream>
+//#include <iterator>
+//#include <algorithm>
+#include <armadillo>
+
 #include "petscmat.h"
 #include "petscviewer.h"
 #include "petscerror.h"
-#include <armadillo>
-#include <boost/foreach.hpp>
 
 
 #include "system/system.hh"
@@ -52,7 +57,6 @@
 #include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
 
-#include "system/file_path.hh"
 #include "flow/darcy_flow_mh.hh"
 
 #include "flow/darcy_flow_mh_output.hh"
@@ -60,15 +64,8 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include <fem/fe_rt.hh>
+#include "fem/fe_rt.hh"
 #include "quadrature/quadrature_lib.hh"
-
-#include <limits>
-#include <set>
-#include <vector>
-#include <iostream>
-#include <iterator>
-#include <algorithm>
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -76,7 +73,6 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "flow/old_bcd.hh"
-
 
 #include "coupling/balance.hh"
 
@@ -116,32 +112,30 @@ const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
 
 
 const it::Record & DarcyFlowMH_Steady::get_input_type() {
+    it::Record field_descriptor =
+        it::Record("DarcyFlowMH_Data",FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
+        .copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
+        .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
+        .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
+        .declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
+        .close();
+
     return it::Record("Steady_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
+        .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
+                "Input data for Darcy flow model.")
+        .declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
+                "Linear solver for MH problem.")
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
+                "Parameters of output form MH module.")
+        .declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
+                "Settings for computing mass balance.")
+        .declare_key("time", TimeGovernor::get_input_type(),
+                "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
-		.declare_key("solver", LinSys::get_input_type(), it::Default::obligatory(),
-				"Linear solver for MH problem.")
-		.declare_key("output", DarcyFlowMHOutput::get_input_type(), it::Default::obligatory(),
-				"Parameters of output form MH module.")
 		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
 				"Method for coupling Darcy flow between dimensions." )
-		.declare_key("balance", Balance::get_input_type(), it::Default::obligatory(),
-				"Settings for computing mass balance.")
-		.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
-				"Boundary condition for pressure as piezometric head." )
-		.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(),
-				"Initial condition for pressure as piezometric head." )
-		.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(),
-				"File with mesh dependent boundary conditions (obsolete).")
-		.declare_key("input_fields", it::Array(
-					it::Record("DarcyFlowMH_Data", FieldCommon::field_descriptor_record_decsription("DarcyFlowMH_Data") )
-					.copy_keys( DarcyFlowMH_Steady::EqData().make_field_descriptor_type("DarcyFlowMH") )
-					.declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Boundary condition for pressure as piezometric head." )
-					.declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type(), "Initial condition for pressure as piezometric head." )
-					.declare_key(OldBcdInput::flow_old_bcd_file_key(), it::FileName::input(), "File with mesh dependent boundary conditions (obsolete).")
-					.close()
-					), it::Default::obligatory(), ""  )
 		.close();
 }
 
@@ -155,8 +149,6 @@ const it::Record & DarcyFlowMH_Unsteady::get_input_type() {
 	return it::Record("Unsteady_MH", "Mixed-Hybrid solver for unsteady saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
 		.copy_keys(DarcyFlowMH_Steady::get_input_type())
-		.declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
-					 "Time governor setting for the unsteady Darcy flow model.")
 		.close();
 }
 
@@ -254,43 +246,50 @@ DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
  */
 //=============================================================================
 DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec, bool make_tg )
-: DarcyFlowMH(mesh_in, in_rec)
+: DarcyFlowMH(mesh_in, in_rec),
+  solution(nullptr),
+  schur0(nullptr),
+  edge_ds(nullptr),
+  el_ds(nullptr),
+  side_ds(nullptr),
+  el_4_loc(nullptr)
 
 {
-    using namespace Input;
     START_TIMER("Darcy constructor");
-
-    this->eq_data_ = &data_;
+    {
+        Input::Record time_record;
+        if ( in_rec.opt_val("time", time_record) )
+            time_ = new TimeGovernor(time_record);
+        else
+            time_ = new TimeGovernor();
+        this->eq_data_ = &data_;
+    }
 
     //connecting data fields with mesh
-    START_TIMER("data init");
-    data_.set_mesh(mesh_in);
-    data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
-
-
-
-    
-    END_TIMER("data init");
+    {
+        START_TIMER("data init");
+        data_.set_mesh(mesh_in);
+        data_.set_input_list( in_rec.val<Input::Array>("input_fields") );
+        data_.mark_input_times(this->mark_type());
+        data_.set_limit_side(LimitSide::right);
+        //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
+        data_.gravity_ =  arma::vec4(" 0 0 -1 0");
+        data_.bc_pressure.add_factory(
+                OldBcdInput::instance()->flow_pressure_factory );
+        data_.bc_pressure.add_factory(
+                std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+                (data_.gravity_, "bc_piezo_head") );
+        data_.set_time(time_->step());
+    }
+    output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
 
     
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    //data_.gravity_ = arma::vec4( in_rec.val<std::string>("gravity") );
-    data_.gravity_ =  arma::vec4(" 0 0 -1 0");
-    data_.bc_pressure.add_factory( OldBcdInput::instance()->flow_pressure_factory );
-    data_.bc_pressure.add_factory(
-    		std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-    		(data_.gravity_, "bc_piezo_head") );
-    
-    solution = NULL;
-    schur0   = NULL;
-
-    
     mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (mortar_method_ != NoMortar) {
         mesh_->make_intersec_elements();
     }
-
     mh_dh.reinit(mesh_);
     
     AssemblyData assembly_data;
@@ -301,15 +300,13 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     assembly_.push_back(new Assembly<2>(assembly_data));
     assembly_.push_back(new Assembly<3>(assembly_data));
 
-    
-    prepare_parallel(in_rec.val<AbstractRecord>("solver"));
-
+    // TODO: After simplification of Balance constructor move next line into create_linear_system.
+    prepare_parallel();
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
     //edge_ds->view( std::cout );
     //rows_ds->view( std::cout );
     
-
     // initialization of balance object
     Input::Iterator<Input::Record> it = in_rec.find<Input::Record>("balance");
     if (it->val<bool>("balance_on"))
@@ -319,21 +316,21 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
         balance_->allocate(rows_ds->lsize(), 1);
         balance_->units(UnitSI().m(3));
     }
-
-
-    if (make_tg) {
-    	// steady time governor
-    	time_ = new TimeGovernor();
-    	data_.mark_input_times(this->mark_type());
-    	data_.set_limit_side(LimitSide::right);
-    	data_.set_time(time_->step());
-
-    	create_linear_system();
-    	output_object = new DarcyFlowMHOutput(this, in_rec.val<Input::Record>("output"));
-    }
 }
 
 
+void DarcyFlowMH_Steady::zero_time_step() {
+    create_linear_system();
+    assembly_linear_system();
+    int convergedReason = schur0->solve();
+
+    xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
+    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+
+    this -> postprocess();
+    solution_changed_for_scatter=true;
+    output_data();
+}
 
 //=============================================================================
 // COMPOSE and SOLVE WATER MH System possibly through Schur complements
@@ -343,10 +340,8 @@ void DarcyFlowMH_Steady::update_solution() {
 
 
     if (time_->is_end()) return;
-
-    if (! time_->is_steady()) time_->next_time();
-    
-
+    time_->next_time();
+    if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
 
     assembly_linear_system();
     int convergedReason = schur0->solve();
@@ -360,7 +355,7 @@ void DarcyFlowMH_Steady::update_solution() {
 
     output_data();
 
-    if (time_->is_steady()) time_->next_time();
+    //if (time_->is_steady()) time_->next_time();
 }
 
 void DarcyFlowMH_Steady::postprocess() 
@@ -964,12 +959,12 @@ void DarcyFlowMH_Steady::create_linear_system() {
     START_TIMER("preallocation");
 
     auto in_rec = this->input_record_.val<Input::AbstractRecord>("solver");
-
     if (schur0 == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
-            xprintf(Warn, "For BDDC is using no Schur complements.");
+            xprintf(Warn, "For BDDC no Schur complements are used.");
+            prepare_parallel_bddc();
             n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(global_row_4_sub_row->size(), &(*rows_ds),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
@@ -1391,7 +1386,7 @@ void DarcyFlowMH_Steady::make_serial_scatter() {
 // - compute appropriate partitioning of elements and sides
 // - make arrays: *_id_4_loc and *_row_4_id to allow parallel assembly of the MH matrix
 // ====================================================================================
-void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
+void DarcyFlowMH_Steady::prepare_parallel() {
     
     START_TIMER("prepare parallel");
     
@@ -1467,45 +1462,45 @@ void DarcyFlowMH_Steady::prepare_parallel( const Input::AbstractRecord in_rec) {
 
     // prepare global_row_4_sub_row
 
-#ifdef FLOW123D_HAVE_BDDCML
-    if (in_rec.type() ==  LinSys_BDDC::get_input_type()) {
-        // auxiliary
-        Element *el;
-        int side_row, edge_row;
-
-        global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
-
-        //
-        // ordering of dofs
-        // for each subdomain:
-        // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
-        for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-            el = mesh_->element(el_4_loc[i_loc]);
-            int el_row = row_4_el[el_4_loc[i_loc]];
-
-            global_row_4_sub_row->insert( el_row );
-
-            unsigned int nsides = el->n_sides();
-            for (unsigned int i = 0; i < nsides; i++) {
-                side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
-		        edge_row = row_4_edge[el->side(i)->edge_idx()];
-
-		        global_row_4_sub_row->insert( side_row );
-		        global_row_4_sub_row->insert( edge_row );
-            }
-
-            for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
-                // mark this edge
-                edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
-                global_row_4_sub_row->insert( edge_row );
-            }
-        }
-        global_row_4_sub_row->finalize();
-    }
-#endif // FLOW123D_HAVE_BDDCML
 
 }
 
+void DarcyFlowMH_Steady::prepare_parallel_bddc() {
+#ifdef FLOW123D_HAVE_BDDCML
+    // auxiliary
+    Element *el;
+    int side_row, edge_row;
+
+    global_row_4_sub_row = boost::make_shared<LocalToGlobalMap>(rows_ds);
+
+    //
+    // ordering of dofs
+    // for each subdomain:
+    // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
+    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
+        el = mesh_->element(el_4_loc[i_loc]);
+        int el_row = row_4_el[el_4_loc[i_loc]];
+
+        global_row_4_sub_row->insert( el_row );
+
+        unsigned int nsides = el->n_sides();
+        for (unsigned int i = 0; i < nsides; i++) {
+            side_row = side_row_4_id[ mh_dh.side_dof( el->side(i) ) ];
+            edge_row = row_4_edge[el->side(i)->edge_idx()];
+
+            global_row_4_sub_row->insert( side_row );
+            global_row_4_sub_row->insert( edge_row );
+        }
+
+        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+            // mark this edge
+            edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
+            global_row_4_sub_row->insert( edge_row );
+        }
+    }
+    global_row_4_sub_row->finalize();
+#endif // FLOW123D_HAVE_BDDCML
+}
 
 
 void mat_count_off_proc_values(Mat m, Vec v) {
