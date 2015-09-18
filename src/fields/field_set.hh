@@ -150,20 +150,20 @@ public:
      * vector fields should be set to the same number of components.
      */
     void set_components(const std::vector<string> &names) {
-        for(auto field : field_list) field->set_components(names);
+        for(FieldCommon *field : field_list) field->set_components(names);
     }
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_mesh(const Mesh &mesh) {
-    	for(auto field : field_list) field->set_mesh(mesh);
+        for(FieldCommon *field : field_list) field->set_mesh(mesh);
     }
 
     /**
      * Collective interface to @p FieldCommon::set_mesh().
      */
     void set_input_list(Input::Array input_list) {
-    	for(auto field : field_list) field->set_input_list(input_list);
+        for(FieldCommon *field : field_list) field->set_input_list(input_list);
     }
 
     /**
@@ -178,14 +178,14 @@ public:
      * @param mask   mask to set for all fields in the field set.
      */
     void flags_add( FieldFlag::Flags::Mask mask) {
-        for (auto field : field_list) field->flags_add(mask);
+        for(FieldCommon *field : field_list) field->flags_add(mask);
     }
 
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_time(const TimeStep &time) {
-        for(auto field : field_list) field->set_time(time);
+        for(FieldCommon *field : field_list) field->set_time(time);
     }
 
     /**
@@ -193,14 +193,14 @@ public:
      * @param rt   Discrete function space (element, node or corner data).
      */
     void output_type(OutputTime::DiscreteSpace rt) {
-        for (auto field : field_list) field->output_type(rt);
+        for(FieldCommon *field : field_list) field->output_type(rt);
     }
 
     /**
-     * Collective interface to @p FieldCommonBase::mar_input_times().
+     * Collective interface to @p FieldCommonBase::mark_input_times().
      */
     void mark_input_times(TimeMark::Type mark_type) {
-    	for(auto field : field_list) field->mark_input_times(mark_type);
+        for(FieldCommon *field : field_list) field->mark_input_times(mark_type);
     }
 
     /**
