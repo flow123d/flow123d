@@ -86,7 +86,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
     *this+=bc_type
             .name("bc_type")
             .description(
-            "Boundary condition type, possible values: inflow, dirichlet, neumann, robin.")
+            "Type of boundary condition.")
             .units( UnitSI::dimensionless() )
             .input_default("\"inflow\"")
             .input_selection( &get_bc_type_selection() )
