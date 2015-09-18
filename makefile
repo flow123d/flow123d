@@ -40,10 +40,14 @@ all:  install-hooks build-flow123d
 update-build-tree: update-submodules
 	@-bin/git_post_checkout_hook	# do not print command, ignore return code
 
-
-build-flow123d: update-build-tree cmake
+# Just build flow123d with existing configuration.
+fast-flow123d:
 	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
 
+# Build flow, update configuration and dependencies.
+.PHONY : build-flow123d
+build-flow123d: update-build-tree cmake fast-flow123d
+	
 
 # This target only configure the build process.
 # Useful for building unit tests without actually build whole program.
