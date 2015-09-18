@@ -109,7 +109,7 @@ public:
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
+        ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec);
 	/**
 	 * TODO: destructor
 	 */

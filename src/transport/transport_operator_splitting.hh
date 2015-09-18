@@ -140,8 +140,6 @@ public:
 
 class TransportOperatorSplitting : public TransportBase {
 public:
-	typedef AdvectionProcessBase FactoryBaseType;
-
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
      *
@@ -152,7 +150,7 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /// Constructor.
-    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec);
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 

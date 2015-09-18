@@ -84,7 +84,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 
 
 const int TransportOperatorSplitting::registrar =
-		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record & >("TransportOperatorSplitting") +
+		Input::register_class< TransportOperatorSplitting, Mesh &, const Input::Record>("TransportOperatorSplitting") +
 		TransportOperatorSplitting::get_input_type().size();
 
 
@@ -134,7 +134,7 @@ TransportBase::~TransportBase()
 
 
 
-TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec)
+TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : TransportBase(init_mesh, in_rec),
   convection(NULL),
   Semchem_reactions(NULL)

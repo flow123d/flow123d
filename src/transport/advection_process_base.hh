@@ -19,6 +19,8 @@ class SubstanceList;
 class AdvectionProcessBase : public EquationBase {
 
 public:
+    typedef AdvectionProcessBase FactoryBaseType;
+
 
     AdvectionProcessBase(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)

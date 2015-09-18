@@ -87,7 +87,7 @@ ConvectionTransport::EqData::EqData() : TransportBase::TransportEqData()
 }
 
 
-ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec)
+ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : TransportBase(init_mesh, in_rec)
 {
 	START_TIMER("ConvectionTransport");

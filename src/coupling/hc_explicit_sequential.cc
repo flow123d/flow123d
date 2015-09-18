@@ -110,6 +110,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("primary_equation");
+    // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
 
 

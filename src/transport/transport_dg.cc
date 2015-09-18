@@ -103,7 +103,7 @@ const Record & TransportDG<Model>::get_input_type() {
 
 template<class Model>
 const int TransportDG<Model>::registrar =
-		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record & >(std::string(Model::ModelEqData::name()) + "_DG") +
+		Input::register_class< TransportDG<Model>, Mesh &, const Input::Record>(std::string(Model::ModelEqData::name()) + "_DG") +
 		TransportDG<Model>::get_input_type().size();
 
 
@@ -262,7 +262,7 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 }
 
 template<class Model>
-TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record &in_rec)
+TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : TransportBase(init_mesh, in_rec),
           mass_matrix(0),
           allocation_done(false)
