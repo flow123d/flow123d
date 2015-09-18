@@ -47,12 +47,12 @@ using namespace std;
 
 
 TypeBase::TypeBase()
-: attributes_( boost::make_shared<attribute_map>() ) {}
+: attributes_( boost::make_shared<attribute_map>() ), root_of_generic_subtree_(false) {}
 
 
 
 TypeBase::TypeBase(const TypeBase& other)
-: attributes_(other.attributes_) {}
+: attributes_(other.attributes_), root_of_generic_subtree_(other.root_of_generic_subtree_) {}
 
 
 
@@ -237,6 +237,12 @@ Array Array::deep_copy() const {
 	arr.data_ = boost::make_shared<Array::ArrayData>(*this->data_);
 	arr.data_->finished = false;
 	return arr;
+}
+
+
+Array &Array::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
 }
 
 

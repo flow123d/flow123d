@@ -230,6 +230,9 @@ protected:
     /// map of type attributes (e. g. input_type, name etc.)
     boost::shared_ptr<attribute_map> attributes_;
 
+    /// flag is true if type should be root of generic subtree
+    bool root_of_generic_subtree_;
+
     friend class Array;
     friend class Record;
 };
@@ -324,6 +327,9 @@ public:
 
     /// Create deep copy of Array (copy all data stored in shared pointers etc.)
     Array deep_copy() const;
+
+    /// Set flag @p root_of_generic_subtree_ to true
+    Array &root_of_generic_subtree();
 
 protected:
 

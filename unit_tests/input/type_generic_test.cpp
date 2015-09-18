@@ -41,6 +41,7 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Integer>(0, max_limit)) );
 
 	static Record rec = Record("generic_rec", "desc.")
+							.root_of_generic_subtree()
 							.declare_key("param1", Parameter("param1"), "desc.")
 							.declare_key("param2", Parameter("param2"), "desc.")
 							.declare_key("start_time", Double(), "desc.")
@@ -52,7 +53,7 @@ static const Instance & get_generic_record(const Selection *sel, int max_limit) 
 }
 
 static const Instance & get_generic_array(const Selection *sel) {
-	static Array arr(Parameter("param"), 0, 100);
+	static Array arr = Array(Parameter("param"), 0, 100).root_of_generic_subtree();
 
 	std::vector<TypeBase::ParameterPair> param_vec;
 	param_vec.push_back( std::make_pair("param", boost::make_shared<Selection>(*sel)) );
@@ -62,7 +63,7 @@ static const Instance & get_generic_array(const Selection *sel) {
 }
 
 static AbstractRecord & get_abstract_type() {
-	return AbstractRecord("SomeAbstract", "Some Abstract.").close();
+	return AbstractRecord("SomeAbstract", "Some Abstract.").root_of_generic_subtree().close();
 }
 
 static const Instance & get_generic_abstract(const Selection *sel) {
@@ -96,6 +97,7 @@ static const Instance & get_record_with_record(const Selection *sel, const boost
 	param_vec.push_back( std::make_pair("param2", type) );
 
 	static Record rec = Record("record", "desc.")
+					.root_of_generic_subtree()
 					.declare_key("inner_record", get_inner_record(), "desc.")
 					.declare_key("param1", Parameter("param1"), "desc.")
 					.declare_key("start_time", Double(), "desc.")
@@ -233,6 +235,7 @@ TEST(GenericType, parameter_in_deep) {
 	param_vec.push_back( std::make_pair("param", boost::make_shared<Double>()) );
 
 	static Record with_array = Record("inner_rec", "")
+			.root_of_generic_subtree()
 			.declare_key("array", Array( Array( Parameter("param") ) ), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();
@@ -278,6 +281,7 @@ TEST(GenericType, instance_in_instance) {
 	static Instance inst_in = Instance(param, param_vec2).close();
 
 	static Record in_rec = Record("Inner record", "")
+			.root_of_generic_subtree()
 			.declare_key("key1", inst_in, "Inner instance.")
 			.declare_key("param", Parameter("param"), "Parameterized key")
 			.close();
@@ -308,6 +312,7 @@ TEST(GenericType, parameter_not_replaced) {
 	std::vector<TypeBase::ParameterPair> param_vec;
 
 	static Record inner = Record("inner_rec", "")
+			.root_of_generic_subtree()
 			.declare_key("param", Parameter("param"), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();
@@ -332,6 +337,7 @@ TEST(GenericType, parameter_not_used) {
 	param_vec.push_back( std::make_pair("param2", boost::make_shared<Double>()) );
 
 	static Record inner = Record("inner_rec", "")
+			.root_of_generic_subtree()
 			.declare_key("param", Parameter("param"), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();

@@ -359,6 +359,9 @@ public:
     /// Create deep copy of Record (copy all data stored in shared pointers etc.)
     Record deep_copy() const;
 
+    /// Set flag @p root_of_generic_subtree_ to true
+    Record &root_of_generic_subtree();
+
 
 protected:
 
@@ -702,6 +705,9 @@ public:
 
     /// Create deep copy of AbstractRecord (copy all data stored in shared pointers etc.)
     AbstractRecord deep_copy() const;
+
+    /// Set flag @p root_of_generic_subtree_ to true
+    AbstractRecord &root_of_generic_subtree();
 
 protected:
     /**

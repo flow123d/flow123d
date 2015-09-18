@@ -390,6 +390,12 @@ const Record &Record::add_parent(AbstractRecord &parent) const {
 }
 
 
+Record &Record::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
+}
+
+
 
 /**********************************************************************************
  * implementation of Type::Record::RecordData
@@ -742,6 +748,12 @@ AbstractRecord AbstractRecord::deep_copy() const {
 	abstract.child_data_->selection_of_childs = boost::make_shared<Selection>(this->type_name() + "_TYPE_selection");
 	abstract.attributes_ = boost::make_shared<attribute_map>(*attributes_);
 	return abstract;
+}
+
+
+AbstractRecord &AbstractRecord::root_of_generic_subtree() {
+	root_of_generic_subtree_ = true;
+	return *this;
 }
 
 
