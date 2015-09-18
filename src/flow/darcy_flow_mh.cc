@@ -83,9 +83,9 @@
 #include "fields/vec_seq_double.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(steady_MH);
-FLOW123D_FORCE_LINK_IN_CHILD(unsteady_MH);
-FLOW123D_FORCE_LINK_IN_CHILD(unsteady_LMH);
+FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
+
+
 
 
 namespace it = Input::Type;

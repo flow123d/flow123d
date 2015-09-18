@@ -18,10 +18,14 @@
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
+#include "la/schur.hh"
 
 #include "coupling/balance.hh"
 
 #include "fields/vec_seq_double.hh"
+
+FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
+
 
 namespace it=Input::Type;
 const it::Record & DarcyFlowLMH_Unsteady::get_input_type() {
@@ -55,8 +59,10 @@ DarcyFlowLMH_Unsteady::DarcyFlowLMH_Unsteady(Mesh &mesh_in, const  Input::Record
 
     //time_->fix_dt_until_mark();
     create_linear_system();
-    if ( typeid(LinSys_PETSC) != typeid(*(this->schur0)) )
-        THROW( ExcMessage() << EI_Message("Only PETSC linear solver allowed for DarcyFlowLMH.") );
+    if ( typeid(SchurComplement) != typeid(*(this->schur0)) ) {
+        DBGMSG( "%s != %s\n", typeid(LinSys_PETSC).name(),typeid(*(this->schur0)).name() );
+        THROW( ExcMessage() << EI_Message("Only SchurComplement linear solver currently allowed for DarcyFlowLMH.") );
+    }
 
     VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
