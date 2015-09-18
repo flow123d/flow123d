@@ -115,8 +115,11 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record &i
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
     transport_matrix_time = -1.0; // or -infty
+    transport_bc_time = -1.0;
     is_convection_matrix_scaled = false;
-    need_time_rescaling=true;
+    is_src_term_scaled=false;
+    tm_need_time_rescaling=true;
+    src_need_time_rescaling=true;
 
     // register output vectors
     output_rec = in_rec.val<Input::Record>("output_stream");
@@ -364,6 +367,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (sbi=0; sbi<n_subst_; sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
     for (sbi=0; sbi<n_subst_; sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
 
+    transport_bc_time = time_->t();
 }
 
 
@@ -458,78 +462,100 @@ void ConvectionTransport::zero_time_step()
 }
 
 
+double ConvectionTransport::assess_time_constraint()
+{
+    ASSERT(mh_dh, "Null MH object.\n" );
+    data_.set_time(time_->step()); // set to the last computed time
+    
+    START_TIMER("data reinit");
+    
+    // if FLOW or DATA changed ---------------------> recompute transport matrix
+    if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed())
+    {
+        create_transport_matrix_mpi();
+        is_convection_matrix_scaled=false;
+        tm_need_time_rescaling = true;
+    }
+    
+    // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
+    if( data_.sources_density.changed() || data_.sources_conc.changed() || data_.sources_sigma.changed()
+       || data_.cross_section.changed() || data_.porosity.changed() )
+    {
+        compute_concentration_sources();
+        is_src_term_scaled = false;
+        src_need_time_rescaling = true;
+    }
+    
+    END_TIMER("data reinit");
+    return cfl_max_step;
+}
 
 void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
+    
+    time_->set_upper_constraint(cfl_max_step);
+    time_->fix_dt_until_mark();
 
-
-    START_TIMER("data reinit");
-    data_.set_time(time_->step()); // set to the last computed time
-
-    ASSERT(mh_dh, "Null MH object.\n" );
-    // update matrix and sources if neccessary
-
-
-    if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed()) {
-        create_transport_matrix_mpi();
-        
-        START_TIMER("compute_concentration_sources");
-        compute_concentration_sources();
-        END_TIMER("compute_concentration_sources");
-        
-        is_convection_matrix_scaled=false;
-
-        // need new fixation of the time step
-
-        time_->set_upper_constraint(cfl_max_step);
-        time_->fix_dt_until_mark();
-
+    double dt_new = time_->estimate_dt(),
+           dt_scaled = dt_new / time_->dt();
+    
+    START_TIMER("time step rescaling");
+    // if FLOW or DATA or BC changed ---------------------> recompute boundary condition
+    if ( (mh_dh->time_changed() > transport_bc_time)
+        || data_.porosity.changed()
+        || data_.bc_conc.changed() )
+    {
         set_boundary_conditions();
-        // scale boundary sources
-        for (unsigned int sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->estimate_dt());
-
-        need_time_rescaling = true;
-    } else {
-        // possibly read boundary conditions
-        if (data_.bc_conc.changed() ) {
-            set_boundary_conditions();
-            // scale boundary sources
-            for (unsigned int  sbi=0; sbi<n_subst_; sbi++) VecScale(bcvcorr[sbi], time_->dt());
-        }
+        // rescale by time step
+        for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
+            VecScale(bcvcorr[sbi], dt_new);
+    }
+    else if(time_->is_changed_dt()) // if time step changed, only rescale
+    {
+        for (unsigned int  sbi=0; sbi<n_subst_; sbi++) 
+            VecScale(bcvcorr[sbi], dt_scaled);
     }
 
-    if (need_time_rescaling) {
-        if ( is_convection_matrix_scaled ) {
+    // if DATA or TIME STEP changed -----------------------> rescale source term
+    if (src_need_time_rescaling || time_->is_changed_dt()) {
+        if(is_src_term_scaled) { // if it is already scaled
+            for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+            {
+                VecScale(v_sources_corr[sbi], dt_scaled);
+                VecScale(v_tm_diag[sbi], dt_scaled);
+            }
+        }
+        else{ //if it is not scaled (freshly computed)
+            for (unsigned int sbi=0; sbi<n_subst_; sbi++)
+            { 
+                VecScale(v_sources_corr[sbi], dt_new);
+                VecScale(v_tm_diag[sbi], dt_new);
+            }
+            is_src_term_scaled = true;
+        }
+        src_need_time_rescaling = false;
+    }
+    
+    // if DATA or TIME STEP changed -----------------------> rescale transport matrix
+    if (tm_need_time_rescaling || time_->is_changed_dt()) {
+        if ( is_convection_matrix_scaled ) { // if it is already scaled
             // rescale matrix
             MatShift(tm, -1.0);
-            MatScale(tm, time_->estimate_dt()/time_->dt() );
+            MatScale(tm, dt_scaled );
             MatShift(tm, 1.0);
-
-            for (unsigned int sbi=0; sbi<n_subst_; sbi++) 
-            {
-                VecScale(v_sources_corr[sbi], time_->estimate_dt()/time_->dt());
-                VecScale(v_tm_diag[sbi], time_->estimate_dt()/time_->dt());
-                VecScale(bcvcorr[sbi], time_->estimate_dt()/time_->dt());
-            }
-
         } else {
             // scale fresh convection term matrix
-            MatScale(tm, time_->estimate_dt());
+            MatScale(tm, dt_new);
             MatShift(tm, 1.0);
             is_convection_matrix_scaled = true;
-            for (unsigned int sbi=0; sbi<n_subst_; sbi++) 
-            { 
-                VecScale(v_sources_corr[sbi], time_->estimate_dt());
-                VecScale(v_tm_diag[sbi], time_->estimate_dt());
-            }
-
         }
-        need_time_rescaling = false;
-    }
+        tm_need_time_rescaling = false;
+    } 
+    END_TIMER("time step rescaling");
+    
 
-    END_TIMER("data reinit");
-
+    // Compute new concentrations for every substance.
     
     for (unsigned int sbi = 0; sbi < n_subst_; sbi++) {
       // one step in MOBILE phase
@@ -554,7 +580,6 @@ void ConvectionTransport::update_solution() {
       END_TIMER("mat mult");
     }
 
-    
     // proceed to actually computed time
     // explicit scheme use values from previous time and then set then new time
     time_->next_time();
@@ -576,7 +601,7 @@ void ConvectionTransport::set_target_time(double target_time)
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();
-    need_time_rescaling = true;
+    tm_need_time_rescaling = true;
 
 }
 

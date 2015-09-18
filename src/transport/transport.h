@@ -118,6 +118,10 @@ public:
 	 * Initialize solution at zero time.
 	 */
     void zero_time_step() override;
+    /**
+     * 
+     */
+    double assess_time_constraint();
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
@@ -229,7 +233,8 @@ private:
     /**
      * Indicates if we finished the matrix and add vector by scaling with timestep factor.
      */
-	bool is_convection_matrix_scaled, need_time_rescaling;
+	bool is_convection_matrix_scaled, tm_need_time_rescaling, 
+         is_src_term_scaled, src_need_time_rescaling;
     
     double **sources_corr;
     Vec *v_sources_corr;
@@ -250,6 +255,7 @@ private:
     /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
     /// necessity for matrix update
     double transport_matrix_time;
+    double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
     /// Concentration vectors for mobile phase.
     Vec *vconc; // concentration vector
