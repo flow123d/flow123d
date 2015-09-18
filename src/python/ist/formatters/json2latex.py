@@ -29,10 +29,10 @@ class LatexItemFormatter (object):
         self.tag_name = tag_name
 
     def format (self, element):
-        raise Exception ('Method format not implemented {}'.format (self.__class__.__name__))
+        raise NotImplementedError ('Method format not implemented {}'.format (self.__class__.__name__))
 
     def format_as_child (self, *args):
-        raise Exception ('Method format_as_child not implemented {}'.format (self.__class__.__name__))
+        raise NotImplementedError ('Method format_as_child not implemented {}'.format (self.__class__.__name__))
 
 
 class LatexSelection (LatexItemFormatter):
@@ -159,12 +159,11 @@ class LatexRecordKey (LatexItemFormatter):
         reference = record_key.type.get_reference ()
 
         # try to grab formatter and format type and default value based on reference type
-        try:
-            fmt = LatexFormatter.get_formatter_for (reference)
+        fmt = LatexFormatter.get_formatter_for (reference)
+        if not fmt:
+            print ' <<Missing formatter for {}>>'.format (type (reference))
+        else:
             tex.extend (fmt.format_as_child (reference, record_key, record))
-        except Exception as e:
-            tex.append (' <<Missing formatter for {}>>'.format (type (reference)))
-            print e
 
         return tex
 
@@ -464,16 +463,9 @@ class LatexRecord (LatexItemFormatter):
 
             # record keys
             for record_key in record.keys:
-                # try:
-                # if not record_key.include_in_format ():
-                #     continue
-
                 tex.newline ()
                 fmt = LatexFormatter.get_formatter_for (record_key)
                 tex.extend (fmt.format (record_key, record))
-                # except Exception as e:
-                #     print e
-                #     continue
             tex.newline ()
 
         return tex
@@ -640,8 +632,7 @@ class LatexFormatter (object):
         'Integer': LatexInteger,
         'Double': LatexDouble,
         'Bool': LatexBool,
-        'FileName': LatexFileName,
-        '': LatexUniversal
+        'FileName': LatexFileName
     }
 
     @staticmethod
@@ -661,9 +652,8 @@ class LatexFormatter (object):
                     tex.extend (fmt.format (item))
                     tex.newline ()
                     tex.newline ()
-                except Exception as e:
-                    # print e
-                    continue
+                except NotImplementedError as e:
+                    print e
 
         return tex
 
@@ -671,7 +661,7 @@ class LatexFormatter (object):
     def get_formatter_for (o):
         cls = LatexFormatter.formatters.get (o.__class__.__name__, None)
         if cls is None:
-            cls = LatexFormatter.formatters.get ('')
+            return None
         return cls ()
 
 

@@ -31,6 +31,8 @@
 #define TRANSPORT_DG_HH_
 
 #include "transport_operator_splitting.hh"
+#include "fields/bc_field.hh"
+#include "fields/field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -137,7 +139,6 @@ template<class Model>
 class TransportDG : public TransportBase, public Model
 {
 public:
-	typedef AdvectionProcessBase FactoryBaseType;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -184,7 +185,7 @@ public:
      * @param init_mesh         computational mesh
      * @param in_rec            input record
      */
-    TransportDG(Mesh &init_mesh, const Input::Record &in_rec);
+    TransportDG(Mesh &init_mesh, const Input::Record in_rec);
     /**
 
      * @brief Declare input record type for the equation TransportDG.
