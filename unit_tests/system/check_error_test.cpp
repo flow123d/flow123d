@@ -34,3 +34,10 @@ TEST(CheckError, assert_message) {
 	EXPECT_THROW_WHAT( { chkerr_assert( err_code ); }, ExcChkErrAssert, "1" );
 #endif
 }
+
+#ifdef FLOW123D_DEBUG_ASSERTS
+TEST(ASSERTS, assert_ptr) {
+    void * test_ptr = nullptr;
+    EXPECT_THROW_WHAT( {ASSERT_PTR(test_ptr);}, ExcAssertMsg, "test_ptr");
+}
+#endif

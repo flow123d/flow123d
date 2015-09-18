@@ -91,6 +91,13 @@
 #endif
 
 
+// Undefine ASERT_LE macro from gtest.
+#if defined(ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
+#undef ASSERT_LE
+#endif
+
+
+
 #ifdef FLOW123D_DEBUG_ASSERTS
 
 /**
@@ -115,57 +122,34 @@
 
 #define WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
-
-#else
-
-#define ASSERT(...)
-#define WARN_ASSERT(...)
-
-#endif
-
-
-
-#ifdef FLOW123D_DEBUG_ASSERTS
-
 #define ASSERT_EQUAL( a, b)  do {\
     stringstream ss; ss << (a) << " != " << (b); \
     ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
     } while (0)
-#else
-
-#define ASSERT_EQUAL( a, b)
-
-#endif
-
-
-
-#ifdef FLOW123D_DEBUG_ASSERTS
 
 #define ASSERT_LESS( a, b) do {\
     stringstream ss; ss << (a) << " >= " << (b); \
     ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
-
-
-
-#if defined(ASSERT_LE) && defined(FLOW123D_INCLUDES_GTEST)
-#undef ASSERT_LE
-#endif
-
-
 #define ASSERT_LE( a, b) do {\
     stringstream ss; ss << (a) << " > " << (b); \
     ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
     } while (0)
 
+#define ASSERT_PTR( ptr ) do {\
+    ASSERT( ((ptr) != nullptr) , "Null pointer: %s\n", #ptr ); \
+    } while (0)
 #else
 
+#define ASSERT(...)
+#define WARN_ASSERT(...)
+#define ASSERT_EQUAL( a, b)
 #define ASSERT_LESS( a, b)
 #define ASSERT_LE( a, b)
+#define ASSERT_PTR( ptr )
 
 #endif
-
 
 
 
