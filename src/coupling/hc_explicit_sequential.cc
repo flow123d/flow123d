@@ -43,7 +43,8 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_IN_PARENT(soluteTransport);
+FLOW123D_FORCE_LINK_IN_PARENT(soluteTransportDG);
+FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
 FLOW123D_FORCE_LINK_IN_PARENT(heatTransfer);
 
 FLOW123D_FORCE_LINK_IN_PARENT(steady_MH);
@@ -120,6 +121,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
         // setup fields
         secondary_eq->data()["cross_section"]
         		.copy_from(water->data()["cross_section"]);
+        secondary_eq->initialize();
 
     } else {
         secondary_eq = std::make_shared<TransportNothing>(*mesh);
