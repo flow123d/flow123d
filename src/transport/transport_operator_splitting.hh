@@ -25,7 +25,9 @@ class Balance;
 
 
 
-
+/**
+ * Abstract interface class for secondary equations in HC_ExplicitCoupling.
+ */
 class AdvectionProcessBase : public EquationBase {
 
 public:
@@ -41,26 +43,112 @@ public:
      */
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
-    virtual unsigned int n_substances() = 0;
-
-    virtual SubstanceList &substances() = 0;
-
-
 	/// Common specification of the input record for secondary equations.
     static Input::Type::AbstractRecord & get_input_type();
 
+
+protected:
+
+    /// object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
 
 };
 
 
 
 /**
- * @brief Specification of transport model interface.
- *
- * Here one has to specify methods for setting or getting data particular to
- * transport equations.
+ * Abstract interface class for implementations of transport equation within TransportOperatorSplitting.
  */
-class TransportBase : public AdvectionProcessBase {
+class ConcentrationTransportBase : public EquationBase {
+public:
+
+    /**
+     * Constructor.
+     */
+    ConcentrationTransportBase(Mesh &init_mesh, const Input::Record &in_rec)
+	: EquationBase(init_mesh, in_rec) {};
+
+
+	/// Common specification of the input record for secondary equations.
+    static Input::Type::AbstractRecord & get_input_type();
+
+
+    virtual void initialize() = 0;
+
+    /**
+     * Set time interval which is considered as one time step by TransportOperatorSplitting.
+     * In particular the velocity field dosn't change over this interval.
+     *
+     * Dependencies:
+     *
+     * velocity, porosity -> matrix, source_vector
+     * matrix -> time_step
+     *
+     * data_read_times -> time_step (not necessary if we won't stick to jump times)
+     * data -> source_vector
+     * time_step -> scaling
+     *
+     *
+     *
+     */
+    virtual void set_target_time(double target_time) = 0;
+
+    /**
+     * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
+     */
+    virtual void set_balance_object(boost::shared_ptr<Balance> balance) = 0;
+
+    virtual const vector<unsigned int> &get_subst_idx() = 0;
+
+    /**
+     * Calculate quantities necessary for cumulative balance (over time).
+     * This method is called at each (sub)iteration of the time loop.
+     */
+    virtual void calculate_cumulative_balance() = 0;
+
+    /**
+     * Calculate instant quantities at output times.
+     */
+    virtual void calculate_instant_balance() = 0;
+
+
+    virtual std::shared_ptr<OutputTime> &output_stream() = 0;
+
+	virtual double **get_concentration_matrix() = 0;
+
+	/// Return PETSc vector with solution for sbi-th substance.
+	virtual const Vec &get_solution(unsigned int sbi) = 0;
+
+	virtual void get_par_info(int * &el_4_loc, Distribution * &el_ds) = 0;
+
+	virtual int *get_row_4_el() = 0;
+
+    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+
+    /// Returns number of trnasported substances.
+    virtual unsigned int n_substances() = 0;
+
+    /// Returns reference to the vector of substnace names.
+    virtual SubstanceList &substances() = 0;
+
+
+protected:
+
+    TimeGovernor &time() { return *time_; }
+
+    friend class TransportOperatorSplitting;
+
+
+};
+
+
+
+
+
+/**
+ * Interface class for transport/heat equations with common declarations.
+ */
+class TransportCommon {
 public:
 
     /**
@@ -86,43 +174,11 @@ public:
 
 	};
 
-    TransportBase(Mesh &mesh, const Input::Record in_rec);
-    virtual ~TransportBase();
-
-    virtual void set_velocity_field(const MH_DofHandler &dh) override {
-    	mh_dh=&dh;
-    }
+    TransportCommon();
+    virtual ~TransportCommon();
 
 
-    /// Returns number of trnasported substances.
-    inline unsigned int n_substances() override { return n_subst_; }
 
-    /// Returns reference to the vector of substnace names.
-    inline SubstanceList &substances() override { return substances_; }
-
-    virtual void set_concentration_vector(Vec &vec){};
-
-
-protected:
-
-    /// Returns the region database.
-    const RegionDB *region_db() { return &mesh_->region_db(); }
-
-    /// Number of transported substances.
-    unsigned int n_subst_;
-
-    /// Transported substances.
-    SubstanceList substances_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
-
-    /// (new) object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
 };
 
 
@@ -130,10 +186,11 @@ protected:
 /**
  * @brief Empty transport class.
  */
-class TransportNothing : public TransportBase {
+class TransportNothing : public AdvectionProcessBase {
 public:
     inline TransportNothing(Mesh &mesh_in)
-    : TransportBase(mesh_in, Input::Record() )
+    : AdvectionProcessBase(mesh_in, Input::Record() )
+
     {
         // make module solved for ever
         time_=new TimeGovernor();
@@ -142,6 +199,8 @@ public:
 
     inline virtual ~TransportNothing()
     {}
+
+    inline void set_velocity_field(const MH_DofHandler &dh) override {};
 
     inline virtual void output_data() override {};
 
@@ -161,7 +220,7 @@ public:
  * happens between substances and phases on one element or more generally on one DoF.
  */
 
-class TransportOperatorSplitting : public TransportBase {
+class TransportOperatorSplitting : public AdvectionProcessBase {
 public:
 	typedef AdvectionProcessBase FactoryBaseType;
 
@@ -186,7 +245,7 @@ public:
 
     void compute_until_save_time();
     void compute_internal_step();
-    void output_data() override ;
+    void output_data() override;
 
    
 
@@ -194,7 +253,7 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    ConvectionTransport *convection;
+    std::shared_ptr<ConcentrationTransportBase> convection;
     std::shared_ptr<ReactionTerm> reaction;
 
     double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more) 
