@@ -36,10 +36,10 @@
 
 
 
-class ConcentrationTransportModel : public AdvectionDiffusionModel {
+class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportBase::TransportEqData {
+	class ModelEqData : public TransportCommon::TransportEqData {
 	public:
 
 		/// Boundary conditions (Dirichlet) for concentrations.
@@ -67,6 +67,87 @@ public:
 		static IT::Selection get_output_selection_input_type(const string &implementation, const string &description);
 
 	};
+
+
+	typedef ConcentrationTransportBase FactoryBaseType;
+
+
+	ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec);
+
+	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
+
+	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<double> &mm_coef) override;
+
+
+
+	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+			const std::vector<arma::vec3> &velocity,
+			const ElementAccessor<3> &ele_acc,
+			std::vector<std::vector<arma::vec3> > &ad_coef,
+			std::vector<std::vector<arma::mat33> > &dif_coef) override;
+
+	void compute_init_cond(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &init_values) override;
+
+	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
+			const ElementAccessor<3> &ele_acc,
+			std::vector< arma::vec > &bc_values) override;
+
+	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+				const ElementAccessor<3> &ele_acc,
+				std::vector<arma::vec> &sources_conc,
+				std::vector<arma::vec> &sources_density,
+				std::vector<arma::vec> &sources_sigma) override;
+
+	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+				const ElementAccessor<3> &ele_acc,
+				std::vector<arma::vec> &sources_sigma) override;
+
+	~ConcentrationTransportModel() override;
+
+
+	/**
+	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
+	 *
+         * @param dh mixed hybrid dof handler
+         *
+	 * (So far it does not work since the flow module returns a vector of zeros.)
+	 * @param velocity_vector Input array of velocity values.
+	 */
+	inline void set_velocity_field(const MH_DofHandler &dh) override
+	{
+		mh_dh = &dh;
+		flux_changed = true;
+	}
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances() override
+    { return substances_.size(); }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances() override
+    { return substances_; }
+
+
+    // Methods inherited from ConcentrationTransportBase:
+
+	void set_target_time(double target_time) override {};
+
+	void set_balance_object(boost::shared_ptr<Balance> balance) override;
+
+    const vector<unsigned int> &get_subst_idx() override
+	{ return subst_idx; }
+
+	std::shared_ptr<OutputTime> &output_stream() override
+	{ return output_stream_; }
+
+    double **get_concentration_matrix() override {}
+
+
+
 
 protected:
 
@@ -102,48 +183,26 @@ protected:
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
 
+    /// Transported substances.
+    SubstanceList substances_;
 
-public:
+	/// List of indices used to call balance methods for a set of quantities.
+	vector<unsigned int> subst_idx;
 
-	ConcentrationTransportModel();
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
 
-	static string balance_prefix() { return "mass"; }
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
 
-	UnitSI balance_units();
-
-	void set_components(SubstanceList &substances, const Input::Record &in_rec) override;
-
-	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
+	std::shared_ptr<OutputTime> output_stream_;
 
 
 
-	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
-
-	void compute_init_cond(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) override;
-
-	void compute_dirichlet_bc(const std::vector<arma::vec3> &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &bc_values) override;
-
-	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_conc,
-				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma) override;
-
-	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma) override;
-
-	~ConcentrationTransportModel() override;
 };
 
 

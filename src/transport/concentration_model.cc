@@ -48,7 +48,7 @@ using namespace Input::Type;
 
 
 ConcentrationTransportModel::ModelEqData::ModelEqData()
-: TransportBase::TransportEqData()
+: TransportCommon::TransportEqData()
 {
     *this+=bc_conc
             .name("bc_conc")
@@ -88,26 +88,12 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 
-UnitSI ConcentrationTransportModel::balance_units()
-{
-	return UnitSI().kg();
-}
-
-
 IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
 {
 	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
-			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
-			.declare_key("balance", Balance::get_input_type(), Default::obligatory(),
-					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
-					"Parameters of output stream.")
-			.declare_key("substances", IT::Array( Substance::get_input_type() ), IT::Default::obligatory(),
-					"Names of transported substances.");
+			.derive_from(ConcentrationTransportBase::get_input_type());
 }
 
 IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_input_type(const string &implementation, const string &description)
@@ -118,8 +104,10 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection_inp
 }
 
 
-ConcentrationTransportModel::ConcentrationTransportModel() :
-		flux_changed(true)
+ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
+		ConcentrationTransportBase(mesh, in_rec),
+		flux_changed(true),
+		mh_dh(nullptr)
 {}
 
 
@@ -244,6 +232,14 @@ void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::
 
 ConcentrationTransportModel::~ConcentrationTransportModel()
 {}
+
+
+void ConcentrationTransportModel::set_balance_object(boost::shared_ptr<Balance> balance)
+{
+	balance_ = balance;
+	subst_idx = balance_->add_quantities(substances_.names());
+}
+
 
 
 
