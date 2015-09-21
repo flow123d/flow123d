@@ -449,6 +449,11 @@ public:
     };
 
     /**
+     * Explicitly compute residual and its norm for current solution.
+     */
+    virtual double compute_residual() =0;
+
+    /**
      * Returns information on relative solver accuracy
      */
     double get_relative_accuracy(){

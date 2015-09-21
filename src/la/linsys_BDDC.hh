@@ -89,6 +89,11 @@ public:
 
     double get_solution_precision();
 
+    double compute_residual() override
+    {
+        return 0;
+    }
+
     ~LinSys_BDDC( );
 
 //private:

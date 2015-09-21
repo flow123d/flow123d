@@ -255,6 +255,10 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
   el_4_loc(nullptr)
 
 {
+    is_linear_=true;
+    tolerance_=0.01;
+    max_n_it_=100;
+
     START_TIMER("Darcy constructor");
     {
         Input::Record time_record;
@@ -355,12 +359,26 @@ void DarcyFlowMH_Steady::update_solution() {
     if (time_->t() == TimeGovernor::inf_time) return; // end time of steady TimeGovernor
 
     assembly_linear_system();
-    int convergedReason = schur0->solve();
+    double residual_norm = schur0->compute_residual();
+    unsigned int n_it=0, l_it=0;
+    xprintf(MsgLog, "Nonlin iter: %d %d %g\n",n_it, l_it, residual_norm);
+    n_it++;
+    while (residual_norm > this->tolerance_ || n_it > this->max_n_it_) {
 
-    xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        int convergedReason = schur0->solve();
+        this -> postprocess();
 
-    this -> postprocess();
+        // hack to make BDDC work with empty compute_residual
+        if (is_linear_) break;
+
+        //xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
+        //ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        assembly_linear_system();
+        residual_norm = schur0->compute_residual();
+        xprintf(MsgLog, "Nonlin iter: %d %d(%d) %g\n",n_it, l_it, convergedReason, residual_norm);
+
+        n_it++;
+    }
 
     solution_changed_for_scatter=true;
 

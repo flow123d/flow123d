@@ -381,6 +381,10 @@ protected:
 	int size;				// global size of MH matrix
 	int  n_schur_compls;  	// number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
+	bool is_linear_;
+	double tolerance_;
+	unsigned int max_n_it_;
+
 
 
 	LinSys *schur0;  		//< whole MH Linear System
@@ -408,11 +412,11 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
         
-  EqData data_;
+	EqData data_;
 
-  friend class DarcyFlowMHOutput;
-  friend class P0_CouplingAssembler;
-  friend class P1_CouplingAssembler;
+    friend class DarcyFlowMHOutput;
+    friend class P0_CouplingAssembler;
+    friend class P1_CouplingAssembler;
 
 private:
   /// Registrar of class to factory

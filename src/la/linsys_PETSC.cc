@@ -68,6 +68,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     v_rhs_= new double[ rows_ds_->lsize() + 1 ];
     ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+    VecDuplicate(rhs_, &residual_);
 
     params_ = "";
     matrix_ = NULL;
@@ -308,8 +309,6 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 
 int LinSys_PETSC::solve()
 {
-    KSP                system;
-    KSPConvergedReason reason;
 
     const char *petsc_dflt_opt;
     int nits;
@@ -436,3 +435,12 @@ double LinSys_PETSC::get_solution_precision()
 	return solution_precision_;
 }
 
+
+double LinSys_PETSC::compute_residual()
+{
+    MatMult(matrix_, solution_, residual_);
+    VecAXPY(residual_,-1.0, rhs_);
+    double residual_norm;
+    VecNorm(residual_, NORM_2, &residual_norm);
+    return residual_norm;
+}
