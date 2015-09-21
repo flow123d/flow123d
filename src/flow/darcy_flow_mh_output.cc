@@ -246,7 +246,7 @@ void DarcyFlowMHOutput::make_element_vector() {
     unsigned int i=0;
     arma::vec3 flux_in_center;
     FOR_ELEMENTS(mesh_, ele) {
-        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->make_element_vector(ele);
+        flux_in_center = darcy_flow->assembly_[ele->dim() -1]->barycenter_velocity(ele);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i+j]=flux_in_center[j];

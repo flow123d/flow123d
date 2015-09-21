@@ -296,9 +296,7 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
     assembly_data.data = &data_;
     assembly_data.mesh = mesh_;
     assembly_data.mh_dh = &mh_dh;
-    assembly_.push_back(new Assembly<1>(assembly_data));
-    assembly_.push_back(new Assembly<2>(assembly_data));
-    assembly_.push_back(new Assembly<3>(assembly_data));
+    assembler_.set_data(assembly_data);
 
     // TODO: After simplification of Balance constructor move next line into create_linear_system.
     prepare_parallel();
@@ -449,7 +447,7 @@ void  DarcyFlowMH_Steady::get_parallel_solution_vector(Vec &vec)
 
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
+void DarcyFlowMH_Steady::LocalAssembly<dim>::assembly_local_matrix(arma::mat& local_matrix, ElementFullIter ele)
 {
     fe_values_.reinit(ele);
     const unsigned int ndofs = fe_values_.get_fe()->n_dofs(), qsize = fe_values_.get_quadrature()->size();
@@ -476,7 +474,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_matrix(arma::mat& local_m
 }
 
 template<unsigned int dim>
-void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
+void DarcyFlowMH_Steady::LocalAssembly<dim>::assembly_local_vb(double* local_vb, ElementFullIter ele, Neighbour *ngh)
 {
     // compute normal vector to side
     arma::vec3 nv;
@@ -499,7 +497,7 @@ void DarcyFlowMH_Steady::Assembly<dim>::assembly_local_vb(double* local_vb, Elem
 
 
 template<unsigned int dim>
-arma::vec3 DarcyFlowMH_Steady::Assembly<dim>::make_element_vector(ElementFullIter ele)
+arma::vec3 DarcyFlowMH_Steady::LocalAssembly<dim>::barycenter_velocity(ElementFullIter ele)
 {
     arma::vec3 flux_in_center;
     flux_in_center.zeros();
@@ -554,7 +552,7 @@ void DarcyFlowMH_Steady::assembly_steady_mh_matrix()
         unsigned int nsides = ele->n_sides();
         
         if (fill_matrix) 
-            assembly_[ele->dim()-1]->assembly_local_matrix(local_matrix, ele);
+            assembler_.assembly(ele->dim()).assembly_local_matrix(local_matrix, ele);
         
         double cross_section = data_.cross_section.value(ele->centre(), ele->element_accessor());
 
