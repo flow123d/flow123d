@@ -242,9 +242,11 @@ private:
     
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
-    double cfl_max_step;
-            // only local part
-
+    double cfl_max_step;    ///< Time step constraint coming from CFL condition.
+    
+    Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
+        vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
+    double *cfl_flow_, *cfl_source_;
 
 
     VecScatter vconc_out_scatter;

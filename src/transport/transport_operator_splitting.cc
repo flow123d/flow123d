@@ -259,7 +259,8 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-        convection->assess_time_constraint();
+        double cfl = convection->assess_time_constraint();
+        convection->time_->set_upper_constraint(cfl);
 	    convection->update_solution();
 
 	    if (balance_ != nullptr && balance_->cumulative())

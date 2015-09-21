@@ -172,6 +172,10 @@ ConvectionTransport::~ConvectionTransport()
 
     //Destroy mpi vectors at first
     MatDestroy(&tm);
+    VecDestroy(&vcfl_flow_);
+    VecDestroy(&vcfl_source_);
+    delete cfl_flow_;
+    delete cfl_source_;
 
     for (sbi = 0; sbi < n_subst_; sbi++) {
         // mpi vectors
@@ -250,6 +254,9 @@ void ConvectionTransport::alloc_transport_vectors() {
             conc[sbi][i] = 0.0;
         }
     }
+    
+    cfl_flow_ = new double[el_ds->lsize()];
+    cfl_source_ = new double[el_ds->lsize()];
 }
 
 //=============================================================================
@@ -300,6 +307,10 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
             mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &tm);
 
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
+            cfl_flow_,&vcfl_flow_);
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
+            cfl_source_,&vcfl_source_);
 }
 
 
@@ -376,7 +387,8 @@ void ConvectionTransport::compute_concentration_sources() {
 
   //temporary variables
   unsigned int loc_el, sbi;
-  double measure, por_m, source;
+  double measure, por_m, source, diag;
+  double max_cfl;
   Element *ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
@@ -416,7 +428,11 @@ void ConvectionTransport::compute_concentration_sources() {
                 // addition to RHS
                 sources_corr[sbi][loc_el] = source / por_m;
                 // addition to diagonal of the transport matrix
-                tm_diag[sbi][loc_el] = - src_sigma(sbi) / por_m;
+                diag = src_sigma(sbi) / por_m;
+                tm_diag[sbi][loc_el] = - diag;
+                
+                // compute maximal cfl condition over all substances
+                max_cfl = std::max(max_cfl, diag);
                 
                 if (balance_ != nullptr)
                 {
@@ -426,9 +442,13 @@ void ConvectionTransport::compute_concentration_sources() {
                                                     {source * measure});
                 }
             }
+            
+            cfl_source_[loc_el] = max_cfl;
+            max_cfl = 0;
         }
         
         if (balance_ != nullptr) balance_->finish_source_assembly(subst_idx);
+        
         END_TIMER("sources_reinit");
     }
 }
@@ -484,6 +504,18 @@ double ConvectionTransport::assess_time_constraint()
         src_need_time_rescaling = true;
     }
     
+    //now resolve the CFL condition
+    if(tm_need_time_rescaling || src_need_time_rescaling)
+    {
+        // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
+        Vec cfl;
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(),PETSC_DETERMINE, &cfl);
+        VecWAXPY(cfl, 1.0, vcfl_flow_, vcfl_source_);
+        VecMax(cfl,nullptr, &cfl_max_step);
+        // get a reciprocal value as a time constraint
+        cfl_max_step = 1 / cfl_max_step;
+    }
+    
     END_TIMER("data reinit");
     return cfl_max_step;
 }
@@ -492,7 +524,6 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
-    time_->set_upper_constraint(cfl_max_step);
     time_->fix_dt_until_mark();
 
     double dt_new = time_->estimate_dt(),
@@ -616,7 +647,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     struct Edge *edg;
     unsigned int n;
     int s, j, np, rank, new_j, new_i;
-    double max_sum, aij, aii;
+    double aij, aii;
         
     MatZeroEntries(tm);
 
@@ -638,7 +669,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     if (balance_ != nullptr)
     	balance_->start_mass_assembly(subst_idx);
 
-    max_sum = 0.0;
     aii = 0.0;
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
@@ -705,19 +735,13 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             }
 
         MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
-
-        if (fabs(aii) > max_sum)
-            max_sum = fabs(aii);
+        
+        cfl_flow_[loc_el] = fabs(aii);
         aii = 0.0;
     } // END ELEMENTS
 
     if (balance_ != nullptr)
     	balance_->finish_mass_assembly(subst_idx);
-
-    double glob_max_sum;
-
-    MPI_Allreduce(&max_sum,&glob_max_sum,1,MPI_DOUBLE,MPI_MAX,PETSC_COMM_WORLD);
-    cfl_max_step = 1 / glob_max_sum;
     
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
