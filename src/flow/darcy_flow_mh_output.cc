@@ -61,7 +61,7 @@
 namespace it = Input::Type;
 
 const it::Selection & DarcyFlowMHOutput::OutputFields::get_output_selection() {
-	return DarcyFlowMH::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
+	return DarcyFlowMH_Steady::EqData().make_output_field_selection("DarcyMHOutput_Selection", "Selection of fields available for output.")
 		.copy_values(OutputFields().make_output_field_selection("").close())
 		.close();
 }

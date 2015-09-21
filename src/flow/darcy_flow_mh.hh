@@ -96,11 +96,48 @@ template<unsigned int dim> class QGauss;
  *
  */
 
-class DarcyFlowMH : public DarcyFlowInterface {
+
+/**
+ * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
+ *
+ * solve equations:
+ * @f[
+ *      q= -{\mathbf{K}} \nabla h -{\mathbf{K}} R \nabla z
+ * @f]
+ * @f[
+ *      \mathrm{div} q = f
+ * @f]
+ *
+ * where
+ * - @f$ q @f$ is flux @f$[ms^{-1}]@f$ for 3d, @f$[m^2s^{-1}]@f$ for 2d and @f$[m^3s^{-1}]@f$ for 1d.
+ * - @f$ \mathbf{K} @f$ is hydraulic tensor ( its orientation for 2d, 1d case is questionable )
+ * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressure head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
+ *   Assumes gravity force acts counter to the direction of the @f$ z @f$ axis.
+ * - @f$ R @f$ is destity or gravity variability coefficient. For density driven flow it should be
+ * @f[
+ *    R = \frac{\rho}{\rho_0} -1 = \rho_0^{-1}\sum_{i=1}^s c_i
+ * @f]
+ *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
+ *
+ * The time key is optional, when not specified the equation is forced to steady regime. Using Steady TimeGovernor which have no dt constraints.
+ *
+ *
+ * TODO:
+ * Make solution regular field (need FeSeystem and parallel DofHandler for edge pressures), then remove get_solution_vector from
+ * Equation interface.
+ */
+/**
+ * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
+ *
+ * TODO:
+ * - how we can reuse field values computed during assembly
+ *
+ */
+
+class DarcyFlowMH_Steady : public DarcyFlowInterface
+{
 public:
 
-
-    
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
@@ -145,9 +182,9 @@ public:
          */
         arma::vec4 gravity_;
 
-        //FieldSet	time_term_fields;
-        //FieldSet	main_matrix_fields;
-        //FieldSet	rhs_fields;
+        //FieldSet  time_term_fields;
+        //FieldSet  main_matrix_fields;
+        //FieldSet  rhs_fields;
     };
 
     /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
@@ -161,20 +198,14 @@ public:
 
 
 
-    /**
-     * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
-     *
-     * TODO:
-     * - how we can reuse field values computed during assembly
-     *
-     */
-    DarcyFlowMH(Mesh &mesh, const Input::Record in_rec)
-    : DarcyFlowInterface(mesh, in_rec)
-    {}
 
 
-    //void get_velocity_seq_vector(Vec &velocity_vec)
-    //    { velocity_vec = velocity_vector; }
+
+
+
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
+
+    static const Input::Type::Record & get_input_type();
 
     const MH_DofHandler &get_mh_dofhandler() {
         double *array;
@@ -192,80 +223,8 @@ public:
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
-    
 
-protected:
-    /*
-    void setup_velocity_vector() {
-        double *velocity_array;
-        unsigned int size;
-
-        get_solution_vector(velocity_array, size);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
-
-    }*/
-
-    virtual double solution_precision() const = 0;
-
-    bool solution_changed_for_scatter;
-    //Vec velocity_vector;
-    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-
-    MortarMethod mortar_method_;
-
-    /// object for calculation and writing the water balance to file.
-    boost::shared_ptr<Balance> balance_;
-    /// index of water balance within the Balance object.
-    unsigned int water_balance_idx_;
-};
-
-
-/**
- * @brief Mixed-hybrid of steady Darcy flow with sources and variable density.
- *
- * solve equations:
- * @f[
- *      q= -{\mathbf{K}} \nabla h -{\mathbf{K}} R \nabla z
- * @f]
- * @f[
- *      \mathrm{div} q = f
- * @f]
- *
- * where
- * - @f$ q @f$ is flux @f$[ms^{-1}]@f$ for 3d, @f$[m^2s^{-1}]@f$ for 2d and @f$[m^3s^{-1}]@f$ for 1d.
- * - @f$ \mathbf{K} @f$ is hydraulic tensor ( its orientation for 2d, 1d case is questionable )
- * - @f$ h = \frac{\pi}{\rho_0 g}+z @f$ is pressure head, @f$ \pi, \rho_0, g @f$ are the pressure, water density, and acceleration of gravity , respectively.
- *   Assumes gravity force acts counter to the direction of the @f$ z @f$ axis.
- * - @f$ R @f$ is destity or gravity variability coefficient. For density driven flow it should be
- * @f[
- *    R = \frac{\rho}{\rho_0} -1 = \rho_0^{-1}\sum_{i=1}^s c_i
- * @f]
- *   where @f$ c_i @f$ is concentration in @f$ kg m^{-3} @f$.
- *
- * The time key is optional, when not specified the equation is forced to steady regime. Using Steady TimeGovernor which have no dt constraints.
- *
- *
- * TODO:
- * Make solution regular field (need FeSeystem and parallel DofHandler for edge pressures), then remove get_solution_vector from
- * Equation interface.
- */
-class DarcyFlowMH_Steady : public DarcyFlowMH
-{
-public:
-
-  
-    class EqData : public DarcyFlowMH::EqData {
-    public:
-      
-      EqData() : DarcyFlowMH::EqData()
-      {}
-    };
-    
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
-
-    static const Input::Type::Record & get_input_type();
-
-    virtual void update_solution();
+    void update_solution() override;
     void zero_time_step() override;
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     void get_parallel_solution_vector(Vec &vector) override;
@@ -339,11 +298,24 @@ protected:
 
     };
     
+    /*
+    void setup_velocity_vector() {
+        double *velocity_array;
+        unsigned int size;
+
+        get_solution_vector(velocity_array, size);
+        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, mesh_->n_sides(), velocity_array, &velocity_vector);
+
+    }*/
+
+
+
+
     void make_serial_scatter();
     virtual void modify_system()
-    { ASSERT(0, "Method modify_system not implemented in DarcyFlowMH.\n"); };
+    {  };
     virtual void setup_time_term()
-    { ASSERT(0, "Method setup_time_term not implemented in Steady darcy.\n"); };
+    {  };
 
 
     void prepare_parallel();
@@ -361,7 +333,8 @@ protected:
      * Must be called after create_linear_system.
      *
      */
-    virtual void read_init_condition() {};
+    virtual void read_init_condition()
+    {  };
 
     /**
      * Abstract assembly method used for both assembly and preallocation.
@@ -385,8 +358,23 @@ protected:
     void assembly_linear_system();
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
-    double solution_precision() const;
+    /**
+     * Return a norm of residual vector.
+     * TODO: Introduce Equation::compute_residual() updating
+     * residual field, standard part of EqData.
+     */
+    virtual double solution_precision() const;
 
+    bool solution_changed_for_scatter;
+    //Vec velocity_vector;
+    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+
+    MortarMethod mortar_method_;
+
+    /// object for calculation and writing the water balance to file.
+    boost::shared_ptr<Balance> balance_;
+    /// index of water balance within the Balance object.
+    unsigned int water_balance_idx_;
 
     DarcyFlowMHOutput *output_object;
 

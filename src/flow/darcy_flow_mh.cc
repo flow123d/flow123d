@@ -86,7 +86,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
 namespace it = Input::Type;
 
-const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
+const it::Selection & DarcyFlowMH_Steady::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
@@ -95,7 +95,7 @@ const it::Selection & DarcyFlowMH::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyFlowMH::EqData::get_bc_type_selection() {
+const it::Selection & DarcyFlowMH_Steady::EqData::get_bc_type_selection() {
 	return it::Selection("DarcyFlow_BC_Type")
                .add_value(none, "none", "Homogeneous Neumann boundary condition. Zero flux")
                .add_value(dirichlet, "dirichlet",
@@ -134,7 +134,7 @@ const it::Record & DarcyFlowMH_Steady::get_input_type() {
                 "Time governor setting for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
-		.declare_key("mortar_method", DarcyFlowMH::get_mh_mortar_selection(), it::Default("None"),
+		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("None"),
 				"Method for coupling Darcy flow between dimensions." )
 		.close();
 }
@@ -159,7 +159,7 @@ const int DarcyFlowMH_Unsteady::registrar =
 
 
 
-DarcyFlowMH::EqData::EqData()
+DarcyFlowMH_Steady::EqData::EqData()
 {
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
@@ -246,7 +246,7 @@ DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
  */
 //=============================================================================
 DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
-: DarcyFlowMH(mesh_in, in_rec),
+: DarcyFlowInterface(mesh_in, in_rec),
   solution(nullptr),
   schur0(nullptr),
   edge_ds(nullptr),
@@ -416,10 +416,12 @@ void DarcyFlowMH_Steady::output_data() {
 	}
 }
 
+
 double DarcyFlowMH_Steady::solution_precision() const
 {
 	return schur0->get_solution_precision();
 }
+
 
 
 void  DarcyFlowMH_Steady::get_solution_vector(double * &vec, unsigned int &vec_size)
@@ -754,9 +756,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 		Boundary * bcd = ele->side(i_side)->cond();
 		if (bcd) {			
 			ElementAccessor<3> b_ele = bcd->element_accessor();
-			DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+			auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 			//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-			if (type == DarcyFlowMH::EqData::dirichlet) {
+			if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
 				//DBGMSG("Dirichlet: %d\n", ele->index());
 				dofs[i_side] = -dofs[i_side];
 				double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
@@ -837,9 +839,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 			if (bcd) {
 				ElementAccessor<3> b_ele = bcd->element_accessor();
-				DarcyFlowMH::EqData::BC_Type type = (DarcyFlowMH::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
+				auto type = (DarcyFlowMH_Steady::EqData::BC_Type)darcy_.data_.bc_type.value(b_ele.centre(), b_ele);
 				//DBGMSG("bcd id: %d sidx: %d type: %d\n", ele->id(), i_side, type);
-				if (type == DarcyFlowMH::EqData::dirichlet) {
+				if (type == DarcyFlowMH_Steady::EqData::dirichlet) {
 					//DBGMSG("Dirichlet: %d\n", ele->index());
 					dofs[shift + i_side] = -dofs[shift + i_side];
 					double bc_pressure = darcy_.data_.bc_pressure.value(b_ele.centre(), b_ele);
