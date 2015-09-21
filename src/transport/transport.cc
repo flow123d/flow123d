@@ -480,12 +480,14 @@ void ConvectionTransport::zero_time_step()
 }
 
 
-double ConvectionTransport::assess_time_constraint()
+bool ConvectionTransport::assess_time_constraint(double& time_constraint)
 {
     ASSERT(mh_dh, "Null MH object.\n" );
     data_.set_time(time_->step()); // set to the last computed time
     
     START_TIMER("data reinit");
+    
+    bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
     if (mh_dh->time_changed() > transport_matrix_time  || data_.porosity.changed())
@@ -493,6 +495,8 @@ double ConvectionTransport::assess_time_constraint()
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
         tm_need_time_rescaling = true;
+        cfl_changed = true;
+        DBGMSG("CFL changed - flow.\n");
     }
     
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
@@ -502,10 +506,12 @@ double ConvectionTransport::assess_time_constraint()
         compute_concentration_sources();
         is_src_term_scaled = false;
         src_need_time_rescaling = true;
+        cfl_changed = true;
+        DBGMSG("CFL changed - source.\n");
     }
     
     //now resolve the CFL condition
-    if(tm_need_time_rescaling || src_need_time_rescaling)
+    if(cfl_changed)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
         Vec cfl;
@@ -517,15 +523,18 @@ double ConvectionTransport::assess_time_constraint()
     }
     
     END_TIMER("data reinit");
-    return cfl_max_step;
+    
+    // return time constraint
+    time_constraint = cfl_max_step;
+    return cfl_changed;
 }
 
 void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
-    time_->fix_dt_until_mark();
-
+    if(time_->is_changed_dt()) time_->view("Convection");    //show time governor
+    
     double dt_new = time_->estimate_dt(),
            dt_scaled = dt_new / time_->dt();
     
@@ -623,15 +632,19 @@ void ConvectionTransport::set_target_time(double target_time)
     //sets target_mark_type (it is fixed) to be met in next_time()
     time_->marks().add(TimeMark(target_time, target_mark_type));
 
-    // make new time step fixation, invalidate scaling
-    // same is done when matrix has changed in compute_one_step
+    // This is done every time TOS calls update_solution.
+    // If CFL condition is changed, time fixation will change later from TOS.
+    
+    // Set the same constraint as was set last time.
     time_->set_upper_constraint(cfl_max_step);
     
     // fixing convection time governor till next target_mark_type (got from TOS or other)
     // may have marks for data changes
     time_->fix_dt_until_mark();
+    
+    // invalidate scaling
     tm_need_time_rescaling = true;
-
+    src_need_time_rescaling = true;
 }
 
 

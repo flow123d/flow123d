@@ -122,7 +122,7 @@ public:
     /**
      * 
      */
-    double assess_time_constraint();
+    bool assess_time_constraint(double &time_constraint);
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
