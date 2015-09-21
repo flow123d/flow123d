@@ -75,10 +75,10 @@ class ConvectionTransport;
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
-class ConvectionTransport : public TransportBase {
+class ConvectionTransport : public TransportCommon, public ConcentrationTransportBase {
 public:
 
-    class EqData : public TransportBase::TransportEqData {
+    class EqData : public TransportCommon::TransportEqData {
     public:
         static const Input::Type::Selection & get_output_selection();
 
@@ -105,14 +105,21 @@ public:
         FieldSet output_fields;
     };
 
+
+    typedef ConcentrationTransportBase FactoryBaseType;
+
+    static const Input::Type::Record & get_input_type();
+
     /**
      * Constructor.
      */
-        ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
+    ConvectionTransport(Mesh &init_mesh, const Input::Record &in_rec);
 	/**
 	 * TODO: destructor
 	 */
 	virtual ~ConvectionTransport();
+
+	void initialize() override;
 
 	/**
 	 * Initialize solution at zero time.
@@ -139,50 +146,59 @@ public:
      *
      *
      */
-    void set_target_time(double target_time);
+    void set_target_time(double target_time) override;
 
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    void set_balance_object(boost::shared_ptr<Balance> balance);
+    void set_balance_object(boost::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx()
+    const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
 
     /**
      * Calculate quantities necessary for cumulative balance (over time).
      * This method is called at each (sub)iteration of the time loop.
      */
-    void calculate_cumulative_balance();
+    void calculate_cumulative_balance() override;
 
     /**
      * Calculate instant quantities at output times.
      */
-    void calculate_instant_balance();
+    void calculate_instant_balance() override;
 
-	/**
-	 * Communicate parallel concentration vectors into sequential output vector.
-	 */
-	void output_vector_gather();
 
     /**
      * @brief Write computed fields.
      */
     virtual void output_data() override;
 
+    inline void set_velocity_field(const MH_DofHandler &dh) override
+    { mh_dh=&dh; }
+
 
 	/**
 	 * Getters.
 	 */
-	inline EqData *get_data() { return &data_; }
+	inline std::shared_ptr<OutputTime> &output_stream() override
+	{ return output_stream_; }
 
-	inline std::shared_ptr<OutputTime> output_stream() { return output_stream_; }
+	double **get_concentration_matrix() override;
 
-	double **get_concentration_matrix();
-	Vec *get_concentration_vector() { return vconc; }
-	void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-	int *get_el_4_loc();
-	int *get_row_4_el();
+	const Vec &get_solution(unsigned int sbi) override
+	{ return vconc[sbi]; }
+
+	void get_par_info(int * &el_4_loc, Distribution * &el_ds) override;
+
+	int *get_row_4_el() override;
+
+    /// Returns number of transported substances.
+    inline unsigned int n_substances() override
+    { return substances_.size(); }
+
+    /// Returns reference to the vector of substance names.
+    inline SubstanceList &substances() override
+    { return substances_; }
 
 private:
 
@@ -216,7 +232,15 @@ private:
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
+	/**
+	 * Communicate parallel concentration vectors into sequential output vector.
+	 */
+	void output_vector_gather();
 
+
+
+    /// Registrar of class to factory
+    static const int registrar;
 
     /**
      *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
@@ -264,8 +288,8 @@ private:
 
     std::vector<VectorSeqDouble> out_conc;
 
-	/// Record with output specification.
-	Input::Record output_rec;
+	/// Record with input specification.
+	const Input::Record input_rec;
 
 	std::shared_ptr<OutputTime> output_stream_;
 
@@ -274,9 +298,22 @@ private:
 	int *el_4_loc;
 	Distribution *el_ds;
 
+    /// Transported substances.
+    SubstanceList substances_;
+
+    /**
+     * Temporary solution how to pass velocity field form the flow model.
+     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+     */
+    const MH_DofHandler *mh_dh;
+
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
 
-            friend class TransportOperatorSplitting;
+    /// (new) object for calculation and writing the mass balance to file.
+    boost::shared_ptr<Balance> balance_;
+
+    friend class TransportOperatorSplitting;
 };
 #endif /* TRANSPORT_H_ */
