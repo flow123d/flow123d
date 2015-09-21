@@ -70,10 +70,8 @@ const Record & Balance::get_input_type() {
 
 Balance::Balance(const std::string &file_prefix,
 		const Mesh *mesh,
-		const Distribution *el_ds,
-		const int *el_4_loc,
 		const Input::Record &in_rec)
-	: 	  regions_(mesh->region_db()),
+	: 	  mesh_(mesh),
 	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
@@ -103,21 +101,6 @@ Balance::Balance(const std::string &file_prefix,
 
 		output_.open(string(in_rec.val<FilePath>("file", FilePath(default_file_name, FilePath::output_file))).c_str());
 	}
-
-	// construct vector of regions of boundary edges
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
-    {
-        Element *elm = mesh->element(el_4_loc[loc_el]);
-        if (elm->boundary_idx_ != nullptr)
-        {
-            FOR_ELEMENT_SIDES(elm,si)
-            {
-                Boundary *b = elm->side(si)->cond();
-                if (b != nullptr)
-                	be_regions_.push_back(b->region().boundary_idx());
-            }
-        }
-    }
 }
 
 
@@ -170,16 +153,35 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 }
 
 
-void Balance::allocate(unsigned int n_loc_dofs,
+void Balance::allocate(const Distribution *el_ds,
+		const int *el_4_loc,
+		unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
 	ASSERT(!allocation_done_, "Attempt to allocate Balance object multiple times.");
 	// Max. number of regions to which a single dof can contribute.
 	// TODO: estimate or compute this number directly (from mesh or dof handler).
-	const int n_bulk_regs_per_dof = min(10, (int)regions_.bulk_size());
+	const int n_bulk_regs_per_dof = min(10, (int)mesh_->region_db().bulk_size());
 	const unsigned int n_quant = quantities_.size();
-	const unsigned int n_bdr_reg = regions_.boundary_size();
-	const unsigned int n_blk_reg = regions_.bulk_size();
+	const unsigned int n_bdr_reg = mesh_->region_db().boundary_size();
+	const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
+
+
+	// construct vector of regions of boundary edges
+    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++)
+    {
+        Element *elm = mesh_->element(el_4_loc[loc_el]);
+        if (elm->boundary_idx_ != nullptr)
+        {
+            FOR_ELEMENT_SIDES(elm,si)
+            {
+                Boundary *b = elm->side(si)->cond();
+                if (b != nullptr)
+                	be_regions_.push_back(b->region().boundary_idx());
+            }
+        }
+    }
+
 
 
 	fluxes_    .resize(n_quant, vector<double>(n_bdr_reg, 0));
@@ -221,7 +223,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 	{
 		MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
-				(rank_==0)?regions_.bulk_size():0,
+				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
 				(rank_==0)?n_bulk_regs_per_dof:0,
@@ -243,7 +245,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 
 		MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
-				(rank_==0)?regions_.bulk_size():0,
+				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
 				(rank_==0)?n_bulk_regs_per_dof:0,
@@ -254,7 +256,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 
 		MatCreateAIJ(PETSC_COMM_WORLD,
 				n_loc_dofs,
-				(rank_==0)?regions_.bulk_size():0,
+				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
 				(rank_==0)?n_bulk_regs_per_dof:0,
@@ -269,14 +271,14 @@ void Balance::allocate(unsigned int n_loc_dofs,
 				&(be_flux_vec_[c]));
 
 		VecCreateMPI(PETSC_COMM_WORLD,
-				(rank_==0)?regions_.bulk_size():0,
+				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				&(region_source_vec_[c]));
 	}
 
 	MatCreateAIJ(PETSC_COMM_WORLD,
 			be_regions_.size(),
-			(rank_==0)?regions_.boundary_size():0,
+			(rank_==0)?mesh_->region_db().boundary_size():0,
 			PETSC_DECIDE,
 			PETSC_DECIDE,
 			(rank_==0)?1:0,
@@ -462,7 +464,7 @@ void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
-			(rank_==0)?regions_.bulk_size():0,
+			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(sources_[quantity_idx][0]),
 			&bulk_vec);
@@ -493,7 +495,7 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
-			(rank_==0)?regions_.boundary_size():0,
+			(rank_==0)?mesh_->region_db().boundary_size():0,
 			PETSC_DECIDE,
 			&(fluxes_[quantity_idx][0]),
 			&boundary_vec);
@@ -525,7 +527,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
-			(rank_==0)?regions_.bulk_size():0,
+			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(output_array[0]),
 			&bulk_vec);
@@ -545,7 +547,7 @@ void Balance::calculate_source(unsigned int quantity_idx,
 
 	VecCreateMPIWithArray(PETSC_COMM_WORLD,
 			1,
-			(rank_==0)?regions_.bulk_size():0,
+			(rank_==0)?mesh_->region_db().bulk_size():0,
 			PETSC_DECIDE,
 			&(sources_[quantity_idx][0]),
 			&bulk_vec);
@@ -565,7 +567,7 @@ void Balance::calculate_source(unsigned int quantity_idx,
 	VecDuplicate(solution, &mat_r);
 	VecDuplicate(solution, &rhs_r);
 	VecGetArrayRead(solution, &sol_array);
-	for (unsigned int r=0; r<regions_.bulk_size(); ++r)
+	for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
 	{
 		MatGetColumnVector(region_source_matrix_[quantity_idx], mat_r, r);
 		MatGetColumnVector(region_source_rhs_[quantity_idx], rhs_r, r);
@@ -598,7 +600,7 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	ASSERT(allocation_done_, "Balance structures are not allocated!");
 	Vec boundary_vec;
 
-	VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, (rank_==0)?regions_.boundary_size():0, PETSC_DECIDE, &(fluxes_[quantity_idx][0]), &boundary_vec);
+	VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, (rank_==0)?mesh_->region_db().boundary_size():0, PETSC_DECIDE, &(fluxes_[quantity_idx][0]), &boundary_vec);
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
 	VecZeroEntries(boundary_vec);
@@ -608,8 +610,8 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	MatMultTranspose(region_be_matrix_, temp, boundary_vec);
 
 	// compute positive/negative fluxes
-	fluxes_in_[quantity_idx].assign(regions_.boundary_size(), 0);
-	fluxes_out_[quantity_idx].assign(regions_.boundary_size(), 0);
+	fluxes_in_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
+	fluxes_out_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
 	const double *flux_array;
 	int lsize;
 	VecGetArrayRead(temp, &flux_array);
@@ -642,8 +644,8 @@ void Balance::output(double time)
 
 	// gather results from processes and sum them up
 	const unsigned int n_quant = quantities_.size();
-	const unsigned int n_blk_reg = regions_.bulk_size();
-	const unsigned int n_bdr_reg = regions_.boundary_size();
+	const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
+	const unsigned int n_bdr_reg = mesh_->region_db().boundary_size();
 	const int buf_size = n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg;
 	double sendbuffer[buf_size], recvbuffer[buf_size];
 	for (unsigned int qi=0; qi<n_quant; qi++)
@@ -693,7 +695,7 @@ void Balance::output(double time)
 		sum_sources_out_.assign(n_quant, 0);
 
 		// sum all boundary fluxes
-		const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
+		const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
 		for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 		{
 			for (unsigned int qi=0; qi<n_quant; qi++)
@@ -705,7 +707,7 @@ void Balance::output(double time)
 		}
 
 		// sum all volume sources
-		const RegionSet & bulk_set = regions_.get_region_set("BULK");
+		const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
 		for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
 		{
 			for (unsigned int qi=0; qi<n_quant; qi++)
@@ -800,7 +802,7 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw(w*c+wl) << setfill('-') << "" << setfill(' ') << endl;
 
 	// print mass fluxes over boundaries
-	const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
+	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg) {
 		for (unsigned int qi=0; qi<n_quant; qi++) {
 			output_ << setw(2)  << ""
@@ -846,7 +848,7 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw(w*c+wl) << setfill('-') << "" << setfill(' ') << endl;
 
 	// print  balance of volume sources and masses
-	const RegionSet & bulk_set = regions_.get_region_set("BULK");
+	const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
 	for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
@@ -929,7 +931,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	if (repeat==0 && output_line_counter_==0) format_csv_output_header(delimiter, comment_string);
 
 	// print sources and masses over bulk regions
-	const RegionSet & bulk_set = regions_.get_region_set("BULK");
+	const RegionSet & bulk_set = mesh_->region_db().get_region_set("BULK");
 	for( RegionSet::const_iterator reg = bulk_set.begin(); reg != bulk_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
@@ -951,7 +953,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 	}
 
 	// print mass fluxes over boundaries
-	const RegionSet & b_set = regions_.get_region_set("BOUNDARY");
+	const RegionSet & b_set = mesh_->region_db().get_region_set("BOUNDARY");
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
