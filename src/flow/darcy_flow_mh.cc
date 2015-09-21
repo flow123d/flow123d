@@ -245,7 +245,7 @@ DarcyFlowMH_Steady::Assembly<dim>::~Assembly()
  *
  */
 //=============================================================================
-DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec, bool make_tg )
+DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowMH(mesh_in, in_rec),
   solution(nullptr),
   schur0(nullptr),
@@ -321,14 +321,25 @@ DarcyFlowMH_Steady::DarcyFlowMH_Steady(Mesh &mesh_in, const Input::Record in_rec
 
 void DarcyFlowMH_Steady::zero_time_step() {
     create_linear_system();
+    read_init_condition(); // Possible solution guess for steady case.
     assembly_linear_system();
-    int convergedReason = schur0->solve();
 
-    xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
-    ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+    if (time_->is_steady()) {
+        /* TODO:
+         * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
+         * - Introduce key, steady initial condition. Which could be used to start from steady initial case
+         * as well as indicating steady solver. Problem: initial steady problem need to set limit_side::left, however staedy solver
+         * should set limit_side::right. But this is problematic, since it seems that limit_side may not be property of the solver, but could be set by user.
+         *
+         */
+        int convergedReason = schur0->solve();
 
-    this -> postprocess();
-    solution_changed_for_scatter=true;
+        xprintf(MsgLog, "Linear solver ended with reason: %d \n", convergedReason );
+        ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+
+        this -> postprocess();
+        solution_changed_for_scatter=true;
+    }
     output_data();
 }
 
@@ -1541,8 +1552,9 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 // unsteady
 
 DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in_rec)
-    : DarcyFlowMH_Steady(mesh_in, in_rec, false)
+    : DarcyFlowMH_Steady(mesh_in, in_rec)
 {
+    /*
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	data_.mark_input_times(this->mark_type());
 	data_.set_limit_side(LimitSide::right);
@@ -1554,20 +1566,24 @@ DarcyFlowMH_Unsteady::DarcyFlowMH_Unsteady(Mesh &mesh_in, const Input::Record in
 	//time_->fix_dt_until_mark();
 	create_linear_system();
 
-	VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
+
 
     assembly_linear_system();
 	read_init_condition();
 
     output_data();
+    */
 }
+
 
 void DarcyFlowMH_Unsteady::read_init_condition()
 {
+
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD,rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
+    VecDuplicate(*( schur0->get_rhs()), &steady_rhs);
 
 	// read inital condition
 	VecZeroEntries(schur0->get_solution());

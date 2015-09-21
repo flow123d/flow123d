@@ -261,7 +261,7 @@ public:
       {}
     };
     
-    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec, bool make_tg=true);
+    DarcyFlowMH_Steady(Mesh &mesh, const Input::Record in_rec);
 
     static const Input::Type::Record & get_input_type();
 
