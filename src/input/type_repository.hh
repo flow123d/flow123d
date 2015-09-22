@@ -45,7 +45,7 @@ public:
 
     boost::shared_ptr<T> add_type(const T & type);
 
-    void finish();
+    void finish(bool is_generic = false);
 
 private:
     /// Default constructor.
@@ -70,9 +70,9 @@ boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
 }
 
 template <class T>
-void TypeRepository<T>::finish() {
+void TypeRepository<T>::finish(bool is_generic) {
 	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
-		it->second->finish();
+		it->second->finish(is_generic);
 	}
 }
 

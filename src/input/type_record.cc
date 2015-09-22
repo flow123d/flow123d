@@ -240,7 +240,16 @@ bool Record::finish(bool is_generic)
     {
     	if (it->key_ != "TYPE") {
 			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-            data_->finished = data_->finished && it->type_->finish(is_generic);
+            try {
+            	data_->finished = data_->finished && it->type_->finish(is_generic);
+            } catch (ExcParamaterInIst &e) {
+            	if (root_of_generic_subtree_) {
+#ifdef FLOW123D_DEBUG
+            		xprintf(Warn, "Unused root of generic subtree: '%s'.\n", this->type_name().c_str());
+#endif
+            	}
+            	else throw;
+            }
 
             // we check once more even keys that was already checked, otherwise we have to store
             // result of validity check in every key
@@ -645,9 +654,19 @@ bool AbstractRecord::finish(bool is_generic) {
 
 	child_data_->finished_ = true;
 
+	cout << "AbstractRecord " << type_name() << ", finish " << is_generic << endl;
 	for (auto &child : child_data_->list_of_childs) {
 		child.add_parent(*this);
-		child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
+        try {
+        	child_data_->finished_ = child_data_->finished_ && child.finish(is_generic);
+        } catch (ExcParamaterInIst &e) {
+        	if (root_of_generic_subtree_) {
+#ifdef FLOW123D_DEBUG
+            	xprintf(Warn, "Unused root of generic subtree: '%s'.\n", this->type_name().c_str());
+#endif
+            }
+        	else throw;
+        }
 	}
 
     // check validity of possible default value of TYPE key

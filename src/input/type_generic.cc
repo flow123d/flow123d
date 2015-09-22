@@ -64,9 +64,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 
 
 bool Parameter::finish(bool is_generic) {
-#ifdef FLOW123D_DEBUG
-	if (!is_generic) xprintf(Warn, "Finish of non-generic Parameter '%s'.\n", this->name_.c_str());
-#endif
+	if (!is_generic) THROW( ExcParamaterInIst() << EI_Object(this->name_));
 	return true;
 }
 
@@ -104,7 +102,7 @@ const Instance &Instance::close() const {
 
 
 bool Instance::finish(bool is_generic) {
-	return generic_type_.finish(true);
+	return generic_type_.finish(is_generic);
 }
 
 

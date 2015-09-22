@@ -357,10 +357,56 @@ TEST(GenericType, parameter_not_used) {
 TEST(GenericType, parameter_during_lazy_finish) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	static Record record = Record("parametrized_record", "")
+	static Record param_record = Record("record_with_param", "")
 			.declare_key("param", Parameter("param"), "desc.")
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "Finish of non-generic Parameter 'param'");
+	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcParamaterInIst, "Parameter 'param' appears in the IST");
+}
+
+
+template <int spacedim>
+class ParametrizedTestClass {
+public:
+	static string template_name() {
+	    stringstream ss;
+	    ss << "Rec:" << spacedim;
+		return ss.str();
+	}
+
+	static Record & get_input_type() {
+		static Record rec = Record(template_name(), "Record with parameterized dimension.")
+				.root_of_generic_subtree()
+				.declare_key("param", Parameter("param"), "desc.")
+				.declare_key("boundary", Bool(), "desc.")
+				.close();
+
+		return rec;
+	}
+
+	static const Instance & get_input_type_instance() {
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", boost::make_shared<Array>(Double(), 0, spacedim)) );
+
+		return Instance(get_input_type(), param_vec).close();
+	}
+};
+
+
+TEST(GenericType, unused_record) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	{
+		// same mechanism as call of registrars
+		ParametrizedTestClass<2>::get_input_type();
+		ParametrizedTestClass<3>::get_input_type();
+	}
+
+	static Record root_templated_record = Record("templated_record", "")
+			.declare_key("generic_rec", ParametrizedTestClass<3>::get_input_type_instance(), "desc.")
+			.declare_key("some_int", Integer(), "Integer key")
+			.close();
+
+	TypeBase::lazy_finish();
 }

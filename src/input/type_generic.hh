@@ -25,6 +25,8 @@ TYPEDEF_ERR_INFO(EI_ParameterList, std::string);
 DECLARE_INPUT_EXCEPTION(ExcParamaterNotSubsituted,
         << "No input type substitution for input type parameter " << EI_Object::qval
 		<< " found during creation of instance with parameter list: " << EI_ParameterList::val << ".");
+DECLARE_INPUT_EXCEPTION(ExcParamaterInIst,
+		<< "Parameter " << EI_Object::qval << " appears in the IST. Check where Instance is missing.");
 
 
 
