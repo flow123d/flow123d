@@ -145,6 +145,7 @@ add_library(tools_lib
     tools/adaptivesimpson.cc
     tools/time_marks.cc
     tools/time_governor.cc
+    tools/time_constraints.cc
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
