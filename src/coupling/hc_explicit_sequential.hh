@@ -36,12 +36,10 @@
 
 #include "coupling/equation.hh"
 
-class DarcyFlowMH;
-class DarcyFlowMHOutput;
+class DarcyFlowInterface;
 class Mesh;
 class EquationBase;
 class AdvectionProcessBase;
-class MaterialDatabase;
 
 
 /**
@@ -74,7 +72,7 @@ private:
     Mesh *mesh;
 
     /// steady or unsteady water flow simulator based on MH scheme
-    std::shared_ptr<DarcyFlowMH> water;
+    std::shared_ptr<DarcyFlowInterface> water;
 
     /// explicit transport with chemistry through operator splitting
     std::shared_ptr<AdvectionProcessBase> secondary_eq;

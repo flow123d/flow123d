@@ -6,11 +6,13 @@
 #include <limits>
 
 #include "io/output_time.hh"
-#include "flow/darcy_flow_mh.hh"
+//#include "flow/darcy_flow_mh.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
+#include "fields/field_set.hh"
 #include "transport/substance.hh"
+#include "transport/advection_process_base.hh"
 
 
 /// external types:
@@ -25,36 +27,6 @@ class Balance;
 
 
 
-/**
- * Abstract interface class for secondary equations in HC_ExplicitCoupling.
- */
-class AdvectionProcessBase : public EquationBase {
-
-public:
-
-	AdvectionProcessBase(Mesh &mesh, const Input::Record in_rec) : EquationBase(mesh, in_rec) {};
-
-    /**
-     * This method takes sequential PETSc vector of side velocities and update
-     * transport matrix. The ordering is same as ordering of sides in the mesh.
-     * We just keep the pointer, but do not destroy the object.
-     *
-     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     */
-    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
-
-	/// Common specification of the input record for secondary equations.
-    static Input::Type::AbstractRecord & get_input_type();
-
-
-protected:
-
-    /// object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
-
-};
-
-
 
 /**
  * Abstract interface class for implementations of transport equation within TransportOperatorSplitting.
@@ -65,7 +37,7 @@ public:
     /**
      * Constructor.
      */
-    ConcentrationTransportBase(Mesh &init_mesh, const Input::Record &in_rec)
+    ConcentrationTransportBase(Mesh &init_mesh, const Input::Record in_rec)
 	: EquationBase(init_mesh, in_rec) {};
 
 
@@ -222,8 +194,6 @@ public:
 
 class TransportOperatorSplitting : public AdvectionProcessBase {
 public:
-	typedef AdvectionProcessBase FactoryBaseType;
-
     /**
      * @brief Declare input record type for the equation TransportOperatorSplittiong.
      *
@@ -234,7 +204,7 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /// Constructor.
-    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record &in_rec);
+    TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec);
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 

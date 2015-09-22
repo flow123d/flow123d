@@ -30,6 +30,7 @@ int Factory<Type, Arguments...>::register_class(string class_name) {
 
 	auto func_wrapper = std::function<std::shared_ptr<Type>(Arguments...)>(creating_function);
 	Factory<Type, Arguments...>::instance()->factory_registry_[class_name] = func_wrapper;
+	//DBGMSG("Adding name: %s of class %s to factory of class %s.\n", class_name.c_str(), typeid(Child).name(), typeid(Type).name());
     return 0;
 }
 
