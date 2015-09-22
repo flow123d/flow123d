@@ -3,7 +3,7 @@
     TYPE = "SequentialCoupling", 
     description = "Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition", 
     mesh = {
-      mesh_file = "${INPUT}/square_xy.msh"
+      mesh_file = "${INPUT}/square_xz.msh"
     }, 
 
     primary_equation = {
@@ -14,27 +14,21 @@
         { region = "plane",
           anisotropy = 1
         },
-        { region = ".bc_south",
-          bc_type = "dirichlet",
-          bc_pressure = 0
+        { region = ".bottom",
+          bc_type = "neumann" // zero flux
         },
-        { region = ".bc_east",
+        { region = ".right",
           bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "y"
-          }
+          bc_piezo_head = 1.25
         },
-        { region = ".bc_north",
-          bc_type = "dirichlet",
-          bc_pressure = {
-            TYPE = "FieldFormula",
-            value = "x"
-          }
+        { region = ".top",
+          bc_type = "seepage",
+          bc_pressure = 0,
+          bc_flux = 0
         },
-        { region = ".bc_west",
+        { region = ".left",
           bc_type = "dirichlet",
-          bc_pressure = 0
+          bc_piezo_head = 0.25
         }
       ],
 
@@ -44,7 +38,7 @@
         }, 
         output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
       }, 
-      
+
       balance = true,
 
       solver = {

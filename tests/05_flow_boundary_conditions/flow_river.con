@@ -1,0 +1,80 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test of 'river' boundary condition of the Darcy flow model.
+    Quasirealistic landscape have three valleys with river condition on three elements.", 
+    mesh = {
+      mesh_file = "RiverTest_fin.msh",
+      sets = [
+        {
+          name = ".reky",
+          region_labels = [
+            ".reka1",
+            ".reka2",
+            ".reka3"  
+          ]
+        }
+      ]
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields = [
+        {
+          region = "kvarter",
+          conductivity = 1e-7
+        },
+        {
+          region = "masiv",
+          conductivity = 1e-8
+        },        
+        {
+          r_set = ".reky",
+          bc_type = "robin",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "0"
+          },
+          bc_robin_sigma = 1e-5
+        },
+        {
+          region = ".povrch",
+          bc_type = "neumann",
+          bc_flux = {
+            TYPE = "FieldFormula",
+            value = "-1e-9" 
+          }
+        }  
+      ],
+
+      
+      balance = true,
+
+      output = {
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ],
+        raw_flow_output = "./raw_output.txt"
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        r_tol = 1.0e-12,
+        a_tol = 1.0e-12
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./proudeni.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+} 
